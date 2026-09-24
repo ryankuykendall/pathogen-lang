@@ -2087,6 +2087,77 @@ function evaluateExpression(expr: Expression, scope: Scope): Value {
 /**
  * Evaluate a LayerConstructorExpression — creates a new layer and returns a LayerReference
  */
+/** Style keys that are shorthand for an SVG transform. */
+const TRANSFORM_STYLE_KEYS = ['translate', 'translate-x', 'translate-y', 'scale', 'scale-x', 'scale-y', 'rotate'];
+
+/**
+ * Move a layer's transform shorthand out of its style block and into its
+ * `TransformState`, so there is ONE transform store rather than two.
+ *
+ * Before this, style shorthand was resolved to an attribute string at emit time
+ * and never reached `transformState`, with two consequences measured in
+ * project-docs/placement-audit/D2-layer-transform-queries.md:
+ *   - `#{ translate-x: 100; }` rendered with the transform but read back as
+ *     `ctx.transform.translate = 0,0`, so a program could not inspect or
+ *     compensate for its own layer's transform;
+ *   - mixing the spellings silently dropped one — a style `translate-x` plus a
+ *     later `ctx.transform.scale.set(2,2)` emitted only the translate, because
+ *     the shorthand string won the emit-time precedence ladder outright.
+ *
+ * Absorbing here fixes both: `transformStateToSvg` produces the same attribute
+ * for numeric input (`translate(x, y)` / `rotate(deg)` / `scale(x, y)`), so
+ * output is unchanged, and the two spellings now compose.
+ *
+ * Values that are not finite numbers are LEFT IN PLACE for the legacy
+ * emit-time path — a CSS var or an interpolated string still reaches the
+ * attribute verbatim, exactly as before.
+ */
+function absorbStyleTransform(styles: LayerStyle, transformState: TransformState): void {
+  const present = TRANSFORM_STYLE_KEYS.filter((k) => styles[k] !== undefined);
+  if (present.length === 0) return;
+
+  const nums = (raw: string): number[] | null => {
+    const parts = raw.split(/\s*,\s*/).map((v) => Number(v.trim()));
+    return parts.every((n) => Number.isFinite(n)) ? parts : null;
+  };
+  // All-or-nothing: if any value is non-numeric, leave every key for the
+  // legacy path rather than absorbing half a transform.
+  const parsed = new Map<string, number[]>();
+  for (const k of present) {
+    const v = nums(styles[k] as string);
+    if (v === null) return;
+    parsed.set(k, v);
+  }
+
+  let tx: number | undefined;
+  let ty: number | undefined;
+  const t = parsed.get('translate');
+  if (t) {
+    tx = t[0];
+    ty = t.length > 1 ? t[1] : 0;
+  }
+  if (parsed.has('translate-x')) tx = parsed.get('translate-x')![0];
+  if (parsed.has('translate-y')) ty = parsed.get('translate-y')![0];
+  if (tx !== undefined || ty !== undefined) transformState.translate = { x: tx ?? 0, y: ty ?? 0 };
+
+  // The style value is already radians — an AngleValue is converted on the way
+  // into the style block — and TransformState.rotate.angle is radians too.
+  if (parsed.has('rotate')) transformState.rotate = { angle: parsed.get('rotate')![0] };
+
+  let sx: number | undefined;
+  let sy: number | undefined;
+  const sc = parsed.get('scale');
+  if (sc) {
+    sx = sc[0];
+    sy = sc.length > 1 ? sc[1] : sc[0];
+  }
+  if (parsed.has('scale-x')) sx = parsed.get('scale-x')![0];
+  if (parsed.has('scale-y')) sy = parsed.get('scale-y')![0];
+  if (sx !== undefined || sy !== undefined) transformState.scale = { x: sx ?? 1, y: sy ?? 1 };
+
+  for (const k of present) delete styles[k];
+}
+
 function evaluateLayerConstructor(expr: LayerConstructorExpression, scope: Scope): LayerReference {
   if (!scope.evalState) {
     throw new Error(formatError('Layer constructors require evaluation context', getLine(expr)));
@@ -2141,6 +2212,12 @@ function evaluateLayerConstructor(expr: LayerConstructorExpression, scope: Scope
       accum: createPathStore(),
       transformState: createTransformState(),
     };
+  }
+
+  // One transform store: move any shorthand out of the styles and into the
+  // layer's TransformState so it is readable through ctx.transform.
+  if ('transformState' in layerState && layerState.transformState) {
+    absorbStyleTransform(layerState.styles, layerState.transformState);
   }
 
   scope.evalState.layers.set(nameValue, layerState);
@@ -9671,6 +9748,7 @@ function evaluateStatementToAccum(stmt: Statement, scope: Scope, accum: PathStor
         accum: stmt.isDefault ? (scope.evalState.rootAccum ?? accum) : createPathStore(),
         transformState: stmt.isDefault ? scope.evalState.transformState : createTransformState(),
       };
+      absorbStyleTransform(layerState.styles, layerState.transformState);
       scope.evalState.layers.set(nameValue, layerState);
       scope.evalState.layerOrder.push(nameValue);
       if (stmt.isDefault) {

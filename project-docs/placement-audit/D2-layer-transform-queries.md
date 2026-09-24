@@ -1,6 +1,7 @@
 # D2 — A query on a transformed layer answers coordinates that are not on screen
 
-**Status:** open, no fix attempted · **Severity:** High · **Audit:** `05-defects.md` D2
+**Status:** readback defect FIXED and option C LANDED 2026-09-24; option D open
+**Severity:** High · **Audit:** `05-defects.md` D2
 **All measurements below are reproducible** — probes in the CLI, one per claim.
 
 ## The issue
@@ -50,7 +51,7 @@ is not a constant offset you can subtract — every derived measurement is wrong
 
 ## Three facts that constrain the fix
 
-**1. The transform is not readable back for the common spelling.** A manual workaround
+**1. ~~The transform is not readable back for the common spelling.~~ FIXED 2026-09-24.** A manual workaround
 ("query, then add the transform yourself") is unavailable where it is most needed:
 
 | Spelling | `ctx.transform.translate` reads back | Renders with the transform? |
@@ -58,9 +59,12 @@ is not a constant offset you can subtract — every derived measurement is wrong
 | `#{ translate-x: 100; translate-y: 50; }` | `0,0` | yes |
 | `ctx.transform.translate.set(100, 50)` | `100,50` | yes |
 
-Style-block transforms are resolved at emit time by `extractConvenienceTransform` and never
-populate `transformState`. There are effectively two transform stores, one of them
-write-only. **This is arguably its own defect** and it blocks option C below.
+Style-block transforms were resolved at emit time and never populated `transformState` —
+two stores, one write-only. `absorbStyleTransform` now moves the shorthand into the layer's
+`TransformState` at creation, so there is one store: the shorthand reads back through
+`ctx.transform`, and the two spellings compose instead of the shorthand silently discarding a
+later imperative call. Output is unchanged (`transformStateToSvg` emits the same attribute for
+numeric input); a non-numeric value such as `10px` is left on the legacy path verbatim.
 
 **2. Applying the transform at query time would double-apply in the same-layer case.**
 Annotating a layer from within itself works correctly today:
@@ -93,10 +97,12 @@ Cheap, safe, honest, and it satisfies the audit's P4. Blunt: it removes a capabi
 works fine as long as you know which space you are in, and same-layer annotation (fact 2) is
 currently *correct* and would be forbidden.
 
-**C — Name the space and expose the transform.** Keep the behaviour; state in `docs/layers.md`
-that layer queries answer in layer-local coordinates; make the transform readable so callers
-can compose deliberately. Requires fixing fact 1 first. Cheapest honest option, but it leaves
-a sharp edge that users must know about.
+**C — Name the space and expose the transform. LANDED 2026-09-24.** `docs/layers.md` gained
+"Queries and layer transforms": queries answer in the layer's own coordinates, scale makes it
+plainest, and there are two worked ways to live with it — annotate inside the same layer, or
+compose `ctx.transform` yourself. The two false promises ("in page coordinates",
+"ProjectedPath (absolute coords)") are corrected. Both examples in the section are verified
+against the compiler.
 
 **D — Warn on the cross-layer case only.** Fire when a query result from a transformed layer
 is drawn into a layer with a *different* transform — which is exactly the failing pattern in

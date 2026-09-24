@@ -103,13 +103,13 @@ pl.apply {
   v 40 as endpoint('corner');
 }
 
-let top = layer('outline').segment('top');   // ProjectedPath (absolute coords)
+let top = layer('outline').segment('top');   // ProjectedPath, in the layer's own coordinates
 let c = layer('outline').point('corner');    // Point(70, 50)
 ```
 
 `segment('name')` returns a `ProjectedPath` with the full sampling API (`get`, `tangent`, `partition`, `boundingBox`, ...); `point('name')` returns the labeled vertex as a Point. See [Segment Labels & Corner Suffixes](#segment-labels-segment-labels-corner-suffixes) for the label shortcuts.
 
-The general query methods work on layer references too, labels or not: `layer('outline').queryAll('endpoint')` is every joint the layer has drawn so far, `layer('outline').query('call(circle)')` is the first circle statement's geometry. Results are in page coordinates. See [Path Queries](#path-queries-path-queries). To have another layer follow this one's geometry automatically, see [Subscriptions](#subscriptions-subscriptions).
+The general query methods work on layer references too, labels or not: `layer('outline').queryAll('endpoint')` is every joint the layer has drawn so far, `layer('outline').query('call(circle)')` is the first circle statement's geometry. Results are in the layer's own coordinates — see [Queries and layer transforms](#layers-queries-and-layer-transforms) when the layer carries one. See [Path Queries](#path-queries-path-queries). To have another layer follow this one's geometry automatically, see [Subscriptions](#subscriptions-subscriptions).
 
 ## Accessing Layer Context
 
@@ -731,6 +731,48 @@ layer('shape').ctx.transform.rotate.set(90deg)
 layer('shape').ctx.transform.scale.set(2, 2)
 // Output: transform="translate(10, 20) rotate(90) scale(2, 2)"
 ```
+
+### Queries and layer transforms
+
+A layer transform is an SVG attribute on the output element. It moves the rendered picture; it does not move the geometry the compiler is holding. So a query on a transformed layer answers in **the layer's own coordinates**, before the transform:
+
+```
+define PathLayer('moved') #{ translate-x: 100; translate-y: 50; }
+define PathLayer('dots')  #{ fill: #c00; }
+
+layer('moved').apply {
+  M 10 10
+  L 60 10
+}
+
+let end = layer('moved').query('endpoint:last').point;   // Point(60, 10)
+```
+
+`end` is `(60, 10)`, and the line renders at `(110, 60)`–`(160, 60)`. Drawing a dot at `end` in an **untransformed** layer puts it 100, 50 away from the line it is marking.
+
+This is the rule, not a special case: everything a layer hands back — `query`, `queryAll`, `segment`, `point`, `vertex`, and the `match` in a [subscription](#subscriptions-subscriptions) — is in that layer's own coordinates. Scale makes it plainest: on a `scale-x: 2` layer a queried `length` is half the rendered length, because the compiler measured the untransformed path.
+
+Two ways to work with it:
+
+**Annotate inside the same layer.** The annotation takes the same transform as the geometry, so the two stay together and nothing needs converting:
+
+```
+layer('moved').apply {
+  let seam = layer('moved').query('command(l)').block;
+  seam.draw();                    // lands exactly on the original
+}
+```
+
+**Or compose the transform yourself.** A layer's transform is readable through `ctx.transform`, whichever spelling set it:
+
+```
+let t = layer('moved').ctx.transform.translate;
+layer('dots').apply {
+  circle(calc(end.x + t.x), calc(end.y + t.y), 3);
+}
+```
+
+The simplest habit is to give the annotating layer the same transform as the layer it annotates, and let both sides move together.
 
 ### Transform Convenience Properties
 

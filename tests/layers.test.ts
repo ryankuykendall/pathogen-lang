@@ -2686,3 +2686,102 @@ describe('apply block scoping', () => {
     expect(() => compile(`${textLayer}\nlayer('t').apply { let sz = 1; M sz sz }`)).toThrow('Path commands cannot be used inside a TextLayer apply block');
   });
 });
+
+/**
+ * There is ONE transform store. Layer transform shorthand (`translate-x`,
+ * `scale`, `rotate`, …) is absorbed into the layer's TransformState at creation
+ * rather than resolved to an attribute string at emit time.
+ *
+ * Before that, the shorthand rendered but was invisible to the program: a layer
+ * written `#{ translate-x: 100; }` read back `ctx.transform.translate` as 0,0,
+ * and mixing the two spellings silently dropped one, because the shorthand won
+ * the emit-time precedence ladder outright.
+ *
+ * Audit: project-docs/placement-audit/D2-layer-transform-queries.md.
+ */
+describe('layer transform: one store, readable and composable', () => {
+  function transformOf(src: string, name: string): string | undefined {
+    const layer = compile(src).layers.find((l) => l.name === name);
+    if (!layer) throw new Error(`no layer ${name}`);
+    return layer.transform;
+  }
+
+  function logged(src: string): string {
+    const out = compile(src);
+    return out.logs[0].parts.map((p) => String(p.value)).join(' ');
+  }
+
+  it('reads back shorthand set in the style block', () => {
+    expect(
+      logged(`
+        let v = PathLayer('v') #{ fill: none; translate-x: 100; translate-y: 50; };
+        v.apply { M 10 10; L 60 10; }
+        let out = \`\${layer('v').ctx.transform.translate.x},\${layer('v').ctx.transform.translate.y}\`;
+        log(out);
+        M 0 0;
+      `),
+    ).toBe('100,50');
+  });
+
+  it('reads back scale and rotate shorthand', () => {
+    expect(
+      logged(`
+        let v = PathLayer('v') #{ fill: none; scale-x: 2; scale-y: 3; rotate: 0.25pi; };
+        v.apply { M 10 10; L 60 10; }
+        let out = \`\${layer('v').ctx.transform.scale.x},\${layer('v').ctx.transform.scale.y}\`;
+        log(out);
+        M 0 0;
+      `),
+    ).toBe('2,3');
+  });
+
+  it('emits the same attribute as before for each shorthand spelling', () => {
+    const base = "let v = PathLayer('v') #{ fill: none;";
+    const tail = " };\nv.apply { M 10 10; L 60 10; }\nM 0 0;";
+    expect(transformOf(`${base} translate-x: 100; translate-y: 50;${tail}`, 'v')).toBe('translate(100, 50)');
+    expect(transformOf(`${base} translate: 100, 50;${tail}`, 'v')).toBe('translate(100, 50)');
+    expect(transformOf(`${base} scale: 2, 3;${tail}`, 'v')).toBe('scale(2, 3)');
+    expect(transformOf(`${base} scale: 2;${tail}`, 'v')).toBe('scale(2, 2)');
+  });
+
+  it('composes the two spellings instead of silently dropping one', () => {
+    // A style translate plus a later imperative scale used to emit only the
+    // translate — the shorthand string won the ladder and the imperative state
+    // was never consulted.
+    const t = transformOf(
+      `
+      let both = PathLayer('both') #{ fill: none; translate-x: 100; };
+      both.apply { M 10 10; L 60 10; }
+      layer('both').ctx.transform.scale.set(2, 2);
+      M 0 0;
+    `,
+      'both',
+    );
+    expect(t).toBe('translate(100, 0) scale(2, 2)');
+  });
+
+  it('an explicit transform string still wins', () => {
+    const t = transformOf(
+      `
+      let v = PathLayer('v') #{ fill: none; transform: rotate(30); translate-x: 100; };
+      v.apply { M 10 10; L 60 10; }
+      M 0 0;
+    `,
+      'v',
+    );
+    expect(t).toBe('rotate(30)');
+  });
+
+  it('leaves a non-numeric value on the legacy path, verbatim', () => {
+    // All-or-nothing: absorbing half a transform would be worse than leaving it.
+    const t = transformOf(
+      `
+      let v = PathLayer('v') #{ fill: none; translate-x: 10px; translate-y: 10; };
+      v.apply { M 10 10; L 60 10; }
+      M 0 0;
+    `,
+      'v',
+    );
+    expect(t).toBe('translate(10px, 10)');
+  });
+});
