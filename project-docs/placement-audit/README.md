@@ -33,8 +33,12 @@ It compiles one tiny program per case — so a method that throws is recorded as
 rather than killing the run — and prints the matrix in `02-surface-matrix.md`. Cases live in
 `probes/cases.tsv`; add a row to extend it.
 
-**Every claim in these notes comes from a probe, not from reading source or prior notes.**
-That is deliberate: the one prior record of this matrix
+**Every claim in `01`, `02` and `05` comes from a probe unless it is labelled a source read.**
+`probes/run-defects.sh` covers D1–D4, D6, D7 and ISSUE-015; D5 and D9 are source reads and
+say so; D8 was probed by hand (recorded in `02`). `06-vocabulary.md` is a reading of the
+published docs, not a measurement.
+
+Probing rather than reading is deliberate: the one prior record of this matrix
 (`project-docs/glyph-halo-diagnosis/STATUS.md:87`, 2026-09-12) is **already stale** — it
 lists `offset()` as re-origining a positioned block, and `offset()` keeps the frame today.
 A hand-maintained matrix of this surface goes wrong within weeks.
@@ -42,14 +46,20 @@ A hand-maintained matrix of this surface goes wrong within weeks.
 ## The three-sentence version
 
 The mental model is "a block is local, a projection is page". The code has **six** spaces,
-only one of which has a named conversion; **five** different answers to "where does the
-result land"; and a third, unnamed value state — the *positioned PathBlock*, which carries
-its position as a leading `m` and is therefore correct only when drawn from the origin.
-That third state is the root of ISSUE-015, the cut-piece shift, and the invalid SVG every
-`<defs>` producer emits.
+only one of which has a named conversion, and **five** different answers to "where does the
+result land". Underneath both: **position is encoded as the presence or absence of a first
+command rather than as data** — so a block that carries a leading `m` is cursor-dependent
+(the cut-piece shift), and a block that lacks one serializes to invalid SVG (every `<defs>`
+producer, ISSUE-015). Two opposite failures, one representation choice.
 
 ## What this does NOT do
 
 It does not fix anything. It ranks and costs. Nine defects are written up in `05-defects.md`
 ready to become `known-issues.md` entries; four of them are user-visible breakage rather
 than design debt.
+
+**Revised 2026-09-24 after review.** The first draft claimed a single root cause, and its own
+evidence contradicted it — a *positioned* block appends to a mask **validly**
+(`M 0 0 H 40 V 40 H 0 Z`); it is the *absence* of the leading move that produces invalid SVG.
+`03-principles.md` now names two opposite causes. `04-violations.md`'s order changed with it:
+V2's cost was wrong (`anchor` is already declared), so V4 goes first on severity.

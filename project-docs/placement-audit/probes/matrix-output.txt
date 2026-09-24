@@ -48,6 +48,12 @@
 | projected | variableOffset       | ProjectedPath | receiver's frame * |       | Point(200, 296) |
 | projected | toPathBlock          | PathBlock     | RE-BASED to (0,0)  | by design | Point(0, 0) |
 | projected | contours             | n/a           | throws             |       | Error: Property 'contours' does not exist on ProjectedPath |
+| flat      | dash                 | PathBlock     | at (0,0) — n/a     |       | Point(0, 0) |
+| flat      | cut                  | PathBlock     | receiver's frame * |       | Point(30, 0) |
+| flat      | contours             | PathBlock     | at (0,0) — n/a     |       | Point(0, 0) |
+| flat      | offset               | PathBlock     | at (0,0) — n/a     |       | Point(0, 0) |
+| flat      | outline              | PathBlock     | receiver's frame * |       | Point(-2, -2) |
+| flat      | subPath              | PathBlock     | at (0,0) — n/a     |       | Point(0, 0) |
 
 * the geometry moved inside the receiver's frame (offset steps out, fillet trims,
   scale multiplies) — the frame itself was kept. Only (0,0) means re-based.

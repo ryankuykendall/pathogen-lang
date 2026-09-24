@@ -17,12 +17,12 @@ for line in open(sys.argv[1]):
 # frame keeps coordinates of that magnitude even when the geometry legitimately
 # moves (offset steps out by d, fillet trims the corner, scale multiplies). A
 # result that was RE-BASED reports (0,0) regardless of the receiver.
-RECV = {'block': 'Point(40, 25)', 'projected': 'Point(200, 300)'}
+RECV = {'block': 'Point(40, 25)', 'flat': 'Point(0, 0)', 'projected': 'Point(200, 300)'}
 
 # Methods whose whole purpose is to change the value's kind.
 BY_DESIGN = {'draw', 'drawTo', 'project', 'toPathBlock'}
 
-EXPECTED = {'block': 'PathBlock', 'projected': 'ProjectedPath'}
+EXPECTED = {'block': 'PathBlock', 'flat': 'PathBlock', 'projected': 'ProjectedPath'}
 
 
 def classify(rid, start, d):
@@ -30,7 +30,8 @@ def classify(rid, start, d):
         return 'n/a', 'throws', d[:58]
     kind = 'ProjectedPath' if d[:2] == 'M ' else 'PathBlock'
     if start == 'Point(0, 0)':
-        place = 'RE-BASED to (0,0)'
+        # A flat block's own first point IS (0,0), so re-basing is unobservable there.
+        place = 'at (0,0) — n/a' if rid == 'flat' else 'RE-BASED to (0,0)'
     elif start == RECV[rid]:
         place = "receiver's frame"
     else:

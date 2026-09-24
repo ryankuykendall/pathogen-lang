@@ -1,6 +1,8 @@
 # 05 — Measured defects
 
-Nine bugs found while auditing. Each was **reproduced**, not inferred. Four are user-visible
+Nine bugs found while auditing. D1–D4, D6, D7 and ISSUE-015 are **reproduced** by
+`probes/run-defects.sh`; D8 was probed by hand (see `02`, text surface); **D5 and D9 are
+source reads** and are labelled as such. Four are user-visible
 breakage rather than design debt. None is fixed here; these are drafted to become
 `known-issues.md` entries.
 
@@ -33,6 +35,18 @@ mask built this way is empty, so whatever it masks vanishes or shows unmasked. N
 This is the same failure class as **ISSUE-015** (open, Medium), which records it for
 *layers* only. The `ProjectedPath.d` getter **does** synthesize a leading `M`
 (`index.ts:6415`); the defs path does not. The two disagree.
+
+**The contrast that names the cause.** Append a *positioned* block and the same call is
+valid:
+
+```
+m.append(@{ m 0 0 h 40 v 40 h -40 z });   →  <path d="M 0 0 H 40 V 40 H 0 Z"/>   valid
+m.append(@{ h 40 v 40 h -40 z });         →  <path d="H 40 V 40 H 0 Z"/>         invalid
+```
+
+So the leading `m` is what makes serialization correct — the opposite of the cursor-dependence
+problem it causes elsewhere. It is also why the six defs byte-snapshot fixtures are clean:
+`snapshots/03-mask.pathogen:3` authors `@{ m 0 0 … }`.
 
 **Fix:** synthesize the moveto where `d` is built for defs, or reuse the `.d` getter's
 logic. Additive, no breaking change.
@@ -92,7 +106,7 @@ This is ISSUE-025's twin and is unrecorded. `cut` has the same shape.
 
 ---
 
-## D5 — The conic gradient ignores the viewBox origin · **Medium**
+## D5 — The conic gradient ignores the viewBox origin · **Medium** · *source read*
 
 `buildSvgTree` passes `buildDefs` the viewBox width and height but never `originX`/`originY`
 (`src/render/build-tree.ts:63`). With `define ViewBox(-100, -100, 200, 200)` the visible area
@@ -137,7 +151,7 @@ different boundary. Only the `45deg` spelling is correct in all three.
 
 ---
 
-## D8 — `ProjectedText.polarProject()` corrupts `origin` · **Low**
+## D8 — `ProjectedText.polarProject()` corrupts `origin` · **Low** · *probed by hand*
 
 Everywhere else `origin` is the cumulative translation from block-local. `ProjectedText.polarProject`
 (`index.ts:4467-4494`) computes its anchor offset from **already-absolute** elements, so it
@@ -147,7 +161,7 @@ discarded amount.
 
 ---
 
-## D9 — `dash()`'s percent resolves against a total the pattern never uses · **Low**
+## D9 — `dash()`'s percent resolves against a total the pattern never uses · **Low** · *source read*
 
 `stroke-dasharray: 50%` inside `dash()` resolves against the **combined** length of all
 subpaths, while the dash pattern **restarts at each subpath**. On a three-subpath receiver,

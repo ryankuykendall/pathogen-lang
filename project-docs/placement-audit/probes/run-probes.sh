@@ -10,6 +10,10 @@ CASES="project-docs/placement-audit/probes/cases.tsv"
 # A POSITIONED block (leading m) and a projected path, so "keeps its place" and
 # "re-bases to its own first point" are distinguishable in the result.
 recv_block="@{ m 40 25 h 60 as segment('edge') v 30 h -60 z }"
+# F9: a NON-positioned block, so "kind" and "carries a leading m" vary independently.
+recv_flat="@{ h 60 as segment('edge') v 30 h -60 z }"
+other_flat="@{ m 30 15 h 60 v 30 h -60 z }"
+knife_flat="@{ m 30 0 v 30 }"
 other_block="@{ m 70 40 h 60 v 30 h -60 z }"
 knife_block="@{ m 70 25 v 30 }"
 
@@ -22,6 +26,7 @@ emit_row() {  # receiver_id  label  expression
   local R OTHER KNIFE
   case "$rid" in
     block)     R="$recv_block";     OTHER="$other_block";     KNIFE="$knife_block" ;;
+    flat)      R="$recv_flat";      OTHER="$other_flat";      KNIFE="$knife_flat" ;;
     projected) R="$recv_projected"; OTHER="$other_projected"; KNIFE="$knife_projected" ;;
   esac
   expr="${expr//OTHER/$OTHER}"

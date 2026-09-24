@@ -1,138 +1,184 @@
 # 04 — Violations, ranked and costed
 
-Every operation that breaks a principle from `03-principles.md`, ranked by how likely a user
-is to hit it. Each carries a fix and what the fix would cost.
+Revised 2026-09-24 after review: V2's cost was wrong, V4 carried a mis-citation, V3's warning
+is not free, and V8 was missing. The order below changed as a result.
 
-**On the cost numbers.** Counts are files that mention the method anywhere in
-`website/blog/samples/` and `tests/`. They are an **upper bound**: only calls on a
-*projected* receiver are affected by P3, and separating those needs per-call receiver typing,
-which this audit did not attempt. **Byte-snapshot exposure is zero for every row** — none of
-the 13 fixtures in `project-docs/render-pipeline-unification/snapshots/` uses any of these
-methods.
+**On the cost numbers.** The counts column is **files mentioning the method anywhere, on any
+receiver** — an upper bound, not exposure. Only calls on a *projected* receiver are affected
+by P3, and separating those needs per-call receiver typing, which this audit did not attempt.
+**Byte-snapshot exposure is zero for every row** (verified: none of the 13 fixtures in
+`project-docs/render-pipeline-unification/snapshots/` uses any of these methods).
 
 ---
 
-## V1 — Six methods on a ProjectedPath return a PathBlock · P3 · **highest impact**
+## V4 — Path data with no leading moveto is emitted silently · P5a · **do this first**
 
-`subPath`, `union`, `difference`, `intersection`, `xor`, `cut`. All are declared as returning
-`ProjectedPath` in `src/pathogen-api.ts`. Three of them (`union`/`difference`/`cut`) hand back
-page numbers inside a relative value, so drawing the result double-places it.
+Two forms, one cause (Cause B in `03`): command lists are not self-contained SVG and each
+serializer decides independently whether to synthesize a moveto.
 
-| Method | samples | test files | Note |
-|---|---|---|---|
-| `cut` | 26 | 3 | the big one |
-| `difference` | 13 | 4 | |
-| `union` | 5 | 4 | |
-| `xor` | 3 | 1 | |
-| `subPath` | 1 | 3 | ISSUE-025 |
-| `intersection` | 1 | 1 | |
+- **D1** — `Mask`/`ClipPath`/`Pattern`/`Marker.append()` and `.contour()` emit
+  `<path d="H 40 V 40 H 0 Z"/>`. Invalid; browsers discard the path; the mask is empty.
+- **ISSUE-015** — a block with no leading move drawn first into a layer emits `d="c 16.99…"`.
+  Same shape, recorded since 2026-09-09.
+
+`ProjectedPath.d` already synthesizes the moveto (`index.ts:6420`), so the logic exists and
+only has to be reused.
+
+**Cost:** additive. It changes output only for programs that are currently emitting invalid
+SVG, which is the point. Snapshot exposure verified zero — and the reason is instructive: the
+six defs fixtures author `@{ m 0 0 … }`, so they already serialize validly.
+
+**Severity:** D1 is rated High in `05-defects.md`. ISSUE-015's fix is already recorded as
+"warning + `M 0 0` prepend" in `glyph-halo-diagnosis/STATUS.md:147`.
+
+> *Removed from this section:* a claim that two published pages teach the idiom that triggers
+> the layer form. They do not. `variable-offset.md:178` and `subscriptions.md:132` both use a
+> **projected** spine, where `draw()` emits its own `M`; the block-spine example at
+> `variable-offset.md:212` writes `M calc(x + ribbon.anchor.x) …` first. The pages teach the
+> correct idiom. D1's severity carries this row without the embellishment.
+
+---
+
+## V1+V2 — Declarations the runtime refuses · P3, P2 · **one pass, after a decision on `subPath`**
+
+These are the same defect class and should land together.
+
+**V1 — six methods return the wrong kind.** On a ProjectedPath, `subPath`, `union`,
+`difference`, `intersection`, `xor` and `cut` hand back a PathBlock; all six are declared as
+returning a `ProjectedPath`. The boolean ops and `cut` return page numbers inside a relative
+value, so drawing one double-places it.
+
+| Method | files mentioning (any receiver) | test files |
+|---|---|---|
+| `cut` | 26 | 3 |
+| `difference` | 13 | 4 |
+| `union` | 5 | 4 |
+| `xor` | 3 | 1 |
+| `subPath` | 1 | 3 |
+| `intersection` | 1 | 1 |
+
+**V2 — `anchor` is declared but throws.** `readonly anchor: PathogenPoint` is declared
+**unconditionally** on `PathogenPathBlock` (`pathogen-api.ts:922`) and on
+`PathogenProjectedPath` (`:1340`), while the runtime throws unless the value came from
+`variableOffset` (`index.ts:6319`, `:6429`). So completions and hover already offer `.anchor`
+on `subPath`/`segment`/`reverse` results and the runtime refuses it.
+
+This corrects the first draft, which called V2 "Cost: none" and said it "needs a declaration
+in `pathogen-api.ts`". The declaration exists. V2 is not an addition — it is the same
+promise-vs-runtime drift as V1, and the honest argument for it is that it is a **live false
+promise**, which is stronger than "additive".
+
+**Real cost of V2:** the member exists, so no declaration churn — but per-method semantics are
+undecided (what is `reverse().anchor`? `segment('edge').anchor` on a multi-subpath receiver?),
+`anchor` does not compose (see P2's caveat), and the project's gates apply: `docs/` page
+first, `generate:completions`, three-surface parity, and a test that presumably pins today's
+throw.
 
 **Fix A (conforming):** return a ProjectedPath from a projected receiver. Makes the
-declarations true, removes four exceptions. Breaking for anyone relying on the relative
-result — in practice that means code doing `M x y; piece.draw()`, which would then
-double-place.
+declarations true and removes six exceptions. Breaking for code doing `M x y; piece.draw()`,
+which would then double-place.
 
-**Fix B (declare the truth):** change the declarations to `PathogenPathBlock`. Zero runtime
-break, fixes completions and hover, leaves the inconsistency in place. This is ISSUE-025's
-recorded option 1.
+**Fix B (declare the truth):** change the six declarations to `PathogenPathBlock`. Zero
+runtime break, fixes completions and hover, leaves the inconsistency. ISSUE-025's option 1.
 
-**Recommendation:** B now — it is documentation-only and removes a live false promise — and A
-behind a version decision, since the same change would land for all six methods at once.
+**These interact — see the decision below.** Fix B then Fix A is two rounds of declaration
+churn, and Fix B legitimizes the behaviour Fix A must undo.
 
 ---
 
-## V2 — `subPath`, `segment` and `reverse` discard position unrecoverably · P2 · **highest value, lowest cost**
+## The `subPath` decision (ISSUE-025)
 
-They re-base to `(0,0)` and nothing on the result records what was removed. The caller must
-still hold the receiver and know which `t` they asked for.
+The first draft gave three answers and picked none. One answer:
 
-**Fix:** give them `anchor`, exactly as `variableOffset` has it. `result.drawTo(result.anchor)`
-becomes an identity.
+**Take Fix B now, and treat Fix A as closed.** Reasons: the `d`-level behaviour of `cut` and
+the boolean ops — pieces sharing one frame so that drawing them all at one origin reassembles
+the shape — is genuinely useful and is what 26 files rely on; Fix A would change it.
+Declaring the truth costs nothing and removes six false promises today.
 
-**Cost: none.** Purely additive — a new member on values that currently throw on `anchor`.
-No return type changes, no output changes, no sample touched. Needs a declaration in
-`pathogen-api.ts` plus `generate:completions`.
+Under that decision, **V2 is the substantive half**: `subPath` keeps returning a PathBlock,
+and gains a working `anchor` so the discarded position is recoverable. That is the answer to
+ISSUE-025 — not a change of return type.
 
-**This is the single highest value-to-risk item in the audit,** and it answers ISSUE-025
-without changing what `subPath` returns.
-
----
-
-## V3 — The positioned block is cursor-dependent · P1, P5 · **root cause**
-
-`cut` pieces, `dash` pieces, `.contours` and `@{ m … }` literals carry position as a leading
-`m`, which is correct only when drawn from `(0,0)`. From any other cursor they shift silently.
-
-**Fix (containment, cheap):** warn when a value whose first command is a move is drawn from a
-non-origin cursor. Additive, catches the cut-piece shift and the glyph-halo class of bug.
-
-**Fix (elimination, expensive):** fold into V1 — on a projected receiver these return
-ProjectedPaths and the state disappears for derived values. The `@{ m … }` literal keeps it,
-by design.
-
-**Cost:** the warning is free. Elimination is V1's cost.
+If Fix A is ever revisited, note that `anchor` on a projected result is trivially
+`startPoint`, so V2's surface would become redundant there.
 
 ---
 
-## V4 — Emitting path data with no leading moveto is silent · P5 · **user-visible breakage**
+## V3 — Cursor-dependent placement is undiagnosable · P5b · **needs design, not code**
 
-Two forms, same cause: `05-defects.md` D1 (every defs producer) and ISSUE-015 (a normalized
-block drawn first into a layer). Both produce invalid SVG that browsers discard, with
-`warnings: []`.
+`dash`, `cut` and `.contours` inject a leading `m` even from a non-positioned receiver
+(measured: `@{ h 100 }.dash(…)[2].d` = `m 30 0 l 20 0`). Drawn from a non-origin cursor they
+shift silently.
 
-Worse, **two published pages actively teach the idiom that triggers the layer form** —
-`docs/variable-offset.md:154` and `docs/subscriptions.md:132` both show `edge.draw()`.
+The first draft said "the warning is free". It is not. `M 10 10; block.draw();` with a
+positioned block is ordinary, correct relative drawing, so a warning keyed on "first command
+is a move and the cursor is not the origin" fires on exactly the authored intent P1 protects.
+A usable signal has to distinguish *injected* from *authored* positioning — which is design
+work, and an argument for P1 (make the type say it) over a heuristic.
 
-**Fix:** synthesize the moveto where `d` is built (defs and layers), and/or warn. The
-`ProjectedPath.d` getter already synthesizes one, so the logic exists.
+---
 
-**Cost:** additive. Synthesizing changes output for programs that are currently broken, which
-is the point. Byte-snapshot exposure: zero.
+## V8 — `buildPathBlockFromCommands` has no enforced convention · P1 · **cheapest durable fix**
+
+Omitting `origin` destroys the frame; passing `{x:0, y:0}` preserves it (`index.ts:1206`).
+Every derived PathBlock is one of these two spellings, chosen by hand, and the misreading is
+one character from a silent placement bug.
+
+**Fix:** split into `fromCommandsRebased(cmds)` and `fromCommandsKeepingFrame(cmds)`.
+Internal only, zero user-visible surface, mechanical. It does not fix any existing bug — it
+stops the next method from picking wrong, which is how this matrix accumulated.
 
 ---
 
 ## V5 — `drawTo` anchors different things on the two receivers · P3 · **documentation-first**
 
-PathBlock: the frame origin → `(x,y)`. ProjectedPath: the first inked point → `(x,y)`. These
-coincide only when the block is not positioned. `docs/path-blocks.md:95` states the ink
-version unconditionally.
+PathBlock: the frame origin → `(x,y)`. ProjectedPath: the first inked point → `(x,y)`.
+ProjectedText: `origin`. Three definitions across four `draw*` entry points. These coincide
+only when the block is not positioned. `docs/path-blocks.md:95` states the ink version
+unconditionally.
 
-**Fix:** pick one and document it. The ink version is the more useful and matches
-`startPoint`'s definition; the frame version is what a positioned block needs.
-
-**Cost:** changing `PathBlock.drawTo` to anchor the ink would move any program that relies on
-the frame behaviour with a leading-`m` block. Documenting the split costs nothing and is the
-right first step.
+**Fix:** document the split. Changing `PathBlock.drawTo` would move any program relying on
+frame anchoring with a positioned block.
 
 ---
 
 ## V6 — Default pivots differ by receiver · P3 · **low**
 
 `rotate`/`scale`/`mirror` pivot on `(0,0)` for a PathBlock and on `startPoint` for a
-ProjectedPath. Defensible (a block has no `startPoint` worth pivoting on), but undocumented
-and surprising when the same call is moved between receivers.
-
-**Fix:** document. Changing it is not worth the break.
+ProjectedPath. Defensible, undocumented, surprising when a call moves between receivers.
+**Fix:** document.
 
 ---
 
 ## V7 — Space conversions are silent · P4 · **medium, needs design**
 
 A PathBlock appended to a `Marker` is read as marker-viewBox coordinates; a ProjectedPath
-appended to the same is read as page coordinates inside a `0 0 mw mh` viewBox and renders
-nothing. A query on a transformed layer answers pre-transform (D2). No conversion exists for
-spaces 3–6.
+appended to the same keeps page numbers inside a `0 0 mw mh` viewBox and renders nothing. A
+query on a transformed layer answers pre-transform (D2). Spaces 3–6 have no conversion.
 
-**Fix:** reject with a message naming both spaces, or write the conversion. Either is a
-design task, not a patch.
+**Fix:** P4's rejection message is the cheap half and can land alone. Writing the conversions
+is the design task.
+
+---
+
+## V9 — Text is ungraded · P2 · **gap, not a finding**
+
+No `cases.tsv` text receiver, no text row in the grading table — yet **D8 is a P2 violation**
+(`ProjectedText.polarProject` stores a delta as `origin`). Either extend the matrix to text
+receivers or state the exclusion. `03` now states it.
 
 ---
 
 ## Suggested order
 
-1. **V2** — additive, highest value, answers ISSUE-025. Do this first.
-2. **V4 / D1** — user-visible breakage, additive fix.
-3. **D3, D6** — one-line correctness fixes with no design content.
-4. **V1 Fix B** — declare the truth; removes the false promise at zero runtime risk.
-5. **V3 warning, V5/V6 documentation** — cheap, and they make the surface teachable.
-6. **V1 Fix A, V7** — the version decision and the design task. Not before the rest.
+1. **V4 / D1 + ISSUE-015** — High severity, user-visible breakage, additive, snapshot-clean,
+   fix already recorded.
+2. **D3, D6** — one-line fixes to measured wrongness on declared APIs (`drawTo` dropping every
+   label; `rotateAtVertexIndex` ignoring its index).
+3. **The `subPath` decision**, then **V1 Fix B + V2** as one "make the declarations true" pass.
+4. **V8** — two named constructors; stops the next drift.
+5. **Documentation** — V5, V6, and `06`'s vocabulary collapse.
+6. **V3, V7, V9** — the design tasks. Not before the rest.
+
+The first draft put V2 first on the strength of "Cost: none". That was wrong, and with the
+cost corrected the order inverts: **V4 goes first**, on severity.

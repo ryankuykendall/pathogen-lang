@@ -1,7 +1,9 @@
 # 01 — The six coordinate spaces
 
 The published mental model has two: *a PathBlock is local, a ProjectedPath is page*. The
-code has at least six, and only the first edge has a named conversion.
+code has at least six **families**, and only the first edge has a named conversion. Family 6
+is itself six sub-spaces — see the section below — so "six" is the conservative count used
+throughout these notes, not the total.
 
 | # | Space | Origin means | Who lives in it |
 |---|---|---|---|

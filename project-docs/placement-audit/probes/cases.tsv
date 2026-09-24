@@ -49,3 +49,9 @@ projected	segment	R.segment('edge')
 projected	variableOffset	R.variableOffset() {|go, pb| go.stop(0%, 4, CurveContinuity.G1); go.stop(100%, 4, CurveContinuity.G1); }
 projected	toPathBlock	R.toPathBlock()
 projected	contours	R.contours[0]
+flat	dash	R.dash(#{ stroke-dasharray: 20 10; })[0].path
+flat	cut	R.cut(KNIFE)[0]
+flat	contours	R.contours[0]
+flat	offset	R.offset(5)
+flat	outline	R.outline(#{ stroke-width: 4; })
+flat	subPath	R.subPath(0.1, 0.5)
