@@ -5,6 +5,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] - 2026-09-24 (one transform store; queries name their space)
+
+D2 from the placement audit, in the agreed order: fix the readback defect, then name the space, then warn on the case that is actually wrong. Full write-up in `project-docs/placement-audit/D2-layer-transform-queries.md`.
+
+### Fixed
+
+#### Core
+
+- **A layer's transform shorthand is now readable, and composes.** `translate-x`, `scale`, `rotate` and friends were resolved to an attribute string at emit time and never reached the layer's transform state, so `#{ translate-x: 100; }` rendered with the transform while `ctx.transform.translate` read back `0,0` — a program could not inspect, let alone compensate for, its own layer's transform. Mixing the two spellings silently dropped one: a style `translate-x: 100` plus a later `ctx.transform.scale.set(2, 2)` emitted only the translate. There is now one store; the emitted attribute is unchanged.
+- **`ProjectedPath.drawTo()` no longer drops every label.** (See the entry above for the full note.)
+
+### Added
+
+#### Core
+
+- **A `layer-transform` warning when a subscription annotates across a transform boundary.** A layer transform moves the rendered picture, not the geometry the compiler holds, so a subscription match is in the *source* layer's coordinates. Drawing it into a layer whose transform differs puts the annotation where the geometry is not — 100,50 off in the audit's repro, silently. The warning compares **effective** transforms, composed with any groups the layers sit in, so annotating inside the same transformed group stays silent; it fires once per layer pair, not per match. `--strict=layer-transform` makes it an error. Zero published samples trip it.
+
+### Changed
+
+#### Documentation
+
+- **Layers gains "Queries and layer transforms".** Queries answer in the layer's own coordinates; scale makes it plainest, since a queried length on a 2× layer is half the rendered length. Two worked ways to live with it — annotate inside the same layer, or compose `ctx.transform` yourself — both verified against the compiler. Corrects two false promises the audit found: "Results are in page coordinates" and "ProjectedPath (absolute coords)".
+
 ## [Unreleased] - 2026-09-24 (every path begins with a moveto)
 
 ISSUE-015 resolved, and the same failure found and fixed in every `<defs>` producer. Found by the placement audit in `project-docs/placement-audit/`; the probes there are now the regression check.

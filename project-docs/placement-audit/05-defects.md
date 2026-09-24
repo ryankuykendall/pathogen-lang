@@ -55,7 +55,7 @@ D1 and ISSUE-015 as FIXED; leaving those probes in place makes them the regressi
 
 ---
 
-## D2 — A query on a transformed layer answers in a space that is not on screen · **High**
+## D2 — A query on a transformed layer answers in a space that is not on screen · **High** · **MITIGATED 2026-09-24**
 
 > Expanded: **[`D2-layer-transform-queries.md`](D2-layer-transform-queries.md)** — full scope, the three facts that constrain a fix, and four costed options.
 

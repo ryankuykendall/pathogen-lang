@@ -33,6 +33,10 @@ export interface DispatchHooks {
   invoke: (sub: SubscriptionValue, match: Value, ordinal: number, trigger: SourceLocation | undefined) => void;
   /** Build a line-formatted error. */
   fail: (message: string, loc: SourceLocation | undefined) => Error;
+  /** A layer's effective SVG transform, composed with its ancestor groups; null when identity. */
+  effectiveTransform: (layerName: string) => string | null;
+  /** Emit a compile warning. */
+  warn: (message: string, loc: SourceLocation | undefined) => void;
 }
 
 interface Event {
@@ -48,6 +52,9 @@ interface Event {
 export function dispatchSubscriptions(evalState: EvaluationState, hooks: DispatchHooks): void {
   const subs = evalState.subscriptions ?? [];
   if (subs.length === 0) return;
+  // One warning per (source, target) pair — a subscription fires once per match,
+  // and the mismatch is a property of the pair, not of each match.
+  const warnedPairs = new Set<string>();
   const pathLayers = (): PathLayerState[] =>
     [...evalState.layers.values()].filter((l): l is PathLayerState => l.layerType === 'PathLayer');
   const edges: [string, string][] = [];
@@ -109,6 +116,24 @@ export function dispatchSubscriptions(evalState: EvaluationState, hooks: Dispatc
         if (l.accum.records.length <= (before.get(l.name) ?? 0)) continue;
         if (l.name === ev.sub.layerName) {
           throw hooks.fail(`Subscription on '${l.name}' drew into '${l.name}' from its own callback`, ev.sub.loc);
+        }
+        // A layer transform moves the rendered picture, not the geometry the
+        // compiler holds, so a match is in the SOURCE layer's own coordinates.
+        // Drawing it into a layer whose transform differs puts the annotation
+        // somewhere the geometry is not. Same transform on both sides is fine —
+        // they move together — which is why this compares rather than just
+        // asking whether the source is transformed.
+        const from = hooks.effectiveTransform(ev.sub.layerName);
+        const to = hooks.effectiveTransform(l.name);
+        if (from !== to && !warnedPairs.has(`${ev.sub.layerName}\u0000${l.name}`)) {
+          warnedPairs.add(`${ev.sub.layerName}\u0000${l.name}`);
+          hooks.warn(
+            `Subscription on '${ev.sub.layerName}' drew into '${l.name}', whose transform differs ` +
+              `(${from ?? 'none'} vs ${to ?? 'none'}). Matches are in '${ev.sub.layerName}' coordinates, ` +
+              `so the annotation will not line up — give '${l.name}' the same transform, or compose ` +
+              `layer('${ev.sub.layerName}').ctx.transform yourself`,
+            ev.sub.loc,
+          );
         }
         edges.push([ev.sub.layerName, l.name]);
       }

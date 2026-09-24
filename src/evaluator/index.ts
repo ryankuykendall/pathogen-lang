@@ -889,6 +889,42 @@ class ReturnSignal {
 }
 
 /**
+ * A layer's effective SVG transform: its own, with every ancestor group's applied
+ * outside it, outermost first — the same composition nested `<g transform>`
+ * elements produce at render (src/render/build-layers.ts).
+ *
+ * Returns null when the whole chain is identity, so callers can compare two
+ * layers with `!==` and have "neither is transformed" come out equal.
+ */
+function effectiveLayerTransform(evalState: EvaluationState, layerName: string): string | null {
+  const chain: string[] = [];
+  const seen = new Set<string>();
+  let current: string | undefined = layerName;
+  while (current && !seen.has(current)) {
+    seen.add(current);
+    const layer = evalState.layers.get(current);
+    if (!layer) break;
+    const own = 'transformState' in layer && layer.transformState ? transformStateToSvg(layer.transformState) : null;
+    // An explicit `transform:` style string outranks the state, as it does at emit.
+    const explicit = typeof layer.styles?.transform === 'string' ? layer.styles.transform : null;
+    const resolved = explicit ?? own;
+    if (resolved) chain.push(resolved);
+
+    // Climb to the group that holds this layer, if any.
+    const child = current;
+    current = undefined;
+    for (const [name, candidate] of evalState.layers) {
+      if (candidate.layerType === 'GroupLayer' && candidate.children.includes(child)) {
+        current = name;
+        break;
+      }
+    }
+  }
+  // Innermost was pushed first; the outermost group's transform applies first.
+  return chain.length > 0 ? chain.reverse().join(' ') : null;
+}
+
+/**
  * Program end: deliver every subscription's matches (src/evaluator/subscriptions.ts).
  * Callbacks run as top-level code — apply blocks are legal, bare commands go to
  * the default layer — and errors name the subscription and the triggering statement.
@@ -898,6 +934,8 @@ function runSubscriptionDispatch(scope: Scope, evalState: EvaluationState): void
     finalizedCommands: (layer) => applyRecordedCornerOps(layer.accum.records.flatMap((r) => r.commands)).commands,
     layerRef: (layer) => ({ type: 'LayerReference' as const, layer }),
     fail: (message, loc) => new Error(formatError(message, loc?.line, loc?.column)),
+    effectiveTransform: (layerName) => effectiveLayerTransform(evalState, layerName),
+    warn: (message, loc) => warn(evalState, 'layer-transform', message, loc),
     invoke: (sub, match, ordinal, trigger) => {
       const blockScope = createScope(sub.callback.closure ?? scope);
       const params = sub.callback.params;

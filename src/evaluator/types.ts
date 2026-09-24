@@ -776,6 +776,7 @@ export const WARNING_CODES = [
   'font-glyph', // characters with no glyph in the loaded font
   'gradient', // gradient definition that will render degenerate
   'non-finite', // NaN / Infinity reaching path data — SVG cannot represent it
+  'layer-transform', // a subscription annotated across layers whose transforms differ
 ] as const;
 
 export type WarningCode = (typeof WARNING_CODES)[number];

@@ -76,7 +76,7 @@ Warnings never stop compilation unless you ask them to. They appear:
 - in the playground console, marked with a **warn** chip, and as a yellow squiggle on the line in the editor;
 - in VS Code, as a warning diagnostic on the line;
 - on the CLI's stderr as `file:line:col: warning: message` (exit code stays 0 unless [strict mode](#debug-strict-mode) is on);
-- in the structured result under `warnings`, one entry per instance, each with a `code`: `corner-op`, `cut`, `annotation-transfer`, `font-glyph`, `gradient`, or `non-finite`.
+- in the structured result under `warnings`, one entry per instance, each with a `code`: `corner-op`, `cut`, `annotation-transfer`, `font-glyph`, `gradient`, `non-finite`, or `layer-transform`.
 
 A warning is also mirrored into the log stream as a `[warn] …` entry, so `--log-file` output keeps everything in one place.
 

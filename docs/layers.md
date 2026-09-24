@@ -774,6 +774,16 @@ layer('dots').apply {
 
 The simplest habit is to give the annotating layer the same transform as the layer it annotates, and let both sides move together.
 
+A [subscription](#subscriptions-subscriptions) that annotates across a transform boundary is warned about, because it is nearly always a mistake:
+
+```
+Subscription on 'moved' drew into 'dots', whose transform differs (translate(100, 50) vs none).
+Matches are in 'moved' coordinates, so the annotation will not line up — give 'dots' the same
+transform, or compose layer('moved').ctx.transform yourself
+```
+
+The warning compares the two layers' **effective** transforms, composed with any groups they sit in, so annotating inside the same transformed group is silent — both sides move together. Its code is `layer-transform`; `--strict=layer-transform` makes it an error.
+
 ### Transform Convenience Properties
 
 Style blocks support individual transform properties as an alternative to `transform: ...` or the imperative API. These work on PathLayer, GroupLayer, and TextLayer. On a TextLayer the transform applies to every `text` it holds; a per-text rotation (`text(x, y, 30deg)`) turns the text about its own anchor inside that transform:

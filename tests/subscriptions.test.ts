@@ -264,3 +264,102 @@ describe('subscriptions — building geometry from match.block', () => {
     expect(layerData(src, 'born-0')).toContain('M 10 10');
   });
 });
+
+/**
+ * A layer transform moves the rendered picture, not the geometry the compiler
+ * holds, so a subscription match is in the SOURCE layer's own coordinates.
+ * Drawing it into a layer whose transform differs puts the annotation where the
+ * geometry is not — measured at 100,50 off in the audit's repro.
+ *
+ * The check compares EFFECTIVE transforms (composed with any groups the layers
+ * sit in), so equal transforms on both sides stay silent: they move together.
+ *
+ * Audit: project-docs/placement-audit/D2-layer-transform-queries.md, option D.
+ * Note the layer and parameter names: single letters like a/c/s/q are path
+ * commands and cannot be identifiers in path-argument position.
+ */
+describe('subscriptions across a layer-transform boundary', () => {
+  function transformWarnings(src: string): string[] {
+    return compile(src)
+      .warnings.filter((w) => w.code === 'layer-transform')
+      .map((w) => w.message);
+  }
+
+  const wiring = `
+    src.subscribe('endpoint') {|pt, i, sub| dst.apply { circle(pt.x, pt.y, 2); } };
+    src.apply { M 10 10; L 60 10; }
+  `;
+
+  it('warns when the source is transformed and the target is not', () => {
+    const w = transformWarnings(`
+      define default PathLayer('sink') #{ fill: none; }
+      let src = PathLayer('src') #{ fill: none; translate-x: 100; translate-y: 50; };
+      let dst = PathLayer('dst') #{ fill: #c00; };
+      ${wiring}
+    `);
+    expect(w).toHaveLength(1);
+    expect(w[0]).toContain("Subscription on 'src' drew into 'dst'");
+    expect(w[0]).toContain('translate(100, 50) vs none');
+  });
+
+  it('stays silent when neither layer is transformed', () => {
+    expect(
+      transformWarnings(`
+        define default PathLayer('sink') #{ fill: none; }
+        let src = PathLayer('src') #{ fill: none; };
+        let dst = PathLayer('dst') #{ fill: #c00; };
+        ${wiring}
+      `),
+    ).toEqual([]);
+  });
+
+  it('stays silent when both carry the same transform', () => {
+    expect(
+      transformWarnings(`
+        define default PathLayer('sink') #{ fill: none; }
+        let src = PathLayer('src') #{ fill: none; translate-x: 100; };
+        let dst = PathLayer('dst') #{ fill: #c00; translate-x: 100; };
+        ${wiring}
+      `),
+    ).toEqual([]);
+  });
+
+  it('stays silent when both sit in the same transformed group', () => {
+    // Effective transforms, not own transforms: neither layer declares one.
+    expect(
+      transformWarnings(`
+        define default PathLayer('sink') #{ fill: none; }
+        let grp = GroupLayer('grp') #{ translate-x: 200; };
+        let src = PathLayer('src') #{ fill: none; };
+        let dst = PathLayer('dst') #{ fill: #c00; };
+        grp.append(src);
+        grp.append(dst);
+        ${wiring}
+      `),
+    ).toEqual([]);
+  });
+
+  it('warns when only the source sits in a transformed group', () => {
+    const w = transformWarnings(`
+      define default PathLayer('sink') #{ fill: none; }
+      let grp = GroupLayer('grp') #{ translate-x: 200; };
+      let src = PathLayer('src') #{ fill: none; };
+      let dst = PathLayer('dst') #{ fill: #c00; };
+      grp.append(src);
+      ${wiring}
+    `);
+    expect(w).toHaveLength(1);
+    expect(w[0]).toContain('translate(200, 0) vs none');
+  });
+
+  it('warns once per layer pair, not once per match', () => {
+    const w = transformWarnings(`
+      define default PathLayer('sink') #{ fill: none; }
+      let src = PathLayer('src') #{ fill: none; translate-x: 100; };
+      let dst = PathLayer('dst') #{ fill: #c00; };
+      src.subscribe('endpoint') {|pt, i, sub| dst.apply { circle(pt.x, pt.y, 2); } };
+      src.apply { M 10 10; L 60 10; L 60 60; }
+    `);
+    expect(w).toHaveLength(1);
+  });
+});

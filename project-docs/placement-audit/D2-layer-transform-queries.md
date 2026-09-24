@@ -1,6 +1,6 @@
 # D2 — A query on a transformed layer answers coordinates that are not on screen
 
-**Status:** readback defect FIXED and option C LANDED 2026-09-24; option D open
+**Status:** readback defect FIXED, options C and D LANDED 2026-09-24; A deliberately unbuilt
 **Severity:** High · **Audit:** `05-defects.md` D2
 **All measurements below are reproducible** — probes in the CLI, one per claim.
 
@@ -105,10 +105,20 @@ compose `ctx.transform` yourself. The two false promises ("in page coordinates",
 "ProjectedPath (absolute coords)") are corrected. Both examples in the section are verified
 against the compiler.
 
-**D — Warn on the cross-layer case only.** Fire when a query result from a transformed layer
-is drawn into a layer with a *different* transform — which is exactly the failing pattern in
-the repro, and leaves the correct same-layer idiom alone. Narrower than B, more targeted than
-C, and needs no matrix work.
+**D — Warn on the cross-layer case only. LANDED 2026-09-24.** A `layer-transform` warning
+fires when a subscription draws into a layer whose **effective** transform differs from the
+subscribed layer's — effective meaning composed with any groups either sits in, so annotating
+inside the same transformed group is silent. One warning per layer pair, not per match.
+
+Scoped to subscriptions on purpose. The canonical failure reads `corner.x` — a plain number —
+so there is no value to carry provenance on, and a warning at `query()` time could not know
+where the result would be used. The subscription dispatch already knows both the source layer
+and every layer the callback wrote to, which makes the comparison exact rather than heuristic.
+A direct `layer('x').query(...)` used across a transform boundary is still only covered by C's
+documentation.
+
+Measured against every published sample: **zero** warnings, so the check does not fire on
+working code.
 
 ## Recommendation and what has happened
 
@@ -118,8 +128,9 @@ Agreed 2026-09-24: fix fact 1, then C, then D.
   compose instead of one silently winning.
 - **C — done.** The space is named in `docs/layers.md`, with both workarounds shown and
   verified.
-- **D — open.** Warn when a query result from a transformed layer is drawn into a layer whose
-  transform differs, leaving the same-layer idiom (fact 2) alone.
+- **D — done.** A `layer-transform` warning on the cross-boundary subscription case, effective
+  transforms compared, same-layer and same-group idioms left silent, zero hits across the
+  published samples.
 
 **A** stays unbuilt, and deliberately so: it is a product question — are layer transforms a
 first-class layout tool, or a render-time convenience? — not a bug question.
