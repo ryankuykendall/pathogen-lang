@@ -105,9 +105,9 @@ describe('declared return types match the runtime', () => {
   }
 
   const CASES: [expr: string, declared: string][] = [
-    ['pp.subPath(0.2, 0.8)', 'PathBlock'],
-    ['pp.union(@{ h 40 v 40 h -40 z }.project(20, 20))', 'PathBlock'],
-    ['pp.difference(@{ h 40 v 40 h -40 z }.project(20, 20))', 'PathBlock'],
+    ['pp.subPath(0.2, 0.8)', 'ProjectedPath'],
+    ['pp.union(@{ h 40 v 40 h -40 z }.project(20, 20))', 'ProjectedPath'],
+    ['pp.difference(@{ h 40 v 40 h -40 z }.project(20, 20))', 'ProjectedPath'],
     ['pp.offset(5)', 'ProjectedPath'],
     ['pp.reverse()', 'ProjectedPath'],
     ['pp.toPathBlock()', 'PathBlock'],
@@ -121,12 +121,12 @@ describe('declared return types match the runtime', () => {
   }
 
   it('agrees with what the generated completion data promises', () => {
+    // Receiver decides: everything that takes a ProjectedPath gives one back,
+    // except the members whose whole purpose is to change the kind.
     const returns = TYPE_METHOD_RETURNS.ProjectedPath;
-    expect(returns.subPath).toBe('PathBlock');
-    expect(returns.union).toBe('PathBlock');
-    expect(returns.difference).toBe('PathBlock');
-    expect(returns.intersection).toBe('PathBlock');
-    expect(returns.xor).toBe('PathBlock');
-    expect(returns.offset).toBe('ProjectedPath');
+    for (const m of ['subPath', 'union', 'difference', 'intersection', 'xor', 'offset']) {
+      expect(returns[m], m).toBe('ProjectedPath');
+    }
+    expect(returns.toPathBlock).toBe('PathBlock');
   });
 });

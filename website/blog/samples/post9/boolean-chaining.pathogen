@@ -69,7 +69,7 @@ let s2_result = PathLayer('s2-result') #{
 };
 s2_result.apply {
   let u = sq.project(0, 0).union(sq.project(25, 25));
-  u.drawTo(0, 0);
+  u.draw();
 }
 
 let s2_label = TextLayer('s2-label') #{
@@ -118,7 +118,7 @@ let s3_result = PathLayer('s3-result') #{
 s3_result.apply {
   let u = sq.project(0, 0).union(sq.project(25, 25));
   let rounded = u.fillet(8);
-  rounded.drawTo(0, 0);
+  rounded.draw();
 }
 
 let s3_label = TextLayer('s3-label') #{

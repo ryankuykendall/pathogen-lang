@@ -1177,7 +1177,7 @@ for ([oR, ri] in outerRs) {
     let sharp = @{ radialWedge(innerR, oR, fromA, toA, 0); };
     let rounded = @{ radialWedge(innerR, oR, fromA, toA, cornerR); };
     let diff = sharp.project(cx, cy).xor(rounded.project(cx, cy));
-    xorLayer.apply { diff.drawTo(0, 0); }
+    xorLayer.apply { diff.draw(); }
 
     // 3. Sharp outline (dotted green)
     outlines.apply {
@@ -1307,7 +1307,7 @@ for ([oR, ri] in outerRs) {
     let sharp = @{ radialWedge(innerR, oR, fromA, toA, 0); };
     let rounded = @{ radialWedge(innerR, oR, fromA, toA, cornerR); };
     let diff = sharp.project(cx, cy).xor(rounded.project(cx, cy));
-    xorLayer.apply { diff.drawTo(0, 0); }
+    xorLayer.apply { diff.draw(); }
 
     // 3. Sharp outline (dotted green)
     outlines.apply {

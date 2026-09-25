@@ -898,7 +898,7 @@ describe('Boolean Operations', () => {
         let a = @{ h 40 v 40 h -40 z };
         let b = @{ h 30 v 30 h -30 z };
         let u = a.project(0, 50).difference(b.project(5, 20));
-        u.drawTo(0, 0);
+        u.draw();
       `);
       expect(result).toClosePath();
       const zCount = parseSVGPath(result).filter(c => c.command.toLowerCase() === 'z').length;
@@ -922,9 +922,9 @@ describe('Boolean Operations', () => {
         else if (op === 'v') ny = cy + a[0];
         else if (op === 'Z' || op === 'z') { nx = sx; ny = sy; }
         if (op === 'M' || op === 'm') { moveCount++; sx = nx; sy = ny; }
-        // Skip the very first M 0 0 produced by drawTo(0,0). Track from
-        // the second move (the relative `m` to the actual start) and
-        // every subsequent draw command.
+        // The result is projected, but its own command list still opens with a
+        // move from the origin, so draw() emits `M 0 0 m 35 50 …`. Track from
+        // the second move — the one that reaches the actual start.
         if (moveCount >= 2) {
           if (nx < minX) minX = nx;
           if (nx > maxX) maxX = nx;

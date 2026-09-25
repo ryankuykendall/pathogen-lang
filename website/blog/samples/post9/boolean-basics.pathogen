@@ -31,7 +31,7 @@ let u_result = PathLayer('u-result') #{
 };
 u_result.apply {
   let u = sq.project(0, 0).union(sq.project(25, 25));
-  u.drawTo(0, 0);
+  u.draw();
 }
 
 let u_ab = TextLayer('u-ab') #{
@@ -91,7 +91,7 @@ let d_result = PathLayer('d-result') #{
 };
 d_result.apply {
   let d = sq.project(0, 0).difference(sq.project(25, 25));
-  d.drawTo(0, 0);
+  d.draw();
 }
 
 let d_ab = TextLayer('d-ab') #{
@@ -151,7 +151,7 @@ let i_result = PathLayer('i-result') #{
 };
 i_result.apply {
   let ix = sq.project(0, 0).intersection(sq.project(25, 25));
-  ix.drawTo(0, 0);
+  ix.draw();
 }
 
 let i_ab = TextLayer('i-ab') #{
@@ -211,7 +211,7 @@ let x_result = PathLayer('x-result') #{
 };
 x_result.apply {
   let xr = sq.project(0, 0).xor(sq.project(25, 25));
-  xr.drawTo(0, 0);
+  xr.draw();
 }
 
 let x_ab = TextLayer('x-ab') #{

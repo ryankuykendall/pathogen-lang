@@ -98,7 +98,7 @@ destroys labels.
 
 ---
 
-## D4 — `ProjectedPath.union/difference/intersection/xor` return a PathBlock holding page coordinates · **Medium** · **RESOLVED 2026-09-25 (declared the truth)**
+## D4 — `ProjectedPath.union/difference/intersection/xor` return a PathBlock holding page coordinates · **Medium** · **FIXED 2026-09-25**
 
 Declared `ProjectedPath` in `src/pathogen-api.ts:1396-1402`; measured result is a PathBlock
 (relative `d`) whose numbers are page coordinates. Drawing one re-offsets it from the cursor,
@@ -106,12 +106,20 @@ double-placing it.
 
 This is ISSUE-025's twin and is unrecorded. `cut` has the same shape.
 
-**Resolved as "declare the truth"** — the five wrong declarations now say `PathogenPathBlock`.
-Returning an actual ProjectedPath (P3, V1 Fix A) stays unbuilt and is the breaking half: the
-published samples compensate for the current shape with `.project(0, 0)` (11 sites) and
-`.drawTo(0, 0)` (8 sites), and under Fix A the first would throw while the second would
-silently move geometry to the canvas origin. That wants a migration note and a deliberate
-release. `anchor` (V2) landed alongside for the operations that genuinely discard position.
+**Fixed in two steps.** First "declare the truth" (the five declarations moved to
+`PathogenPathBlock`), then **Fix A**: all six now return a ProjectedPath from a ProjectedPath
+receiver, so P3 holds and the positioned-block artefact is gone from this family — a result
+drawn from a non-origin cursor no longer shifts.
+
+The migration was smaller than the raw grep suggested. Of 294 published samples, **4 failed to
+compile** (a redundant `.project(0, 0)` on a value that is already projected) and **5 changed
+geometry** (`.drawTo(0, 0)`, which used to seat the block frame and now seats the ink). All
+nine were migrated and every one of the 294 verified **geometrically identical** to a
+pre-change baseline; the only three flagged were the samples that use `random()` and differ
+from themselves run to run.
+
+`anchor` (V2) landed alongside for the operations that genuinely discard position — which on a
+ProjectedPath receiver `subPath` no longer does.
 
 ---
 

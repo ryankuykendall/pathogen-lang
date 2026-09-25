@@ -39,7 +39,7 @@ six defs fixtures author `@{ m 0 0 … }`, so they already serialize validly.
 
 ---
 
-## V1+V2 — Declarations the runtime refuses · P3, P2 · **one pass, after a decision on `subPath`**
+## V1+V2 — Declarations the runtime refuses · P3, P2 · **DONE 2026-09-25 (both halves)**
 
 These are the same defect class and should land together.
 
@@ -90,17 +90,19 @@ churn, and Fix B legitimizes the behaviour Fix A must undo.
 
 The first draft gave three answers and picked none. One answer:
 
-**Take Fix B now, and treat Fix A as closed.** Reasons: the `d`-level behaviour of `cut` and
-the boolean ops — pieces sharing one frame so that drawing them all at one origin reassembles
-the shape — is genuinely useful and is what 26 files rely on; Fix A would change it.
-Declaring the truth costs nothing and removes six false promises today.
+**Both landed, in that order.** Fix B first (zero risk, removed six false promises), then
+**Fix A** once the cost was measured rather than estimated: 4 samples failed to compile and 5
+changed geometry, not the 19 the raw grep implied, because most `.project(0, 0)` calls sit on
+PathBlock receivers that Fix A does not touch. All 294 samples were rendered before and after
+and compared geometrically — identical.
 
-Under that decision, **V2 is the substantive half**: `subPath` keeps returning a PathBlock,
-and gains a working `anchor` so the discarded position is recoverable. That is the answer to
-ISSUE-025 — not a change of return type.
+The earlier reasoning here ("26 files rely on pieces sharing one frame") was wrong in its
+premise: the pieces still share a frame, it is just the page frame now, and drawing them all
+without a placement argument still reassembles the shape. What actually needed migrating was
+the `drawTo(0, 0)` idiom, which used to seat the block frame and now seats the ink.
 
-If Fix A is ever revisited, note that `anchor` on a projected result is trivially
-`startPoint`, so V2's surface would become redundant there.
+`anchor` on a projected result is trivially `startPoint`, so V2's surface applies to the
+PathBlock receiver, where re-basing still happens.
 
 ---
 
@@ -180,7 +182,7 @@ receivers or state the exclusion. `03` now states it.
    label). ~~D6~~ was investigated and **is not a fix**: `rotateAtVertexIndex`'s index is
    inert on a PathBlock because the result is deliberately re-based, and a published sample
    compensates for that. Document or deprecate it instead — see `05-defects.md` D6.
-3. **The `subPath` decision**, then **V1 Fix B + V2** as one "make the declarations true" pass.
+3. ~~**The `subPath` decision**, then **V1 Fix B + V2**~~ — done 2026-09-25, followed by Fix A.
 4. **V8** — two named constructors; stops the next drift.
 5. **Documentation** — V5, V6, and `06`'s vocabulary collapse.
 6. **V3, V7, V9** — the design tasks. Not before the rest.

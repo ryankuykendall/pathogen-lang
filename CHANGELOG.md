@@ -5,6 +5,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] - 2026-09-25 (the receiver decides, for boolean ops and slices too)
+
+Fix A of the placement audit's V1, closing D4 and ISSUE-025. **This is a behaviour change.**
+
+### Changed
+
+#### Core
+
+- **`subPath`, `union`, `difference`, `intersection`, `xor` and `cut` on a `ProjectedPath` now return projected values.** They used to hand back a PathBlock that merely carried page numbers in a leading `m` — so the result was cursor-dependent: drawn from `M 0 0` it landed correctly, drawn from `M 40 40` it silently landed 40,40 away. The receiver now decides, as it does everywhere else: a ProjectedPath in, a ProjectedPath out, and `draw()` puts it where it belongs regardless of the pen.
+
+  **Migrating.** Two idioms change, and only on a *projected* receiver:
+
+  | Was | Now |
+  |---|---|
+  | `result.drawTo(0, 0)` | `result.draw()` |
+  | `result.project(0, 0)` | drop it — the value is already projected |
+  | `result.drawTo(a, b)` meaning "translate by (a, b)" | `let at = result.startPoint; result.drawTo(calc(a + at.x), calc(b + at.y))` |
+
+  `drawTo(0, 0)` is the one to look for: it used to seat the block's frame and now seats the ink, so it moves geometry to the canvas origin without erroring. Of the 294 published samples, 4 failed to compile and 5 changed geometry; all nine were migrated and every sample verified geometrically identical to a pre-change baseline.
+
+- **`subPath` on a ProjectedPath keeps the page coordinates it was cut from**, so `slice.draw()` lands it where it came from. On a PathBlock it still re-bases and carries [`anchor`](#path-blocks-anchor-putting-a-re-based-result-back).
+
 ## [Unreleased] - 2026-09-25 (declarations tell the truth; `anchor` generalized)
 
 D4 from the placement audit, plus the half of ISSUE-025 that does not need a breaking change.

@@ -702,10 +702,11 @@ for (half in halves) {
   // move there is.
   let bounds = half.boundingBox();
   let side = calc(bounds.x + bounds.width / 2 &lt; 240 ? -10 : 10);
-  frame.apply {
-    M calc(side) calc(0 - side) half.draw()
-  }
-  let placed = half.project(side, calc(0 - side));
+  // Cut pieces come back projected, already placed in the ring, so the nudge
+  // has to move them from where they are rather than seat the pen first.
+  let at = half.startPoint;
+  let placed = half.toPathBlock().project(calc(at.x + side), calc(at.y - side));
+  frame.apply { placed.draw(); }
   sillRun.apply {
     for (run in placed.segmentAll('sill')) {
       run.draw();

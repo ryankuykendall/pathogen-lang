@@ -3974,28 +3974,15 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
             endPoint: { x: 0, y: 0 },
           };
         }
-        const spOriginX = subResult[0].start.x;
-        const spOriginY = subResult[0].start.y;
-        const spNormalized = subResult.map((cmd) => ({
-          command: cmd.command,
-          args: [...cmd.args],
-          start: { x: cmd.start.x - spOriginX, y: cmd.start.y - spOriginY },
-          end: { x: cmd.end.x - spOriginX, y: cmd.end.y - spOriginY },
-        }));
-        const spLast = spNormalized[spNormalized.length - 1];
-        const spBlock: PathBlockValue = {
-          type: 'PathBlockValue' as const,
-          commands: spNormalized,
-          records: recordsFromCommands(spNormalized),
-          startPoint: firstInkedPointOf(spNormalized) ?? { x: 0, y: 0 },
-          endPoint: { x: spLast.end.x, y: spLast.end.y },
+        // The slice keeps the page coordinates it was cut from. `anchor` rides
+        // along equal to startPoint, as it does on a projected variableOffset
+        // result, so one worker reads on either receiver.
+        const spProjected = buildProjectedPathFromCommands(subResult, obj);
+        (spProjected as ProjectedPathValue & { anchor: { x: number; y: number } }).anchor = {
+          x: spProjected.startPoint.x,
+          y: spProjected.startPoint.y,
         };
-        // The page position this slice was cut from — see buildRebasedWithAnchor.
-        (spBlock as PathBlockValue & { anchor: { x: number; y: number } }).anchor = {
-          x: spOriginX,
-          y: spOriginY,
-        };
-        return spBlock;
+        return spProjected;
       }
 
       case 'dash': {
@@ -4171,7 +4158,10 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
           case 'xor': resultCmds = pathXor(aCmds, bCmds); break;
           default: resultCmds = [];
         }
-        return buildPathBlockFromCommands(resultCmds, { x: 0, y: 0 });
+        // Receiver decides (placement audit P3): the operands are in page
+        // coordinates and so is the result, so it comes back projected rather
+        // than as a PathBlock that merely holds page numbers.
+        return buildProjectedPathFromCommands(resultCmds, obj);
       }
 
       case 'cut': {
@@ -4185,9 +4175,9 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
         }
         return {
           type: 'ArrayValue' as const,
-          // Origin (0,0) keeps each piece's subject-local placement, so
-          // drawing every piece at one position reassembles the shape.
-          elements: pieceCmds.map(p => buildPathBlockFromCommands(p, { x: 0, y: 0 })),
+          // Pieces stay projected, each already where it sits in the subject —
+          // so `piece.draw()` reassembles the shape with no placement argument.
+          elements: pieceCmds.map((piece) => buildProjectedPathFromCommands(piece, obj)),
         };
       }
 

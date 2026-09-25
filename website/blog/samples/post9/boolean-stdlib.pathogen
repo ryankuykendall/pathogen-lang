@@ -10,9 +10,9 @@ let plate = @{ rect(0, 0, 80, 80); };
 let hole = @{ circle(0, 0, 10); };
 
 let d1 = plate.project(0, 0).difference(hole.project(25, 25));
-let d2 = d1.project(0, 0).difference(hole.project(55, 25));
-let d3 = d2.project(0, 0).difference(hole.project(25, 55));
-let drilled = d3.project(0, 0).difference(hole.project(55, 55));
+let d2 = d1.difference(hole.project(55, 25));
+let d3 = d2.difference(hole.project(25, 55));
+let drilled = d3.difference(hole.project(55, 55));
 
 let plate_result = PathLayer('plate-result') #{
   stroke: Color('#3b82f6');
@@ -20,7 +20,10 @@ let plate_result = PathLayer('plate-result') #{
   fill: Color('#3b82f618');
 };
 plate_result.apply {
-  drilled.drawTo(30, 55);
+  let drilledAt = drilled.startPoint;
+  // drawTo used to seat the block frame; the value is projected now, so the
+  // same offset is applied from its own position.
+  drilled.drawTo(calc(30 + drilledAt.x), calc(55 + drilledAt.y));
 }
 
 let plate_label = TextLayer('plate-label') #{
@@ -56,7 +59,10 @@ let badge_result = PathLayer('badge-result') #{
   fill: Color('#3b82f618');
 };
 badge_result.apply {
-  badge.drawTo(260, 100);
+  let badgeAt = badge.startPoint;
+  // drawTo used to seat the block frame; the value is projected now, so the
+  // same offset is applied from its own position.
+  badge.drawTo(calc(260 + badgeAt.x), calc(100 + badgeAt.y));
 }
 
 let badge_label = TextLayer('badge-label') #{

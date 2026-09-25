@@ -352,7 +352,7 @@ let u_result = PathLayer('u-result') #{
 };
 u_result.apply {
   let u = sq.project(0, 0).union(sq.project(25, 25));
-  u.drawTo(0, 0);
+  u.draw();
 }
 
 let u_ab = TextLayer('u-ab') #{
@@ -412,7 +412,7 @@ let d_result = PathLayer('d-result') #{
 };
 d_result.apply {
   let d = sq.project(0, 0).difference(sq.project(25, 25));
-  d.drawTo(0, 0);
+  d.draw();
 }
 
 let d_ab = TextLayer('d-ab') #{
@@ -472,7 +472,7 @@ let i_result = PathLayer('i-result') #{
 };
 i_result.apply {
   let ix = sq.project(0, 0).intersection(sq.project(25, 25));
-  ix.drawTo(0, 0);
+  ix.draw();
 }
 
 let i_ab = TextLayer('i-ab') #{
@@ -532,7 +532,7 @@ let x_result = PathLayer('x-result') #{
 };
 x_result.apply {
   let xr = sq.project(0, 0).xor(sq.project(25, 25));
-  xr.drawTo(0, 0);
+  xr.draw();
 }
 
 let x_ab = TextLayer('x-ab') #{
@@ -768,7 +768,7 @@ let s2_result = PathLayer('s2-result') #{
 };
 s2_result.apply {
   let u = sq.project(0, 0).union(sq.project(25, 25));
-  u.drawTo(0, 0);
+  u.draw();
 }
 
 let s2_label = TextLayer('s2-label') #{
@@ -817,7 +817,7 @@ let s3_result = PathLayer('s3-result') #{
 s3_result.apply {
   let u = sq.project(0, 0).union(sq.project(25, 25));
   let rounded = u.fillet(8);
-  rounded.drawTo(0, 0);
+  rounded.draw();
 }
 
 let s3_label = TextLayer('s3-label') #{
@@ -943,9 +943,9 @@ let plate = @{ rect(0, 0, 80, 80); };
 let hole = @{ circle(0, 0, 10); };
 
 let d1 = plate.project(0, 0).difference(hole.project(25, 25));
-let d2 = d1.project(0, 0).difference(hole.project(55, 25));
-let d3 = d2.project(0, 0).difference(hole.project(25, 55));
-let drilled = d3.project(0, 0).difference(hole.project(55, 55));
+let d2 = d1.difference(hole.project(55, 25));
+let d3 = d2.difference(hole.project(25, 55));
+let drilled = d3.difference(hole.project(55, 55));
 
 let plate_result = PathLayer('plate-result') #{
   stroke: Color('#3b82f6');
@@ -953,7 +953,10 @@ let plate_result = PathLayer('plate-result') #{
   fill: Color('#3b82f618');
 };
 plate_result.apply {
-  drilled.drawTo(30, 55);
+  let drilledAt = drilled.startPoint;
+  // drawTo used to seat the block frame; the value is projected now, so the
+  // same offset is applied from its own position.
+  drilled.drawTo(calc(30 + drilledAt.x), calc(55 + drilledAt.y));
 }
 
 let plate_label = TextLayer('plate-label') #{
@@ -989,7 +992,10 @@ let badge_result = PathLayer('badge-result') #{
   fill: Color('#3b82f618');
 };
 badge_result.apply {
-  badge.drawTo(260, 100);
+  let badgeAt = badge.startPoint;
+  // drawTo used to seat the block frame; the value is projected now, so the
+  // same offset is applied from its own position.
+  badge.drawTo(calc(260 + badgeAt.x), calc(100 + badgeAt.y));
 }
 
 let badge_label = TextLayer('badge-label') #{

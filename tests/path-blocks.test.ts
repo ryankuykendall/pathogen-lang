@@ -2587,8 +2587,11 @@ M 0 0`);
     const src =
       'let shape = @{\n  h 40;\n  v 54;\n  h -40;\n  z;\n  m 56 54;\n  c 14 -80 34 50 62 -50;\n};\nlet piece = shape.project(0, 0).subPath(0.2, 0.7);\nlog(piece.d);';
     const d = String(compile(src).logs[0].parts[0].value);
-    // The z would close to the slice's own start, so it becomes the run's real closing line.
-    expect(d).toMatch(/^l 0 [\d.]+ h -40 l 0 -54 m 56 54 c /);
+    // The z would close to the slice's own start, so it becomes the run's real
+    // closing line. The slice keeps the receiver's page coordinates, so the `d`
+    // is absolute — what matters here is that the move between the two runs
+    // survives rather than collapsing into a line across the gap.
+    expect(d).toMatch(/^M 40 [\d.]+ L 40 54 H 0 L 0 0 M 56 54 C /);
   });
 
     it('subPath(0, 1) returns approximately the original path', () => {
@@ -2717,21 +2720,21 @@ M 0 0`);
       expect(aLen + bLen).toBeCloseTo(full, 0);
     });
 
-    it('subPath on ProjectedPath returns drawable PathBlock', () => {
+    it('subPath on a ProjectedPath keeps the page coordinates it was cut from', () => {
       const result = compile(`
         let p = @{ h 100 };
         let proj = p.project(10, 20);
         let sub = proj.subPath(0, 0.5);
-        // Returns PathBlock normalized to (0,0)
+        // Receiver decides: the slice stays projected, where it was cut from.
         log(sub.startPoint.x);
         log(sub.startPoint.y);
         log(sub.endPoint.x);
         log(sub.endPoint.y);
       `);
-      expect(parseFloat(result.logs[0].parts[0].value)).toBeCloseTo(0, 1);
-      expect(parseFloat(result.logs[1].parts[0].value)).toBeCloseTo(0, 1);
-      expect(parseFloat(result.logs[2].parts[0].value)).toBeCloseTo(50, 1);
-      expect(parseFloat(result.logs[3].parts[0].value)).toBeCloseTo(0, 1);
+      expect(parseFloat(result.logs[0].parts[0].value)).toBeCloseTo(10, 1);
+      expect(parseFloat(result.logs[1].parts[0].value)).toBeCloseTo(20, 1);
+      expect(parseFloat(result.logs[2].parts[0].value)).toBeCloseTo(60, 1);
+      expect(parseFloat(result.logs[3].parts[0].value)).toBeCloseTo(20, 1);
     });
 
     it('subPath on ProjectedPath result can be drawn', () => {
@@ -3963,25 +3966,40 @@ describe('anchor on re-based results', () => {
   });
 
   it('drawTo(anchor) is an identity — the whole point of P2', () => {
-    // The second layer uses ONLY the result: no receiver, no knowledge of t.
+    // On a PATHBLOCK receiver, where re-basing actually happens: the second
+    // layer uses only the result — no receiver, no knowledge of t — and lands
+    // where the slice was cut from.
     const out = compile(`
       define default PathLayer('sink') #{ fill: none; }
       let direct = PathLayer('direct') #{ fill: none; };
       let viaAnchor = PathLayer('viaAnchor') #{ fill: none; };
-      let pp = @{ h 100 v 40 }.project(200, 300);
+      let shape = @{ h 100 v 40 };
       direct.apply {
-        M 228 300;
-        pp.subPath(0.2, 0.8).draw();
+        let cutFrom = shape.get(0.2);
+        shape.subPath(0.2, 0.8).drawTo(cutFrom.x, cutFrom.y);
       }
       viaAnchor.apply {
-        let sp = pp.subPath(0.2, 0.8);
+        let sp = shape.subPath(0.2, 0.8);
         let at = sp.anchor;
         sp.drawTo(at.x, at.y);
       }
     `);
     const data = (name: string) => out.layers.find((l) => l.name === name)?.data;
+    // The identity is the assertion that matters; the literal below just pins
+    // WHERE it lands. get(0.2) carries float noise, so match rather than equal.
     expect(data('viaAnchor')).toBe(data('direct'));
-    expect(data('direct')).toBe('M 228 300 l 72 0 l 0 12');
+    expect(data('direct')).toMatch(/^M 28(\.0+\d*)? 0 l 72 0 l 0 12$/);
+  });
+
+  it('a projected slice needs no putting back — anchor equals startPoint', () => {
+    const out = compile(`
+      define default PathLayer('sink') #{ fill: none; }
+      let placed = PathLayer('placed') #{ fill: none; };
+      let pp = @{ h 100 v 40 }.project(200, 300);
+      placed.apply { pp.subPath(0.2, 0.8).draw(); }
+      M 0 0;
+    `);
+    expect(out.layers.find((l) => l.name === 'placed')?.data).toBe('M 228 300 l 72 0 l 0 12');
   });
 
   it('still refuses anchor on results that kept their placement', () => {

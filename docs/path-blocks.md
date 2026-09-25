@@ -101,16 +101,16 @@ let proj = shape.project(10, 10);
 
 ## `anchor` — putting a re-based result back
 
-Some operations hand back geometry **re-based to its own first point**: the shape is right, but where it came from has been subtracted out. `subPath`, `segment`, `reverse`, and the [variable-offset](#variable-offset-variable-offset) family all do this.
+Some operations hand back geometry **re-based to its own first point**: the shape is right, but where it came from has been subtracted out. On a PathBlock receiver, `subPath`, `segment`, `reverse` and the [variable-offset](#variable-offset-variable-offset) family all do this. (On a ProjectedPath they keep their page coordinates instead — there is nothing to recover, and `anchor` simply equals `startPoint`.)
 
 Each of them records the translation it removed, as `anchor`:
 
 ```
-let pp = @{ h 100 v 40 }.project(200, 300);
-let slice = pp.subPath(0.2, 0.8);
+let shape = @{ h 100 v 40 };
+let slice = shape.subPath(0.2, 0.8);
 
-slice.startPoint     // Point(0, 0)     — re-based
-slice.anchor         // Point(228, 300) — where it was cut from
+slice.startPoint     // Point(0, 0)   — re-based
+slice.anchor         // Point(28, 0)  — where it was cut from
 ```
 
 So a re-based result can always be put back using nothing but itself:
@@ -122,7 +122,7 @@ slice.drawTo(at.x, at.y);      // exactly where subPath took it from
 
 That is the point of `anchor`: without it you would have to go back to the receiver and remember which `t` you asked for. What it names depends on the operation, but the rule is the same each time — the first point of the result, in the receiver's coordinates:
 
-| Operation | `anchor` is |
+| Operation (on a PathBlock) | `anchor` is |
 |---|---|
 | `subPath(t0, t1)` | the receiver sampled at `t0` — the same point as `receiver.get(t0)` |
 | `segment('name')` | where that labelled run starts |
@@ -357,7 +357,7 @@ A PathBlock has no position of its own, so a transform of one is free-floating b
 | `fillet`, `chamfer`, `ellipticalFillet` (and their `AtVertex` forms) | page coordinates — only the corner changes |
 | `union`, `difference`, `intersection`, `xor`, `cut` | page coordinates — the pieces stay where they were |
 | `toPathBlock` | free-floating, re-based to its own first point — this is what it is for |
-| `subPath` | free-floating: it returns a **PathBlock**, not a ProjectedPath, so the slice is re-based to `(0, 0)` — and carries [`anchor`](#path-blocks-anchor-putting-a-re-based-result-back), the page position it was cut from |
+| `subPath` | page coordinates — the slice stays where it was cut from |
 
 Every operation that re-bases carries [`anchor`](#path-blocks-anchor-putting-a-re-based-result-back) — the position the re-base removed. Operations that keep their placement have nothing to recover and do not answer it.
 
@@ -651,7 +651,7 @@ let big = arc.scale(3, 3);        // uniform: radii tripled
 
 ### `subPath(startT, endT)` → PathBlock
 
-Extracts the geometric portion of a path between two arc-length fractions. Both `startT` and `endT` must be between 0 and 1. Always returns a PathBlock (normalized to `(0, 0)` origin), even when called on a ProjectedPath.
+Extracts the geometric portion of a path between two arc-length fractions. Both `startT` and `endT` must be between 0 and 1. The receiver decides: on a PathBlock the slice is re-based to `(0, 0)` and carries [`anchor`](#path-blocks-anchor-putting-a-re-based-result-back); on a ProjectedPath it keeps the page coordinates it was cut from, so `draw()` lands it there.
 
 > Not to be confused with the `subpath` noun in [Path Queries](#path-queries-path-queries). That selects whole pen-down runs between moves — SVG subpaths — while `subPath(startT, endT)` slices any path by arc-length fraction.
 
@@ -958,7 +958,7 @@ let exclusive = a.project(50, 50).xor(b.project(70, 50));
 - The `other` argument can be a PathBlock or ProjectedPath.
 - Multi-component results produce multiple subpaths (`M...z M...z`).
 - All curve types (lines, cubics, quadratics, arcs) are preserved through the operation.
-- Results are always returned as PathBlock values (normalized to `(0, 0)` origin).
+- The receiver decides the result: a PathBlock in, a PathBlock out, sharing the operands' frame; a ProjectedPath in, a ProjectedPath out, in page coordinates.
 - Segment and endpoint labels from **both** operands survive into the result (see [Labels Survive Derived Paths](#segment-labels-labels-survive-derived-paths)).
 
 ## Cutting Paths
@@ -1135,7 +1135,7 @@ Details worth knowing:
 
 **Arguments and results**
 
-- The `cutter` argument can be a PathBlock or ProjectedPath; so can the receiver. Pieces always come back as PathBlock values, even from a ProjectedPath receiver.
+- The `cutter` argument can be a PathBlock or ProjectedPath; so can the receiver. Pieces follow the receiver: PathBlocks from a PathBlock, ProjectedPaths from a ProjectedPath — so pieces cut from a projected shape can simply be `draw()`n back where they came from.
 - Pieces keep their original placement inside the subject (like the set operations, results are normalized to a `(0, 0)` origin). Drawing every piece at one position reassembles the shape.
 - Piece order is deterministic but unspecified — style pieces by iterating, not by assuming which index is which.
 - Labels survive: pieces keep the subject's `as segment(...)` / `as endpoint(...)` names on their surviving boundary fragments, and every healed seam edge carries the automatic segment label `cut` (query the seams with `segmentAll('cut')`). See [Labels Survive Derived Paths](#segment-labels-labels-survive-derived-paths).

@@ -58,7 +58,11 @@ fn drawSplit(pieces, centerX) {
   for ([p, i] in pieces) {
     let pb = p.boundingBox();
     let side = calc(pb.x + pb.width / 2 < centerX ? -8 : 8);
-    M calc(side) 0 p.draw()
+    // Cut pieces come back projected, already where they sit in the donut, so
+    // the exploded view nudges each one from its own position rather than
+    // seating the pen and letting a leading `m` carry it.
+    let at = p.startPoint;
+    p.drawTo(calc(at.x + side), at.y);
   }
 }
 

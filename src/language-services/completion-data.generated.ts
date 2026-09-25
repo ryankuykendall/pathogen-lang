@@ -892,7 +892,7 @@ export const TYPE_MEMBERS: Record<string, MemberCompletionSet> = {
       { label: 'rotate', kind: 'function', detail: 'rotate(angle, origin?) — Rotate about an absolute point (default: the projection start)', boost: 8, insertText: 'rotate(${1:angle})$0', isSnippet: true },
       { label: 'rotateAtVertexIndex', kind: 'function', detail: 'rotateAtVertexIndex(index, angle) — Rotate at vertex', boost: 8, insertText: 'rotateAtVertexIndex(${1:index}, ${2:angle})$0', isSnippet: true },
       { label: 'scale', kind: 'function', detail: 'scale(sx, sy) — Scale path', boost: 8, insertText: 'scale(${1:sx})$0', isSnippet: true },
-      { label: 'subPath', kind: 'function', detail: 'subPath(startT, endT) — Extract sub-path', boost: 8, insertText: 'subPath(${1:startT}, ${2:endT})$0', isSnippet: true },
+      { label: 'subPath', kind: 'function', detail: 'subPath(startT, endT) — Extract sub-path; the slice keeps its page coordinates, so draw() lands it where it was cut from', boost: 8, insertText: 'subPath(${1:startT}, ${2:endT})$0', isSnippet: true },
       { label: 'dash', kind: 'function', detail: 'dash(styles) — Partition into dash/gap centerline pieces per stroke-dasharray (+ optional stroke-dashoffset); returns [{ path, kind: \'dash\' | \'gap\', t0, t1 }] in path order (pieces stay projected)', boost: 8, insertText: 'dash(${1:styles})$0', isSnippet: true },
       { label: 'outline', kind: 'function', detail: 'outline(styles) — Closed stroke outline (stroke-to-path, boolean-ready) in absolute coordinates; styles: stroke-width (required), stroke-linecap, stroke-linejoin, stroke-miterlimit', boost: 8, insertText: 'outline(${1:styles})$0', isSnippet: true },
       { label: 'startAt', kind: 'function', detail: 'startAt(t) — Re-anchor to start at arc-length fraction t (0..1 or percent, wraps); seamless on closed paths, two runs on open ones', boost: 8, insertText: 'startAt(${1:t})$0', isSnippet: true },
@@ -1270,7 +1270,7 @@ export const TYPE_METHOD_RETURNS: Record<string, Record<string, string>> = {
   'PolarVector': { turn: 'PolarVector', scale: 'PolarVector', mirror: 'PolarVector' },
   'PathLayer': { subscribe: 'Subscription', segment: 'ProjectedPath', segmentAll: 'array', point: 'Point', pointAll: 'array', vertex: 'Endpoint', vertexAll: 'array' },
   'ProjectedText': { translate: 'ProjectedText' },
-  'ProjectedPath': { draw: 'ProjectedPath', drawTo: 'ProjectedPath', get: 'Point', partition: 'array', reverse: 'ProjectedPath', centerPoint: 'Point', offset: 'ProjectedPath', variableOffset: 'ProjectedPath', compoundVariableOffset: 'ProjectedPath', toPathBlock: 'PathBlock', mirror: 'ProjectedPath', rotate: 'ProjectedPath', rotateAtVertexIndex: 'ProjectedPath', scale: 'ProjectedPath', subPath: 'PathBlock', dash: 'array', outline: 'ProjectedPath', startAt: 'ProjectedPath', chamfer: 'ProjectedPath', chamferAtVertex: 'ProjectedPath', fillet: 'ProjectedPath', filletAtVertex: 'ProjectedPath', ellipticalFillet: 'ProjectedPath', ellipticalFilletAtVertex: 'ProjectedPath', union: 'PathBlock', difference: 'PathBlock', intersection: 'PathBlock', xor: 'PathBlock', cut: 'array', intersectionPoints: 'array', segment: 'ProjectedPath', segmentAll: 'array', point: 'Point', pointAll: 'array', vertex: 'Endpoint', vertexAll: 'array' },
+  'ProjectedPath': { draw: 'ProjectedPath', drawTo: 'ProjectedPath', get: 'Point', partition: 'array', reverse: 'ProjectedPath', centerPoint: 'Point', offset: 'ProjectedPath', variableOffset: 'ProjectedPath', compoundVariableOffset: 'ProjectedPath', toPathBlock: 'PathBlock', mirror: 'ProjectedPath', rotate: 'ProjectedPath', rotateAtVertexIndex: 'ProjectedPath', scale: 'ProjectedPath', subPath: 'ProjectedPath', dash: 'array', outline: 'ProjectedPath', startAt: 'ProjectedPath', chamfer: 'ProjectedPath', chamferAtVertex: 'ProjectedPath', fillet: 'ProjectedPath', filletAtVertex: 'ProjectedPath', ellipticalFillet: 'ProjectedPath', ellipticalFilletAtVertex: 'ProjectedPath', union: 'ProjectedPath', difference: 'ProjectedPath', intersection: 'ProjectedPath', xor: 'ProjectedPath', cut: 'array', intersectionPoints: 'array', segment: 'ProjectedPath', segmentAll: 'array', point: 'Point', pointAll: 'array', vertex: 'Endpoint', vertexAll: 'array' },
   'LinearGradient': { inherit: 'LinearGradient' },
   'RadialGradient': { inherit: 'RadialGradient' },
   'ConicGradient': { inherit: 'ConicGradient' },
@@ -1335,7 +1335,7 @@ export const TYPE_ELEMENT_TYPES: Record<string, Record<string, string>> = {
   'Subpath': { commands: 'Command' },
   'PathBlock': { vertices: 'Point', subPathCommands: 'Command', commands: 'Command', contours: 'PathBlock', dash: 'DashPiece', intersectionPoints: 'Point', cut: 'PathBlock', segmentAll: 'PathBlock', pointAll: 'Point', vertexAll: 'Endpoint' },
   'PathLayer': { segmentAll: 'ProjectedPath', pointAll: 'Point', vertexAll: 'Endpoint' },
-  'ProjectedPath': { vertices: 'Point', subPathCommands: 'Command', commands: 'Command', dash: 'DashPiece', cut: 'PathBlock', intersectionPoints: 'Point', segmentAll: 'ProjectedPath', pointAll: 'Point', vertexAll: 'Endpoint' },
+  'ProjectedPath': { vertices: 'Point', subPathCommands: 'Command', commands: 'Command', dash: 'DashPiece', cut: 'ProjectedPath', intersectionPoints: 'Point', segmentAll: 'ProjectedPath', pointAll: 'Point', vertexAll: 'Endpoint' },
   'MeshGradient': { getRow: 'MeshPoint', getCol: 'MeshPoint' },
 };
 
