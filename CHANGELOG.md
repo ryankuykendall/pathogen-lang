@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] - 2026-09-25 (declarations tell the truth; `anchor` generalized)
+
+D4 from the placement audit, plus the half of ISSUE-025 that does not need a breaking change.
+
+### Fixed
+
+#### Core
+
+- **Six methods on a `ProjectedPath` declared the wrong return type.** `subPath`, `union`, `difference`, `intersection` and `xor` were declared to return a `ProjectedPath` while the runtime handed back a `PathBlock` — so completions offered `toPathBlock()`, which threw `Unknown PathBlock method`, an error naming a type the program never saw, while hiding `project()`, which works. The declarations now say what the runtime does. No behaviour changed; `cut` already declared PathBlock elements.
+
+### Added
+
+#### Core
+
+- **`anchor` on every result that was re-based.** An operation that re-bases its result to its own first point used to discard where the geometry came from, leaving the caller to recover it from the receiver — which meant remembering which `t` had been asked for. `subPath`, `segment` and `reverse` now record the translation they removed, as `variableOffset` always has, so `result.drawTo(result.anchor.x, result.anchor.y)` puts a value back using nothing but itself. `anchor` names the result's first point in the receiver's coordinates: `receiver.get(t0)` for `subPath`, the run start for `segment`, the receiver's `endPoint` for `reverse`. Operations that keep their placement — `offset`, `outline`, `dash`, `fillet`, the boolean ops, `cut` — have nothing to recover and still refuse it, with an error that now says which operations do. Docs: Path Blocks "`anchor` — putting a re-based result back".
+
+#### Development
+
+- **A return-type parity test.** The existing receiver-parity suite compared which *methods* each receiver has; it could not catch a method present on both but declared with the wrong return type, which is how this defect and ISSUE-025 survived. The new check probes the runtime with the one member each kind has that the other does not, and cross-checks the generated completion data.
+
 ## [Unreleased] - 2026-09-24 (one transform store; queries name their space)
 
 D2 from the placement audit, in the agreed order: fix the readback defect, then name the space, then warn on the case that is actually wrong. Full write-up in `project-docs/placement-audit/D2-layer-transform-queries.md`.

@@ -3914,3 +3914,81 @@ describe('ProjectedPath.toPathBlock()', () => {
     );
   });
 });
+
+/**
+ * P2 of the placement audit: an operation that re-bases its result exposes the
+ * translation it removed, as `anchor`, so the caller can put the value back
+ * without re-querying the receiver.
+ *
+ * Scoped to the operations that genuinely DISCARD position — `subPath`,
+ * `segment`, `reverse`. Operations that carry their placement in a leading `m`
+ * (`cut`, `dash`, the boolean ops, `.contours`) have nothing to recover and
+ * still refuse `anchor`.
+ *
+ * Audit: project-docs/placement-audit/ V2.
+ */
+describe('anchor on re-based results', () => {
+  function logged(src: string): string {
+    const out = compile(`${src}\nM 0 0;`);
+    return out.logs[0].parts.map((part) => String(part.value)).join(' ');
+  }
+
+  const SHAPE = "let shape = @{ m 40 25 h 60 as segment('mid') v 30 h -60 z };";
+
+  it('subPath reports the point it was cut from', () => {
+    // Equal to receiver.get(t0): the position re-basing removed.
+    expect(logged(`${SHAPE}\nlet out = \`\${shape.subPath(0.2, 0.6).anchor} \${shape.get(0.2)}\`; log(out);`)).toBe(
+      'Point(76, 25) Point(76, 25)',
+    );
+  });
+
+  it('reverse reports the receiver end it now starts from', () => {
+    expect(logged(`${SHAPE}\nlet out = \`\${shape.reverse().anchor} \${shape.endPoint}\`; log(out);`)).toBe(
+      'Point(40, 25) Point(40, 25)',
+    );
+  });
+
+  it('segment reports the run start', () => {
+    expect(logged(`${SHAPE}\nlet out = \`\${shape.segment('mid').anchor}\`; log(out);`)).toBe('Point(40, 25)');
+  });
+
+  it('subPath on a ProjectedPath reports page coordinates', () => {
+    expect(
+      logged(`
+        let pp = @{ h 100 v 40 }.project(200, 300);
+        let out = \`\${pp.subPath(0.2, 0.8).anchor} \${pp.get(0.2)}\`;
+        log(out);
+      `),
+    ).toBe('Point(228, 300) Point(228, 300)');
+  });
+
+  it('drawTo(anchor) is an identity — the whole point of P2', () => {
+    // The second layer uses ONLY the result: no receiver, no knowledge of t.
+    const out = compile(`
+      define default PathLayer('sink') #{ fill: none; }
+      let direct = PathLayer('direct') #{ fill: none; };
+      let viaAnchor = PathLayer('viaAnchor') #{ fill: none; };
+      let pp = @{ h 100 v 40 }.project(200, 300);
+      direct.apply {
+        M 228 300;
+        pp.subPath(0.2, 0.8).draw();
+      }
+      viaAnchor.apply {
+        let sp = pp.subPath(0.2, 0.8);
+        let at = sp.anchor;
+        sp.drawTo(at.x, at.y);
+      }
+    `);
+    const data = (name: string) => out.layers.find((l) => l.name === name)?.data;
+    expect(data('viaAnchor')).toBe(data('direct'));
+    expect(data('direct')).toBe('M 228 300 l 72 0 l 0 12');
+  });
+
+  it('still refuses anchor on results that kept their placement', () => {
+    for (const expr of ['@{ h 100 }', '@{ h 100 }.offset(5)', '@{ h 100 }.fillet(2)']) {
+      expect(() => compile(`let v = ${expr};\nlet out = \`\${v.anchor}\`; log(out);\nM 0 0;`)).toThrow(
+        /re-based to its own origin/,
+      );
+    }
+  });
+});

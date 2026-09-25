@@ -99,6 +99,40 @@ let proj = shape.project(10, 10);
 // No path commands emitted, cursor unchanged
 ```
 
+## `anchor` — putting a re-based result back
+
+Some operations hand back geometry **re-based to its own first point**: the shape is right, but where it came from has been subtracted out. `subPath`, `segment`, `reverse`, and the [variable-offset](#variable-offset-variable-offset) family all do this.
+
+Each of them records the translation it removed, as `anchor`:
+
+```
+let pp = @{ h 100 v 40 }.project(200, 300);
+let slice = pp.subPath(0.2, 0.8);
+
+slice.startPoint     // Point(0, 0)     — re-based
+slice.anchor         // Point(228, 300) — where it was cut from
+```
+
+So a re-based result can always be put back using nothing but itself:
+
+```
+let at = slice.anchor;
+slice.drawTo(at.x, at.y);      // exactly where subPath took it from
+```
+
+That is the point of `anchor`: without it you would have to go back to the receiver and remember which `t` you asked for. What it names depends on the operation, but the rule is the same each time — the first point of the result, in the receiver's coordinates:
+
+| Operation | `anchor` is |
+|---|---|
+| `subPath(t0, t1)` | the receiver sampled at `t0` — the same point as `receiver.get(t0)` |
+| `segment('name')` | where that labelled run starts |
+| `reverse()` | the receiver's `endPoint`, since the reversed path starts there |
+| `variableOffset` / `compoundVariableOffset` | the spine sampled at the first stop, stepped out by that stop's offset |
+
+**Operations that keep their placement do not answer `anchor`** — `offset`, `outline`, `dash`, `fillet`, the boolean operations and `cut` never moved the geometry, so there is nothing to recover, and asking is an error that says so.
+
+`anchor` does not survive composition. `@{ m -10 0 } << slice`, `slice.offset(5)` and `slice.reverse()` each produce a new value, and only the last of those re-bases — read `anchor` off the result before composing.
+
 ## Back to a PathBlock — `toPathBlock()`
 
 A ProjectedPath is anchored: its coordinates *are* its position. `toPathBlock()` gives you the same geometry free-floating, re-based to its own first point, so you can place copies of it wherever you like:
@@ -323,9 +357,9 @@ A PathBlock has no position of its own, so a transform of one is free-floating b
 | `fillet`, `chamfer`, `ellipticalFillet` (and their `AtVertex` forms) | page coordinates — only the corner changes |
 | `union`, `difference`, `intersection`, `xor`, `cut` | page coordinates — the pieces stay where they were |
 | `toPathBlock` | free-floating, re-based to its own first point — this is what it is for |
-| `subPath` | free-floating: it returns a **PathBlock**, not a ProjectedPath, so the slice is re-based to `(0, 0)`. Capture the position first if you need it back |
+| `subPath` | free-floating: it returns a **PathBlock**, not a ProjectedPath, so the slice is re-based to `(0, 0)` — and carries [`anchor`](#path-blocks-anchor-putting-a-re-based-result-back), the page position it was cut from |
 
-The two offset families additionally carry [`anchor`](#variable-offset-placement-origin-normalization-and-anchor). On a PathBlock result it recovers the position that origin normalization removed; on a ProjectedPath result nothing was removed, so it equals `startPoint`.
+Every operation that re-bases carries [`anchor`](#path-blocks-anchor-putting-a-re-based-result-back) — the position the re-base removed. Operations that keep their placement have nothing to recover and do not answer it.
 
 ### `reverse()` → PathBlock / ProjectedPath
 

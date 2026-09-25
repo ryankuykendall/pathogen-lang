@@ -221,7 +221,7 @@ The `M` + `draw()` pair for the ribbon mirrors how the glyph itself is placed �
 
 Sampling the spine yourself (`contour.get(10%)`) is *close* but off by the first stop's offset along the normal — and it silently drifts if you later edit the first `go.stop(...)`. `anchor` always matches the built curve.
 
-`anchor` lives only on the `variableOffset` / `compoundVariableOffset` result itself — on a PathBlock result and a ProjectedPath result alike. Composing or transforming it (`@{ m -10 0 } << edge`, `.reverse()`, `.offset()`) produces a new path block that does **not** carry it — read `let a = edge.anchor;` before composing.
+`anchor` is the general rule for [re-based results](#path-blocks-anchor-putting-a-re-based-result-back) — `subPath`, `segment` and `reverse` carry it too — and it lives on the `variableOffset` / `compoundVariableOffset` result itself, on a PathBlock result and a ProjectedPath result alike. Composing or transforming it (`@{ m -10 0 } << edge`, `.reverse()`, `.offset()`) produces a new path block that does **not** carry it — read `let a = edge.anchor;` before composing.
 
 ## Errors
 

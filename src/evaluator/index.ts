@@ -1265,6 +1265,28 @@ function buildPathBlockFromCommands(cmds: PathBlockCommand[], origin?: { x: numb
 }
 
 /**
+ * Re-base a command list to its own first point AND record the translation that
+ * removed, as `anchor`.
+ *
+ * P2 of the placement audit: an operation that discards position exposes it on
+ * its result, so `result.drawTo(result.anchor.x, result.anchor.y)` is an
+ * identity. `variableOffset` has always done this; `subPath`, `segment` and
+ * `reverse` re-base as well and used to throw on `anchor`, leaving the caller
+ * to recover the position from the receiver — which it could only do by knowing
+ * which `t` it had asked for.
+ *
+ * `anchor` is the result's first point in the RECEIVER's coordinate space:
+ * exactly the origin `buildPathBlockFromCommands` subtracts when `origin` is
+ * omitted.
+ */
+function buildRebasedWithAnchor(cmds: PathBlockCommand[]): PathBlockValue {
+  const block = buildPathBlockFromCommands(cmds);
+  if (cmds.length === 0) return block;
+  (block as PathBlockValue & { anchor: { x: number; y: number } }).anchor = { ...cmds[0].start };
+  return block;
+}
+
+/**
  * Build a ProjectedPathValue from transform result commands.
  */
 function buildProjectedPathFromCommands(cmds: PathBlockCommand[], original: ProjectedPathValue): ProjectedPathValue {
@@ -3151,7 +3173,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
       case 'reverse': {
         if (expr.args.length !== 0) throw mError('reverse() expects 0 arguments');
         const reversed = reverseCommands(obj.commands);
-        return buildPathBlockFromCommands(reversed);
+        return buildRebasedWithAnchor(reversed);
       }
 
       case 'boundingBox': {
@@ -3324,7 +3346,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
         if (spStart < 0 || spStart > 1) throw mError('subPath() startT must be between 0 and 1');
         if (spEnd < 0 || spEnd > 1) throw mError('subPath() endT must be between 0 and 1');
         const subResult = subPathCommands(obj.commands, spStart, spEnd);
-        return buildPathBlockFromCommands(subResult);
+        return buildRebasedWithAnchor(subResult);
       }
 
       case 'dash': {
@@ -3961,13 +3983,19 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
           end: { x: cmd.end.x - spOriginX, y: cmd.end.y - spOriginY },
         }));
         const spLast = spNormalized[spNormalized.length - 1];
-        return {
+        const spBlock: PathBlockValue = {
           type: 'PathBlockValue' as const,
           commands: spNormalized,
           records: recordsFromCommands(spNormalized),
           startPoint: firstInkedPointOf(spNormalized) ?? { x: 0, y: 0 },
           endPoint: { x: spLast.end.x, y: spLast.end.y },
         };
+        // The page position this slice was cut from — see buildRebasedWithAnchor.
+        (spBlock as PathBlockValue & { anchor: { x: number; y: number } }).anchor = {
+          x: spOriginX,
+          y: spOriginY,
+        };
+        return spBlock;
       }
 
       case 'dash': {
@@ -6462,7 +6490,7 @@ function evaluateMemberExpression(expr: MemberExpression, scope: Scope): Value {
         const anchor = (obj as PathBlockValue & { anchor?: { x: number; y: number } }).anchor;
         if (anchor === undefined)
           throw new Error(
-            "'anchor' is only available on variableOffset/compoundVariableOffset results — it recovers the position removed by origin normalization. Composing or transforming a result produces a new block without it; read anchor before composing",
+            "'anchor' is only available on a result that was re-based to its own origin — variableOffset/compoundVariableOffset, subPath, segment, and reverse — where it recovers the position that re-basing removed. Operations that keep their placement (offset, outline, dash, fillet, the boolean ops, cut) have nothing to recover, and composing or transforming a result produces a new value without it; read anchor before composing",
           );
         return { type: 'PointValue' as const, x: anchor.x, y: anchor.y };
       }

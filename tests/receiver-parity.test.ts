@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { compilePath } from './helpers';
-import { TYPE_MEMBERS } from '../src/language-services/completion-data.generated';
+import { TYPE_MEMBERS, TYPE_METHOD_RETURNS } from '../src/language-services/completion-data.generated';
 
 /**
  * PathBlock and ProjectedPath are the same geometry in two coordinate spaces, so
@@ -68,5 +68,65 @@ describe('PathBlock / ProjectedPath parity', () => {
     const declared = new Set(TYPE_MEMBERS.ProjectedPath.methods.map((m) => m.label));
     const missing = PB_METHODS.filter((m) => !declared.has(m) && !(m in PATHBLOCK_ONLY_BY_DESIGN));
     expect(missing).toEqual([]);
+  });
+});
+
+/**
+ * Return-type parity. The presence checks above caught a method missing from a
+ * receiver; they could not catch a method PRESENT on both but declared with the
+ * wrong return type — which is how ISSUE-025 and D4 survived, with six methods
+ * on a ProjectedPath declared to return a ProjectedPath while the runtime handed
+ * back a PathBlock.
+ *
+ * The probe uses the one member each kind has that the other does not:
+ * `toPathBlock` exists only on a ProjectedPath, `project` only on a PathBlock.
+ *
+ * Audit: project-docs/placement-audit/ V1.
+ */
+describe('declared return types match the runtime', () => {
+  // A CLOSED receiver, so the boolean ops are usable: an open path makes them
+  // throw for an unrelated reason, which the probe would read as "the member
+  // exists" and silently invert the answer.
+  const RECV = '@{ h 40 v 40 h -40 z }.project(10, 10)';
+
+  /** 'PathBlock' | 'ProjectedPath' | null (neither, or the call itself failed). */
+  function runtimeKind(expr: string): string | null {
+    const probe = (member: string): boolean => {
+      try {
+        compilePath(`let pp = ${RECV}; let r = ${expr}; r.${member}; M 0 0`);
+        return true;
+      } catch (e) {
+        return !/Unknown (PathBlock|ProjectedPath) method/.test((e as Error).message);
+      }
+    };
+    if (probe('toPathBlock()')) return 'ProjectedPath';
+    if (probe('project(0, 0)')) return 'PathBlock';
+    return null;
+  }
+
+  const CASES: [expr: string, declared: string][] = [
+    ['pp.subPath(0.2, 0.8)', 'PathBlock'],
+    ['pp.union(@{ h 40 v 40 h -40 z }.project(20, 20))', 'PathBlock'],
+    ['pp.difference(@{ h 40 v 40 h -40 z }.project(20, 20))', 'PathBlock'],
+    ['pp.offset(5)', 'ProjectedPath'],
+    ['pp.reverse()', 'ProjectedPath'],
+    ['pp.toPathBlock()', 'PathBlock'],
+    ['pp.drawTo(0, 0)', 'ProjectedPath'],
+  ];
+
+  for (const [expr, declared] of CASES) {
+    it(`${expr} really returns a ${declared}`, () => {
+      expect(runtimeKind(expr)).toBe(declared);
+    });
+  }
+
+  it('agrees with what the generated completion data promises', () => {
+    const returns = TYPE_METHOD_RETURNS.ProjectedPath;
+    expect(returns.subPath).toBe('PathBlock');
+    expect(returns.union).toBe('PathBlock');
+    expect(returns.difference).toBe('PathBlock');
+    expect(returns.intersection).toBe('PathBlock');
+    expect(returns.xor).toBe('PathBlock');
+    expect(returns.offset).toBe('ProjectedPath');
   });
 });

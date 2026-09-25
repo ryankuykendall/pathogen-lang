@@ -1373,7 +1373,7 @@ export interface PathogenProjectedPath {
   /** scale(sx, sy) — Scale path */
   scale(sx: number, sy?: number): PathogenProjectedPath;
   /** subPath(startT, endT) — Extract sub-path */
-  subPath(startT: number, endT: number): PathogenProjectedPath;
+  subPath(startT: number, endT: number): PathogenPathBlock;
   /** dash(styles) — Partition into dash/gap centerline pieces per stroke-dasharray (+ optional stroke-dashoffset); returns [{ path, kind: 'dash' | 'gap', t0, t1 }] in path order (pieces stay projected) */
   dash(styles: Value): PathogenArray<PathogenDashPiece>;
   /** outline(styles) — Closed stroke outline (stroke-to-path, boolean-ready) in absolute coordinates; styles: stroke-width (required), stroke-linecap, stroke-linejoin, stroke-miterlimit */
@@ -1393,13 +1393,13 @@ export interface PathogenProjectedPath {
   /** ellipticalFilletAtVertex(index, rx, ry, rotation?) — Elliptical fillet at vertex */
   ellipticalFilletAtVertex(index: number, rx: number, ry: number, rotation?: AngleValue): PathogenProjectedPath;
   /** union(other) — Boolean union */
-  union(other: PathogenPathBlock): PathogenProjectedPath;
+  union(other: PathogenPathBlock): PathogenPathBlock;
   /** difference(other) — Boolean difference */
-  difference(other: PathogenPathBlock): PathogenProjectedPath;
+  difference(other: PathogenPathBlock): PathogenPathBlock;
   /** intersection(other) — Boolean intersection */
-  intersection(other: PathogenPathBlock): PathogenProjectedPath;
+  intersection(other: PathogenPathBlock): PathogenPathBlock;
   /** xor(other) — Boolean XOR */
-  xor(other: PathogenPathBlock): PathogenProjectedPath;
+  xor(other: PathogenPathBlock): PathogenPathBlock;
   /** cut(cutter) — Slice along the cutter(s): one PathBlock/ProjectedPath or an array of them; returns the healed pieces. Seams are labeled 'cut' — or 'cut.<name>' when the cutter edge was named as segment('name') */
   cut(cutter: PathogenPathBlock | PathogenProjectedPath | (PathogenPathBlock | PathogenProjectedPath)[]): PathogenArray<PathogenPathBlock>;
   /** intersects(other) — Check for intersections */

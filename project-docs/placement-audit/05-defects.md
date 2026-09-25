@@ -98,7 +98,7 @@ destroys labels.
 
 ---
 
-## D4 — `ProjectedPath.union/difference/intersection/xor` return a PathBlock holding page coordinates · **Medium**
+## D4 — `ProjectedPath.union/difference/intersection/xor` return a PathBlock holding page coordinates · **Medium** · **RESOLVED 2026-09-25 (declared the truth)**
 
 Declared `ProjectedPath` in `src/pathogen-api.ts:1396-1402`; measured result is a PathBlock
 (relative `d`) whose numbers are page coordinates. Drawing one re-offsets it from the cursor,
@@ -106,7 +106,12 @@ double-placing it.
 
 This is ISSUE-025's twin and is unrecorded. `cut` has the same shape.
 
-**Fix:** either return a ProjectedPath (P3), or declare the truth. See `04-violations.md` V1.
+**Resolved as "declare the truth"** — the five wrong declarations now say `PathogenPathBlock`.
+Returning an actual ProjectedPath (P3, V1 Fix A) stays unbuilt and is the breaking half: the
+published samples compensate for the current shape with `.project(0, 0)` (11 sites) and
+`.drawTo(0, 0)` (8 sites), and under Fix A the first would throw while the second would
+silently move geometry to the canvas origin. That wants a migration note and a deliberate
+release. `anchor` (V2) landed alongside for the operations that genuinely discard position.
 
 ---
 

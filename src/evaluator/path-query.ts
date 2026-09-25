@@ -796,13 +796,18 @@ export function wrapCommands(run: PathBlockCommand[], kind: QuerySource['kind'])
       end: { x: c.end.x - runStart.x, y: c.end.y - runStart.y },
       ...(c.meta !== undefined ? { meta: c.meta } : {}),
     }));
-    return {
+    const block: PathBlockValue = {
       type: 'PathBlockValue',
       commands: rebased,
       records: recordsFromCommands(rebased),
       startPoint: firstInkedPointOf(rebased) ?? { x: 0, y: 0 },
       endPoint: { x: rebased[rebased.length - 1].end.x, y: rebased[rebased.length - 1].end.y },
     };
+    // The run's position in the receiver's coordinates — the translation this
+    // re-base removed. Without it a caller can only recover the position by
+    // re-querying the receiver. See buildRebasedWithAnchor in evaluator/index.ts.
+    (block as PathBlockValue & { anchor: { x: number; y: number } }).anchor = { ...runStart };
+    return block;
   }
   const copies = source.map((c) => ({
     command: c.command,
