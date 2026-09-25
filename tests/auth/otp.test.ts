@@ -19,10 +19,25 @@ describe('generateCode', () => {
   });
 
   it('does not produce the same code twice in a row (statistical sanity)', () => {
+    // The title's claim: no two CONSECUTIVE draws match. That is what a stuck or
+    // poorly seeded generator breaks, and it is what this asserts.
+    let previous = generateCode();
+    for (let i = 1; i < 200; i++) {
+      const code = generateCode();
+      expect(code).not.toBe(previous);
+      previous = code;
+    }
+  });
+
+  it('draws are overwhelmingly distinct (entropy sanity)', () => {
+    // NOT `toBe(200)`. 200 draws from 10^6 collide with probability
+    // 1 - exp(-200^2 / (2 * 10^6)) ~= 2%, so the exact-uniqueness assertion this
+    // replaces failed roughly one run in fifty. Allowing two collisions puts the
+    // chance of a spurious failure near 1e-6 while still catching a generator
+    // with a collapsed range.
     const seen = new Set<string>();
     for (let i = 0; i < 200; i++) seen.add(generateCode());
-    // 200 draws from 10^6 — collisions vanishingly unlikely.
-    expect(seen.size).toBe(200);
+    expect(seen.size).toBeGreaterThanOrEqual(198);
   });
 
   it('covers all ten digits across many draws (entropy sanity)', () => {
