@@ -1835,7 +1835,7 @@ M 0 0`);
       it('horizontal line mirrored across vertical axis', () => {
         const result = compile(`
           let p = @{ h 50 };
-          let m = p.mirror(calc(90 * 3.14159265358979 / 180));
+          let m = p.mirror(90deg);
           log(m.endPoint);
         `);
         const ep = result.logs[0].parts[0].value;
@@ -1846,7 +1846,7 @@ M 0 0`);
       it('L-shaped path mirrored across 45deg swaps x and y', () => {
         const result = compile(`
           let p = @{ h 30 v 0 };
-          let m = p.mirror(calc(45 * 3.14159265358979 / 180));
+          let m = p.mirror(45deg);
           log(m.endPoint.x, m.endPoint.y);
         `);
         // mirror(45deg): swaps x and y → (30, 0) → (0, 30)
@@ -1857,7 +1857,7 @@ M 0 0`);
       it('preserves total length', () => {
         const result = compile(`
           let p = @{ h 50 v 30 };
-          log(p.length, p.mirror(calc(90 * 3.14159265358979 / 180)).length);
+          log(p.length, p.mirror(90deg).length);
         `);
         const origLen = Number(result.logs[0].parts[0].value);
         const mirLen = Number(result.logs[0].parts[1].value);
@@ -1867,7 +1867,7 @@ M 0 0`);
       it('startPoint (0,0) for the self-rebased PathBlockValue result', () => {
         const result = compile(`
           let p = @{ h 50 v 30 };
-          let m = p.mirror(calc(90 * 3.14159265358979 / 180));
+          let m = p.mirror(90deg);
           log(m.startPoint);
         `);
         expect(result.logs[0].parts[0].value).toBe('Point(0, 0)');
@@ -1876,7 +1876,7 @@ M 0 0`);
       it('mirrors cubic bezier (length preserved)', () => {
         const result = compile(`
           let p = @{ c 0 -40 50 -40 50 0 };
-          let m = p.mirror(calc(90 * 3.14159265358979 / 180));
+          let m = p.mirror(90deg);
           log(p.length, m.length);
         `);
         const origLen = Number(result.logs[0].parts[0].value);
@@ -1888,7 +1888,7 @@ M 0 0`);
         // a 25 25 0 0 1 50 0 → after mirror, sweep should be 0
         const result = compile(`
           let p = @{ a 25 25 0 0 1 50 0 };
-          let m = p.mirror(calc(90 * 3.14159265358979 / 180));
+          let m = p.mirror(90deg);
           log(m.length);
         `);
         // Should not throw and length should be positive
@@ -1898,7 +1898,7 @@ M 0 0`);
       it('can draw result', () => {
         const path = compilePath(`
           let p = @{ h 50 v 30 };
-          let m = p.mirror(calc(90 * 3.14159265358979 / 180));
+          let m = p.mirror(90deg);
           M 100 100
           m.draw();
         `);
@@ -1910,7 +1910,7 @@ M 0 0`);
         const result = compile(`
           let p = @{ h 50 };
           let proj = p.project(100, 100);
-          let m = proj.mirror(calc(90 * 3.14159265358979 / 180));
+          let m = proj.mirror(90deg);
           log(m.startPoint.x, m.startPoint.y, m.endPoint.x, m.endPoint.y);
         `);
         // Mirror across vertical through (100,100): startPoint stays, endPoint.x reflects
@@ -2019,7 +2019,7 @@ M 0 0`);
 
       it('validates arguments', () => {
         expect(() => compile('let p = @{ h 10 };\nlet r = p.rotate();')).toThrow(/expects 1-2 arguments/);
-        expect(() => compile('let p = @{ h 10 };\nlet r = p.rotate(1, 5);')).toThrow(/origin must be a Point/);
+        expect(() => compile('let p = @{ h 10 };\nlet r = p.rotate(1rad, 5);')).toThrow(/origin must be a Point/);
       });
     });
 
@@ -2027,7 +2027,7 @@ M 0 0`);
       it('rotate L-shape around vertex 0 (origin) by 90deg', () => {
         const result = compile(`
           let p = @{ h 50 v 50 };
-          let r = p.rotateAtVertexIndex(0, calc(90 * 3.14159265358979 / 180));
+          let r = p.rotateAtVertexIndex(0, 90deg);
           log(r.endPoint.x, r.endPoint.y);
         `);
         // Original vertices: (0,0), (50,0), (50,50)
@@ -2039,7 +2039,7 @@ M 0 0`);
       it('rotate around vertex 1 (corner) by 90deg', () => {
         const result = compile(`
           let p = @{ h 50 v 50 };
-          let r = p.rotateAtVertexIndex(1, calc(90 * 3.14159265358979 / 180));
+          let r = p.rotateAtVertexIndex(1, 90deg);
           log(r.endPoint.x, r.endPoint.y);
         `);
         // Vertices: (0,0)→idx0, (50,0)→idx1, (50,50)→idx2
@@ -2052,7 +2052,7 @@ M 0 0`);
       it('rotate around last vertex by 180deg', () => {
         const result = compile(`
           let p = @{ h 50 v 50 };
-          let r = p.rotateAtVertexIndex(2, calc(180 * 3.14159265358979 / 180));
+          let r = p.rotateAtVertexIndex(2, 180deg);
           log(r.endPoint.x, r.endPoint.y);
         `);
         // Vertices: (0,0), (50,0), (50,50)
@@ -2065,7 +2065,7 @@ M 0 0`);
       it('preserves total length', () => {
         const result = compile(`
           let p = @{ h 50 v 50 };
-          log(p.length, p.rotateAtVertexIndex(0, calc(45 * 3.14159265358979 / 180)).length);
+          log(p.length, p.rotateAtVertexIndex(0, 45deg).length);
         `);
         const origLen = Number(result.logs[0].parts[0].value);
         const rotLen = Number(result.logs[0].parts[1].value);
@@ -2076,7 +2076,7 @@ M 0 0`);
         // Arc with 0 rotation, rotated by 45deg should have rotation ~45
         const result = compile(`
           let p = @{ a 25 25 0 0 1 50 0 };
-          let r = p.rotateAtVertexIndex(0, calc(45 * 3.14159265358979 / 180));
+          let r = p.rotateAtVertexIndex(0, 45deg);
           log(r.length);
         `);
         expect(Number(result.logs[0].parts[0].value)).toBeGreaterThan(0);
@@ -2085,7 +2085,7 @@ M 0 0`);
       it('startPoint (0,0) for the self-rebased PathBlockValue result', () => {
         const result = compile(`
           let p = @{ h 50 v 50 };
-          let r = p.rotateAtVertexIndex(1, calc(90 * 3.14159265358979 / 180));
+          let r = p.rotateAtVertexIndex(1, 90deg);
           log(r.startPoint);
         `);
         expect(result.logs[0].parts[0].value).toBe('Point(0, 0)');
@@ -2094,7 +2094,7 @@ M 0 0`);
       it('can draw result', () => {
         const path = compilePath(`
           let p = @{ h 50 v 50 };
-          let r = p.rotateAtVertexIndex(0, calc(45 * 3.14159265358979 / 180));
+          let r = p.rotateAtVertexIndex(0, 45deg);
           M 100 100
           r.draw()
         `);
@@ -2106,7 +2106,7 @@ M 0 0`);
         const result = compile(`
           let p = @{ h 50 v 50 };
           let proj = p.project(100, 100);
-          let r = proj.rotateAtVertexIndex(0, calc(90 * 3.14159265358979 / 180));
+          let r = proj.rotateAtVertexIndex(0, 90deg);
           log(r.startPoint);
         `);
         // Vertex 0 for projected is (100,100), rotation around it keeps it fixed
@@ -3291,7 +3291,7 @@ M 0 0`);
     it('supports rotation parameter', () => {
       const result = compilePath(`
         let box = @{ h 60 v 40 h -60 z };
-        let f = box.ellipticalFillet(12, 6, 0.3);
+        let f = box.ellipticalFillet(12, 6, 0.3rad);
         M 10 10
         f.draw()
       `);
@@ -3312,7 +3312,7 @@ M 0 0`);
     it('ellipticalFilletAtVertex with rotation', () => {
       const result = compilePath(`
         let box = @{ h 60 v 40 h -60 z };
-        let f = box.ellipticalFilletAtVertex(2, 15, 8, 0.5);
+        let f = box.ellipticalFilletAtVertex(2, 15, 8, 0.5rad);
         M 10 10
         f.draw()
       `);
@@ -3730,8 +3730,8 @@ describe('truthful startPoint survives the transform-method family (review-criti
   for (const [name, expr] of [
     ['mirror', 'proj.mirror(0)'],
     ['offset', 'proj.offset(2)'],
-    ['rotate', 'proj.rotate(1.5707963)'],
-    ['rotateAtVertexIndex', 'proj.rotateAtVertexIndex(0, 1.5707963)'],
+    ['rotate', 'proj.rotate(1.5707963rad)'],
+    ['rotateAtVertexIndex', 'proj.rotateAtVertexIndex(0, 1.5707963rad)'],
     ['scale', 'proj.scale(2, 2)'],
   ] as const) {
     it(`${name}() on a leading-move projected value keeps startPoint == get(0)`, () => {

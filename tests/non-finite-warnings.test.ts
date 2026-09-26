@@ -175,7 +175,7 @@ describe('non-finite numbers in path data', () => {
     }
 
     it('a missing context-aware argument is still the positioned error', () => {
-      expect(() => compile('M 0 0 polarLine(0.5);')).toThrow(
+      expect(() => compile('M 0 0 polarLine(0.5rad);')).toThrow(
         /Line 1, col \d+: polarLine\(\) produced a non-numeric coordinate \(NaN\).*it received 1 argument\)/,
       );
     });

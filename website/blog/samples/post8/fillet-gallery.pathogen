@@ -51,7 +51,7 @@ filleted.apply {
   f4.drawTo(360, 60);
 
   // Elliptical with rotation
-  let f5 = box.ellipticalFillet(15, 8, 0.3);
+  let f5 = box.ellipticalFillet(15, 8, 0.3rad);
   f5.drawTo(470, 60);
 }
 

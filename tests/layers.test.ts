@@ -942,7 +942,7 @@ describe('Multi-Layer Support', () => {
         const result = compile(`
           define PathLayer('main') #{}
           layer('main').ctx.transform.translate.set(50, 50);
-          layer('main').ctx.transform.rotate.set(1);
+          layer('main').ctx.transform.rotate.set(1rad);
           layer('main').ctx.transform.scale.set(2, 2);
           layer('main').ctx.transform.reset();
           layer('main').apply { M 0 0 }
@@ -1028,7 +1028,7 @@ describe('Multi-Layer Support', () => {
         expect(() =>
           compile(`
           define PathLayer('main') #{}
-          layer('main').ctx.transform.rotate.set(1, 2);
+          layer('main').ctx.transform.rotate.set(1rad, 2);
         `),
         ).toThrow('rotate.set() expects 1 or 3 arguments');
       });
@@ -2443,7 +2443,7 @@ describe('Multi-Layer Support', () => {
     it('ctx.transform.rotate.set works on GroupLayer', () => {
       const result = compile(`
         let g = GroupLayer('g') #{};
-        g.ctx.transform.rotate.set(0.785);
+        g.ctx.transform.rotate.set(0.785rad);
       `);
       expect(result.layers[0].transform).toContain('rotate(');
     });

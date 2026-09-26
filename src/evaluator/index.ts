@@ -29,6 +29,12 @@ import { isBooleanValue, isTruthy, toNumber, valuesEqual } from './value-semanti
 import { selectSwitchArm, selectSwitchClause, type MatchHost } from './switch-match';
 import { planRange, RANGE_MESSAGES, rangeValues } from './range-loop';
 import type { RangeKind, RangePlan } from './range-loop';
+import {
+  describeMissingAngleUnit,
+  describeMissingAngleUnitForProp,
+  describeMissingAngleUnits,
+  receiverTypeName,
+} from './angle-unit-check';
 import { checkAngleUnitMismatch, convertUnitSuffix, convertUnitSuffixToDegrees } from './units';
 import { validateCSSIdent, validateCSSValue } from './sanitize';
 import { sanitizeSVGFragment } from './svg-sanitize';
@@ -1602,6 +1608,7 @@ function evaluateStyleBlockLiteral(expr: StyleBlockLiteral, scope: Scope): Style
     // var() strings this compiler emitted from validated CSSVarValue/Color
     // objects for THIS value — the validator allows exactly these tokens.
     const emittedVars: string[] = [];
+    let angleUnitError: string | null = null;
     try {
       const parseResult = expressionParser.parse(prop.value);
       if (parseResult.status && parseResult.value) {
@@ -1625,6 +1632,13 @@ function evaluateStyleBlockLiteral(expr: StyleBlockLiteral, scope: Scope): Style
             properties[prop.name] = prop.value.trim();
             continue;
           }
+        }
+        if (prop.name === 'rotate') {
+          // The shorthand that motivated this rule: `#{ rotate: 45; }` renders
+          // as rotate(2578.31) and nothing used to complain. Collected rather
+          // than thrown here: the catch below swallows everything to keep raw
+          // CSS strings working, so the throw has to happen outside the try.
+          angleUnitError = describeMissingAngleUnit('style.rotate', 'rotate:', parseResult.value);
         }
         const evaluated = evaluateExpression(parseResult.value, scope);
         if (typeof evaluated === 'number') {
@@ -1673,6 +1687,11 @@ function evaluateStyleBlockLiteral(expr: StyleBlockLiteral, scope: Scope): Style
       }
     } catch {
       // Parse or eval failed — keep raw string (handles rgb(...), #hex, multi-value strings, etc.)
+    }
+    if (angleUnitError) {
+      throw new Error(
+        formatError(angleUnitError, prop.valueLoc?.line ?? prop.loc?.line ?? getLine(expr), prop.valueLoc?.column),
+      );
     }
     if (structValueName) {
       const eLine = prop.valueLoc?.line ?? prop.loc?.line ?? getLine(expr);
@@ -2499,6 +2518,10 @@ function evaluateTextBlockBody(stmts: Statement[], scope: Scope, elements: TextB
     if (stmt.type === 'TextStatement') {
       const x = requireNumber(evaluateExpression(stmt.x, scope), 'text() x');
       const y = requireNumber(evaluateExpression(stmt.y, scope), 'text() y');
+      if (stmt.rotation) {
+        const rotMessage = describeMissingAngleUnit('text', 'text() rotation', stmt.rotation);
+        if (rotMessage) throw new Error(formatError(rotMessage, getLine(stmt), getCol(stmt)));
+      }
       const rotation = stmt.rotation
         ? requireNumber(evaluateExpression(stmt.rotation, scope), 'text() rotation')
         : undefined;
@@ -2657,6 +2680,16 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
     return new Error(formatError(message, mLine, mCol));
   }
 
+  // One angle-unit check for every receiver method: the per-case bodies each
+  // read their own arguments, so this is the only place that sees them all.
+  const receiver = receiverTypeName(obj);
+  if (receiver) {
+    const key = `${receiver}.${expr.method}`;
+    for (const message of describeMissingAngleUnits(key, `${key}()`, expr.args)) {
+      throw mError(message);
+    }
+  }
+
   // TransformReference methods (ctx.transform.reset())
   if (typeof obj === 'object' && obj !== null && 'type' in obj && obj.type === 'TransformReference') {
     const transformRef = obj;
@@ -2693,13 +2726,21 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
           propRef.state.translate = { x: args[0], y: args[1] };
           return 0;
         case 'rotate':
-          if (args.length === 1) {
-            propRef.state.rotate = { angle: args[0] };
-          } else if (args.length === 3) {
-            propRef.state.rotate = { angle: args[0], cx: args[1], cy: args[2] };
-          } else {
+          if (args.length !== 1 && args.length !== 3) {
             throw mError('rotate.set() expects 1 or 3 arguments (angle) or (angle, cx, cy)');
           }
+          // Checked after the arity test — a wrong argument count is the more
+          // fundamental error. A TransformPropertyReference is not tagged
+          // `<Name>Value`, so the generic receiver check cannot key it.
+          for (const message of describeMissingAngleUnits(
+            'transform.rotate.set',
+            'transform.rotate.set()',
+            expr.args,
+          )) {
+            throw mError(message);
+          }
+          propRef.state.rotate =
+            args.length === 1 ? { angle: args[0] } : { angle: args[0], cx: args[1], cy: args[2] };
           return 0;
         case 'scale':
           if (args.length === 2) {
@@ -7163,6 +7204,13 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope): Value {
     if (call.args.length !== 2) {
       throw new Error(`PolarVector() expects 2 arguments, got ${call.args.length}`);
     }
+    // After the arity guard, not before: a wrong argument count is the more
+    // fundamental mistake, the same ordering the stdlib and context-aware
+    // branches use. (Color needs no check here — its hue is a degrees slot,
+    // which the rule exempts.)
+    for (const message of describeMissingAngleUnits('PolarVector', 'PolarVector()', call.args)) {
+      throw new Error(formatError(message, getLine(call), getCol(call)));
+    }
     const angle = toNumber(evaluateExpression(call.args[0], scope));
     const distance = evaluateExpression(call.args[1], scope);
     if (angle === undefined) throw new Error('PolarVector() angle must be a number');
@@ -8225,7 +8273,11 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope): Value {
     // NaN / Infinity is a warning, not an error (path-emit-guard.ts, severity note).
     const nonFiniteCtxArgs = describeNonFinitePathArgs(call.name, call.args, args);
     for (const message of nonFiniteCtxArgs) warn(scope.evalState, 'non-finite', message, call.loc);
+    for (const message of describeMissingAngleUnits(call.name, `${call.name}()`, call.args)) {
+      throw new Error(formatError(message, getLine(call), getCol(call)));
+    }
     const ctxResult = evaluateContextAwareFunction(call.name, args, scope, call.loc);
+
     // A MISSING argument is not in `args`, so the checks above cannot see it; it
     // is `undefined` inside the case and comes out as NaN (`polarLine(0.5)` →
     // `L NaN NaN`). These are switch cases, not function objects — no arity to
@@ -8256,6 +8308,7 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope): Value {
     }
 
     const stdlibArgs = call.args.map((arg) => evaluateExpression(arg, scope));
+
     // A path-emitting function must never write a non-number into `d`
     // (docs/syntax.md → Null). See path-emit-guard.ts.
     const emitsPath = isPathEmittingStdlib(fn);
@@ -8271,6 +8324,9 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope): Value {
         warn(scope.evalState, 'non-finite', message, call.loc);
         warnedNonFiniteArg = true;
       }
+    }
+    for (const message of describeMissingAngleUnits(call.name, `${call.name}()`, call.args)) {
+      throw new Error(formatError(message, getLine(call), getCol(call)));
     }
     let result: Value;
     try {
@@ -9192,6 +9248,10 @@ function evaluateTextBody(items: TextBodyItem[], scope: Scope, children: TextChi
       const text = evaluateTemplateLiteral(item.content, scope);
       const dx = item.dx ? requireNumber(evaluateExpression(item.dx, scope), 'tspan() dx') : undefined;
       const dy = item.dy ? requireNumber(evaluateExpression(item.dy, scope), 'tspan() dy') : undefined;
+      if (item.rotation) {
+        const tsMessage = describeMissingAngleUnit('tspan', 'tspan() rotation', item.rotation);
+        if (tsMessage) throw new Error(formatError(tsMessage, getLine(item), getCol(item)));
+      }
       const rot = item.rotation
         ? requireNumber(evaluateExpression(item.rotation, scope), 'tspan() rotation')
         : undefined;
@@ -9950,6 +10010,10 @@ function evaluateStatementToAccum(stmt: Statement, scope: Scope, accum: PathStor
 
       const x = requireNumber(evaluateExpression(stmt.x, scope), 'text() x');
       const y = requireNumber(evaluateExpression(stmt.y, scope), 'text() y');
+      if (stmt.rotation) {
+        const rotMessage = describeMissingAngleUnit('text', 'text() rotation', stmt.rotation);
+        if (rotMessage) throw new Error(formatError(rotMessage, getLine(stmt), getCol(stmt)));
+      }
       const rotation = stmt.rotation
         ? requireNumber(evaluateExpression(stmt.rotation, scope), 'text() rotation')
         : undefined;
@@ -9977,6 +10041,14 @@ function evaluateStatementToAccum(stmt: Statement, scope: Scope, accum: PathStor
 
     case 'MemberAssignmentStatement': {
       const obj = evaluateExpression(stmt.object, scope);
+      // The one place every angle-valued property assignment passes through —
+      // Marker.orient, the filter angles — before each assign* helper, which
+      // sees only the runtime value and so cannot tell a literal from a variable.
+      const assignReceiver = receiverTypeName(obj);
+      if (assignReceiver) {
+        const message = describeMissingAngleUnitForProp(assignReceiver, stmt.property, stmt.value);
+        if (message) throw new Error(formatError(message, getLine(stmt), getCol(stmt)));
+      }
       const value = evaluateExpression(stmt.value, scope);
       if (isLayerReference(obj) && stmt.property === 'styles') {
         if (!isStyleBlock(value)) throw new Error(formatError('Layer styles must be a style block', getLine(stmt)));

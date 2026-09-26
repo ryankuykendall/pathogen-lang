@@ -1414,6 +1414,73 @@ let full = 2pi;        // 2π
 M sin(eighth) cos(eighth)
 ```
 
+### Angle Literals Require a Unit
+
+A **literal** in an angle position must carry `deg`, `rad`, or `pi`:
+
+```
+sq.rotate(45deg);          // fine
+sq.rotate(0.7853rad);      // fine — the same rotation
+sq.rotate(45);             // error
+```
+
+> `rotate() takes an angle — 45 needs a unit. As written it means 45 radians
+> (2578.31deg). Write 45deg for degrees, or 45rad to keep radians.`
+
+The rule exists because a bare number here means **radians**, and the failure is
+silent: `#{ rotate: 45; }` used to render as `rotate(2578.31)` — seven full turns
+— with no diagnostic at all. Every position that reads radians is covered:
+`rotate`, `mirror`, `rotateAtVertexIndex`, `ellipticalFillet` and their
+`AtVertex` forms, the polar family (`polarPoint`, `polarOffset`, `polarMove`,
+`polarLine`, `polarX`, `polarY`, `PolarVector`), `heading`, `turn`,
+`tangentArc`, `arcFromCenter`, `arcFromPolarOffset`, `radialWedge`,
+`normalizeAngle`, the spline `angle` fields, `Point.rotate`,
+`Point.polarTranslate`, `text()` and `tspan()` rotation, the TextBlock and
+ProjectedText projections and their `drawTo` rotation, `Marker.orient`,
+`ConicGradient.from` / `.to`, the filter angles,
+`ctx.transform.rotate.set()`, and the layer `rotate:` shorthand. The full list
+lives in `src/angle-params.ts`.
+
+**Zero is exempt** — 0 is 0 in any unit:
+
+```
+label.polarProject(100, 100, 0, 60, BBoxAnchor.Left);   // fine
+```
+
+**Degrees positions are exempt too**, because a bare number there already means
+what it says and there is nothing to get wrong:
+
+```
+Color(0.7, 0.2, 240);                   // hue is degrees
+swatch.hueShift(30);                    // degrees
+arc(50, 50, 45, 1, 1, 150, 100);        // the SVG A rotation slot is degrees
+```
+
+#### It is a rule about literals
+
+The check reads the expression you wrote, not the value that flows through it.
+Anything that is not a literal — a variable, a member access, a function result
+— passes, and a plain number there still means radians:
+
+```
+let spin = 45;
+sq.rotate(spin);       // compiles; still means 45 RADIANS
+```
+
+So the rule closes the trap of *typing* a bare angle, not every way a wrong
+number can reach a rotation. When a value is computed, multiply by a unit to say
+which one you meant:
+
+```
+sq.rotate(calc(spin * 1deg));    // 45 degrees
+sq.rotate(calc(spin * 1rad));    // 45 radians
+```
+
+`rad()` and `deg()` are **converters that return plain numbers**, not Angle
+values. A call is not a literal, so `rotate(rad(45))` compiles — and it is
+correct, since `rad(45)` is 45 degrees expressed in radians and `rotate` reads
+radians. `rotate(45deg)` says the same thing without the round trip.
+
 ### Angle Members
 
 An Angle value exposes its measure in whichever unit you need:

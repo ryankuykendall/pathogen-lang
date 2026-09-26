@@ -5,6 +5,68 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] - 2026-09-26 (an angle literal says which unit it is)
+
+D7 of the placement audit, plus the two defects found while cataloguing it.
+**The last item is a behaviour change.**
+
+### Fixed
+
+#### Core
+
+- **The SVG arc rotation slot is degrees, not radians.** `A rx ry ROT …` is degrees by spec and pathogen wrote the value verbatim, but an Angle was flattened with `v.radians` like every other angle — so `arc(50, 50, 45deg, 1, 1, 150, 100)` emitted `A 50 50 0.785…`, i.e. 0.785 *degrees*. Writing the unit produced **less** rotation than omitting it. A bare number is unchanged: already degrees, per the spec.
+
+  The slot is reached by two independent paths and fixing one alone was worse than fixing neither: `evaluatePathArg` builds the emitted text, `getNumericArgs` feeds context tracking and the structured records. With only the text corrected, `ctx.heading` for `A 80 30 45deg 0 1 100 0` read 0.285 against the bare form's 0.925 and `boundingBox().height` read 6.59 against 76.04 — the bytes said one thing and every query said another. Both now agree.
+
+- **An Angle is accepted wherever a rotation is.** `TextBlock.radialProject()`, `Endpoint.ellipticalFillet()` and the `with ellipticalFillet(...)` clause guarded with `typeof v !== 'number'` instead of coercing, so `45deg` was rejected outright even though `docs/syntax.md` promises "an angle is an angle wherever it flows". Lengths are unchanged — `fillet(8deg)` and `ellipticalFillet(8deg, 4, 0)` still error — and a boolean is still not a rotation.
+
+- **`ConicGradient.from` / `.to` accept a bare `0`**, matching the language-wide rule and `sanitize.ts`: 0 is 0 in any unit.
+
+### Changed
+
+#### Core
+
+- **An angle LITERAL now requires a unit.** A bare number in a radians position is an error:
+
+  ```
+  sq.rotate(45);       // error
+  sq.rotate(45deg);    // fine
+  sq.rotate(45rad);    // fine — a different rotation, said out loud
+  ```
+
+  > `rotate() takes an angle — 45 needs a unit. As written it means 45 radians (2578.31deg). Write 45deg for degrees, or 45rad to keep radians.`
+
+  The failure this closes was silent: `#{ rotate: 45; }` rendered as `rotate(2578.31)` — seven full turns — with no diagnostic. Which parameters are angles is now declared once in `src/angle-params.ts`, locked by a behavioural coverage matrix that compiles every registered position twice, so a new angle parameter cannot be added without registering it.
+
+  **Two deliberate limits, both documented.**
+
+  *It is a rule about literals.* The check reads the expression you wrote, so anything that is not a literal still passes and a plain number there still means radians:
+
+  ```
+  let spin = 45;
+  sq.rotate(spin);                 // compiles; still means 45 RADIANS
+  sq.rotate(calc(spin * 1deg));    // say which unit you meant
+  ```
+
+  *Degrees positions are exempt*, because a bare number there already means what it says: the OKLCH hue family (`Color(L, C, H)`, `hueShift`, `analogous`, `splitComplementary`) and the SVG arc rotation. Requiring units there would have churned 349 sites across 29 published samples against 26 across 6, for slots that were never ambiguous.
+
+  **Migrating.** A bare number already meant radians, so the change is mechanical and preserves geometry exactly:
+
+  | Was | Now |
+  |---|---|
+  | `rotate(45)` | `rotate(45rad)` — or `45deg` if that is what you meant |
+  | `calc(45 * 3.14159265358979 / 180)` | `45deg` |
+  | `calc(0.5 * 3.14159265358979)` | `0.5pi` |
+  | `rotate(x)`, x a variable | unchanged — still radians |
+  | computed, in degrees | `calc(x * 1deg)` |
+
+  `rad()` and `deg()` remain converters returning plain numbers; `rotate(rad(45))` still compiles and still means 45 degrees, but `rotate(45deg)` says it directly. Zero is exempt everywhere. Of the 294 published samples, 6 needed migration and every one renders geometrically identical to a pre-change baseline.
+
+### Documentation
+
+- `docs/syntax.md` gains **Angle Literals Require a Unit**, stating the rule, the zero and degrees exemptions, the literal-versus-variable limit and the `calc(x * 1deg)` idiom. Its "one place radians are not the reading" claim is corrected to two.
+- `docs/stdlib.md`'s `arc()` entry now says the rotation is degrees, with the SVG spec citation that makes it so.
+
 ## [Unreleased] - 2026-09-25 (the receiver decides, for boolean ops and slices too)
 
 Fix A of the placement audit's V1, closing D4 and ISSUE-025. **This is a behaviour change.**

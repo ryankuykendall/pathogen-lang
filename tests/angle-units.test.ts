@@ -166,7 +166,7 @@ describe('an Angle is accepted wherever a rotation is', () => {
   `;
 
   it('TextBlock.radialProject takes an Angle', () => {
-    expect(textPositions(RADIAL('45deg'))).toEqual(textPositions(RADIAL('0.7853981633974483')));
+    expect(textPositions(RADIAL('45deg'))).toEqual(textPositions(RADIAL('0.7853981633974483rad')));
   });
 
   const ENDPOINT = (rotation: string) => `
@@ -174,13 +174,13 @@ describe('an Angle is accepted wherever a rotation is', () => {
   `;
 
   it('Endpoint.ellipticalFillet takes an Angle rotation', () => {
-    expect(compilePath(ENDPOINT('45deg'))).toBe(compilePath(ENDPOINT('0.7853981633974483')));
+    expect(compilePath(ENDPOINT('45deg'))).toBe(compilePath(ENDPOINT('0.7853981633974483rad')));
   });
 
   const WITH_CLAUSE = (rotation: string) => `M 0 0; h 40; v 40 with ellipticalFillet(8, 4, ${rotation}); h 40;`;
 
   it('a with-clause ellipticalFillet takes an Angle rotation', () => {
-    expect(compilePath(WITH_CLAUSE('45deg'))).toBe(compilePath(WITH_CLAUSE('0.7853981633974483')));
+    expect(compilePath(WITH_CLAUSE('45deg'))).toBe(compilePath(WITH_CLAUSE('0.7853981633974483rad')));
   });
 
   it('reads the Angle as the same rotation the bare radians produce', () => {

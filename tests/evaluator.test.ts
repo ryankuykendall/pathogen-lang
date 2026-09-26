@@ -3260,7 +3260,7 @@ log(out[0].glyph, out[0].leftOffset, out[1].glyph, out[1].leftOffset);
       });
 
       it('destructures PolarVector angle and distance', () => {
-        const result = compile('let { angle, distance } = PolarVector(0.5, 100); log(angle, distance);');
+        const result = compile('let { angle, distance } = PolarVector(0.5rad, 100); log(angle, distance);');
         expect(result.logs[0].parts[0].value).toBe('0.5');
         expect(result.logs[0].parts[1].value).toBe('100');
       });
@@ -4568,7 +4568,7 @@ log(p.color.hex);`);
     describe('constructor', () => {
       it('creates a PolarVector with angle and distance', () => {
         const result = compilePath(`
-          let pv = PolarVector(0.5, 20);
+          let pv = PolarVector(0.5rad, 20);
           log(pv.angle);
           log(pv.distance);
           M 0 0
@@ -4577,25 +4577,25 @@ log(p.color.hex);`);
       });
 
       it('displays correctly in log()', () => {
-        const result = compile('let pv = PolarVector(0.5, 20); log(pv);');
+        const result = compile('let pv = PolarVector(0.5rad, 20); log(pv);');
         expect(result.logs[0].parts[0].value).toBe('PolarVector(0.5, 20)');
       });
 
       it('rejects wrong number of arguments', () => {
-        expect(() => compilePath('let pv = PolarVector(1);')).toThrow(/expects 2 arguments/);
-        expect(() => compilePath('let pv = PolarVector(1, 2, 3);')).toThrow(/expects 2 arguments/);
+        expect(() => compilePath('let pv = PolarVector(1rad);')).toThrow(/expects 2 arguments/);
+        expect(() => compilePath('let pv = PolarVector(1rad, 2, 3);')).toThrow(/expects 2 arguments/);
       });
 
       it('rejects non-numeric arguments', () => {
         expect(() => compilePath('let pv = PolarVector("a", 1);')).toThrow(/angle must be a number/);
-        expect(() => compilePath('let pv = PolarVector(1, "b");')).toThrow(/distance must be a number/);
+        expect(() => compilePath('let pv = PolarVector(1rad, "b");')).toThrow(/distance must be a number/);
       });
     });
 
     describe('property access', () => {
       it('.angle returns the angle', () => {
         const result = compilePath(`
-          let pv = PolarVector(1.5, 20);
+          let pv = PolarVector(1.5rad, 20);
           M pv.angle 0
         `);
         expect(result).toBe('M 1.5 0');
@@ -4617,8 +4617,8 @@ log(p.color.hex);`);
     describe('.turn()', () => {
       it('rotates angle by delta, preserving distance', () => {
         const result = compilePath(`
-          let pv = PolarVector(1, 20);
-          let turned = pv.turn(0.5);
+          let pv = PolarVector(1rad, 20);
+          let turned = pv.turn(0.5rad);
           M turned.angle turned.distance
         `);
         expect(result).toBe('M 1.5 20');
@@ -4626,8 +4626,8 @@ log(p.color.hex);`);
 
       it('supports negative delta', () => {
         const result = compilePath(`
-          let pv = PolarVector(1, 10);
-          let turned = pv.turn(-0.5);
+          let pv = PolarVector(1rad, 10);
+          let turned = pv.turn(-0.5rad);
           M turned.angle turned.distance
         `);
         expect(result).toBe('M 0.5 10');
@@ -4637,7 +4637,7 @@ log(p.color.hex);`);
     describe('.scale()', () => {
       it('multiplies distance by factor, preserving angle', () => {
         const result = compilePath(`
-          let pv = PolarVector(2, 10);
+          let pv = PolarVector(2rad, 10);
           let scaled = pv.scale(3);
           M scaled.angle scaled.distance
         `);
@@ -4646,7 +4646,7 @@ log(p.color.hex);`);
 
       it('supports fractional factor', () => {
         const result = compilePath(`
-          let pv = PolarVector(1, 20);
+          let pv = PolarVector(1rad, 20);
           let scaled = pv.scale(0.5);
           M scaled.angle scaled.distance
         `);
@@ -4672,7 +4672,7 @@ log(p.color.hex);`);
       it('angle is offset by PI', () => {
         // angle=0.5, mirror → 0.5 + PI ≈ 3.641592653589793
         const result = compilePath(`
-          let pv = PolarVector(0.5, 10);
+          let pv = PolarVector(0.5rad, 10);
           let m = pv.mirror();
           let val = calc(round(m.angle * 1000) / 1000);
           M val 0
@@ -4686,7 +4686,7 @@ log(p.color.hex);`);
       it('turn then scale', () => {
         const result = compilePath(`
           let pv = PolarVector(0, 10);
-          let r = pv.turn(1).scale(2);
+          let r = pv.turn(1rad).scale(2);
           M r.angle r.distance
         `);
         expect(result).toBe('M 1 20');
@@ -4695,7 +4695,7 @@ log(p.color.hex);`);
       it('mirror then turn', () => {
         const result = compilePath(`
           let pv = PolarVector(0, 15);
-          let r = pv.mirror().turn(0.5);
+          let r = pv.mirror().turn(0.5rad);
           M r.distance 0
         `);
         // distance preserved through mirror and turn
@@ -5500,7 +5500,7 @@ describe('first-class Angle values', () => {
     it('cubicSpline point angle: fields accept Angle values', () => {
       const viaAngle = compilePath('M 0 0 cubicSpline([{x: 50, y: 20, angle: 30deg}, {x: 100, y: 0, angle: -20deg}]);');
       const viaNumber = compilePath(
-        `M 0 0 cubicSpline([{x: 50, y: 20, angle: ${(30 * Math.PI) / 180}}, {x: 100, y: 0, angle: ${(-20 * Math.PI) / 180}}]);`,
+        `M 0 0 cubicSpline([{x: 50, y: 20, angle: ${(30 * Math.PI) / 180}rad}, {x: 100, y: 0, angle: ${(-20 * Math.PI) / 180}rad}]);`,
       );
       expect(viaAngle).toBe(viaNumber);
     });
@@ -5538,10 +5538,24 @@ describe('first-class Angle values', () => {
       expect(result.logs[0].parts[0].value).toBe('0.25pi');
     });
 
-    it.each(Object.keys(ANGLE_PRESERVING_ARGS))('%s: plain numbers in → plain number out', (name) => {
+    // normalizeAngle is the one name in BOTH registries: it passes an angle
+    // through like the others, but its argument IS an angle, so ANGLE_PARAMS
+    // requires a unit on a literal and a bare number no longer compiles. Every
+    // other entry (abs/min/max/lerp/clamp/map/randomRange/hashRange) is
+    // value-space polymorphic rather than angle-specific.
+    const PLAIN_IN_PLAIN_OUT = Object.keys(ANGLE_PRESERVING_ARGS).filter((name) => name !== 'normalizeAngle');
+
+    it.each(PLAIN_IN_PLAIN_OUT)('%s: plain numbers in → plain number out', (name) => {
       const call = buildCall(name, String(Math.PI / 4));
       const result = compile(`let r = ${call};\nlog(\`\${r}\`);`);
       expect(result.logs[0].parts[0].value).not.toMatch(/deg|rad|pi|turns/);
+    });
+
+    it('normalizeAngle rejects a bare literal instead, because its argument is an angle', () => {
+      expect(() => compile('let r = normalizeAngle(7);\nM 0 0')).toThrow(/normalizeAngle\(\) takes an angle/);
+      // and with a unit it behaves like the rest of the family
+      const result = compile('let r = normalizeAngle(0.25pi);\nlog(`${r}`);');
+      expect(result.logs[0].parts[0].value).toBe('0.25pi');
     });
 
     it('non-transparent math functions still return plain numbers for angle args', () => {

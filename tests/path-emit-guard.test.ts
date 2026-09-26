@@ -119,7 +119,7 @@ for ([pair, index] in ${slices}) {
     });
 
     // Found in code review: a MISSING argument is not in the argument list, so
-    // the null check cannot see it, and `polarLine(0.5)` still wrote `L NaN NaN`.
+    // the null check cannot see it, and `polarLine(0.5rad)` still wrote `L NaN NaN`.
     // These are cases of one switch — there is no arity to read — so the guard
     // inspects what was produced. The matrix asserts the contract itself rather
     // than a per-function expectation: with too few arguments a call either
@@ -166,13 +166,13 @@ for ([pair, index] in ${slices}) {
       }
 
       it('names the function and how many arguments it received', () => {
-        expect(() => compile('M 0 0 polarLine(0.5);')).toThrow(
+        expect(() => compile('M 0 0 polarLine(0.5rad);')).toThrow(
           /Line 1, col \d+: polarLine\(\) produced a non-numeric coordinate \(NaN\).*it received 1 argument\)/,
         );
       });
 
       it('catches coordinates handed back to the program, not only emitted path text', () => {
-        expect(() => compile('M 0 0 let tip = polarPoint(0.5); L tip.x tip.y')).toThrow(
+        expect(() => compile('M 0 0 let tip = polarPoint(0.5rad); L tip.x tip.y')).toThrow(
           /polarPoint\(\) produced a non-numeric x \(NaN\).*it received 1 argument\)/,
         );
       });

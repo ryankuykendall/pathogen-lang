@@ -37,7 +37,7 @@ const CASES: StructCase[] = [
   },
   {
     name: 'PolarVector',
-    setup: 'let v = PolarVector(0.5, 100);',
+    setup: 'let v = PolarVector(0.5rad, 100);',
     probe: { type: 'PolarVectorValue', angle: 0.5, distance: 100 } as Value,
     numericKeys: ['angle', 'distance'],
   },

@@ -50,7 +50,7 @@ const CANONICAL: Record<string, string> = {
   MotionBlurFilter: `let f = MotionBlurFilter() {|m| m.distance = 4; };\nM 0 0`,
   // Value constructors
   Point: `let p = Point(1, 2);\nM calc(p.x) calc(p.y)`,
-  PolarVector: `let v = PolarVector(0.5, 10);\nM 0 0`,
+  PolarVector: `let v = PolarVector(0.5rad, 10);\nM 0 0`,
   Cycler: `let c = Cycler([1, 2, 3]);\nM calc(c.pick()) 0`,
   CSSVar: `let v = CSSVar('--reg-var', 4);\nM 0 0`,
   Grid: `let g = Grid(2, 2);\nM 0 0`,

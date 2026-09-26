@@ -85,8 +85,10 @@ export function assignGradientProperty(
     // Conic-specific properties
     case 'from':
     case 'to': {
-      // Enforce angle unit on literal numbers
-      if (valueExpr.type === 'NumberLiteral' && !valueExpr.unit) {
+      // Enforce angle unit on literal numbers. Zero is exempt — 0 is 0 in any
+      // unit, matching sanitize.ts and the language-wide rule in
+      // src/angle-params.ts.
+      if (valueExpr.type === 'NumberLiteral' && !valueExpr.unit && valueExpr.value !== 0) {
         fail(
           `ConicGradient '${property}' requires an angle unit. Use e.g. ${valueExpr.value}deg, ${((valueExpr.value * Math.PI) / 180).toFixed(2)}rad, or ${(valueExpr.value / 180).toFixed(2)}pi`,
         );

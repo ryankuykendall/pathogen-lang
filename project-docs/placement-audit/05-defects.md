@@ -3,8 +3,10 @@
 Nine bugs found while auditing. D1–D4, D6, D7 and ISSUE-015 are **reproduced** by
 `probes/run-defects.sh`; D8 was probed by hand (see `02`, text surface); **D5 and D9 are
 source reads** and are labelled as such. Four are user-visible
-breakage rather than design debt. None is fixed here; these are drafted to become
-`known-issues.md` entries.
+breakage rather than design debt.
+
+**Status:** D1, D2 (mitigated), D3, D4, D7 and ISSUE-015 are fixed — each entry says so and
+when. D6 was investigated and deliberately left alone. D5, D8 and D9 are still open.
 
 Severity is "how likely is a user to hit this, and how hard is it to diagnose when they do".
 
@@ -178,14 +180,38 @@ Recorded at the call site in `src/evaluator/index.ts` so the next reader does no
 
 ---
 
-## D7 — A bare number means radians in three unrelated places · **Medium**
+## D7 — A bare number means radians · **Medium** · **FIXED 2026-09-26**
 
-`#{ rotate: 45; }` on a layer is **45 radians** (≈2578°), because style-block evaluation
-converts an `AngleValue` to radians first and `extractConvenienceTransform` then multiplies
-by 180/π. Same footgun in `Marker.orient = 45` and in `text(x, y, 45)`. Each converts at a
-different boundary. Only the `45deg` spelling is correct in all three.
+`#{ rotate: 45; }` on a layer is **45 radians** (≈2578°), and the same footgun sat in
+`Marker.orient = 45` and `text(x, y, 45)`.
 
-**Fix:** reject a bare number where an angle is expected, or define the unit once.
+**Two corrections to this entry, both found while fixing it.**
+
+*It was not three places — it was about fifty.* Nine context-aware functions, nine stdlib
+functions, five methods duplicated across both the PathBlock and ProjectedPath switches,
+eight text entry points, four Color methods and nine property assignments.
+
+*And they were not converting at different boundaries.* The convention is uniformly radians
+and deliberately so, documented at `docs/markers.md:140` and named in the titles of
+`tests/layers.test.ts:448`, `:2506` and `tests/markers.test.ts:150`. Measured: `rotate(45)`
+and `rotate(45deg)` differ, so `sq.rotate(45)` is radians too. D7 was never an
+inconsistency; it was a convention that is easy to type wrong.
+
+**Fixed** by requiring an explicit unit on a *literal* in a radians position, declared once in
+`src/angle-params.ts` and locked by the behavioural matrix in `tests/angle-params.test.ts`.
+Two deliberate limits, both in `docs/syntax.md`: the rule is static, so `let spin = 45;
+sq.rotate(spin)` still means radians; and degrees positions (the OKLCH hue family, the SVG
+arc rotation) are exempt because a bare number there already means what it says. Requiring
+units there would have churned 349 sites across 29 samples rather than 26 across 6.
+
+Two defects surfaced while cataloguing, each fixed first:
+
+- **the SVG arc rotation slot is degrees**, so flattening an Angle to radians made `45deg`
+  mean 0.785° — writing the unit gave *less* rotation than omitting it, and the emitted text
+  disagreed with `ctx.heading` and `boundingBox()` until both code paths were fixed
+- **three rotation slots rejected an Angle outright** (`radialProject`, `Endpoint`
+  `ellipticalFillet`, the `with` clause), contradicting the documented promise that an angle
+  flows anywhere
 
 ---
 

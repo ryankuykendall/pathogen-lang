@@ -39,10 +39,10 @@ let diamond = @{
 // --- Rotate each at increasing angles ---
 // vertex 0 is the top-left corner; rotating around it
 
-let r1 = big_rect.rotateAtVertexIndex(0, 0.2);
-let r2 = med_rect.rotateAtVertexIndex(0, 0.35);
-let r3 = sm_rect.rotateAtVertexIndex(0, 0.55);
-let r4 = diamond.rotateAtVertexIndex(0, 0.4);
+let r1 = big_rect.rotateAtVertexIndex(0, 0.2rad);
+let r2 = med_rect.rotateAtVertexIndex(0, 0.35rad);
+let r3 = sm_rect.rotateAtVertexIndex(0, 0.55rad);
+let r4 = diamond.rotateAtVertexIndex(0, 0.4rad);
 
 // --- Gradient ---
 
