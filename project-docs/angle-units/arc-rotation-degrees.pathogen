@@ -1,0 +1,24 @@
+// D7 prerequisite 1 — the SVG arc rotation slot is degrees, not radians.
+//
+// Before the fix, `45deg` was flattened to 0.785 and written into a slot the SVG
+// spec defines as DEGREES, so writing the unit produced LESS rotation than
+// omitting it: all three arcs below rendered as the same flat grey curve.
+define ViewBox(0, 0, 300, 300);
+
+define default PathLayer('flat') #{ stroke: #888; stroke-width: 2; fill: none; }
+let tilted = PathLayer('tilted') #{ stroke: oklch(0.6 0.2 25); stroke-width: 2; fill: none; };
+let quarter = PathLayer('quarter') #{ stroke: oklch(0.6 0.2 250); stroke-width: 2; fill: none; };
+
+// A wide, flat ellipse arc makes the rotation unmistakable.
+M 90 250;
+arc(60, 18, 0, 0, 1, 210, 250);
+
+tilted.apply {
+  M 90 250;
+  arc(60, 18, 45deg, 0, 1, 210, 250);
+}
+
+quarter.apply {
+  M 90 250;
+  arc(60, 18, 0.5pi, 0, 1, 210, 250);
+}

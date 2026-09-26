@@ -1,3 +1,5 @@
+import { radiansToDegreesSnapped } from './angle';
+
 import type { Expression } from '../parser/ast';
 
 /**
@@ -18,6 +20,27 @@ export function convertUnitSuffix(value: number, unit?: 'deg' | 'rad' | 'pi' | '
     return value / 100;
   }
   return value; // rad or no unit = radians (internal standard)
+}
+
+/**
+ * Convert an angle literal to DEGREES rather than to radians.
+ *
+ * The SVG `A`/`a` rotation slot is degrees by spec and pathogen writes it
+ * verbatim, making it the one angle position in the language that is not
+ * radians. `deg` is returned exactly rather than round-tripped through radians,
+ * so 30deg stays 30 instead of 29.999999999999996.
+ */
+export function convertUnitSuffixToDegrees(value: number, unit?: 'deg' | 'rad' | 'pi' | '%'): number {
+  if (unit === 'deg' || unit === undefined) {
+    return value; // a bare rotation is already degrees (SVG spec)
+  }
+  if (unit === 'pi') {
+    return value * 180;
+  }
+  if (unit === 'rad') {
+    return radiansToDegreesSnapped(value);
+  }
+  return convertUnitSuffix(value, unit);
 }
 
 /**

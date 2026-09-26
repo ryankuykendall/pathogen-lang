@@ -52,6 +52,19 @@ export function formatAngleForDisplay(a: AngleValue): string {
 }
 
 /**
+ * Stdlib argument slots whose consumer wants DEGREES, keyed by function name.
+ *
+ * Radians are the internal standard everywhere else, so this map is the whole
+ * exception list. `arc()` writes its rotation straight into the SVG `A` command
+ * (stdlib/path.ts), and that slot is degrees by spec — flattening an Angle
+ * there to radians turned `45deg` into 0.785 DEGREES, i.e. writing the unit
+ * produced less rotation than omitting it.
+ */
+const DEGREE_ARGS: Readonly<Record<string, readonly number[]>> = {
+  arc: [2], // A rx ry ROTATION large-arc sweep x y
+};
+
+/**
  * Invoke a plain stdlib function (a bare (…numbers) => value), unwrapping
  * AngleValue arguments to radians as the stdlib contract requires, then
  * re-wrapping the numeric result as an AngleValue when the function is
@@ -77,7 +90,10 @@ export function callStdlibPreservingAngles(
     }
     rawArgs = [value, rawArgs[1]];
   }
-  const args = rawArgs.map((v) => (isAngleValue(v) ? v.radians : v));
+  const degreeArgs = DEGREE_ARGS[name];
+  const args = rawArgs.map((v, i) =>
+    isAngleValue(v) ? (degreeArgs?.includes(i) ? radiansToDegreesSnapped(v.radians) : v.radians) : v,
+  );
   const result = fn(...(args as number[]));
   if (typeof result !== 'number') return result;
   const relevant = ANGLE_PRESERVING_ARGS[name];

@@ -573,6 +573,23 @@ M 50 100
 arc(50, 50, 0, 1, 1, 150, 100)
 ```
 
+**`rotation` is in degrees, not radians.** This is the one angle in the language
+that is not radians, because `arc()` writes the value straight into the SVG `A`
+command and [the SVG spec defines that slot as
+degrees](https://www.w3.org/TR/SVG2/paths.html#PathDataEllipticalArcCommands). A
+bare number is therefore already degrees, and an angle with a unit converts to
+degrees rather than to radians:
+
+```
+arc(60, 20, 45, 0, 1, 80, 0)      // 45 degrees
+arc(60, 20, 45deg, 0, 1, 80, 0)   // the same 45 degrees
+arc(60, 20, 0.25pi, 0, 1, 80, 0)  // also 45 degrees
+```
+
+The same applies to a raw `A` or `a` command — `A 10 10 45deg 0 1 20 20` emits a
+rotation of `45`. Every *other* angle in the standard library is radians; see
+[Angle Units](syntax.md#angle-units).
+
 ### quadratic(x1, y1, cx, cy, x2, y2)
 
 Draws a quadratic bezier curve from (x1, y1) to (x2, y2) with control point (cx, cy).
