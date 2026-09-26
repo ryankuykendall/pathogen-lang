@@ -4285,8 +4285,8 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
           throw mError(`${expr.method}() expects ${min === max ? min : `${min}-${max}`} argument${max > 1 ? 's' : ''}`);
         }
         const nums = expr.args.map((a, i) => {
-          const v = evaluateExpression(a, scope);
-          if (typeof v !== 'number' || !Number.isFinite(v)) throw mError(`${expr.method}() argument ${i + 1} must be a finite number`);
+          const v = cornerOpArg(evaluateExpression(a, scope), expr.method, i);
+          if (v === undefined) throw mError(`${expr.method}() argument ${i + 1} must be a finite number`);
           return v;
         });
         const src = handle.source.value as PathBlockValue;
@@ -4351,11 +4351,12 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
         }
         const rpCx = evaluateExpression(expr.args[0], scope);
         const rpCy = evaluateExpression(expr.args[1], scope);
-        const rpAngle = evaluateExpression(expr.args[2], scope);
+        const rpAngleArg = evaluateExpression(expr.args[2], scope);
         const rpDist = evaluateExpression(expr.args[3], scope);
         if (typeof rpCx !== 'number') throw mError('radialProject() cx must be a number');
         if (typeof rpCy !== 'number') throw mError('radialProject() cy must be a number');
-        if (typeof rpAngle !== 'number') throw mError('radialProject() angle must be a number');
+        const rpAngle = rotationRadians(rpAngleArg);
+        if (rpAngle === undefined) throw mError('radialProject() angle must be a number');
         if (typeof rpDist !== 'number') throw mError('radialProject() distance must be a number');
 
         // Optional anchor: 'start' (default) or 'end'
@@ -8448,6 +8449,33 @@ function pathArgToNumber(value: Value, degreesSlot: boolean): number | undefined
 }
 
 /**
+ * A rotation argument: a finite number of radians, or an Angle.
+ *
+ * Deliberately NOT toNumber, which also unwraps a BooleanValue — `true` is not
+ * a rotation. Returns undefined for anything else so each caller can raise its
+ * own worded error.
+ */
+function rotationRadians(v: Value): number | undefined {
+  const n = isAngleValue(v) ? v.radians : v;
+  return typeof n === 'number' && Number.isFinite(n) ? n : undefined;
+}
+
+/**
+ * The rotation slot of a corner operation. Only `ellipticalFillet`'s third
+ * argument is an angle; a fillet radius and the rx/ry pair are lengths, and an
+ * Angle there stays an error.
+ */
+function isCornerOpRotation(kind: string, index: number): boolean {
+  return kind === 'ellipticalFillet' && index === 2;
+}
+
+/** A corner-operation argument: the rotation slot takes an Angle, lengths do not. */
+function cornerOpArg(v: Value, kind: string, index: number): number | undefined {
+  if (isCornerOpRotation(kind, index)) return rotationRadians(v);
+  return typeof v === 'number' && Number.isFinite(v) ? v : undefined;
+}
+
+/**
  * The `A`/`a` rotation slot, allowing for repeated argument sets in one command.
  *
  * Indexing args naively is safe because the only way one `cmd.args` entry can
@@ -9419,8 +9447,8 @@ function evaluatePathAnnotations(
       );
     }
     const values = args.map((a, i) => {
-      const v = evaluateExpression(a, scope);
-      if (typeof v !== 'number' || !Number.isFinite(v)) {
+      const v = cornerOpArg(evaluateExpression(a, scope), kind, i);
+      if (v === undefined) {
         throw new Error(formatError(`${kind}() argument ${i + 1} must be a finite number`, line));
       }
       return v;

@@ -137,3 +137,83 @@ describe('ellipticalFillet rotation stays radians', () => {
     expect(deg).toBe(rad);
   });
 });
+
+/**
+ * Rotation arguments that demanded a plain number.
+ *
+ * `docs/syntax.md` promises "an angle is an angle wherever it flows", but three
+ * rotation slots guarded with `typeof v !== 'number'` instead of coercing, so
+ * `45deg` was rejected outright. The neighbouring `polarProject` uses toNumber
+ * and always worked, which is what made the gap invisible.
+ *
+ * Only the ROTATION argument changes. rx, ry and a fillet radius are lengths,
+ * and an Angle there is still an error.
+ */
+describe('an Angle is accepted wherever a rotation is', () => {
+  /** Every text element's position across all layers. */
+  function textPositions(src: string): [number, number][] {
+    return compile(src).layers.flatMap((layer) =>
+      (layer.textElements ?? []).map((el): [number, number] => [el.x, el.y]),
+    );
+  }
+
+  const RADIAL = (angle: string) => `
+    define default PathLayer('p') #{ fill: none; }
+    let labels = TextLayer('labels') #{ font-size: 10; };
+    let tb = &{ text(0, 10)\`hi\` };
+    labels.apply { tb.radialProject(100, 100, ${angle}, 50).draw(); }
+    M 0 0;
+  `;
+
+  it('TextBlock.radialProject takes an Angle', () => {
+    expect(textPositions(RADIAL('45deg'))).toEqual(textPositions(RADIAL('0.7853981633974483')));
+  });
+
+  const ENDPOINT = (rotation: string) => `
+    @{ m 0 0 h 40 as endpoint('corner') v 40 }.vertex('corner').ellipticalFillet(8, 4, ${rotation}).draw();
+  `;
+
+  it('Endpoint.ellipticalFillet takes an Angle rotation', () => {
+    expect(compilePath(ENDPOINT('45deg'))).toBe(compilePath(ENDPOINT('0.7853981633974483')));
+  });
+
+  const WITH_CLAUSE = (rotation: string) => `M 0 0; h 40; v 40 with ellipticalFillet(8, 4, ${rotation}); h 40;`;
+
+  it('a with-clause ellipticalFillet takes an Angle rotation', () => {
+    expect(compilePath(WITH_CLAUSE('45deg'))).toBe(compilePath(WITH_CLAUSE('0.7853981633974483')));
+  });
+
+  it('reads the Angle as the same rotation the bare radians produce', () => {
+    // Pin the value rather than only the equivalence: 0.785 rad is 45 degrees,
+    // and ellipticalFillet converts to degrees when it emits the arc.
+    expect(compilePath(WITH_CLAUSE('45deg'))).toContain('a 8 4 45 ');
+  });
+
+  describe('lengths still reject an Angle', () => {
+    it('a fillet radius', () => {
+      expect(() => compilePath('M 0 0; h 40; v 40 with fillet(8deg);')).toThrow(
+        /fillet\(\) argument 1 must be a finite number/,
+      );
+    });
+
+    it('an ellipticalFillet rx', () => {
+      expect(() => compilePath(WITH_CLAUSE('0').replace('(8, 4,', '(8deg, 4,'))).toThrow(
+        /ellipticalFillet\(\) argument 1 must be a finite number/,
+      );
+    });
+
+    it('a radialProject distance', () => {
+      expect(() => compile(RADIAL('0').replace(', 50)', ', 50deg)'))).toThrow(
+        /radialProject\(\) distance must be a number/,
+      );
+    });
+  });
+
+  describe('a boolean is not a rotation', () => {
+    // toNumber unwraps a BooleanValue, so coercing with it would let `true`
+    // through as 1 radian. The rotation guards must not regress into that.
+    it('rejects a boolean where a rotation belongs', () => {
+      expect(() => compilePath(WITH_CLAUSE('true'))).toThrow(/ellipticalFillet\(\) argument 3 must be a finite number/);
+    });
+  });
+});
