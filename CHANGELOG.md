@@ -66,11 +66,26 @@ D7 of the placement audit, plus the two defects found while cataloguing it.
 
 - `docs/syntax.md` gains **Angle Literals Require a Unit**, stating the rule, the zero and degrees exemptions, the literal-versus-variable limit and the `calc(x * 1deg)` idiom. Its "one place radians are not the reading" claim is corrected to two.
 - `docs/stdlib.md`'s `arc()` entry now says the rotation is degrees, with the SVG spec citation that makes it so.
+- **Audited the features introduced by [Building a Radial Bar Chart](/blog/radial-bar-chart) against the published reference.** The post ends by pointing readers at the stdlib and TextBlock docs "for the full function signatures and parameter details"; three of its seven features were not there, and a fourth was described wrongly.
+
+  - **`radialWedge()` now has a reference entry** in `docs/stdlib.md` — the post's headline feature had no published signature at all. Covers the cursor-relative centre, the all-relative output, the angle convention and the way corner rounding clamps rather than self-intersects.
+  - **`polarX()` / `polarY()` now have entries.** Only a passing prose mention of `polarX` existed. The Trigonometry example was the exact `100 + cos(angle) * r` boilerplate they replace, so it now shows both spellings.
+  - **`VerticalAnchor` has its own section** in `docs/textblock.md`, beside `BBoxAnchor`, with the shift each value applies as a fraction of `font-size`.
+  - `normalizeAngle()` and ternary expressions were already documented; no change.
+
 - **`TextBlock.radialProject()` is documented.** It shipped with [Building a Radial Bar Chart](/blog/radial-bar-chart) but never reached `docs/textblock.md`, where its sibling `polarProject` has had a row all along. The new **Radial Projection** section covers all seven arguments, the auto-flip rule (strictly `cos(angle) < 0`, so `90deg` does not flip) and the `VerticalAnchor` shift table.
+
+### Fixed
+
+#### Documentation
+
+- **`docs/path-blocks.md` said circular fillets handle "Line-line junctions only. At curve junctions, the fillet is skipped."** Both clauses were wrong. `filletCommands` is tangent-based and imposes no command-type restriction — it rounds arc↔line and curve↔line corners alike, and skips only **tangent-collinear** junctions, where the edges already flow into one another. That last part is why rounding a shape built from quarter arcs often appears to do nothing. `docs/segment-labels.md` has described this correctly all along, so the two pages contradicted each other. Elliptical fillets *are* line-line only, and that entry no longer claims circular fillets match them.
 
 ### Development
 
 - **`radialProject` has behavioural tests.** It had none: position, rotation, the hemisphere flip and the four vertical-metric offsets were all unasserted, and each fails silently — a mis-flipped label still renders, just unreadable. `tests/textblock.test.ts` now pins each against a value derived from the documented contract, including the `90deg` flip boundary and a rotated case proving the vertical shift follows the radius rather than the page. Both were confirmed to fail against deliberately mutated implementations.
+
+- **Fillet junction eligibility is pinned.** Nothing asserted which junctions `fillet()` actually rounds, which is how the docs drifted. `tests/path-blocks.test.ts` now covers arc→line, line→arc, the tangent-collinear skip, and the contrast with `ellipticalFillet` (skipped, with a `corner-op` warning). Confirmed falsifiable by restricting the implementation to line-line junctions, which fails the two arc cases.
 
 ## [Unreleased] - 2026-09-25 (the receiver decides, for boolean ops and slices too)
 

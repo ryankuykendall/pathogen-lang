@@ -281,9 +281,8 @@ for (seam in placed.segmentAll('cut')) {
   SEAM_DRAW
 }`;
       const viaDraw = compile(base.replace('SEAM_DRAW', 'seam.draw();')).layers[0].data;
-      const viaAnchor = compile(
-        base.replace('SEAM_DRAW', 'seam.drawTo(seam.startPoint.x, seam.startPoint.y);'),
-      ).layers[0].data;
+      const viaAnchor = compile(base.replace('SEAM_DRAW', 'seam.drawTo(seam.startPoint.x, seam.startPoint.y);'))
+        .layers[0].data;
       expect(viaDraw).toBe(viaAnchor);
     });
 
@@ -300,20 +299,14 @@ let pieces = plate.cut(@{
   l 0 130
 });
 DRAW_FORM`;
-      const viaProjected = compile(
-        base.replace(
-          'DRAW_FORM',
-          'let placed = pieces[1].project(30, 40);\nplaced.draw();',
-        ),
-      ).layers[0].data;
-      const viaBlock = compile(
-        base.replace('DRAW_FORM', 'M 30 40\npieces[1].draw();'),
-      ).layers[0].data;
+      const viaProjected = compile(base.replace('DRAW_FORM', 'let placed = pieces[1].project(30, 40);\nplaced.draw();'))
+        .layers[0].data;
+      const viaBlock = compile(base.replace('DRAW_FORM', 'M 30 40\npieces[1].draw();')).layers[0].data;
       // Same geometry: the projected form anchors the first command
       // directly, the block form bridges from the cursor — normalize by
       // collapsing the leading "M x y m dx dy" into one absolute M.
       const collapse = (d: string) => {
-        const m = d.match(/^M (-?[\d.]+) (-?[\d.]+) m (-?[\d.]+) (-?[\d.]+) (.*)$/);
+        const m = /^M (-?[\d.]+) (-?[\d.]+) m (-?[\d.]+) (-?[\d.]+) (.*)$/.exec(d);
         if (!m) return d;
         return `M ${Number(m[1]) + Number(m[3])} ${Number(m[2]) + Number(m[4])} ${m[5]}`;
       };
@@ -352,10 +345,8 @@ log(out.endPoint.y);`);
     // review-caught regression class. Ground truth is the block form
     // (M x y + block.draw()), whose local-frame walk was always correct.
     const collapseLeadingMove = (d: string) => {
-      const m = d.match(/^M (-?[\d.]+) (-?[\d.]+) m (-?[\d.]+) (-?[\d.]+) (.*)$/);
-      const collapsed = m
-        ? `M ${Number(m[1]) + Number(m[3])} ${Number(m[2]) + Number(m[4])} ${m[5]}`
-        : d;
+      const m = /^M (-?[\d.]+) (-?[\d.]+) m (-?[\d.]+) (-?[\d.]+) (.*)$/.exec(d);
+      const collapsed = m ? `M ${Number(m[1]) + Number(m[3])} ${Number(m[2]) + Number(m[4])} ${m[5]}` : d;
       // Translated arithmetic rounds differently in the last ulp; compare
       // at 6 decimals.
       return collapsed.replace(/-?\d+\.\d+/g, (n) => Number(n).toFixed(6));
@@ -367,11 +358,9 @@ let a = @{ circle(0, 0, 30); };
 let b = @{ circle(35, 0, 30); };
 let merged = a.union(b);
 DRAW_FORM`;
-      const viaProjected = compile(
-        base.replace('DRAW_FORM', 'let placed = merged.project(150, 28);\nplaced.draw();'),
-      ).layers[0].data;
-      const viaBlock = compile(base.replace('DRAW_FORM', 'M 150 28\nmerged.draw();')).layers[0]
-        .data;
+      const viaProjected = compile(base.replace('DRAW_FORM', 'let placed = merged.project(150, 28);\nplaced.draw();'))
+        .layers[0].data;
+      const viaBlock = compile(base.replace('DRAW_FORM', 'M 150 28\nmerged.draw();')).layers[0].data;
       expect(collapseLeadingMove(viaProjected)).toBe(collapseLeadingMove(viaBlock));
     });
 
@@ -381,11 +370,9 @@ let big = @{ circle(0, 0, 40); };
 let small = @{ circle(0, 0, 15); };
 let donut = big.difference(small);
 DRAW_FORM`;
-      const viaProjected = compile(
-        base.replace('DRAW_FORM', 'let placed = donut.project(150, 28);\nplaced.draw();'),
-      ).layers[0].data;
-      const viaBlock = compile(base.replace('DRAW_FORM', 'M 150 28\ndonut.draw();')).layers[0]
-        .data;
+      const viaProjected = compile(base.replace('DRAW_FORM', 'let placed = donut.project(150, 28);\nplaced.draw();'))
+        .layers[0].data;
+      const viaBlock = compile(base.replace('DRAW_FORM', 'M 150 28\ndonut.draw();')).layers[0].data;
       expect(collapseLeadingMove(viaProjected)).toBe(collapseLeadingMove(viaBlock));
     });
 
@@ -403,11 +390,9 @@ for (piece in stamped) {
     DRAW_FORM
   }
 }`;
-      const viaProjected = compile(
-        base.replace('DRAW_FORM', 'let placed = piece.project(150, 28);\nplaced.draw();'),
-      ).layers[0].data;
-      const viaBlock = compile(base.replace('DRAW_FORM', 'M 150 28\npiece.draw();')).layers[0]
-        .data;
+      const viaProjected = compile(base.replace('DRAW_FORM', 'let placed = piece.project(150, 28);\nplaced.draw();'))
+        .layers[0].data;
+      const viaBlock = compile(base.replace('DRAW_FORM', 'M 150 28\npiece.draw();')).layers[0].data;
       expect(collapseLeadingMove(viaProjected)).toBe(collapseLeadingMove(viaBlock));
     });
 
@@ -422,11 +407,9 @@ let a = @{ circle(0, 0, 30); };
 let b = @{ circle(35, 0, 30); };
 let merged = a.union(b);
 DRAW_FORM`;
-      const viaDrawTo = compile(
-        base.replace('DRAW_FORM', 'let proj = merged.project(0, 0);\nproj.drawTo(150, 28);'),
-      ).layers[0].data;
-      const viaBlock = compile(base.replace('DRAW_FORM', 'M 150 28\nmerged.draw();')).layers[0]
-        .data;
+      const viaDrawTo = compile(base.replace('DRAW_FORM', 'let proj = merged.project(0, 0);\nproj.drawTo(150, 28);'))
+        .layers[0].data;
+      const viaBlock = compile(base.replace('DRAW_FORM', 'M 150 28\nmerged.draw();')).layers[0].data;
       expect(viaDrawTo.startsWith('M 150 28 ')).toBe(true); // ink AT the target
       // Strip the anchor M plus any residual leading-move run (drawTo
       // serializes the consumed leading m as `m 0 0`); the drawing
@@ -455,15 +438,13 @@ l 5 0`);
     });
 
     it('rejects arguments', () => {
-      expect(() =>
-        compile('let p = @{ h 10 }; let pr = p.project(0, 0); pr.draw(5);'),
-      ).toThrow(/0 arguments/);
+      expect(() => compile('let p = @{ h 10 }; let pr = p.project(0, 0); pr.draw(5);')).toThrow(/0 arguments/);
     });
 
     it('is rejected inside a path block, like drawTo', () => {
-      expect(() =>
-        compile('let p = @{ h 10 }; let pr = p.project(0, 0); let q = @{ pr.draw(); };'),
-      ).toThrow(/inside a path block/);
+      expect(() => compile('let p = @{ h 10 }; let pr = p.project(0, 0); let q = @{ pr.draw(); };')).toThrow(
+        /inside a path block/,
+      );
     });
   });
 
@@ -550,7 +531,9 @@ l 5 0`);
     });
 
     it('cannot be called inside a path block', () => {
-      expect(() => compilePath('let p = @{ h 10 }; let q = @{ p.drawTo(0, 0); };')).toThrow(/Cannot call.*inside a path block/);
+      expect(() => compilePath('let p = @{ h 10 }; let q = @{ p.drawTo(0, 0); };')).toThrow(
+        /Cannot call.*inside a path block/,
+      );
     });
 
     it('works with closed paths', () => {
@@ -1977,7 +1960,7 @@ M 0 0`);
         `);
         // The ellipse's x-axis rotation gains 90 degrees.
         const parsed = parseSVGPath(result);
-        const arc = parsed.find(c => c.command.toLowerCase() === 'a')!;
+        const arc = parsed.find((c) => c.command.toLowerCase() === 'a')!;
         expect(arc.args[2]).toBeCloseTo(90, 5);
       });
 
@@ -2581,18 +2564,18 @@ M 0 0`);
   });
 
   describe('subPath', () => {
-  it('keeps the move between runs when a slice spans two subpaths', () => {
-    // 0.2 sits on the square's right edge, 0.7 on the curve: the z, the move to
-    // the curve, and the curve's head must all survive — not a line across the gap.
-    const src =
-      'let shape = @{\n  h 40;\n  v 54;\n  h -40;\n  z;\n  m 56 54;\n  c 14 -80 34 50 62 -50;\n};\nlet piece = shape.project(0, 0).subPath(0.2, 0.7);\nlog(piece.d);';
-    const d = String(compile(src).logs[0].parts[0].value);
-    // The z would close to the slice's own start, so it becomes the run's real
-    // closing line. The slice keeps the receiver's page coordinates, so the `d`
-    // is absolute — what matters here is that the move between the two runs
-    // survives rather than collapsing into a line across the gap.
-    expect(d).toMatch(/^M 40 [\d.]+ L 40 54 H 0 L 0 0 M 56 54 C /);
-  });
+    it('keeps the move between runs when a slice spans two subpaths', () => {
+      // 0.2 sits on the square's right edge, 0.7 on the curve: the z, the move to
+      // the curve, and the curve's head must all survive — not a line across the gap.
+      const src =
+        'let shape = @{\n  h 40;\n  v 54;\n  h -40;\n  z;\n  m 56 54;\n  c 14 -80 34 50 62 -50;\n};\nlet piece = shape.project(0, 0).subPath(0.2, 0.7);\nlog(piece.d);';
+      const d = String(compile(src).logs[0].parts[0].value);
+      // The z would close to the slice's own start, so it becomes the run's real
+      // closing line. The slice keeps the receiver's page coordinates, so the `d`
+      // is absolute — what matters here is that the move between the two runs
+      // survives rather than collapsing into a line across the gap.
+      expect(d).toMatch(/^M 40 [\d.]+ L 40 54 H 0 L 0 0 M 56 54 C /);
+    });
 
     it('subPath(0, 1) returns approximately the original path', () => {
       const result = compile(`
@@ -3114,12 +3097,14 @@ M 0 0`);
     });
 
     it('throws on out-of-range vertex index', () => {
-      expect(() => compilePath(`
+      expect(() =>
+        compilePath(`
         let box = @{ h 60 v 40 h -60 z };
         let c = box.chamferAtVertex(10, 5);
         M 10 10
         c.draw();
-      `)).toThrow(/vertex index.*out of range/i);
+      `),
+      ).toThrow(/vertex index.*out of range/i);
     });
 
     it('clamps chamfer distance to edge length with warning', () => {
@@ -3172,6 +3157,58 @@ M 0 0`);
     });
   });
 
+  describe('fillet() junction eligibility', () => {
+    // docs/path-blocks.md used to say "Line-line junctions only. At curve
+    // junctions, the fillet is skipped." Both clauses were wrong: filletCommands
+    // is tangent-based and takes the angle between edges, whatever commands
+    // formed them. The only thing it skips is a tangent-collinear junction.
+    // Pinning both halves, because the docs now promise this.
+    const ARC_THEN_LINE = '@{ m 20 120 a 50 50 0 0 1 40 -20 l 50 30 }';
+    const LINE_THEN_ARC = '@{ m 20 120 l 40 0 a 50 50 0 0 1 40 -20 }';
+    /** A quarter arc exits along the axis, so the following line continues it. */
+    const TANGENT_JUNCTION = '@{ m 20 100 a 40 40 0 0 1 80 0 l 0 40 }';
+
+    function filleted(block: string, radius = 10): string {
+      const logs = compile(`let b = ${block};\nlog(\`\${b.fillet(${radius}).d}\`);\nM 0 0`).logs;
+      return String(logs[0].parts[0].value);
+    }
+
+    function plain(block: string): string {
+      const logs = compile(`let b = ${block};\nlog(\`\${b.d}\`);\nM 0 0`).logs;
+      return String(logs[0].parts[0].value);
+    }
+
+    it('rounds an arc -> line corner', () => {
+      const out = filleted(ARC_THEN_LINE);
+      expect(out).not.toBe(plain(ARC_THEN_LINE));
+      // The inserted fillet is an arc of the requested radius.
+      expect(out).toMatch(/a 10 10 /);
+    });
+
+    it('rounds a line -> arc corner', () => {
+      const out = filleted(LINE_THEN_ARC);
+      expect(out).not.toBe(plain(LINE_THEN_ARC));
+      expect(out).toMatch(/a 10 10 /);
+    });
+
+    it('leaves a tangent-collinear junction untouched', () => {
+      // Nothing to round: the arc already flows into the line. This is why
+      // rounding a shape built from quarter arcs often changes nothing.
+      expect(filleted(TANGENT_JUNCTION)).toBe(plain(TANGENT_JUNCTION));
+    });
+
+    it('ellipticalFillet, by contrast, skips a non-collinear arc junction', () => {
+      const result = compile(`let b = ${ARC_THEN_LINE};\nlog(\`\${b.ellipticalFillet(12, 6).d}\`);\nM 0 0`);
+      // A skipped corner op logs its own warning first, so take the entry that
+      // carries the path rather than assuming a position.
+      const emitted = result.logs
+        .map((entry) => String(entry.parts[0].value))
+        .filter((line) => !line.startsWith('[warn]'));
+      expect(emitted).toEqual([plain(ARC_THEN_LINE)]);
+      expect(result.warnings.map((w) => w.code)).toContain('corner-op');
+    });
+  });
+
   describe('fillet()', () => {
     it('fillets all vertices of a rectangle', () => {
       const result = compilePath(`
@@ -3217,12 +3254,14 @@ M 0 0`);
     });
 
     it('throws on out-of-range vertex index', () => {
-      expect(() => compilePath(`
+      expect(() =>
+        compilePath(`
         let box = @{ h 60 v 40 h -60 z };
         let f = box.filletAtVertex(10, 5);
         M 10 10
         f.draw()
-      `)).toThrow(/vertex index.*out of range/i);
+      `),
+      ).toThrow(/vertex index.*out of range/i);
     });
 
     it('works on ProjectedPathValue', () => {
@@ -3320,12 +3359,14 @@ M 0 0`);
     });
 
     it('throws on out-of-range vertex index', () => {
-      expect(() => compilePath(`
+      expect(() =>
+        compilePath(`
         let box = @{ h 60 v 40 h -60 z };
         let f = box.ellipticalFilletAtVertex(10, 12, 6);
         M 10 10
         f.draw()
-      `)).toThrow(/vertex index.*out of range/i);
+      `),
+      ).toThrow(/vertex index.*out of range/i);
     });
 
     it('works on ProjectedPathValue', () => {
@@ -3339,7 +3380,9 @@ M 0 0`);
     });
 
     it('requires at least 2 arguments', () => {
-      expect(() => compilePath('let p = @{ h 40 v 40 }; p.ellipticalFillet(12);')).toThrow(/ellipticalFillet\(\) expects/);
+      expect(() => compilePath('let p = @{ h 40 v 40 }; p.ellipticalFillet(12);')).toThrow(
+        /ellipticalFillet\(\) expects/,
+      );
     });
 
     describe('trim distance correctness', () => {
@@ -3350,7 +3393,11 @@ M 0 0`);
         let m;
         while ((m = re.exec(d)) !== null) {
           const cmd = m[1];
-          const args = m[2].trim().split(/[\s,]+/).filter(Boolean).map(Number);
+          const args = m[2]
+            .trim()
+            .split(/[\s,]+/)
+            .filter(Boolean)
+            .map(Number);
           segments.push({ cmd, args });
         }
         return segments;
@@ -3371,8 +3418,8 @@ M 0 0`);
         // For a 60-wide, 40-tall box with rx=15, ry=8:
         // Horizontal edges (length 60): trimmed by 15 from each end → 30 remaining
         // Vertical edges (length 40): trimmed by 8 from each end → 24 remaining
-        const lines = segs.filter(s => s.cmd === 'l');
-        const arcs = segs.filter(s => s.cmd === 'a');
+        const lines = segs.filter((s) => s.cmd === 'l');
+        const arcs = segs.filter((s) => s.cmd === 'a');
 
         expect(arcs.length).toBe(4);
         // All arcs should have rx=15, ry=8
@@ -3382,13 +3429,13 @@ M 0 0`);
         }
 
         // Horizontal lines: should have |dx|=30, dy=0
-        const horizontalLines = lines.filter(l => Math.abs(l.args[1]) < 0.001);
+        const horizontalLines = lines.filter((l) => Math.abs(l.args[1]) < 0.001);
         for (const hl of horizontalLines) {
           expect(Math.abs(hl.args[0])).toBeCloseTo(30, 3);
         }
 
         // Vertical lines: should have dx=0, |dy|=24
-        const verticalLines = lines.filter(l => Math.abs(l.args[0]) < 0.001);
+        const verticalLines = lines.filter((l) => Math.abs(l.args[0]) < 0.001);
         for (const vl of verticalLines) {
           expect(Math.abs(vl.args[1])).toBeCloseTo(24, 3);
         }
@@ -3432,17 +3479,25 @@ M 0 0`);
         const segs = parseSegments(result);
 
         // Walk the path and track position
-        let x = 0, y = 0;
-        let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+        let x = 0;
+        let y = 0;
+        let minX = Infinity;
+        let minY = Infinity;
+        let maxX = -Infinity;
+        let maxY = -Infinity;
         for (const seg of segs) {
           if (seg.cmd === 'M') {
-            x = seg.args[0]; y = seg.args[1];
+            x = seg.args[0];
+            y = seg.args[1];
           } else if (seg.cmd === 'm') {
-            x += seg.args[0]; y += seg.args[1];
+            x += seg.args[0];
+            y += seg.args[1];
           } else if (seg.cmd === 'l') {
-            x += seg.args[0]; y += seg.args[1];
+            x += seg.args[0];
+            y += seg.args[1];
           } else if (seg.cmd === 'a') {
-            x += seg.args[5]; y += seg.args[6];
+            x += seg.args[5];
+            y += seg.args[6];
           } else if (seg.cmd === 'z') {
             // back to start
           }
@@ -3553,17 +3608,21 @@ M 0 0`);
       });
 
       it('error: wrong argument count', () => {
-        expect(() => compile(`
+        expect(() =>
+          compile(`
           let a = @{ h 60 v 40 };
           log(a.intersects());
-        `)).toThrow(/intersects\(\) expects 1 argument/);
+        `),
+        ).toThrow(/intersects\(\) expects 1 argument/);
       });
 
       it('error: invalid argument type (string)', () => {
-        expect(() => compile(`
+        expect(() =>
+          compile(`
           let a = @{ h 60 v 40 };
           log(a.intersects("hello"));
-        `)).toThrow(/intersects\(\) argument must be/);
+        `),
+        ).toThrow(/intersects\(\) argument must be/);
       });
     });
 
@@ -3582,7 +3641,7 @@ M 0 0`);
           }
         `);
         expect(result.logs[0].parts[0].value).toBe('2');
-        const pts = result.logs.slice(1).map(l => ({
+        const pts = result.logs.slice(1).map((l) => ({
           x: Number(l.parts[0].value),
           y: Number(l.parts[1].value),
         }));
@@ -3609,7 +3668,7 @@ M 0 0`);
           }
         `);
         expect(result.logs[0].parts[0].value).toBe('2');
-        const pts = result.logs.slice(1).map(l => ({
+        const pts = result.logs.slice(1).map((l) => ({
           x: Number(l.parts[0].value),
           y: Number(l.parts[1].value),
         }));
@@ -3633,10 +3692,12 @@ M 0 0`);
       });
 
       it('error: wrong argument count', () => {
-        expect(() => compile(`
+        expect(() =>
+          compile(`
           let a = @{ h 60 v 40 };
           log(a.intersectionPoints());
-        `)).toThrow(/intersectionPoints\(\) expects 1 argument/);
+        `),
+        ).toThrow(/intersectionPoints\(\) expects 1 argument/);
       });
     });
   });
@@ -3659,7 +3720,7 @@ describe('truthful startPoint = first inked point (B2)', () => {
     const result = compile('let p = @{ v 20 h 30 }; log(p.startPoint);');
     expect(result.logs[0].parts[0].value).toBe('Point(0, 0)');
   });
-  it('.contours[i] reports each contour\'s in-block position (the reported bug)', () => {
+  it(".contours[i] reports each contour's in-block position (the reported bug)", () => {
     // Second contour starts at (20, 5) inside the block; its leading m
     // used to carry a STALE start and startPoint was hardcoded (0,0).
     const result = compile(`

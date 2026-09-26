@@ -126,6 +126,27 @@ BBoxAnchor.BottomLeft   BBoxAnchor.Bottom   BBoxAnchor.BottomRight
 
 Used with `.anchor()` and `.polarProject()`.
 
+## VerticalAnchor Enum
+
+The `VerticalAnchor` enum names which **vertical font metric** lands on a target
+point. A baseline sits below the visual middle of a line of text, so aligning by
+baseline makes a rotated label look like it has drifted off the thing it labels:
+
+```
+VerticalAnchor.Baseline     VerticalAnchor.Midline
+VerticalAnchor.CapHeight    VerticalAnchor.Descender
+```
+
+| Value | Shift, as a fraction of `font-size` | Lands on the point |
+|-------|-------------------------------------|--------------------|
+| `VerticalAnchor.Baseline` | 0 | the baseline (the default) |
+| `VerticalAnchor.Midline` | 0.35 | the x-height centre — the visual middle |
+| `VerticalAnchor.CapHeight` | 0.7 | the top of capitals |
+| `VerticalAnchor.Descender` | −0.2 | the bottom of descenders |
+
+Used with [`.radialProject()`](#text-block-radial-projection), which applies the
+shift perpendicular to the radial direction.
+
 ## Font Metrics
 
 TextBlock uses built-in character width tables for bounding box estimation:

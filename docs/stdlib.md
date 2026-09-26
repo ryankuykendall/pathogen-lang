@@ -17,13 +17,23 @@ All trigonometric functions use radians.
 | `acos(x)` | Arc cosine |
 | `atan(x)` | Arc tangent |
 | `atan2(y, x)` | Two-argument arc tangent |
+| `polarX(cx, angle, radius)` | `cx + cos(angle) * radius` — the x of a point on a circle |
+| `polarY(cy, angle, radius)` | `cy + sin(angle) * radius` — the y of a point on a circle |
 
 ```
 // Draw a point on a circle
-let angle = 0.5;
+let angle = 0.5rad;
 let r = 50;
 M calc(100 + cos(angle) * r) calc(100 + sin(angle) * r)
+
+// polarX / polarY say the same thing without the arithmetic
+M polarX(100, angle, r) polarY(100, angle, r)
 ```
+
+`polarX` and `polarY` take one axis each, so they suit path arguments, where a
+single coordinate is wanted in each slot. When you need the point as a value —
+to measure from, or to pass on — reach for [`polarPoint`](#stdlib-polar-movement)
+or [`PolarVector`](#stdlib-polarvector) instead.
 
 ### Angle Conversion
 
@@ -554,6 +564,43 @@ Draws a star shape.
 
 ```
 star(100, 100, 50, 25, 5)  // 5-pointed star
+```
+
+### radialWedge(innerRadius, outerRadius, fromAngle, toAngle, cornerRadius)
+
+Draws an **annular sector** — the ring segment that forms one bar of a radial
+chart, one slice of a donut, or one band of a gauge. It is bounded by two arcs
+(at `innerRadius` and `outerRadius`) and two radial edges (at `fromAngle` and
+`toAngle`), with all four junctions rounded by `cornerRadius`.
+
+The centre is **wherever the cursor is**, so position it with a move first:
+
+```
+M 100 100
+radialWedge(30, 70, -30deg, 30deg, 6)
+```
+
+The output is entirely relative (`m`, `a`, `l`, `z`) with no absolute `M`, so it
+composes inside a [path block](#path-blocks-path-blocks) and can be transformed
+like any other shape.
+
+`fromAngle` and `toAngle` are angles, measured the same way as
+[conic gradients](#gradients-conic-gradient) — 0 points right, and increasing
+angles sweep clockwise on screen. A `toAngle` below `fromAngle` sweeps the other
+way. Sweeps wider than a half turn set the large-arc flag automatically.
+
+**Corner rounding degrades gracefully.** `cornerRadius` is clamped to whatever
+the sector can accommodate, so a thin ring or a narrow wedge quietly rounds by
+less rather than self-intersecting. Pass `0` for sharp corners — as does a
+sector with no radial thickness, which has no corners to round.
+
+```
+// A three-bar radial chart
+for (i in 0..3) {
+  let from = calc(i * 40deg);
+  M 100 100
+  radialWedge(25, calc(40 + i * 15), from, calc(from + 30deg), 4)
+}
 ```
 
 ### line(x1, y1, x2, y2)

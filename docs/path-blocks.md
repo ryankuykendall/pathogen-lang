@@ -828,7 +828,13 @@ Chamfers work with all command types — lines, curves, and arcs. For curves, th
 
 Fillets round corners by replacing a vertex with a circular arc. The incoming and outgoing edges are trimmed, and an arc tangent to both edges is inserted.
 
-**Scope:** Line-line junctions only. At curve junctions, the fillet is skipped and a warning is logged.
+**Scope:** any junction with a definite direction on both sides — lines, arcs
+and curves alike. The rounding is tangent-based, so what decides eligibility is
+the angle between the edges, not the commands that formed them. The one case it
+skips is a **tangent-collinear** junction, where the edges already flow into one
+another and there is no corner to round: an arc meeting a line along its own
+tangent is left untouched, which is why rounding a shape built from quarter arcs
+often changes nothing.
 
 > **Name-based alternative:** instead of a numeric vertex index, you can label a vertex with `as endpoint('name')` and round it with `pb.vertex('name').fillet(radius)` — or attach the fillet where you draw the corner with `with fillet(radius)`. Labels don't break when commands are added earlier in the path. See [Segment Labels & Corner Suffixes](#segment-labels-segment-labels-corner-suffixes).
 
@@ -860,7 +866,9 @@ If the radius is too large for the available edge length, it is clamped and a wa
 
 Elliptical fillets replace a corner with an elliptical arc instead of a circular one, allowing for more expressive corner shapes.
 
-**Scope:** Line-line junctions only (same as circular fillets).
+**Scope:** line-line junctions only — *unlike* circular fillets, which also
+handle arcs and curves. At any other junction the elliptical fillet is skipped
+and a `corner-op` warning is logged.
 
 ### `ellipticalFillet(rx, ry)` → PathBlock / ProjectedPath
 
