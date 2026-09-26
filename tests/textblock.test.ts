@@ -644,6 +644,142 @@ describe('TextBlock', () => {
   });
 
   // ---------------------------------------------------------------------------
+  // .radialProject()
+  // ---------------------------------------------------------------------------
+  describe('.radialProject()', () => {
+    // radialProject does four things at once — position, rotate, flip on the
+    // left hemisphere, and align a font metric. Each is asserted against a
+    // value derived from the documented contract (docs/textblock.md → Radial
+    // Projection), never a number copied out of a run.
+    const CX = 100;
+    const CY = 100;
+    const DIST = 50;
+    const FONT_SIZE = 20;
+    /** Perpendicular shift as a fraction of font-size, per the docs table. */
+    const VSHIFT = { Midline: 0.35, CapHeight: 0.7, Descender: -0.2 };
+
+    interface Placed {
+      x: number;
+      y: number;
+      rotation?: number;
+      styles?: Record<string, unknown>;
+    }
+
+    /** The single text element produced by one radialProject call. */
+    function placed(args: string): Placed {
+      const result = compile(`
+        define ViewBox(0, 0, 400, 400);
+        define default PathLayer('p') #{ fill: none; }
+        let labels = TextLayer('labels') #{ font-size: ${FONT_SIZE}; };
+        let t = &{ text(0, 0)\`Hi\` } << #{ font-size: ${FONT_SIZE}; };
+        labels.apply { t.radialProject(${args}).draw(); }
+        M 0 0;
+      `);
+      const layer = result.layers.find((l) => l.name === 'labels') as { textElements?: Placed[] } | undefined;
+      const elements = layer?.textElements;
+      if (elements?.length !== 1) throw new Error('expected exactly one text element');
+      return elements[0];
+    }
+
+    describe('position and rotation', () => {
+      it('places the text on the polar point and rotates along the radius', () => {
+        const angle = Math.PI / 4;
+        const el = placed(`${CX}, ${CY}, 45deg, ${DIST}`);
+        expect(el.x).toBeCloseTo(CX + DIST * Math.cos(angle), 10);
+        expect(el.y).toBeCloseTo(CY + DIST * Math.sin(angle), 10);
+        expect(el.rotation).toBeCloseTo(angle, 10);
+      });
+
+      it('at angle 0 the label sits due right, unrotated', () => {
+        const el = placed(`${CX}, ${CY}, 0, ${DIST}`);
+        expect([el.x, el.y]).toEqual([CX + DIST, CY]);
+        expect(el.rotation).toBe(0);
+      });
+    });
+
+    describe('auto-flip on the left hemisphere', () => {
+      it('adds a half turn and swaps the anchor when cos(angle) < 0', () => {
+        const el = placed(`${CX}, ${CY}, 180deg, ${DIST}`);
+        // The position is unchanged by the flip — only the reading direction is.
+        expect(el.x).toBeCloseTo(CX - DIST, 10);
+        expect(el.y).toBeCloseTo(CY, 10);
+        expect(el.rotation).toBeCloseTo(Math.PI + Math.PI, 10);
+        expect(el.styles?.['text-anchor']).toBe('end');
+      });
+
+      it('does NOT flip at exactly 90deg, where cos is zero', () => {
+        // The boundary is strictly cos < 0, so a label straight down stays put.
+        // Floating-point cos(90deg) is ~6e-17, which must not read as negative.
+        const el = placed(`${CX}, ${CY}, 90deg, ${DIST}`);
+        expect(el.rotation).toBeCloseTo(Math.PI / 2, 10);
+        expect(el.styles?.['text-anchor']).toBe('start');
+      });
+
+      it('flips just past 90deg', () => {
+        const el = placed(`${CX}, ${CY}, 91deg, ${DIST}`);
+        expect(el.rotation).toBeCloseTo((91 * Math.PI) / 180 + Math.PI, 10);
+        expect(el.styles?.['text-anchor']).toBe('end');
+      });
+
+      it('autoFlip 0 keeps the raw rotation and the given anchor', () => {
+        const el = placed(`${CX}, ${CY}, 180deg, ${DIST}, 'start', 0`);
+        expect(el.rotation).toBeCloseTo(Math.PI, 10);
+        expect(el.styles?.['text-anchor']).toBe('start');
+      });
+
+      it("swaps an explicit 'end' anchor to 'start' when it flips", () => {
+        const el = placed(`${CX}, ${CY}, 180deg, ${DIST}, 'end'`);
+        expect(el.styles?.['text-anchor']).toBe('start');
+      });
+
+      it("an explicit 'end' anchor survives on the right hemisphere", () => {
+        const el = placed(`${CX}, ${CY}, 0, ${DIST}, 'end'`);
+        expect(el.styles?.['text-anchor']).toBe('end');
+      });
+    });
+
+    describe('verticalAlign shifts perpendicular to the radius', () => {
+      it('baseline is the default and shifts nothing', () => {
+        const bare = placed(`${CX}, ${CY}, 0, ${DIST}`);
+        const explicit = placed(`${CX}, ${CY}, 0, ${DIST}, 'start', 1, VerticalAnchor.Baseline`);
+        expect([explicit.x, explicit.y]).toEqual([bare.x, bare.y]);
+      });
+
+      it.each(Object.entries(VSHIFT))('%s shifts by its documented fraction of font-size', (name, fraction) => {
+        // At angle 0 the perpendicular is +y, so the baseline moves DOWN by the
+        // shift — putting the named metric on the target point.
+        const el = placed(`${CX}, ${CY}, 0, ${DIST}, 'start', 1, VerticalAnchor.${name}`);
+        expect(el.x).toBeCloseTo(CX + DIST, 10);
+        expect(el.y).toBeCloseTo(CY + FONT_SIZE * fraction, 10);
+      });
+
+      it('shifts along the perpendicular, not along y, once rotated', () => {
+        // At 90deg the perpendicular is -x, which is what proves the offset
+        // follows the radius rather than the page.
+        const el = placed(`${CX}, ${CY}, 90deg, ${DIST}, 'start', 1, VerticalAnchor.Midline`);
+        expect(el.x).toBeCloseTo(CX - FONT_SIZE * VSHIFT.Midline, 10);
+        expect(el.y).toBeCloseTo(CY + DIST, 10);
+      });
+    });
+
+    describe('errors', () => {
+      it('rejects too few arguments', () => {
+        expect(() => placed(`${CX}, ${CY}, 0`)).toThrow(/radialProject\(\) expects 4-7 arguments/);
+      });
+
+      it('rejects too many arguments', () => {
+        expect(() => placed(`${CX}, ${CY}, 0, ${DIST}, 'start', 1, VerticalAnchor.Midline, 9`)).toThrow(
+          /radialProject\(\) expects 4-7 arguments/,
+        );
+      });
+
+      it('rejects a non-numeric centre', () => {
+        expect(() => placed(`'x', ${CY}, 0, ${DIST}`)).toThrow(/radialProject\(\) cx must be a number/);
+      });
+    });
+  });
+
+  // ---------------------------------------------------------------------------
   // .intersects()
   // ---------------------------------------------------------------------------
   describe('.intersects()', () => {

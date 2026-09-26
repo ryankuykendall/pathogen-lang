@@ -70,6 +70,7 @@ Created by `.project()`, `.drawTo()`, `.polarProject()`, or `.translate()`. Cont
 | `.drawTo(x, y [, rotation])` | ProjectedTextValue | Emit to active TextLayer at position |
 | `.boundingBox()` | Object `{x, y, width, height}` | Estimated bounding box |
 | `.polarProject(px, py, angle, distance, anchor)` | ProjectedTextValue | Project along polar vector with anchor alignment |
+| `.radialProject(cx, cy, angle, distance [, anchor, autoFlip, verticalAlign])` | ProjectedTextValue | Place a label around a centre: position, rotate, flip and align in one call |
 | `.toPathBlock()` | PathBlockValue | Flatten glyph outlines into a single PathBlock (requires `@font`) |
 | `.toCodeSnippetBlock(name [, fontSize, padding])` | LayerReference | Generate a syntax-highlighted code snippet GroupLayer |
 
@@ -153,6 +154,53 @@ let placed = label.polarProject(100, 100, 45deg, 80, BBoxAnchor.Left);
 ```
 
 The anchor determines which point of the text's bounding box is placed at the target location. For example, `BBoxAnchor.Left` means the left-center of the text bbox lands on the polar target point.
+
+## Radial Projection
+
+`polarProject` positions text. `radialProject` positions **and orients** it — the four
+things a label around a dial, gauge or radial chart needs:
+
+```pathogen
+let label = &{ text(0, 0)`Strategy` } << #{ font-size: 11; };
+
+labels.apply {
+  label.radialProject(cx, cy, midAngle, labelR, 'start', 1, VerticalAnchor.Midline).draw();
+}
+```
+
+| Argument | Default | Meaning |
+|---|---|---|
+| `cx`, `cy` | — | the centre the label is arranged around |
+| `angle` | — | the radial direction (an angle; `90deg`, `0.5pi`, `1.5rad`) |
+| `distance` | — | how far from the centre |
+| `anchor` | `'start'` | `'start'` extends the text away from the centre, `'end'` inward |
+| `autoFlip` | `1` | flip on the left hemisphere so the text still reads left-to-right |
+| `verticalAlign` | `VerticalAnchor.Baseline` | which font metric lands on the target point |
+
+**Rotation.** The text is rotated by `angle`, so it lies along the radius.
+
+**Auto-flip.** On the left hemisphere — strictly `cos(angle) < 0`, so `90deg` does *not*
+flip — the rotation gains a half turn and the anchor swaps `start`↔`end`. The label
+therefore reads left-to-right on both sides while still growing away from the centre. Pass
+`0` to keep the raw rotation, which is what you want for text that should stay tangent to the
+circle regardless of side.
+
+**Vertical alignment.** A baseline sits below the visual middle of a line of text, so a
+rotated label drifts off its bar. `verticalAlign` shifts the target perpendicular to the
+radius by a fraction of `font-size`:
+
+| Value | Shift | Lands on the point |
+|---|---|---|
+| `VerticalAnchor.Baseline` | 0 | the baseline (default) |
+| `VerticalAnchor.Midline` | 0.35 × font-size | the x-height centre — the visual middle |
+| `VerticalAnchor.CapHeight` | 0.7 × font-size | the top of capitals |
+| `VerticalAnchor.Descender` | −0.2 × font-size | the bottom of descenders |
+
+The returned `ProjectedText` carries the rotation and an SVG `text-anchor` on every element,
+so `draw()` needs no further positioning. Unlike `polarProject`, the anchor is expressed as
+`text-anchor` rather than by moving the origin — `origin` is the target point itself.
+
+Worked through end to end in [Building a Radial Bar Chart](/blog/radial-bar-chart).
 
 ## Intersection Detection
 
