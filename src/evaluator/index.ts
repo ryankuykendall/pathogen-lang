@@ -343,6 +343,24 @@ import { spliceTemplateFragments } from '../css-value-utils';
 /** CSS properties that reference defs elements via url(#id) */
 const URL_REF_PROPERTIES = new Set(['mask', 'clip-path', 'filter', 'marker', 'marker-start', 'marker-mid', 'marker-end']);
 
+/**
+ * Store one evaluated style declaration. The `marker` shorthand is expanded
+ * into `marker-start` / `marker-mid` / `marker-end` here, at declaration time,
+ * so a later `marker-end:` still overrides it (CSS cascade order) — and so the
+ * SVG never carries a `marker` attribute: browsers honour `marker` only as a
+ * CSS property, never as a presentation attribute, so the shorthand rendered
+ * nothing in Chrome, Firefox and Safari (ISSUE-031).
+ */
+function storeStyleProperty(properties: Record<string, string>, name: string, value: string): void {
+  if (name === 'marker') {
+    properties['marker-start'] = value;
+    properties['marker-mid'] = value;
+    properties['marker-end'] = value;
+    return;
+  }
+  properties[name] = value;
+}
+
 export function isArrayValue(value: Value): value is ArrayValue {
   return typeof value === 'object' && value !== null && 'type' in value && value.type === 'ArrayValue';
 }
@@ -1645,7 +1663,7 @@ function evaluateStyleBlockLiteral(expr: StyleBlockLiteral, scope: Scope): Style
         // Bare color literal (#hex) — trusted (parser shape is restrictive).
         if (parseResult.value.type === 'ColorLiteral') {
           resolvedValue = parseResult.value.raw;
-          properties[prop.name] = resolvedValue;
+          storeStyleProperty(properties, prop.name, resolvedValue);
           continue;
         }
         // For the dash-pattern properties ONLY, a bare percent literal
@@ -1815,7 +1833,7 @@ function evaluateStyleBlockLiteral(expr: StyleBlockLiteral, scope: Scope): Style
         throw new Error(formatError((e as Error).message, eLine, eCol));
       }
     }
-    properties[prop.name] = resolvedValue;
+    storeStyleProperty(properties, prop.name, resolvedValue);
   }
   return { type: 'StyleBlockValue', properties };
 }
@@ -6990,6 +7008,14 @@ function evaluateMemberExpression(expr: MemberExpression, scope: Scope): Value {
     const kebabName = camelToKebab(expr.property);
     const value = obj.properties[kebabName] ?? obj.properties[expr.property];
     if (value === undefined) {
+      // The `marker` shorthand is stored as its three longhands (ISSUE-031);
+      // read it back the way CSS serializes a shorthand — only when they agree.
+      if (kebabName === 'marker') {
+        const start = obj.properties['marker-start'];
+        if (start !== undefined && obj.properties['marker-mid'] === start && obj.properties['marker-end'] === start) {
+          return start;
+        }
+      }
       throw new Error(`Property '${expr.property}' does not exist on style block`);
     }
     return value;

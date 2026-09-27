@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { buildSvgTree, toSvgString } from '../src/render';
 
 import { compile, compileWithContext } from '../src';
 
@@ -253,7 +254,9 @@ describe('Markers', () => {
       expect(layer!.styles['marker-end']).toBe('url(#arrowhead)');
     });
 
-    it('marker shorthand auto-wraps to url(#id)', () => {
+    it('marker shorthand expands to marker-start/mid/end, each auto-wrapped to url(#id) (ISSUE-031)', () => {
+      // Browsers honour `marker` only as a CSS property, never as a presentation
+      // attribute, so the shorthand must never reach the SVG as `marker="…"`.
       const result = compile(`
         let arrow = @{ m 0 0 l 10 5 l -10 5 z };
         let m = Marker('a', 10, 10) {|m| m.append(arrow); };
@@ -261,7 +264,60 @@ describe('Markers', () => {
         layer('line').apply { M 0 0 L 100 100 }
       `);
       const layer = result.layers.find((l) => l.name === 'line');
-      expect(layer!.styles['marker']).toBe('url(#a)');
+      expect(layer!.styles['marker']).toBeUndefined();
+      expect(layer!.styles['marker-start']).toBe('url(#a)');
+      expect(layer!.styles['marker-mid']).toBe('url(#a)');
+      expect(layer!.styles['marker-end']).toBe('url(#a)');
+      const svg = toSvgString(buildSvgTree(result));
+      expect(svg).toContain('marker-start="url(#a)" marker-mid="url(#a)" marker-end="url(#a)"');
+      expect(svg).not.toMatch(/ marker="/);
+    });
+
+    it('marker shorthand reads back from a style block when its three longhands agree', () => {
+      const logs = compile(`
+        let arrow = @{ m 0 0 l 10 5 l -10 5 z };
+        let a = Marker('a', 10, 10) {|m| m.append(arrow); };
+        let b = Marker('b', 10, 10) {|m| m.append(arrow); };
+        let same = #{ marker: a; };
+        log(same.marker);
+        log(same.markerEnd);
+      `).logs.map((l) => l.parts[0].value);
+      expect(logs).toEqual(['url(#a)', 'url(#a)']);
+      // once a longhand diverges there is no single shorthand value to report
+      expect(() =>
+        compile(`
+          let arrow = @{ m 0 0 l 10 5 l -10 5 z };
+          let a = Marker('a', 10, 10) {|m| m.append(arrow); };
+          let b = Marker('b', 10, 10) {|m| m.append(arrow); };
+          let mixed = #{ marker: a; marker-end: b; };
+          log(mixed.marker);
+        `),
+      ).toThrow(/Property 'marker' does not exist on style block/);
+    });
+
+    it('marker shorthand keeps CSS cascade order with the explicit properties', () => {
+      const styles = (block: string): Record<string, string> => {
+        const result = compile(`
+          let arrow = @{ m 0 0 l 10 5 l -10 5 z };
+          let a = Marker('a', 10, 10) {|m| m.append(arrow); };
+          let b = Marker('b', 10, 10) {|m| m.append(arrow); };
+          define PathLayer('line') #{ ${block} }
+          layer('line').apply { M 0 0 L 100 100 }
+        `);
+        return result.layers.find((l) => l.name === 'line')!.styles;
+      };
+      // a later marker-end overrides the shorthand's end only
+      expect(styles('marker: a; marker-end: b;')).toMatchObject({
+        'marker-start': 'url(#a)',
+        'marker-mid': 'url(#a)',
+        'marker-end': 'url(#b)',
+      });
+      // a later shorthand overrides all three
+      expect(styles('marker-end: b; marker: a;')).toMatchObject({
+        'marker-start': 'url(#a)',
+        'marker-mid': 'url(#a)',
+        'marker-end': 'url(#a)',
+      });
     });
 
     it('marker-start, marker-mid, marker-end all resolve correctly', () => {

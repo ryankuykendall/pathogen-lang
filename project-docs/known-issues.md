@@ -1107,6 +1107,46 @@ Author explicit `c`/`q` instead of `s`/`t` where exact dash positions matter.
 
 ---
 
+## ISSUE-031: The `marker` style shorthand rendered nothing in every browser
+
+**Discovered:** 2026-09-27 (drawing the V7 marker-space diagrams: a polyline styled `marker: dotMarker` showed no markers at all through the CLI's Chrome PNG path, while `marker-start/mid/end` showed them)
+
+**RESOLVED:** 2026-09-27 — the shorthand is expanded into `marker-start`, `marker-mid` and
+`marker-end` when the declaration is stored (`storeStyleProperty` in `src/evaluator/index.ts`),
+so the SVG never carries a `marker` attribute. Expansion at declaration time keeps CSS cascade
+order: a later `marker-end:` still overrides the shorthand's end. Pinned in
+`tests/markers.test.ts` (the three attributes are emitted, no `marker` attribute, and the
+cascade). No published sample used the shorthand; `docs/markers.md` had promised it since the
+feature shipped.
+
+**Description:**
+
+`#{ marker: dotMarker; }` was stored as the style property `marker` and serialized as the
+presentation attribute `marker="url(#dot)"`. Browsers honour `marker` only as a CSS property
+(`style="marker: url(#dot)"`); as an attribute it is ignored by Chrome, Firefox and Safari, so
+a layer styled with the shorthand rendered its path with no markers, silently. The explicit
+`marker-start` / `marker-mid` / `marker-end` attributes work.
+
+**Impact:**
+
+Anyone following `docs/markers.md`'s "the `marker` shorthand applies the same marker to all
+three positions" got no markers, in the playground, the CLI's SVG and the VS Code preview alike.
+
+**Current Workarounds:**
+
+Write the three properties out.
+
+**Potential Solutions:**
+
+1. Expand the shorthand at declaration time (chosen — cascade-correct, one site, no serializer change).
+2. Emit `style="marker: …"` for the shorthand (a second serialization path for one property).
+
+**Recommended Long-term Solution:**
+
+1, done.
+
+---
+
 ## Resolved entries (kept for the trail)
 
 ### ISSUE-023 (resolved 2026-09-19): A raw path argument accepted NaN and Infinity (`M NaN 0`)

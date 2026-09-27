@@ -20,6 +20,8 @@ truthful, and the two design items written up as a brief.
 
 - **`ProjectedText.polarProject()` keeps a cumulative `origin`** (ISSUE-028). Called on an already-projected value it stored only the shift it had just applied, discarding the prior origin; the text landed right, but a later `.drawTo(x, y)` — which subtracts `origin` — landed off by the discarded amount. `t.project(50, 100).polarProject(…).origin` now reports the same point as the unchained call. Pinned by an origin-invariant matrix over every ProjectedText producer.
 
+- **The `marker` style shorthand now renders** (ISSUE-031). `#{ marker: dotMarker; }` was written to the SVG as a `marker="url(#dot)"` attribute, which no browser honours (`marker` is a CSS property, not a presentation attribute), so a layer styled with the documented shorthand showed no markers at all. It is now expanded into `marker-start`, `marker-mid` and `marker-end` at declaration time, so a later `marker-end:` still overrides it. Found while drawing the V7 marker-space diagrams.
+
 - **`dash()` resolves a `%` against exactly the number `.length` reports** (ISSUE-029). The denominator was a second length function that measured a smooth `s` segment differently (0.02% on the measured receiver). The combined-total rule itself stays — one absolute dash length across all subpaths, like SVG, with the pattern restarting per subpath — and is now documented, with the per-contour recipe (`.contours`) and the note that a `%` in a *layer* style block is SVG's viewport-diagonal percentage.
 
 #### Documentation

@@ -1387,7 +1387,11 @@ describe('Multi-Layer Support', () => {
         layer('me').apply { M 0 0 }
       `);
       expect(result.layers.find((l) => l.name === 'f')!.styles.filter).toBe('url(#blur-filter)');
-      expect(result.layers.find((l) => l.name === 'mk')!.styles['marker']).toBe('url(#arrowhead)');
+      // the shorthand is stored as its three longhands (ISSUE-031)
+      expect(result.layers.find((l) => l.name === 'mk')!.styles['marker']).toBeUndefined();
+      expect(result.layers.find((l) => l.name === 'mk')!.styles['marker-start']).toBe('url(#arrowhead)');
+      expect(result.layers.find((l) => l.name === 'mk')!.styles['marker-mid']).toBe('url(#arrowhead)');
+      expect(result.layers.find((l) => l.name === 'mk')!.styles['marker-end']).toBe('url(#arrowhead)');
       expect(result.layers.find((l) => l.name === 'ms')!.styles['marker-start']).toBe('url(#arrow)');
       expect(result.layers.find((l) => l.name === 'mm')!.styles['marker-mid']).toBe('url(#dot)');
       expect(result.layers.find((l) => l.name === 'me')!.styles['marker-end']).toBe('url(#arrowhead)');
