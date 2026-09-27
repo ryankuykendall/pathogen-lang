@@ -1,0 +1,131 @@
+// V7 / marker space — concern 1.
+// A block centred on its own origin (circle(), .contours) appended to a Marker is read
+// in the marker's viewBox coordinates. The default viewBox is `0 0 markerWidth
+// markerHeight` — no negative quadrant — so three quarters of the shape are clipped.
+// Today nothing says so.
+define ViewBox(0, 0, 900, 460);
+
+let dot = @{
+  circle(0, 0, 5);
+};
+let bb = dot.boundingBox();
+
+// The marker exactly as an author writes it: defaults → viewBox 0 0 10 10, ref (5, 5).
+let dotMarker = Marker('dot', 10, 10) {|m|
+  m.append(dot, #{ fill: context-stroke; });
+};
+
+// ── Left panel: what renders ─────────────────────────────────────────────────
+define PathLayer('polyline') #{
+  stroke: #b23a48;
+  stroke-width: 4;
+  fill: none;
+  marker-start: dotMarker;
+  marker-mid: dotMarker;
+  marker-end: dotMarker;
+}
+layer('polyline').apply {
+  M 70 150;
+  L 170 100;
+  L 270 190;
+  L 380 120;
+}
+
+// ── Right panel: why, at 12× — the marker's viewBox against the block's box ─
+let scale = 12;
+let ox = 570;
+let oy = 120;
+let viewBoxSquare = @{
+  h 120;
+  v 120;
+  h -120;
+  z;
+};
+let visibleQuadrant = @{
+  h 60;
+  a 60 60 0 0 1 -60 60;
+  z;
+};
+let fullDot = dot.scale(scale, scale);
+
+define PathLayer('viewbox-frame') #{
+  stroke: #333;
+  stroke-width: 1.5;
+  fill: #fff7e0;
+}
+define PathLayer('clipped-outline') #{
+  stroke: #b23a48;
+  stroke-width: 1.5;
+  stroke-dasharray: 5 4;
+  fill: #b23a48;
+  fill-opacity: 0.12;
+}
+define PathLayer('visible-quadrant') #{
+  stroke: none;
+  fill: #b23a48;
+}
+define PathLayer('ref-cross') #{
+  stroke: #333;
+  stroke-width: 1.5;
+  fill: none;
+}
+
+layer('viewbox-frame').apply {
+  M ox oy;
+  viewBoxSquare.draw();
+}
+layer('clipped-outline').apply {
+  M ox oy;
+  fullDot.draw();
+}
+layer('visible-quadrant').apply {
+  M ox oy;
+  visibleQuadrant.draw();
+}
+layer('ref-cross').apply {
+  M calc(ox + 60 - 8) calc(oy + 60);
+  h 16;
+  M calc(ox + 60) calc(oy + 60 - 8);
+  v 16;
+}
+
+// ── Labels ───────────────────────────────────────────────────────────────────
+let spanX = `${bb.x}…${calc(bb.x + bb.width)}`;
+let spanY = `${bb.y}…${calc(bb.y + bb.height)}`;
+
+define TextLayer('titles') #{
+  font-family: sans-serif;
+  font-size: 18;
+  font-weight: bold;
+  fill: #222;
+}
+define TextLayer('labels') #{
+  font-family: sans-serif;
+  font-size: 13;
+  fill: #444;
+}
+define TextLayer('callout') #{
+  font-family: monospace;
+  font-size: 12;
+  fill: #7a1f2b;
+}
+
+layer('titles').apply {
+  text(40, 50)`What renders`;
+  text(500, 50)`Why — viewBox vs the block's box, at ${scale}×`;
+}
+layer('labels').apply {
+  text(40, 230)`circle(0, 0, 5) appended to Marker('dot', 10, 10)`;
+  text(40, 250)`Each vertex shows one quarter of the dot: the quadrant inside the viewBox.`;
+  text(calc(ox + 126), calc(oy + 12))`viewBox 0 0 10 10 (the default)`;
+  text(calc(ox + 126), calc(oy + 30))`only this area is drawn`;
+  text(calc(ox + 66), calc(oy + 76))`refX, refY = 5, 5`;
+  text(calc(ox - 60), calc(oy + 150))`the block's box: ${spanX} × ${spanY}`;
+  text(calc(ox - 60), calc(oy + 168))`three quadrants fall outside the viewBox`;
+}
+layer('callout').apply {
+  text(40, 320)`Proposed marker-space warning (V7, cheap half):`;
+  text(40, 340)`  "the appended block spans ${spanX} × ${spanY} but the marker's viewBox is 0 0 10 10`;
+  text(40, 358)`   — set viewBox or refX/refY, or translate the block"`;
+  text(40, 392)`The numbers above come from dot.boundingBox() — the check has all it needs today.`;
+}

@@ -113,6 +113,13 @@ path escape hatch, so nothing crosses it today.
 
 So V7 is, concretely, **the Marker edge**, in two halves.
 
+Diagrams (2026-09-27, `v7-marker-space/`, compiled as BBWPs): `01-clipped-quadrant` (the
+`circle()` case, with the marker's viewBox and the block's box drawn at 12× and the proposed
+warning text computed from `boundingBox()`), `02-projected-invisible` (the ProjectedPath case
+at page scale), `03-fit-by-hand` (the three assignments `Marker.fromPathBlock` would fold into
+one call, applied to both cases). Found while drawing them: the `marker:` shorthand emitted a
+`marker` attribute that no browser honours — ISSUE-031, fixed the same day.
+
 ### The cheap half — P4, a rejection that names both spaces
 
 `Marker.append(value)`:

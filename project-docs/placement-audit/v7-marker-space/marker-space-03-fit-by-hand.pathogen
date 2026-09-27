@@ -1,0 +1,143 @@
+// V7 / marker space — the design half, done by hand today.
+// The conversion a user wants is "make the marker fit this block": viewBox = the block's
+// bounding box, refX/refY = its centre. These three assignments are what the proposed
+// Marker.fromPathBlock(id, block) (or marker.fit(block)) would do in one call.
+define ViewBox(0, 0, 900, 460);
+
+let dot = @{
+  circle(0, 0, 5);
+};
+let bb = dot.boundingBox();
+let fittedViewBox = `${bb.x} ${bb.y} ${bb.width} ${bb.height}`;
+let refX = calc(bb.x + bb.width / 2);
+let refY = calc(bb.y + bb.height / 2);
+
+let dotMarker = Marker('dot-fitted', bb.width, bb.height) {|m|
+  m.append(dot, #{ fill: context-stroke; });
+};
+dotMarker.viewBox = fittedViewBox;      // ≡ Marker.fromPathBlock('dot-fitted', dot)
+dotMarker.refX = refX;
+dotMarker.refY = refY;
+
+// The projected case: come back to local coordinates first, then fit.
+let arrow = @{
+  m 0 0;
+  l 10 5;
+  l -10 5;
+  z;
+};
+let placedArrow = arrow.project(200, 150);
+let localArrow = placedArrow.toPathBlock();   // free-floating again
+let ab = localArrow.boundingBox();
+let arrowMarker = Marker('arrow-fitted', ab.width, ab.height) {|m|
+  m.append(localArrow, #{ fill: context-stroke; });
+};
+arrowMarker.viewBox = `${ab.x} ${ab.y} ${ab.width} ${ab.height}`;
+arrowMarker.refX = calc(ab.x + ab.width);     // the tip, not the centre — an anchor option
+arrowMarker.refY = calc(ab.y + ab.height / 2);
+
+// ── Left panel: what renders ─────────────────────────────────────────────────
+define PathLayer('polyline') #{
+  stroke: #2a7f62;
+  stroke-width: 4;
+  fill: none;
+  marker-start: dotMarker;
+  marker-mid: dotMarker;
+  marker-end: dotMarker;
+}
+define PathLayer('arrow-line') #{
+  stroke: #2a7f62;
+  stroke-width: 4;
+  fill: none;
+  marker-end: arrowMarker;
+}
+layer('polyline').apply {
+  M 70 120;
+  L 170 80;
+  L 270 160;
+  L 380 100;
+}
+layer('arrow-line').apply {
+  M 70 250;
+  L 380 250;
+}
+
+// ── Right panel: why, at 12× — the viewBox now IS the block's box ────────────
+let scale = 12;
+let ox = 560;
+let oy = 150;
+let fittedSquare = @{
+  m -60 -60;
+  h 120;
+  v 120;
+  h -120;
+  z;
+};
+let fullDot = dot.scale(scale, scale);
+
+define PathLayer('viewbox-frame') #{
+  stroke: #333;
+  stroke-width: 1.5;
+  fill: #eaf6f0;
+}
+define PathLayer('whole-dot') #{
+  stroke: none;
+  fill: #2a7f62;
+}
+define PathLayer('ref-cross') #{
+  stroke: #fff;
+  stroke-width: 1.5;
+  fill: none;
+}
+
+layer('viewbox-frame').apply {
+  M ox oy;
+  fittedSquare.draw();
+}
+layer('whole-dot').apply {
+  M ox oy;
+  fullDot.draw();
+}
+layer('ref-cross').apply {
+  M calc(ox - 8) oy;
+  h 16;
+  M ox calc(oy - 8);
+  v 16;
+}
+
+// ── Labels ───────────────────────────────────────────────────────────────────
+define TextLayer('titles') #{
+  font-family: sans-serif;
+  font-size: 18;
+  font-weight: bold;
+  fill: #222;
+}
+define TextLayer('labels') #{
+  font-family: sans-serif;
+  font-size: 13;
+  fill: #444;
+}
+define TextLayer('code') #{
+  font-family: monospace;
+  font-size: 12;
+  fill: #1f5c47;
+}
+
+layer('titles').apply {
+  text(40, 50)`What renders — fitted`;
+  text(500, 50)`Why — viewBox = the block's box, at ${scale}×`;
+}
+layer('labels').apply {
+  text(40, 195)`whole dots: the viewBox is the block's box, ref at its centre`;
+  text(40, 285)`the projected arrow, after toPathBlock() and the same fit`;
+  text(calc(ox + 68), calc(oy - 64))`viewBox ${fittedViewBox}`;
+  text(calc(ox + 68), calc(oy - 46))`refX, refY = ${refX}, ${refY}`;
+}
+layer('code').apply {
+  text(40, 322)`Done by hand today (three lines the proposal folds into one call):`;
+  text(40, 344)`  let bb = dot.boundingBox();`;
+  text(40, 362)`  dotMarker.viewBox = "${fittedViewBox}";   // \`${'$'}{bb.x} ${'$'}{bb.y} ${'$'}{bb.width} ${'$'}{bb.height}\``;
+  text(40, 380)`  dotMarker.refX = ${refX}; dotMarker.refY = ${refY};   // bb centre — or a BBoxAnchor`;
+  text(40, 412)`Proposed: Marker.fromPathBlock('dot', dot) — or marker.fit(dot) on an existing Marker.`;
+  text(40, 430)`Not proposed: fitting on every append, which would move every marker that relies on 0 0 w h.`;
+}

@@ -1,0 +1,121 @@
+// V7 / marker space — concern 2.
+// A ProjectedPath carries page coordinates. Appended to a Marker it keeps them, and the
+// marker's viewBox is `0 0 markerWidth markerHeight`, so the shape sits hundreds of
+// units outside the only area the marker can show. It renders nothing. No diagnostic.
+define ViewBox(0, 0, 900, 460);
+
+let arrow = @{
+  m 0 0;
+  l 10 5;
+  l -10 5;
+  z;
+};
+let placedArrow = arrow.project(200, 150);   // page coordinates: M 200 150 …
+
+let ghostMarker = Marker('ghost', 10, 10) {|m|
+  m.append(placedArrow, #{ fill: context-stroke; });
+};
+let arrowMarker = Marker('arrow', 10, 10) {|m|
+  m.append(arrow, #{ fill: context-stroke; });
+};
+arrowMarker.refX = 10;
+arrowMarker.refY = 5;
+
+// ── Left panel: what renders ─────────────────────────────────────────────────
+define PathLayer('ghost-line') #{
+  stroke: #2f6f8f;
+  stroke-width: 4;
+  fill: none;
+  marker-end: ghostMarker;
+}
+define PathLayer('arrow-line') #{
+  stroke: #2f6f8f;
+  stroke-width: 4;
+  fill: none;
+  marker-end: arrowMarker;
+}
+layer('ghost-line').apply {
+  M 60 120;
+  L 380 120;
+}
+layer('arrow-line').apply {
+  M 60 200;
+  L 380 200;
+}
+
+// ── Right panel: why, at page scale — the viewBox is 10 units, the data is 200 away
+let ox = 500;
+let oy = 110;
+let viewBoxSquare = @{
+  h 10;
+  v 10;
+  h -10;
+  z;
+};
+
+define PathLayer('viewbox-frame') #{
+  stroke: #333;
+  stroke-width: 1.5;
+  fill: #fff7e0;
+}
+define PathLayer('leader') #{
+  stroke: #999;
+  stroke-width: 1;
+  stroke-dasharray: 4 4;
+  fill: none;
+}
+define PathLayer('placed-arrow') #{
+  stroke: none;
+  fill: #2f6f8f;
+}
+
+layer('viewbox-frame').apply {
+  M ox oy;
+  viewBoxSquare.draw();
+}
+layer('leader').apply {
+  M calc(ox + 10) calc(oy + 10);
+  L calc(ox + 200) calc(oy + 150);
+}
+layer('placed-arrow').apply {
+  placedArrow.drawTo(calc(ox + 200), calc(oy + 150));
+}
+
+// ── Labels ───────────────────────────────────────────────────────────────────
+define TextLayer('titles') #{
+  font-family: sans-serif;
+  font-size: 18;
+  font-weight: bold;
+  fill: #222;
+}
+define TextLayer('labels') #{
+  font-family: sans-serif;
+  font-size: 13;
+  fill: #444;
+}
+define TextLayer('callout') #{
+  font-family: monospace;
+  font-size: 12;
+  fill: #1d4b63;
+}
+
+layer('titles').apply {
+  text(40, 50)`What renders`;
+  text(500, 50)`Why — at page scale (1 unit = 1 px)`;
+}
+layer('labels').apply {
+  text(40, 100)`marker-end: a ProjectedPath, arrow.project(200, 150)`;
+  text(40, 150)`nothing at the end of the line`;
+  text(40, 180)`marker-end: the same arrow as a PathBlock`;
+  text(40, 230)`renders`;
+  text(calc(ox + 18), calc(oy + 8))`viewBox 0 0 10 10 — all the marker can show`;
+  text(calc(ox + 18), calc(oy + 26))`(the marker's own space)`;
+  text(calc(ox - 20), calc(oy + 200))`inside the marker: ${placedArrow.d}`;
+  text(calc(ox - 20), calc(oy + 218))`page coordinates, 200 units from the viewBox`;
+}
+layer('callout').apply {
+  text(40, 320)`Proposed marker-space warning (V7, cheap half):`;
+  text(40, 340)`  "a ProjectedPath carries page coordinates; a Marker draws in its own viewBox`;
+  text(40, 358)`   (0 0 10 10) — append a PathBlock, or toPathBlock() and re-place it"`;
+  text(40, 392)`It cannot be right, so an error is defensible; a warning keeps existing markers compiling.`;
+}
