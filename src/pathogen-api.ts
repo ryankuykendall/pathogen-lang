@@ -1175,6 +1175,36 @@ export interface PathogenObject {
   has(key: string): boolean;
 }
 
+/** @type TextBlock */
+export interface PathogenTextBlock {
+  /** Number of text elements */
+  readonly elementCount: number;
+  /** Style block */
+  readonly styles: Value;
+  /** boundingBox() — Estimated bounding box of the composed text */
+  boundingBox(): PathogenBoundingBox;
+  /** project(x, y) — Offset every element to absolute coordinates */
+  project(x: number, y: number): PathogenProjectedText;
+  /** polarProject(px, py, angle, distance, anchor) — Place along a polar vector; `anchor` is a BBoxAnchor value naming which point of the bbox lands on the target @snippet polarProject(${1:px}, ${2:py}, ${3:angle}, ${4:distance}, ${5:BBoxAnchor.Center})$0 */
+  polarProject(px: number, py: number, angle: AngleValue, distance: number, anchor: Value): PathogenProjectedText;
+  /** radialProject(cx, cy, angle, distance [, anchor, autoFlip, verticalAlign]) — Position, rotate, hemisphere-flip and font-metric-align a label around a centre. `anchor` is 'start' (away from centre) or 'end'; `autoFlip` 1 keeps left-hemisphere text readable; `verticalAlign` is a VerticalAnchor value @snippet radialProject(${1:cx}, ${2:cy}, ${3:angle}, ${4:distance}, ${5:'start'}, ${6:1}, ${7:VerticalAnchor.Midline})$0 */
+  radialProject(
+    cx: number,
+    cy: number,
+    angle: AngleValue,
+    distance: number,
+    anchor?: Value,
+    autoFlip?: number,
+    verticalAlign?: Value,
+  ): PathogenProjectedText;
+  /** drawTo(x, y, rotation?) — Emit to the active TextLayer at a position */
+  drawTo(x: number, y: number, rotation?: AngleValue): PathogenProjectedText;
+  /** toPathBlock() — Flatten glyph outlines into a single PathBlock (requires an @font) */
+  toPathBlock(): PathogenPathBlock;
+  /** toCodeSnippetBlock(name [, fontSize, padding]) — Build a syntax-highlighted code snippet as a GroupLayer */
+  toCodeSnippetBlock(name: string, fontSize?: number, padding?: number): PathogenGroupLayer;
+}
+
 /** @type ProjectedText */
 export interface PathogenProjectedText {
   /** Number of text elements */
@@ -1183,6 +1213,22 @@ export interface PathogenProjectedText {
   readonly styles: Value;
   /** Origin point */
   readonly origin: PathogenPoint;
+  /** boundingBox() — Estimated bounding box, in absolute coordinates */
+  boundingBox(): PathogenBoundingBox;
+  /** paddedBoundingBox(blockPad, inlinePad) — Bounding box grown by block (vertical) and inline (horizontal) padding */
+  paddedBoundingBox(blockPad: number, inlinePad: number): PathogenBoundingBox;
+  /** anchor(BBoxAnchor) — The point at a named position on the bounding box @snippet anchor(${1:BBoxAnchor.Center})$0 */
+  anchor(position: Value): PathogenPoint;
+  /** polarProject(px, py, angle, distance, anchor) — Re-place along a polar vector; `anchor` is a BBoxAnchor value @snippet polarProject(${1:px}, ${2:py}, ${3:angle}, ${4:distance}, ${5:BBoxAnchor.Center})$0 */
+  polarProject(px: number, py: number, angle: AngleValue, distance: number, anchor: Value): PathogenProjectedText;
+  /** intersects(other) — Whether this text's bounding box overlaps another ProjectedText or ProjectedPath */
+  intersects(other: Value): boolean;
+  /** intersectionPoints(other) — Where the bounding box crosses a ProjectedPath */
+  intersectionPoints(other: Value): PathogenPoint[];
+  /** draw() — Emit to the active TextLayer at the projected position */
+  draw(): PathogenProjectedText;
+  /** drawTo(x, y, rotation?) — Emit to the active TextLayer at a different position */
+  drawTo(x: number, y: number, rotation?: AngleValue): PathogenProjectedText;
   /** translate(dx, dy) — Offset projected text */
   translate(dx: number, dy: number): PathogenProjectedText;
 }

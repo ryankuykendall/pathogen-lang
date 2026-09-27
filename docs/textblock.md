@@ -84,6 +84,7 @@ Created by `.project()`, `.drawTo()`, `.polarProject()`, or `.translate()`. Cont
 | `.boundingBox()` | Object `{x, y, width, height}` | Estimated bounding box |
 | `.paddedBoundingBox(blockPad, inlinePad)` | Object `{x, y, width, height}` | Bbox expanded by padding |
 | `.anchor(BBoxAnchor)` | PointValue | Point at named position on bbox |
+| `.polarProject(px, py, angle, distance, anchor)` | ProjectedTextValue | Re-place along a polar vector |
 | `.intersects(geometry)` | Boolean | AABB overlap test |
 | `.intersectionPoints(geometry)` | Array\<PointValue\> | Intersection points between bbox and geometry |
 

@@ -81,6 +81,16 @@ D7 of the placement audit, plus the two defects found while cataloguing it.
 
 - **`docs/path-blocks.md` said circular fillets handle "Line-line junctions only. At curve junctions, the fillet is skipped."** Both clauses were wrong. `filletCommands` is tangent-based and imposes no command-type restriction — it rounds arc↔line and curve↔line corners alike, and skips only **tangent-collinear** junctions, where the edges already flow into one another. That last part is why rounding a shape built from quarter arcs often appears to do nothing. `docs/segment-labels.md` has described this correctly all along, so the two pages contradicted each other. Elliptical fillets *are* line-line only, and that entry no longer claims circular fillets match them.
 
+### Added
+
+#### Development
+
+- **TextBlock and ProjectedText now have editor support.** `TextBlock` was absent from `src/pathogen-api.ts` entirely and `ProjectedText` declared only its three properties and `translate()`, so typing `.` after a text block offered nothing useful. Both types are now declared in full — 7 TextBlock methods, 8 further ProjectedText methods — which generates member completions, hover, and chain return types.
+
+  The declarations alone were not enough: `inferExprType` mapped a `&{ }` expression to `ProjectedText`, a stand-in from before a TextBlock type existed. The two are genuinely different — an unplaced TextBlock has no `origin` and cannot `draw()` — so `&{ }` now infers as `TextBlock`, and `.project()` / `.drawTo()` / `.polarProject()` / `.radialProject()` are what turn it into a `ProjectedText`. Typing `.` on a text block went from 12 wrong members to 9 right ones.
+
+  Note that **signature help still does not work for methods on any receiver** — `PathBlock.rotate()` has never offered it either. That is a pre-existing language-wide limitation, unrelated to these declarations.
+
 ### Development
 
 - **`radialProject` has behavioural tests.** It had none: position, rotation, the hemisphere flip and the four vertical-metric offsets were all unasserted, and each fails silently — a mis-flipped label still renders, just unreadable. `tests/textblock.test.ts` now pins each against a value derived from the documented contract, including the `90deg` flip boundary and a rotated case proving the vertical shift follows the radius rather than the page. Both were confirmed to fail against deliberately mutated implementations.

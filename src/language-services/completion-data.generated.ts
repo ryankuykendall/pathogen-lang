@@ -750,6 +750,21 @@ export const TYPE_MEMBERS: Record<string, MemberCompletionSet> = {
       { label: 'has', kind: 'function', detail: 'has(key) — Check if key exists', boost: 8, insertText: 'has(\'${1:key}\')$0', isSnippet: true },
     ],
   },
+  'TextBlock': {
+    properties: [
+      { label: 'elementCount', kind: 'property', detail: 'Number of text elements', boost: 8 },
+      { label: 'styles', kind: 'property', detail: 'Style block', boost: 8 },
+    ],
+    methods: [
+      { label: 'boundingBox', kind: 'function', detail: 'boundingBox() — Estimated bounding box of the composed text', boost: 8, insertText: 'boundingBox()$0', isSnippet: true },
+      { label: 'project', kind: 'function', detail: 'project(x, y) — Offset every element to absolute coordinates', boost: 8, insertText: 'project(${1:x}, ${2:y})$0', isSnippet: true },
+      { label: 'polarProject', kind: 'function', detail: 'polarProject(px, py, angle, distance, anchor) — Place along a polar vector; `anchor` is a BBoxAnchor value naming which point of the bbox lands on the target', boost: 8, insertText: 'polarProject(${1:px}, ${2:py}, ${3:angle}, ${4:distance}, ${5:BBoxAnchor.Center})$0', isSnippet: true },
+      { label: 'radialProject', kind: 'function', detail: 'radialProject(cx, cy, angle, distance [, anchor, autoFlip, verticalAlign]) — Position, rotate, hemisphere-flip and font-metric-align a label around a centre. `anchor` is \'start\' (away from centre) or \'end\'; `autoFlip` 1 keeps left-hemisphere text readable; `verticalAlign` is a VerticalAnchor value', boost: 8, insertText: 'radialProject(${1:cx}, ${2:cy}, ${3:angle}, ${4:distance}, ${5:\'start\'}, ${6:1}, ${7:VerticalAnchor.Midline})$0', isSnippet: true },
+      { label: 'drawTo', kind: 'function', detail: 'drawTo(x, y, rotation?) — Emit to the active TextLayer at a position', boost: 8, insertText: 'drawTo(${1:x}, ${2:y})$0', isSnippet: true },
+      { label: 'toPathBlock', kind: 'function', detail: 'toPathBlock() — Flatten glyph outlines into a single PathBlock (requires an @font)', boost: 8, insertText: 'toPathBlock()$0', isSnippet: true },
+      { label: 'toCodeSnippetBlock', kind: 'function', detail: 'toCodeSnippetBlock(name [, fontSize, padding]) — Build a syntax-highlighted code snippet as a GroupLayer', boost: 8, insertText: 'toCodeSnippetBlock(\'${1:name}\')$0', isSnippet: true },
+    ],
+  },
   'ProjectedText': {
     properties: [
       { label: 'elementCount', kind: 'property', detail: 'Number of text elements', boost: 8 },
@@ -757,6 +772,14 @@ export const TYPE_MEMBERS: Record<string, MemberCompletionSet> = {
       { label: 'origin', kind: 'property', detail: 'Origin point', boost: 8 },
     ],
     methods: [
+      { label: 'boundingBox', kind: 'function', detail: 'boundingBox() — Estimated bounding box, in absolute coordinates', boost: 8, insertText: 'boundingBox()$0', isSnippet: true },
+      { label: 'paddedBoundingBox', kind: 'function', detail: 'paddedBoundingBox(blockPad, inlinePad) — Bounding box grown by block (vertical) and inline (horizontal) padding', boost: 8, insertText: 'paddedBoundingBox(${1:blockPad}, ${2:inlinePad})$0', isSnippet: true },
+      { label: 'anchor', kind: 'function', detail: 'anchor(BBoxAnchor) — The point at a named position on the bounding box', boost: 8, insertText: 'anchor(${1:BBoxAnchor.Center})$0', isSnippet: true },
+      { label: 'polarProject', kind: 'function', detail: 'polarProject(px, py, angle, distance, anchor) — Re-place along a polar vector; `anchor` is a BBoxAnchor value', boost: 8, insertText: 'polarProject(${1:px}, ${2:py}, ${3:angle}, ${4:distance}, ${5:BBoxAnchor.Center})$0', isSnippet: true },
+      { label: 'intersects', kind: 'function', detail: 'intersects(other) — Whether this text\'s bounding box overlaps another ProjectedText or ProjectedPath', boost: 8, insertText: 'intersects(${1:other})$0', isSnippet: true },
+      { label: 'intersectionPoints', kind: 'function', detail: 'intersectionPoints(other) — Where the bounding box crosses a ProjectedPath', boost: 8, insertText: 'intersectionPoints(${1:other})$0', isSnippet: true },
+      { label: 'draw', kind: 'function', detail: 'draw() — Emit to the active TextLayer at the projected position', boost: 8, insertText: 'draw()$0', isSnippet: true },
+      { label: 'drawTo', kind: 'function', detail: 'drawTo(x, y, rotation?) — Emit to the active TextLayer at a different position', boost: 8, insertText: 'drawTo(${1:x}, ${2:y})$0', isSnippet: true },
       { label: 'translate', kind: 'function', detail: 'translate(dx, dy) — Offset projected text', boost: 8, insertText: 'translate(${1:dx}, ${2:dy})$0', isSnippet: true },
     ],
   },
@@ -1269,7 +1292,8 @@ export const TYPE_METHOD_RETURNS: Record<string, Record<string, string>> = {
   'CompoundVariableOffsetBuilder': { stop: 'CompoundVariableOffsetBuilder', startCap: 'CompoundVariableOffsetBuilder', endCap: 'CompoundVariableOffsetBuilder' },
   'PolarVector': { turn: 'PolarVector', scale: 'PolarVector', mirror: 'PolarVector' },
   'PathLayer': { subscribe: 'Subscription', segment: 'ProjectedPath', segmentAll: 'array', point: 'Point', pointAll: 'array', vertex: 'Endpoint', vertexAll: 'array' },
-  'ProjectedText': { translate: 'ProjectedText' },
+  'TextBlock': { boundingBox: 'BoundingBox', project: 'ProjectedText', polarProject: 'ProjectedText', radialProject: 'ProjectedText', drawTo: 'ProjectedText', toPathBlock: 'PathBlock', toCodeSnippetBlock: 'GroupLayer' },
+  'ProjectedText': { boundingBox: 'BoundingBox', paddedBoundingBox: 'BoundingBox', anchor: 'Point', polarProject: 'ProjectedText', intersectionPoints: 'array', draw: 'ProjectedText', drawTo: 'ProjectedText', translate: 'ProjectedText' },
   'ProjectedPath': { draw: 'ProjectedPath', drawTo: 'ProjectedPath', get: 'Point', partition: 'array', reverse: 'ProjectedPath', centerPoint: 'Point', offset: 'ProjectedPath', variableOffset: 'ProjectedPath', compoundVariableOffset: 'ProjectedPath', toPathBlock: 'PathBlock', mirror: 'ProjectedPath', rotate: 'ProjectedPath', rotateAtVertexIndex: 'ProjectedPath', scale: 'ProjectedPath', subPath: 'ProjectedPath', dash: 'array', outline: 'ProjectedPath', startAt: 'ProjectedPath', chamfer: 'ProjectedPath', chamferAtVertex: 'ProjectedPath', fillet: 'ProjectedPath', filletAtVertex: 'ProjectedPath', ellipticalFillet: 'ProjectedPath', ellipticalFilletAtVertex: 'ProjectedPath', union: 'ProjectedPath', difference: 'ProjectedPath', intersection: 'ProjectedPath', xor: 'ProjectedPath', cut: 'array', intersectionPoints: 'array', segment: 'ProjectedPath', segmentAll: 'array', point: 'Point', pointAll: 'array', vertex: 'Endpoint', vertexAll: 'array' },
   'LinearGradient': { inherit: 'LinearGradient' },
   'RadialGradient': { inherit: 'RadialGradient' },
@@ -1304,6 +1328,7 @@ export const TYPE_PROPERTY_TYPES: Record<string, Record<string, string>> = {
   'GroupLayer': { name: 'string', ctx: 'PathContext' },
   'PathContext': { position: 'Point', start: 'Point', heading: 'number', tangentAngle: 'number', commands: 'array' },
   'ObjectValue': { length: 'number' },
+  'TextBlock': { elementCount: 'number' },
   'ProjectedText': { elementCount: 'number', origin: 'Point' },
   'NoiseFilter': { id: 'string', octaves: 'number', amount: 'number', monochrome: 'boolean', seed: 'number', contrast: 'number', stitch: 'boolean' },
   'GlowFilter': { id: 'string', color: 'ColorInstance', radius: 'number', spread: 'number', opacity: 'number' },
@@ -1335,6 +1360,7 @@ export const TYPE_ELEMENT_TYPES: Record<string, Record<string, string>> = {
   'Subpath': { commands: 'Command' },
   'PathBlock': { vertices: 'Point', subPathCommands: 'Command', commands: 'Command', contours: 'PathBlock', dash: 'DashPiece', intersectionPoints: 'Point', cut: 'PathBlock', segmentAll: 'PathBlock', pointAll: 'Point', vertexAll: 'Endpoint' },
   'PathLayer': { segmentAll: 'ProjectedPath', pointAll: 'Point', vertexAll: 'Endpoint' },
+  'ProjectedText': { intersectionPoints: 'Point' },
   'ProjectedPath': { vertices: 'Point', subPathCommands: 'Command', commands: 'Command', dash: 'DashPiece', cut: 'ProjectedPath', intersectionPoints: 'Point', segmentAll: 'ProjectedPath', pointAll: 'Point', vertexAll: 'Endpoint' },
   'MeshGradient': { getRow: 'MeshPoint', getCol: 'MeshPoint' },
 };

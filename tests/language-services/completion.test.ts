@@ -1,20 +1,22 @@
-import { describe, it, expect } from 'vitest';
-import { StringTextDocument } from '../../src/language-services/document';
+import { describe, expect, it } from 'vitest';
+
+import { CSS_FILTER_FUNCTION_NAMES } from '../../src/evaluator/sanitize';
 import {
   getCompletions,
   getStyleValueKeywordRun,
   isStylePropertyNamePosition,
 } from '../../src/language-services/completion';
+import { STYLE_PROPERTY_VALUES } from '../../src/language-services/completion-data-static';
+import { StringTextDocument } from '../../src/language-services/document';
+
 import type { CompletionItem } from '../../src/language-services/completion';
+
+// eslint-disable-next-line import/order
+// eslint-disable-next-line import/order
 
 function complete(source: string, line: number, character: number): CompletionItem[] {
   return getCompletions(new StringTextDocument(source), { line, character });
 }
-
-// eslint-disable-next-line import/order
-import { STYLE_PROPERTY_VALUES } from '../../src/language-services/completion-data-static';
-// eslint-disable-next-line import/order
-import { CSS_FILTER_FUNCTION_NAMES } from '../../src/evaluator/sanitize';
 
 /** Get completions at end of source. */
 function completeAtEnd(source: string): CompletionItem[] {
@@ -660,6 +662,68 @@ describe('getCompletions', () => {
     });
   });
 
+  describe('TextBlock member completions', () => {
+    // `&{ }` used to infer as ProjectedText — a stand-in from before a TextBlock
+    // type existed in pathogen-api.ts. The two are genuinely different: a
+    // TextBlock has no position yet, so it has no `origin` and cannot `draw()`;
+    // it becomes a ProjectedText only once something places it.
+    it('offers TextBlock members for a text block variable', () => {
+      const names = labels(completeAtEnd('let t = &{ text(0, 10)`Hi` };\nt.'));
+      expect(names).toContain('project');
+      expect(names).toContain('radialProject');
+      expect(names).toContain('polarProject');
+      expect(names).toContain('toPathBlock');
+      expect(names).toContain('toCodeSnippetBlock');
+      expect(names).toContain('boundingBox');
+      expect(names).toContain('elementCount');
+    });
+
+    it('does not offer ProjectedText-only members on an unplaced TextBlock', () => {
+      const names = labels(completeAtEnd('let t = &{ text(0, 10)`Hi` };\nt.'));
+      expect(names).not.toContain('origin');
+      expect(names).not.toContain('draw');
+      expect(names).not.toContain('translate');
+      expect(names).not.toContain('intersects');
+    });
+
+    it.each([
+      ['project(0, 0)', 'project'],
+      ['drawTo(0, 0)', 'drawTo'],
+      ['polarProject(0, 0, 45deg, 10, BBoxAnchor.Center)', 'polarProject'],
+      ['radialProject(0, 0, 45deg, 10)', 'radialProject'],
+    ])('%s returns a ProjectedText', (call, _name) => {
+      const names = labels(completeAtEnd(`let t = &{ text(0, 10)\`Hi\` };\nlet p = t.${call};\np.`));
+      expect(names).toContain('origin');
+      expect(names).toContain('draw');
+      expect(names).toContain('paddedBoundingBox');
+      // and not the PathBlock set it used to fall back to
+      expect(names).not.toContain('subPathCount');
+    });
+
+    it('offers the completed ProjectedText surface', () => {
+      const names = labels(completeAtEnd('let t = &{ text(0, 10)`Hi` };\nlet p = t.project(0, 0);\np.'));
+      for (const m of [
+        'boundingBox',
+        'paddedBoundingBox',
+        'anchor',
+        'polarProject',
+        'intersects',
+        'intersectionPoints',
+        'draw',
+        'drawTo',
+        'translate',
+      ]) {
+        expect(names, `ProjectedText should offer ${m}`).toContain(m);
+      }
+    });
+
+    it('toPathBlock chains into the PathBlock surface', () => {
+      const names = labels(completeAtEnd('let t = &{ text(0, 10)`Hi` };\nlet b = t.toPathBlock();\nb.'));
+      expect(names).toContain('subPathCount');
+      expect(names).toContain('fillet');
+    });
+  });
+
   describe('PolarVector member completions', () => {
     it('offers PolarVector members', () => {
       const items = completeAtEnd('let pv = PolarVector(45, 10);\npv.');
@@ -720,7 +784,7 @@ describe('getCompletions', () => {
     });
 
     it('types query() results by the selector noun, parentheses in the selector included', () => {
-      const base = "let shape = @{\n  M 0 0\n  a 10 10 0 0 1 20 0\n};\n";
+      const base = 'let shape = @{\n  M 0 0\n  a 10 10 0 0 1 20 0\n};\n';
       const arc = labels(completeAtEnd(`${base}shape.query('command(a)').`));
       expect(arc).toContain('center');
       expect(arc).toContain('rx');
@@ -741,7 +805,7 @@ describe('getCompletions', () => {
     });
 
     it('offers array members after queryAll() and types loop elements by noun', () => {
-      const base = "let shape = @{\n  M 0 0\n  a 10 10 0 0 1 20 0\n};\n";
+      const base = 'let shape = @{\n  M 0 0\n  a 10 10 0 0 1 20 0\n};\n';
       const arr = labels(completeAtEnd(`${base}shape.queryAll('command(a)').`));
       expect(arr).toContain('map');
       expect(arr).toContain('length');
@@ -755,7 +819,7 @@ describe('getCompletions', () => {
     });
 
     it('.commands elements are Commands', () => {
-      const items = labels(completeAtEnd("let shape = @{\n  M 0 0\n  h 10\n};\nfor (cmd in shape.commands) {\n  cmd."));
+      const items = labels(completeAtEnd('let shape = @{\n  M 0 0\n  h 10\n};\nfor (cmd in shape.commands) {\n  cmd.'));
       expect(items).toContain('block');
       expect(items).toContain('segment');
     });
@@ -1540,9 +1604,15 @@ describe('query-API chains rooted in layer() calls', () => {
 describe('subscription completions', () => {
   it('types the block params by selector noun, ordinal, and Subscription', () => {
     const head = "define PathLayer('shape') #{ fill: none; }\n";
-    expect(labels(completeAtEnd(`${head}layer('shape').subscribe('endpoint') {|corner, i, sub|\n  corner.`))).toContain('turn');
-    expect(labels(completeAtEnd(`${head}layer('shape').subscribe('command(a)') {|arc, i, sub|\n  arc.`))).toContain('center');
-    expect(labels(completeAtEnd(`${head}layer('shape').subscribe('endpoint') {|corner, i, sub|\n  sub.`))).toContain('unsubscribe');
+    expect(labels(completeAtEnd(`${head}layer('shape').subscribe('endpoint') {|corner, i, sub|\n  corner.`))).toContain(
+      'turn',
+    );
+    expect(labels(completeAtEnd(`${head}layer('shape').subscribe('command(a)') {|arc, i, sub|\n  arc.`))).toContain(
+      'center',
+    );
+    expect(labels(completeAtEnd(`${head}layer('shape').subscribe('endpoint') {|corner, i, sub|\n  sub.`))).toContain(
+      'unsubscribe',
+    );
   });
 
   it('offers subscribe on layer references and Subscription members on the handle', () => {

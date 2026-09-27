@@ -179,7 +179,9 @@ export function inferExprType(expr: Expression, scope: Scope, seen?: Set<Declara
     case 'PathBlockExpression':
       return 'PathBlock';
     case 'TextBlockExpression':
-      return 'ProjectedText';
+      // `&{ }` builds a TextBlock; it becomes a ProjectedText only once
+      // .project()/.drawTo()/.polarProject()/.radialProject() places it.
+      return 'TextBlock';
     case 'ArrayLiteral':
     case 'RangeExpression': // (a..b) evaluates to an array of numbers
       return 'array';
