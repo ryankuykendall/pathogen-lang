@@ -99,7 +99,13 @@ export type RenderPath = 'gpu' | '2d';
  * `w`/`h` must be the *post-clamp* texture size and `path` the renderer, so a
  * GPU raster and a Canvas 2D raster of the same gradient never share a key.
  */
-export function hashGradient(grad: HashableGradient, w: number, h: number, path: RenderPath = 'gpu'): string {
+export function hashGradient(
+  grad: HashableGradient,
+  w: number,
+  h: number,
+  path: RenderPath = 'gpu',
+  origin: { x: number; y: number } = { x: 0, y: 0 },
+): string {
   if (grad.type === 'mesh') {
     const grid = (grad.meshGrid || []).map((row) => row.map((p) => `${p.x},${p.y}:${p.color}`).join(';')).join('/');
     return ['mesh', path, w, h, grad.meshWidth ?? 0, grad.meshHeight ?? 0, grad.interpolation ?? 'srgb', grid].join('|');
@@ -141,11 +147,15 @@ export function hashGradient(grad: HashableGradient, w: number, h: number, path:
   }
 
   const stops = (grad.stopsWithOklch || grad.stops || []).map((s) => `${s.offset}:${s.color}`).join(',');
+  // The viewBox origin is part of the key: the same centre renders differently
+  // when the tile covers `-100 -100 200 200` than `0 0 200 200` (ISSUE-027).
   return [
     'conic',
     path,
     w,
     h,
+    origin.x,
+    origin.y,
     grad.cx ?? 0,
     grad.cy ?? 0,
     grad.from ?? 0,

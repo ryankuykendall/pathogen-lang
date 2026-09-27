@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { compile } from '../../src';
+import { buildSvgTree } from '../../src/render';
 import { buildDefs } from '../../src/render/build-defs';
 
 describe('buildDefs', () => {
@@ -162,5 +163,74 @@ describe('buildDefs — conic gradients', () => {
     const urls = new Map([['wheel', 'data:image/png;base64,AAAA']]);
     const withUrl = buildDefs(result, { width: 200, height: 200, useImageGradients: true, gpuGradientUrls: urls });
     expect(withUrl[0].children[0].attrs.href).toBe('data:image/png;base64,AAAA');
+  });
+});
+
+describe('buildDefs — conic gradients honour the viewBox origin (ISSUE-027)', () => {
+  // `define ViewBox(-100, -100, 200, 200)`: the visible area is (-100,-100) → (100,100)
+  // and the gradient is centred in it. Every tile, mask and rect must start at the origin.
+  const source = (extra: string): string => `
+      define ViewBox(-100, -100, 200, 200);
+      let g = ConicGradient('wheel', 0, 0) {|g|
+        g.stop(0, Color('#ff0000'));
+        g.stop(1, Color('#0000ff'));
+      };
+      ${extra}
+      define PathLayer('p') #{ fill: g; }
+      layer('p').apply { M -100 -100 h 200 v 200 h -200 z }
+    `;
+  const view = { originX: -100, originY: -100, width: 200, height: 200 };
+  const tile = { x: '-100', y: '-100', width: '200', height: '200' };
+
+  // Pattern content is drawn in the tile's own coordinates (its top-left is (0, 0)),
+  // so the user-space centre (0, 0) is (100, 100) inside the tile.
+  const local = { x: '0', y: '0', width: '200', height: '200' };
+
+  it('wedge branch: the pattern tile covers the viewBox and the wedges fan out from the tile-local centre', () => {
+    const nodes = buildDefs(compile(source('')), view);
+    expect(nodes.map((n) => n.tag)).toEqual(['pattern']);
+    expect(nodes[0].attrs).toMatchObject({ id: 'wheel', ...tile, patternUnits: 'userSpaceOnUse' });
+    expect((nodes[0].children[0].attrs.d as string).startsWith('M 100 100 L ')).toBe(true);
+  });
+
+  it("wedge branch: a 'transparent-blend' mask, its rect and the inner disc are tile-local", () => {
+    const nodes = buildDefs(compile(source("g.innerRadius = 30; g.innerFill = 'transparent-blend';")), view);
+    expect(nodes.map((n) => n.tag)).toEqual(['radialGradient', 'mask', 'pattern']);
+    expect(nodes[0].attrs).toMatchObject({ cx: '100', cy: '100' });
+    expect(nodes[1].attrs).toMatchObject({ id: 'wheel-inner-mask', ...local });
+    expect(nodes[1].children[0].attrs).toMatchObject(local);
+    expect(nodes[2].attrs).toMatchObject(tile);
+  });
+
+  it('image branch: the pattern tile and the image cover the viewBox', () => {
+    const nodes = buildDefs(compile(source('')), { ...view, useImageGradients: true });
+    expect(nodes[0].attrs).toMatchObject(tile);
+    expect(nodes[0].children[0].attrs).toMatchObject({ width: '200', height: '200' });
+  });
+
+  it('buildSvgTree passes the source viewBox origin through, so the CLI and VS Code get it for free', () => {
+    const tree = buildSvgTree(compile(source('')));
+    const defs = tree.children.find((c) => typeof c !== 'string' && c.tag === 'defs');
+    expect(defs && typeof defs !== 'string' && defs.children[0].attrs).toMatchObject(tile);
+  });
+
+  it('the mesh/freeform/topo CLI placeholder tile starts at the viewBox origin too', () => {
+    const result = compile(`
+      define ViewBox(-100, -100, 200, 200);
+      let m = MeshGradient('m', 200, 200, 2, 2) {|g|
+        g.getPoint(0, 0).color = Color('#ff0000');
+        g.getPoint(1, 1).color = Color('#0000ff');
+      };
+      define PathLayer('p') #{ fill: m; }
+      layer('p').apply { M -100 -100 h 200 v 200 h -200 z }
+    `);
+    const nodes = buildDefs(result, view);
+    expect(nodes[0].tag).toBe('pattern');
+    expect(nodes[0].attrs).toMatchObject({ id: 'm', x: '-100', y: '-100', patternUnits: 'userSpaceOnUse' });
+  });
+
+  it('defaults the origin to (0, 0), leaving the existing 0 0 W H output unchanged', () => {
+    const result = compile(source('').replace('define ViewBox(-100, -100, 200, 200);', ''));
+    expect(buildDefs(result, { width: 200, height: 200 })).toEqual(buildDefs(result, { originX: 0, originY: 0, width: 200, height: 200 }));
   });
 });

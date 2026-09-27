@@ -8,6 +8,7 @@
  * Phase 2's CLI byte-snapshots pass unchanged.
  */
 
+import { resolveConicPlacement, type ConicViewport } from '../conic-param';
 import { renderConic } from '../conic-renderer';
 import { validateCSSIdent } from '../evaluator/sanitize';
 import type {
@@ -44,6 +45,14 @@ function assertSafeGpuImageUrl(url: string): void {
 }
 
 export interface BuildDefsOptions {
+  /**
+   * The viewBox origin (min-x / min-y). A conic gradient's pattern tile, its
+   * inner-fill mask and its default centre are laid out from here, so a viewBox
+   * such as `-100 -100 200 200` is covered rather than tiled from (0, 0)
+   * (ISSUE-027). Defaults to 0.
+   */
+  originX?: number;
+  originY?: number;
   /** SVG canvas width — used for conic gradient wedge sizing. Defaults to 200. */
   width?: number;
   /** SVG canvas height — used for conic gradient wedge sizing. Defaults to 200. */
@@ -72,8 +81,12 @@ export interface BuildDefsOptions {
 }
 
 export function buildDefs(result: CompileResult, options: BuildDefsOptions = {}): VNode[] {
-  const width = options.width ?? 200;
-  const height = options.height ?? 200;
+  const view: ConicViewport = {
+    x: options.originX ?? 0,
+    y: options.originY ?? 0,
+    width: options.width ?? 200,
+    height: options.height ?? 200,
+  };
   const emitData = options.emitPlaygroundDataAttrs ?? false;
   const useImg = options.useImageGradients ?? false;
   const urls = options.gpuGradientUrls;
@@ -87,7 +100,7 @@ export function buildDefs(result: CompileResult, options: BuildDefsOptions = {})
     defs.push(buildClipPath(clip, emitData));
   }
   for (const grad of result.gradients) {
-    defs.push(...buildGradientDefs(grad, width, height, emitData, useImg, urls));
+    defs.push(...buildGradientDefs(grad, view, emitData, useImg, urls));
   }
   for (const pat of result.patterns ?? []) {
     defs.push(buildPattern(pat, emitData));
@@ -138,16 +151,15 @@ function buildClipPath(clip: ClipPathOutput, emitData: boolean): VNode {
  */
 function buildGradientDefs(
   grad: GradientOutput,
-  svgW: number,
-  svgH: number,
+  view: ConicViewport,
   emitData: boolean,
   useImageGradients: boolean,
   gpuGradientUrls: Map<string, string> | undefined,
 ): VNode[] {
   if (grad.type === 'conic' && !useImageGradients) {
-    return buildConicWedgeDefs(grad, svgW, svgH);
+    return buildConicWedgeDefs(grad, view);
   }
-  return [buildGradient(grad, svgW, svgH, emitData, useImageGradients, gpuGradientUrls)];
+  return [buildGradient(grad, view, emitData, useImageGradients, gpuGradientUrls)];
 }
 
 /**
@@ -155,22 +167,29 @@ function buildGradientDefs(
  * one `<path>` per ~1° slice inside a `<pattern>`, following the same rules as
  * the playground's WebGPU shader (see `src/conic-param.ts`).
  */
-function buildConicWedgeDefs(grad: GradientOutput, svgW: number, svgH: number): VNode[] {
+function buildConicWedgeDefs(grad: GradientOutput, view: ConicViewport): VNode[] {
+  // Pattern content is drawn in the tile's own coordinates (top-left = (0, 0)),
+  // so the wedges, the inner-fill disc and the mask are tile-local; only the
+  // <pattern> itself is placed at the viewBox origin (ISSUE-027).
+  const placement = resolveConicPlacement(grad, view);
   const render = renderConic({
-    cx: grad.cx ?? svgW / 2,
-    cy: grad.cy ?? svgH / 2,
+    cx: placement.cx,
+    cy: placement.cy,
+    viewWidth: placement.viewWidth,
+    viewHeight: placement.viewHeight,
     from: grad.from ?? 0,
     to: grad.to ?? (grad.from ?? 0) + 2 * Math.PI,
     direction: grad.direction ?? 'cw',
     spread: grad.spread ?? 'clamp',
     stops: grad.stopsWithOklch ?? grad.stops,
-    viewWidth: svgW,
-    viewHeight: svgH,
     innerRadius: grad.innerRadius ?? 0,
     innerFill: grad.innerFill,
   });
-  const cx = String(grad.cx ?? svgW / 2);
-  const cy = String(grad.cy ?? svgH / 2);
+  const cx = String(placement.cx);
+  const cy = String(placement.cy);
+  const size = { width: String(view.width), height: String(view.height) };
+  const local = { x: '0', y: '0', ...size };
+  const tile = { x: String(placement.tileX), y: String(placement.tileY), ...size };
   const siblings: VNode[] = [];
   let content: VNode[] = render.wedges.map((w) => h('path', { d: w.d, fill: w.fill }));
 
@@ -204,53 +223,41 @@ function buildConicWedgeDefs(grad: GradientOutput, svgW: number, svgH: number): 
           return h('stop', { offset: String(s.offset), 'stop-color': `rgb(${level}, ${level}, ${level})` });
         }),
       ),
-      h(
-        'mask',
-        { id: maskId, maskUnits: 'userSpaceOnUse', x: '0', y: '0', width: String(svgW), height: String(svgH) },
-        [h('rect', { x: '0', y: '0', width: String(svgW), height: String(svgH), fill: `url(#${maskGradId})` })],
-      ),
+      h('mask', { id: maskId, maskUnits: 'userSpaceOnUse', ...local }, [
+        h('rect', { ...local, fill: `url(#${maskGradId})` }),
+      ]),
     );
     content = [h('g', { mask: `url(#${maskId})` }, content)];
   }
 
-  const pattern = h(
-    'pattern',
-    {
-      id: grad.id,
-      x: '0',
-      y: '0',
-      width: String(svgW),
-      height: String(svgH),
-      patternUnits: 'userSpaceOnUse',
-    },
-    content,
-  );
+  const pattern = h('pattern', { id: grad.id, ...tile, patternUnits: 'userSpaceOnUse' }, content);
   return [...siblings, pattern];
 }
 
 function buildGradient(
   grad: GradientOutput,
-  svgW: number,
-  svgH: number,
+  view: ConicViewport,
   emitData: boolean,
   useImageGradients: boolean,
   gpuGradientUrls: Map<string, string> | undefined,
 ): VNode {
   // Conic: pattern+image (playground). buildGradientDefs routes the wedge
   // form to buildConicWedgeDefs before this is reached, because that form can
-  // emit sibling defs.
+  // emit sibling defs. The raster covers the viewBox, so the tile starts at
+  // its origin (ISSUE-027); the <image> fills the tile.
   if (grad.type === 'conic') {
     {
+      const placement = resolveConicPlacement(grad, view);
       const attrs: Record<string, string> = { id: grad.id };
       if (emitData) attrs['data-gradient-def'] = grad.id;
-      attrs.x = '0';
-      attrs.y = '0';
-      attrs.width = String(svgW);
-      attrs.height = String(svgH);
+      attrs.x = String(placement.tileX);
+      attrs.y = String(placement.tileY);
+      attrs.width = String(view.width);
+      attrs.height = String(view.height);
       attrs.patternUnits = 'userSpaceOnUse';
       const imgAttrs: Record<string, string> = {
-        width: String(svgW),
-        height: String(svgH),
+        width: String(view.width),
+        height: String(view.height),
       };
       const url = gpuGradientUrls?.get(grad.id);
       if (url) {
@@ -308,12 +315,15 @@ function buildGradient(
         grad.type === 'mesh' ? (grad.meshGrid ?? []).flat() : grad.freeformPoints ?? [];
       if (points.length > 0) avgColor = points[0].color;
     }
+    // The placeholder tile starts at the viewBox origin, like the conic tile
+    // (ISSUE-027): visually inert for a flat colour, but one rule for every
+    // gradient that covers the canvas.
     return h(
       'pattern',
       {
         id: grad.id,
-        x: '0',
-        y: '0',
+        x: String(view.x),
+        y: String(view.y),
         width: String(w),
         height: String(hgt),
         patternUnits: 'userSpaceOnUse',

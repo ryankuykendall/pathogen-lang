@@ -644,6 +644,29 @@ describe('CLI', () => {
       expect(result.status).toBe(1);
     });
 
+    it('places the conic pattern tile at the viewBox origin (ISSUE-027)', () => {
+      const outputSvg = join(TMP_DIR, 'conic-origin.svg');
+      if (existsSync(outputSvg)) unlinkSync(outputSvg);
+      runCli([
+        '-e',
+        `
+        define ViewBox(-100, -100, 200, 200);
+        let g = ConicGradient('g', 0, 0) {|c|
+          c.stop(0, Color('#e63946'));
+          c.stop(1, Color('#264653'));
+        };
+        define default PathLayer('bg') #{ fill: g; stroke: none; };
+        M -100 -100; h 200; v 200; h -200; z;
+        `,
+        `--output-svg-file=${outputSvg}`,
+      ]);
+      const svg = readFileSync(outputSvg, 'utf-8');
+      expect(svg).toContain('viewBox="-100 -100 200 200"');
+      expect(svg).toContain('<pattern id="g" x="-100" y="-100" width="200" height="200" patternUnits="userSpaceOnUse">');
+      // Wedges are tile-local: the user-space centre (0, 0) is (100, 100) inside the tile.
+      expect(svg).toContain('<path d="M 100 100 L ');
+    });
+
     it('without --render-gpu, existing conic wedge-path output is unchanged', () => {
       const outputSvg = join(TMP_DIR, 'conic-no-gpu.svg');
       if (existsSync(outputSvg)) unlinkSync(outputSvg);

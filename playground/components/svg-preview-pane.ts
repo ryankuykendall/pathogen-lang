@@ -544,6 +544,10 @@ export class SvgPreviewPane extends HTMLElement {
 
       const svgW = (store.get('width') as number) || 200;
       const svgH = (store.get('height') as number) || 200;
+      // The viewBox origin reaches the defs too, so a conic gradient's tile
+      // covers `-100 -100 200 200` instead of tiling from (0, 0) (ISSUE-027).
+      const originX = (store.get('viewBoxOriginX') as number) || 0;
+      const originY = (store.get('viewBoxOriginY') as number) || 0;
 
       // Build defs via the shared renderer, then run the playground-only
       // Canvas 2D fallback for conic gradients that have no GPU-pre-rendered
@@ -566,6 +570,8 @@ export class SvgPreviewPane extends HTMLElement {
               calledStdlibFunctions: [],
             } as unknown as CompileResult,
             {
+              originX,
+              originY,
               width: svgW,
               height: svgH,
               emitPlaygroundDataAttrs: true,
@@ -578,6 +584,7 @@ export class SvgPreviewPane extends HTMLElement {
             (defsData.gradients ?? []) as GradientOutput[],
             svgW,
             svgH,
+            { x: originX, y: originY },
           );
           window.PathogenLang.mountInto(defsEl, defsVNodes);
         });

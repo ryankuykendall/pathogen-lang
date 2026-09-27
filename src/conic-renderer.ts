@@ -47,7 +47,7 @@ export interface ConicRenderSpec {
   direction: ConicDirection;
   spread: ConicSpread;
   stops: ConicStop[];
-  /** Viewport size — the wedges extend past the farthest corner. */
+  /** Viewport (tile) size — the wedges extend past the farthest corner. Tile-local, see `resolveConicPlacement`. */
   viewWidth: number;
   viewHeight: number;
   /** Center plateau radius, user units (0 = none). */

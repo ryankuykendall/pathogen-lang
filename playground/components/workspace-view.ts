@@ -1126,7 +1126,10 @@ export class WorkspaceView extends HTMLElement {
         const svgH = compiledViewBox.height;
         const [conicUrls, freeformUrls, meshUrls, topoUrls] = await perfSpanAsync('gpu-gradient-prerender', async () =>
           Promise.all([
-            gpuGradientService.renderConicGradients(result.gradients, svgW, svgH),
+            gpuGradientService.renderConicGradients(result.gradients, svgW, svgH, 2, {
+              x: compiledViewBox.originX,
+              y: compiledViewBox.originY,
+            }),
             gpuGradientService.renderFreeformGradients(result.gradients, svgW, svgH),
             gpuGradientService.renderMeshGradients(result.gradients, svgW, svgH),
             gpuGradientService.renderTopoGradients(result.gradients, svgW, svgH),

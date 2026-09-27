@@ -25,6 +25,54 @@ export interface ConicAngleSpec {
 
 export const TWO_PI = 2 * Math.PI;
 
+/** The rectangle a conic gradient is laid out in — the SVG viewBox, origin included. */
+export interface ConicViewport {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+/**
+ * Where a conic gradient sits, in the coordinates the renderers draw in. The
+ * gradient is carried by a `<pattern>` tile the size of the viewBox, and SVG
+ * draws pattern content in the tile's own coordinates (its top-left is (0, 0));
+ * the playground's rasters cover the same tile. So every renderer works
+ * tile-local, and only the tile itself is placed at the viewBox origin.
+ */
+export interface ConicPlacement {
+  /** Centre, tile-local: the viewBox origin subtracted. */
+  cx: number;
+  cy: number;
+  /** Tile size — the viewBox size. */
+  viewWidth: number;
+  viewHeight: number;
+  /** Where the tile sits in user space — the viewBox origin. */
+  tileX: number;
+  tileY: number;
+}
+
+/**
+ * Resolve where a conic gradient sits in its viewport. This is the one rule every
+ * renderer follows — the CLI/VS Code wedge paths, the playground's Canvas 2D
+ * fallback and its WebGPU uniform — so a viewBox that does not start at (0, 0)
+ * cannot be honoured by one and dropped by another (placement audit D5,
+ * ISSUE-027: every path assumed `(0, 0) → (width, height)`). The centre defaults
+ * to the middle of the viewBox.
+ */
+export function resolveConicPlacement(grad: { cx?: number; cy?: number }, view: ConicViewport): ConicPlacement {
+  const cx = grad.cx ?? view.x + view.width / 2;
+  const cy = grad.cy ?? view.y + view.height / 2;
+  return {
+    cx: cx - view.x,
+    cy: cy - view.y,
+    viewWidth: view.width,
+    viewHeight: view.height,
+    tileX: view.x,
+    tileY: view.y,
+  };
+}
+
 /** Wrap an angle into [0, 2π). */
 export function wrapAngle(angle: number): number {
   return angle - Math.floor(angle / TWO_PI) * TWO_PI;

@@ -62,6 +62,10 @@ export function buildSvgTree(result: CompileResult, options: BuildTreeOptions = 
 
   const viewBoxParts = viewBox.split(/\s+/).map(Number);
   const defsOptions: BuildDefsOptions = {
+    // The origin reaches the defs too: a conic gradient's tile must cover the
+    // viewBox, not (0, 0) → (W, H) (ISSUE-027).
+    originX: viewBoxParts[0] || 0,
+    originY: viewBoxParts[1] || 0,
     width: viewBoxParts[2] || parseInt(width, 10) || 200,
     height: viewBoxParts[3] || parseInt(height, 10) || 200,
     useImageGradients: options.useImageGradients,

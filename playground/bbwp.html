@@ -120,10 +120,14 @@
         const w = parseInt(svgOptions.width, 10) || 200;
         const h = parseInt(svgOptions.height, 10) || 200;
         const s = scale || 2;
+        // The conic raster covers the viewBox from its origin (ISSUE-027); the
+        // tile that carries it is placed there by buildSvg → buildSvgTree.
+        const vbParts = String(svgOptions.viewBox || '0 0 200 200').trim().split(/\s+/).map(Number);
+        const origin = { x: vbParts[0] || 0, y: vbParts[1] || 0 };
 
         // Render all GPU gradient types in parallel
         const [conicUrls, freeformUrls, meshUrls, topoUrls] = await Promise.all([
-          gradientService.renderConicGradients(gradients, w, h, s),
+          gradientService.renderConicGradients(gradients, w, h, s, origin),
           gradientService.renderFreeformGradients(gradients, w, h, s),
           gradientService.renderMeshGradients(gradients, w, h, s),
           gradientService.renderTopoGradients(gradients, w, h, s),

@@ -6,6 +6,7 @@ import {
   TWO_PI,
   conicParamForAngle,
   innerFillMode,
+  resolveConicPlacement,
   smoothstep01,
   wedgeCountFor,
   wrapAngle,
@@ -115,5 +116,37 @@ describe('wedgeCountFor', () => {
     expect(wedgeCountFor(TWO_PI, -1)).toBe(cap);
     expect(wedgeCountFor(TWO_PI, Number.NaN)).toBe(cap);
     expect(cap).toBe(36000);
+  });
+});
+
+describe('resolveConicPlacement — the one placement rule (ISSUE-027)', () => {
+  const view = { x: -100, y: -100, width: 200, height: 200 };
+
+  it('defaults the centre to the middle of the viewBox and reports it tile-local', () => {
+    expect(resolveConicPlacement({}, view)).toEqual({
+      cx: 100,
+      cy: 100,
+      viewWidth: 200,
+      viewHeight: 200,
+      tileX: -100,
+      tileY: -100,
+    });
+    expect(resolveConicPlacement({}, { x: 0, y: 0, width: 200, height: 200 })).toMatchObject({ cx: 100, cy: 100, tileX: 0, tileY: 0 });
+  });
+
+  it('subtracts the viewBox origin from an explicit centre and places the tile at the origin', () => {
+    // User-space (30, -40) inside -100 -100 200 200 is (130, 60) from the tile's top-left.
+    expect(resolveConicPlacement({ cx: 30, cy: -40 }, view)).toEqual({
+      cx: 130,
+      cy: 60,
+      viewWidth: 200,
+      viewHeight: 200,
+      tileX: -100,
+      tileY: -100,
+    });
+  });
+
+  it('is the identity for a 0 0 W H viewBox, so existing output is unchanged', () => {
+    expect(resolveConicPlacement({ cx: 30, cy: 40 }, { x: 0, y: 0, width: 200, height: 200 })).toMatchObject({ cx: 30, cy: 40 });
   });
 });

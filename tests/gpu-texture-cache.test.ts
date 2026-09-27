@@ -22,6 +22,11 @@ describe('hashGradient', () => {
     expect(key.startsWith('conic|gpu|8192|3174|')).toBe(true);
   });
 
+  it('separates viewBox origins — the same centre tiles differently from -100,-100 than from 0,0 (ISSUE-027)', () => {
+    expect(hashGradient(conic, 8192, 3174, 'gpu', { x: -100, y: -100 })).not.toBe(hashGradient(conic, 8192, 3174, 'gpu'));
+    expect(hashGradient(conic, 8192, 3174, 'gpu', { x: 0, y: 0 })).toBe(hashGradient(conic, 8192, 3174, 'gpu'));
+  });
+
   it('separates a GPU raster from a Canvas 2D raster of the same gradient', () => {
     expect(hashGradient(conic, 8192, 3174, 'gpu')).not.toBe(hashGradient(conic, 8192, 3174, '2d'));
   });

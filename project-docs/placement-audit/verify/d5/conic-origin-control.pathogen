@@ -1,0 +1,14 @@
+// Control for D5: the same wheel in a 0 0 200 200 viewBox, centred at (100, 100).
+// Must look identical to conic-origin.pathogen.
+define ViewBox(0, 0, 200, 200);
+let g = ConicGradient('g', 100, 100) {|c|
+  c.stop(0, Color('#e63946'));
+  c.stop(0.5, Color('#f1faee'));
+  c.stop(1, Color('#264653'));
+};
+define default PathLayer('bg') #{ fill: g; stroke: none; };
+M 0 0;
+h 200;
+v 200;
+h -200;
+z;

@@ -179,12 +179,19 @@ export function isGPUActive(): boolean {
 /** Human-readable family name for notices. */
 type GradientFamily = 'conic' | 'freeform' | 'mesh' | 'topo';
 
+/** The viewBox origin a raster is laid out from. Only the conic family reads it. */
+export interface RasterOrigin {
+  x: number;
+  y: number;
+}
+const ORIGIN_ZERO: RasterOrigin = { x: 0, y: 0 };
+
 interface FamilySpec {
   family: GradientFamily;
   /** Per-gradient raster extent in user units (mesh/freeform/topo carry their own). */
   extent: (grad: GradientOutput, width: number, height: number) => [number, number];
-  gpu: (grad: GradientOutput, w: number, h: number, size: RasterSize) => Promise<string | null>;
-  cpu: (grad: GradientOutput, w: number, h: number, size: RasterSize) => string | null;
+  gpu: (grad: GradientOutput, w: number, h: number, size: RasterSize, origin: RasterOrigin) => Promise<string | null>;
+  cpu: (grad: GradientOutput, w: number, h: number, size: RasterSize, origin: RasterOrigin) => string | null;
   /** Properties the Canvas 2D path only approximates, named in the fallback notice. */
   cpuCaveat?: string;
 }
@@ -206,6 +213,7 @@ async function renderFamily(
   width: number,
   height: number,
   scale: number,
+  origin: RasterOrigin = ORIGIN_ZERO,
 ): Promise<Map<string, string>> {
   const result = new Map<string, string>();
   const members = gradients.filter((g) => g.type === spec.family);
@@ -216,8 +224,8 @@ async function renderFamily(
     const [gw, gh] = spec.extent(grad, width, height);
     const gpuSize = rasterSize(gw, gh, scale, getMaxTextureDimension2D());
     const cpuSize = rasterSize(gw, gh, scale, MAX_CANVAS_2D_DIM);
-    const gpuKey = hashGradient(grad, gpuSize.pw, gpuSize.ph, 'gpu');
-    const cpuKey = hashGradient(grad, cpuSize.pw, cpuSize.ph, '2d');
+    const gpuKey = hashGradient(grad, gpuSize.pw, gpuSize.ph, 'gpu', origin);
+    const cpuKey = hashGradient(grad, cpuSize.pw, cpuSize.ph, '2d', origin);
     const tryGpu = _gpuAvailable === true && !gpuFailed.has(gpuKey);
 
     if (tryGpu) {
@@ -246,7 +254,7 @@ async function renderFamily(
         );
       }
       try {
-        dataUrl = await spec.gpu(grad, gw, gh, gpuSize);
+        dataUrl = await spec.gpu(grad, gw, gh, gpuSize, origin);
         if (dataUrl === null) throw new Error('renderer produced no image');
         path = 'gpu';
       } catch (e: unknown) {
@@ -259,7 +267,7 @@ async function renderFamily(
 
     if (dataUrl === null) {
       try {
-        dataUrl = spec.cpu(grad, gw, gh, cpuSize);
+        dataUrl = spec.cpu(grad, gw, gh, cpuSize, origin);
       } catch (e: unknown) {
         console.warn(`[GradientService] ${spec.family} '${grad.id}' Canvas 2D render failed:`, describeError(e));
         dataUrl = null;
@@ -324,8 +332,9 @@ export async function renderConicGradients(
   width: number,
   height: number,
   scale: number = 2,
+  origin: RasterOrigin = ORIGIN_ZERO,
 ): Promise<Map<string, string>> {
-  return renderFamily(CONIC_FAMILY, gradients, width, height, scale);
+  return renderFamily(CONIC_FAMILY, gradients, width, height, scale, origin);
 }
 
 /**
@@ -389,7 +398,13 @@ function assertWithinDeviceLimit(device: GPUDevice, pw: number, ph: number, labe
 /**
  * Render a single conic gradient via WebGPU.
  */
-async function renderConicWebGPU(grad: GradientOutput, w: number, h: number, size: RasterSize): Promise<string> {
+async function renderConicWebGPU(
+  grad: GradientOutput,
+  w: number,
+  h: number,
+  size: RasterSize,
+  origin: RasterOrigin = ORIGIN_ZERO,
+): Promise<string> {
   const pipelineResult = await getConicPipeline() as RenderPipelineResult | null;
   if (!pipelineResult) throw new Error('Pipeline unavailable');
   const { device, pipeline, format } = pipelineResult;
@@ -438,8 +453,12 @@ async function renderConicWebGPU(grad: GradientOutput, w: number, h: number, siz
     const f32 = new Float32Array(uniformData);
     const u32 = new Uint32Array(uniformData);
 
-    f32[0] = (grad.cx ?? w / 2) / w; // center.x in UV space [0,1]
-    f32[1] = (grad.cy ?? h / 2) / h; // center.y in UV space [0,1]
+    // The raster covers the viewBox tile, so the centre is tile-local (the
+    // viewBox origin subtracted) before normalizing (ISSUE-027). One rule for
+    // every renderer: src/conic-param.ts resolveConicPlacement.
+    const placement = window.PathogenLang.resolveConicPlacement(grad, { x: origin.x, y: origin.y, width: w, height: h });
+    f32[0] = placement.cx / w; // center.x in UV space [0,1]
+    f32[1] = placement.cy / h; // center.y in UV space [0,1]
     f32[2] = fromAngle;
     f32[3] = toAngle;
     f32[4] = innerRadius;
@@ -1004,21 +1023,29 @@ function smoothstep(t: number): number {
  *
  * Exported so the last-resort decorator can share it. Throws on failure.
  */
-export function renderConicCanvas2D(grad: GradientOutput, w: number, h: number, size: RasterSize): string | null {
+export function renderConicCanvas2D(
+  grad: GradientOutput,
+  w: number,
+  h: number,
+  size: RasterSize,
+  origin: RasterOrigin = ORIGIN_ZERO,
+): string | null {
   const { scale, pw, ph } = size;
   const lib = window.PathogenLang;
-  const cx = grad.cx ?? w / 2;
-  const cy = grad.cy ?? h / 2;
+  // Same placement rule as the CLI wedges and the WebGPU uniform (ISSUE-027):
+  // tile-local coordinates, the canvas being the viewBox tile.
+  const placement = lib.resolveConicPlacement(grad, { x: origin.x, y: origin.y, width: w, height: h });
+  const { cx, cy } = placement;
   const render = lib.renderConic({
     cx,
     cy,
+    viewWidth: placement.viewWidth,
+    viewHeight: placement.viewHeight,
     from: grad.from ?? 0,
     to: grad.to ?? (grad.from ?? 0) + 2 * Math.PI,
     direction: grad.direction ?? 'cw',
     spread: grad.spread ?? 'clamp',
     stops: grad.stopsWithOklch || grad.stops || [],
-    viewWidth: w,
-    viewHeight: h,
     innerRadius: grad.innerRadius ?? 0,
     innerFill: grad.innerFill,
   });

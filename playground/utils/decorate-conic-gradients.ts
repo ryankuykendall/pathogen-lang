@@ -13,7 +13,7 @@
 // and `document.createElement` are browser-only APIs; the shared renderer
 // must also work in Node for the CLI.
 
-import { pushNotice, renderConicCanvas2D } from '../gpu/gradient-service.js';
+import { pushNotice, renderConicCanvas2D, type RasterOrigin } from '../gpu/gradient-service.js';
 import { MAX_CANVAS_2D_DIM, rasterSize } from '../gpu/raster-size.js';
 
 import type { GradientOutput } from '../../src/evaluator/types';
@@ -29,6 +29,7 @@ export function decorateConicGradientsWithCanvasFallback(
   gradients: GradientOutput[],
   width: number,
   height: number,
+  origin: RasterOrigin = { x: 0, y: 0 },
 ): void {
   const conicById = new Map<string, GradientOutput>();
   for (const g of gradients) {
@@ -47,7 +48,7 @@ export function decorateConicGradientsWithCanvasFallback(
     if (!image || typeof image === 'string' || !('tag' in image)) continue;
     if (image.attrs.href) continue; // already set (e.g. GPU pre-rendered)
 
-    const dataUrl = renderConicToDataUrl(grad, width, height);
+    const dataUrl = renderConicToDataUrl(grad, width, height, origin);
     if (dataUrl) {
       image.attrs.href = dataUrl;
       pushNotice(
@@ -57,9 +58,9 @@ export function decorateConicGradientsWithCanvasFallback(
   }
 }
 
-function renderConicToDataUrl(grad: GradientOutput, w: number, h: number): string | null {
+function renderConicToDataUrl(grad: GradientOutput, w: number, h: number, origin: RasterOrigin): string | null {
   try {
-    return renderConicCanvas2D(grad, w, h, rasterSize(w, h, 2, MAX_CANVAS_2D_DIM));
+    return renderConicCanvas2D(grad, w, h, rasterSize(w, h, 2, MAX_CANVAS_2D_DIM), origin);
   } catch (e) {
     // eslint-disable-next-line no-console
     console.warn('Conic gradient canvas rendering failed:', e);
