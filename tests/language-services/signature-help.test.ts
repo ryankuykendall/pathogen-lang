@@ -1,4 +1,5 @@
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
+
 import { StringTextDocument } from '../../src/language-services/document';
 import { getSignatureHelp } from '../../src/language-services/signature-help';
 
@@ -136,7 +137,11 @@ describe('getSignatureHelp', () => {
       expect(result).not.toBeNull();
       expect(result!.signatures[0].label).toContain('radialWedge');
       expect(result!.signatures[0].parameters.map((p) => p.label)).toEqual([
-        'innerR', 'outerR', 'fromAngle', 'toAngle', 'cornerR',
+        'innerR',
+        'outerR',
+        'fromAngle',
+        'toAngle',
+        'cornerR',
       ]);
     });
 
@@ -164,5 +169,69 @@ describe('getSignatureHelp', () => {
       expect(result).not.toBeNull();
       expect(result!.signatures[0].label).toContain('circle');
     });
+  });
+});
+
+describe('method signature help', () => {
+  /** Get signature help at end of source. */
+  function atEnd(source: string) {
+    const lines = source.split('\n');
+    return getSignatureHelp(new StringTextDocument(source), {
+      line: lines.length - 1,
+      character: lines[lines.length - 1].length,
+    });
+  }
+
+  const BLOCK = 'let b = @{ h 10 v 10 };\n';
+  const TEXT = 'let t = &{ text(0, 10)`Hi` };\n';
+
+  it('shows a signature for a method on a receiver', () => {
+    const result = atEnd(`${BLOCK}let r = b.rotate(`);
+    expect(result).not.toBeNull();
+    expect(result!.signatures[0].label).toBe('rotate(angle, origin?)');
+    expect(result!.activeParameter).toBe(0);
+  });
+
+  it('tracks the active parameter across commas', () => {
+    expect(atEnd(`${BLOCK}let r = b.rotate(45deg, `)!.activeParameter).toBe(1);
+    expect(atEnd(`${TEXT}let q = t.radialProject(1, 2, `)!.activeParameter).toBe(2);
+  });
+
+  it('marks optional parameters', () => {
+    // The one detail signature help is uniquely placed to show.
+    expect(atEnd(`${TEXT}let q = t.radialProject(`)!.signatures[0].label).toBe(
+      'radialProject(cx, cy, angle, distance, anchor?, autoFlip?, verticalAlign?)',
+    );
+  });
+
+  it('picks the signature belonging to the RECEIVER, not the method name', () => {
+    // drawTo takes a rotation on a TextBlock and not on a PathBlock. A flat
+    // name-keyed table could not tell these apart.
+    expect(atEnd(`${TEXT}let q = t.drawTo(`)!.signatures[0].label).toBe('drawTo(x, y, rotation?)');
+    expect(atEnd(`${BLOCK}let r = b.drawTo(`)!.signatures[0].label).toBe('drawTo(x, y)');
+  });
+
+  it('does not fall back to a same-named stdlib function', () => {
+    // `map` is both a stdlib function (value, inMin, inMax, outMin, outMax) and
+    // an array method taking a trailing block. Showing the stdlib one here
+    // would describe a different function entirely.
+    const result = atEnd('let xs = [1, 2, 3];\nlet r = xs.map(');
+    expect(result!.signatures[0].label).toBe('map()');
+    expect(result!.signatures[0].label).not.toContain('inMin');
+  });
+
+  it('returns null when the receiver type cannot be resolved', () => {
+    // Better nothing than a confidently wrong signature.
+    expect(atEnd('let r = mystery.whatever(')).toBeNull();
+  });
+
+  it('chains through a method return type', () => {
+    expect(atEnd(`${TEXT}let q = t.project(0, 0).drawTo(`)!.signatures[0].label).toBe('drawTo(x, y, rotation?)');
+  });
+
+  it('reports a valid active parameter for a zero-parameter signature', () => {
+    // Math.min(0, -1) used to yield -1, which is not a valid LSP index.
+    expect(atEnd('let x = PI(')!.activeParameter).toBe(0);
+    expect(atEnd('let xs = [1];\nlet r = xs.map(')!.activeParameter).toBe(0);
   });
 });

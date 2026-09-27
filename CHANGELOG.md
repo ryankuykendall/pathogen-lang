@@ -85,6 +85,21 @@ D7 of the placement audit, plus the two defects found while cataloguing it.
 
 #### Development
 
+- **Signature help now works for methods.** It had only ever covered top-level functions: `SIGNATURE_DATA` is built from `sourceFile.getFunctions()`, so the moment a call had a receiver — `pb.rotate(`, `t.radialProject(` — the popup went silent, on every type in the language.
+
+  It was not merely silent, either. The lookup was keyed by bare name, so `xs.map(` matched the *stdlib* `map(val, inMin, inMax, outMin, outMax)` and described a completely different function.
+
+  Method names collide across receivers, so the new `METHOD_SIGNATURE_DATA` is keyed by Pathogen type — 32 types, 204 signatures, generated from the same `@type` interfaces that already drive member completions. Signature help resolves the receiver through `resolveMemberAccess`, the same AST-first path completion and hover use, and returns nothing when the receiver will not resolve rather than guessing. Optional parameters keep their `?`, which is the detail the popup is uniquely placed to show:
+
+  ```
+  b.rotate(              rotate(angle, origin?)
+  t.drawTo(              drawTo(x, y, rotation?)      TextBlock — takes a rotation
+  b.drawTo(              drawTo(x, y)                 PathBlock — does not
+  t.radialProject(       radialProject(cx, cy, angle, distance, anchor?, autoFlip?, verticalAlign?)
+  ```
+
+  Also fixes a pre-existing off-by-one: a zero-parameter signature (`PI(`, `grid.map(`, whose parameters arrive in a trailing block) reported `activeParameter: -1`, which is not a valid LSP index.
+
 - **TextBlock and ProjectedText now have editor support.** `TextBlock` was absent from `src/pathogen-api.ts` entirely and `ProjectedText` declared only its three properties and `translate()`, so typing `.` after a text block offered nothing useful. Both types are now declared in full — 7 TextBlock methods, 8 further ProjectedText methods — which generates member completions, hover, and chain return types.
 
   The declarations alone were not enough: `inferExprType` mapped a `&{ }` expression to `ProjectedText`, a stand-in from before a TextBlock type existed. The two are genuinely different — an unplaced TextBlock has no `origin` and cannot `draw()` — so `&{ }` now infers as `TextBlock`, and `.project()` / `.drawTo()` / `.polarProject()` / `.radialProject()` are what turn it into a `ProjectedText`. Typing `.` on a text block went from 12 wrong members to 9 right ones.

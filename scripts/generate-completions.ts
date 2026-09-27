@@ -17,6 +17,7 @@ import {
   extractFromPathogenApi,
   extractTypeMembers,
   extractNamespaceMembers,
+  extractMethodSignatureData,
   extractSignatureData,
   extractConstructorReturnTypes,
   extractTypeMethodReturns,
@@ -157,6 +158,17 @@ program
       return `  '${s.name}': { label: '${escapeString(s.label)}', params: [${paramsArr}], doc: '${escapeString(s.doc)}' }`;
     });
 
+    const methodSignatureData = extractMethodSignatureData(sourceFile);
+    const methodSignatureEntries = Object.entries(methodSignatureData).map(([typeName, methods]) => {
+      const inner = Object.entries(methods)
+        .map(([m, sig]) => {
+          const paramsArr = sig.params.map((param) => `'${escapeString(param)}'`).join(', ');
+          return `    '${m}': { label: '${escapeString(sig.label)}', params: [${paramsArr}], doc: '${escapeString(sig.doc)}' }`;
+        })
+        .join(',\n');
+      return `  '${typeName}': {\n${inner},\n  }`;
+    });
+
     const constructorReturnTypes = extractConstructorReturnTypes(sourceFile);
     const constructorEntries = Object.entries(constructorReturnTypes).map(
       ([name, info]) => `  '${name}': { type: '${info.type}', hasBindingBlock: ${info.hasBindingBlock} }`,
@@ -272,6 +284,11 @@ export const SIGNATURE_DATA: Record<string, { label: string; params: string[]; d
 ${signatureEntries.join(',\n')},
 };
 
+/** Per-type method signatures for signature help on \`recv.method(|)\` — method names collide across receivers, so these are keyed by type, not by name */
+export const METHOD_SIGNATURE_DATA: Record<string, Record<string, { label: string; params: string[]; doc: string }>> = {
+${methodSignatureEntries.join(',\n')},
+};
+
 /** Constructor name → Pathogen type of the returned value (drives member-access inference) */
 export const CONSTRUCTOR_RETURN_TYPES: Record<string, { type: string; hasBindingBlock: boolean }> = {
 ${constructorEntries.join(',\n')},
@@ -316,6 +333,10 @@ ${blockParamEntries.join(',\n')},
       `  ${namespaceMembers.length} namespace member sets (${namespaceMembers.reduce((n, m) => n + m.methods.length, 0)} total methods)`,
     );
     console.log(`  ${signatureData.length} function signatures`);
+    console.log(
+      `  ${Object.keys(methodSignatureData).length} type method-signature sets ` +
+        `(${Object.values(methodSignatureData).reduce((n, m) => n + Object.keys(m).length, 0)} total)`,
+    );
     console.log(`  ${Object.keys(constructorReturnTypes).length} constructor return-type mappings`);
 
     if (opts.strict && (problems.length > 0 || warnings.length > 0 || missingMetadata.length > 0)) {

@@ -326,6 +326,46 @@ export function extractSignatureData(sourceFile: SourceFile): SignatureEntry[] {
 }
 
 /**
+ * Per-type method signatures, for signature help on `recv.method(|)`.
+ *
+ * The sibling of extractSignatureData, which only walks top-level functions —
+ * so until this existed, signature help went silent the moment a call had a
+ * receiver, on every type in the language. Keyed by Pathogen type name because
+ * method names collide across receivers: `rotate` takes an angle on PathBlock
+ * and an angle plus an origin on Point, and `drawTo` takes a rotation on
+ * TextBlock but not on PathBlock.
+ *
+ * Optional parameters keep their `?`, which is the detail signature help is
+ * uniquely placed to show.
+ */
+export function extractMethodSignatureData(sourceFile: SourceFile): Record<string, Record<string, SignatureEntry>> {
+  const result: Record<string, Record<string, SignatureEntry>> = {};
+
+  for (const iface of sourceFile.getInterfaces()) {
+    const comment = getRawJsDocComment(iface.getJsDocs());
+    if (!comment) continue;
+    const typeMatch = /@type\s+(\w+)/.exec(comment);
+    if (!typeMatch) continue;
+    const typeName = typeMatch[1];
+
+    const methods: Record<string, SignatureEntry> = {};
+    for (const method of iface.getMethods()) {
+      const name = method.getName();
+      const params = method.getParameters().map((param) => {
+        const base = param.getName().replace(/^\.\.\./, '');
+        return param.hasQuestionToken() ? `${base}?` : base;
+      });
+      const methodComment = getRawJsDocComment(method.getJsDocs());
+      const doc = methodComment ? parseJsDoc(methodComment).detail : `${name}()`;
+      methods[name] = { name, label: `${name}(${params.join(', ')})`, params, doc };
+    }
+    if (Object.keys(methods).length > 0) result[typeName] = methods;
+  }
+
+  return result;
+}
+
+/**
  * Map top-level constructor functions to the Pathogen type of the value they
  * return. A function participates when its declared return type names an
  * interface carrying a `@type` tag. Union return types (e.g. PathLayer) are
