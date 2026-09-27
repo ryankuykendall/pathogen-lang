@@ -46,6 +46,71 @@ m.append(arrow, #{ fill: context-stroke; });
 
 `.append()` can be called multiple times to layer multiple shapes inside a single marker.
 
+A marker draws in **its own coordinate space**, its `viewBox`, which defaults to `0 0 markerWidth markerHeight`. Anything you append outside that box is clipped. Two common shapes miss it. A block centered on its own origin, such as `circle(0, 0, 5)` or a glyph contour, spans negative coordinates, so three quarters of it are cut off. A `ProjectedPath` keeps its page coordinates, so a shape projected at `(200, 150)` never appears in a `0 0 10 10` box. The compiler reports both as a [`marker-space` warning](#markers-the-marker-space-warning). [`Marker.fromPathBlock()`](#markers-fitting-a-marker-to-a-shape) fixes both in one call.
+
+## Fitting a Marker to a Shape
+
+`Marker.fromPathBlock(id, shape, styles?, anchor?)` builds a marker whose viewBox **is** the shape's bounding box, so the whole shape is visible and nothing needs translating:
+
+```
+let dot = @{
+  circle(0, 0, 5);
+};
+let dotMarker = Marker.fromPathBlock('dot', dot, #{ fill: context-stroke; });
+
+define PathLayer('polyline') #{
+  stroke: Color('#333');
+  stroke-width: 3;
+  fill: none;
+  marker: dotMarker;
+}
+layer('polyline').apply {
+  M 40 100;
+  L 160 60;
+  L 280 120;
+}
+```
+
+The call is equivalent to constructing the marker and setting three properties by hand:
+
+| Property | Set to |
+|---|---|
+| `viewBox` | the shape's bounding box — `-5 -5 10 10` for the dot above |
+| `markerWidth`, `markerHeight` | the box's width and height |
+| `refX`, `refY` | the `anchor` point of that box: its center by default, or any [`BBoxAnchor`](#text-block-bboxanchor-enum) |
+
+The marker's size is still measured in stroke widths (`markerUnits` defaults to `strokeWidth`, as for `Marker()`): on a `stroke-width: 3` line the 10-unit dot above draws 30 units across. Set `dotMarker.markerUnits = MarkerUnits.UserSpaceOnUse` to draw it at its own size.
+
+- **shape** — a `PathBlock` or a `ProjectedPath`. A projected shape is fitted where it is: the viewBox takes its page coordinates, so it renders the same way.
+- **styles** — the style block for the appended path, exactly as for `.append()`. When it carries a numeric `stroke-width`, the viewBox and the marker size are padded by half that width on every side, so the stroke is not clipped at the edges. (The [`marker-space` warning](#markers-the-marker-space-warning) compares geometry only, so a stroke that spills past the box of a plain `.append()` is clipped without a warning; this padding is how a fitted marker avoids that.)
+- **anchor** — a `BBoxAnchor` value. `BBoxAnchor.Right` puts the reference point at the middle of the right edge, which is what an arrowhead drawn from `m 0 0 l 10 5 l -10 5 z` wants:
+
+```
+let arrow = @{
+  m 0 0;
+  l 10 5;
+  l -10 5;
+  z;
+};
+let tip = Marker.fromPathBlock('tip', arrow, #{ fill: context-stroke; }, BBoxAnchor.Right);
+```
+
+which emits `<marker id="tip" viewBox="0 0 10 10" markerWidth="10" markerHeight="10" refX="10" refY="5" orient="auto">`.
+
+The result is an ordinary marker: `.append()` adds more shapes to it, and every [mutable property](#markers-mutable-properties) can still be reassigned afterwards — `tip.markerUnits = MarkerUnits.UserSpaceOnUse`, `tip.orient = MarkerOrient.AutoStartReverse`. It is registered under `id` like any other def, so the same duplicate-ID rules apply.
+
+`Marker()` itself is unchanged: its viewBox stays `0 0 markerWidth markerHeight`, which is right for shapes authored in the marker's own coordinates, and existing markers render exactly as before.
+
+## The `marker-space` Warning
+
+When the program finishes, every marker is checked once: if an appended shape's bounding box is not inside the marker's final viewBox, the compiler warns, naming both:
+
+```
+Marker 'dot': the appended shape spans -5…5 × -5…5 but the marker's viewBox is 0 0 10 10 — the part outside it is clipped. Use Marker.fromPathBlock(), set viewBox, or translate the shape
+```
+
+For a `ProjectedPath` the message says the shape kept its page coordinates and suggests `toPathBlock()` instead of setting the viewBox. There is one warning per marker, covering every appended shape that misses the box (`2 appended shapes span …`). The check runs after the whole program, so assigning `viewBox` after `.append()` is fine — it is the final viewBox that counts. Only the geometry is compared; a stroke that extends past the edge is not reported. The warning's code is `marker-space`; `--strict=marker-space` makes it an error (see [Debug & Console](#debug-warnings)).
+
 ## Using Markers in Styles
 
 Reference a marker in a layer's style block using `marker-start`, `marker-mid`, or `marker-end`:
@@ -80,7 +145,7 @@ define PathLayer('vertices') #{
 
 ## Default Attribute Values
 
-Markers are created with smart defaults so the simple case just works:
+`Marker()` creates a marker with defaults chosen so the simple case just works (a marker built by [`Marker.fromPathBlock()`](#markers-fitting-a-marker-to-a-shape) takes its `viewBox`, size and reference point from the shape instead):
 
 | Attribute | Default | Notes |
 |-----------|---------|-------|
@@ -278,6 +343,7 @@ Attributes that match the SVG default are omitted to keep output compact — in 
 | Method | Description |
 |--------|-------------|
 | `.append(pathBlock, styles?)` | Add a path element to the marker. Accepts `PathBlock` or `ProjectedPath`; optional style block. |
+| `Marker.fromPathBlock(id, shape, styles?, anchor?)` | Called on `Marker` itself, not on a marker: build a marker fitted to a shape's bounding box — see [Fitting a Marker to a Shape](#markers-fitting-a-marker-to-a-shape). |
 
 ## Auto-Wrapping
 
@@ -297,11 +363,17 @@ If the value already starts with `url(`, it's left as-is.
 | `Marker() expects 3 arguments (id, markerWidth, markerHeight)` | Wrong number of constructor args |
 | `Marker() first argument must be a string` | Non-string ID |
 | `Marker() markerWidth and markerHeight arguments must be numbers` | Non-numeric dimensions |
+| `Marker.fromPathBlock() expects 2-4 arguments (id, shape, styles?, anchor?)` | Wrong number of args |
+| `Marker.fromPathBlock() first argument must be a string` | Non-string ID |
+| `Marker.fromPathBlock() second argument must be a PathBlock or ProjectedPath` | Fitting something that is not a shape |
+| `Marker.fromPathBlock() third argument must be a style block` | Styles that are not a `#{ }` block |
+| `Marker.fromPathBlock() cannot fit an empty shape` | The shape has no commands |
+| `Marker.fromPathBlock() anchor must be a BBoxAnchor value` | Fourth argument is not a `BBoxAnchor` |
 | `Duplicate defs ID '<id>'` | Another Mask, ClipPath, Gradient, Pattern, or Marker already uses this ID |
 | `Marker.append() expects 1-2 arguments (path, styles?)` | Wrong number of `.append()` args |
 | `Marker.append() first argument must be a PathBlock or ProjectedPath` | Passed something other than `@{ ... }` or a projected path |
 | `Marker.append() second argument must be a style block` | Passed something other than a `#{ ... }` style block |
-| `Unknown Marker method: <name>` | Called a method other than `.append()` |
+| `Unknown Marker method: <name>` | Called a method other than `.append()` on a marker, or other than `Marker.fromPathBlock()` on `Marker` itself |
 | `Cannot assign to Marker property '<name>'` | Assigned to a non-mutable property |
 | `Marker.refX must be a number or MarkerRefX enum value` | Assigned an invalid type to `refX` (same pattern applies to `refY`, `orient`, `markerUnits`, `preserveAspectRatio`) |
 | `Invalid value '<x>' for Marker.<prop>. Valid values: ...` | Assigned a string that isn't a member of the relevant enum |

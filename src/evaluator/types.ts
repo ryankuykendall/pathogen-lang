@@ -48,6 +48,7 @@ export type Value =
   | SubpathValue
   | SubscriptionValue
   | PathBlockNamespace
+  | MarkerNamespace
   | ProjectedPathValue
   | CyclerValue
   | SVGFragmentValue
@@ -159,6 +160,16 @@ export interface MaskPathEntry {
   styles: Record<string, string>;
 }
 
+/** A shape appended to a Marker, with what the `marker-space` check needs (placement audit V7). */
+export interface MarkerPathEntry extends MaskPathEntry {
+  /** Bounding box of the appended commands, in the marker's content coordinates. */
+  bbox?: { x: number; y: number; width: number; height: number };
+  /** True when the shape was a ProjectedPath — it kept its page coordinates. */
+  projected?: boolean;
+  /** Where it was appended, for the warning. */
+  loc?: { line?: number; column?: number };
+}
+
 /**
  * Represents a <mask> definition with appended path elements
  */
@@ -211,7 +222,7 @@ export interface MarkerValue {
   markerUnits: string; // MarkerUnits enum value ('strokeWidth' | 'userSpaceOnUse')
   orient: number | string; // number (radians) or MarkerOrient enum value ('auto' | 'auto-start-reverse')
   preserveAspectRatio: string; // MarkerPreserveAspectRatio enum value
-  paths: MaskPathEntry[]; // reuse {d, styles} type
+  paths: MarkerPathEntry[];
 }
 
 export type GridOutOfBoundsMode = 'clamp' | 'wrap' | 'null';
@@ -515,6 +526,11 @@ export interface ObjectNamespace {
   type: 'ObjectNamespace';
 }
 
+/** `Marker` used as a namespace: Marker.fromPathBlock(...). */
+export interface MarkerNamespace {
+  type: 'MarkerNamespace';
+}
+
 /**
  * Sentinel for PathBlock namespace (PathBlock.fromGlyph, etc.)
  */
@@ -777,6 +793,7 @@ export const WARNING_CODES = [
   'gradient', // gradient definition that will render degenerate
   'non-finite', // NaN / Infinity reaching path data — SVG cannot represent it
   'layer-transform', // a subscription annotated across layers whose transforms differ
+  'marker-space', // a shape appended to a Marker lies outside the marker's viewBox
 ] as const;
 
 export type WarningCode = (typeof WARNING_CODES)[number];

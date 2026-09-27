@@ -34,6 +34,14 @@ truthful, and the two design items written up as a brief.
 - `docs/cli.md`: the styling examples heading no longer collides with the page's Examples anchor, and the ten `.svgx` mentions are `.pathogen`.
 - `docs/textblock.md` states that a ProjectedText's `.origin` is cumulative; `docs/gradients.md` states that a conic gradient fills the viewBox whatever its origin.
 
+### Added
+
+#### Core
+
+- **`Marker.fromPathBlock(id, shape, styles?, anchor?)`** — a marker whose viewBox *is* the shape's bounding box, its size the box, its reference point the box's centre or any `BBoxAnchor` (`BBoxAnchor.Right` for an arrowhead's tip). A numeric `stroke-width` in the styles pads the box by half of it so the stroke is not clipped. A `ProjectedPath` is fitted where it is. The result is an ordinary marker: `.append()` and every mutable property still work. Placement audit V7, the conversion users reached for by hand: a block centred on its own origin (`circle()`, a glyph contour) appended to a default `0 0 w h` marker lost three quadrants, and a projected shape never appeared.
+
+- **The `marker-space` warning.** At the end of the program every marker is checked once: an appended shape whose bounding box is not inside the marker's final viewBox is reported, naming the span and the viewBox, and saying when the shape was a `ProjectedPath` that kept its page coordinates. Checking at the end means assigning `viewBox` after `.append()` is honoured. `--strict=marker-space` makes it an error. No published sample trips it.
+
 ### Development
 
 - **Two named constructors for derived PathBlocks** (audit V8): `fromCommandsKeepingFrame` and `fromCommandsRebased` replace `buildPathBlockFromCommands(cmds, origin?)`, whose `{ x: 0, y: 0 }` argument *preserved* the frame — read as "put it at the origin" it meant the opposite, and each of 22 call sites had picked by hand. Renamed to what each already did; all 294 published samples render byte-identically before and after, and the probe matrix is unchanged. The naming made one thing visible: `offset` and `mirror` re-base, and only look frame-keeping because a block literal's first command starts at `(0, 0)`.

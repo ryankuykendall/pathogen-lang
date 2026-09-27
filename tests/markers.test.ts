@@ -430,4 +430,128 @@ describe('Markers', () => {
       expect(contextResult.markers).toEqual(compileResult.markers);
     });
   });
+  describe('Marker.fromPathBlock()', () => {
+    const DOT = 'let dot = @{ circle(0, 0, 5); };';
+    const ARROW = 'let arrow = @{ m 0 0 l 10 5 l -10 5 z };';
+    const USE = (m: string): string => `define PathLayer('p') #{ stroke: #333; fill: none; marker: ${m}; }\nlayer('p').apply { M 0 0 L 50 0 }`;
+    const warnings = (src: string): string[] => compile(src).warnings.filter((w) => w.code === 'marker-space').map((w) => w.message);
+
+    it('fits the viewBox, size and reference point to the shape and applies the styles', () => {
+      const result = compile(`${DOT}
+        let m = Marker.fromPathBlock('dot', dot, #{ fill: context-stroke; });
+        ${USE('m')}`);
+      const marker = result.markers![0];
+      expect(marker).toMatchObject({ id: 'dot', viewBox: '-5 -5 10 10', markerWidth: 10, markerHeight: 10, refX: '0', refY: '0', orient: 'auto' });
+      expect(marker.elements).toHaveLength(1);
+      expect(marker.elements[0].styles.fill).toBe('context-stroke');
+      expect(marker.elements[0].pathData.startsWith('M ')).toBe(true);
+      expect(result.warnings.filter((w) => w.code === 'marker-space')).toEqual([]);
+      const svg = toSvgString(buildSvgTree(result));
+      expect(svg).toContain('<marker id="dot" viewBox="-5 -5 10 10" markerWidth="10" markerHeight="10" refX="0" refY="0"');
+      expect(svg).toContain('marker-start="url(#dot)" marker-mid="url(#dot)" marker-end="url(#dot)"');
+    });
+
+    it('pads the box by half a numeric stroke-width, keeping the reference point', () => {
+      const marker = compile(`${DOT}
+        let m = Marker.fromPathBlock('dot', dot, #{ fill: none; stroke: context-stroke; stroke-width: 2; });
+        ${USE('m')}`).markers![0];
+      expect(marker).toMatchObject({ viewBox: '-6 -6 12 12', markerWidth: 12, markerHeight: 12, refX: '0', refY: '0' });
+    });
+
+    it('puts the reference point at a BBoxAnchor', () => {
+      const marker = compile(`${ARROW}
+        let tip = Marker.fromPathBlock('tip', arrow, #{ fill: context-stroke; }, BBoxAnchor.Right);
+        ${USE('tip')}`).markers![0];
+      expect(marker).toMatchObject({ viewBox: '0 0 10 10', refX: '10', refY: '5' });
+      const bottomLeft = compile(`${ARROW}
+        let m = Marker.fromPathBlock('m', arrow, #{ fill: context-stroke; }, BBoxAnchor.BottomLeft);
+        ${USE('m')}`).markers![0];
+      expect(bottomLeft).toMatchObject({ refX: '0', refY: '10' });
+    });
+
+    it('fits a ProjectedPath where it is, with no warning', () => {
+      const result = compile(`${ARROW}
+        let far = Marker.fromPathBlock('far', arrow.project(200, 150));
+        ${USE('far')}`);
+      expect(result.markers![0]).toMatchObject({ viewBox: '200 150 10 10', refX: '205', refY: '155' });
+      expect(result.markers![0].elements[0].pathData.startsWith('M 200 150')).toBe(true);
+      expect(result.warnings.filter((w) => w.code === 'marker-space')).toEqual([]);
+    });
+
+    it('returns an ordinary marker: append and property assignment still work', () => {
+      const result = compile(`${DOT}${ARROW}
+        let m = Marker.fromPathBlock('m', arrow, #{ fill: context-stroke; });
+        m.append(@{ m 2 2 l 6 3 l -6 3 z }, #{ fill: #fff; });
+        m.orient = MarkerOrient.AutoStartReverse;
+        m.markerUnits = MarkerUnits.UserSpaceOnUse;
+        ${USE('m')}`);
+      expect(result.markers![0].elements).toHaveLength(2);
+      expect(result.markers![0]).toMatchObject({ orient: 'auto-start-reverse', markerUnits: 'userSpaceOnUse' });
+    });
+
+    it('rejects bad arguments and duplicate ids', () => {
+      expect(() => compile(`${DOT} let m = Marker.fromPathBlock('m');`)).toThrow(/expects 2-4 arguments/);
+      expect(() => compile(`${DOT} let m = Marker.fromPathBlock(5, dot);`)).toThrow(/first argument must be a string/);
+      expect(() => compile(`let m = Marker.fromPathBlock('m', 5);`)).toThrow(/must be a PathBlock or ProjectedPath/);
+      expect(() => compile(`let m = Marker.fromPathBlock('m', @{ });`)).toThrow(/cannot fit an empty shape/);
+      expect(() => compile(`${DOT} let m = Marker.fromPathBlock('m', dot, 5);`)).toThrow(/third argument must be a style block/);
+      expect(() => compile(`${DOT} let m = Marker.fromPathBlock('m', dot, #{ }, 5);`)).toThrow(/anchor must be a BBoxAnchor value/);
+      expect(() => compile(`${DOT} let m = Marker.fromPathBlock('m', dot, #{ }, 'nowhere');`)).toThrow(/Invalid BBoxAnchor value/);
+      expect(() =>
+        compile(`${DOT} let a = Marker('m', 10, 10) {|m| m.append(dot); }; let b = Marker.fromPathBlock('m', dot);`),
+      ).toThrow(/Duplicate defs ID 'm'/);
+      expect(() => compile(`${DOT} let m = Marker.fromPathBlock('m', dot); let n = Marker.nope();`)).toThrow(/Unknown Marker method: nope/);
+    });
+  });
+
+  describe('marker-space warning', () => {
+    const DOT = 'let dot = @{ circle(0, 0, 5); };';
+    const ARROW = 'let arrow = @{ m 0 0 l 10 5 l -10 5 z };';
+    const warnings = (src: string): string[] => compile(src).warnings.filter((w) => w.code === 'marker-space').map((w) => w.message);
+
+    it('warns once per marker when an appended block lies outside the viewBox, naming both', () => {
+      const w = warnings(`${DOT}
+        let m = Marker('dot', 10, 10) {|m| m.append(dot); m.append(dot); };
+        M 0 0`);
+      expect(w).toHaveLength(1);
+      expect(w[0]).toBe(
+        "Marker 'dot': 2 appended shapes span -5…5 × -5…5 but the marker's viewBox is 0 0 10 10 — the part outside it is clipped. Use Marker.fromPathBlock(), set viewBox, or translate the shape",
+      );
+      const single = warnings(`${DOT}
+        let m = Marker('dot', 10, 10) {|m| m.append(dot); };
+        M 0 0`);
+      expect(single[0]).toContain("Marker 'dot': the appended shape spans -5…5 × -5…5 but the marker's viewBox is 0 0 10 10");
+    });
+
+    it('says that a ProjectedPath kept its page coordinates', () => {
+      const w = warnings(`${ARROW}
+        let m = Marker('ghost', 10, 10) {|m| m.append(arrow.project(200, 150)); };
+        M 0 0`);
+      expect(w).toHaveLength(1);
+      expect(w[0]).toContain('the appended ProjectedPath kept its page coordinates and spans 200…210 × 150…160');
+      expect(w[0]).toContain('toPathBlock() and append that');
+    });
+
+    it('carries the position of the append', () => {
+      const result = compile(`${DOT}
+        let m = Marker('dot', 10, 10) {|m|
+          m.append(dot);
+        };
+        M 0 0`);
+      const w = result.warnings.find((x) => x.code === 'marker-space')!;
+      expect(w.line).toBe(3);
+    });
+
+    it('is silent when the shape fits, and when viewBox is assigned after append', () => {
+      expect(warnings(`${ARROW} let m = Marker('a', 10, 10) {|m| m.append(arrow); }; M 0 0`)).toEqual([]);
+      expect(warnings(`${DOT} let m = Marker('late', 10, 10) {|m| m.append(dot); }; m.viewBox = \`-5 -5 10 10\`; M 0 0`)).toEqual([]);
+      expect(warnings(`${DOT} let m = Marker.fromPathBlock('fit', dot); M 0 0`)).toEqual([]);
+    });
+
+    it('becomes an error under strict mode', () => {
+      expect(() =>
+        compile(`${DOT} let m = Marker('dot', 10, 10) {|m| m.append(dot); }; M 0 0`, { strict: ['marker-space'] }),
+      ).toThrow(/marker-space/);
+    });
+  });
 });

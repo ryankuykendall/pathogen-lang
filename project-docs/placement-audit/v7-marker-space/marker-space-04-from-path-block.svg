@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 460" width="900" height="460">
+
+<defs>
+  <marker id="dot" viewBox="-5.5 -5.5 11 11" markerWidth="11" markerHeight="11" refX="0" refY="0" orient="auto">
+    <path d="M -5 0 A 5 5 0 1 1 5 0 A 5 5 0 1 1 -5 0" fill="context-stroke" stroke="#fff" stroke-width="1"/>
+  </marker>
+  <marker id="tip" viewBox="0 0 10 10" markerWidth="10" markerHeight="10" refX="10" refY="5" orient="auto">
+    <path d="M 0 0 L 10 5 L 0 10 Z" fill="context-stroke"/>
+  </marker>
+  <marker id="far" viewBox="200 150 10 10" markerWidth="10" markerHeight="10" refX="210" refY="155" orient="auto">
+    <path d="M 200 150 L 210 155 L 200 160 Z" fill="context-stroke"/>
+  </marker>
+</defs>
+
+  <path data-layer-name="polyline" id="polyline" d="M 70 110 L 170 70 L 270 150 L 380 90" fill="none" stroke="#2a7f62" stroke-width="4" marker-start="url(#dot)" marker-mid="url(#dot)" marker-end="url(#dot)"/>
+  <path data-layer-name="arrow-line" id="arrow-line" d="M 70 220 L 380 220" fill="none" stroke="#2a7f62" stroke-width="4" marker-end="url(#tip)"/>
+  <path data-layer-name="far-line" id="far-line" d="M 70 290 L 380 290" fill="none" stroke="#2a7f62" stroke-width="4" marker-end="url(#far)"/>
+  <text data-layer-name="titles" id="titles" x="40" y="50" font-family="sans-serif" font-size="18" font-weight="bold" fill="#222">What renders — Marker.fromPathBlock()</text>
+  <text data-layer-name="titles" x="500" y="50" font-family="sans-serif" font-size="18" font-weight="bold" fill="#222">What each call computed</text>
+  <text data-layer-name="labels" id="labels" x="40" y="180" font-family="sans-serif" font-size="13" fill="#444">dot, fitted with a 1-unit white stroke</text>
+  <text data-layer-name="labels" x="40" y="250" font-family="sans-serif" font-size="13" fill="#444">arrow, reference point at BBoxAnchor.Right</text>
+  <text data-layer-name="labels" x="40" y="320" font-family="sans-serif" font-size="13" fill="#444">the same arrow projected at (200, 150), fitted where it is</text>
+  <text data-layer-name="code" id="code" x="470" y="100" font-family="monospace" font-size="11" fill="#1f5c47">Marker.fromPathBlock('dot', dot, #{ … stroke-width: 1; })</text>
+  <text data-layer-name="code" x="470" y="118" font-family="monospace" font-size="11" fill="#1f5c47">  viewBox  -5.5 -5.5 11 11   (box -5 -5 10 10, padded by 0.5)</text>
+  <text data-layer-name="code" x="470" y="136" font-family="monospace" font-size="11" fill="#1f5c47">  ref      0, 0</text>
+  <text data-layer-name="code" x="470" y="172" font-family="monospace" font-size="11" fill="#1f5c47">Marker.fromPathBlock('tip', arrow, #{ … }, BBoxAnchor.Right)</text>
+  <text data-layer-name="code" x="470" y="190" font-family="monospace" font-size="11" fill="#1f5c47">  viewBox  0 0 10 10</text>
+  <text data-layer-name="code" x="470" y="208" font-family="monospace" font-size="11" fill="#1f5c47">  ref      10, 5   (the tip)</text>
+  <text data-layer-name="code" x="470" y="244" font-family="monospace" font-size="11" fill="#1f5c47">Marker.fromPathBlock('far', arrow.project(200, 150), …, Right)</text>
+  <text data-layer-name="code" x="470" y="262" font-family="monospace" font-size="11" fill="#1f5c47">  viewBox  200 150 10 10   (page coordinates, kept)</text>
+  <text data-layer-name="code" x="470" y="280" font-family="monospace" font-size="11" fill="#1f5c47">  ref      210, 155</text>
+  <text data-layer-name="code" x="470" y="330" font-family="monospace" font-size="11" fill="#1f5c47">Compare 01 and 02: Marker('dot', 10, 10) + append(dot) clips</text>
+  <text data-layer-name="code" x="470" y="348" font-family="monospace" font-size="11" fill="#1f5c47">three quadrants, and append(arrow.project(…)) draws nothing.</text>
+  <text data-layer-name="code" x="470" y="366" font-family="monospace" font-size="11" fill="#1f5c47">Both now raise the marker-space warning; this call is the fix.</text>
+</svg>

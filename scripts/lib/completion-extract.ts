@@ -198,9 +198,14 @@ export function extractFromPathogenApi(sourceFile: SourceFile, warnings?: Extrac
     completions.push({ label: name, kind, detail, boost });
   }
 
-  // Namespace declarations (Color, Object, Cap, PathBlock) — no template
+  // Namespace declarations (Color, Object, Cap, PathBlock) — no template.
+  // A name declared as BOTH a function and a namespace (Marker, whose
+  // Marker.fromPathBlock() rides on the constructor's name) keeps the
+  // function entry; its members still come from extractNamespaceMembers.
+  const declared = new Set(completions.map((c) => c.label));
   for (const ns of sourceFile.getModules()) {
     const name = ns.getName();
+    if (declared.has(name)) continue;
 
     const comment = getRawJsDocComment(ns.getJsDocs());
     if (!comment) continue;

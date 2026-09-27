@@ -1,0 +1,104 @@
+// V7 / marker space — the design half, built: Marker.fromPathBlock().
+// The viewBox is the shape's bounding box, the reference point its anchor, the marker
+// size the box — one call, no arithmetic. Both silent failures from 01 and 02 are
+// covered: the origin-centred dot and the projected arrow.
+define ViewBox(0, 0, 900, 460);
+
+let dot = @{
+  circle(0, 0, 5);
+};
+let arrow = @{
+  m 0 0;
+  l 10 5;
+  l -10 5;
+  z;
+};
+
+// The dot: fitted, with a stroke — the box is padded by half the stroke-width.
+let dotMarker = Marker.fromPathBlock('dot', dot, #{
+  fill: context-stroke;
+  stroke: #fff;
+  stroke-width: 1;
+});
+
+// The arrow: reference point at the tip, so the line ends exactly at the point.
+let tipMarker = Marker.fromPathBlock('tip', arrow, #{ fill: context-stroke; }, BBoxAnchor.Right);
+
+// A projected shape is fitted where it is — the viewBox takes its page coordinates.
+let farMarker = Marker.fromPathBlock('far', arrow.project(200, 150), #{ fill: context-stroke; }, BBoxAnchor.Right);
+
+// ── Left panel: what renders ─────────────────────────────────────────────────
+define PathLayer('polyline') #{
+  stroke: #2a7f62;
+  stroke-width: 4;
+  fill: none;
+  marker: dotMarker;
+}
+define PathLayer('arrow-line') #{
+  stroke: #2a7f62;
+  stroke-width: 4;
+  fill: none;
+  marker-end: tipMarker;
+}
+define PathLayer('far-line') #{
+  stroke: #2a7f62;
+  stroke-width: 4;
+  fill: none;
+  marker-end: farMarker;
+}
+layer('polyline').apply {
+  M 70 110;
+  L 170 70;
+  L 270 150;
+  L 380 90;
+}
+layer('arrow-line').apply {
+  M 70 220;
+  L 380 220;
+}
+layer('far-line').apply {
+  M 70 290;
+  L 380 290;
+}
+
+// ── Right panel: what the call computed ──────────────────────────────────────
+define TextLayer('titles') #{
+  font-family: sans-serif;
+  font-size: 18;
+  font-weight: bold;
+  fill: #222;
+}
+define TextLayer('labels') #{
+  font-family: sans-serif;
+  font-size: 13;
+  fill: #444;
+}
+define TextLayer('code') #{
+  font-family: monospace;
+  font-size: 11;
+  fill: #1f5c47;
+}
+
+layer('titles').apply {
+  text(40, 50)`What renders — Marker.fromPathBlock()`;
+  text(500, 50)`What each call computed`;
+}
+layer('labels').apply {
+  text(40, 180)`dot, fitted with a 1-unit white stroke`;
+  text(40, 250)`arrow, reference point at BBoxAnchor.Right`;
+  text(40, 320)`the same arrow projected at (200, 150), fitted where it is`;
+}
+layer('code').apply {
+  text(470, 100)`Marker.fromPathBlock('dot', dot, #{ … stroke-width: 1; })`;
+  text(470, 118)`  viewBox  ${dotMarker.viewBox}   (box -5 -5 10 10, padded by 0.5)`;
+  text(470, 136)`  ref      ${dotMarker.refX}, ${dotMarker.refY}`;
+  text(470, 172)`Marker.fromPathBlock('tip', arrow, #{ … }, BBoxAnchor.Right)`;
+  text(470, 190)`  viewBox  ${tipMarker.viewBox}`;
+  text(470, 208)`  ref      ${tipMarker.refX}, ${tipMarker.refY}   (the tip)`;
+  text(470, 244)`Marker.fromPathBlock('far', arrow.project(200, 150), …, Right)`;
+  text(470, 262)`  viewBox  ${farMarker.viewBox}   (page coordinates, kept)`;
+  text(470, 280)`  ref      ${farMarker.refX}, ${farMarker.refY}`;
+  text(470, 330)`Compare 01 and 02: Marker('dot', 10, 10) + append(dot) clips`;
+  text(470, 348)`three quadrants, and append(arrow.project(…)) draws nothing.`;
+  text(470, 366)`Both now raise the marker-space warning; this call is the fix.`;
+}

@@ -102,6 +102,24 @@ describe('deriveTemplate', () => {
 });
 
 describe('extractFromPathogenApi', () => {
+  it('emits one top-level entry for a name declared as both a function and a namespace', () => {
+    // Marker is a constructor AND carries Marker.fromPathBlock(); the function entry
+    // wins (it has the snippet) and the namespace's members are still extracted.
+    const sf = loadApiSource(`
+      /** Marker('id', w, h) — A marker @boost 10 */
+      export declare function Marker(id: string, w: number, h: number): unknown;
+      /** Marker — also a namespace @kind variable */
+      export declare namespace Marker {
+        /** Marker.fromPathBlock(id, shape) — fitted marker */
+        function fromPathBlock(id: string, shape: unknown): unknown;
+      }
+    `);
+    const top = extractFromPathogenApi(sf).filter((e) => e.label === 'Marker');
+    expect(top).toHaveLength(1);
+    expect(top[0].kind).toBe('function');
+    expect(JSON.stringify(extractNamespaceMembers(sf))).toContain('fromPathBlock');
+  });
+
   it('attaches derived insertText to function completions', () => {
     const sf = loadApiSource(`
       /** lerp(a, b, t) — Linear interpolation @boost 14 */

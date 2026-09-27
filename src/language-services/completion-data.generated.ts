@@ -1088,6 +1088,14 @@ export const TYPE_MEMBERS: Record<string, MemberCompletionSet> = {
 
 /** Namespace member completion sets keyed by namespace name */
 export const NAMESPACE_MEMBERS: Record<string, MemberCompletionSet> = {
+  'Marker': {
+    properties: [
+
+    ],
+    methods: [
+      { label: 'fromPathBlock', kind: 'function', detail: 'Marker.fromPathBlock(id, shape, styles?, anchor?) — Marker whose viewBox is the shape\'s bounding box; refX/refY at the BBoxAnchor (default Center); a numeric stroke-width in styles pads the box', boost: 8, insertText: 'fromPathBlock(\'${1:id}\', ${2:shape})$0', isSnippet: true },
+    ],
+  },
   'Object': {
     properties: [
 
@@ -1639,6 +1647,7 @@ export const TYPE_ELEMENT_TYPES: Record<string, Record<string, string>> = {
 
 /** Namespace function return types (resolves let glyphs = PathBlock.fromGlyph(...), including array element types) */
 export const NAMESPACE_METHOD_RETURNS: Record<string, Record<string, { type: string; elementType?: string }>> = {
+  'Marker': { fromPathBlock: { type: 'Marker' } },
   'Object': { keys: { type: 'array' }, values: { type: 'array' }, entries: { type: 'array' } },
   'Color': { mix: { type: 'ColorInstance' }, palette: { type: 'array', elementType: 'ColorInstance' }, lightDark: { type: 'ColorInstance' } },
   'PathBlock': { fromGlyph: { type: 'array', elementType: 'PathBlock' } },

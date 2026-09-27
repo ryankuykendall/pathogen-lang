@@ -1,6 +1,6 @@
 # 07 — Design brief: V3 and V7
 
-**Date:** 2026-09-26 · **Status:** options and a recommendation, nothing built · **Reads
+**Date:** 2026-09-26 · **Status:** V7's Marker edge built 2026-09-27 (Ryan chose `Marker.fromPathBlock`; the cheap half landed with it as a warning); V3-A agreed, not built · **Reads
 first:** `06-vocabulary.md` (this note uses its collapsed terms: *page coordinates*, *local
 coordinates*, *placed* / *free-floating*, *re-basing*, *placing*), then `03-principles.md`.
 
@@ -158,6 +158,14 @@ product question, not a placement one.
 
 Decisions for Ryan: (1) warning or error for a ProjectedPath into a Marker? (2) Which
 spelling for the conversion — `Marker.fromPathBlock` or `marker.fit(block)` — or both?
+
+**Built 2026-09-27.** (2) `Marker.fromPathBlock(id, shape, styles?, anchor?)` (Ryan's choice);
+(1) a warning, `marker-space`, one per marker, checked at the END of the program against the
+final viewBox so a late `viewBox =` assignment is honoured; it names the shape's span and the
+viewBox, and says when the shape was a ProjectedPath. One rule for both cases: the appended
+shape's bounding box must lie inside the viewBox. `fromPathBlock` accepts a ProjectedPath too
+and fits it where it is. Docs: `docs/markers.md` (two new sections); diagram
+`v7-marker-space/04-from-path-block`. `marker.fit(block)` was not built.
 
 ## Sequencing and cost
 

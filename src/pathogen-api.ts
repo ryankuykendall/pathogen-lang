@@ -139,6 +139,11 @@ export declare function TopoGradient(id: string, width: number, height: number):
 export declare function Pattern(id: string, x: number, y: number, width: number, height: number): PathogenPattern;
 /** Marker('id', markerWidth, markerHeight) {|m| ...} — Arrowhead/vertex marker; styles support context-stroke and context-fill @boost 10 @snippet Marker('${1:id}', ${2:10}, ${3:10}) {|${4:m}|\n\t$0\n} */
 export declare function Marker(id: string, markerWidth: number, markerHeight: number): PathogenMarker;
+/** Marker — also a namespace: Marker.fromPathBlock() fits a marker to a shape's bounding box @kind variable */
+export declare namespace Marker {
+  /** Marker.fromPathBlock(id, shape, styles?, anchor?) — Marker whose viewBox is the shape's bounding box; refX/refY at the BBoxAnchor (default Center); a numeric stroke-width in styles pads the box */
+  function fromPathBlock(id: string, shape: PathogenPathBlock, styles?: Value, anchor?: string): PathogenMarker;
+}
 
 // =============================================================================
 // Context-Aware Functions (implemented in evaluator, not stdlib)

@@ -152,7 +152,7 @@ ProjectedPath. Defensible, undocumented, surprising when a call moves between re
 
 ---
 
-## V7 — Space conversions are silent · P4 · **medium, needs design**
+## V7 — Space conversions are silent · P4 · **medium, needs design** · **Marker edge DONE 2026-09-27**
 
 A PathBlock appended to a `Marker` is read as marker-viewBox coordinates; a ProjectedPath
 appended to the same keeps page numbers inside a `0 0 mw mh` viewBox and renders nothing. A
@@ -184,7 +184,7 @@ receivers or state the exclusion. `03` now states it.
 3. ~~**The `subPath` decision**, then **V1 Fix B + V2**~~ — done 2026-09-25, followed by Fix A.
 4. ~~**V8**~~ — **done 2026-09-26**: `fromCommandsKeepingFrame` / `fromCommandsRebased`, renamed to what each site already did; samples and matrix byte-identical (`03`, "The mechanism").
 5. **Documentation** — ~~V5, V6~~ (done 2026-09-26: `docs/path-blocks.md`, the `drawTo` contract by receiver and the pivots table, plus D6), and `06`'s vocabulary collapse (open).
-6. **V3, V7** — the design tasks; options and a recommendation in `07-design-brief.md` (2026-09-26), nothing built. ~~V9~~ done the same day: text receivers are in the `02` matrix.
+6. **V3, V7** — the design tasks; options and a recommendation in `07-design-brief.md` (2026-09-26). V7's Marker edge is built (2026-09-27): the `marker-space` warning (P4, both spaces named) and `Marker.fromPathBlock()`; the layer-transform Option A stays parked. V3-A agreed, not yet built. ~~V9~~ done: text receivers are in the `02` matrix.
 
 The first draft put V2 first on the strength of "Cost: none". That was wrong, and with the
 cost corrected the order inverts: **V4 goes first**, on severity.

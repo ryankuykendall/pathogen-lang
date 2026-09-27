@@ -62,6 +62,9 @@ Consequences, both silent:
 - A **ProjectedPath** handed to the same method keeps its page numbers: a path projected at
   `(200, 150)` sits at `(200, 150)` inside a `0 0 10 10` viewBox, entirely invisible.
 
+**2026-09-27:** both now raise the `marker-space` warning (checked against the marker's final
+viewBox), and `Marker.fromPathBlock()` is the conversion — see `07-design-brief.md`, V7.
+
 ## Space 4: why the glyph example adds `(x, y)`
 
 A glyph outline is neither em units nor page units: it is *font-size-scaled units measured

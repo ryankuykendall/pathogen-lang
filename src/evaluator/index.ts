@@ -152,6 +152,7 @@ import type {
   LayerStyle,
   LogEntry,
   LogPart,
+  MarkerNamespace,
   MarkerOutput,
   MarkerValue,
   MaskOutput,
@@ -259,6 +260,7 @@ export type {
   LayerStyle,
   LogEntry,
   LogPart,
+  MarkerNamespace,
   MarkerOutput,
   MarkerValue,
   MaskOutput,
@@ -1091,6 +1093,10 @@ function lookupVariable(scope: Scope, name: string, line?: number, column?: numb
   // Cap namespace (end caps for compoundVariableOffset)
   if (name === 'Cap') {
     return { type: 'CapNamespace' } as CapNamespace;
+  }
+  // Marker namespace (Marker.fromPathBlock); Marker(...) itself is a constructor call
+  if (name === 'Marker') {
+    return { type: 'MarkerNamespace' } as MarkerNamespace;
   }
   // Ambient viewbox global — fresh copy per read so the struct is read-only
   // and evalState's `loc` never leaks into user code.
@@ -5226,7 +5232,14 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
           if (!isStyleBlock(styleArg)) throw mError('Marker.append() second argument must be a style block');
           styles = { ...styleArg.properties };
         }
-        obj.paths.push({ d, styles });
+        obj.paths.push({
+          d,
+          styles,
+          // For the marker-space check at the end of the program (V7).
+          ...(commands.length > 0 ? { bbox: computeBoundingBox(commands) } : {}),
+          projected: isProjectedPathValue(pathArg),
+          loc: { line: getLine(expr), column: getCol(expr) },
+        });
         return 0;
       }
       default:
@@ -5964,6 +5977,86 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
       }
       default:
         throw mError(`Unknown Cap method: ${expr.method}`);
+    }
+  }
+
+  // MarkerNamespace methods (Marker.fromPathBlock) — placement audit V7
+  if (typeof obj === 'object' && obj !== null && 'type' in obj && obj.type === 'MarkerNamespace') {
+    switch (expr.method) {
+      case 'fromPathBlock': {
+        if (expr.args.length < 2 || expr.args.length > 4)
+          throw mError('Marker.fromPathBlock() expects 2-4 arguments (id, shape, styles?, anchor?)');
+        if (!scope.evalState) throw mError('Marker.fromPathBlock() requires evaluation context');
+        const id = evaluateExpression(expr.args[0], scope);
+        if (typeof id !== 'string') throw mError('Marker.fromPathBlock() first argument must be a string');
+        try {
+          validateCSSIdent(id, 'marker-id');
+        } catch (e) {
+          throw mError((e as Error).message);
+        }
+        const shapeArg = evaluateExpression(expr.args[1], scope);
+        let commands: PathBlockCommand[];
+        let projected = false;
+        if (isProjectedPathValue(shapeArg)) {
+          commands = shapeArg.commands;
+          projected = true;
+        } else if (isPathBlockValue(shapeArg)) {
+          commands = projectCommands(shapeArg.commands, 0, 0);
+        } else {
+          throw mError('Marker.fromPathBlock() second argument must be a PathBlock or ProjectedPath');
+        }
+        if (commands.length === 0) throw mError('Marker.fromPathBlock() cannot fit an empty shape');
+        let styles: Record<string, string> = {};
+        if (expr.args.length >= 3) {
+          const styleArg = evaluateExpression(expr.args[2], scope);
+          if (!isStyleBlock(styleArg)) throw mError('Marker.fromPathBlock() third argument must be a style block');
+          styles = { ...styleArg.properties };
+        }
+        let anchor = 'center';
+        if (expr.args.length === 4) {
+          const anchorArg = evaluateExpression(expr.args[3], scope);
+          if (typeof anchorArg !== 'string') throw mError('Marker.fromPathBlock() anchor must be a BBoxAnchor value');
+          anchor = anchorArg;
+        }
+        if (
+          scope.evalState.masks.has(id) ||
+          scope.evalState.clipPaths.has(id) ||
+          scope.evalState.gradients.has(id) ||
+          scope.evalState.patterns.has(id) ||
+          scope.evalState.markers.has(id) ||
+          scope.evalState.filters.has(id)
+        ) {
+          throw mError(`Duplicate defs ID '${id}': a Mask, ClipPath, Gradient, Pattern, Marker, or Filter with this ID already exists`);
+        }
+        // The viewBox IS the shape's bounding box (what .boundingBox() reports), padded by
+        // half a numeric stroke-width so a stroke is not clipped at the edges; the
+        // reference point is the anchor of the UNPADDED box.
+        const bb = computeBoundingBox(commands);
+        const ref = resolveAnchorPoint(bb, anchor, mError);
+        const strokeWidth = Number(styles['stroke-width']);
+        const pad = Number.isFinite(strokeWidth) && strokeWidth > 0 ? strokeWidth / 2 : 0;
+        const vx = bb.x - pad;
+        const vy = bb.y - pad;
+        const vw = bb.width + 2 * pad;
+        const vh = bb.height + 2 * pad;
+        const marker: MarkerValue = {
+          type: 'MarkerValue',
+          id,
+          viewBox: `${formatNum(vx)} ${formatNum(vy)} ${formatNum(vw)} ${formatNum(vh)}`,
+          markerWidth: vw,
+          markerHeight: vh,
+          refX: ref.x,
+          refY: ref.y,
+          markerUnits: 'strokeWidth',
+          orient: 'auto',
+          preserveAspectRatio: 'xMidYMid meet',
+          paths: [{ d: defsPathData(commands), styles, bbox: bb, projected, loc: { line: getLine(expr), column: getCol(expr) } }],
+        };
+        scope.evalState.markers.set(id, marker);
+        return marker;
+      }
+      default:
+        throw mError(`Unknown Marker method: ${expr.method}`);
     }
   }
 
@@ -11141,6 +11234,45 @@ function buildCompileResult(mainAccum: PathStore, evalState: EvaluationState): C
   // Build markers output
   const markers: MarkerOutput[] = [];
   for (const [, marker] of evalState.markers) {
+    // marker-space (placement audit V7): a marker draws only inside its FINAL viewBox,
+    // so the check runs here, after the program — assigning viewBox after append is fine.
+    const vb = marker.viewBox.trim().split(/\s+/).map(Number);
+    if (vb.length === 4 && vb.every((n) => Number.isFinite(n))) {
+      const [vx, vy, vw, vh] = vb;
+      const EPS = 1e-6;
+      const outside = marker.paths.filter(
+        (p) =>
+          p.bbox !== undefined &&
+          (p.bbox.x < vx - EPS ||
+            p.bbox.y < vy - EPS ||
+            p.bbox.x + p.bbox.width > vx + vw + EPS ||
+            p.bbox.y + p.bbox.height > vy + vh + EPS),
+      );
+      if (outside.length > 0) {
+        const boxes = outside.map((p) => p.bbox!);
+        const x0 = Math.min(...boxes.map((b) => b.x));
+        const y0 = Math.min(...boxes.map((b) => b.y));
+        const x1 = Math.max(...boxes.map((b) => b.x + b.width));
+        const y1 = Math.max(...boxes.map((b) => b.y + b.height));
+        const span = `${formatNum(x0)}…${formatNum(x1)} × ${formatNum(y0)}…${formatNum(y1)}`;
+        const projected = outside.every((p) => p.projected === true);
+        const what =
+          outside.length === 1
+            ? projected
+              ? 'the appended ProjectedPath kept its page coordinates and spans'
+              : 'the appended shape spans'
+            : `${outside.length} appended shapes${projected ? ' (ProjectedPaths, which keep their page coordinates)' : ''} span`;
+        const fix = projected
+          ? 'Use Marker.fromPathBlock(), or toPathBlock() and append that'
+          : 'Use Marker.fromPathBlock(), set viewBox, or translate the shape';
+        warn(
+          evalState,
+          'marker-space',
+          `Marker '${marker.id}': ${what} ${span} but the marker's viewBox is ${marker.viewBox} — the part outside it is clipped. ${fix}`,
+          outside[0].loc,
+        );
+      }
+    }
     // Convert refX/refY to output string: keyword stays as-is, number is stringified
     const refX = typeof marker.refX === 'number' ? formatNum(marker.refX) : marker.refX;
     const refY = typeof marker.refY === 'number' ? formatNum(marker.refY) : marker.refY;
