@@ -934,10 +934,10 @@ let diamond = @{
 
 // --- Rotate each at gentle increments for nesting ---
 
-let r1 = big_rect.rotateAtVertexIndex(0, 0.12);
-let r2 = med_rect.rotateAtVertexIndex(0, 0.20);
-let r3 = sm_rect.rotateAtVertexIndex(0, 0.30);
-let r4 = diamond.rotateAtVertexIndex(0, 0.22);
+let r1 = big_rect.rotateAtVertexIndex(0, 0.12rad);
+let r2 = med_rect.rotateAtVertexIndex(0, 0.20rad);
+let r3 = sm_rect.rotateAtVertexIndex(0, 0.30rad);
+let r4 = diamond.rotateAtVertexIndex(0, 0.22rad);
 
 // --- Gradient ---
 // Projections computed to center all shapes at (200, 200)
@@ -1102,13 +1102,13 @@ let shard = @{
 
 // --- Rotate for angular variety ---
 
-let hex_r = hex.rotateAtVertexIndex(0, 0.15);
-let pent_r = pent.rotateAtVertexIndex(0, 0.4);
-let sq_r = sq.rotateAtVertexIndex(0, 0.6);
-let tri_r = tri.rotateAtVertexIndex(0, 0.3);
-let wedge_r = wedge.rotateAtVertexIndex(0, -0.25);
-let shard_r = shard.rotateAtVertexIndex(0, 0.5);
-let shard_r2 = shard.rotateAtVertexIndex(0, -0.3);
+let hex_r = hex.rotateAtVertexIndex(0, 0.15rad);
+let pent_r = pent.rotateAtVertexIndex(0, 0.4rad);
+let sq_r = sq.rotateAtVertexIndex(0, 0.6rad);
+let tri_r = tri.rotateAtVertexIndex(0, 0.3rad);
+let wedge_r = wedge.rotateAtVertexIndex(0, -0.25rad);
+let shard_r = shard.rotateAtVertexIndex(0, 0.5rad);
+let shard_r2 = shard.rotateAtVertexIndex(0, -0.3rad);
 
 // --- Gradient: multi-cluster crystal ---
 

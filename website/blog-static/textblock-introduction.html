@@ -1733,10 +1733,10 @@ let polar_labels = TextLayer('polar') #{
 };
 
 // Project labels at cardinal directions, radius 75, with semantic anchors
-let top_proj = top_label.polarProject(450, 210, calc(-0.5 * 3.14159265358979), 75, BBoxAnchor.Bottom);
+let top_proj = top_label.polarProject(450, 210, -0.5pi, 75, BBoxAnchor.Bottom);
 let right_proj = right_label.polarProject(450, 210, 0, 75, BBoxAnchor.Left);
-let bottom_proj = bottom_label.polarProject(450, 210, calc(0.5 * 3.14159265358979), 75, BBoxAnchor.Top);
-let left_proj = left_label.polarProject(450, 210, calc(3.14159265358979), 75, BBoxAnchor.Right);
+let bottom_proj = bottom_label.polarProject(450, 210, 0.5pi, 75, BBoxAnchor.Top);
+let left_proj = left_label.polarProject(450, 210, 1pi, 75, BBoxAnchor.Right);
 
 polar_labels.apply {
   top_proj.draw();

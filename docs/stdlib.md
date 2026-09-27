@@ -635,7 +635,7 @@ arc(60, 20, 0.25pi, 0, 1, 80, 0)  // also 45 degrees
 
 The same applies to a raw `A` or `a` command — `A 10 10 45deg 0 1 20 20` emits a
 rotation of `45`. Every *other* angle in the standard library is radians; see
-[Angle Units](syntax.md#angle-units).
+[Angle Units](#syntax-angle-units).
 
 ### quadratic(x1, y1, cx, cy, x2, y2)
 

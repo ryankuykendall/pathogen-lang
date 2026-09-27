@@ -500,8 +500,6 @@ fn linkageBlock(theta) {
     l toA.x toA.y as segment('crank'), endpoint('A');
     l toB.x toB.y as segment('coupler'), endpoint('B');
     l toO4.x toO4.y as segment('rocker'), endpoint('O4');
-
-
     z as segment('ground'), endpoint('O2')
   };
 }
@@ -709,7 +707,6 @@ fn linkageBlock(theta) {
     l toA.x toA.y as segment('crank'), endpoint('A');
     l toB.x toB.y as segment('coupler'), endpoint('B');
     l toO4.x toO4.y as segment('rocker'), endpoint('O4');
-
     z as segment('ground'), endpoint('O2')
   };
 }
@@ -935,7 +932,6 @@ fn linkageBlock(theta) {
     l toA.x toA.y as segment('crank'), endpoint('A');
     l toB.x toB.y as segment('coupler'), endpoint('B');
     l toO4.x toO4.y as segment('rocker'), endpoint('O4');
-
     z as segment('ground'), endpoint('O2')
   };
 }
@@ -1202,7 +1198,6 @@ fn linkageBlock(theta) {
     l toA.x toA.y as segment('crank'), endpoint('A');
     l toB.x toB.y as segment('coupler'), endpoint('B');
     l toO4.x toO4.y as segment('rocker'), endpoint('O4');
-
     z as segment('ground'), endpoint('O2')
   };
 }
@@ -1752,8 +1747,6 @@ fn linkageBlock(theta) {
     l toA.x toA.y as segment('crank'), endpoint('A');
     l toB.x toB.y as segment('coupler'), endpoint('B');
     l toO4.x toO4.y as segment('rocker'), endpoint('O4');
-
-
     z as segment('ground'), endpoint('O2')
   };
 }
@@ -13680,10 +13673,11 @@ for (half in halves) {
   // move there is.
   let bounds = half.boundingBox();
   let side = calc(bounds.x + bounds.width / 2 &lt; 240 ? -10 : 10);
-  frame.apply {
-    M calc(side) calc(0 - side) half.draw()
-  }
-  let placed = half.project(side, calc(0 - side));
+  // Cut pieces come back projected, already placed in the ring, so the nudge
+  // has to move them from where they are rather than seat the pen first.
+  let at = half.startPoint;
+  let placed = half.toPathBlock().project(calc(at.x + side), calc(at.y - side));
+  frame.apply { placed.draw(); }
   sillRun.apply {
     for (run in placed.segmentAll('sill')) {
       run.draw();
@@ -17689,10 +17683,10 @@ let diamond = @{
 
 // --- Rotate each at gentle increments for nesting ---
 
-let r1 = big_rect.rotateAtVertexIndex(0, 0.12);
-let r2 = med_rect.rotateAtVertexIndex(0, 0.20);
-let r3 = sm_rect.rotateAtVertexIndex(0, 0.30);
-let r4 = diamond.rotateAtVertexIndex(0, 0.22);
+let r1 = big_rect.rotateAtVertexIndex(0, 0.12rad);
+let r2 = med_rect.rotateAtVertexIndex(0, 0.20rad);
+let r3 = sm_rect.rotateAtVertexIndex(0, 0.30rad);
+let r4 = diamond.rotateAtVertexIndex(0, 0.22rad);
 
 // --- Gradient ---
 // Projections computed to center all shapes at (200, 200)
@@ -17857,13 +17851,13 @@ let shard = @{
 
 // --- Rotate for angular variety ---
 
-let hex_r = hex.rotateAtVertexIndex(0, 0.15);
-let pent_r = pent.rotateAtVertexIndex(0, 0.4);
-let sq_r = sq.rotateAtVertexIndex(0, 0.6);
-let tri_r = tri.rotateAtVertexIndex(0, 0.3);
-let wedge_r = wedge.rotateAtVertexIndex(0, -0.25);
-let shard_r = shard.rotateAtVertexIndex(0, 0.5);
-let shard_r2 = shard.rotateAtVertexIndex(0, -0.3);
+let hex_r = hex.rotateAtVertexIndex(0, 0.15rad);
+let pent_r = pent.rotateAtVertexIndex(0, 0.4rad);
+let sq_r = sq.rotateAtVertexIndex(0, 0.6rad);
+let tri_r = tri.rotateAtVertexIndex(0, 0.3rad);
+let wedge_r = wedge.rotateAtVertexIndex(0, -0.25rad);
+let shard_r = shard.rotateAtVertexIndex(0, 0.5rad);
+let shard_r2 = shard.rotateAtVertexIndex(0, -0.3rad);
 
 // --- Gradient: multi-cluster crystal ---
 
@@ -19599,7 +19593,7 @@ let u_result = PathLayer('u-result') #{
 };
 u_result.apply {
   let u = sq.project(0, 0).union(sq.project(25, 25));
-  u.drawTo(0, 0);
+  u.draw();
 }
 
 let u_ab = TextLayer('u-ab') #{
@@ -19659,7 +19653,7 @@ let d_result = PathLayer('d-result') #{
 };
 d_result.apply {
   let d = sq.project(0, 0).difference(sq.project(25, 25));
-  d.drawTo(0, 0);
+  d.draw();
 }
 
 let d_ab = TextLayer('d-ab') #{
@@ -19719,7 +19713,7 @@ let i_result = PathLayer('i-result') #{
 };
 i_result.apply {
   let ix = sq.project(0, 0).intersection(sq.project(25, 25));
-  ix.drawTo(0, 0);
+  ix.draw();
 }
 
 let i_ab = TextLayer('i-ab') #{
@@ -19779,7 +19773,7 @@ let x_result = PathLayer('x-result') #{
 };
 x_result.apply {
   let xr = sq.project(0, 0).xor(sq.project(25, 25));
-  xr.drawTo(0, 0);
+  xr.draw();
 }
 
 let x_ab = TextLayer('x-ab') #{
@@ -20015,7 +20009,7 @@ let s2_result = PathLayer('s2-result') #{
 };
 s2_result.apply {
   let u = sq.project(0, 0).union(sq.project(25, 25));
-  u.drawTo(0, 0);
+  u.draw();
 }
 
 let s2_label = TextLayer('s2-label') #{
@@ -20064,7 +20058,7 @@ let s3_result = PathLayer('s3-result') #{
 s3_result.apply {
   let u = sq.project(0, 0).union(sq.project(25, 25));
   let rounded = u.fillet(8);
-  rounded.drawTo(0, 0);
+  rounded.draw();
 }
 
 let s3_label = TextLayer('s3-label') #{
@@ -20190,9 +20184,9 @@ let plate = @{ rect(0, 0, 80, 80); };
 let hole = @{ circle(0, 0, 10); };
 
 let d1 = plate.project(0, 0).difference(hole.project(25, 25));
-let d2 = d1.project(0, 0).difference(hole.project(55, 25));
-let d3 = d2.project(0, 0).difference(hole.project(25, 55));
-let drilled = d3.project(0, 0).difference(hole.project(55, 55));
+let d2 = d1.difference(hole.project(55, 25));
+let d3 = d2.difference(hole.project(25, 55));
+let drilled = d3.difference(hole.project(55, 55));
 
 let plate_result = PathLayer('plate-result') #{
   stroke: Color('#3b82f6');
@@ -20200,7 +20194,10 @@ let plate_result = PathLayer('plate-result') #{
   fill: Color('#3b82f618');
 };
 plate_result.apply {
-  drilled.drawTo(30, 55);
+  let drilledAt = drilled.startPoint;
+  // drawTo used to seat the block frame; the value is projected now, so the
+  // same offset is applied from its own position.
+  drilled.drawTo(calc(30 + drilledAt.x), calc(55 + drilledAt.y));
 }
 
 let plate_label = TextLayer('plate-label') #{
@@ -20236,7 +20233,10 @@ let badge_result = PathLayer('badge-result') #{
   fill: Color('#3b82f618');
 };
 badge_result.apply {
-  badge.drawTo(260, 100);
+  let badgeAt = badge.startPoint;
+  // drawTo used to seat the block frame; the value is projected now, so the
+  // same offset is applied from its own position.
+  badge.drawTo(calc(260 + badgeAt.x), calc(100 + badgeAt.y));
 }
 
 let badge_label = TextLayer('badge-label') #{
@@ -20593,7 +20593,11 @@ fn drawSplit(pieces, centerX) {
   for ([p, i] in pieces) {
     let pb = p.boundingBox();
     let side = calc(pb.x + pb.width / 2 &lt; centerX ? -8 : 8);
-    M calc(side) 0 p.draw()
+    // Cut pieces come back projected, already where they sit in the donut, so
+    // the exploded view nudges each one from its own position rather than
+    // seating the pen and letting a leading \`m\` carry it.
+    let at = p.startPoint;
+    p.drawTo(calc(at.x + side), at.y);
   }
 }
 
@@ -21861,7 +21865,7 @@ filleted.apply {
   f4.drawTo(360, 60);
 
   // Elliptical with rotation
-  let f5 = box.ellipticalFillet(15, 8, 0.3);
+  let f5 = box.ellipticalFillet(15, 8, 0.3rad);
   f5.drawTo(470, 60);
 }
 
@@ -22912,14 +22916,13 @@ for (i in 1..6) {
   combined = combined.union(projected[i]);
 }
 
-// .project(0, 0) converts union result to positioned path for boundingBox/difference
-let cbb = combined.project(0, 0).boundingBox();
+let cbb = combined.boundingBox();
 let pad = 15;
 let plate = @{ h calc(cbb.width + pad * 2) v calc(cbb.height + pad * 2) h calc(-(cbb.width + pad * 2)) z };
 let plate_proj = plate.project(calc(cbb.x - pad), calc(cbb.y - pad));
 
 // Punch the text out of the plate
-let cutout = plate_proj.difference(combined.project(0, 0));
+let cutout = plate_proj.difference(combined);
 
 // ─── 5-column layout constants ──────────────────────────────────────
 // [ Stage 1 (glyphs) | Arrow 1 | Stage 2 (union) | Arrow 2 | Stage 3 (cutout) ]
@@ -22965,7 +22968,12 @@ g_stage1.append(s1_label);
 let g_stage2 = GroupLayer('stage2') #{ translate-x: 320; translate-y: 0; };
 
 let union_layer = PathLayer('union-result') #{ fill: c_blue; stroke: none; };
-layer('union-result').apply { combined.drawTo(30, calc(geo_y + baseline_y)); }
+layer('union-result').apply {
+  let combinedAt = combined.startPoint;
+  // drawTo used to seat the block frame; the value is projected now, so the
+  // same offset is applied from its own position.
+  combined.drawTo(calc(30 + combinedAt.x), calc(geo_y + baseline_y + combinedAt.y));
+}
 
 let s2_label = TextLayer('s2-label') #{ font-family: monospace; font-size: 8; fill: c_muted; text-anchor: start; };
 layer('s2-label').apply { text(30, label_y)\`single united path\` }
@@ -22979,7 +22987,12 @@ g_stage2.append(union_layer, s2_label);
 let g_stage3 = GroupLayer('stage3') #{ translate-x: 610; translate-y: 0; };
 
 let cutout_layer = PathLayer('cutout-result') #{ fill: c_green; stroke: none; };
-layer('cutout-result').apply { cutout.drawTo(30, calc(geo_y + baseline_y)); }
+layer('cutout-result').apply {
+  let cutoutAt = cutout.startPoint;
+  // drawTo used to seat the block frame; the value is projected now, so the
+  // same offset is applied from its own position.
+  cutout.drawTo(calc(30 + cutoutAt.x), calc(geo_y + baseline_y + cutoutAt.y));
+}
 
 let s3_label = TextLayer('s3-label') #{ font-family: monospace; font-size: 8; fill: c_muted; text-anchor: start; };
 layer('s3-label').apply { text(30, label_y)\`text punched from plate\` }
@@ -29449,7 +29462,7 @@ for ([oR, ri] in outerRs) {
     let sharp = @{ radialWedge(innerR, oR, fromA, toA, 0); };
     let rounded = @{ radialWedge(innerR, oR, fromA, toA, cornerR); };
     let diff = sharp.project(cx, cy).xor(rounded.project(cx, cy));
-    xorLayer.apply { diff.drawTo(0, 0); }
+    xorLayer.apply { diff.draw(); }
 
     // 3. Sharp outline (dotted green)
     outlines.apply {
@@ -29579,7 +29592,7 @@ for ([oR, ri] in outerRs) {
     let sharp = @{ radialWedge(innerR, oR, fromA, toA, 0); };
     let rounded = @{ radialWedge(innerR, oR, fromA, toA, cornerR); };
     let diff = sharp.project(cx, cy).xor(rounded.project(cx, cy));
-    xorLayer.apply { diff.drawTo(0, 0); }
+    xorLayer.apply { diff.draw(); }
 
     // 3. Sharp outline (dotted green)
     outlines.apply {
@@ -32720,10 +32733,10 @@ let polar_labels = TextLayer('polar') #{
 };
 
 // Project labels at cardinal directions, radius 75, with semantic anchors
-let top_proj = top_label.polarProject(450, 210, calc(-0.5 * 3.14159265358979), 75, BBoxAnchor.Bottom);
+let top_proj = top_label.polarProject(450, 210, -0.5pi, 75, BBoxAnchor.Bottom);
 let right_proj = right_label.polarProject(450, 210, 0, 75, BBoxAnchor.Left);
-let bottom_proj = bottom_label.polarProject(450, 210, calc(0.5 * 3.14159265358979), 75, BBoxAnchor.Top);
-let left_proj = left_label.polarProject(450, 210, calc(3.14159265358979), 75, BBoxAnchor.Right);
+let bottom_proj = bottom_label.polarProject(450, 210, 0.5pi, 75, BBoxAnchor.Top);
+let left_proj = left_label.polarProject(450, 210, 1pi, 75, BBoxAnchor.Right);
 
 polar_labels.apply {
   top_proj.draw();
