@@ -120,7 +120,7 @@ work, and an argument for P1 (make the type say it) over a heuristic.
 
 ---
 
-## V8 — `buildPathBlockFromCommands` has no enforced convention · P1 · **cheapest durable fix**
+## V8 — `buildPathBlockFromCommands` has no enforced convention · P1 · **cheapest durable fix** · **DONE 2026-09-26**
 
 Omitting `origin` destroys the frame; passing `{x:0, y:0}` preserves it (`index.ts:1206`).
 Every derived PathBlock is one of these two spellings, chosen by hand, and the misreading is
@@ -182,9 +182,9 @@ receivers or state the exclusion. `03` now states it.
    inert on a PathBlock because the result is deliberately re-based, and a published sample
    compensates for that. Document or deprecate it instead — see `05-defects.md` D6.
 3. ~~**The `subPath` decision**, then **V1 Fix B + V2**~~ — done 2026-09-25, followed by Fix A.
-4. **V8** — two named constructors; stops the next drift.
-5. **Documentation** — V5, V6, and `06`'s vocabulary collapse.
-6. **V3, V7, V9** — the design tasks. Not before the rest.
+4. ~~**V8**~~ — **done 2026-09-26**: `fromCommandsKeepingFrame` / `fromCommandsRebased`, renamed to what each site already did; samples and matrix byte-identical (`03`, "The mechanism").
+5. **Documentation** — ~~V5, V6~~ (done 2026-09-26: `docs/path-blocks.md`, the `drawTo` contract by receiver and the pivots table, plus D6), and `06`'s vocabulary collapse (open).
+6. **V3, V7** — the design tasks; options and a recommendation in `07-design-brief.md` (2026-09-26), nothing built. ~~V9~~ done the same day: text receivers are in the `02` matrix.
 
 The first draft put V2 first on the strength of "Cost: none". That was wrong, and with the
 cost corrected the order inverts: **V4 goes first**, on severity.

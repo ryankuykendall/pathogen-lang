@@ -39,6 +39,17 @@ This is the most actionable finding in the audit and it is a five-line internal 
 split it into two named constructors, `fromCommandsRebased` and `fromCommandsKeepingFrame`,
 so the choice is stated at every call site. See `04-violations.md` V8.
 
+**Done 2026-09-26.** The two constructors exist over a shared `buildDerivedPathBlock`; the 22
+call sites were renamed to whatever they already did (17 keeping the frame, 5 re-basing:
+`reverse`/`subPath` via `buildRebasedWithAnchor`, `offset`, `mirror`, `rotateAtVertexIndex`,
+`ProjectedPath.toPathBlock`), with no behaviour change — all 294 published samples render
+byte-identically before and after (`probes/compare-samples.sh`, the three `random()` samples
+excepted) and the `02` matrix is unchanged. One thing the naming made visible: `offset` and
+`mirror` *re-base*, and only look frame-keeping in `02` because a block literal's first
+command starts at `(0, 0)`, so the subtraction is a no-op there. Whether they should keep the
+frame for a receiver whose first command does not start at the origin is a separate decision,
+not taken by the rename.
+
 ## Two causes, not one
 
 The first draft of this note claimed every placement bug traced to a single unnamed state.

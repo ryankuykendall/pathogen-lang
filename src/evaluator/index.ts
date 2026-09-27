@@ -1237,7 +1237,41 @@ function parseMapSliceOptions(val: Value, mkErr: (message: string) => Error): { 
   throw mkErr('mapSlice() partial must be a boolean');
 }
 
-function buildPathBlockFromCommands(cmds: PathBlockCommand[], origin?: { x: number; y: number }): PathBlockValue {
+/**
+ * The two ways a derived PathBlock is built, named so the choice is stated at
+ * every call site (placement audit V8). Both normalize `start`/`end` and carry
+ * labels through `derivedMeta`; they differ in one thing:
+ *
+ * - `fromCommandsKeepingFrame` subtracts nothing. The result stays in the
+ *   receiver's frame, so a positioned block or a cut piece keeps its place.
+ *   This is what `dash`, `cut`, `outline`, the fillets, the boolean ops,
+ *   `.contours`, `fromGlyph` and `TextBlock.toPathBlock` do.
+ * - `fromCommandsRebased` subtracts the first command's start. The result is
+ *   free-floating, re-based to its own first point, and the removed
+ *   translation is what `buildRebasedWithAnchor` exposes as `anchor`. This is
+ *   what `reverse`, `subPath`, `offset`, `mirror`, `rotateAtVertexIndex` and
+ *   `ProjectedPath.toPathBlock` do. For a block whose first command starts at
+ *   (0, 0) — every block literal, and a `segment()` result — the subtraction
+ *   is a no-op, which is why `offset` and `mirror` appear to keep the frame in
+ *   the probe matrix; on a receiver with a real frame (a `cut` or `dash` piece)
+ *   they do re-base.
+ *
+ * The previous spelling, `buildPathBlockFromCommands(cmds, origin?)`, encoded
+ * this choice as the presence of a `{ x: 0, y: 0 }` argument: read as "put it
+ * at the origin" it meant the opposite, and each method picked by hand
+ * (project-docs/placement-audit/03-principles.md, "The mechanism").
+ */
+function fromCommandsKeepingFrame(cmds: PathBlockCommand[]): PathBlockValue {
+  return buildDerivedPathBlock(cmds, 0, 0);
+}
+
+function fromCommandsRebased(cmds: PathBlockCommand[]): PathBlockValue {
+  if (cmds.length === 0) return buildDerivedPathBlock(cmds, 0, 0);
+  return buildDerivedPathBlock(cmds, cmds[0].start.x, cmds[0].start.y);
+}
+
+/** The shared body: subtract `(originX, originY)` from every start/end and rebuild the value. */
+function buildDerivedPathBlock(cmds: PathBlockCommand[], originX: number, originY: number): PathBlockValue {
   if (cmds.length === 0) {
     return {
       type: 'PathBlockValue' as const,
@@ -1247,8 +1281,6 @@ function buildPathBlockFromCommands(cmds: PathBlockCommand[], origin?: { x: numb
       endPoint: { x: 0, y: 0 },
     };
   }
-  const originX = origin ? origin.x : cmds[0].start.x;
-  const originY = origin ? origin.y : cmds[0].start.y;
   const normalized = cmds.map((cmd) => {
     const meta = derivedMeta(cmd.meta);
     return {
@@ -1281,11 +1313,10 @@ function buildPathBlockFromCommands(cmds: PathBlockCommand[], origin?: { x: numb
  * which `t` it had asked for.
  *
  * `anchor` is the result's first point in the RECEIVER's coordinate space:
- * exactly the origin `buildPathBlockFromCommands` subtracts when `origin` is
- * omitted.
+ * exactly the origin `fromCommandsRebased` subtracts.
  */
 function buildRebasedWithAnchor(cmds: PathBlockCommand[]): PathBlockValue {
-  const block = buildPathBlockFromCommands(cmds);
+  const block = fromCommandsRebased(cmds);
   if (cmds.length === 0) return block;
   (block as PathBlockValue & { anchor: { x: number; y: number } }).anchor = { ...cmds[0].start };
   return block;
@@ -3242,7 +3273,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
         if (typeof dist !== 'number') throw mError('offset() argument must be a number');
         const offsetOpts = expr.args.length === 2 ? parseOffsetJoinOptions(evaluateExpression(expr.args[1], scope), mError) : {};
         const offsetResult = offsetCommands(obj.commands, dist, offsetOpts);
-        return buildPathBlockFromCommands(offsetResult);
+        return fromCommandsRebased(offsetResult);
       }
 
       case 'variableOffset': {
@@ -3312,7 +3343,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
         const mAngle = toNumber(evaluateExpression(expr.args[0], scope));
         if (mAngle === undefined) throw mError('mirror() argument must be a number');
         const mirrored = mirrorCommands(obj.commands, mAngle, { x: 0, y: 0 });
-        return buildPathBlockFromCommands(mirrored);
+        return fromCommandsRebased(mirrored);
       }
 
       case 'rotate': {
@@ -3329,7 +3360,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
         // and keep the geometry where it lands (no re-base) — a cut piece
         // rotated in place keeps its placement inside the subject.
         const rotCmds = rotateAboutPointCommands(obj.commands, rotAngle, rotPivot);
-        return buildPathBlockFromCommands(rotCmds, { x: 0, y: 0 });
+        return fromCommandsKeepingFrame(rotCmds);
       }
 
       case 'rotateAtVertexIndex': {
@@ -3348,7 +3379,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
         // result. website/blog/samples/post40/shattered-glyph.pathogen depends on
         // this and adds the pivot back by hand. Do not "fix" it to keep the frame
         // without migrating that sample. See project-docs/placement-audit/ D6.
-        return buildPathBlockFromCommands(rotated);
+        return fromCommandsRebased(rotated);
       }
 
       case 'scale': {
@@ -3409,7 +3440,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
             properties: new Map<string, Value>([
               // Origin (0,0) keeps each piece's subject-local placement, so
               // drawing every piece at one position reassembles the source.
-              ['path', buildPathBlockFromCommands(p.commands, { x: 0, y: 0 })],
+              ['path', fromCommandsKeepingFrame(p.commands)],
               ['kind', p.kind],
               ['t0', p.t0],
               ['t1', p.t1],
@@ -3428,7 +3459,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
         } catch (e) {
           throw mError((e as Error).message);
         }
-        return buildPathBlockFromCommands(outlined, { x: 0, y: 0 });
+        return fromCommandsKeepingFrame(outlined);
       }
 
       case 'startAt': {
@@ -3441,7 +3472,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
         } catch (e) {
           throw mError((e as Error).message);
         }
-        return buildPathBlockFromCommands(rotatedCmds, { x: 0, y: 0 });
+        return fromCommandsKeepingFrame(rotatedCmds);
       }
 
       case 'chamfer': {
@@ -3457,7 +3488,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
         for (const w of chamResult.warnings) {
           warn(scope.evalState, 'corner-op', w, { line: mLine, column: mCol });
         }
-        return buildPathBlockFromCommands(chamResult.commands, { x: 0, y: 0 });
+        return fromCommandsKeepingFrame(chamResult.commands);
       }
 
       case 'chamferAtVertex': {
@@ -3475,7 +3506,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
         for (const w of cvResult.warnings) {
           warn(scope.evalState, 'corner-op', w, { line: mLine, column: mCol });
         }
-        return buildPathBlockFromCommands(cvResult.commands, { x: 0, y: 0 });
+        return fromCommandsKeepingFrame(cvResult.commands);
       }
 
       case 'fillet': {
@@ -3486,7 +3517,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
         for (const w of fResult.warnings) {
           warn(scope.evalState, 'corner-op', w, { line: mLine, column: mCol });
         }
-        return buildPathBlockFromCommands(fResult.commands, { x: 0, y: 0 });
+        return fromCommandsKeepingFrame(fResult.commands);
       }
 
       case 'filletAtVertex': {
@@ -3499,7 +3530,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
         for (const w of fvResult.warnings) {
           warn(scope.evalState, 'corner-op', w, { line: mLine, column: mCol });
         }
-        return buildPathBlockFromCommands(fvResult.commands, { x: 0, y: 0 });
+        return fromCommandsKeepingFrame(fvResult.commands);
       }
 
       case 'ellipticalFillet': {
@@ -3517,7 +3548,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
         for (const w of efResult.warnings) {
           warn(scope.evalState, 'corner-op', w, { line: mLine, column: mCol });
         }
-        return buildPathBlockFromCommands(efResult.commands, { x: 0, y: 0 });
+        return fromCommandsKeepingFrame(efResult.commands);
       }
 
       case 'ellipticalFilletAtVertex': {
@@ -3537,7 +3568,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
         for (const w of efvResult.warnings) {
           warn(scope.evalState, 'corner-op', w, { line: mLine, column: mCol });
         }
-        return buildPathBlockFromCommands(efvResult.commands, { x: 0, y: 0 });
+        return fromCommandsKeepingFrame(efvResult.commands);
       }
 
       case 'union':
@@ -3565,7 +3596,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
           case 'xor': resultCmds = pathXor(aCmds, bCmds); break;
           default: resultCmds = [];
         }
-        return buildPathBlockFromCommands(resultCmds, { x: 0, y: 0 });
+        return fromCommandsKeepingFrame(resultCmds);
       }
 
       case 'cut': {
@@ -3581,7 +3612,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
           type: 'ArrayValue' as const,
           // Origin (0,0) keeps each piece's subject-local placement, so
           // drawing every piece at one position reassembles the shape.
-          elements: pieceCmds.map(p => buildPathBlockFromCommands(p, { x: 0, y: 0 })),
+          elements: pieceCmds.map(p => fromCommandsKeepingFrame(p)),
         };
       }
 
@@ -3924,7 +3955,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
       // readable as this value's startPoint.
       case 'toPathBlock': {
         if (expr.args.length !== 0) throw mError('toPathBlock() expects 0 arguments');
-        return buildPathBlockFromCommands(obj.commands);
+        return fromCommandsRebased(obj.commands);
       }
 
       case 'mirror': {
@@ -4341,7 +4372,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
         for (const w of res.warnings) {
           warn(scope.evalState, 'corner-op', w, { line: mLine, column: mCol });
         }
-        return buildPathBlockFromCommands(res.commands, { x: 0, y: 0 });
+        return fromCommandsKeepingFrame(res.commands);
       }
       default:
         throw mError(`Unknown method '${expr.method}' on Endpoint`);
@@ -4591,7 +4622,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
           }
         }
 
-        return buildPathBlockFromCommands(allCommands, { x: 0, y: 0 });
+        return fromCommandsKeepingFrame(allCommands);
       }
       case 'toCodeSnippetBlock': {
         if (expr.args.length < 1 || expr.args.length > 3) throw mError('toCodeSnippetBlock() expects 1-3 arguments (name [, fontSize, padding])');
@@ -5976,7 +6007,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
           }
 
           // Normalize to (0,0) origin
-          const normalized = buildPathBlockFromCommands(commands, { x: 0, y: 0 });
+          const normalized = fromCommandsKeepingFrame(commands);
           // Attach advanceWidth + source char as expando properties
           (normalized as PathBlockValue & { advanceWidth: number; char: string }).advanceWidth = advanceWidth;
           (normalized as PathBlockValue & { advanceWidth: number; char: string }).char = char;
@@ -6270,7 +6301,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
           const withClose = ringClosed
             ? [...cmds, { command: 'z', args: [], start: { ...tail.end }, end: { ...first.start } }]
             : cmds;
-          return buildPathBlockFromCommands(withClose, { x: 0, y: 0 });
+          return fromCommandsKeepingFrame(withClose);
         }),
       };
     }
@@ -6536,7 +6567,7 @@ function evaluateMemberExpression(expr: MemberExpression, scope: Scope): Value {
         // Decompose a multi-contour glyph into individual PathBlockValues
         const contourGroups = splitContours(obj.commands);
         const contourBlocks: Value[] = contourGroups.map((cmds) =>
-          buildPathBlockFromCommands(cmds, { x: 0, y: 0 }),
+          fromCommandsKeepingFrame(cmds),
         );
         return { type: 'ArrayValue' as const, elements: contourBlocks };
       }

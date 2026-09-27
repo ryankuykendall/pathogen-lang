@@ -22,6 +22,8 @@ That read is correct. This is the distillation.
 | `05-defects.md` | Nine measured bugs, each with its status; the open ones carry their `known-issues.md` number |
 | `06-vocabulary.md` | One name per concept, and the synonyms it replaces |
 | `D2-layer-transform-queries.md` | One-pager on D2: layer transforms vs query coordinates |
+| `07-design-brief.md` | V3 and V7 as options with a recommendation (2026-09-26); nothing built |
+| `verify/d5/` | The D5 renders on all three surfaces and the live playground, with the comparison script |
 | `probes/` | The evidence. Re-runnable. |
 
 ## How to re-run the evidence
@@ -32,7 +34,9 @@ bash project-docs/placement-audit/probes/run-probes.sh
 
 It compiles one tiny program per case — so a method that throws is recorded as a result
 rather than killing the run — and prints the matrix in `02-surface-matrix.md`. Cases live in
-`probes/cases.tsv`; add a row to extend it.
+`probes/cases.tsv`; add a row to extend it. `probes/compare-samples.sh` renders every published
+sample to SVG and diffs two such directories — the safety net for behaviour-preserving
+refactors of the evaluator.
 
 **Every claim in `01`, `02` and `05` comes from a probe unless it is labelled a source read.**
 `probes/run-defects.sh` covers D1–D9 and ISSUE-015 (D2 as its mitigation, D6 and D9 as

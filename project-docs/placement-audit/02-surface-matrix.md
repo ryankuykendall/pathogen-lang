@@ -108,7 +108,7 @@ The boolean ops and `cut` are the worse case, because the PathBlock they return 
 | **ProjectedPath** | `subPath`, `toPathBlock` | everything else |
 
 There is no principle separating the columns. It is decided one call at a time by a single
-argument: `buildPathBlockFromCommands(cmds, origin?)` (`index.ts:1196`) subtracts
+argument (until 2026-09-26, when V8 split it into `fromCommandsKeepingFrame` / `fromCommandsRebased`): `buildPathBlockFromCommands(cmds, origin?)` (`index.ts:1196`) subtracted
 `cmds[0].start` when `origin` is **omitted** and subtracts nothing when it is passed
 `{x:0, y:0}`. So `buildPathBlockFromCommands(cmds, { x: 0, y: 0 })` **preserves** the frame
 — reading it as "put it at the origin" gets it exactly backwards. Nothing enforces a
