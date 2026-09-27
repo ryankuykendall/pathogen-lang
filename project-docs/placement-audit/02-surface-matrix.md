@@ -7,6 +7,8 @@ Three receivers, so that *kind* and *positionedness* vary independently:
 - `block` — a **positioned** block `@{ m 40 25 h 60 v 30 h -60 z }` (first ink at `(40,25)`)
 - `flat` — a **non-positioned** block `@{ h 60 v 30 h -60 z }` (first ink at `(0,0)`)
 - `projected` — `@{ h 60 v 30 h -60 z }.project(200, 300)` (first ink at `(200,300)`)
+- `text` — `&{ text(0, 16)`X` } << #{ font-size: 16; }` (V9, added 2026-09-26)
+- `projectedText` — the same block `.project(100, 200)`
 
 The `flat` rows exist to separate "this method *injected* a leading `m`" from "this method
 *preserved* the receiver's". Re-basing is unobservable on `flat` — its own first point is
@@ -16,65 +18,74 @@ already `(0,0)` — so those cells read `at (0,0) — n/a`.
 the method's purpose. `by design` marks `draw`/`drawTo`/`project`/`toPathBlock`, whose job is
 to change the kind.
 
-| receiver  | method               | result type   | placement          | flip? | startPoint |
-|-----------|----------------------|---------------|--------------------|-------|------------|
-| block     | draw                 | ProjectedPath | receiver's frame   | by design | Point(40, 25) |
-| block     | drawTo               | ProjectedPath | receiver's frame * | by design | Point(540, 525) |
-| block     | project              | ProjectedPath | receiver's frame * | by design | Point(540, 525) |
-| block     | reverse              | PathBlock     | RE-BASED to (0,0)  |       | Point(0, 0) |
-| block     | offset               | PathBlock     | receiver's frame * |       | Point(35, 20) |
-| block     | outline              | PathBlock     | receiver's frame * |       | Point(38, 23) |
-| block     | startAt              | PathBlock     | receiver's frame * |       | Point(94, 25) |
-| block     | subPath              | PathBlock     | RE-BASED to (0,0)  |       | Point(0, 0) |
-| block     | scale                | PathBlock     | receiver's frame * |       | Point(80, 50) |
-| block     | mirror               | PathBlock     | receiver's frame * |       | Point(40, -25) |
-| block     | rotate               | PathBlock     | receiver's frame * |       | Point(32.166556923999714, 34.500907461327536) |
-| block     | rotateAtVertexIndex  | PathBlock     | receiver's frame * |       | Point(32.166556923999714, 34.500907461327536) |
-| block     | fillet               | PathBlock     | receiver's frame * |       | Point(43, 25) |
-| block     | chamfer              | PathBlock     | receiver's frame * |       | Point(43, 25) |
-| block     | union                | PathBlock     | receiver's frame * |       | Point(70, 55) |
-| block     | difference           | PathBlock     | receiver's frame * |       | Point(70, 55) |
-| block     | intersection         | PathBlock     | receiver's frame * |       | Point(100, 40) |
-| block     | xor                  | PathBlock     | receiver's frame * |       | Point(70, 55) |
-| block     | cut                  | PathBlock     | receiver's frame * |       | Point(70, 25) |
-| block     | dash                 | PathBlock     | receiver's frame   |       | Point(40, 25) |
-| block     | segment              | PathBlock     | RE-BASED to (0,0)  |       | Point(0, 0) |
-| block     | variableOffset       | PathBlock     | RE-BASED to (0,0)  |       | Point(0, 0) |
-| block     | toPathBlock          | n/a           | throws             |       | Error: Line 5, col 14: Unknown PathBlock method: toPathBlo |
-| block     | contours             | PathBlock     | receiver's frame   |       | Point(40, 25) |
-| projected | draw                 | ProjectedPath | receiver's frame   |       | Point(200, 300) |
-| projected | drawTo               | ProjectedPath | receiver's frame * |       | Point(500, 500) |
-| projected | project              | n/a           | throws             |       | Error: Line 5, col 14: Unknown ProjectedPath method: proje |
-| projected | reverse              | ProjectedPath | receiver's frame   |       | Point(200, 300) |
-| projected | offset               | ProjectedPath | receiver's frame * |       | Point(195, 295) |
-| projected | outline              | ProjectedPath | receiver's frame * |       | Point(198, 298) |
-| projected | startAt              | ProjectedPath | receiver's frame * |       | Point(254, 300) |
-| projected | subPath              | PathBlock     | RE-BASED to (0,0)  | YES   | Point(0, 0) |
-| projected | scale                | ProjectedPath | receiver's frame   |       | Point(200, 300) |
-| projected | mirror               | ProjectedPath | receiver's frame   |       | Point(200, 300) |
-| projected | rotate               | ProjectedPath | receiver's frame   |       | Point(200, 300) |
-| projected | rotateAtVertexIndex  | ProjectedPath | receiver's frame * |       | Point(202.0444504226559, 284.4708572938488) |
-| projected | fillet               | ProjectedPath | receiver's frame * |       | Point(203, 300) |
-| projected | chamfer              | ProjectedPath | receiver's frame * |       | Point(203, 300) |
-| projected | union                | PathBlock     | receiver's frame * | YES   | Point(230, 330) |
-| projected | difference           | PathBlock     | receiver's frame * | YES   | Point(230, 330) |
-| projected | intersection         | PathBlock     | receiver's frame * | YES   | Point(260, 315) |
-| projected | xor                  | PathBlock     | receiver's frame * | YES   | Point(230, 330) |
-| projected | cut                  | PathBlock     | receiver's frame * | YES   | Point(230, 300) |
-| projected | dash                 | ProjectedPath | receiver's frame   |       | Point(200, 300) |
-| projected | segment              | ProjectedPath | receiver's frame   |       | Point(200, 300) |
-| projected | variableOffset       | ProjectedPath | receiver's frame * |       | Point(200, 296) |
-| projected | toPathBlock          | PathBlock     | RE-BASED to (0,0)  | by design | Point(0, 0) |
-| projected | contours             | n/a           | throws             |       | Error: Property 'contours' does not exist on ProjectedPath |
-| flat      | dash                 | PathBlock     | at (0,0) — n/a     |       | Point(0, 0) |
-| flat      | cut                  | PathBlock     | receiver's frame * |       | Point(30, 0) |
-| flat      | contours             | PathBlock     | at (0,0) — n/a     |       | Point(0, 0) |
-| flat      | offset               | PathBlock     | at (0,0) — n/a     |       | Point(0, 0) |
-| flat      | outline              | PathBlock     | receiver's frame * |       | Point(-2, -2) |
-| flat      | subPath              | PathBlock     | at (0,0) — n/a     |       | Point(0, 0) |
+| receiver      | method               | result type   | placement          | flip? | startPoint / origin |
+|---------------|----------------------|---------------|--------------------|-------|---------------------|
+| block         | draw                 | ProjectedPath | receiver's frame   | by design | Point(40, 25) |
+| block         | drawTo               | ProjectedPath | receiver's frame * | by design | Point(540, 525) |
+| block         | project              | ProjectedPath | receiver's frame * | by design | Point(540, 525) |
+| block         | reverse              | PathBlock     | RE-BASED to (0,0)  |       | Point(0, 0) |
+| block         | offset               | PathBlock     | receiver's frame * |       | Point(35, 20) |
+| block         | outline              | PathBlock     | receiver's frame * |       | Point(38, 23) |
+| block         | startAt              | PathBlock     | receiver's frame * |       | Point(94, 25) |
+| block         | subPath              | PathBlock     | RE-BASED to (0,0)  |       | Point(0, 0) |
+| block         | scale                | PathBlock     | receiver's frame * |       | Point(80, 50) |
+| block         | mirror               | PathBlock     | receiver's frame * |       | Point(40, -25) |
+| block         | rotate               | PathBlock     | receiver's frame * |       | Point(32.166556923999714, 34.500907461327536) |
+| block         | rotateAtVertexIndex  | PathBlock     | receiver's frame * |       | Point(32.166556923999714, 34.500907461327536) |
+| block         | fillet               | PathBlock     | receiver's frame * |       | Point(43, 25) |
+| block         | chamfer              | PathBlock     | receiver's frame * |       | Point(43, 25) |
+| block         | union                | PathBlock     | receiver's frame * |       | Point(70, 55) |
+| block         | difference           | PathBlock     | receiver's frame * |       | Point(70, 55) |
+| block         | intersection         | PathBlock     | receiver's frame * |       | Point(100, 40) |
+| block         | xor                  | PathBlock     | receiver's frame * |       | Point(70, 55) |
+| block         | cut                  | PathBlock     | receiver's frame * |       | Point(70, 25) |
+| block         | dash                 | PathBlock     | receiver's frame   |       | Point(40, 25) |
+| block         | segment              | PathBlock     | RE-BASED to (0,0)  |       | Point(0, 0) |
+| block         | variableOffset       | PathBlock     | RE-BASED to (0,0)  |       | Point(0, 0) |
+| block         | toPathBlock          | n/a           | throws             |       | Error: Line 5, col 14: Unknown PathBlock method: toPathBlo |
+| block         | contours             | PathBlock     | receiver's frame   |       | Point(40, 25) |
+| projected     | draw                 | ProjectedPath | receiver's frame   |       | Point(200, 300) |
+| projected     | drawTo               | ProjectedPath | receiver's frame * |       | Point(500, 500) |
+| projected     | project              | n/a           | throws             |       | Error: Line 5, col 14: Unknown ProjectedPath method: proje |
+| projected     | reverse              | ProjectedPath | receiver's frame   |       | Point(200, 300) |
+| projected     | offset               | ProjectedPath | receiver's frame * |       | Point(195, 295) |
+| projected     | outline              | ProjectedPath | receiver's frame * |       | Point(198, 298) |
+| projected     | startAt              | ProjectedPath | receiver's frame * |       | Point(254, 300) |
+| projected     | subPath              | ProjectedPath | receiver's frame * |       | Point(218, 300) |
+| projected     | scale                | ProjectedPath | receiver's frame   |       | Point(200, 300) |
+| projected     | mirror               | ProjectedPath | receiver's frame   |       | Point(200, 300) |
+| projected     | rotate               | ProjectedPath | receiver's frame   |       | Point(200, 300) |
+| projected     | rotateAtVertexIndex  | ProjectedPath | receiver's frame * |       | Point(202.0444504226559, 284.4708572938488) |
+| projected     | fillet               | ProjectedPath | receiver's frame * |       | Point(203, 300) |
+| projected     | chamfer              | ProjectedPath | receiver's frame * |       | Point(203, 300) |
+| projected     | union                | ProjectedPath | receiver's frame * |       | Point(230, 330) |
+| projected     | difference           | ProjectedPath | receiver's frame * |       | Point(230, 330) |
+| projected     | intersection         | ProjectedPath | receiver's frame * |       | Point(260, 315) |
+| projected     | xor                  | ProjectedPath | receiver's frame * |       | Point(230, 330) |
+| projected     | cut                  | ProjectedPath | receiver's frame * |       | Point(230, 300) |
+| projected     | dash                 | ProjectedPath | receiver's frame   |       | Point(200, 300) |
+| projected     | segment              | ProjectedPath | receiver's frame   |       | Point(200, 300) |
+| projected     | variableOffset       | ProjectedPath | receiver's frame * |       | Point(200, 296) |
+| projected     | toPathBlock          | PathBlock     | RE-BASED to (0,0)  | by design | Point(0, 0) |
+| projected     | contours             | n/a           | throws             |       | Error: Property 'contours' does not exist on ProjectedPath |
+| flat          | dash                 | PathBlock     | at (0,0) — n/a     |       | Point(0, 0) |
+| flat          | cut                  | PathBlock     | receiver's frame * |       | Point(30, 0) |
+| flat          | contours             | PathBlock     | at (0,0) — n/a     |       | Point(0, 0) |
+| flat          | offset               | PathBlock     | at (0,0) — n/a     |       | Point(0, 0) |
+| flat          | outline              | PathBlock     | receiver's frame * |       | Point(-2, -2) |
+| flat          | subPath              | PathBlock     | at (0,0) — n/a     |       | Point(0, 0) |
+| text          | project              | ProjectedText | origin cumulative  |       | Point(500, 500) |
+| text          | drawTo               | ProjectedText | origin cumulative  |       | Point(500, 500) |
+| text          | polarProject         | ProjectedText | origin cumulative  |       | Point(550, 500) |
+| text          | radialProject        | ProjectedText | origin cumulative  |       | Point(550, 500) |
+| projectedText | drawTo               | ProjectedText | origin cumulative  |       | Point(500, 500) |
+| projectedText | translate            | ProjectedText | origin cumulative  |       | Point(110, 210) |
+| projectedText | polarProject         | ProjectedText | origin cumulative  |       | Point(550, 500) |
 
 * the geometry moved inside the receiver's frame (offset steps out, fillet trims,
   scale multiplies) — the frame itself was kept. Only (0,0) means re-based.
+† text rows: the last column is `origin`; placement says whether it is the cumulative
+  translation (drift = boundingBox − local boundingBox − origin is zero) or a delta.
 
 ## What the matrix says
 
@@ -162,19 +173,18 @@ state rather than merely preserving it — which is what makes them producers of
 
 ## The text surface
 
-Measured the same way (`text(0, 16)` inside `&{ }`, projected at `(100, 200)`):
+Measured by the same script since 2026-09-26 (V9): the `text` and `projectedText` rows above.
+Text values have no `startPoint` or `d`, so the probe checks the one placement fact that
+matters on that side — whether `origin` is the cumulative translation from block-local.
+Drift is `boundingBox() − the block's own boundingBox() − origin`; zero means a later
+`drawTo` re-places the block correctly.
 
-| Operation | Result | `origin` |
-|---|---|---|
-| `TextBlock.project(100, 200)` | ProjectedText | `Point(100, 200)` |
-| `ProjectedText.translate(10, 10)` | ProjectedText | `Point(110, 210)` — cumulative, correct |
-| `ProjectedText.polarProject(0, 0, 0deg, 50, Center)` | ProjectedText | `Point(-57.52, -209.6)` — **a delta, not a position** |
-| `TextBlock.boundingBox().width` | number | `15.04` |
-
-`polarProject` on an already-projected value computes its anchor offset from absolute
-element coordinates, so it stores an incremental delta and discards the prior origin — the
-`-209.6` is the original `200` subtracted rather than replaced. Elements land correctly; a
-subsequent `.drawTo()` does not. See `05-defects.md` D8.
+Before the fix, `projectedText · polarProject` read as a DELTA, off by exactly the discarded
+prior origin `(100, 200)` (computed from the pre-fix code, not re-run): `polarProject` on an
+already-projected value computed its anchor offset from absolute element coordinates and
+stored that shift as `origin`. Elements landed correctly; a subsequent `.drawTo()` did not.
+That was D8 / ISSUE-028, fixed 2026-09-26. The original hand probe (2026-09-24) is kept in
+`05-defects.md` under D8.
 
 **Not probed:** `TextBlock.toPathBlock()` requires a loaded font and the CLI cannot fetch
 Google Fonts, so its placement is recorded from source only (`index.ts:4322-4389`: rebuilds

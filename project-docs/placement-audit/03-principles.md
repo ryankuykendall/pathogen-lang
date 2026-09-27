@@ -172,10 +172,11 @@ than authored). Treat the design of that signal as open.
 
 ## What is not covered
 
-**Text.** `TextBlock` and `ProjectedText` are measured in `02` but are not graded here, and no
-`04` row addresses them — except that **D8 is already a P2 violation on the text side**
-(`ProjectedText.polarProject` stores a delta as `origin`, discarding the prior one). Space 5
-has no named conversion, `TextBlock` has no `draw`, `ProjectedText` has no `toPathBlock`, and
+**Text.** `TextBlock` and `ProjectedText` are measured in `02` (script-generated `text` and
+`projectedText` rows since 2026-09-26, V9) but are not graded here, and no `04` row addresses
+them. The one text-side P2 violation, **D8** (`ProjectedText.polarProject` stored a delta as
+`origin`, discarding the prior one), was fixed 2026-09-26 (ISSUE-028); every text row now
+reads `origin cumulative`. Space 5 has no named conversion, `TextBlock` has no `draw`, `ProjectedText` has no `toPathBlock`, and
 `anchor` is a *method* there with an unrelated meaning. Adopting P1–P5 and landing V1–V8 would
 leave the text side untouched. That is a known gap, not an oversight.
 

@@ -4681,17 +4681,20 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
         // Compute target point
         const targetX = ppx + ppDist * Math.cos(ppAngle);
         const targetY = ppy + ppDist * Math.sin(ppAngle);
-        // Estimate bbox at origin to find anchor offset
-        const originBB = estimateTextBoundingBox(obj.elements, obj.styles, scope.evalState?.fontRegistry);
-        const anchorOffset = resolveAnchorPoint(originBB, ppAnchor, mError);
-        // Projection origin = target - anchorOffset
-        const projOriginX = targetX - anchorOffset.x;
-        const projOriginY = targetY - anchorOffset.y;
+        // The elements are already absolute, so the anchor resolves to an absolute
+        // point and (target − anchor) is the DELTA to move by — not a new origin.
+        // `origin` is the cumulative translation from block-local (what drawTo
+        // subtracts), so the delta is added to the prior origin, as translate does.
+        // Storing the delta itself was ISSUE-028 (placement audit D8).
+        const absBB = estimateTextBoundingBox(obj.elements, obj.styles, scope.evalState?.fontRegistry);
+        const anchorAbs = resolveAnchorPoint(absBB, ppAnchor, mError);
+        const shiftX = targetX - anchorAbs.x;
+        const shiftY = targetY - anchorAbs.y;
         return {
           type: 'ProjectedTextValue' as const,
-          elements: obj.elements.map((el) => ({ ...el, x: el.x + projOriginX, y: el.y + projOriginY })),
+          elements: obj.elements.map((el) => ({ ...el, x: el.x + shiftX, y: el.y + shiftY })),
           styles: { ...obj.styles },
-          origin: { x: projOriginX, y: projOriginY },
+          origin: { x: obj.origin.x + shiftX, y: obj.origin.y + shiftY },
         };
       }
       case 'paddedBoundingBox': {

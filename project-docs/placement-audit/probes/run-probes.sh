@@ -21,13 +21,22 @@ recv_projected="@{ h 60 as segment('edge') v 30 h -60 z }.project(200, 300)"
 other_projected="@{ h 60 v 30 h -60 z }.project(230, 315)"
 knife_projected="@{ v 30 }.project(230, 300)"
 
+# V9: the text surface. A TextBlock and the same block projected at (100, 200). Text
+# values have no startPoint/d; what is measured instead is whether `origin` is the
+# cumulative translation — drift = boundingBox() − the block's own boundingBox() − origin,
+# which is (0, 0) exactly when it is (D8 / ISSUE-028 showed as a non-zero drift).
+recv_text="TEXT"
+recv_projectedText="TEXT.project(100, 200)"
+
 emit_row() {  # receiver_id  label  expression
   local rid="$1" label="$2" expr="$3"
   local R OTHER KNIFE
   case "$rid" in
-    block)     R="$recv_block";     OTHER="$other_block";     KNIFE="$knife_block" ;;
-    flat)      R="$recv_flat";      OTHER="$other_flat";      KNIFE="$knife_flat" ;;
-    projected) R="$recv_projected"; OTHER="$other_projected"; KNIFE="$knife_projected" ;;
+    block)         R="$recv_block";         OTHER="$other_block";     KNIFE="$knife_block" ;;
+    flat)          R="$recv_flat";          OTHER="$other_flat";      KNIFE="$knife_flat" ;;
+    projected)     R="$recv_projected";     OTHER="$other_projected"; KNIFE="$knife_projected" ;;
+    text)          R="$recv_text";          OTHER="";                 KNIFE="" ;;
+    projectedText) R="$recv_projectedText"; OTHER="";                 KNIFE="" ;;
   esac
   expr="${expr//OTHER/$OTHER}"
   expr="${expr//KNIFE/$KNIFE}"
@@ -37,13 +46,32 @@ emit_row() {  # receiver_id  label  expression
   # built into a variable first: logging a bare identifier keeps the template out
   # of the output and leaves exactly one 'ROW|' on the line.
   local prog
-  prog="define ViewBox(0, 0, 800, 800);
+  case "$rid" in
+    text|projectedText)
+      # drawTo needs a text layer, so every text case evaluates inside one.
+      prog="define ViewBox(0, 0, 800, 800);
+define default PathLayer('probe') #{ fill: none; };
+let labels = TextLayer('labels') #{};
+let TEXT = &{ text(0, 16)\`X\` } << #{ font-size: 16; };
+let LOCAL = TEXT.boundingBox();
+let RECV = ${R};
+labels.apply {
+  let RESULT = ${expr};
+  let bb = RESULT.boundingBox();
+  let dx = calc(bb.x - LOCAL.x - RESULT.origin.x);
+  let dy = calc(bb.y - LOCAL.y - RESULT.origin.y);
+  let row = \`ROW|${rid}|${label}|\${RESULT.origin}|drift=\${dx},\${dy}\`;
+  log(row);
+}" ;;
+    *)
+      prog="define ViewBox(0, 0, 800, 800);
 define default PathLayer('probe') #{ fill: none; };
 let RECV = ${R};
 M 0 0;
 let RESULT = ${expr};
 let row = \`ROW|${rid}|${label}|\${RESULT.startPoint}|\${RESULT.d}\`;
-log(row);"
+log(row);" ;;
+  esac
 
   local out
   out=$(npx tsx src/cli.ts -e "$prog" --print-logs 2>&1)

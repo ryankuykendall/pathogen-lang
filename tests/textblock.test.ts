@@ -644,6 +644,74 @@ describe('TextBlock', () => {
   });
 
   // ---------------------------------------------------------------------------
+  // origin is the cumulative translation, for every ProjectedText producer
+  // (placement audit D8 / ISSUE-028)
+  // ---------------------------------------------------------------------------
+  describe('ProjectedText origin is the cumulative translation', () => {
+    const BLOCK = 'let t = &{ text(0, 16)`X` } << #{ font-size: 16; };';
+
+    it('polarProject after project keeps the prior origin (ISSUE-028)', () => {
+      const vals = compileLogValues(`
+        ${BLOCK}
+        log(t.polarProject(100, 100, 0deg, 50, BBoxAnchor.TopLeft).origin);
+        log(t.project(50, 100).polarProject(100, 100, 0deg, 50, BBoxAnchor.TopLeft).origin);
+        log(t.polarProject(100, 100, 0deg, 50, BBoxAnchor.TopLeft).boundingBox().x);
+        log(t.project(50, 100).polarProject(100, 100, 0deg, 50, BBoxAnchor.TopLeft).boundingBox().x);
+      `);
+      expect(vals[0]).toBe('Point(150, 100)');
+      // Was Point(100, 0): the shift it had just applied, with the prior (50, 100) discarded.
+      expect(vals[1]).toBe('Point(150, 100)');
+      // The ink lands in the same place either way — only `origin` was wrong.
+      expect(vals[2]).toBe(vals[3]);
+    });
+
+    // Every producer, chained or not: a drawTo(0, 0) afterwards must return the block to
+    // block-local, i.e. the one text element lands at (0, 16). That holds only when
+    // `origin` is the whole translation applied so far, whichever methods applied it.
+    const PRODUCERS: Array<[string, string]> = [
+      ['project', 't.project(50, 100)'],
+      ['project → translate', 't.project(50, 100).translate(10, -5)'],
+      ['polarProject on the block', 't.polarProject(100, 100, 0deg, 50, BBoxAnchor.TopLeft)'],
+      ['polarProject on the block, Center anchor', 't.polarProject(100, 100, 45deg, 50, BBoxAnchor.Center)'],
+      ['project → polarProject', 't.project(50, 100).polarProject(100, 100, 0deg, 50, BBoxAnchor.TopLeft)'],
+      ['project → polarProject → translate', 't.project(50, 100).polarProject(100, 100, 30deg, 50, BBoxAnchor.Center).translate(3, 4)'],
+      ['project → polarProject → polarProject', 't.project(50, 100).polarProject(100, 100, 0deg, 50, BBoxAnchor.TopLeft).polarProject(0, 0, 90deg, 20, BBoxAnchor.Center)'],
+      ['radialProject', 't.radialProject(100, 100, 0deg, 50)'],
+      ['radialProject, left hemisphere', 't.radialProject(100, 100, 180deg, 50)'],
+    ];
+    it.each(PRODUCERS)('%s — drawTo(0, 0) returns to block-local', (_name, expr) => {
+      const result = compile(`
+        define TextLayer('labels') #{}
+        ${BLOCK}
+        let p = ${expr};
+        layer('labels').apply { p.drawTo(0, 0); }
+      `);
+      const els = result.layers.find((l) => l.name === 'labels')!.textElements!;
+      expect(els).toHaveLength(1);
+      expect(els[0].x).toBeCloseTo(0, 6);
+      expect(els[0].y).toBeCloseTo(16, 6);
+    });
+
+    it('a second drawTo re-places from the first drawTo, not from the block', () => {
+      const result = compile(`
+        define TextLayer('labels') #{}
+        ${BLOCK}
+        let p = t.project(50, 100);
+        layer('labels').apply {
+          let q = p.drawTo(200, 300);
+          q.drawTo(0, 0);
+        }
+      `);
+      const els = result.layers.find((l) => l.name === 'labels')!.textElements!;
+      expect(els).toHaveLength(2);
+      expect(els[0].x).toBe(200);
+      expect(els[0].y).toBe(316);
+      expect(els[1].x).toBeCloseTo(0, 6);
+      expect(els[1].y).toBeCloseTo(16, 6);
+    });
+  });
+
+  // ---------------------------------------------------------------------------
   // .radialProject()
   // ---------------------------------------------------------------------------
   describe('.radialProject()', () => {

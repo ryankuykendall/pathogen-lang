@@ -22,10 +22,29 @@ RECV = {'block': 'Point(40, 25)', 'flat': 'Point(0, 0)', 'projected': 'Point(200
 # Methods whose whole purpose is to change the value's kind.
 BY_DESIGN = {'draw', 'drawTo', 'project', 'toPathBlock'}
 
-EXPECTED = {'block': 'PathBlock', 'flat': 'PathBlock', 'projected': 'ProjectedPath'}
+EXPECTED = {'block': 'PathBlock', 'flat': 'PathBlock', 'projected': 'ProjectedPath',
+            'text': 'ProjectedText', 'projectedText': 'ProjectedText'}
+
+# Text rows (V9). Every text producer returns a ProjectedText by design; what varies is
+# whether `origin` is the cumulative translation. The row carries `origin` in the start
+# column and `drift=dx,dy` (boundingBox − local boundingBox − origin) in the d column.
+TEXT = {'text', 'projectedText'}
+
+
+def classify_text(start, d):
+    if start == 'THREW':
+        return 'n/a', 'throws', d[:58]
+    dx, dy = (float(v) for v in d.removeprefix('drift=').split(','))
+    if abs(dx) < 1e-6 and abs(dy) < 1e-6:
+        place = 'origin cumulative'
+    else:
+        place = f'origin is a DELTA ({dx:g},{dy:g} off)'
+    return 'ProjectedText', place, start
 
 
 def classify(rid, start, d):
+    if rid in TEXT:
+        return classify_text(start, d)
     if start == 'THREW':
         return 'n/a', 'throws', d[:58]
     kind = 'ProjectedPath' if d[:2] == 'M ' else 'PathBlock'
@@ -39,15 +58,17 @@ def classify(rid, start, d):
     return kind, place, start
 
 
-print('| receiver  | method               | result type   | placement          | flip? | startPoint |')
-print('|-----------|----------------------|---------------|--------------------|-------|------------|')
+print('| receiver      | method               | result type   | placement          | flip? | startPoint / origin |')
+print('|---------------|----------------------|---------------|--------------------|-------|---------------------|')
 for rid, label, start, d in rows:
     kind, place, shown = classify(rid, start, d)
     flip = ''
     if kind != 'n/a' and kind != EXPECTED[rid]:
         flip = 'by design' if label in BY_DESIGN else 'YES'
-    print(f'| {rid:9} | {label:20} | {kind:13} | {place:18} | {flip:5} | {shown} |')
+    print(f'| {rid:13} | {label:20} | {kind:13} | {place:18} | {flip:5} | {shown} |')
 
 print()
 print("* the geometry moved inside the receiver's frame (offset steps out, fillet trims,")
 print("  scale multiplies) — the frame itself was kept. Only (0,0) means re-based.")
+print("† text rows: the last column is `origin`; placement says whether it is the cumulative")
+print("  translation (drift = boundingBox − local boundingBox − origin is zero) or a delta.")
