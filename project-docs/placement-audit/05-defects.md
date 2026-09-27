@@ -1,13 +1,13 @@
 # 05 — Measured defects
 
 Nine bugs found while auditing. D1–D8 and ISSUE-015 are **reproduced** by
-`probes/run-defects.sh` (D2 checks its mitigation, D6 its as-spec behaviour; D5 and D8 gained
-probes 2026-09-26); **D9 is a source read** and is labelled as such. Four are user-visible
-breakage rather than design debt.
+`probes/run-defects.sh` (D2 checks its mitigation, D6 and D9 their as-spec behaviour; D5, D8
+and D9 gained probes 2026-09-26). Four are user-visible breakage rather than design debt.
 
 **Status:** D1, D2 (mitigated), D3, D4, D7 and ISSUE-015 are fixed — each entry says so and
-when. D6 was investigated and deliberately left alone. D5, D8 and D9 are still open and are
-registered in `known-issues.md` as ISSUE-027, ISSUE-028 and ISSUE-029 (2026-09-26).
+when. D6 was investigated and deliberately left alone. D5 and D8 were fixed 2026-09-26
+(ISSUE-027, ISSUE-028). D9 was decided as-spec and documented the same day (ISSUE-029).
+Nothing in this list is open.
 
 Severity is "how likely is a user to hit this, and how hard is it to diagnose when they do".
 
@@ -127,7 +127,7 @@ ProjectedPath receiver `subPath` no longer does.
 
 ---
 
-## D5 — The conic gradient ignores the viewBox origin · **Medium** · *probed* · ISSUE-027
+## D5 — The conic gradient ignores the viewBox origin · **Medium** · *probed* · ISSUE-027 · **FIXED 2026-09-26**
 
 `buildSvgTree` passes `buildDefs` the viewBox width and height but never `originX`/`originY`
 (`src/render/build-tree.ts:63`). With `define ViewBox(-100, -100, 200, 200)` the visible area
@@ -143,6 +143,24 @@ Measured 2026-09-26 (`probes/run-defects.sh`, D5): `define ViewBox(-100, -100, 2
 a conic fill emits `<pattern id="g" x="0" y="0" width="200" height="200">`. `ConicGradient`
 requires `cx, cy`, so the default-centre half above is unreachable from Pathogen; the tile,
 mask and rect placement is the user-visible part, on all three surfaces.
+
+**Fixed 2026-09-26:** one rule, `resolveConicPlacement` in `src/conic-param.ts`, for every
+renderer — the wedge paths (CLI, and VS Code through `buildSvgTree`), the playground's Canvas
+2D fallback and its WebGPU uniform — so the origin cannot be honoured by one and dropped by
+another. The rule is **tile-local**: SVG draws pattern content in the tile's own coordinates
+(its top-left is `(0, 0)`) and the rasters cover the same tile, so every renderer subtracts
+the viewBox origin from the centre and only the `<pattern>` itself is placed at the origin.
+(The first cut placed the tile and left the wedges in user space; the CLI PNG showed one
+quadrant anchored at the corner — the raster paths were already tile-local, which is why
+WebGPU and Canvas 2D agreed with each other and not with the wedges.)
+`BuildDefsOptions.originX/originY` is threaded from `buildSvgTree` (the viewBox's first two
+numbers), from the preview pane (the store's `viewBoxOriginX/Y`) and from `bbwp.html`; the
+texture cache keys on the origin. Verified in `verify/d5/`: the CLI wedges are pixel-identical
+to a `0 0 200 200` control, the headless WebGPU and Canvas 2D renders and the **live
+playground's** rasters (both modes, `verify-playground.mjs`) agree with them within the 1°
+wedge quantization, and the committed `conic-parity/` renders are unchanged. The probe reads
+FIXED. Not covered, and separate: the mesh/freeform/topo **CLI fallback rects** still sit at
+`(0, 0)` with the gradient's own size — they are placeholders, not renders.
 
 ---
 
@@ -222,7 +240,7 @@ Two defects surfaced while cataloguing, each fixed first:
 
 ---
 
-## D8 — `ProjectedText.polarProject()` corrupts `origin` · **Low** · *probed* · ISSUE-028
+## D8 — `ProjectedText.polarProject()` corrupts `origin` · **Low** · *probed* · ISSUE-028 · **FIXED 2026-09-26**
 
 Everywhere else `origin` is the cumulative translation from block-local. `ProjectedText.polarProject`
 (`index.ts:4669-4697`) computes its anchor offset from **already-absolute** elements, so it
@@ -232,11 +250,27 @@ discarded amount.
 
 Measured 2026-09-26 (`probes/run-defects.sh`, D8): `t.polarProject(100, 100, 0deg, 50,
 BBoxAnchor.TopLeft).origin` is `Point(150, 100)`; the same call after `t.project(50, 100)`
-reports `Point(100, 0)` — the prior origin subtracted rather than kept.
+reported `Point(100, 0)` — the prior origin subtracted rather than kept.
+
+**Fixed 2026-09-26:** `origin` is now the prior origin plus the shift just applied — the rule
+`translate` already used. `probes/run-defects.sh` D8 reads FIXED, and the `projectedText ·
+polarProject` row in `02` reads `origin cumulative`. Pinned by the origin-invariant matrix in
+`tests/textblock.test.ts` (every producer, chained or not, returns to block-local under
+`drawTo(0, 0)`).
+
+Original hand probe (2026-09-24), moved here from `02` when the text rows became
+script-generated — `text(0, 16)` inside `&{ }`, projected at `(100, 200)`:
+
+| Operation | Result | `origin` |
+|---|---|---|
+| `TextBlock.project(100, 200)` | ProjectedText | `Point(100, 200)` |
+| `ProjectedText.translate(10, 10)` | ProjectedText | `Point(110, 210)` — cumulative, correct |
+| `ProjectedText.polarProject(0, 0, 0deg, 50, Center)` | ProjectedText | `Point(-57.52, -209.6)` — **a delta, not a position** |
+| `TextBlock.boundingBox().width` | number | `15.04` |
 
 ---
 
-## D9 — `dash()`'s percent resolves against a total the pattern never uses · **Low** · *source read* · ISSUE-029
+## D9 — `dash()`'s percent resolves against a total the pattern never uses · **Low** · *probed* · ISSUE-029 · **AS-SPEC 2026-09-26 — documented, denominator unified**
 
 `stroke-dasharray: 50%` inside `dash()` resolves against the **combined** length of all
 subpaths, while the dash pattern **restarts at each subpath**. On a three-subpath receiver,
@@ -248,6 +282,25 @@ the number `%` resolves against can differ on the same receiver.
 
 And the same six characters in a **layer** style block survive to the SVG attribute, where
 the spec resolves `%` against the viewport diagonal — a third, unrelated denominator.
+
+Measured 2026-09-26: `@{ h 30 m 10 0 h 30 m 10 0 h 30 }.dash(#{ stroke-dasharray: 50%; })`
+yields three pieces of length 30 — `50%` resolved to 45 against the combined 90, each 30-long
+subpath restarting and entirely dash. The `.length` half is small but real: on
+`@{ h 40 c 10 0 20 10 30 10 s 20 10 30 10 m 10 0 h 20 }`, `.length` is 123.815 while `50%`
+resolved to 61.920 — against a total of 123.839, 0.02% off (the two functions measure the
+smooth `s` segment differently). Zero published samples use a `%` dash array.
+
+**Decided 2026-09-26 (Ryan): keep the combined total.** One absolute dash length across all
+subpaths is SVG's own behaviour, and per-contour division is one `.contours` call away. Done
+as: the denominator is now literally `calculatePathLength` — the function `.length` uses — at
+both call sites, so the two numbers cannot drift; `docs/path-blocks.md` says what `%` divides,
+what the restart means on a multi-subpath receiver, the per-contour recipe, and that a `%` in
+a *layer* style block is SVG's viewport-diagonal percentage. `probes/run-defects.sh` D9 pins
+the contract (`AS-SPEC`); `tests/stroke-geometry.test.ts` pins `50%` = `.length / 2` on a cubic
+receiver. On a receiver with a smooth `s` segment the piece still re-measures 0.1% off — the
+cutter walks the raw command list, where an `s` lacks its reflected control point. That is a
+separate, pre-existing measurement gap in `stroke-geometry.ts`, registered as **ISSUE-030** and
+deliberately left out of D9 ("no geometry change").
 
 ---
 

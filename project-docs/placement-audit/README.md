@@ -35,8 +35,8 @@ rather than killing the run — and prints the matrix in `02-surface-matrix.md`.
 `probes/cases.tsv`; add a row to extend it.
 
 **Every claim in `01`, `02` and `05` comes from a probe unless it is labelled a source read.**
-`probes/run-defects.sh` covers D1–D8 and ISSUE-015 (D2 as its mitigation, D6 as its as-spec
-check); D9 is a source read and says so. `06-vocabulary.md` is a reading of the
+`probes/run-defects.sh` covers D1–D9 and ISSUE-015 (D2 as its mitigation, D6 and D9 as
+as-spec checks). `06-vocabulary.md` is a reading of the
 published docs, not a measurement.
 
 Probing rather than reading is deliberate: the one prior record of this matrix

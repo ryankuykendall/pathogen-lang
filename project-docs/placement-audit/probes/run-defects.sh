@@ -161,6 +161,25 @@ M 0 0;
 " --print-logs 2>&1 | grep -oE '(direct|chained)=Point\([-0-9., ]*\)' | tr '\n' ' ')
 if grep -q 'chained=Point(150, 100)' <<<"$out"; then pass "origin is cumulative: $out"; else fail "${out}— chained should equal direct; the prior origin was subtracted instead of kept"; fi
 
+echo "D9 — dash() % resolves against the combined drawn length (AS-SPEC — documented; the denominator is .length)"
+# Decided 2026-09-26: the combined total stays (one absolute dash length across all subpaths,
+# like SVG), the pattern restarts per subpath, and the number is exactly .length. A 100+20
+# receiver at 50% therefore gets a first dash of 60 — ratio 0.5 of .length. Per-contour
+# division is documented as dashing each .contours entry.
+out=$(npx tsx src/cli.ts -e "
+define default PathLayer('p') #{ fill: none; };
+let p = @{ h 100 m 10 0 h 20 };
+let first = p.dash(#{ stroke-dasharray: 50%; })[0].path.length;
+let out = \`ratio=\${calc(first / p.length)}\`;
+log(out);
+M 0 0;
+" --print-logs 2>&1 | grep -oE 'ratio=[0-9.]+' | head -1)
+if [ "$out" = "ratio=0.5" ]; then
+  label "AS-SPEC" "50% of a 100+20 receiver is 60, half of .length (combined); the pattern restarts per subpath — documented"
+else
+  label "CHANGED" "50% of a 100+20 receiver gave $out of .length — the denominator moved; update docs/path-blocks.md"
+fi
+
 echo "ISSUE-015 — a normalized block drawn first into a layer emits no moveto"
 out=$(npx tsx src/cli.ts -e "
 define ViewBox(0, 0, 200, 200);

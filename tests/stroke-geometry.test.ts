@@ -246,6 +246,26 @@ describe('PathBlock.dash()', () => {
       expect(logs[1]).toBe('dash');
       expect(logs[2]).toBe('dash');
     });
+
+    it('resolves % against exactly the number .length reports (ISSUE-029)', () => {
+      // The denominator is `.length` itself (calculatePathLength), all subpaths combined,
+      // so the number a user logs and the number `%` resolves against cannot drift apart.
+      // A cubic and two lines: every length model agrees on these, so the first dash —
+      // the first subpath is longer than half the total — re-measures as 50% to within
+      // the cutter's sampling tolerance (~1e-3 on a 46-unit slice). A smooth `s` segment
+      // would be ~0.3% short instead: the cutter measures it without its reflected
+      // control point — a separate gap, ISSUE-030.
+      const { logs } = compileWithLogs(`
+        let p = @{ h 40 c 10 0 20 10 30 10 m 10 0 h 20 };
+        let pieces = p.dash(#{ stroke-dasharray: 50%; });
+        log(p.length);
+        log(pieces[0].path.length);
+        log(pieces[0].kind);
+      `);
+      expect(num(logs[0])).toBeCloseTo(91.9076, 3);
+      expect(num(logs[1])).toBeCloseTo(num(logs[0]) / 2, 2);
+      expect(logs[2]).toBe('dash');
+    });
   });
 
   describe('argument validation', () => {

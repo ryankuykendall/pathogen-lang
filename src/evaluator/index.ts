@@ -94,7 +94,6 @@ import {
   parseDashStyles,
   parseOutlineStyles,
   rotateStartCommands,
-  totalDrawnLength,
 } from './stroke-geometry';
 import { calculatePathLength, partitionPath, samplePathAtFraction, wrapToPi } from './sampling';
 import {
@@ -3396,7 +3395,9 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
         if (!isStyleBlock(dashStylesVal)) throw mError('dash() argument must be a style block');
         let dashPieces;
         try {
-          const parsed = parseDashStyles(dashStylesVal.properties, totalDrawnLength(obj.commands));
+          // `%` resolves against exactly the number `.length` reports (ISSUE-029): the
+          // combined length of all subpaths, measured by the same function.
+          const parsed = parseDashStyles(dashStylesVal.properties, calculatePathLength(obj.commands));
           dashPieces = dashCommands(obj.commands, parsed.dashes, parsed.offset, parsed.mergeSeam);
         } catch (e) {
           throw mError((e as Error).message);
@@ -4032,7 +4033,9 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
         if (!isStyleBlock(dashStylesVal)) throw mError('dash() argument must be a style block');
         let dashPieces;
         try {
-          const parsed = parseDashStyles(dashStylesVal.properties, totalDrawnLength(obj.commands));
+          // `%` resolves against exactly the number `.length` reports (ISSUE-029): the
+          // combined length of all subpaths, measured by the same function.
+          const parsed = parseDashStyles(dashStylesVal.properties, calculatePathLength(obj.commands));
           dashPieces = dashCommands(obj.commands, parsed.dashes, parsed.offset, parsed.mergeSeam);
         } catch (e) {
           throw mError((e as Error).message);

@@ -862,7 +862,11 @@ this survived the 7bb4bfc work.
 
 **Discovered:** 2026-09-21 (while auditing origin preservation for ISSUE-019)
 
-**Severity:** Low
+**RESOLVED:** 2026-09-25 — Fix A (`f94592e`, after `3b08bb9` declared the boolean ops' return
+types and gave re-based results an `anchor`): `subPath`, `union`, `difference`, `intersection`,
+`xor` and `cut` on a ProjectedPath now return projected values, so the declaration is true and
+the results are no longer cursor-dependent. Placement audit D4. Marker added 2026-09-26 — the
+entry had been left open after the fix shipped.
 
 **Description:**
 
@@ -936,7 +940,17 @@ Use `line` / `column`, not `offset`, for nodes that may sit inside a trailing bl
 
 **Discovered:** 2026-09-24 (placement audit, `project-docs/placement-audit/05-defects.md` D5 — a source read; measured 2026-09-26 by `probes/run-defects.sh`)
 
-**Severity:** Medium
+**RESOLVED:** 2026-09-26 — solution 1. `resolveConicPlacement` (`src/conic-param.ts`) is the one
+rule for where a conic gradient sits in its viewport; the wedge renderer (CLI and VS Code via
+`buildSvgTree`), the playground's Canvas 2D fallback and its WebGPU uniform all call it. The
+rule is tile-local: pattern content is drawn in the tile's own coordinates and the rasters
+cover the same tile, so the centre has the viewBox origin subtracted and only the `<pattern>`
+is placed at the origin. `BuildDefsOptions.originX/originY` carries that origin from
+`buildSvgTree`, the preview pane and `bbwp.html`; the texture cache keys on it.
+`probes/run-defects.sh` D5 reads FIXED; renders for all three surfaces and the live playground
+are in `project-docs/placement-audit/verify/d5/`.
+Pinned in `tests/conic-param.test.ts`, `tests/conic-renderer.test.ts`,
+`tests/render/build-defs.test.ts`, `tests/gpu-texture-cache.test.ts` and `tests/cli.test.ts`.
 
 **Description:**
 
@@ -982,7 +996,12 @@ Any conic gradient in a program whose viewBox does not start at `(0, 0)` renders
 
 **Discovered:** 2026-09-24 (placement audit, `project-docs/placement-audit/05-defects.md` D8 — probed by hand; measured 2026-09-26 by `probes/run-defects.sh`)
 
-**Severity:** Low
+**RESOLVED:** 2026-09-26 — `origin` is now the prior origin plus the shift just applied (the
+rule `translate` already used), so `drawTo` after a chained `polarProject` lands where the
+direct form does. `probes/run-defects.sh` D8 reads FIXED; the `projectedText` rows of the
+placement matrix read `origin cumulative`. Pinned by "ProjectedText origin is the cumulative
+translation" in `tests/textblock.test.ts` — every producer, chained or not, returns to
+block-local under `drawTo(0, 0)`. Solution 1 below.
 
 **Description:**
 
@@ -1021,13 +1040,18 @@ Call `polarProject` on the TextBlock rather than on an already-projected value, 
 
 **Discovered:** 2026-09-24 (placement audit, `project-docs/placement-audit/05-defects.md` D9 — source read; measured 2026-09-26)
 
-**Severity:** Low
+**RESOLVED:** 2026-09-26 — solution 2, as decided the same day: the combined total stays. The
+denominator is now literally `calculatePathLength` (what `.length` uses) at both `dash()` call
+sites, so the logged number and the resolved `%` cannot drift; `docs/path-blocks.md` documents
+what `%` divides, the per-subpath restart, the per-contour recipe (`.contours`), and that a `%`
+in a layer style block is SVG's viewport-diagonal percentage. `probes/run-defects.sh` D9 pins
+the contract as AS-SPEC; `tests/stroke-geometry.test.ts` pins `50%` = `.length / 2`.
 
 **Description:**
 
 `stroke-dasharray: 50%` inside `.dash()` resolves against the combined drawn length of all subpaths (`parseDashStyles(props, totalDrawnLength(cmds))` at both evaluator call sites), while `dashCommands` restarts the pattern at each subpath. Measured: `@{ h 30 m 10 0 h 30 m 10 0 h 30 }.dash(#{ stroke-dasharray: 50%; })` yields three pieces of length 30 — `50%` resolved to 45 against the combined 90, and each 30-long subpath restarts and is entirely dash. So on a multi-subpath receiver `20% 5%` never divides a contour into four; it divides the combined length.
 
-Two smaller points ride along. `.length` uses `calculatePathLength` while the denominator uses `totalDrawnLength`; they differ only on sub-epsilon subpaths, but they are two functions that can drift. And the same `50%` in a **layer** style block passes through to the SVG attribute untouched, where the spec resolves it against the viewport diagonal — a third denominator, by design (it is SVG's).
+Two smaller points ride along. `.length` uses `calculatePathLength` while the denominator uses `totalDrawnLength`; measured 2026-09-26 on a receiver with a smooth `s` segment, the two totals differ by 0.02% (123.815 vs 123.839) — small, but two functions that can drift, and already have. And the same `50%` in a **layer** style block passes through to the SVG attribute untouched, where the spec resolves it against the viewport diagonal — a third denominator, by design (it is SVG's).
 
 **Impact:**
 
@@ -1049,6 +1073,37 @@ Dash each entry of `.contours` separately for per-contour division, or use absol
 **Recommended Long-term Solution:**
 
 2 — decided 2026-09-26. The combined total matches SVG's uniform dash lengths, and per-contour division is one `.contours` call away. Close as as-spec once the denominator is unified and the docs say so.
+
+---
+
+## ISSUE-030: Stroke geometry measures smooth curves (`s` / `t`) without their reflected control point
+
+**Discovered:** 2026-09-26 (while pinning ISSUE-029: a `50%` dash on a receiver with an `s` segment re-measured 0.1% off half of `.length`)
+
+**Severity:** Low
+
+**Description:**
+
+A smooth command's first control point is the reflection of the previous command's second control point; it cannot be recovered from the command alone, which is why `sampling.ts` has `resolveSmooth` (S→C, T→Q) and every entry point there and in `path-transforms.ts` runs on a resolved list. `src/evaluator/stroke-geometry.ts` does not: `groupIntoSubpaths` (`:66`), `subpathLength` (`:71`, hence `totalDrawnLength`), the dash cursor and the `t0`/`t1` fractions in `dashCommands`, and the EPS checks at `:239` / `:251` all call `calculateCommandLength` on the raw commands, so an `s` is measured with an approximate control point.
+
+Measured on `M 0 0 h 40 c 10 0 20 10 30 10 s 20 10 30 10 m 10 0 h 20`: the `s` segment is 31.9076 resolved and 31.8118 raw (0.3% short); `.length` (resolved) is 123.815 while `totalDrawnLength` is 123.719. Dashing it at `50%` — now resolved against `.length` (ISSUE-029) — produces a first piece that re-measures as 61.968 against the requested 61.908, because the cutter walked the raw length. A plain cubic receiver re-measures within sampling tolerance (~1e-3), so the gap is specific to smooth commands.
+
+**Impact:**
+
+Dash pieces, `t0`/`t1`, and seam positions on paths that use `s`/`t` are a few tenths of a percent off along those segments. Visually negligible; measurable through `.length`.
+
+**Current Workarounds:**
+
+Author explicit `c`/`q` instead of `s`/`t` where exact dash positions matter.
+
+**Potential Solutions:**
+
+1. Resolve at the boundary: run `resolveSmooth` once at the top of `dashCommands` / `outlineCommands` / the seam helpers (the same boundary fix ISSUE-026 used). Pieces would then emit `c`/`q` in place of `s`/`t` — same curves, different bytes, so a sample comparison (`probes/compare-samples.sh`) is required before shipping.
+2. Teach `calculateCommandLength` to take the previous command — every caller changes.
+
+**Recommended Long-term Solution:**
+
+1. It was deliberately **not** folded into ISSUE-029, whose decision was "no geometry change"; it moves cut positions on smooth curves and deserves its own before/after render comparison.
 
 ---
 
