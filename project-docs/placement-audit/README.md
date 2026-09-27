@@ -1,6 +1,6 @@
 # Placement & coordinate-space audit
 
-**Date:** 2026-09-24 · **Status:** findings, not decisions · **Prompted by:** ISSUE-025
+**Date:** 2026-09-24 · **Status:** findings, then a follow-through from 2026-09-26 (per-defect status in `05-defects.md`) · **Prompted by:** ISSUE-025
 
 Ryan's read, which started this:
 
@@ -19,7 +19,7 @@ That read is correct. This is the distillation.
 | `02-surface-matrix.md` | Every producer → result type, where the origin lands, and whether position is **recoverable** |
 | `03-principles.md` | The model we should have had, argued from the grain that already exists |
 | `04-violations.md` | Every operation graded against those principles, ranked, each with a fix and its cost |
-| `05-defects.md` | Nine measured bugs, triaged for `known-issues.md` |
+| `05-defects.md` | Nine measured bugs, each with its status; the open ones carry their `known-issues.md` number |
 | `06-vocabulary.md` | One name per concept, and the synonyms it replaces |
 | `D2-layer-transform-queries.md` | One-pager on D2: layer transforms vs query coordinates |
 | `probes/` | The evidence. Re-runnable. |
@@ -35,8 +35,8 @@ rather than killing the run — and prints the matrix in `02-surface-matrix.md`.
 `probes/cases.tsv`; add a row to extend it.
 
 **Every claim in `01`, `02` and `05` comes from a probe unless it is labelled a source read.**
-`probes/run-defects.sh` covers D1–D4, D6, D7 and ISSUE-015; D5 and D9 are source reads and
-say so; D8 was probed by hand (recorded in `02`). `06-vocabulary.md` is a reading of the
+`probes/run-defects.sh` covers D1–D8 and ISSUE-015 (D2 as its mitigation, D6 as its as-spec
+check); D9 is a source read and says so. `06-vocabulary.md` is a reading of the
 published docs, not a measurement.
 
 Probing rather than reading is deliberate: the one prior record of this matrix
@@ -55,9 +55,10 @@ producer, ISSUE-015). Two opposite failures, one representation choice.
 
 ## What this does NOT do
 
-It does not fix anything. It ranks and costs. Nine defects are written up in `05-defects.md`
-ready to become `known-issues.md` entries; four of them are user-visible breakage rather
-than design debt.
+As written on 2026-09-24 it fixed nothing: it ranked and costed. Nine defects are written up
+in `05-defects.md`; four of them are user-visible breakage rather than design debt. The fixes
+that followed are recorded per entry there and in `04-violations.md`; the three still open
+were registered in `known-issues.md` on 2026-09-26.
 
 **Revised 2026-09-24 after review.** The first draft claimed a single root cause, and its own
 evidence contradicted it — a *positioned* block appends to a mask **validly**

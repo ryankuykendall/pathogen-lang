@@ -76,7 +76,13 @@ Alternatively, consider a lint/warning in the CLI that detects this pattern and 
 
 **Discovered:** 2026-01-25 (during arcFromPolarOffset implementation)
 
-**Severity:** Medium
+**RESOLVED:** 2026-09-26 — re-measured during the placement-audit follow-through
+(`project-docs/placement-audit/05-defects.md`, "Also worth re-measuring"). The recorded example
+predates mandatory semicolons; with them, `M 100 100; arcFromPolarOffset(0deg, 50, 90deg);`
+emits `M 100 100 A 50 50 0 0 1 150 50` — the arc is computed from the moved position, as
+expected. No code change was needed; the statement-by-statement context sync landed with the
+Lezer-only evaluator. Pinned by "uses the position set by a preceding M statement" in
+`tests/context.test.ts`. The original write-up is kept below.
 
 **Description:**
 
@@ -85,9 +91,11 @@ When an `M` (moveto) command and a context-aware function (like `arcFromPolarOff
 **Example:**
 
 ```
-M 100 100
-arcFromPolarOffset(0, 50, 90deg)
+M 100 100;
+arcFromPolarOffset(0deg, 50, 90deg);
 ```
+
+(As recorded in January, without semicolons — which no longer parses.)
 
 Expected: `arcFromPolarOffset` uses position `(100, 100)` to calculate the arc center at `(150, 100)`.
 
@@ -921,6 +929,126 @@ Use `line` / `column`, not `offset`, for nodes that may sit inside a trailing bl
 **Recommended Long-term Solution:**
 
 1, then 2 as its regression test.
+
+---
+
+## ISSUE-027: The conic gradient ignores the viewBox origin
+
+**Discovered:** 2026-09-24 (placement audit, `project-docs/placement-audit/05-defects.md` D5 — a source read; measured 2026-09-26 by `probes/run-defects.sh`)
+
+**Severity:** Medium
+
+**Description:**
+
+`buildDefs` (`src/render/build-defs.ts`) receives the viewBox width and height but never its origin, so every conic gradient is laid out as if the viewport were `(0, 0) → (W, H)`: the `<pattern>` tile, the inner-fill `<mask>` and its `<rect>` all sit at `x="0" y="0"`, and the wedge renderer's outer radius is measured to those corners. With a negative origin the tile is anchored in the wrong place:
+
+```
+define ViewBox(-100, -100, 200, 200);
+let g = ConicGradient('g', 0, 0) {|c|
+  c.stop(0, Color('#e63946'));
+  c.stop(1, Color('#264653'));
+};
+define default PathLayer('bg') #{ fill: g; stroke: none; };
+M -100 -100; h 200; v 200; h -200; z;
+```
+
+emits `<pattern id="g" x="0" y="0" width="200" height="200" patternUnits="userSpaceOnUse">` inside `viewBox="-100 -100 200 200"`. Because the pattern repeats, the visible area shows wrapped quadrants of the tile rather than one gradient centred where the author put it. The same assumption is repeated in the playground's three conic paths (WebGPU uniform, Canvas 2D fallback, and the `<image>` pattern) and reaches the VS Code preview through `buildSvgTree`.
+
+**Impact:**
+
+Any conic gradient in a program whose viewBox does not start at `(0, 0)` renders wrong on all three surfaces. `docs/viewbox.md` recommends negative origins for centring, so this is an ordinary combination, not an edge case.
+
+**Current Workarounds:**
+
+1. Use a `0 0 w h` viewBox and translate the drawing instead of the viewBox.
+2. Position the conic centre and accept the tile wrap (not really a workaround — the tile still repeats).
+
+**Potential Solutions:**
+
+1. Thread `originX`/`originY` through `BuildDefsOptions` from `buildSvgTree` and the playground preview pane; resolve the viewport (origin, size, default centre) in one shared helper in `src/conic-param.ts` used by the CLI wedge renderer, the Canvas 2D fallback and the WebGPU uniform, so the three cannot drift.
+   - Pro: one rule, three consumers; no per-surface duplication
+   - Con: touches build-defs, conic-renderer, build-tree, and four playground files; the `.vsix` must be rebuilt
+2. Emit the conic pattern with `patternUnits="objectBoundingBox"` so it is origin-independent.
+   - Pro: fewer call sites
+   - Con: changes the gradient's user-space semantics (`cx, cy` are documented as user space), so it is a behaviour change for every existing sample
+
+**Recommended Long-term Solution:**
+
+1 — the origin is already known at every call site; it just was never passed.
+
+---
+
+## ISSUE-028: `ProjectedText.polarProject()` stores a delta as `origin`
+
+**Discovered:** 2026-09-24 (placement audit, `project-docs/placement-audit/05-defects.md` D8 — probed by hand; measured 2026-09-26 by `probes/run-defects.sh`)
+
+**Severity:** Low
+
+**Description:**
+
+Everywhere else a ProjectedText's `origin` is the cumulative translation from block-local coordinates: `project(x, y)` stores `(x, y)`, `translate(dx, dy)` adds to it, and `drawTo(X, Y)` re-places by computing `X − origin.x`. `ProjectedText.polarProject` (`src/evaluator/index.ts:4669-4697`) is a copy of the TextBlock branch applied to elements that are **already absolute**, so its anchor offset is an absolute point and the "origin" it stores is the incremental delta it just applied — the prior origin is discarded.
+
+```
+let t = &{ text(0, 16)`X` } << #{ font-size: 16; };
+log(t.polarProject(100, 100, 0deg, 50, BBoxAnchor.TopLeft).origin);                  // Point(150, 100)
+log(t.project(50, 100).polarProject(100, 100, 0deg, 50, BBoxAnchor.TopLeft).origin); // Point(100, 0) — should be Point(150, 100)
+```
+
+The element coordinates come out right (the anchor does land on the target), so nothing looks wrong until a later `.drawTo()` subtracts the bad origin and mis-places the text by the discarded `(50, 100)`.
+
+**Impact:**
+
+`drawTo` after a chained `polarProject` lands off by the earlier projection's offset. Low: chaining a projection before `polarProject` is unusual, and the direct form is correct.
+
+**Current Workarounds:**
+
+Call `polarProject` on the TextBlock rather than on an already-projected value, or use `translate` for the follow-up move.
+
+**Potential Solutions:**
+
+1. Store `origin: { x: obj.origin.x + delta.x, y: obj.origin.y + delta.y }` — one line — and add an origin-invariant test over every ProjectedText producer (`project`, `drawTo`, `translate`, `polarProject` on both receivers, `radialProject`): after each, `drawTo(0, 0)` returns the elements to block-local.
+2. Un-project to block-local first and reuse the TextBlock branch.
+   - Pro: one implementation
+   - Con: more code motion for the same result
+
+**Recommended Long-term Solution:**
+
+1, with the matrix test so the invariant is stated once for the whole family.
+
+---
+
+## ISSUE-029: `dash()`'s percent resolves against the combined length while the pattern restarts per subpath
+
+**Discovered:** 2026-09-24 (placement audit, `project-docs/placement-audit/05-defects.md` D9 — source read; measured 2026-09-26)
+
+**Severity:** Low
+
+**Description:**
+
+`stroke-dasharray: 50%` inside `.dash()` resolves against the combined drawn length of all subpaths (`parseDashStyles(props, totalDrawnLength(cmds))` at both evaluator call sites), while `dashCommands` restarts the pattern at each subpath. Measured: `@{ h 30 m 10 0 h 30 m 10 0 h 30 }.dash(#{ stroke-dasharray: 50%; })` yields three pieces of length 30 — `50%` resolved to 45 against the combined 90, and each 30-long subpath restarts and is entirely dash. So on a multi-subpath receiver `20% 5%` never divides a contour into four; it divides the combined length.
+
+Two smaller points ride along. `.length` uses `calculatePathLength` while the denominator uses `totalDrawnLength`; they differ only on sub-epsilon subpaths, but they are two functions that can drift. And the same `50%` in a **layer** style block passes through to the SVG attribute untouched, where the spec resolves it against the viewport diagonal — a third denominator, by design (it is SVG's).
+
+**Impact:**
+
+Surprising on multi-contour receivers (glyph outlines, `.contours` unions). No published sample uses a percent dash array, and the documented example (a single ring) is unaffected.
+
+**Current Workarounds:**
+
+Dash each entry of `.contours` separately for per-contour division, or use absolute lengths.
+
+**Potential Solutions:**
+
+1. Resolve `%` per subpath against that subpath's own length, matching the restart.
+   - Pro: `20% 5%` gives exactly four dashes on every contour, which is the documented purpose of `%`
+   - Con: dash lengths then differ between contours of different length; a behaviour change (zero published exposure today)
+2. Keep the combined total — one absolute dash length across all subpaths, like SVG — make the denominator literally `.length`'s function so the two cannot drift, and document the multi-subpath consequence plus the per-contour recipe and the layer-style pass-through.
+   - Pro: no geometry change; uniform dash lengths across contours
+   - Con: per-contour division stays one `.contours` step away
+
+**Recommended Long-term Solution:**
+
+2 — decided 2026-09-26. The combined total matches SVG's uniform dash lengths, and per-contour division is one `.contours` call away. Close as as-spec once the denominator is unified and the docs say so.
 
 ---
 

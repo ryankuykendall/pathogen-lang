@@ -670,6 +670,19 @@ describe('Path Context Tracking', () => {
   });
 
   describe('arcFromPolarOffset', () => {
+    it('uses the position set by a preceding M statement (ISSUE-002, re-measured 2026-09-26)', () => {
+      // ISSUE-002 recorded the arc being computed from (0, 0) when the M sat on its own
+      // statement. From (100, 100) with the centre 50 to the right, a 90deg clockwise arc
+      // ends at (150, 50). Re-measured fixed; this pins it.
+      const result = compileWithContext(`
+        M 100 100;
+        arcFromPolarOffset(0deg, 50, 90deg);
+      `);
+      expect(result.path).toBe('M 100 100 A 50 50 0 0 1 150 50');
+      expect(result.context.position.x).toBeCloseTo(150, 5);
+      expect(result.context.position.y).toBeCloseTo(50, 5);
+    });
+
     it('draws arc clockwise with positive angleOfArc', () => {
       // Start at (0, 0), center direction = 0 (right), radius = 50
       // Center is at (50, 0)

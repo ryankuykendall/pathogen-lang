@@ -1,12 +1,13 @@
 # 05 — Measured defects
 
-Nine bugs found while auditing. D1–D4, D6, D7 and ISSUE-015 are **reproduced** by
-`probes/run-defects.sh`; D8 was probed by hand (see `02`, text surface); **D5 and D9 are
-source reads** and are labelled as such. Four are user-visible
+Nine bugs found while auditing. D1–D8 and ISSUE-015 are **reproduced** by
+`probes/run-defects.sh` (D2 checks its mitigation, D6 its as-spec behaviour; D5 and D8 gained
+probes 2026-09-26); **D9 is a source read** and is labelled as such. Four are user-visible
 breakage rather than design debt.
 
 **Status:** D1, D2 (mitigated), D3, D4, D7 and ISSUE-015 are fixed — each entry says so and
-when. D6 was investigated and deliberately left alone. D5, D8 and D9 are still open.
+when. D6 was investigated and deliberately left alone. D5, D8 and D9 are still open and are
+registered in `known-issues.md` as ISSUE-027, ISSUE-028 and ISSUE-029 (2026-09-26).
 
 Severity is "how likely is a user to hit this, and how hard is it to diagnose when they do".
 
@@ -82,7 +83,7 @@ transformed layer; or document it and name the space. All three are decisions, n
 
 ---
 
-## D3 — `ProjectedPath.drawTo()` drops every label · **Medium**
+## D3 — `ProjectedPath.drawTo()` drops every label · **Medium** · **FIXED 2026-09-24**
 
 Measured: a block with two `as segment(...)` labels reports 2/2 labelled commands through
 `reverse`, `offset`, `scale`, `rotate`, `subPath`, `startAt`, `mirror`, `project` and
@@ -96,7 +97,8 @@ Sharpened by the fact that `drawTo` is the *only* way to translate a `ProjectedP
 is no `translate` member — so the one available move operation is the one that silently
 destroys labels.
 
-**Fix:** add the `meta` spread. One line, no behaviour change beyond the fix.
+**Fixed 2026-09-24 (`fdc3bc3`):** the `meta` spread was added. One line, no behaviour change
+beyond the fix; `probes/run-defects.sh` reports `labels=2`.
 
 ---
 
@@ -125,7 +127,7 @@ ProjectedPath receiver `subPath` no longer does.
 
 ---
 
-## D5 — The conic gradient ignores the viewBox origin · **Medium** · *source read*
+## D5 — The conic gradient ignores the viewBox origin · **Medium** · *probed* · ISSUE-027
 
 `buildSvgTree` passes `buildDefs` the viewBox width and height but never `originX`/`originY`
 (`src/render/build-tree.ts:63`). With `define ViewBox(-100, -100, 200, 200)` the visible area
@@ -136,6 +138,11 @@ is `(-100,-100) → (100,100)`, but the conic mask, its backing `<rect>` and its
 Negative origins are explicitly recommended for centring in `docs/viewbox.md`.
 
 **Fix:** thread the origin through `buildDefs`.
+
+Measured 2026-09-26 (`probes/run-defects.sh`, D5): `define ViewBox(-100, -100, 200, 200)` with
+a conic fill emits `<pattern id="g" x="0" y="0" width="200" height="200">`. `ConicGradient`
+requires `cx, cy`, so the default-centre half above is unreachable from Pathogen; the tile,
+mask and rect placement is the user-visible part, on all three surfaces.
 
 ---
 
@@ -215,17 +222,21 @@ Two defects surfaced while cataloguing, each fixed first:
 
 ---
 
-## D8 — `ProjectedText.polarProject()` corrupts `origin` · **Low** · *probed by hand*
+## D8 — `ProjectedText.polarProject()` corrupts `origin` · **Low** · *probed* · ISSUE-028
 
 Everywhere else `origin` is the cumulative translation from block-local. `ProjectedText.polarProject`
-(`index.ts:4467-4494`) computes its anchor offset from **already-absolute** elements, so it
+(`index.ts:4669-4697`) computes its anchor offset from **already-absolute** elements, so it
 stores an incremental delta as `origin`, discarding the prior one. Element coordinates come
 out right; a later `.drawTo(X, Y)` — which computes `X − origin.x` — mis-places by the
 discarded amount.
 
+Measured 2026-09-26 (`probes/run-defects.sh`, D8): `t.polarProject(100, 100, 0deg, 50,
+BBoxAnchor.TopLeft).origin` is `Point(150, 100)`; the same call after `t.project(50, 100)`
+reports `Point(100, 0)` — the prior origin subtracted rather than kept.
+
 ---
 
-## D9 — `dash()`'s percent resolves against a total the pattern never uses · **Low** · *source read*
+## D9 — `dash()`'s percent resolves against a total the pattern never uses · **Low** · *source read* · ISSUE-029
 
 `stroke-dasharray: 50%` inside `dash()` resolves against the **combined** length of all
 subpaths, while the dash pattern **restarts at each subpath**. On a three-subpath receiver,
@@ -246,3 +257,7 @@ the spec resolves `%` against the viewport diagonal — a third, unrelated denom
 `ctx.position` before context-aware stdlib calls. The recorded example no longer parses, and
 the `.draw()` path demonstrably does sync the context. It may already be fixed; it should be
 re-measured before anyone acts on it.
+
+**Re-measured 2026-09-26:** fixed. `M 100 100; arcFromPolarOffset(0deg, 50, 90deg);` emits
+`M 100 100 A 50 50 0 0 1 150 50` — the arc is computed from the moved position. Closed in
+`known-issues.md`, pinned by a regression test in `tests/context.test.ts`.
