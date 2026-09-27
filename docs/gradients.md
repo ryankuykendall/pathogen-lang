@@ -216,6 +216,8 @@ Constructor signature: `ConicGradient(id, cx, cy)` — center coordinates in use
 
 Conic gradients use the same `.stop(offset, color)` method as linear and radial gradients. Stops map to the angular sweep: offset 0 is the start angle, offset 1 is the end angle.
 
+The gradient fills the whole viewBox, whatever its origin. With `define ViewBox(-100, -100, 200, 200)`, a center of `(0, 0)` sits in the middle of the picture, and the output matches a `ViewBox(0, 0, 200, 200)` program whose coordinates are all moved by +100. (Every surface draws the gradient into an SVG `<pattern>` tile that starts at the viewBox origin — see [Rendering](#gradients-rendering).)
+
 ### Conic Gradient Properties
 
 | Property | Values | Default |
@@ -340,7 +342,7 @@ SVG has no native conic gradient element, so every surface rasterizes or approxi
 - **Playground, Canvas 2D** (Firefox, Safari, or WebGPU unavailable): `createConicGradient()` plus clipping, compositing and a radial overlay reproduce the same rules. The console reports when this fallback is used.
 - **CLI, VS Code preview and library consumers**: wedge-shaped `<path>` elements, one per ~1° slice, each filled with the color the shader would sample at the slice's middle (stops mix in gamma-encoded sRGB, as the shader and CSS gradients do). `innerRadius` cuts the wedges into annular sectors; a blended `innerFill` adds a radial-gradient disc (or mask) that follows the shader's smoothstep curve at five stops. Nothing is ignored and nothing warns.
 
-**Bitmap resolution.** The playground renders at twice the viewBox size, then reduces that so the longer edge fits the largest texture the renderer allows: the GPU's maximum texture dimension (16384 on most desktop GPUs, 8192 at minimum) for WebGPU, 16384 for Canvas 2D. A 4000-unit-wide viewBox renders at 2 pixels per unit; a 48000-unit-wide one at about 0.34 pixels per unit on a 16384 GPU. Rendered bitmaps are cached, so a compile that does not change the gradient reuses the previous image.
+**Bitmap resolution.** The playground renders the full viewBox, starting at its origin, at twice its size, then reduces that so the longer edge fits the largest texture the renderer allows: the GPU's maximum texture dimension (16384 on most desktop GPUs, 8192 at minimum) for WebGPU, 16384 for Canvas 2D. A 4000-unit-wide viewBox renders at 2 pixels per unit; a 48000-unit-wide one at about 0.34 pixels per unit on a 16384 GPU. Rendered bitmaps are cached, so a compile that does not change the gradient reuses the previous image.
 
 ### OKLCh Interpolation
 

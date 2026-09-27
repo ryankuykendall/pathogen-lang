@@ -19,13 +19,13 @@ npx pathogen-lang [options]
 ### Compile a File
 
 ```bash
-pathogen-lang input.svgx
+pathogen-lang input.pathogen
 ```
 
 Or with the explicit flag:
 
 ```bash
-pathogen-lang --src=input.svgx
+pathogen-lang --src=input.pathogen
 ```
 
 ### Compile Inline Code
@@ -41,7 +41,7 @@ echo 'let x = 50; circle(x, x, 25)' | pathogen-lang -
 ```
 
 ```bash
-cat myfile.svgx | pathogen-lang -
+cat myfile.pathogen | pathogen-lang -
 ```
 
 ## Output Options
@@ -49,8 +49,8 @@ cat myfile.svgx | pathogen-lang -
 ### Output Path Data to File
 
 ```bash
-pathogen-lang --src=input.svgx -o output.txt
-pathogen-lang --src=input.svgx --output output.txt
+pathogen-lang --src=input.pathogen -o output.txt
+pathogen-lang --src=input.pathogen --output output.txt
 ```
 
 ### Output as Complete SVG File
@@ -58,7 +58,7 @@ pathogen-lang --src=input.svgx --output output.txt
 Generate a complete SVG file with the path embedded:
 
 ```bash
-pathogen-lang --src=input.svgx --output-svg-file=output.svg
+pathogen-lang --src=input.pathogen --output-svg-file=output.svg
 ```
 
 This creates a ready-to-use SVG file that can be opened in any browser or image viewer.
@@ -156,7 +156,7 @@ When using `--output-svg-file`, you can customize the appearance:
 
 **ViewBox precedence:** if the source program contains a [`define ViewBox`](#viewbox-viewbox) statement, the source value wins and the `--viewBox`/`--width`/`--height` flags are ignored. The flags apply only when the source has no `define ViewBox`.
 
-### Examples
+### Styling Examples
 
 Red circle with no fill:
 
@@ -180,7 +180,7 @@ pathogen-lang -e 'polygon(100, 100, 80, 6)' \
 Large canvas with custom viewBox:
 
 ```bash
-pathogen-lang --src=complex.svgx \
+pathogen-lang --src=complex.pathogen \
   --output-svg-file=output.svg \
   --viewBox="0 0 800 600" \
   --width=800 \
@@ -208,7 +208,7 @@ Warnings (see [Debug & Console](#debug-warnings)) are printed to stderr as `file
 
 ## File Extensions
 
-By convention, source files use the `.svgx` extension, but any text file will work.
+By convention, source files use the `.pathogen` extension, but any text file will work.
 
 ## Examples
 
@@ -226,8 +226,8 @@ for (i in 1..50) {
 ### Process Multiple Files
 
 ```bash
-for file in examples/*.svgx; do
-  pathogen-lang --src="$file" --output-svg-file="${file%.svgx}.svg"
+for file in examples/*.pathogen; do
+  pathogen-lang --src="$file" --output-svg-file="${file%.pathogen}.svg"
 done
 ```
 
@@ -236,7 +236,7 @@ done
 ```json
 {
   "scripts": {
-    "build:icons": "pathogen-lang --src=src/icons.svgx --output-svg-file=dist/icons.svg"
+    "build:icons": "pathogen-lang --src=src/icons.pathogen --output-svg-file=dist/icons.svg"
   }
 }
 ```

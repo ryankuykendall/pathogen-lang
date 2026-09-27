@@ -261,6 +261,8 @@ Style properties map directly to SVG presentation attributes. Common properties:
 | `fill-opacity` | `0.3` | Fill opacity |
 | `opacity` | `0.8` | Overall opacity |
 
+Evaluated values are written to the SVG attribute as-is, so they mean what SVG says they mean. In particular a percentage in `stroke-dasharray` or `stroke-dashoffset` (`stroke-dasharray: 25%`) is SVG's viewport-diagonal percentage, not a fraction of any path — the path-relative reading belongs to [`.dash()`](#path-blocks-dashstyles-array-of-path-kind-t0-t1), which resolves `%` against the path's own length.
+
 Each property is a semicolon-terminated declaration:
 
 ```

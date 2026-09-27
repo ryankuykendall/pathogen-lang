@@ -58,7 +58,7 @@ Created by the `&{ }` expression. All coordinates are **relative to origin (0, 0
 
 ### ProjectedTextValue
 
-Created by `.project()`, `.drawTo()`, `.polarProject()`, or `.translate()`. Contains text elements with **absolute coordinates** and tracks the projection origin.
+Created by `.project()`, `.drawTo()`, `.polarProject()`, or `.translate()`. Contains text elements with **absolute coordinates** and tracks the projection origin. Its `.origin` is cumulative: the total translation from the original text block, whichever of these methods applied it. So `.drawTo(x, y)` always places the block as if it had been projected at `(x, y)` directly.
 
 ## Methods
 

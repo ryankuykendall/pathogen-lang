@@ -59,7 +59,7 @@ let proj = shape.drawTo(10, 10);
 // proj.endPoint = Point(40, 30)
 ```
 
-`drawTo()` also works on ProjectedPath values — it re-positions the projected path to the new origin:
+`drawTo()` also works on ProjectedPath values — it moves the path so its `startPoint` lands at `(x, y)`:
 
 ```
 let shape = @{ h 50 v 30 };
@@ -83,9 +83,24 @@ for (seam in placed.segmentAll('cut')) {
 
 This is the idiom for decorating query results — seams, labeled runs, offsets — where the value's own coordinates *are* the target. The cursor advances to the path's endpoint, and the same ProjectedPath comes back for chaining.
 
-**The `drawTo` anchor contract.** `drawTo(x, y)` places the value's `startPoint` — the **first inked point** — at `(x, y)`. There used to be a trap here: a cut piece's `startPoint` reported the *frame origin* rather than where the piece's ink actually starts, so `drawTo(p.startPoint.x, p.startPoint.y)` silently shifted whole pieces. `startPoint` is now truthful for every value (`get(0)` always agrees with it), so `drawTo` anchors the ink at the target for pieces and seams alike. `.draw()` remains the one-word spelling for drawing a projected value in place.
+**The `drawTo` anchor contract — by receiver.** `drawTo(x, y)` anchors a different thing depending on what it is called on:
 
-One distinction worth knowing: `proj.drawTo(x, y)` puts the *ink* at `(x, y)`; `M x y` followed by `block.draw()` seats the *pen* there and lets a leading `m` in the block offset from it. For blocks with no leading move the two agree exactly.
+| Receiver | What lands at `(x, y)` |
+|---|---|
+| ProjectedPath | its `startPoint`, the **first inked point** — `get(0)` always agrees with it |
+| PathBlock | its **frame origin** — the block's `(0, 0)`, so a leading `m 10 10` offsets the ink to `(x + 10, y + 10)`, exactly as `M x y` then `block.draw()` would |
+| [ProjectedText](#text-block-projectedtextvalue) | its `origin`, the total translation applied so far |
+
+Because `startPoint` is always the first inked point, `drawTo(p.startPoint.x, p.startPoint.y)` redraws a cut piece or a seam exactly where it was. `.draw()` is the shorter spelling for drawing a projected value in place.
+
+The block and projection rows coincide only for a block with no leading move:
+
+```
+@{ m 10 10 h 20 }.drawTo(100, 100)                // M 100 100 m 10 10 h 20  — ink at (110, 110)
+@{ m 10 10 h 20 }.project(0, 0).drawTo(100, 100)  // M 100 100 m 0 0 h 20    — ink at (100, 100)
+```
+
+Project first when you want the ink at the target.
 
 ## Projecting Without Drawing
 
@@ -353,7 +368,8 @@ A PathBlock has no position of its own, so a transform of one is free-floating b
 |---|---|
 | `offset`, `variableOffset`, `compoundVariableOffset`, `outline`, `dash` | page coordinates — the new curve sits alongside the original |
 | `reverse`, `startAt` | page coordinates — same path, different starting end |
-| `rotate`, `scale`, `mirror` | page coordinates — transformed about the path's own start unless you pass an origin |
+| `rotate`, `scale`, `mirror` | page coordinates — transformed about `startPoint` (`rotate` also takes an origin) |
+| `rotateAtVertexIndex` | page coordinates — about the absolute vertex |
 | `fillet`, `chamfer`, `ellipticalFillet` (and their `AtVertex` forms) | page coordinates — only the corner changes |
 | `union`, `difference`, `intersection`, `xor`, `cut` | page coordinates — the pieces stay where they were |
 | `toPathBlock` | free-floating, re-based to its own first point — this is what it is for |
@@ -541,9 +557,22 @@ M 0 50
 parallel.draw()              // parallel curve 3 units to the left
 ```
 
+### Pivots and placement by receiver
+
+`mirror`, `rotate` and `scale` pivot on the **block origin `(0, 0)`** when called on a PathBlock and on the value's **`startPoint`** when called on a ProjectedPath. For a block with no leading move the two are the same point; for a positioned block (one that starts with `m`) or a cut piece they are not, so the same call can give a different result on a block and on its projection. On a PathBlock, three of the four keep the block's frame — the result is not re-based, its `(0, 0)` is still its placement origin, so `M x y` then `.draw()` places it exactly as it placed the original; the fourth re-bases:
+
+| Method | PathBlock | ProjectedPath |
+|---|---|---|
+| `mirror(angle)` | line through `(0, 0)`; frame kept | line through `startPoint`; stays in place |
+| `rotate(angle, origin?)` | about `origin`, default `(0, 0)`; frame kept | about `origin` (absolute), default `startPoint`; stays in place |
+| `scale(sx, sy)` | from `(0, 0)`; frame kept | from `startPoint`; stays in place |
+| `rotateAtVertexIndex(i, angle)` | re-based — the index is **unobservable** (see below) | about the absolute vertex `i`; stays in place |
+
+To pivot a PathBlock about one of its own points, pass the point: `p.rotate(angle, p.vertices[1])` or `p.rotate(angle, p.centerPoint())`.
+
 ### `mirror(angle)` → PathBlock / ProjectedPath
 
-Reflects the path across a line through the start point at the given angle. The angle uses standard language units (radians).
+Reflects the path across a line through the pivot at the given angle — the block origin `(0, 0)` for a PathBlock, the `startPoint` for a ProjectedPath. The angle uses standard language units (radians).
 
 ```
 let p = @{ h 60 v 40 };
@@ -570,12 +599,13 @@ flipped.draw()               // curve reflected below the axis
 
 ### `rotateAtVertexIndex(index, angle)` → PathBlock / ProjectedPath
 
-Rotates the path around the vertex at `index` (from the `.vertices` array) by `angle` radians. PathBlockValue results are normalized to `(0, 0)` start.
+Rotates the path by `angle` about the vertex at `index` (from the `.vertices` array). On a **ProjectedPath** that vertex is the pivot. On a **PathBlock** the result is re-based to its own first point, so the index has no visible effect: a rotation about vertex 1 differs from one about vertex 0 only by a translation, which the re-basing removes. `p.rotateAtVertexIndex(i, a)` is therefore the same block as `p.rotate(a)` for every `i`. When the pivot matters on a block, pass the point to `rotate` — `p.rotate(a, p.vertices[1])` keeps the frame and honours the pivot — or project first.
 
 ```
 let p = @{ h 50 v 50 };
 // p.vertices = [Point(0,0), Point(50,0), Point(50,50)]
-let r = p.rotateAtVertexIndex(1, 0.5pi);  // rotate around corner
+let r = p.rotateAtVertexIndex(1, 0.5pi);  // l 0 50 l -50 0          — same as index 0, and as p.rotate(0.5pi)
+let s = p.rotate(0.5pi, p.vertices[1]);    // m 50 -50 l 0 50 l -50 0 — pivots on the corner
 M 10 10
 r.draw()
 ```
@@ -586,7 +616,7 @@ The index must be a non-negative integer within range. The rotation preserves pa
 // Create a radial pattern by rotating around the first vertex
 let arm = @{ h 50 v 10 };
 for (i in 0..5) {
-  let angle = calc(i * 2 * 3.14159265358979 / 6);
+  let angle = calc(i * 60deg);
   let r = arm.rotateAtVertexIndex(0, angle);
   M 100 100
   r.draw()
@@ -628,11 +658,11 @@ for (piece in pieces) {
 }
 ```
 
-`rotate(a)` with no origin is equivalent to `rotateAtVertexIndex(0, a)` when the path starts at the origin. Rotation preserves path length and curve types; arc commands have their rotation parameter adjusted. Segment and endpoint labels survive (see [Labels Survive Derived Paths](#segment-labels-labels-survive-derived-paths)).
+`rotate(a)` with no origin gives the same block as `rotateAtVertexIndex(i, a)` for any `i` (see above). Rotation preserves path length and curve types; arc commands have their rotation parameter adjusted. Segment and endpoint labels survive (see [Labels Survive Derived Paths](#segment-labels-labels-survive-derived-paths)).
 
 ### `scale(sx, sy)` → PathBlock / ProjectedPath
 
-Scales the path from its start point. `sx` scales x-coordinates, `sy` scales y-coordinates.
+Scales the path from the block origin `(0, 0)` (a PathBlock keeps its frame) or from `startPoint` (a ProjectedPath). `sx` scales x-coordinates, `sy` scales y-coordinates.
 
 ```
 let p = @{ h 50 v 30 };
@@ -672,15 +702,13 @@ let p = @{ h 100 };
 let rev = p.subPath(1, 0);        // full path, reversed direction
 ```
 
-Use `.get()` on the ProjectedPath to find the absolute position, then `.draw()` the extracted PathBlock:
+On a ProjectedPath the slice keeps its page coordinates — it stays where it was cut from — so `.draw()` puts it back in place with no positioning:
 
 ```
 let p = @{ h 100 v 50 };
 let proj = p.project(10, 20);
-let start = proj.get(0.2);
-let sub = proj.subPath(0.2, 0.8);  // PathBlock, normalized to (0,0)
-M start.x start.y
-sub.draw()                          // draws the middle 60% at the right position
+let sub = proj.subPath(0.2, 0.8);  // ProjectedPath(40, 20 → 110, 40)
+sub.draw()                          // draws the middle 60% where it already is
 ```
 
 Edge cases:
@@ -1197,7 +1225,7 @@ Each entry in the returned array is an object:
 - `kind` — `'dash'` for inked spans, `'gap'` for the spaces between them. Pieces alternate in path order, so the array reconstructs the whole path with nothing missing.
 - `t0`, `t1` — where the piece lives along the path, as arc-length fractions between 0 and 1. Useful for fading, scaling, or coloring pieces by position.
 
-**Dash array values.** Plain numbers are arc lengths in user units, exactly as in SVG. An odd number of entries repeats the list doubled (`12 6 3` behaves as `12 6 3 12 6 3`), also as in SVG. Percentages are supported with one deliberate difference: `25%` means *a quarter of this path's total length* — not SVG's viewport-diagonal percentage, which has no useful meaning inside a path-space partition:
+**Dash array values.** Plain numbers are arc lengths in user units, exactly as in SVG. An odd number of entries repeats the list doubled (`12 6 3` behaves as `12 6 3 12 6 3`), also as in SVG. Percentages are supported with one deliberate difference: `25%` means *a quarter of this path's total length* — the same number `.length` reports, all subpaths combined — not SVG's viewport-diagonal percentage, which has no useful meaning inside a path-space partition:
 
 ```
 let ring = @{
@@ -1210,6 +1238,10 @@ let quarters = ring.dash(#{
 ```
 
 Negative entries are an error. If every entry is zero, the whole path comes back as a single `'dash'` piece — the same "render as solid" behavior SVG falls back to.
+
+The pattern restarts at each subpath, as in SVG, but a percentage is resolved once against the combined length. On a multi-subpath receiver, `20% 5%` gives every subpath the same absolute dash length rather than dividing each contour into four. For per-contour division, dash each entry of [`contours`](#path-blocks-contours) on its own.
+
+A percentage in a **layer's** style block is different: it is written to the SVG attribute as-is and means SVG's viewport-diagonal percentage. See [Style Properties](#layers-style-properties).
 
 **Dash offset.** `stroke-dashoffset` advances the pattern's starting position, wrapping around the pattern length; negative offsets are allowed, as in CSS:
 

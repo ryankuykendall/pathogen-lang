@@ -5,6 +5,41 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] - 2026-09-26 (the placement audit's open items close)
+
+Everything the 2026-09-24 placement audit (`project-docs/placement-audit/`) left open and
+had a recorded fix for. Three defects fixed, one decided as-spec and documented, the docs
+brought in line with the measured behaviour, the audit's own regression script made
+truthful, and the two design items written up as a brief.
+
+### Fixed
+
+#### Core
+
+- **Conic gradients honour the viewBox origin, on all three surfaces** (ISSUE-027). Every conic path assumed the viewport was `(0, 0) → (W, H)`: with `define ViewBox(-100, -100, 200, 200)` the `<pattern>` tile that carries the gradient sat at `x="0" y="0"` and repeated, so the visible area showed wrapped quadrants instead of the wheel the author centred — in the CLI, the playground (WebGPU and Canvas 2D) and the VS Code preview alike. One rule now, `resolveConicPlacement`, and it is *tile-local*: SVG draws pattern content in the tile's own coordinates and the rasters cover the same tile, so every renderer subtracts the origin from the centre and only the `<pattern>` is placed at the origin. Verified pixel-for-pixel against a `0 0 200 200` control on every surface and the live playground (`project-docs/placement-audit/verify/d5/`); the committed conic-parity renders are unchanged. No published sample was affected.
+
+- **`ProjectedText.polarProject()` keeps a cumulative `origin`** (ISSUE-028). Called on an already-projected value it stored only the shift it had just applied, discarding the prior origin; the text landed right, but a later `.drawTo(x, y)` — which subtracts `origin` — landed off by the discarded amount. `t.project(50, 100).polarProject(…).origin` now reports the same point as the unchained call. Pinned by an origin-invariant matrix over every ProjectedText producer.
+
+- **`dash()` resolves a `%` against exactly the number `.length` reports** (ISSUE-029). The denominator was a second length function that measured a smooth `s` segment differently (0.02% on the measured receiver). The combined-total rule itself stays — one absolute dash length across all subpaths, like SVG, with the pattern restarting per subpath — and is now documented, with the per-contour recipe (`.contours`) and the note that a `%` in a *layer* style block is SVG's viewport-diagonal percentage.
+
+#### Documentation
+
+- **`drawTo` is documented per receiver.** A PathBlock seats its frame origin at the target (so a leading `m` offsets the ink); a ProjectedPath seats its first inked point; a ProjectedText its `origin`. The page had stated the ink contract for every value.
+- **Pivots are documented per receiver** — a table for `mirror`, `rotate`, `scale` and `rotateAtVertexIndex`: block origin `(0, 0)` on a PathBlock, `startPoint` on a ProjectedPath. The `mirror` and `scale` intros said "start point" for both; the runtime never did that on a block.
+- **`rotateAtVertexIndex` on a PathBlock says the index is unobservable** (the result is re-based, so every index yields `rotate(angle)`), and shows `rotate(angle, p.vertices[i])` for the pivot people wanted. Deliberately unchanged behaviour (audit D6).
+- **`polarOffset` returns `{dx, dy}`**, a relative step; the stdlib page said `{x, y}`. The `polarMove` example next to it did not parse (no semicolons) and now does.
+- The `subPath` example on a ProjectedPath still said "PathBlock, normalized to (0,0)" — stale since the receiver-decides change; it now draws the slice in place.
+- `docs/cli.md`: the styling examples heading no longer collides with the page's Examples anchor, and the ten `.svgx` mentions are `.pathogen`.
+- `docs/textblock.md` states that a ProjectedText's `.origin` is cumulative; `docs/gradients.md` states that a conic gradient fills the viewBox whatever its origin.
+
+### Development
+
+- **Two named constructors for derived PathBlocks** (audit V8): `fromCommandsKeepingFrame` and `fromCommandsRebased` replace `buildPathBlockFromCommands(cmds, origin?)`, whose `{ x: 0, y: 0 }` argument *preserved* the frame — read as "put it at the origin" it meant the opposite, and each of 22 call sites had picked by hand. Renamed to what each already did; all 294 published samples render byte-identically before and after, and the probe matrix is unchanged. The naming made one thing visible: `offset` and `mirror` re-base, and only look frame-keeping because a block literal's first command starts at `(0, 0)`.
+- **The audit's regression script tells the truth.** Its D7 probe printed PRESENT for a fixed bug (it expected the old output; the fix rejects the program), and its D2 probe tested for the deliberately unbuilt full fix rather than the mitigation. Both rewritten; probes added for D5, D8 and D9; text receivers added to the placement matrix (V9), where the D8 defect shows as a non-zero origin drift.
+- `project-docs/placement-audit/probes/compare-samples.sh`: render every published sample to SVG and diff two such directories — the safety net for behaviour-preserving evaluator refactors, checked in this time.
+- Trackers: ISSUE-002 closed (re-measured fixed; pinned by a test), ISSUE-025 given the RESOLVED marker it had been missing since its fix, ISSUE-027/028/029 registered and resolved, **ISSUE-030 registered** — stroke geometry measures `s`/`t` commands without their reflected control point (0.3% short on the measured segment), so dash pieces on smooth curves re-measure a few tenths of a percent off; deliberately not folded into ISSUE-029.
+- `project-docs/placement-audit/07-design-brief.md`: options and a recommendation for V3 (injected vs authored position — a provenance field carried by the two constructors, with a warning) and V7 (the Marker edge — a warning naming both spaces, then `Marker.fromPathBlock`). Nothing built; each ends with the decisions it needs.
+
 ## [Unreleased] - 2026-09-26 (an angle literal says which unit it is)
 
 D7 of the placement audit, plus the two defects found while cataloguing it.

@@ -893,15 +893,21 @@ L p.x p.y  // Line to (150, 100)
 
 #### polarOffset(angle, distance)
 
-Returns `{x, y}` coordinates at a polar offset. Similar to `polarPoint`.
+Returns the relative step `{dx, dy}` — `distance` along `angle` — without adding the current position. Does not emit any path commands. `polarPoint` returns the absolute point; `polarOffset` returns the step.
+
+```
+M 100 100
+let o = polarOffset(0deg, 50);
+l o.dx o.dy  // relative line to (150, 100)
+```
 
 #### polarMove(angle, distance)
 
 Emits a line command (`L`) moving in the specified direction. Updates position but draws a visible line.
 
 ```
-M 100 100
-polarMove(0, 50)  // Draws line to (150, 100)
+M 100 100;
+polarMove(0, 50);  // Draws line to (150, 100)
 ```
 
 #### polarLine(angle, distance)
