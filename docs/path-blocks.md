@@ -116,7 +116,7 @@ let proj = shape.project(10, 10);
 
 ## `anchor` — putting a re-based result back
 
-Some operations hand back geometry **re-based to its own first point**: the shape is right, but where it came from has been subtracted out. On a PathBlock receiver, `subPath`, `segment`, `reverse` and the [variable-offset](#variable-offset-variable-offset) family all do this. (On a ProjectedPath they keep their page coordinates instead — there is nothing to recover, and `anchor` simply equals `startPoint`.)
+Some operations hand back geometry **re-based to its own first point**: the shape is right, but where it came from has been subtracted out. On a PathBlock receiver, `subPath`, `segment`, `reverse` and the [variable-offset](#variable-offset-variable-offset) family all do this. (On a ProjectedPath they keep their page coordinates instead — there is nothing to recover, and `anchor` simply equals `startPoint`.) [`translateStartPointTo` and `translateCenterPointTo`](#path-blocks-translatestartpointtox-y-translatecenterpointtox-y-pathblock-projectedpath) are different: they move the geometry because you asked, on either kind of path, and record the move as `anchor`.
 
 Each of them records the translation it removed, as `anchor`:
 
@@ -135,7 +135,7 @@ let at = slice.anchor;
 slice.drawTo(at.x, at.y);      // exactly where subPath took it from
 ```
 
-That is the point of `anchor`: without it you would have to go back to the receiver and remember which `t` you asked for. What it names depends on the operation, but the rule is the same each time — the first point of the result, in the receiver's coordinates:
+That is the point of `anchor`: without it you would have to go back to the receiver and remember which `t` you asked for. What it names depends on the operation. For the operations that re-base, it is the first point of the result, in the receiver's coordinates; for the two `translate…PointTo` methods it is the shift itself. Either way, drawing the result at its `anchor` gives back the original ink:
 
 | Operation (on a PathBlock) | `anchor` is |
 |---|---|
@@ -143,8 +143,9 @@ That is the point of `anchor`: without it you would have to go back to the recei
 | `segment('name')` | where that labelled run starts |
 | `reverse()` | the receiver's `endPoint`, since the reversed path starts there |
 | `variableOffset` / `compoundVariableOffset` | the spine sampled at the first stop, stepped out by that stop's offset |
+| `translateStartPointTo(x, y)` / `translateCenterPointTo(x, y)` | the shift that was removed: where the moved point was, minus `(x, y)`. (On a ProjectedPath: where the receiver started.) |
 
-**Operations that keep their placement do not answer `anchor`** — `offset`, `outline`, `dash`, `fillet`, the boolean operations and `cut` never moved the geometry, so there is nothing to recover, and asking is an error that says so.
+**Operations that leave the geometry where it was do not answer `anchor`** — `offset`, `outline`, `dash`, `fillet`, the boolean operations and `cut` never moved the geometry, so there is nothing to recover, and asking is an error that says so.
 
 `anchor` does not survive composition. `@{ m -10 0 } << slice`, `slice.offset(5)` and `slice.reverse()` each produce a new value, and only the last of those re-bases — read `anchor` off the result before composing.
 
@@ -373,9 +374,74 @@ A PathBlock has no position of its own, so a transform of one is free-floating b
 | `fillet`, `chamfer`, `ellipticalFillet` (and their `AtVertex` forms) | page coordinates — only the corner changes |
 | `union`, `difference`, `intersection`, `xor`, `cut` | page coordinates — the pieces stay where they were |
 | `toPathBlock` | free-floating, re-based to its own first point — this is what it is for |
+| `translateStartPointTo`, `translateCenterPointTo` | page coordinates — the same shape, with that point at the `(x, y)` you gave |
 | `subPath` | page coordinates — the slice stays where it was cut from |
 
-Every operation that re-bases carries [`anchor`](#path-blocks-anchor-putting-a-re-based-result-back) — the position the re-base removed. Operations that keep their placement have nothing to recover and do not answer it.
+Every operation that re-bases carries [`anchor`](#path-blocks-anchor-putting-a-re-based-result-back) — the position the re-base removed — and so do the two `translate…PointTo` methods, which record the shift they made. Operations that leave the geometry where it was have nothing to recover and do not answer it.
+
+### `translateStartPointTo(x, y)` / `translateCenterPointTo(x, y)` → PathBlock / ProjectedPath
+
+Return the same geometry, shifted so that one named point of it sits at `(x, y)`:
+
+- `translateStartPointTo(x, y)` moves `startPoint` — the first drawn point — to `(x, y)`.
+- `translateCenterPointTo(x, y)` moves the centre of the drawn shape's bounding box to `(x, y)`.
+
+Nothing else changes: every subpath, a closing `z`, the length, the bounding-box size and any labels come through as they were. On a PathBlock, `(x, y)` is in the block's own coordinates, so `(0, 0)` means "at the pen" — the current drawing position, where the last `M` left the cursor — once it is drawn. On a ProjectedPath, `(x, y)` is in page coordinates and the result is a ProjectedPath there.
+
+A leading move counts as where the block was, not as part of its shape. So `@{ m 10 10 h 20 }.translateStartPointTo(0, 0)` gives back `h 20`, and `translateCenterPointTo` centres only what is drawn. That can differ from `centerPoint()`, whose box also includes the point the move started from: for that block the drawn centre is `(20, 10)`, while `centerPoint()` is `(15, 5)`.
+
+These are the methods to reach for with a piece of something — a `cut()` piece, a `dash()` piece, a glyph contour. A piece keeps the place it had in the path it came from, which is what lets a set of pieces reassemble. It also means `draw()` does not start the piece at the pen:
+
+```
+let plate = @{
+  h 100
+  v 40
+  h -100
+  z
+};
+let knife = @{
+  m 50 -10
+  v 60
+};
+let piece = plate.cut(knife)[1];    // the left half; its first point is (50, 40) in the plate
+
+// Where it sat: the plate's corner is at the pen, so the piece starts 50 right and 40 down
+M 200 70
+piece.draw()
+
+// The piece's first point is at the pen
+M 200 70
+piece.translateStartPointTo(0, 0).draw()
+
+// The piece is centred on the pen
+M 200 70
+piece.translateCenterPointTo(0, 0).draw()
+```
+
+| You want | Write |
+|---|---|
+| the piece where it sat, so the pieces reassemble | `piece.draw()` |
+| the piece to start at the pen | `piece.translateStartPointTo(0, 0).draw()` |
+| the piece centred on the pen — an exploded view, a scatter | `piece.translateCenterPointTo(0, 0).draw()` |
+
+The arguments are a destination, not a distance, as in `drawTo(x, y)`: `translateStartPointTo(10, 0)` returns a block whose first point is at `(10, 0)`, wherever it was before.
+
+The result carries [`anchor`](#path-blocks-anchor-putting-a-re-based-result-back), so the shift can always be undone from the result alone — `drawTo(anchor.x, anchor.y)` draws it exactly where the path you called the method on was:
+
+```
+let loose = piece.translateStartPointTo(0, 0);
+
+loose.startPoint     // Point(0, 0)
+loose.anchor         // Point(50, 40) — where the piece's first point sat in the plate
+loose.drawTo(loose.anchor.x, loose.anchor.y);    // the same ink as piece.drawTo(0, 0)
+```
+
+On a ProjectedPath the same line works, and `anchor` is the point the original path started at:
+
+```
+let moved = piece.project(300, 200).translateCenterPointTo(60, 60);
+moved.drawTo(moved.anchor.x, moved.anchor.y);    // back at (350, 240), where the projected piece started
+```
 
 ### `reverse()` → PathBlock / ProjectedPath
 
@@ -1065,7 +1131,7 @@ let pieces = plate.project(50, 50).cut(knife.project(0, 40));
 log(pieces.length);    // 2
 ```
 
-Pieces keep their original placement inside the subject, so drawing them all at the same position reassembles the shape — and offsetting each one produces an exploded view:
+Pieces keep their original placement inside the subject, so drawing them all at the same position reassembles the shape — and offsetting each one produces an exploded view. (To draw one piece starting at the pen instead, see [`translateStartPointTo(0, 0)`](#path-blocks-translatestartpointtox-y-translatecenterpointtox-y-pathblock-projectedpath).)
 
 ```
 let box = @{
@@ -1172,7 +1238,7 @@ Details worth knowing:
 **Arguments and results**
 
 - The `cutter` argument can be a PathBlock or ProjectedPath; so can the receiver. Pieces follow the receiver: PathBlocks from a PathBlock, ProjectedPaths from a ProjectedPath — so pieces cut from a projected shape can simply be `draw()`n back where they came from.
-- Pieces keep their original placement inside the subject (like the set operations, results are normalized to a `(0, 0)` origin). Drawing every piece at one position reassembles the shape.
+- Pieces keep their original placement inside the subject (like the set operations, results are normalized to a `(0, 0)` origin). Drawing every piece at one position reassembles the shape. A piece on its own does not start at the pen: [`translateStartPointTo(0, 0)`](#path-blocks-translatestartpointtox-y-translatecenterpointtox-y-pathblock-projectedpath) returns one that does, and `translateCenterPointTo(0, 0)` returns one centred on it.
 - Piece order is deterministic but unspecified — style pieces by iterating, not by assuming which index is which.
 - Labels survive: pieces keep the subject's `as segment(...)` / `as endpoint(...)` names on their surviving boundary fragments, and every healed seam edge carries the automatic segment label `cut` (query the seams with `segmentAll('cut')`). See [Labels Survive Derived Paths](#segment-labels-labels-survive-derived-paths).
 - **Name your knives.** A cutter edge labeled `as segment('valley')` stamps the seams it heals with the sub-label `cut.valley`. `segmentAll('cut')` still returns *every* seam — sub-labeled or not, merged into runs exactly as before — while `segmentAll('cut.valley')` answers just that knife's seams. Unlabeled cutter edges, cookie boundaries, and bridging segments stay plain `cut` (a bridge that seals a gap *inside* one named knife's seam inherits that knife's name, so the run stays contiguous). Because [`cut()` takes an array of cutters](#path-blocks-cutcutter-array-of-pathblock), each knife can carry its own name: mountain and valley folds, cut in one call, dashed differently. [Query pseudo-selectors](#segment-labels-query-pseudo-selectors) compose with the namespace — `segment('cut:first')`, `segmentAll('cut.valley:atomic')`. The cutter's endpoint labels do not propagate — seam identity is a per-edge affair.
@@ -1221,7 +1287,7 @@ for (piece in pieces) {
 
 Each entry in the returned array is an object:
 
-- `path` — the piece's geometry, unclosed, as a PathBlock (or a ProjectedPath when called on a ProjectedPath). Pieces keep their original placement inside the source (normalized to a `(0, 0)` origin, like [`cut()`](#path-blocks-cutting-behavior)): drawing every piece at one position reassembles the original path exactly.
+- `path` — the piece's geometry, unclosed, as a PathBlock (or a ProjectedPath when called on a ProjectedPath). Pieces keep their original placement inside the source (normalized to a `(0, 0)` origin, like [`cut()`](#path-blocks-cutting-behavior)): drawing every piece at one position reassembles the original path exactly. For a single dash that starts at the pen, use [`translateStartPointTo(0, 0)`](#path-blocks-translatestartpointtox-y-translatecenterpointtox-y-pathblock-projectedpath).
 - `kind` — `'dash'` for inked spans, `'gap'` for the spaces between them. Pieces alternate in path order, so the array reconstructs the whole path with nothing missing.
 - `t0`, `t1` — where the piece lives along the path, as arc-length fractions between 0 and 1. Useful for fading, scaling, or coloring pieces by position.
 

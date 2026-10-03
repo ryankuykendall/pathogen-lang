@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 330" width="900" height="330">
+
+  <path data-layer-name="ghost" id="ghost" d="M 110 130 h 100 v 40 h -100 z M 410 130 h 100 v 40 h -100 z M 690 130 h 100 v 40 h -100 z" fill="none" stroke="#b9b9b9" stroke-width="1" stroke-dasharray="4 3"/>
+  <path data-layer-name="piece" id="piece" d="M 110 130 m 50 40 l -50 0 l 0 -40 l 50 0 l 0 40 z M 410 130 l -50 0 l 0 -40 l 50 0 l 0 40 z M 690 130 m 25 20 l -50 0 l 0 -40 l 50 0 l 0 40 z" fill="#2a7f6222" stroke="#2a7f62" stroke-width="2.5"/>
+  <path data-layer-name="pen" id="pen" d="M 110 130 m -7 0 h 14 m -7 -7 v 14 M 410 130 m -7 0 h 14 m -7 -7 v 14 M 690 130 m -7 0 h 14 m -7 -7 v 14" fill="none" stroke="#c0392b" stroke-width="2"/>
+  <text data-layer-name="titles" id="titles" x="40" y="40" font-family="sans-serif" font-size="16" font-weight="bold" fill="#222">One cut piece, three intents — the pen is the red cross, the plate is dashed</text>
+  <text data-layer-name="code" id="code" x="40" y="80" font-family="monospace" font-size="11" fill="#1f5c47">piece.draw()</text>
+  <text data-layer-name="code" x="340" y="80" font-family="monospace" font-size="11" fill="#1f5c47">piece.translateStartPointTo(0, 0).draw()</text>
+  <text data-layer-name="code" x="610" y="80" font-family="monospace" font-size="11" fill="#1f5c47">piece.translateCenterPointTo(0, 0).draw()</text>
+  <text data-layer-name="labels" id="labels" x="40" y="230" font-family="sans-serif" font-size="12" fill="#444">where it sat: the plate's frame is at the pen</text>
+  <text data-layer-name="labels" x="40" y="248" font-family="sans-serif" font-size="12" fill="#444">piece.startPoint = Point(50, 40)</text>
+  <text data-layer-name="labels" x="340" y="230" font-family="sans-serif" font-size="12" fill="#444">the piece's first point is at the pen</text>
+  <text data-layer-name="labels" x="340" y="248" font-family="sans-serif" font-size="12" fill="#444">anchor = Point(50, 40)</text>
+  <text data-layer-name="labels" x="610" y="230" font-family="sans-serif" font-size="12" fill="#444">the piece is centred on the pen</text>
+  <text data-layer-name="labels" x="610" y="248" font-family="sans-serif" font-size="12" fill="#444">anchor = Point(25, 20)</text>
+  <text data-layer-name="labels" x="40" y="295" font-family="sans-serif" font-size="12" fill="#444">anchor is the shift removed: result.drawTo(anchor.x, anchor.y) is the same ink as piece.drawTo(0, 0).</text>
+</svg>

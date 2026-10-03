@@ -42,12 +42,19 @@ def classify_text(start, d):
     return 'ProjectedText', place, start
 
 
-def classify(rid, start, d):
+# Methods that move the value because the caller asked: the destination is an argument,
+# so neither "re-based" nor "receiver's frame" describes them.
+TRANSLATES = {'translateStartPointTo', 'translateCenterPointTo'}
+
+
+def classify(rid, start, d, label=''):
     if rid in TEXT:
         return classify_text(start, d)
     if start == 'THREW':
         return 'n/a', 'throws', d[:58]
     kind = 'ProjectedPath' if d[:2] == 'M ' else 'PathBlock'
+    if label in TRANSLATES:
+        return kind, 'moved, as asked', start
     if start == 'Point(0, 0)':
         # A flat block's own first point IS (0,0), so re-basing is unobservable there.
         place = 'at (0,0) — n/a' if rid == 'flat' else 'RE-BASED to (0,0)'
@@ -61,7 +68,7 @@ def classify(rid, start, d):
 print('| receiver      | method               | result type   | placement          | flip? | startPoint / origin |')
 print('|---------------|----------------------|---------------|--------------------|-------|---------------------|')
 for rid, label, start, d in rows:
-    kind, place, shown = classify(rid, start, d)
+    kind, place, shown = classify(rid, start, d, label)
     flip = ''
     if kind != 'n/a' and kind != EXPECTED[rid]:
         flip = 'by design' if label in BY_DESIGN else 'YES'

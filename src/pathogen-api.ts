@@ -963,6 +963,10 @@ export interface PathogenPathBlock {
   boundingBox(): { x: number; y: number; width: number; height: number };
   /** centerPoint() — Center of the bounding box as a Point */
   centerPoint(): PathogenPoint;
+  /** translateStartPointTo(x, y) — The same geometry shifted so its first drawn point (startPoint) is at (x, y); translateStartPointTo(0, 0) makes a cut or dash piece start at the pen. The result carries anchor */
+  translateStartPointTo(x: number, y: number): PathogenPathBlock;
+  /** translateCenterPointTo(x, y) — The same geometry shifted so the centre of its drawn shape is at (x, y); translateCenterPointTo(0, 0) centres a piece on the pen. The result carries anchor */
+  translateCenterPointTo(x: number, y: number): PathogenPathBlock;
 
   // Transforms
   /** offset(distance, options?) — Parallel path; options: { join: 'miter' | 'bevel' | 'round' } */
@@ -1407,6 +1411,10 @@ export interface PathogenProjectedPath {
   boundingBox(): { x: number; y: number; width: number; height: number };
   /** centerPoint() — Center of the bounding box as a Point */
   centerPoint(): PathogenPoint;
+  /** translateStartPointTo(x, y) — The same geometry shifted so its first drawn point (startPoint) is at (x, y); translateStartPointTo(0, 0) makes a cut or dash piece start at the pen. The result carries anchor */
+  translateStartPointTo(x: number, y: number): PathogenProjectedPath;
+  /** translateCenterPointTo(x, y) — The same geometry shifted so the centre of its drawn shape is at (x, y); translateCenterPointTo(0, 0) centres a piece on the pen. The result carries anchor */
+  translateCenterPointTo(x: number, y: number): PathogenProjectedPath;
   /** offset(distance, options?) — Parallel path; options: { join: 'miter' | 'bevel' | 'round' } */
   offset(distance: number, options?: { join?: string }): PathogenProjectedPath;
   /** variableOffset() {|go, pb| ...} — Trace a smooth offset path with per-stop distance + continuity, registered on this path's own coordinates; or variableOffset() << worker @blockparams VariableOffsetBuilder, ProjectedPath @snippet variableOffset() {|${1:go}, ${2:pb}|\n\t$0\n} */

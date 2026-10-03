@@ -52,3 +52,19 @@ anchor reassembles the source geometry".
 3. **V3-C, position as data.** The destination the brief already named; large and breaking.
 4. **Ship the warning anyway and migrate 33 samples** to `M 0 0` / `project()`. Not
    recommended: it declares the documented idiom wrong.
+
+## Decision — 2026-10-03 (Ryan): option 2, name the intent
+
+No warning. "Starts at the pen" becomes a method call and "where it sat" stays `draw()`:
+`translateStartPointTo(x, y)` and `translateCenterPointTo(x, y)`, on PathBlock and
+ProjectedPath, each carrying `anchor`. The naming went `rebase()` → rejected ("right concept,
+wrong name") → "it is a translation of the start point to the origin" → `translateStartPoint(0, 0)`
+→ `…To`, because a bare `translate` reads as a delta and `(0, 0)` as a no-op; `To` is the
+suffix `drawTo` already uses for a destination. Built the same day: `docs/path-blocks.md`
+(Transforms), `tests/translate-point.test.ts`, `../v3-translate/` (diagram, three-surface probe),
+`../reviews/translate-point-2026-10-03.md`.
+
+Found while building, not changed: `boundingBox()` / `centerPoint()` on a block count the
+point a leading or trailing **move** touches (`@{ m 10 10 h 20 }.centerPoint()` is `(15, 5)`,
+not the drawn `(20, 10)`; `@{ h 10 m 50 50 h 10 m 100 100 }` reports 170 × 150). The centre
+method measures the drawn shape only and the docs say so.

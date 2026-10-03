@@ -1,0 +1,102 @@
+// V3 — the intent gets a spelling instead of a warning.
+// One cut piece, drawn three ways from the same pen position (the red cross):
+// where it sat in the plate, starting at the pen, and centred on the pen.
+define ViewBox(0, 0, 900, 330);
+
+let plate = @{
+  h 100;
+  v 40;
+  h -100;
+  z;
+};
+let knife = @{
+  m 50 -10;
+  v 60;
+};
+let piece = plate.cut(knife)[1];
+let fromStart = piece.translateStartPointTo(0, 0);
+let fromCenter = piece.translateCenterPointTo(0, 0);
+
+let cross = @{
+  m -7 0;
+  h 14;
+  m -7 -7;
+  v 14;
+};
+
+define PathLayer('ghost') #{
+  stroke: #b9b9b9;
+  stroke-width: 1;
+  stroke-dasharray: 4 3;
+  fill: none;
+}
+define PathLayer('piece') #{
+  stroke: #2a7f62;
+  stroke-width: 2.5;
+  fill: #2a7f6222;
+}
+define PathLayer('pen') #{
+  stroke: #c0392b;
+  stroke-width: 2;
+  fill: none;
+}
+
+let penY = 130;
+let columns = [110, 410, 690];
+
+// The plate, drawn from the same pen each time, as a reference.
+layer('ghost').apply {
+  for (penX in columns) {
+    M penX penY;
+    plate.draw();
+  }
+}
+layer('pen').apply {
+  for (penX in columns) {
+    M penX penY;
+    cross.draw();
+  }
+}
+layer('piece').apply {
+  M columns[0] penY;
+  piece.draw();
+  M columns[1] penY;
+  fromStart.draw();
+  M columns[2] penY;
+  fromCenter.draw();
+}
+
+define TextLayer('titles') #{
+  font-family: sans-serif;
+  font-size: 16;
+  font-weight: bold;
+  fill: #222;
+}
+define TextLayer('code') #{
+  font-family: monospace;
+  font-size: 11;
+  fill: #1f5c47;
+}
+define TextLayer('labels') #{
+  font-family: sans-serif;
+  font-size: 12;
+  fill: #444;
+}
+
+layer('titles').apply {
+  text(40, 40)`One cut piece, three intents — the pen is the red cross, the plate is dashed`;
+}
+layer('code').apply {
+  text(40, 80)`piece.draw()`;
+  text(340, 80)`piece.translateStartPointTo(0, 0).draw()`;
+  text(610, 80)`piece.translateCenterPointTo(0, 0).draw()`;
+}
+layer('labels').apply {
+  text(40, 230)`where it sat: the plate's frame is at the pen`;
+  text(40, 248)`piece.startPoint = ${piece.startPoint}`;
+  text(340, 230)`the piece's first point is at the pen`;
+  text(340, 248)`anchor = ${fromStart.anchor}`;
+  text(610, 230)`the piece is centred on the pen`;
+  text(610, 248)`anchor = ${fromCenter.anchor}`;
+  text(40, 295)`anchor is the shift removed: result.drawTo(anchor.x, anchor.y) is the same ink as piece.drawTo(0, 0).`;
+}

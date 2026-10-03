@@ -1,0 +1,18 @@
+let plate = @{
+  h 100;
+  v 40;
+  h -100;
+  z;
+};
+let knife = @{
+  m 50 -10;
+  v 60;
+};
+let piece = plate.cut(knife)[1];
+let fromStart = piece.translateStartPointTo(0, 0);
+let fromCenter = piece.translateCenterPointTo(0, 0);
+log(`${fromStart.d} | ${fromStart.anchor} | ${fromCenter.d} | ${fromCenter.anchor}`);
+M 200 70;
+fromStart.draw();
+M 400 70;
+fromCenter.draw();

@@ -1346,6 +1346,46 @@ function buildRebasedWithAnchor(cmds: PathBlockCommand[]): PathBlockValue {
   return block;
 }
 
+/** A command list without its leading run of moves — the shape, without where the pen was put first. */
+function withoutLeadingMoves(cmds: PathBlockCommand[]): PathBlockCommand[] {
+  let firstInked = 0;
+  while (firstInked < cmds.length && cmds[firstInked].command.toLowerCase() === 'm') firstInked++;
+  return firstInked === 0 ? cmds : cmds.slice(firstInked);
+}
+
+/** The point a translate*PointTo method moves: the first drawn point, or the centre of the drawn shape. */
+function translationReference(method: string, cmds: PathBlockCommand[], startPoint: { x: number; y: number }) {
+  // The centre is of the INK: boundingBox() counts a leading move's origin, which
+  // is where the pen was, and that is exactly what a translation gives up.
+  return method === 'translateStartPointTo' ? startPoint : computeBoundingBoxCenter(withoutLeadingMoves(cmds));
+}
+
+/**
+ * The third way a derived PathBlock is built: translated so a chosen point of it
+ * (`from`, in the receiver's coordinates) lands on `to`. This is the named,
+ * user-callable form of re-basing — `translateStartPointTo` / `translateCenterPointTo`
+ * (placement audit V3: the intent "this piece starts at the pen" gets a spelling
+ * instead of a warning).
+ *
+ * A leading run of moves is the receiver's position, not its shape, so it is
+ * dropped: the result's position lives in its commands' coordinates, as a cut
+ * piece's does, and the serializer bridges from the origin to the first command.
+ * `anchor` is the translation removed (`from − to`), which makes
+ * `result.drawTo(anchor.x, anchor.y)` the same ink as `receiver.drawTo(0, 0)`.
+ */
+function fromCommandsTranslated(
+  cmds: PathBlockCommand[],
+  from: { x: number; y: number },
+  to: { x: number; y: number },
+): PathBlockValue {
+  const inked = withoutLeadingMoves(cmds);
+  const anchor = { x: from.x - to.x, y: from.y - to.y };
+  const block = buildDerivedPathBlock(inked, anchor.x, anchor.y);
+  if (inked.length === 0) return block;
+  (block as PathBlockValue & { anchor: { x: number; y: number } }).anchor = anchor;
+  return block;
+}
+
 /**
  * Build a ProjectedPathValue from transform result commands.
  */
@@ -3291,6 +3331,18 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
         return { type: 'PointValue' as const, x: center.x, y: center.y };
       }
 
+      case 'translateStartPointTo':
+      case 'translateCenterPointTo': {
+        if (expr.args.length !== 2) throw mError(`${expr.method}() expects 2 arguments (x, y)`);
+        const toX = evaluateExpression(expr.args[0], scope);
+        const toY = evaluateExpression(expr.args[1], scope);
+        if (typeof toX !== 'number') throw mError(`${expr.method}() x must be a number`);
+        if (typeof toY !== 'number') throw mError(`${expr.method}() y must be a number`);
+        // The point being moved, in the block's own coordinates.
+        const from = translationReference(expr.method, obj.commands, obj.startPoint);
+        return fromCommandsTranslated(obj.commands, from, { x: toX, y: toY });
+      }
+
       case 'offset': {
         if (expr.args.length < 1 || expr.args.length > 2) throw mError('offset() expects 1-2 arguments (distance, options?)');
         const dist = evaluateExpression(expr.args[0], scope);
@@ -3931,6 +3983,33 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
         if (expr.args.length !== 0) throw mError('centerPoint() expects 0 arguments');
         const center = computeBoundingBoxCenter(obj.commands);
         return { type: 'PointValue' as const, x: center.x, y: center.y };
+      }
+
+      case 'translateStartPointTo':
+      case 'translateCenterPointTo': {
+        if (expr.args.length !== 2) throw mError(`${expr.method}() expects 2 arguments (x, y)`);
+        const toX = evaluateExpression(expr.args[0], scope);
+        const toY = evaluateExpression(expr.args[1], scope);
+        if (typeof toX !== 'number') throw mError(`${expr.method}() x must be a number`);
+        if (typeof toY !== 'number') throw mError(`${expr.method}() y must be a number`);
+        // Page coordinates in, page coordinates out: every command shifts by the
+        // same amount. `anchor` is where the receiver started, so drawTo(anchor) —
+        // which seats a ProjectedPath's first drawn point — puts it back.
+        const inked = withoutLeadingMoves(obj.commands);
+        if (inked.length === 0) {
+          // Nothing drawn: an empty path at the destination, with no shift to record —
+          // the same answer the PathBlock receiver gives.
+          return {
+            type: 'ProjectedPathValue' as const,
+            commands: [],
+            startPoint: { x: toX, y: toY },
+            endPoint: { x: toX, y: toY },
+          };
+        }
+        const from = translationReference(expr.method, obj.commands, obj.startPoint);
+        const moved = buildProjectedPathFromCommands(projectCommands(inked, toX - from.x, toY - from.y), obj);
+        (moved as ProjectedPathValue & { anchor: { x: number; y: number } }).anchor = { ...obj.startPoint };
+        return moved;
       }
 
       case 'offset': {
@@ -6670,7 +6749,7 @@ function evaluateMemberExpression(expr: MemberExpression, scope: Scope): Value {
         const anchor = (obj as PathBlockValue & { anchor?: { x: number; y: number } }).anchor;
         if (anchor === undefined)
           throw new Error(
-            "'anchor' is only available on a result that was re-based to its own origin — variableOffset/compoundVariableOffset, subPath, segment, and reverse — where it recovers the position that re-basing removed. Operations that keep their placement (offset, outline, dash, fillet, the boolean ops, cut) have nothing to recover, and composing or transforming a result produces a new value without it; read anchor before composing",
+            "'anchor' is only available on a result that was re-based to its own origin — variableOffset/compoundVariableOffset, subPath, segment, reverse, and translateStartPointTo/translateCenterPointTo — where it recovers the position that re-basing removed. Operations that keep their placement (offset, outline, dash, fillet, the boolean ops, cut) have nothing to recover, and composing or transforming a result produces a new value without it; read anchor before composing",
           );
         return { type: 'PointValue' as const, x: anchor.x, y: anchor.y };
       }
@@ -6780,7 +6859,7 @@ function evaluateMemberExpression(expr: MemberExpression, scope: Scope): Value {
         const anchor = (obj as ProjectedPathValue & { anchor?: { x: number; y: number } }).anchor;
         if (anchor === undefined)
           throw new Error(
-            "'anchor' is only available on variableOffset/compoundVariableOffset results — it recovers the position removed by origin normalization. On a ProjectedPath the result is already registered on its spine, so 'anchor' equals 'startPoint'. Composing or transforming a result produces a new path without it; read anchor before composing",
+            "'anchor' is only available on variableOffset/compoundVariableOffset results, where it equals 'startPoint' (a ProjectedPath result is already registered on its spine), and on translateStartPointTo/translateCenterPointTo results, where it is the point the path started at before the move. Composing or transforming a result produces a new path without it; read anchor before composing",
           );
         return { type: 'PointValue' as const, x: anchor.x, y: anchor.y };
       }

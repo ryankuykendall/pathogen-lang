@@ -5,7 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased] - 2026-10-03 (smooth curves in stroke geometry)
+## [Unreleased] - 2026-10-03 (smooth curves in stroke geometry; a piece that starts at the pen)
+
+### Added
+
+#### Core
+
+- **`translateStartPointTo(x, y)` and `translateCenterPointTo(x, y)`**, on PathBlock and ProjectedPath. The same geometry, shifted so its first drawn point — or the centre of its drawn shape — sits at `(x, y)`. A `cut()` or `dash()` piece keeps the place it had in the path it came from, which is what lets pieces reassemble and also means `M 200 70 piece.draw()` does not start the piece at the pen; `piece.translateStartPointTo(0, 0).draw()` does, and `translateCenterPointTo(0, 0)` centres it there. Closure, subpaths, length and labels are untouched (`subPath(0, 1)`, the nearest older spelling, drops the `z`). The result carries `anchor`, so `result.drawTo(anchor.x, anchor.y)` puts it back. The receiver decides the type: a PathBlock in block coordinates, a ProjectedPath in page coordinates. This closes placement audit V3 by giving the intent a name instead of a warning. Completions, hover and signature help are generated from the declarations.
+
+#### Documentation
+
+- `docs/path-blocks.md`: a section for the two methods under Transforms, with the three-way "where it sat / starts at the pen / centred on the pen" example; the `anchor` section and the "Where the result lands" table cover them; the cutting and dash sections point at them. Content-reviewed (4 personas) and code-reviewed; findings and dispositions in `project-docs/placement-audit/reviews/translate-point-2026-10-03.md`.
 
 ### Fixed
 
@@ -17,6 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - `project-docs/placement-audit/probes/count-warnings.sh` — compiles every published sample with `--json` and lists the warnings carrying one code. The sample render comparison cannot see a warning; this is the measurement a new warning needs before it ships.
 - **Placement audit V3-A measured, not shipped.** The proposed `cursor-dependent-placement` warning was built as a spike and compiled against every published sample: 1652 warnings in 33 of 294 files, all of them the documented reassembly idiom (`M x y piece.draw()` for every piece). The spike is reverted and kept as a patch with the measurement in `project-docs/placement-audit/v3a-spike/`; the brief and the violations list record the result.
+- Placement audit trail for the two translate methods: probe rows in `probes/cases.tsv` and the regenerated `02-surface-matrix.md`, a diagram and a three-surface probe in `v3-translate/`, the decision recorded in `v3a-spike/README.md`, the brief and the violations list.
 - Correction to 18752f5's message: four of the five ISSUE-030 tests fail on the previous source. The fifth (a smooth command that opens a subpath) held before the fix too and is a guard, not a regression test.
 
 ## [Unreleased] - 2026-09-26 (the placement audit's open items close)

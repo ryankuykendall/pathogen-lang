@@ -43,6 +43,8 @@ to change the kind.
 | block         | segment              | PathBlock     | RE-BASED to (0,0)  |       | Point(0, 0) |
 | block         | variableOffset       | PathBlock     | RE-BASED to (0,0)  |       | Point(0, 0) |
 | block         | toPathBlock          | n/a           | throws             |       | Error: Line 5, col 14: Unknown PathBlock method: toPathBlo |
+| block         | translateStartPointTo | PathBlock     | moved, as asked    |       | Point(0, 0) |
+| block         | translateCenterPointTo | PathBlock     | moved, as asked    |       | Point(-30, -15) |
 | block         | contours             | PathBlock     | receiver's frame   |       | Point(40, 25) |
 | projected     | draw                 | ProjectedPath | receiver's frame   |       | Point(200, 300) |
 | projected     | drawTo               | ProjectedPath | receiver's frame * |       | Point(500, 500) |
@@ -67,6 +69,8 @@ to change the kind.
 | projected     | segment              | ProjectedPath | receiver's frame   |       | Point(200, 300) |
 | projected     | variableOffset       | ProjectedPath | receiver's frame * |       | Point(200, 296) |
 | projected     | toPathBlock          | PathBlock     | RE-BASED to (0,0)  | by design | Point(0, 0) |
+| projected     | translateStartPointTo | ProjectedPath | moved, as asked    |       | Point(0, 0) |
+| projected     | translateCenterPointTo | ProjectedPath | moved, as asked    |       | Point(-30, -15) |
 | projected     | contours             | n/a           | throws             |       | Error: Property 'contours' does not exist on ProjectedPath |
 | flat          | dash                 | PathBlock     | at (0,0) — n/a     |       | Point(0, 0) |
 | flat          | cut                  | PathBlock     | receiver's frame * |       | Point(30, 0) |
@@ -74,6 +78,8 @@ to change the kind.
 | flat          | offset               | PathBlock     | at (0,0) — n/a     |       | Point(0, 0) |
 | flat          | outline              | PathBlock     | receiver's frame * |       | Point(-2, -2) |
 | flat          | subPath              | PathBlock     | at (0,0) — n/a     |       | Point(0, 0) |
+| flat          | translateStartPointTo | PathBlock     | moved, as asked    |       | Point(0, 0) |
+| flat          | translateCenterPointTo | PathBlock     | moved, as asked    |       | Point(-30, -15) |
 | text          | project              | ProjectedText | origin cumulative  |       | Point(500, 500) |
 | text          | drawTo               | ProjectedText | origin cumulative  |       | Point(500, 500) |
 | text          | polarProject         | ProjectedText | origin cumulative  |       | Point(550, 500) |

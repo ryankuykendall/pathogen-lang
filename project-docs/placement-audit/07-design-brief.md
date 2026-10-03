@@ -1,6 +1,6 @@
 # 07 — Design brief: V3 and V7
 
-**Date:** 2026-09-26 · **Status:** V7's Marker edge built 2026-09-27 (Ryan chose `Marker.fromPathBlock`; the cheap half landed with it as a warning); V3-A agreed, built as a spike and measured 2026-10-03: **1652 warnings in 33 published samples — not shipped** (see `v3a-spike/README.md`) · **Reads
+**Date:** 2026-09-26 · **Status:** V7's Marker edge built 2026-09-27 (Ryan chose `Marker.fromPathBlock`; the cheap half landed with it as a warning); V3-A agreed, built as a spike and measured 2026-10-03: **1652 warnings in 33 published samples — not shipped**; V3 closed instead by `translateStartPointTo` / `translateCenterPointTo` (see `v3a-spike/README.md`) · **Reads
 first:** `06-vocabulary.md` (this note uses its collapsed terms: *page coordinates*, *local
 coordinates*, *placed* / *free-floating*, *re-basing*, *placing*), then `03-principles.md`.
 
@@ -101,6 +101,11 @@ injected from authored; it does not tell "seat the subject's frame at the pen" f
 piece at the pen", which are the same call. The spike is reverted; the propagation half is
 kept as a patch for V3-C. Options are in `v3a-spike/README.md`.
 
+**Decided and built 2026-10-03 — name the intent instead.** `translateStartPointTo(x, y)` /
+`translateCenterPointTo(x, y)` on both receivers, carrying `anchor`: "starts at the pen" is a
+call, "where it sat" stays `draw()`, and no warning is needed. P5b is met by a spelling rather
+than a diagnostic; P1 (the type says whether a value has a position) is still V3-C's to do.
+
 ## V7 — space conversions
 
 ### The problem, restated
@@ -181,7 +186,7 @@ and fits it where it is. Docs: `docs/markers.md` (two new sections); diagram
 | Item | Size | Risk | Needs |
 |---|---|---|---|
 | V7 cheap half — `marker-space` warning | S | none | — |
-| V3-A — provenance field + `cursor-dependent-placement` warning | M | **measured 2026-10-03: fires on the documented idiom (1652 / 33 files) — not shipped** | a decision (`v3a-spike/README.md`) |
+| V3-A — provenance field + `cursor-dependent-placement` warning | M | **measured 2026-10-03: fires on the documented idiom (1652 / 33 files) — not shipped** | superseded: `translate…PointTo` built 2026-10-03 |
 | V7 design half — `Marker.fromPathBlock` | M | new API surface: docs page first | decision on spelling |
 | V3-C — position as data | L | breaking (`.d`, `.commands[0]`) | V3-A, the `02` matrix |
 
