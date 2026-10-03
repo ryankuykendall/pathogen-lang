@@ -1076,37 +1076,6 @@ Dash each entry of `.contours` separately for per-contour division, or use absol
 
 ---
 
-## ISSUE-030: Stroke geometry measures smooth curves (`s` / `t`) without their reflected control point
-
-**Discovered:** 2026-09-26 (while pinning ISSUE-029: a `50%` dash on a receiver with an `s` segment re-measured 0.1% off half of `.length`)
-
-**Severity:** Low
-
-**Description:**
-
-A smooth command's first control point is the reflection of the previous command's second control point; it cannot be recovered from the command alone, which is why `sampling.ts` has `resolveSmooth` (S→C, T→Q) and every entry point there and in `path-transforms.ts` runs on a resolved list. `src/evaluator/stroke-geometry.ts` does not: `groupIntoSubpaths` (`:66`), `subpathLength` (`:71`, hence `totalDrawnLength`), the dash cursor and the `t0`/`t1` fractions in `dashCommands`, and the EPS checks at `:239` / `:251` all call `calculateCommandLength` on the raw commands, so an `s` is measured with an approximate control point.
-
-Measured on `M 0 0 h 40 c 10 0 20 10 30 10 s 20 10 30 10 m 10 0 h 20`: the `s` segment is 31.9076 resolved and 31.8118 raw (0.3% short); `.length` (resolved) is 123.815 while `totalDrawnLength` is 123.719. Dashing it at `50%` — now resolved against `.length` (ISSUE-029) — produces a first piece that re-measures as 61.968 against the requested 61.908, because the cutter walked the raw length. A plain cubic receiver re-measures within sampling tolerance (~1e-3), so the gap is specific to smooth commands.
-
-**Impact:**
-
-Dash pieces, `t0`/`t1`, and seam positions on paths that use `s`/`t` are a few tenths of a percent off along those segments. Visually negligible; measurable through `.length`.
-
-**Current Workarounds:**
-
-Author explicit `c`/`q` instead of `s`/`t` where exact dash positions matter.
-
-**Potential Solutions:**
-
-1. Resolve at the boundary: run `resolveSmooth` once at the top of `dashCommands` / `outlineCommands` / the seam helpers (the same boundary fix ISSUE-026 used). Pieces would then emit `c`/`q` in place of `s`/`t` — same curves, different bytes, so a sample comparison (`probes/compare-samples.sh`) is required before shipping.
-2. Teach `calculateCommandLength` to take the previous command — every caller changes.
-
-**Recommended Long-term Solution:**
-
-1. It was deliberately **not** folded into ISSUE-029, whose decision was "no geometry change"; it moves cut positions on smooth curves and deserves its own before/after render comparison.
-
----
-
 ## ISSUE-031: The `marker` style shorthand rendered nothing in every browser
 
 **Discovered:** 2026-09-27 (drawing the V7 marker-space diagrams: a polyline styled `marker: dotMarker` showed no markers at all through the CLI's Chrome PNG path, while `marker-start/mid/end` showed them)
@@ -1148,6 +1117,45 @@ Write the three properties out.
 ---
 
 ## Resolved entries (kept for the trail)
+
+### ISSUE-030 (resolved 2026-10-03): Stroke geometry measures smooth curves (`s` / `t`) without their reflected control point
+
+**Resolution:** Option 1, at one boundary. `groupIntoSubpaths` in `src/evaluator/stroke-geometry.ts` — the grouping `dash()`, `outline()` and `startAt()` all go through — now runs `resolveSmooth` first, so every length, split and tangent below it sees `c`/`q` with real control points. `outlineCommands` had a private copy of the grouping loop (it keeps zero-length subpaths for dots); the two now share `groupRuns`.
+
+- **The entry understated `t`.** A raw `t` has no control point at all, so it was measured and cut as a straight line: on `@{ q 20 30 40 0 t 40 0 t 40 0 }` a `50%` dash returned a first piece of 92.05 against a requested 77.93 (18% long). `s` was the 0.3% case measured here.
+- **Caps too.** `subpathStartTangent` / `subpathEndTangent` split the raw command, so `outline()` on a path beginning or ending in a smooth command capped along the wrong direction. Fixed by the same boundary.
+- **Contract, pinned in `tests/stroke-geometry.test.ts`:** a smooth spelling dashes and outlines identically to its explicit `c`/`q` spelling (piece lengths to 1e-9, outline `d` byte-equal). A piece still re-measures within the length integrator's own tolerance (~1e-4 relative) of the requested fraction — that is `calculateCommandLength`'s sampling, the same on explicit curves, not this issue.
+- **Output:** the one spelling change is the no-op rotation — `startAt(0)` on a smooth path now returns `c`/`q` where it used to pass `s`/`t` through. Every other result already spelled them out (`subPathCommands` resolves). Same curves.
+- **Sample comparison:** `probes/compare-samples.sh` before/after over all 294 published samples — 291 byte-identical, the 3 that differ are the `random()` samples that differ from themselves. No published sample changed.
+
+*Original entry:*
+
+**Discovered:** 2026-09-26 (while pinning ISSUE-029: a `50%` dash on a receiver with an `s` segment re-measured 0.1% off half of `.length`)
+
+**Severity:** Low
+
+**Description:**
+
+A smooth command's first control point is the reflection of the previous command's second control point; it cannot be recovered from the command alone, which is why `sampling.ts` has `resolveSmooth` (S→C, T→Q) and every entry point there and in `path-transforms.ts` runs on a resolved list. `src/evaluator/stroke-geometry.ts` does not: `groupIntoSubpaths` (`:66`), `subpathLength` (`:71`, hence `totalDrawnLength`), the dash cursor and the `t0`/`t1` fractions in `dashCommands`, and the EPS checks at `:239` / `:251` all call `calculateCommandLength` on the raw commands, so an `s` is measured with an approximate control point.
+
+Measured on `M 0 0 h 40 c 10 0 20 10 30 10 s 20 10 30 10 m 10 0 h 20`: the `s` segment is 31.9076 resolved and 31.8118 raw (0.3% short); `.length` (resolved) is 123.815 while `totalDrawnLength` is 123.719. Dashing it at `50%` — now resolved against `.length` (ISSUE-029) — produces a first piece that re-measures as 61.968 against the requested 61.908, because the cutter walked the raw length. A plain cubic receiver re-measures within sampling tolerance (~1e-3), so the gap is specific to smooth commands.
+
+**Impact:**
+
+Dash pieces, `t0`/`t1`, and seam positions on paths that use `s`/`t` are a few tenths of a percent off along those segments. Visually negligible; measurable through `.length`.
+
+**Current Workarounds:**
+
+Author explicit `c`/`q` instead of `s`/`t` where exact dash positions matter.
+
+**Potential Solutions:**
+
+1. Resolve at the boundary: run `resolveSmooth` once at the top of `dashCommands` / `outlineCommands` / the seam helpers (the same boundary fix ISSUE-026 used). Pieces would then emit `c`/`q` in place of `s`/`t` — same curves, different bytes, so a sample comparison (`probes/compare-samples.sh`) is required before shipping.
+2. Teach `calculateCommandLength` to take the previous command — every caller changes.
+
+**Recommended Long-term Solution:**
+
+1. It was deliberately **not** folded into ISSUE-029, whose decision was "no geometry change"; it moves cut positions on smooth curves and deserves its own before/after render comparison.
 
 ### ISSUE-023 (resolved 2026-09-19): A raw path argument accepted NaN and Infinity (`M NaN 0`)
 

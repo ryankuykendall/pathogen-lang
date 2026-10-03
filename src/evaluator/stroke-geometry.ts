@@ -1,6 +1,6 @@
 import type { Point } from './context';
 import type { PathCommandMeta } from './types';
-import { calculateCommandLength } from './sampling';
+import { calculateCommandLength, resolveSmooth } from './sampling';
 import { pathUnion } from './boolean-ops';
 import {
   offsetCommands,
@@ -47,11 +47,21 @@ const copyCmd = (c: StrokeCmd): StrokeCmd => ({
  * commands are dropped — each subpath's placement lives in its commands'
  * start/end coordinates. A Z ends its subpath (per SVG, a command after Z
  * without an intervening move starts a new subpath).
+ *
+ * Smooth commands are resolved first (S→C, T→Q): an `s`/`t` cannot be measured
+ * or split without the control point it reflects from the command before it,
+ * and everything below measures per command (ISSUE-030). This is the module's
+ * one boundary — dash, outline and startAt all group through it.
  */
 export function groupIntoSubpaths(commands: StrokeCmd[]): StrokeCmd[][] {
+  return groupRuns(commands).filter((s) => s.some((c) => calculateCommandLength(c) > EPS));
+}
+
+/** The grouping itself, zero-length subpaths included (outline() draws those as dots). */
+function groupRuns(commands: StrokeCmd[]): StrokeCmd[][] {
   const subs: StrokeCmd[][] = [];
   let current: StrokeCmd[] | null = null;
-  for (const cmd of commands) {
+  for (const cmd of resolveSmooth(commands)) {
     if (cmd.command.toUpperCase() === 'M') {
       current = null;
       continue;
@@ -63,7 +73,7 @@ export function groupIntoSubpaths(commands: StrokeCmd[]): StrokeCmd[][] {
     current.push(cmd);
     if (cmd.command.toUpperCase() === 'Z') current = null;
   }
-  return subs.filter((s) => s.some((c) => calculateCommandLength(c) > EPS));
+  return subs;
 }
 
 function subpathLength(body: StrokeCmd[]): number {
@@ -347,22 +357,7 @@ export function outlineCommands(commands: StrokeCmd[], options: OutlineOptions):
 
   // groupIntoSubpaths drops zero-length subpaths, but a zero-length subpath
   // still has cap geometry (a dot) — walk the raw grouping for those.
-  const rawSubs: StrokeCmd[][] = [];
-  let current: StrokeCmd[] | null = null;
-  for (const cmd of commands) {
-    if (cmd.command.toUpperCase() === 'M') {
-      current = null;
-      continue;
-    }
-    if (!current) {
-      current = [];
-      rawSubs.push(current);
-    }
-    current.push(cmd);
-    if (cmd.command.toUpperCase() === 'Z') current = null;
-  }
-
-  for (const body of rawSubs) {
+  for (const body of groupRuns(commands)) {
     if (body.length === 0) continue;
 
     if (subpathLength(body) <= 1e-6) {

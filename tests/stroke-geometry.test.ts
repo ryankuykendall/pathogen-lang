@@ -252,9 +252,8 @@ describe('PathBlock.dash()', () => {
       // so the number a user logs and the number `%` resolves against cannot drift apart.
       // A cubic and two lines: every length model agrees on these, so the first dash —
       // the first subpath is longer than half the total — re-measures as 50% to within
-      // the cutter's sampling tolerance (~1e-3 on a 46-unit slice). A smooth `s` segment
-      // would be ~0.3% short instead: the cutter measures it without its reflected
-      // control point — a separate gap, ISSUE-030.
+      // the cutter's sampling tolerance (~1e-3 on a 46-unit slice). Smooth segments are
+      // pinned separately below (ISSUE-030).
       const { logs } = compileWithLogs(`
         let p = @{ h 40 c 10 0 20 10 30 10 m 10 0 h 20 };
         let pieces = p.dash(#{ stroke-dasharray: 50%; });
@@ -265,6 +264,86 @@ describe('PathBlock.dash()', () => {
       expect(num(logs[0])).toBeCloseTo(91.9076, 3);
       expect(num(logs[1])).toBeCloseTo(num(logs[0]) / 2, 2);
       expect(logs[2]).toBe('dash');
+    });
+
+    // ISSUE-030: a smooth command's first control point is the reflection of the
+    // previous one's, so the cutter has to walk the same resolved curve `.length`
+    // measures. Measured raw, the `s` below is 0.3% short and the 50% cut lands 0.06 off.
+    it('cuts a smooth cubic (s) where .length says the fraction is (ISSUE-030)', () => {
+      const { logs } = compileWithLogs(`
+        let p = @{ h 40 c 10 0 20 10 30 10 s 20 10 30 10 m 10 0 h 20 };
+        let pieces = p.dash(#{ stroke-dasharray: 50%; });
+        log(p.length);
+        log(pieces[0].path.length);
+        log(pieces[0].t1);
+      `);
+      expect(num(logs[0])).toBeCloseTo(123.8152, 3);
+      expect(num(logs[1])).toBeCloseTo(num(logs[0]) / 2, 2);
+      expect(num(logs[2])).toBeCloseTo(0.5, 6);
+    });
+
+    // The contract is parity with the explicit spelling: `t`/`s` are the same curves
+    // as the `q`/`c` they abbreviate, so every piece must measure the same. (A piece
+    // re-measures within the length integrator's own tolerance of the requested
+    // fraction — ~1e-4 relative — which is why the absolute checks are looser.)
+    it('cuts a smooth quadratic (t) exactly as its explicit q spelling (ISSUE-030)', () => {
+      const { logs } = compileWithLogs(`
+        let smooth = @{ q 20 30 40 0 t 40 0 t 40 0 };
+        let explicit = @{ q 20 30 40 0 q 20 -30 40 0 q 20 30 40 0 };
+        let sp = smooth.dash(#{ stroke-dasharray: 50%; });
+        let ep = explicit.dash(#{ stroke-dasharray: 50%; });
+        log(smooth.length);
+        log(explicit.length);
+        log(sp[0].path.length);
+        log(ep[0].path.length);
+        log(sp[0].path.endPoint.x);
+        log(sp[0].path.endPoint.y);
+      `);
+      expect(num(logs[0])).toBeCloseTo(num(logs[1]), 9);
+      expect(num(logs[2])).toBeCloseTo(num(logs[3]), 9);
+      expect(num(logs[2])).toBeCloseTo(num(logs[0]) / 2, 1);
+      // Half way along a symmetric wave is the crest of the middle arch.
+      expect(num(logs[4])).toBeCloseTo(60, 6);
+      expect(num(logs[5])).toBeCloseTo(-15, 6);
+    });
+
+    it('the pieces of a smooth path add up as the explicit spelling does (ISSUE-030)', () => {
+      const { logs } = compileWithLogs(`
+        let smooth = @{ c 10 0 20 10 30 10 s 20 10 30 10 s 20 -10 30 -10 };
+        let explicit = @{ c 10 0 20 10 30 10 c 10 0 20 10 30 10 c 10 0 20 -10 30 -10 };
+        let ssum = 0;
+        for (piece in smooth.dash(#{ stroke-dasharray: 7, 3; })) { ssum = ssum + piece.path.length; }
+        let esum = 0;
+        for (piece in explicit.dash(#{ stroke-dasharray: 7, 3; })) { esum = esum + piece.path.length; }
+        log(smooth.length);
+        log(ssum);
+        log(esum);
+      `);
+      expect(num(logs[1])).toBeCloseTo(num(logs[2]), 9);
+      expect(num(logs[1])).toBeCloseTo(num(logs[0]), 1);
+    });
+
+    it('a smooth command that opens a subpath has nothing to reflect, as in SVG (ISSUE-030)', () => {
+      const { logs } = compileWithLogs(`
+        let smooth = @{ h 30 m 10 0 s 20 10 30 10 t 20 0 };
+        let explicit = @{ h 30 m 10 0 c 0 0 20 10 30 10 q 0 0 20 0 };
+        log(smooth.dash(#{ stroke-dasharray: 9, 4; }).length);
+        log(explicit.dash(#{ stroke-dasharray: 9, 4; }).length);
+        log(smooth.dash(#{ stroke-dasharray: 9, 4; })[5].path.d);
+        log(explicit.dash(#{ stroke-dasharray: 9, 4; })[5].path.d);
+      `);
+      expect(logs[0]).toBe(logs[1]);
+      expect(logs[2]).toBe(logs[3]);
+    });
+
+    it('outline() caps a path that ends in a smooth command along its true tangent (ISSUE-030)', () => {
+      const { logs } = compileWithLogs(`
+        let smooth = @{ q 20 30 40 0 t 40 0 };
+        let explicit = @{ q 20 30 40 0 q 20 -30 40 0 };
+        log(smooth.outline(#{ stroke-width: 6; stroke-linecap: square; }).d);
+        log(explicit.outline(#{ stroke-width: 6; stroke-linecap: square; }).d);
+      `);
+      expect(logs[0]).toBe(logs[1]);
     });
   });
 

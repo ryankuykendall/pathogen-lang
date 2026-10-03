@@ -300,7 +300,9 @@ the contract (`AS-SPEC`); `tests/stroke-geometry.test.ts` pins `50%` = `.length 
 receiver. On a receiver with a smooth `s` segment the piece still re-measures 0.1% off — the
 cutter walks the raw command list, where an `s` lacks its reflected control point. That is a
 separate, pre-existing measurement gap in `stroke-geometry.ts`, registered as **ISSUE-030** and
-deliberately left out of D9 ("no geometry change").
+deliberately left out of D9 ("no geometry change"). **ISSUE-030 fixed 2026-10-03**: the stroke-geometry grouping
+resolves smooth commands first; a smooth spelling now dashes identically to its explicit one
+(and `t`, which had been cut as a straight line, is right). No published sample changed.
 
 ---
 

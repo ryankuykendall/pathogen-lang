@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] - 2026-10-03 (smooth curves in stroke geometry)
+
+### Fixed
+
+#### Core
+
+- **`dash()`, `outline()` and `startAt()` treat a smooth command as the curve it is** (ISSUE-030). An `s` or `t` takes its first control point from the command before it, and stroke geometry measured and split each command alone. An `s` came out 0.3% short; a `t`, which has no control point of its own, was cut as a straight line — on `@{ q 20 30 40 0 t 40 0 t 40 0 }` a `50%` dash returned a first piece 18% too long — and `outline()` capped a path ending in a smooth command along the wrong direction. The subpath grouping all three methods share now resolves smooth commands first, so a smooth spelling dashes and outlines identically to its explicit `c`/`q` spelling. Compared over all 294 published samples before and after: none changed.
+
+#### Development
+
+- `project-docs/placement-audit/probes/count-warnings.sh` — compiles every published sample with `--json` and lists the warnings carrying one code. The sample render comparison cannot see a warning; this is the measurement a new warning needs before it ships.
+
 ## [Unreleased] - 2026-09-26 (the placement audit's open items close)
 
 Everything the 2026-09-24 placement audit (`project-docs/placement-audit/`) left open and
