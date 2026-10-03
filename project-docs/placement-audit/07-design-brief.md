@@ -1,6 +1,6 @@
 # 07 — Design brief: V3 and V7
 
-**Date:** 2026-09-26 · **Status:** V7's Marker edge built 2026-09-27 (Ryan chose `Marker.fromPathBlock`; the cheap half landed with it as a warning); V3-A agreed, not built · **Reads
+**Date:** 2026-09-26 · **Status:** V7's Marker edge built 2026-09-27 (Ryan chose `Marker.fromPathBlock`; the cheap half landed with it as a warning); V3-A agreed, built as a spike and measured 2026-10-03: **1652 warnings in 33 published samples — not shipped** (see `v3a-spike/README.md`) · **Reads
 first:** `06-vocabulary.md` (this note uses its collapsed terms: *page coordinates*, *local
 coordinates*, *placed* / *free-floating*, *re-basing*, *placing*), then `03-principles.md`.
 
@@ -92,6 +92,15 @@ Decisions for Ryan: (1) A now? (2) Warning or error for the injected-and-off-ori
 warning is proposed, because `M 40 40; piece.draw()` *can* be intended. (3) The field's name:
 `placement` is proposed; `06` reserves *placed* / *free-floating* for prose.
 
+**Measured 2026-10-03 — A's warning does not survive the samples.** Built as a spike
+(`v3a-spike/`), then compiled against every published sample: 1652
+`cursor-dependent-placement` warnings in 33 of 294 files, every one of them the documented
+reassembly idiom (`M 60 120 piece.path.draw()` for each piece). "Expect zero warnings" above
+was wrong, and it contradicted option B's own note about the 26 files. Provenance tells
+injected from authored; it does not tell "seat the subject's frame at the pen" from "start the
+piece at the pen", which are the same call. The spike is reverted; the propagation half is
+kept as a patch for V3-C. Options are in `v3a-spike/README.md`.
+
 ## V7 — space conversions
 
 ### The problem, restated
@@ -172,7 +181,7 @@ and fits it where it is. Docs: `docs/markers.md` (two new sections); diagram
 | Item | Size | Risk | Needs |
 |---|---|---|---|
 | V7 cheap half — `marker-space` warning | S | none | — |
-| V3-A — provenance field + `cursor-dependent-placement` warning | M | propagation drift (mitigated by V8) | V8 landed |
+| V3-A — provenance field + `cursor-dependent-placement` warning | M | **measured 2026-10-03: fires on the documented idiom (1652 / 33 files) — not shipped** | a decision (`v3a-spike/README.md`) |
 | V7 design half — `Marker.fromPathBlock` | M | new API surface: docs page first | decision on spelling |
 | V3-C — position as data | L | breaking (`.d`, `.commands[0]`) | V3-A, the `02` matrix |
 

@@ -16,6 +16,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 #### Development
 
 - `project-docs/placement-audit/probes/count-warnings.sh` — compiles every published sample with `--json` and lists the warnings carrying one code. The sample render comparison cannot see a warning; this is the measurement a new warning needs before it ships.
+- **Placement audit V3-A measured, not shipped.** The proposed `cursor-dependent-placement` warning was built as a spike and compiled against every published sample: 1652 warnings in 33 of 294 files, all of them the documented reassembly idiom (`M x y piece.draw()` for every piece). The spike is reverted and kept as a patch with the measurement in `project-docs/placement-audit/v3a-spike/`; the brief and the violations list record the result.
+- Correction to 18752f5's message: four of the five ISSUE-030 tests fail on the previous source. The fifth (a smooth command that opens a subpath) held before the fix too and is a guard, not a regression test.
 
 ## [Unreleased] - 2026-09-26 (the placement audit's open items close)
 

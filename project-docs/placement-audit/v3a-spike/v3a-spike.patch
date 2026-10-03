@@ -1,0 +1,303 @@
+diff --git a/src/evaluator/index.ts b/src/evaluator/index.ts
+index ae8579e..e22b2bb 100644
+--- a/src/evaluator/index.ts
++++ b/src/evaluator/index.ts
+@@ -167,6 +167,7 @@ import type {
+   PathBlockCommand,
+   PathBlockNamespace,
+   PathBlockValue,
++  PlacementInjector,
+   PathLayerState,
+   PathRecordOutput,
+   PathSegment,
+@@ -1285,10 +1286,30 @@ function parseMapSliceOptions(val: Value, mkErr: (message: string) => Error): {
+  * at the origin" it meant the opposite, and each method picked by hand
+  * (project-docs/placement-audit/03-principles.md, "The mechanism").
+  */
+-function fromCommandsKeepingFrame(cmds: PathBlockCommand[]): PathBlockValue {
+-  return buildDerivedPathBlock(cmds, 0, 0);
++function fromCommandsKeepingFrame(cmds: PathBlockCommand[], placement: PlacementOf): PathBlockValue {
++  const block = buildDerivedPathBlock(cmds, 0, 0);
++  if (placement.placement !== undefined && placement.placement !== 'none') {
++    block.placement = placement.placement;
++    if (placement.injectedBy !== undefined) block.injectedBy = placement.injectedBy;
++  }
++  return block;
+ }
+ 
++/**
++ * Where a frame-keeping result's placement comes from (placement audit V3-A): the
++ * receiver it was derived from — pass the receiver itself — or a producer that states
++ * it. A re-based result is free-floating by construction, so `fromCommandsRebased`
++ * takes no such argument.
++ */
++type PlacementOf = Pick<PathBlockValue, 'placement' | 'injectedBy'>;
++const FREE_FLOATING: PlacementOf = { placement: 'none' };
++/** The placement fields of a block, for a hand-built result that stays in its frame. */
++function placementOf(block: PathBlockValue): PlacementOf {
++  if (block.placement === undefined || block.placement === 'none') return {};
++  return { placement: block.placement, ...(block.injectedBy !== undefined ? { injectedBy: block.injectedBy } : {}) };
++}
++const injectedBy = (by: PlacementInjector): PlacementOf => ({ placement: 'injected', injectedBy: by });
++
+ function fromCommandsRebased(cmds: PathBlockCommand[]): PathBlockValue {
+   if (cmds.length === 0) return buildDerivedPathBlock(cmds, 0, 0);
+   return buildDerivedPathBlock(cmds, cmds[0].start.x, cmds[0].start.y);
+@@ -1325,6 +1346,20 @@ function buildDerivedPathBlock(cmds: PathBlockCommand[], originX: number, origin
+   };
+ }
+ 
++function cursorDependentPlacementMessage(block: PathBlockValue, penX: number, penY: number): string {
++  const by = block.injectedBy;
++  const what =
++    by === 'contours' ? 'a .contours entry' : by === 'seams' ? 'a .seams entry' : `a ${by ?? 'derived'}() piece`;
++  const first = block.commands.length > 0 ? block.commands[0].start : { x: 0, y: 0 };
++  return (
++    `draw() of ${what} from the pen at (${formatNum(penX)}, ${formatNum(penY)}): the piece keeps its place in the ` +
++    `path it came from (it starts at (${formatNum(first.x)}, ${formatNum(first.y)}) there), so it lands at ` +
++    `(${formatNum(first.x + penX)}, ${formatNum(first.y + penY)}), not at the pen. ` +
++    `To draw it where it sat, draw from the origin (M 0 0) or project the subject first ` +
++    `(subject.project(x, y)); to start it at the pen, re-base it with subPath(0, 1)`
++  );
++}
++
+ /**
+  * Re-base a command list to its own first point AND record the translation that
+  * removed, as `anchor`.
+@@ -2057,6 +2092,8 @@ function evaluateExpression(expr: Expression, scope: Scope): Value {
+             records: recordsFromCommands(concatCmds),
+             startPoint: firstInkedPointOf(concatCmds) ?? { x: 0, y: 0 },
+             endPoint: { x: lastCmd.end.x, y: lastCmd.end.y },
++            // V3-A: the result lives in the left operand's frame.
++            ...placementOf(left),
+           };
+         }
+         if (isTextBlockValue(left) && isStyleBlock(right)) {
+@@ -2463,6 +2500,8 @@ function evaluatePathBlockExpression(expr: PathBlockExpression, scope: Scope): P
+     // B2: a literal with a leading m run starts where the ink lands.
+     startPoint: firstInkedPointOf(finalized.commands) ?? { x: 0, y: 0 },
+     endPoint: { x: blockContext.position.x, y: blockContext.position.y },
++    // V3-A: a literal that opens with a move has a position its author wrote.
++    ...(finalized.commands[0]?.command.toLowerCase() === 'm' ? { placement: 'authored' as const } : {}),
+   };
+ }
+ 
+@@ -3053,6 +3092,18 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
+         const originX = activeCtx.position.x;
+         const originY = activeCtx.position.y;
+ 
++        // V3-A: a piece that sits in its subject's frame, drawn from a moved pen,
++        // lands that far from where it sat — silently, and byte-identical to the
++        // ordinary relative drawing of an authored `@{ m … }`. Provenance tells them apart.
++        if (obj.placement === 'injected' && (Math.abs(originX) > 1e-9 || Math.abs(originY) > 1e-9)) {
++          warn(
++            scope.evalState,
++            'cursor-dependent-placement',
++            cursorDependentPlacementMessage(obj, originX, originY),
++            { line: mLine, column: mCol },
++          );
++        }
++
+         // Emit relative commands from structured command data (not raw pathStrings).
+         // Relative commands naturally work from the cursor position, so no projection
+         // is needed for the emitted path. We reconstruct from structured commands
+@@ -3384,7 +3435,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
+         // and keep the geometry where it lands (no re-base) — a cut piece
+         // rotated in place keeps its placement inside the subject.
+         const rotCmds = rotateAboutPointCommands(obj.commands, rotAngle, rotPivot);
+-        return fromCommandsKeepingFrame(rotCmds);
++        return fromCommandsKeepingFrame(rotCmds, obj);
+       }
+ 
+       case 'rotateAtVertexIndex': {
+@@ -3429,6 +3480,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
+           records: recordsFromCommands(scaled),
+           startPoint: firstInkedPointOf(scaled) ?? { x: 0, y: 0 },
+           endPoint: { x: sLast.end.x, y: sLast.end.y },
++          ...placementOf(obj),
+         };
+       }
+ 
+@@ -3464,7 +3516,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
+             properties: new Map<string, Value>([
+               // Origin (0,0) keeps each piece's subject-local placement, so
+               // drawing every piece at one position reassembles the source.
+-              ['path', fromCommandsKeepingFrame(p.commands)],
++              ['path', fromCommandsKeepingFrame(p.commands, injectedBy('dash'))],
+               ['kind', p.kind],
+               ['t0', p.t0],
+               ['t1', p.t1],
+@@ -3483,7 +3535,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
+         } catch (e) {
+           throw mError((e as Error).message);
+         }
+-        return fromCommandsKeepingFrame(outlined);
++        return fromCommandsKeepingFrame(outlined, obj);
+       }
+ 
+       case 'startAt': {
+@@ -3496,7 +3548,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
+         } catch (e) {
+           throw mError((e as Error).message);
+         }
+-        return fromCommandsKeepingFrame(rotatedCmds);
++        return fromCommandsKeepingFrame(rotatedCmds, obj);
+       }
+ 
+       case 'chamfer': {
+@@ -3512,7 +3564,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
+         for (const w of chamResult.warnings) {
+           warn(scope.evalState, 'corner-op', w, { line: mLine, column: mCol });
+         }
+-        return fromCommandsKeepingFrame(chamResult.commands);
++        return fromCommandsKeepingFrame(chamResult.commands, obj);
+       }
+ 
+       case 'chamferAtVertex': {
+@@ -3530,7 +3582,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
+         for (const w of cvResult.warnings) {
+           warn(scope.evalState, 'corner-op', w, { line: mLine, column: mCol });
+         }
+-        return fromCommandsKeepingFrame(cvResult.commands);
++        return fromCommandsKeepingFrame(cvResult.commands, obj);
+       }
+ 
+       case 'fillet': {
+@@ -3541,7 +3593,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
+         for (const w of fResult.warnings) {
+           warn(scope.evalState, 'corner-op', w, { line: mLine, column: mCol });
+         }
+-        return fromCommandsKeepingFrame(fResult.commands);
++        return fromCommandsKeepingFrame(fResult.commands, obj);
+       }
+ 
+       case 'filletAtVertex': {
+@@ -3554,7 +3606,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
+         for (const w of fvResult.warnings) {
+           warn(scope.evalState, 'corner-op', w, { line: mLine, column: mCol });
+         }
+-        return fromCommandsKeepingFrame(fvResult.commands);
++        return fromCommandsKeepingFrame(fvResult.commands, obj);
+       }
+ 
+       case 'ellipticalFillet': {
+@@ -3572,7 +3624,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
+         for (const w of efResult.warnings) {
+           warn(scope.evalState, 'corner-op', w, { line: mLine, column: mCol });
+         }
+-        return fromCommandsKeepingFrame(efResult.commands);
++        return fromCommandsKeepingFrame(efResult.commands, obj);
+       }
+ 
+       case 'ellipticalFilletAtVertex': {
+@@ -3592,7 +3644,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
+         for (const w of efvResult.warnings) {
+           warn(scope.evalState, 'corner-op', w, { line: mLine, column: mCol });
+         }
+-        return fromCommandsKeepingFrame(efvResult.commands);
++        return fromCommandsKeepingFrame(efvResult.commands, obj);
+       }
+ 
+       case 'union':
+@@ -3620,7 +3672,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
+           case 'xor': resultCmds = pathXor(aCmds, bCmds); break;
+           default: resultCmds = [];
+         }
+-        return fromCommandsKeepingFrame(resultCmds);
++        return fromCommandsKeepingFrame(resultCmds, obj);
+       }
+ 
+       case 'cut': {
+@@ -3636,7 +3688,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
+           type: 'ArrayValue' as const,
+           // Origin (0,0) keeps each piece's subject-local placement, so
+           // drawing every piece at one position reassembles the shape.
+-          elements: pieceCmds.map(p => fromCommandsKeepingFrame(p)),
++          elements: pieceCmds.map(p => fromCommandsKeepingFrame(p, injectedBy('cut'))),
+         };
+       }
+ 
+@@ -4396,7 +4448,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
+         for (const w of res.warnings) {
+           warn(scope.evalState, 'corner-op', w, { line: mLine, column: mCol });
+         }
+-        return fromCommandsKeepingFrame(res.commands);
++        return fromCommandsKeepingFrame(res.commands, src);
+       }
+       default:
+         throw mError(`Unknown method '${expr.method}' on Endpoint`);
+@@ -4646,7 +4698,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
+           }
+         }
+ 
+-        return fromCommandsKeepingFrame(allCommands);
++        return fromCommandsKeepingFrame(allCommands, FREE_FLOATING);
+       }
+       case 'toCodeSnippetBlock': {
+         if (expr.args.length < 1 || expr.args.length > 3) throw mError('toCodeSnippetBlock() expects 1-3 arguments (name [, fontSize, padding])');
+@@ -6118,7 +6170,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
+           }
+ 
+           // Normalize to (0,0) origin
+-          const normalized = fromCommandsKeepingFrame(commands);
++          const normalized = fromCommandsKeepingFrame(commands, FREE_FLOATING);
+           // Attach advanceWidth + source char as expando properties
+           (normalized as PathBlockValue & { advanceWidth: number; char: string }).advanceWidth = advanceWidth;
+           (normalized as PathBlockValue & { advanceWidth: number; char: string }).char = char;
+@@ -6412,7 +6464,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
+           const withClose = ringClosed
+             ? [...cmds, { command: 'z', args: [], start: { ...tail.end }, end: { ...first.start } }]
+             : cmds;
+-          return fromCommandsKeepingFrame(withClose);
++          return fromCommandsKeepingFrame(withClose, injectedBy('seams'));
+         }),
+       };
+     }
+@@ -6678,7 +6730,7 @@ function evaluateMemberExpression(expr: MemberExpression, scope: Scope): Value {
+         // Decompose a multi-contour glyph into individual PathBlockValues
+         const contourGroups = splitContours(obj.commands);
+         const contourBlocks: Value[] = contourGroups.map((cmds) =>
+-          fromCommandsKeepingFrame(cmds),
++          fromCommandsKeepingFrame(cmds, injectedBy('contours')),
+         );
+         return { type: 'ArrayValue' as const, elements: contourBlocks };
+       }
+diff --git a/src/evaluator/types.ts b/src/evaluator/types.ts
+index b2b334b..0dc82d8 100644
+--- a/src/evaluator/types.ts
++++ b/src/evaluator/types.ts
+@@ -693,8 +693,26 @@ export interface PathBlockValue {
+   records: PathRecord[]; // statement-granularity authored store (raw fragments + commands)
+   startPoint: Point; // FIRST INKED POINT: last leading-m's end, else commands[0].start — (0,0) for on-origin blocks (B2; the day-one m-exception, finally implemented)
+   endPoint: Point; // final cursor position (relative)
++  placement?: PathBlockPlacement; // where the block's position came from; absent = 'none'
++  injectedBy?: PlacementInjector; // which method injected it, when placement is 'injected'
+ }
+ 
++/**
++ * Where a PathBlock's position came from (placement audit V3-A). A block's position is
++ * the move it starts with — written or bridged from the origin to its first command —
++ * and two producers of that state are byte-identical afterwards:
++ *
++ * - `'none'`     free-floating: the first command starts at the block's origin.
++ * - `'authored'` the literal says so: `@{ m 10 10 h 20 }` — "offset from the pen".
++ * - `'injected'` a method put it there: a `dash` / `cut` / `.contours` / `.seams` piece
++ *   sits where it sat in its subject, whether or not the subject had a position.
++ *
++ * Only the two derived-block constructors and the literal write it, so a transform
++ * cannot forget it any more than it can forget which constructor to call.
++ */
++export type PathBlockPlacement = 'none' | 'authored' | 'injected';
++export type PlacementInjector = 'dash' | 'cut' | 'contours' | 'seams';
++
+ /**
+  * Represents a projected path — a PathBlock projected into absolute coordinate space
+  */
+@@ -794,6 +812,7 @@ export const WARNING_CODES = [
+   'non-finite', // NaN / Infinity reaching path data — SVG cannot represent it
+   'layer-transform', // a subscription annotated across layers whose transforms differ
+   'marker-space', // a shape appended to a Marker lies outside the marker's viewBox
++  'cursor-dependent-placement', // a piece that sits in its subject's frame, drawn from a moved pen
+ ] as const;
+ 
+ export type WarningCode = (typeof WARNING_CODES)[number];

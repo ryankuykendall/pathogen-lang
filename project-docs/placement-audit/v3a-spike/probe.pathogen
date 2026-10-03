@@ -1,0 +1,12 @@
+let plate = @{ h 100 v 40 h -100 z };
+let pieces = plate.cut(@{ m 50 -10 v 60 });
+M 40 40
+pieces[1].draw();
+let authored = @{ m 10 10 h 20 };
+M 40 80
+authored.draw();
+M 0 0
+pieces[0].draw();
+let d = @{ h 100 }.dash(#{ stroke-dasharray: 20, 10; });
+M 10 120
+d[2].path.rotate(10deg).draw();
