@@ -1,0 +1,19 @@
+let hole = @{
+  circle(50, 50, 20);
+};
+let box = hole.boundingBox();
+log(box.x, box.y, box.width, box.height);
+log(hole.centerPoint());
+let written = @{
+  m 30 0
+  l 20 0
+};
+let piece = @{ h 100 }.dash(#{ stroke-dasharray: 20, 10; })[2].path;
+
+log(written.d, written.boundingBox().x);
+log(piece.d, piece.boundingBox().x);
+let inked = hole.translateStartPointTo(hole.startPoint.x, hole.startPoint.y);
+let box2 = inked.boundingBox();
+log(box2.x, box2.y, box2.width, box2.height);
+log(inked.centerPoint());
+log(@{ m 10 10 }.centerPoint(), @{ m 10 10 }.isEmpty, @{ m 10 10 }.length);

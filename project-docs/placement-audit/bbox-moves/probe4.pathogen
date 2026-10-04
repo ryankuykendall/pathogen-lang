@@ -1,0 +1,29 @@
+define ViewBox(0, 0, 200, 200);
+fn show(name, p) {
+  let bb = p.boundingBox();
+  log(name, p.d, bb.x, bb.y, bb.width, bb.height, p.centerPoint(), p.startPoint);
+}
+fn ink(name, p) {
+  let q = p.translateStartPointTo(p.startPoint.x, p.startPoint.y);
+  let bb = q.boundingBox();
+  log(name, q.d, bb.x, bb.y, bb.width, bb.height, q.centerPoint());
+}
+let trail = @{ h 20 m 30 30 };
+let tc = trail.translateCenterPointTo(0, 0);
+show(`trail-centre`, tc); log(tc.anchor);
+let lead = @{ m 10 10 h 20 };
+let circ = @{ circle(50, 50, 20); };
+let mid = @{ h 20 m 100 100 m -100 -60 h 20 };
+ink(`lead`, lead);
+ink(`trail`, trail);
+ink(`circ`, circ);
+ink(`mid`, mid);
+ink(`proj-lead`, lead.project(100, 100));
+ink(`proj-circ`, circ.project(100, 100));
+ink(`cutpiece`, @{ h 100 v 40 h -100 z }.cut(@{ m 50 -10 v 60 })[1]);
+let lc = lead.translateCenterPointTo(0, 0);
+show(`lead-centre`, lc); log(lc.anchor);
+show(`moveonly-same`, @{ m 10 10 }.translateStartPointTo(10, 10));
+log(@{ m 10 10 }.isEmpty, @{ m 10 10 }.length);
+log(@{ m 40 40 h 10 v 10 h -10 z }.intersects(@{ h 10 v 10 h -10 z }));
+log(@{ m 40 40 h 10 v 10 h -10 z }.intersects(@{ m 20 0 h 10 v 10 h -10 z }));

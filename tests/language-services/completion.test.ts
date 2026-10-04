@@ -474,14 +474,18 @@ describe('getCompletions', () => {
       expect(names).toContain('centerPoint');
       expect(names).toContain('length');
       const centerPoint = items.find((item) => item.label === 'centerPoint');
-      expect(centerPoint!.detail).toBe('centerPoint() — Center of the bounding box as a Point');
+      expect(centerPoint!.detail).toBe(
+        'centerPoint() — Center of the bounding box as a Point. Moves count: @{ circle(50, 50, 20); }.centerPoint() is (35, 35), not (50, 50)',
+      );
       expect(centerPoint!.insertText).toBe('centerPoint()$0');
     });
 
     it('offers centerPoint on ProjectedPath variables', () => {
       const items = completeAtEnd('let shape = @{ h 10 };\nlet proj = shape.project(5, 5);\nproj.');
       const centerPoint = items.find((item) => item.label === 'centerPoint');
-      expect(centerPoint!.detail).toBe('centerPoint() — Center of the bounding box as a Point');
+      expect(centerPoint!.detail).toBe(
+        'centerPoint() — Center of the bounding box as a Point. Moves count, as in boundingBox(): the point the path was projected to is in the box',
+      );
     });
 
     it('offers array members for array variables', () => {

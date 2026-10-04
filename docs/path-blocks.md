@@ -384,11 +384,11 @@ Every operation that re-bases carries [`anchor`](#path-blocks-anchor-putting-a-r
 Return the same geometry, shifted so that one named point of it sits at `(x, y)`:
 
 - `translateStartPointTo(x, y)` moves `startPoint` — the first drawn point — to `(x, y)`.
-- `translateCenterPointTo(x, y)` moves the centre of the drawn shape's bounding box to `(x, y)`.
+- `translateCenterPointTo(x, y)` moves the center of the shape's bounding box — measured without a leading move — to `(x, y)`.
 
-Nothing else changes: every subpath, a closing `z`, the length, the bounding-box size and any labels come through as they were. On a PathBlock, `(x, y)` is in the block's own coordinates, so `(0, 0)` means "at the pen" — the current drawing position, where the last `M` left the cursor — once it is drawn. On a ProjectedPath, `(x, y)` is in page coordinates and the result is a ProjectedPath there.
+Nothing else changes: every subpath, a closing `z`, the length and any labels come through as they were. The drawn shape keeps its size; the box `boundingBox()` reports shrinks if the block opened with a move, because that move is no longer counted. On a PathBlock, `(x, y)` is in the block's own coordinates, so `(0, 0)` means "at the pen" — the current drawing position, where the last `M` left the cursor — once it is drawn. On a ProjectedPath, `(x, y)` is in page coordinates and the result is a ProjectedPath there.
 
-A leading move counts as where the block was, not as part of its shape. So `@{ m 10 10 h 20 }.translateStartPointTo(0, 0)` gives back `h 20`, and `translateCenterPointTo` centres only what is drawn. That can differ from `centerPoint()`, whose box also includes the point the move started from: for that block the drawn centre is `(20, 10)`, while `centerPoint()` is `(15, 5)`.
+A leading move counts as where the block was, not as part of its shape. So `@{ m 10 10 h 20 }.translateStartPointTo(0, 0)` gives back `h 20`, and `translateCenterPointTo` centers the box measured without that move. That can differ from `centerPoint()`, whose box also includes the point the move started from: for that block the drawn center is `(20, 10)`, while `centerPoint()` is `(15, 5)`. Only a move at the start is set aside. A move at the end of the block stays in the result and still counts: `@{ h 20 m 30 30 }.translateCenterPointTo(0, 0)` centers the `50 × 30` box that reaches the move's landing point, not the 20-unit line. [What the box measures](#path-blocks-what-the-box-measures) has the full rule.
 
 These are the methods to reach for with a piece of something — a `cut()` piece, a `dash()` piece, a glyph contour. A piece keeps the place it had in the path it came from, which is what lets a set of pieces reassemble. It also means `draw()` does not start the piece at the pen:
 
@@ -481,9 +481,70 @@ let bb = line.boundingBox();
 // bb = { x: 0, y: 0, width: 100, height: 0 }
 ```
 
+#### What the box measures
+
+**The box follows the pen, not the ink** — the ink being the lines the path actually draws. It covers every point the pen visits, starting from where the path begins — for a block, its own `(0, 0)`. A move (`m`) draws nothing, but both of its ends count: where the pen was, and where it went.
+
+The place this shows up first is a stdlib shape inside a block. `circle(50, 50, 20)` moves the pen from `(0, 0)` out to the rim and then draws, so the box reaches back to the origin:
+
+```
+let hole = @{
+  circle(50, 50, 20);
+};
+let box = hole.boundingBox();
+log(box.x, box.y, box.width, box.height);    // 0 0 70 70 — the circle alone is 30 30 40 40
+log(hole.centerPoint());                     // Point(35, 35) — the circle's center is (50, 50)
+```
+
+The same rule, one move at a time (boxes are written `x y width height`):
+
+| Block | `boundingBox()` | `centerPoint()` | What the move added |
+|---|---|---|---|
+| `@{ h 20 }` | `0 0 20 0` | `(10, 0)` | no move — the box is the line |
+| `@{ m 10 10 h 20 }` | `0 0 30 10` | `(15, 5)` | a move at the start adds the origin it left from; the line alone is `10 10 20 0` |
+| `@{ h 20 m 30 30 }` | `0 0 50 30` | `(25, 15)` | a move at the end adds the point it lands on |
+| `@{ h 20 m 0 40 h 20 }` | `0 0 40 40` | `(20, 20)` | nothing — this move leaves from the end of the first line and lands where the second begins, so both of its ends are already in the box |
+| `@{ m 10 10 }` | `0 0 10 10` | `(5, 5)` | everything — the block draws nothing, and still has a box |
+
+A ProjectedPath follows the same rule in page coordinates, and the point it was projected to takes the origin's place: `@{ m 10 10 h 20 }.project(100, 100).boundingBox()` is `100 100 30 10`, though the line starts at `(110, 110)`.
+
+**Whether a move at the start counts depends on where the path came from.** It counts for blocks you write, and it is already taken out of the pieces the language cuts for you:
+
+| Where the path came from | Does the box reach back to `(0, 0)`? |
+|---|---|
+| a block you wrote, including stdlib shapes inside it | yes |
+| `.contours`, `union` / `difference` / `intersection` / `xor`, `scale`, `rotate`, `mirror`, `offset` on a block you wrote | yes — the result keeps the block's origin |
+| a `cut()` piece, a `dash()` piece, an `outline()` | no |
+| a [query](#path-queries-path-queries) match's `block` | no |
+| a `translateStartPointTo` / `translateCenterPointTo` result | no (a move at the end still counts) |
+
+`.d` does not tell the two kinds apart. Both of these read `m 30 0 l 20 0`, and they report different boxes:
+
+```
+let written = @{
+  m 30 0
+  l 20 0
+};
+let piece = @{ h 100 }.dash(#{ stroke-dasharray: 20, 10; })[2].path;
+
+log(written.d, written.boundingBox().x);    // m 30 0 l 20 0, 0  — the travel from the origin counts
+log(piece.d, piece.boundingBox().x);        // m 30 0 l 20 0, 30 — the dash is measured where it is
+```
+
+**To measure only what a block draws when it starts with a move**, translate it to the place it already is. `translateStartPointTo` returns a path measured from its first drawn point instead of from `(0, 0)`; aiming it at the block's own `startPoint` leaves the shape where it was and changes only how it is measured. The result draws identically and its `.d` reads the same — the box is what differs:
+
+```
+let inked = hole.translateStartPointTo(hole.startPoint.x, hole.startPoint.y);
+let box = inked.boundingBox();
+log(box.x, box.y, box.width, box.height);    // 30 30 40 40
+log(inked.centerPoint());                    // Point(50, 50)
+```
+
+This removes a move at the start only. Nothing strips a move from the end of a block, so leave one out of any block you intend to measure.
+
 ### `centerPoint()` → Point
 
-Returns the center of the path's bounding box as a Point. The box is the one `boundingBox()` reports, so a curve that bulges past its endpoints is included in the center. Use it as the pivot for `rotate()`, or anywhere you need a shape's middle as a Point.
+Returns the center of the path's bounding box as a Point. Use it as the pivot for `rotate()`, or anywhere you need a shape's middle as a Point. The box is the one `boundingBox()` reports, so a curve that bulges past its endpoints is included in the center. Moves count too: `@{ circle(50, 50, 20); }.centerPoint()` is `(35, 35)`, not `(50, 50)`, because a stdlib circle begins with a move out from the block's `(0, 0)`. [What the box measures](#path-blocks-what-the-box-measures) has the rule, and how to get the center of the drawn shape alone.
 
 Before `centerPoint()`, the same value took a bounding box and two `calc()` expressions:
 
@@ -509,6 +570,8 @@ plate.rotate(15deg, center).draw()    // spins in place, pivoting on (50, 40)
 
 An empty block has no box, so `centerPoint()` returns `Point(0, 0)` — the same answer a shape genuinely centered on the origin gives. Check `isEmpty` first when the block came from `subPath(t, t)` or a `fromGlyph` space glyph.
 
+A block that only moves the pen is not empty. `@{ m 10 10 }` draws nothing and has a `length` of `0`, but `isEmpty` is `false` and its box runs from the origin to where the move landed, so `centerPoint()` is `Point(5, 5)`.
+
 Because the result is a Point, its members and methods are available directly:
 
 ```
@@ -521,6 +584,8 @@ log(center.translate(0, -10));        // Point(25, -25) — Point methods chain 
 ### `intersects(geometry)` → Boolean
 
 AABB overlap test — returns `true` if this path's bounding box overlaps the argument's bounding box. Works on both PathBlock and ProjectedPath values.
+
+The boxes are the ones `boundingBox()` reports, so they [count where the pen travels](#path-blocks-what-the-box-measures). Every block you write has a box that includes its own `(0, 0)`, so a block that starts with a move can overlap another block there, however far apart their ink is: `@{ h 10 v 10 h -10 z }.intersects(@{ m 40 40 h 10 v 10 h -10 z })` is `true`, though the two squares do not touch. To test only what is drawn, call `translateStartPointTo(startPoint.x, startPoint.y)` on the block that starts with a move and compare the result; for those two squares that is `false`. Projected paths are compared in page coordinates, where each box starts at the point its path was projected to.
 
 **Accepted arguments:**
 

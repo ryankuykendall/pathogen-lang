@@ -1,0 +1,28 @@
+define ViewBox(0, 0, 200, 200);
+fn show(name, p) {
+  let bb = p.boundingBox();
+  log(name, p.d, bb.x, bb.y, bb.width, bb.height, p.centerPoint(), p.startPoint);
+}
+let lead = @{ m 10 10 h 20 };
+show(`same-place`, lead.translateStartPointTo(lead.startPoint.x, lead.startPoint.y));
+let trail = @{ h 20 m 30 30 };
+show(`trail-sub`, trail.subPath(0, 1));
+show(`trail-translate`, trail.translateStartPointTo(0, 0));
+let two = @{ h 20 v 20 h -20 z m 40 0 h 20 v 20 h -20 z };
+let cs = two.contours;
+log(cs.length);
+show(`contour1`, cs[1]);
+show(`authored-same-d`, @{ m 30 0 l 20 0 });
+show(`dashpiece`, @{ h 100 }.dash(#{ stroke-dasharray: 20, 10; })[1].path);
+show(`lead-rot`, lead.rotate(90deg));
+show(`lead-scale`, lead.scale(2, 2));
+show(`lead-offset`, lead.offset(5));
+show(`lead-reverse`, lead.reverse());
+show(`cut-rot`, @{ h 100 v 40 h -100 z }.cut(@{ m 50 -10 v 60 })[0].scale(1, 1));
+show(`union`, @{ m 10 10 h 20 v 20 h -20 z }.union(@{ m 20 20 h 20 v 20 h -20 z }));
+let circ = @{ circle(50, 50, 20); };
+show(`circle`, circ);
+let rc = @{ rect(30, 30, 20, 10); };
+show(`rect`, rc);
+let mk = Marker.fromPathBlock('mk', lead);
+log(mk.viewBox);

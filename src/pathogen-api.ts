@@ -959,9 +959,9 @@ export interface PathogenPathBlock {
   partition(n: number): PathogenArray;
   /** reverse() — Reverse direction */
   reverse(): PathogenPathBlock;
-  /** boundingBox() — Get bounding box */
+  /** boundingBox() — Bounding box of everywhere the pen goes: a move draws nothing, but both of its ends count, so a block that starts with a move reaches back to its (0, 0) */
   boundingBox(): { x: number; y: number; width: number; height: number };
-  /** centerPoint() — Center of the bounding box as a Point */
+  /** centerPoint() — Center of the bounding box as a Point. Moves count: @{ circle(50, 50, 20); }.centerPoint() is (35, 35), not (50, 50) */
   centerPoint(): PathogenPoint;
   /** translateStartPointTo(x, y) — The same geometry shifted so its first drawn point (startPoint) is at (x, y); translateStartPointTo(0, 0) makes a cut or dash piece start at the pen. The result carries anchor */
   translateStartPointTo(x: number, y: number): PathogenPathBlock;
@@ -1407,9 +1407,9 @@ export interface PathogenProjectedPath {
   partition(n: number): PathogenArray;
   /** reverse() — Reverse direction */
   reverse(): PathogenProjectedPath;
-  /** boundingBox() — Get bounding box */
+  /** boundingBox() — Bounding box of everywhere the pen goes: a move draws nothing, but both of its ends count, so a path whose block starts with a move reaches back to the point it was projected to */
   boundingBox(): { x: number; y: number; width: number; height: number };
-  /** centerPoint() — Center of the bounding box as a Point */
+  /** centerPoint() — Center of the bounding box as a Point. Moves count, as in boundingBox(): the point the path was projected to is in the box */
   centerPoint(): PathogenPoint;
   /** translateStartPointTo(x, y) — The same geometry shifted so its first drawn point (startPoint) is at (x, y); translateStartPointTo(0, 0) makes a cut or dash piece start at the pen. The result carries anchor */
   translateStartPointTo(x: number, y: number): PathogenProjectedPath;

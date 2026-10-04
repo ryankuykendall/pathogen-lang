@@ -1,0 +1,26 @@
+define ViewBox(0, 0, 200, 200);
+let plate = PathLayer('plate') #{ stroke: black; fill: none; };
+plate.apply {
+  M 5 5;
+  h 10;
+  circle(50, 50, 20);
+  circle(120, 60, 10);
+}
+for (hole in plate.queryAll('call(circle)')) {
+  let bb = hole.block.boundingBox();
+  log(hole.block.d, bb.x, bb.y, bb.width, bb.height, hole.block.centerPoint());
+}
+let face = @{
+  h 10;
+  circle(50, 50, 20);
+  circle(120, 60, 10);
+};
+for (hole in face.queryAll('call(circle)')) {
+  let bb = hole.block.boundingBox();
+  log(hole.block.d, bb.x, bb.y, bb.width, bb.height, hole.block.centerPoint());
+}
+let drawn = face.project(0, 0);
+for (hole in drawn.queryAll('call(circle)')) {
+  let bb = hole.block.boundingBox();
+  log(hole.block.d, bb.x, bb.y, bb.width, bb.height, hole.block.centerPoint());
+}

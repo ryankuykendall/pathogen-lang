@@ -1,0 +1,7 @@
+log(@{ h 10 }.intersects(@{ m 40 40 h 10 }));
+let a = @{ m 40 40 h 10 v 10 h -10 z };
+let b = @{ m 20 0 h 10 v 10 h -10 z };
+log(a.intersects(b));
+log(a.translateStartPointTo(a.startPoint.x, a.startPoint.y).intersects(b.translateStartPointTo(b.startPoint.x, b.startPoint.y)));
+let hole = @{ circle(50, 50, 20); };
+log(hole.translateStartPointTo(hole.startPoint.x, hole.startPoint.y).d == hole.d);

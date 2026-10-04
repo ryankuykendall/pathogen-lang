@@ -1,0 +1,32 @@
+define ViewBox(0, 0, 200, 200);
+fn show(name, p) {
+  let bb = p.boundingBox();
+  log(name, bb.x, bb.y, bb.width, bb.height, p.centerPoint(), p.startPoint, p.endPoint, p.length);
+}
+show(`plain`, @{ h 20 });
+show(`leading`, @{ m 10 10 h 20 });
+show(`trailing`, @{ h 20 m 30 30 });
+show(`mid`, @{ h 20 m 0 40 h 20 });
+show(`midgap`, @{ h 20 m 100 100 m -100 -60 h 20 });
+show(`moveonly`, @{ m 10 10 });
+show(`closed-then-move`, @{ m 10 10 h 20 v 20 z m 50 50 });
+show(`proj-leading`, @{ m 10 10 h 20 }.project(100, 100));
+show(`proj-trailing`, @{ h 20 m 30 30 }.project(100, 100));
+let plate = @{ h 100 v 40 h -100 z };
+let knife = @{ m 50 -10 v 60 };
+let pieces = plate.cut(knife);
+for (i in 0..(pieces.length - 1)) { show(`cut${i}`, pieces[i]); log(pieces[i].d); }
+let ds = @{ h 100 }.dash(#{ stroke-dasharray: 20, 10; });
+log(ds.length);
+show(`dash2`, ds[2].path); log(ds[2].path.d);
+show(`translated`, @{ m 10 10 h 20 }.translateStartPointTo(0, 0));
+let lm = @{ m 10 10 h 20 };
+log(lm.isEmpty, @{ m 10 10 }.isEmpty);
+log(lm.intersects(@{ m 0 0 h 5 v 5 }));
+let g = @{ h 20 v 20 h -20 z }.contours;
+log(g.length);
+show(`outline`, @{ m 20 20 h 60 }.outline(#{ stroke-width: 8; }));
+log(@{ m 20 20 h 60 }.outline(#{ stroke-width: 8; }).d);
+show(`sub`, @{ m 10 10 h 20 }.subPath(0, 1));
+show(`twomoves`, @{ m 10 10 m 5 5 h 20 });
+show(`zthenmove`, @{ h 20 v 20 z m 50 50 });
