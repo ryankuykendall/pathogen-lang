@@ -66,6 +66,72 @@ A dated 2027 monthly planner: year parameter in, 12 month spreads + habit
 tracker pages out as print PDF — regenerated for 2028 with one edit to
 prove the treadmill claim.
 
+## Project ideas (as of 2026-10-07)
+Tiered by Pathogen skill and readiness. Web-researched; a dated snapshot.
+
+### Beginner — buildable today
+- **Undated weekly one-pager** — The undated weekly layout, seven day boxes
+  plus a notes column, is the entry-level planner product and suits the 2026
+  move toward single-purpose pages. It is a Grid with header text and ruled
+  lines inside each cell, exported as PDF. Because nothing is dated, the
+  missing date type is irrelevant, and Monday or Sunday starts are a one-value
+  change.
+- **Thirty-one-day habit tracker** — Habit trackers are a grid of habits
+  against days, as squares or circles to fill in, and remain among the most
+  downloaded single pages. Rows, columns, cell shape and accent colour are
+  parameters, so a seller can issue rounded, minimalist and bold variants from
+  one file. A circular tracker with days around a ring is the same data with
+  rotation.
+- **Monthly budget sheet** — Minimalist budget pages, with income, bills,
+  savings and a spending log as ruled tables, are a growth niche. Each table
+  is a Grid with a header band, column widths set as proportions, and a colour
+  system applied through shared style values. It exercises typography and
+  alignment, the two things buyers judge, and needs nothing beyond what the
+  profile lists as strong.
+
+### Intermediate — several features, or one gap
+- **ADHD daily page in colourways** — ADHD-friendly daily pages use a few
+  large blocks: a brain-dump area, three priorities, a time-blocking column
+  and a small win box, sold in several palettes. Composing uneven blocks on a
+  shared grid with consistent gutters, then driving every colour from one
+  palette definition, combines layout arithmetic, colour systems and
+  typography. All shipped, and the palette swap is where code beats Canva.
+- **Undated planner bundle** — Sellers bundle daily, weekly and monthly
+  undated pages with trackers into one download. Each page already works as
+  its own Pathogen file. The single gap is multi-page PDF [G]: a bundle today
+  is a set of separate exports joined in another tool, which is tolerable for
+  ten pages but is the first thing a seller would ask to have fixed.
+- **Size-graded page set** — Every listing ships the same pages in Letter, A4,
+  A5 and often Happy Planner or half-letter sizes, each with its own margins
+  and punch-hole allowance. Page size is easily a parameter. The one gap is
+  CLI batch [G]: generating every page at every size is a matrix run, done by
+  hand today, and exactly the chore that pushes sellers toward templates.
+
+### Advanced — depends on a named gap
+- **Hyperlinked digital planner** — GoodNotes and Notability planners are the
+  premium product: side tabs for months, a linked index, and a tap on any date
+  that jumps to its daily page. The pages are ordinary layouts; the navigation
+  is the product. Hyperlinked PDF with internal navigation [D] is the gap, and
+  with it Pathogen could generate the hundreds of links that sellers currently
+  place by hand.
+- **Year-at-a-glance wall calendar** — A single large poster showing all
+  twelve months, with week numbers and weekends shaded, is reissued every
+  year. Which weekday each month starts on, how many rows it needs and how
+  weeks are numbered all depend on real calendar rules. Date and calendar
+  arithmetic [D], the domain's defining gap, is the dependency, including
+  locales and ISO week numbering for European buyers.
+- **Lunar and holiday calendar** — Moon calendars showing the phase for every
+  night of the year, and regional calendars with national holidays marked, are
+  strong seasonal sellers. The drawing is simple; the content is a table of
+  dates that changes yearly and by country. Moon-phase and holiday data [D] is
+  the gap, alongside importing holiday tables, and it makes each new year a
+  regeneration.
+
+*Sourcing is narrow: current Etsy listings were the only web evidence drawn on
+for this category.*
+
+Sources: etsy.com
+
 ## Top YouTube channels (as of 2026-08-31)
 - [Yasmina Zariouh](https://www.youtube.com/@YasminaZariouh) — digital/printable planner designer who sells her own planners and teaches creating and selling them; the one dedicated planner-seller channel verified in search.
 - *Thin YouTube presence for dedicated planner-selling channels; nearest-adjacent coverage is the general Etsy digital-product seller channels (e.g. Money With Mak, Cassiy Johnson — see the personal-data-art profile), which treat digital planners as a flagship product category.*

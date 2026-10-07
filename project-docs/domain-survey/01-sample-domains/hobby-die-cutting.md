@@ -83,6 +83,63 @@ double-digit machine sell-out growth. Cricut alone supports the 5–9M claim;
 with Silhouette/Brother the 10M+ owner estimate is reasonable · confidence
 **H for Cricut figures, M for the total**.
 
+## Project ideas (as of 2026-10-07)
+Tiered by Pathogen skill and readiness. Web-researched; a dated snapshot.
+
+### Beginner — buildable today
+- **Welded script name decal** — A name in a script font, welded so the
+  letters cut as one piece, is the first vinyl project most owners make for a
+  bottle or laptop. Text-to-path with any Google Font plus a boolean union
+  does exactly that, and the SVG carries no font dependency. The name is a
+  parameter, so one file serves every customer.
+- **Name cake topper** — Cardstock cake and cupcake toppers are quick party
+  projects: a welded greeting or name joined to a pair of stakes. Text-to-path
+  gives the lettering and boolean ops weld it to the stakes and a baseline bar
+  so it cuts as one sturdy piece. Changing the name or the font is a one-line
+  edit.
+- **Two-colour pantry labels** — Labelling jars and bins is a standard starter
+  project: a word inside a frame, often in two vinyl colours. Text-to-path
+  sets the word, boolean ops shape the frame, and each colour sits on its own
+  layer for separate mats. A list of words in the file yields the whole pantry
+  set with consistent spacing.
+
+### Intermediate — several features, or one gap
+- **Layered mandala** — Layered cardstock mandalas, often seven sheets stacked
+  for depth, are consistent best sellers. Each layer is a radial pattern with
+  openings that grow or shrink from the layer above. That combines loops,
+  boolean ops and a layer per sheet, all shipped, in one program. It has no
+  single blocking gap, only more moving parts than a beginner file.
+- **Party topper colourways** — A seller lists one cupcake topper design in
+  several sizes and a dozen colourways for different party themes.
+  Text-to-path, welding and layers per colour describe the design well today.
+  The one gap is CLI batch export, which would turn that one source into the
+  full listing in a single command.
+- **Seasonal motif bundle** — Holiday SVG drops reuse the same elements, a
+  snowflake, a holly sprig, a frame, across dozens of designs. Each design is
+  text, boolean ops and layers. The gap is modules for reusable motifs: a
+  shared motif file that every design in the bundle imports keeps the drop
+  consistent and makes next year's update one edit.
+
+### Advanced — depends on a named gap
+- **Shadow-layer text decal** — The most requested lettering effect is a
+  shadow layer: the welded word again, grown outward into a smooth backing
+  shape in a second colour. That is an outline offset around text. This
+  depends on rock-solid offset() on text outlines and curves, the domain gap,
+  because a spiked or distorted ring is unsellable.
+- **Layered shadow box** — Shadow boxes stack five or more cardstock frames
+  with spacers, each sheet cut from its own file at an exact size. Buyers
+  complain loudly when a file imports at the wrong scale. This depends on
+  machine export profiles, the domain gap covering the 72-dpi scaling quirk
+  and layer-per-colour file splitting.
+- **Shirt design size run** — Heat-transfer designs are sold sized for infant,
+  youth and adult shirts, each a separate file in the buyer's download.
+  Sellers resize and re-export each one by hand today. This depends on
+  multi-size variant export in one command, the domain gap that would emit the
+  whole size run from one design.
+
+Sources: jennifermaker.com, sustainmycrafthabit.com, designbundles.net,
+  thehomesihavemade.com, hobbycraft.co.uk, etsy.com
+
 ## Top YouTube channels (as of 2026-08-31)
 - [Cricut](https://www.youtube.com/OfficialCricut) — the official channel; Design Space walkthroughs, machine onboarding, and project tutorials straight from the vendor.
 - [Kerri Crafts It](https://www.youtube.com/channel/UCvq_qe2vAtV24IMia15geFQ) — Kerri Adamczyk, author of *Cricut For Dummies*; Cricut projects plus laser engraving and sublimation, beginner-friendly.

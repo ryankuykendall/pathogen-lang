@@ -69,6 +69,66 @@ A geometric string-art kit: pins partitioned along a star-polygon path,
 closed-form thread sequence, numbered template + step list + thread estimate —
 physically strung to verify the instructions read well.
 
+## Project ideas (as of 2026-10-07)
+Tiered by Pathogen skill and readiness. Web-researched; a dated snapshot.
+
+### Beginner — buildable today
+- **Times-table cardioid** — The classroom classic: pins spaced evenly on a
+  circle, a thread from each pin to the pin with double its number, and a
+  heart-shaped curve appears from straight lines. `partition()` places the
+  pins, markers draw them, text numbers them, and a short hand-written loop
+  gives the sequence. Changing the multiplier to three or four draws the
+  related curves from the same script.
+- **Curve-stitch parabola corner** — The oldest string-art exercise, taught as
+  curve stitching: pins along two lines that meet at an angle, with the first
+  pin on one joined to the last on the other, and so on, until the threads
+  outline a parabola. Two paths, two `partition()` calls and one loop make the
+  template, which prints as a PDF at exact scale to tape onto the board.
+- **Heart outline nail template** — The heart is the most common beginner
+  string-art project, needing few nails and filled freely with thread. The
+  template is nothing more than the outline with evenly spaced pin marks,
+  which is `partition()` along a heart path with a marker at each point. Pin
+  count and board size are parameters, and the same few lines place pins on
+  any other outline.
+
+### Intermediate — several features, or one gap
+- **Name sign** — Lettering is the perennial string-art showpiece: a name or
+  short word for a nursery or wedding, with nails along every letter's
+  outline. Text converted to paths supplies the outlines, `partition()` spaces
+  the pins along each contour, including the counters, and markers and numbers
+  finish the template. It combines several shipped features and puts pins on
+  paths no circle-based generator covers.
+- **Home-state outline with heart** — A state or country outline with a small
+  heart over a home town, strung so the thread fills the space between them,
+  is a popular housewarming gift. Pins on two labelled paths and an
+  exact-scale PDF are available now. The outline itself is the obstacle:
+  border geometry has to come from a file, so the gap is data import.
+- **Three-colour ring mandala** — Layering several thread colours on one ring
+  of pins, each with its own step size, builds a mandala with depth; the
+  layering order is what makers compare notes on. One `partition()` call
+  places the ring, each colour has a deterministic sequence written as a loop,
+  and text numbers the pins. No gap is involved, only a longer script.
+
+### Advanced — depends on a named gap
+- **Single-thread photo portrait** — The Vrellis-style portrait is one
+  continuous thread around a few hundred pins, darkening wherever the
+  photograph is dark, sold as personalised gifts and produced by web
+  generators. The pin ring is already `partition()`. The gap is the greedy
+  image-approximation solver and the image import beneath it, which together
+  would let the portrait sit on any labelled path instead of a circle.
+- **Classroom times-table card set** — Maths teachers hand out one card per
+  multiplier, from two up to twelve, so a class can stitch the whole family of
+  curves and compare them on the wall. Each card is the cardioid script with
+  one number changed, and each can be exported singly now. Turning the range
+  into eleven print-ready templates in one command is the gap: CLI batch
+  generation, here on its smallest useful job.
+
+*Web results for this niche were thin and dominated by template-farm pages;
+the ideas rest on the smaller set of sources below.*
+
+Sources: etsy.com, mathforamerica.org, mathcounts.org, babbledabbledo.com,
+  instructables.com, hometalk.com, justcraftyenough.com, r-universe.dev
+
 ## Top YouTube channels (as of 2026-08-31)
 - [String Art Workshop](https://www.youtube.com/c/StringArt) — channel dedicated to nail-and-thread string art projects and technique.
 - [RavsArt](https://www.youtube.com/results?search_query=RavsArt+string+art) (search link) — string art tutorials including mandala-style and geometric patterns.

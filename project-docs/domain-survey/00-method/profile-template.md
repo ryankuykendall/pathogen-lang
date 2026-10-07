@@ -54,4 +54,26 @@ Grid, markers, text-to-path, …).
 ## Proposed validation project
 A Cutting-Room-style demo artifact that would drive out this domain's real
 friction log.
+
+## Project ideas (as of YYYY-MM-DD)
+Tiered by Pathogen skill and readiness. Web-researched; a dated snapshot.
+
+### Beginner — buildable today
+2–4 projects using only what "Pathogen fit today" lists.
+- **<Project name>** — 50–75 words: what the project is, then the Pathogen
+  opportunity.
+
+### Intermediate — several features, or one gap
+2–4 projects combining shipped features, or meeting at most one named [G] gap.
+
+### Advanced — depends on a named gap
+2–4 projects that need a [D]/[G] item from "Missing features"; each entry
+names the gap. Must not restate the proposed validation project.
+
+Sources: bare domains the ideas were drawn from.
 ```
+
+The tiers measure **Pathogen skill and readiness**, not how hard the craft is
+(user decision 2026-10-07). Projects are things the community really makes,
+grounded in web research. In a finished profile this section sits directly
+before `## Top YouTube channels`.

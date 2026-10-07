@@ -83,6 +83,66 @@ by 2027; new-quilter share rising 11% → 18% by 2025; weekly hours up (6–10 v
 5 in 2017). Survey methodology: 1.8M invited, 37k+ responses · confidence
 **M–H**. FPP/EPP subset share still unmeasured — keep 1M+ as an estimate (L).
 
+## Project ideas (as of 2026-10-07)
+Tiered by Pathogen skill and readiness. Web-researched; a dated snapshot.
+
+### Beginner — buildable today
+- **Hexagon papers for a flower block** — English paper piecing starts with
+  hexagons, and Grandmother's Flower Garden — seven hexagons forming a flower
+  — has been the entry pattern for generations. EPP papers are cut at finished
+  size with no allowance. A Grid of hexagons on a real page size, printed and
+  cut from cardstock, is a usable template sheet today.
+- **Flying-geese foundation strip** — A strip of flying geese is the standard
+  first foundation-paper-piecing exercise because the paper guarantees sharp
+  points. Cutting a rectangle into its triangles gives pieces with named
+  seams, and a text layer adds the sewing-order numbers, written by hand for a
+  strip this simple. The foundation prints without allowances between pieces.
+- **Colourway planning sheet** — Before cutting fabric, quilters mock up a
+  quilt as a coloured diagram to test fabric pulls and block rotations. Grid
+  repeats one block across the layout, transforms mirror and rotate alternate
+  blocks, and fills stand in for fabrics. It is a planning aid, not a sewing
+  pattern, so nothing depends on exact scale.
+
+### Intermediate — several features, or one gap
+- **Star block in four sizes** — Star blocks are sold as bundles with each
+  design offered at several finished sizes. Cutting the block into sections,
+  numbering them on a text layer and mirroring where needed are all shipped.
+  Stating the finished size as six or twelve inches and trusting the print
+  needs physical units, the general gap the profile calls non-negotiable.
+- **Pop-art object block** — Pictorial blocks of everyday objects such as
+  mugs, cameras and sneakers are FPP's fashionable style. Such a block has
+  several sections and a few dozen pieces, produced by repeated cuts, with
+  labelled seams, mirrored versions for directional prints and numbers placed
+  manually. It exercises most of what is shipped without relying on derived
+  sewing order.
+- **Block-of-the-month series** — Designers sell twelve related blocks
+  released monthly, sharing a grid, a border and labelling conventions. Each
+  block is its own program today. Keeping the shared parts in one place so a
+  change reaches all twelve is where the missing modules feature matters;
+  block libraries are the example the profile itself gives.
+
+### Advanced — depends on a named gap
+- **La Passacaglia-style rosette pack** — La Passacaglia is the famous
+  advanced EPP quilt: about 1,400 papers in five shapes arranged in
+  interlocking rosettes. Makers buy pre-cut paper packs and count pieces per
+  fabric by hand. Generating the rosettes with piece counts and fabric totals
+  depends on the tiling and yardage item listed as missing — area per label
+  across a whole quilt.
+- **Pictorial animal portrait** — Large FPP portraits of animals run to a
+  hundred or more pieces across many sections, and one mis-numbered piece
+  makes a section unsewable. Designers number them by hand and test-sew. It
+  depends on automatic section numbering and sewing-order derivation from the
+  seam graph, which is listed as missing and is the profile's distinctive
+  opportunity.
+- **New York Beauty arcs** — New York Beauty blocks combine paper-pieced
+  spiked arcs with curved seams joining the arcs to their corners. Every
+  curved piece needs an accurate quarter-inch allowance or the block will not
+  lie flat. It depends on the reliable seam-allowance offset listed first
+  among the gaps, the blocker shared with garment and die-cutting work.
+
+Sources: gathered.how, shop.aspoonfulofsugardesigns.com, quilthistory.com,
+  ladysewandsew.co.uk, jinnybeyer.com, gallery.thequiltshow.com
+
 ## Top YouTube channels (as of 2026-08-31)
 - [Missouri Star Quilt Co](https://www.youtube.com/results?search_query=Missouri+Star+Quilt+Co) (search link) — Jenny Doan; the most-watched quilting channel (1M+ subscribers per search results), broad block tutorials a newcomer can follow.
 - [SewVeryEasy](https://www.youtube.com/results?search_query=SewVeryEasy+Laura+Coia) (search link) — Laura Coia; the most methodical technique breakdowns on YouTube, including paper piecing, flying geese, and half-square triangle sub-units.

@@ -68,6 +68,74 @@ A clamshell box generator: text-block W/H/D + board and cloth thickness in,
 tray/case templates with clearances out, tiled 100%-scale PDF — built
 physically to verify the nested fit.
 
+## Project ideas (as of 2026-10-07)
+Tiered by Pathogen skill and readiness. Web-researched; a dated snapshot.
+
+### Beginner — buildable today
+- **Signature punching template** — Every sewn binding starts with a strip of
+  card marked with sewing stations, used to pierce each signature identically.
+  Three holes for a pamphlet, more for Coptic. The stations are evenly spaced
+  between head and tail margins, which is a loop and a division. A program
+  draws the strip for any station count, and it prints on one page to trim to
+  spine height.
+- **Journal spine guide** — Junk-journal makers use a printed spine guide:
+  rows of holes that place several signatures across a soft cover's spine. It
+  is a grid of marks, rows for sewing stations and columns for signatures,
+  with fold lines labelled. Changing the signature count regenerates the
+  guide, where today a maker buys a separate printable for each layout and
+  trims it to the cover.
+- **Journal pockets and envelopes** — Junk-journal makers fill their books
+  with folded pockets, envelopes and tuck spots cut from printed templates.
+  Each is a small net: a body panel, side flaps and a closing flap with scored
+  folds. Pathogen draws the outline from a few proportions and labels cut and
+  score lines with the papercraft conventions. The maker scales the page at
+  print time to suit the journal.
+
+### Intermediate — several features, or one gap
+- **Case-binding board layout** — A hardcover case is two boards, a spine
+  stiffener, hinge gaps and a covering sheet with turn-ins, all derived from
+  the text block: boards slightly taller than the pages, a few millimetres of
+  gap at each joint. Formula geometry and labels handle the drawing today. The
+  single gap is physical units, because these allowances are stated in
+  millimetres.
+- **Album cover layout** — Photo albums and portfolios use the same case
+  formulas at sizes well beyond a sheet of printer paper. The geometry is
+  unchanged from a small book and the fold and cut labels still apply. The one
+  gap is multi-page tiled PDF for large templates, without which a full-size
+  layout cannot be printed and taped together at home.
+- **Four-flap folder** — The four-flap enclosure is a cross-shaped sheet of
+  card that wraps a book with scored folds, a common first protective
+  structure. Every panel derives from the book's width, height and depth, and
+  labels mark cut and score lines, so the drawing works today. The single gap
+  is physical units: the wrapper only fits if those three measurements arrive
+  on paper in real millimetres.
+- **Batch board cut list** — A binder making ten journals for a market cuts
+  all the boards in one session from a written list. The dimensions fall out
+  of the same formulas as the template, one row per book size. The gap is
+  number formatting: a cut list needs dimensions rounded and printed
+  consistently before the compiled numbers can replace a hand-written formula
+  sheet.
+
+### Advanced — depends on a named gap
+- **Slipcase for a book set** — A slipcase is an open-ended box sized to one
+  book or a set, built from board panels with allowances for covering material
+  inside and out. It is the usual step between cases and full boxes. This
+  depends on the structure library, the domain gap that would make slipcase a
+  parametric module driven by text-block dimensions and board thickness.
+- **Covering layouts with mitred corners** — Covering a case in cloth or paper
+  means cutting the material oversize, then trimming each corner at 45 degrees
+  a board-thickness and a half away from the tip so the turn-ins meet cleanly.
+  Quarter and half bindings add overlap rules. This depends on turn-in and
+  corner-miter conventions, the domain gap for covering-material layouts.
+- **Grain-marked cutting plan** — Board, paper and cloth must all be cut with
+  the grain running parallel to the spine or the book warps, and binders mark
+  grain on every piece. A cutting plan that arranges parts on a parent sheet
+  has to respect and show that direction. This depends on grain-direction
+  annotations, the domain gap that would make the plan trustworthy.
+
+Sources: skillshare.com, blogs.brighton.ac.uk, printninja.com,
+  publishersweekly.com, cdn.shopify.com
+
 ## Top YouTube channels (as of 2026-08-31)
 - [DAS Bookbinding](https://www.youtube.com/@DASBookbinding) — the reference channel for traditional bookbinding; structurally sound techniques from beginner through advanced, including case and box work
 - [Four Keys Book Arts](https://www.youtube.com/results?search_query=Four+Keys+Book+Arts) (search link) — foundational bookbinding skills, tools, and techniques

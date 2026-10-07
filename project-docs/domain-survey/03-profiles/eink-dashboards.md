@@ -72,6 +72,62 @@ motivator for the HTTP/data General requirement.
 (Post HTTP) A TRMNL weather+calendar plugin rendered by Pathogen, published
 to their community marketplace — adoption metrics as the validation signal.
 
+## Project ideas (as of 2026-10-07)
+Tiered by Pathogen skill and readiness. Web-researched; a dated snapshot.
+
+### Beginner — buildable today
+- **Static month-calendar screen** — A month grid with large day numerals and
+  a title, composed at 800×480 in black and white. It is the layout half of
+  the most common dashboard plugin with the dates typed in. Typography and
+  deterministic layout are Pathogen's strengths here; the result is a vector
+  mock-up to rasterize by other means, since 1-bit export is absent.
+- **Family chore and status board** — Reviews of the TRMNL describe it as a
+  family status board: who does what, this week's activities, house reminders.
+  A fixed board with typed names and tasks is a tile layout of rules and text
+  at device resolution. It is buildable today as a design, and shows how crisp
+  vector type reads against the HTML screenshots most builders push.
+
+### Intermediate — several features, or one gap
+- **Server-stats tile mock-up** — Self-hosters want uptime, disk and container
+  counts at a glance. Laying out a tile grid with big numbers, labels and
+  small trend lines from hard-coded sample values combines text, layout and
+  path geometry that are all shipped. Replacing the samples with real numbers
+  from a file meets one general gap, data import, short of the larger HTTP
+  gate.
+- **Daily generative art frame** — Photo and art slideshows are among the
+  popular plugins, and a generative piece suits a slow screen. Deterministic
+  hash and noise make a pattern from a typed seed, in pure black strokes that
+  need no dithering. Rendering a fresh one each morning without a person
+  pressing the button meets one general gap: a headless compile on a schedule.
+
+### Advanced — depends on a named gap
+- **One-bit typography test card** — Builders care about legibility and
+  ghosting, so a test card is a useful early file: one typeface at a ladder of
+  sizes, hairlines at stepped widths, and line-pattern fills standing in for
+  grays. Text, strokes and loops draw it. Its known dependency is e-ink render
+  profiles, specifically 1-bit output at device resolution; until then the
+  card is rasterized and thresholded outside Pathogen, which changes the very
+  edges being tested.
+- **Transit departures board** — Next buses or trains from the nearest stop is
+  a classic glanceable screen for a hallway display. It depends on the HTTP
+  client, the gap the profile says the domain is, because departures are only
+  useful when fetched minutes ago. With it, a short Pathogen program becomes a
+  complete plugin: fetch, lay out big times and route names, emit an image.
+- **Home Assistant energy panel** — Home Assistant users push sensor summaries
+  to e-ink: solar production, room temperatures, a day's power curve. Most
+  screenshot a web dashboard through headless Chromium. Drawing it natively
+  depends on the dashboard layout kit, tiles, big numbers and sparklines, plus
+  HTTP for sensor values. The opportunity is replacing a
+  browser-in-a-container with one small deterministic render.
+- **Jailbroken Kindle dashboard** — Turning an old Kindle into a wall display
+  is a genre of its own, with guides listing several ways to do it in 2026.
+  Each model has its own resolution and grayscale depth, so it depends on
+  e-ink render profiles: 1-bit dithering, device resolutions and safe fonts.
+  One program targeting TRMNL and three Kindle models by profile is the pitch.
+
+Sources: trmnl.com, terminalbytes.com, hometechhacker.com, the-diy-life.com,
+  cnx-software.com
+
 ## Top YouTube channels (as of 2026-08-31)
 - [Simon Says HA](https://www.youtube.com/results?search_query=simon+says+ha+trmnl) (search link) — Home Assistant content including TRMNL X e-ink dashboard builds — the closest channel to this profile's exact stack.
 - [Smart Home Junkie](https://www.youtube.com/results?search_query=smart+home+junkie+home+assistant) (search link) — Home Assistant tutorial channel with companion example code on GitHub; where dashboard builders learn the HA side.

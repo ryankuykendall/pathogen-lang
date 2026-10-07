@@ -67,6 +67,65 @@ An HO clapboard depot wall set with procedural siding and window cutouts,
 regenerated at N scale — cut and compared against a commercial kit's fit
 quality.
 
+## Project ideas (as of 2026-10-07)
+Tiered by Pathogen skill and readiness. Web-researched; a dated snapshot.
+
+### Beginner — buildable today
+- **Brick paper sheet** — Printed brick paper wrapped over card is the
+  cheapest way to finish a structure, and makers pick a bond, a look and a
+  mortar colour. A Grid of courses with noise varying each brick gives a sheet
+  without a visible repeat, with brick and mortar on separate layers. Scale is
+  chosen at print time, so the units gap does not block it.
+- **Clapboard and batten panels** — Wood siding is engraved lines on a thin
+  sheet: evenly spaced horizontals for clapboard, verticals for
+  board-and-batten. A loop draws the lines on an etch layer and noise adds the
+  occasional split or uneven board that makes a wall look built. The panel is
+  cut to shape later, so the file is pure texture.
+- **Tab shingle strips** — Laser kits include roofing as strips of paper with
+  a notched lower edge, laid in overlapping rows. A strip is a repeated tab,
+  and noise can vary tab widths or drop the odd corner for a worn roof. Labels
+  keep the cut line apart from any score line, and one program covers square,
+  diamond and fishscale tabs.
+
+### Intermediate — several features, or one gap
+- **Layered window sashes** — Kit windows are built in layers, a frame, an
+  upper sash and a lower sash, each a fret of fine openings. Drawing them
+  takes repeated rectangles, layers and labels, all available. The single gap
+  is physical units with named scale ratios: a window is specified in
+  prototype feet and inches and has to land at 1:87 or 1:160.
+- **Trestle bent assembly template** — Timber trestle kits include a full-size
+  template on which the builder lays posts, caps and braces for each bent. It
+  is a line drawing of angled members, repeated for each bent height, with
+  labels naming the parts. The one gap is physical units with named scale
+  ratios: an assembly template is only useful printed at exactly the model's
+  scale, and timber sizes start as prototype dimensions.
+- **Eave brackets and station trim** — Victorian depots are defined by trim:
+  eave brackets, sign boards, corner posts. A sheet of them is small repeated
+  shapes with cut and etch layers. The gap is modules: an architectural part
+  library that every structure file can draw from is what makes a second
+  building cheaper than the first.
+
+### Advanced — depends on a named gap
+- **Number 6 turnout template** — Hand-layers print a full-size turnout
+  template and build rail and ties directly on it; free templates exist for
+  fixed frog numbers and gauges. This depends on NMRA-standard track
+  templates, the domain gap that would generate tie spacing and turnout
+  geometry for any frog number, including the custom turnouts builders ask
+  for.
+- **Brick engine house** — Brick structures show their bond, English, Flemish
+  or common, and the courses must turn corners and stop cleanly at arched door
+  and window openings. This depends on architectural detail generators, the
+  domain gap that would treat brick bond patterns and window muntins as
+  procedural fills clipped to any wall shape.
+- **Modular wall-panel kit** — Some kits are a set of interchangeable wall
+  panels, doors and windows that combine into many buildings. Selling one as
+  cut files means packing dozens of small parts onto sheets efficiently. This
+  depends on sheet nesting, the general gap that turns a part list into
+  production sheets without hand arrangement.
+
+Sources: trainz.com, forum.trains.com, nscalesupply.com, walthers.com,
+  factorydirecthobbies.com
+
 ## Top YouTube channels (as of 2026-08-31)
 - [Boulder Creek Railroad](https://www.youtube.com/channel/UCjRkUtHQ774mTg1vrQ6uA5A) — Luke Towan's channel; the reference standard for hyper-realistic scenery and diorama step-by-step tutorials (water effects, structures, terrain).
 - [The DCC Guy](https://www.youtube.com/@TheDCCGuy) — Larry Puckett, Model Railroader contributing editor; digital command control, wiring, and layout electronics.

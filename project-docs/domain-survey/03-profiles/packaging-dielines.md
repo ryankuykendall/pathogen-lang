@@ -69,6 +69,66 @@ A parametric mailer box (caliper, L/W/D as inputs): cut/crease layers with
 converter conventions, flap-mate labels, allowances computed — cut on a Cricut
 at craft scale to verify the fold physically closes.
 
+## Project ideas (as of 2026-10-07)
+Tiered by Pathogen skill and readiness. Web-researched; a dated snapshot.
+
+### Beginner — buildable today
+- **Pillow box** — The curved-end favour box used for jewellery, samples and
+  party gifts: one piece, two long creases, a glue flap and four curved
+  creases that pop the ends closed. Cut and crease are two line classes on two
+  layers, and the end curves follow from the width. Change length and width
+  and the same script redraws it for a craft cutter.
+- **Belly band sleeve** — A printed sleeve that wraps a tray, a soap bar or a
+  multipack. Structurally it is four panels, four creases and a glue flap,
+  driven by the product's length, width and depth, with a small `offset()`
+  allowance so the band slides on instead of binding. The glue flap and the
+  panel it lands on carry matching labels. It is a real first dieline.
+- **Two-piece gift box** — A tray and a lift-off lid, each a rectangle with
+  four walls and corner tabs, popular for craft-scale gift packaging. The lid
+  is the tray's geometry with an `offset()` allowance and a shorter wall, so
+  both come from one set of dimensions. Labels pair each corner tab with the
+  wall it glues to, and cut and crease export on separate layers.
+
+### Intermediate — several features, or one gap
+- **Reverse tuck end carton** — The most widely used retail carton: four
+  panels, a glue flap, and tuck and dust flaps that close from opposite sides
+  at top and bottom. It exercises every shipped piece together: line classes,
+  labelled mating flaps, layers and `offset()` for tuck clearance. The one gap
+  is physical units, because a print shop quotes and checks the dieline in
+  millimetres or inches.
+- **Gable box** — The carry-handle box used for food, gifts and events. Its
+  top panels crease into a roof, with a slotted handle and locking tabs that
+  pass through each other. Crease angles on the gable derive from the box
+  depth, labels match each tab to its slot, and cut, crease and perforation
+  sit on their own layers. All of it is available today.
+- **Favour boxes laid up on a sheet** — Wedding and party sellers cut small
+  boxes many-up from one sheet of card on a Cricut or a laser. A single
+  favour-box dieline can be repeated with transforms now, but fitting the most
+  copies onto a given sheet, with interlocking flaps and a gap between them,
+  is done by eye. Sheet nesting is the gap this project runs into.
+
+### Advanced — depends on a named gap
+- **FEFCO 0201 shipping case** — The regular slotted case is the most common
+  corrugated box in the world: four body panels, a manufacturer's joint, and
+  flaps whose outer pair meet at the centre. Online generators already draw it
+  from length, width and height. The opportunity is the FEFCO style library
+  with caliper-aware flap math, so slot widths and score allowances follow the
+  board grade instead of a rule of thumb.
+- **Crash-lock bottom carton** — The auto-bottom carton for heavier products
+  has four base flaps, two of them glued and diagonally creased, that snap
+  into place when the flattened box is squared up. It is the style most likely
+  to jam if a flap is a little too long. Fold-sequence sanity checks are the
+  named gap: detect flap collision at fold time before any board is cut.
+- **Die-maker handoff carton** — A short-run product carton sent to a
+  converter, where the dieline has to arrive in the die maker's own format
+  with cut, crease and perforation on standard layers. Indie brands hand over
+  an Illustrator file and wait for corrections. DXF and CF2 export, with the
+  converter-standard layer conventions, is the gap and the door into trade
+  use.
+
+Sources: customboxmakers.com, pacdora.com, pack.ly, qinprinting.com,
+  newprint.ca, govisually.com, designnbuy.com, diecuttemplates.com
+
 ## Top YouTube channels (as of 2026-08-31)
 - [DIELINE](https://www.youtube.com/channel/UC6nfHQa69YlycmlRG3lU-8w) — the packaging industry's leading design platform (est. 2007); hosts a "Packaging Design 101: Dieline Design Guides" playlist
 - [Packaging Unboxd](https://www.youtube.com/channel/UCZm2qmdwxuYenpV3Y31bSUA) — packaging designer Evelio Mattos tears down real packaging: structure, materials, manufacturing processes, terminology

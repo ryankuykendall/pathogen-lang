@@ -82,6 +82,70 @@ hashtag proxies · confidence **L** (unchanged). Note: 2026 vendor landscape
 broadened (UUNA TEK, iDraw, NextDraw), which supports the growth claim
 qualitatively.
 
+## Project ideas (as of 2026-10-07)
+Tiered by Pathogen skill and readiness. Web-researched; a dated snapshot.
+
+### Beginner — buildable today
+- **Truchet and 10 PRINT tiles** — The recommended first plot: a grid of
+  cells, each holding a diagonal or a pair of quarter arcs, with orientation
+  chosen at random. In Pathogen the choice comes from the deterministic hash,
+  so a seed reproduces the plot exactly. Arcs are single continuous strokes,
+  which plot cleanly, and the SVG goes straight to vpype or the AxiDraw
+  software without further preparation.
+- **Guilloche rosette** — Spirograph-style rosettes and banknote guilloches
+  are a plotter classic because fine pens render dense, even curves
+  beautifully. A parametric curve sampled along its length, repeated with
+  small changes in radius or phase and softened with easing, produces the
+  whole family. Each curve is one unbroken path, which keeps pen lifts low
+  without any path-ordering step.
+- **Noise-ring study** — Concentric rings whose radii are nudged by noise,
+  growing more disturbed toward the outside, are a staple of Genuary feeds.
+  Sample each ring with partition, displace each sample along its normal by a
+  noise value, and repeat with a rising amplitude. It teaches the sampling
+  tools the profile lists, and the deterministic noise means a good seed can
+  be plotted again later.
+
+### Intermediate — several features, or one gap
+- **Two-pen layered ribbon plot** — A common step up is a design split across
+  two pen colours, plotted in turn with careful registration. Variable-width
+  offset ribbons along a noise-bent spine, with alternate ribbons assigned to
+  two layers, make a strong first piece. The layered SVG is then separated per
+  pen in vpype, the bridge the profile calls a credible first move, with no
+  missing feature involved.
+- **Pattern clipped to shapes** — Filling a circle, a letterform or a
+  silhouette with a line pattern, and leaving the surround blank, is a
+  long-standing plotter look. Boolean operations cut a field of parallel or
+  wavy strokes to the shape, and layers hold separate shapes for separate
+  pens. It combines sampling, noise and booleans, all shipped, and is the
+  manual route to effects a hatch fill would automate.
+- **Postcard-exchange edition** — The Plotter Postcard Exchange has artists
+  plot dozens of cards, ideally each a unique variation of one design. In
+  Pathogen each card is the same program with a different seed. CLI batch seed
+  runs [G] is the single gap: today the seed is edited and exported card by
+  card, where a batch run would emit a numbered edition in one command.
+
+### Advanced — depends on a named gap
+- **Isometric city with hidden lines** — Stacked isometric boxes and
+  cityscapes are popular plots, but a pen cannot paint over what lies behind,
+  so every edge hidden by a nearer block must be removed before plotting.
+  Artists use vpype's occult plugin for this. Occlusion and hidden-line
+  removal for overlapping shapes [D] is the gap that would keep that step
+  inside the source file.
+- **Fifty-thousand-segment stipple plot** — Dense works such as stippled
+  portraits or long hatched fields take hours to plot, and unsorted paths can
+  double that with wasted pen-up travel. vpype's linesort and linemerge are
+  the community's standard fix. Path ordering and merging optimisation [D] is
+  the gap; built in, Pathogen's export would be plot-ready and the reported
+  travel distance could guide design choices.
+- **Vintage HP plotter revival** — A lively corner of the scene restores 1980s
+  machines such as the HP 7475A, which take HPGL commands and a carousel of
+  pens, not SVG. Getting a design onto one means a conversion chain with
+  per-pen commands. HPGL or G-code export with multi-pen layers [D] is the
+  gap, alongside paper-size presets for A3 and 11×17 sheets.
+
+Sources: tylerxhobbs.com, dirtalleydesign.com, blog.gramener.com,
+  generativeart.de, fosstodon.org, docs.rs, buttondown.com, v.st
+
 ## Top YouTube channels (as of 2026-08-31)
 - [Duncan Geere](https://www.youtube.com/results?search_query=Duncan+Geere+pen+plotter) (search link) — generative/data artist documenting AxiDraw plotter work on video alongside his written tutorials.
 - *Thin YouTube presence for this niche; nearest-adjacent coverage is the Generative Hut community site, Instagram plotter round-ups (@penplotart), and DrawingBotV3 tutorial videos.*

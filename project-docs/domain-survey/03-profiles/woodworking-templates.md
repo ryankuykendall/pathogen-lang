@@ -69,6 +69,71 @@ A parametric corner-radius + box-joint template set: radii series and finger
 joints from stock thickness, bushing offset applied, output as tiled 100%-scale
 PDF and DXF — cut one physically to verify fit.
 
+## Project ideas (as of 2026-10-07)
+Tiered by Pathogen skill and readiness. Web-researched; a dated snapshot.
+
+### Beginner — buildable today
+- **Spoon and spatula blanks** — Tracing templates for kitchen utensils are
+  sold as printable PDFs and as laser-cut acrylic. A blank is two curved
+  profiles, top and side, driven by a few proportions: bowl width, neck width,
+  handle length. One program draws the family on a single PDF page to trace
+  onto stock before bandsawing. Proportion matters more than exact size here,
+  so missing units do not block it.
+- **Bandsaw box pattern** — A bandsaw box starts as a paper pattern glued to a
+  block: a free-form outer outline with drawer openings drawn inside it. The
+  outline is curve geometry and each drawer opening is its own shape, so a
+  short program produces a printable pattern, and changing three numbers gives
+  a different box. A single PDF page holds a typical pattern.
+- **Serving board outline** — Paddle-shaped serving and cutting boards are
+  traced from a pattern, the handle drilled at its base and the perimeter
+  bandsawn. The pattern is one closed outline with a handle, shoulder curves
+  and a hang hole. Drawing it as geometry with named proportions gives a
+  printable page per variation, and a maker can keep a whole range of board
+  shapes in one file.
+
+### Intermediate — several features, or one gap
+- **Butterfly key inlay template** — Bow-tie keys that bridge a crack in a
+  slab are routed with a template and a guide bushing. The key is all straight
+  edges, so offset() already produces the template opening from the key
+  outline. The single gap is physical units: the offset must equal the
+  bushing-to-bit difference in real millimetres or inches, and today that is
+  only a number on trust.
+- **Push-stick and shop-helper pack** — Push sticks, push blocks and
+  featherboards are the classic first shop-made safety aids, traced from free
+  patterns. A pack of them is simple curve and straight-edge geometry that
+  prints on PDF pages now. The one gap is DXF export: CNC owners expect the
+  same pack as DXF, and creators already sell plans in both formats side by
+  side.
+- **Keepsake box plan with cut list** — Small box plans sell steadily, and
+  buyers want a drawing plus a cut list. The panels are rectangles derived
+  from length, width, height and stock thickness, laid out on a PDF page. The
+  gap is number formatting for cut lists: derived dimensions need to print as
+  tidy fractions or fixed decimals before a parametric, any-size plan can
+  replace a fixed PDF.
+
+### Advanced — depends on a named gap
+- **Adirondack chair full-size patterns** — Full-size chair patterns are a
+  staple of the plan trade: back slats, arms and legs traced at one-to-one
+  scale from sheets far larger than a printer page. This depends on full-size
+  multi-page tiled printing with registration marks and a 100% test square,
+  the domain gap that would let a buyer print, tape and trust a pattern at
+  home.
+- **Dovetail marking templates** — Dovetail markers and layout templates set
+  the slope, commonly 1:6 or 1:8, and the spacing of tails across a board. The
+  geometry is angle plus spacing recomputed for each board width. This depends
+  on joinery generators, the domain gap covering dovetail layout, which would
+  produce a marking template or a routing template for any board from two
+  numbers.
+- **Curved inlay template pairs** — Router inlay kits cut a recess and a
+  matching plug from one template by swapping a collar on the bushing. For
+  hearts, leaves and other curved shapes the template must be offset from the
+  finished line by an exact amount. This depends on bushing and bit offset
+  math as a first-class idiom, beyond today's straight-edge offset().
+
+Sources: etsy.com, jeffmacksupply.com, rockler.com, woodcraft.com,
+  woodworkersjournal.com, lostartpress.com, popularwoodworking.com,
+  sawmillcreek.org
+
 ## Top YouTube channels (as of 2026-08-31)
 - [3x3 Custom](https://www.youtube.com/results?search_query=3x3+Custom+Tamar) (search link) — Tamar's channel of clever jig builds and template-driven joinery; the closest match to template/jig-oriented work
 - [Izzy Swan](https://www.youtube.com/results?search_query=Izzy+Swan+woodworking) (search link) — jigs, contraptions, and money-saving shop solutions

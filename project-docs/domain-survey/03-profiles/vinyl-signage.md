@@ -63,6 +63,65 @@ surfaces organically.
 A storefront-lettering size series: one wordmark, four sizes,
 weedability-validated, panelized at 24" media width — cut on a hobby plotter.
 
+## Project ideas (as of 2026-10-07)
+Tiered by Pathogen skill and readiness. Web-researched; a dated snapshot.
+
+### Beginner — buildable today
+- **Store-hours door decal** — The business-hours decal found on nearly every
+  shop door and sold as a personalised staple on Etsy: a heading, seven
+  day-and-time rows and a thin border. It is aligned text converted to
+  outlines plus simple geometry. Changing the hours regenerates the cut file,
+  and the single-colour layout is forgiving to weed at door size.
+- **House or mailbox number set** — Large numerals and a street name for a
+  mailbox, door or bin, among the first permanent-vinyl projects
+  cutting-machine guides suggest. Text outlines with consistent spacing and an
+  optional underline are all it takes. One colour means one cut, one weed and
+  one transfer, so it is the simplest route from a program to applied vinyl.
+- **Two-colour badge decal** — A round emblem for a laptop, tumbler or car
+  window in two vinyl colours, such as a ring of text around a bold geometric
+  centre. Each colour sits on its own layer and is cut separately, with the
+  bold, uncluttered shapes current sign trends favour. Layers and text are the
+  only features involved.
+
+### Intermediate — several features, or one gap
+- **Truck-door lettering** — The company name, town and USDOT number lettered
+  on both cab doors — standard sign-shop work. An arched name over straight
+  lines of text, duplicated for the two doors, combines text on a path with
+  layout. The shop's plotter software expects its own file format, so the
+  output needs a manual conversion step; plotter-format export is the gap.
+- **Boat registration numbers** — The registration number shown on both sides
+  of a bow, which regulations require in plain block characters at least three
+  inches high with set spacing. The layout is simple text, produced twice.
+  Guaranteeing the three-inch height in the file needs physical units, the one
+  general gap here; today the size is set in the cutter software.
+- **Registered multi-colour decal** — A three-colour logo decal where each
+  colour is cut from separate film and stacked on the surface using small
+  alignment squares. Layers hold the colours, the alignment marks are repeated
+  on every layer, and booleans knock lower colours out from under upper ones
+  to avoid ridges. Several shipped features combine, with no gap in the way.
+
+### Advanced — depends on a named gap
+- **ADA room-sign set** — The room number, restroom and exit signs every
+  public building needs, governed by codified character heights, spacing,
+  contrast and mounting rules. Shops work from checklists and experience. A
+  set of templates that refuses to compile when a rule is broken depends on
+  the ADA signage rule kit listed as missing — the spec-compliant wayfinding
+  entry point the profile identifies.
+- **Box-truck side graphic** — A fleet graphic three or four metres long, far
+  wider than any roll of film, which installers cut in vertical panels with
+  overlaps so seams shed water and align. Splitting the artwork is done by
+  hand. It depends on the missing panelization with overlap and alignment
+  marks, and would make media width a parameter.
+- **Small script-lettering decal** — Wedding-glass and tumbler decals in thin
+  script at small sizes — the orders where hairline strokes tear and letter
+  counters lift during weeding. Sellers learn the limits by wasting film.
+  Catching this beforehand depends on weedability validation: minimum gap and
+  feature checks at material scale, the profile's first domain-specific gap
+  and the most seller-relevant one.
+
+Sources: heyletsmakestuff.com, cricut.com, smallbiztrends.com, etsy.com,
+  fastsigns.com, speedpro.com, signazon.com, boatus.com, domednumbers.com
+
 ## Top YouTube channels (as of 2026-08-31)
 - [Wrap Institute](https://www.youtube.com/@WrapInstitute) — the industry's on-demand wrap/PPF training platform (4,000+ tutorials per search results); its YouTube channel is the standard reference for install technique.
 - [CK Wraps](https://www.youtube.com/results?search_query=CK+Wraps) (search link) — "The Wrap Channel"; high-quality, detailed 4K wrap tutorials from certified instructors, beginner through advanced.

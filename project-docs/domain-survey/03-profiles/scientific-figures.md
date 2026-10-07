@@ -69,6 +69,72 @@ A methods-section apparatus schematic: labelled components, callout arrows,
 column-width preset, colorblind-safe palette — rebuilt from a published
 paper's figure and diffed for fidelity.
 
+## Project ideas (as of 2026-10-07)
+Tiered by Pathogen skill and readiness. Web-researched; a dated snapshot.
+
+### Beginner — buildable today
+- **Experimental timeline figure** — Almost every animal or clinical methods
+  section carries a timeline: a horizontal axis with day markers, treatment
+  bars and sampling arrows. It is lines, rectangles and short text labels at
+  computed positions, all shipped. Keeping the schedule as an array means that
+  when a reviewer asks for an extra time point, one value changes and every
+  tick and label moves with it.
+- **Multi-panel layout skeleton** — Journals want panels aligned to a common
+  grid with bold A, B and C labels at each top-left corner in a consistent
+  type size. A Pathogen file that draws only the panel frames and labels gives
+  exact alignment and spacing from a few parameters, and the frames then guide
+  placement of plots made elsewhere. It replaces the manual nudging usually
+  done in Illustrator.
+- **Pipeline block diagram** — Computational papers open with a
+  boxes-and-connectors overview of the analysis pipeline. Rounded rectangles,
+  centred labels in a loaded font and straight connector paths are enough, and
+  the source is plain text that lives in the paper's repository. Because
+  output is deterministic, a rebuilt figure is byte-identical unless the
+  source changed, which keeps figure diffs meaningful during revision.
+
+### Intermediate — several features, or one gap
+- **CONSORT participant flow diagram** — Trial reports require a flow chart
+  tracking participants through enrolment, allocation, follow-up and analysis,
+  with a count in every box. The counts change with each data freeze, so
+  holding them as variables and deriving the excluded totals in the figure
+  itself removes a classic source of inconsistency. It needs text, layout
+  arithmetic and connectors together, but nothing that is missing.
+- **Graphical abstract** — Most journals now ask for a single landscape
+  summary image combining a few simplified shapes, arrows and a short
+  take-home line. It uses layers, a restrained colour system, typography and
+  exact vector export together. Pathogen suits abstracts built from geometric
+  schematics; those needing detailed biological icons still belong to
+  BioRender, and the playground preview makes iteration on proportions quick.
+- **Lab figure kit** — Groups reuse the same visual vocabulary across papers:
+  their colour assignments for conditions, their apparatus symbols, their
+  panel-label style. In Pathogen those are functions and style definitions,
+  but sharing them between figure files is where the one gap bites: modules
+  [G]. Until then the kit is copied into each file, which works for one paper
+  and drifts across a thesis.
+
+### Advanced — depends on a named gap
+- **Composite schematic-plus-data figure** — The typical main figure pairs a
+  schematic with two or three simple plots of the measured data, and today
+  that means matplotlib output pasted into Illustrator. Data import [G],
+  specifically CSV into simple plots, is the bolded gap in this profile. With
+  it the schematic, axes and points would share one coordinate system, one
+  font and one source file.
+- **Annotated reaction or equation schematic** — Chemistry and physics
+  schematics label components with formulae such as CO₂, x² or subscripted
+  variable names, and readers judge a figure by whether these are set
+  correctly. Pathogen's text has no notion of sub- or superscripts.
+  Math-notation text [D], which the profile calls the single biggest gate, is
+  the dependency; even a minimal subset would unlock most schematic labelling.
+- **Journal-retarget build** — A rejected paper is resubmitted elsewhere, and
+  every figure must be rebuilt at the new journal's column width with its
+  minimum font size, for example from Nature's 89 mm to Cell's 85 mm.
+  Journal-spec presets as checks [D] is the gap. One preset name per journal,
+  with a warning when any label falls below the minimum, would make
+  retargeting a one-line change.
+
+Sources: research-figure-guide.nature.com, biorender.com, help.biorender.com,
+  engineering.purdue.edu, conceptviz.app, pmc.ncbi.nlm.nih.gov
+
 ## Top YouTube channels (as of 2026-08-31)
 - [Corey Schafer](https://www.youtube.com/@coreyms) — the canonical matplotlib/pandas/NumPy tutorial series; where most researchers actually learn to script their figures.
 - [Andy Stapleton](https://www.youtube.com/@DrAndyStapleton) — academia/research-workflow advice from an ex-chemist (search results cite 220k+ subscribers); covers the tooling and publishing side of research life.

@@ -65,6 +65,72 @@ A chord-family worksheet: tuning + chord set in, twelve-key diagram pages
 with fingering dots out as a TPT-ready PDF pack — reviewed by a guitar
 teacher.
 
+## Project ideas (as of 2026-10-07)
+Tiered by Pathogen skill and readiness. Web-researched; a dated snapshot.
+
+### Beginner — buildable today
+- **Steady-beat chart** — Elementary music teachers project or print beat
+  charts: rows of four identical icons, hearts or a seasonal shape, that
+  children tap along to while a song plays. One icon is a short closed path
+  and Grid repeats it, with rows and beats per row as parameters and colour
+  marking the strong beat. Seasonal sets swap the icon. It needs no notation
+  or theory helpers and is complete at any size.
+- **Weekly practice log** — Private teachers send students home with a
+  practice chart: seven day columns, rows for pieces or scales, a minutes box
+  and a space for the week's goal. It is ruled lines and short text labels
+  laid out with Grid, and the studio name and colours are parameters. The page
+  is used at ordinary letter or A4 print size, so nothing depends on exact
+  dimensions or on music helpers.
+
+### Intermediate — several features, or one gap
+- **Circle-of-fifths poster** — Every theory classroom has one: twelve key
+  names around a ring with relative minors inside and key-signature counts
+  outside. Built today it uses rotation, text placed at computed angles,
+  colour by position and layered rings, with the key names typed in as an
+  array. That is several shipped features working together, and the hand-typed
+  array is exactly what a later theory helper would replace.
+- **Multi-instrument cheat sheet** — Popular bundles put the essential chords
+  for guitar, ukulele, mandolin and banjo on a single reference page each.
+  Writing one chord-box function that takes string count, fret span and a list
+  of dot positions, then calling it per instrument, is a good exercise in
+  parameterised functions and enums. Everything it needs is shipped; the chord
+  shapes are still entered by hand.
+- **Blank TAB and manuscript bundle** — Sellers package blank tablature, staff
+  paper and chord-box pages as an eleven-page printable. Each page is simple
+  ruled lines with a clef or a TAB label. The one gap is multi-page PDF [G]:
+  today each page is a separate export stitched together afterwards, which is
+  workable for one bundle but awkward when every page has letter and A4
+  versions.
+
+### Advanced — depends on a named gap
+- **Blank chord-box sheet** — A common guitar printable is a page of empty
+  chord boxes, offered in 16, 25, 36 and 49-per-page versions. One box is a
+  fret grid with a thick nut line, and the page repeats it by rows and
+  columns, with four-string ukulele variants. The known dependency is the
+  chord/scale diagram kit [D], which owns the fret grid; until it ships each
+  seller hand-builds a box that the later filled-in worksheets cannot share.
+- **Scale maps in twelve keys** — The classic teaching pack shows a pentatonic
+  or major-scale pattern across the neck in every key, with roots highlighted.
+  Typing dot positions for twelve keys and several tunings by hand is where
+  errors creep in. Pitch-class and interval arithmetic helpers [D],
+  transposition as a function, is the gap; with it a tuning and a scale
+  formula generate every page correctly.
+- **Alternate-tuning chord book** — Players in DADGAD or open G want a full
+  chord dictionary for their tuning, and few printed ones exist. Open chord
+  databases already hold the fingerings. Data import of chord databases [G] is
+  the dependency: read the table, filter by tuning, and lay out several
+  hundred diagrams automatically, which is more than any worksheet seller
+  would attempt to draw and check by hand.
+- **Transposing wheel** — A two-disc cardboard wheel, turned to line up a new
+  key against the old, is a favourite make-and-take for band and choir classes
+  with transposing instruments. Both discs are rings of note names offset by
+  an interval. Circle-of-fifths and interval-wheel constructors [D] is the
+  named gap, and a constructor would guarantee the two discs agree with each
+  other.
+
+Sources: tes.com, gumroad.com, payhip.com, ko-fi.com, walmart.com,
+  singplaycreate.com, blessedhomeschool.com
+
 ## Top YouTube channels (as of 2026-08-31)
 - [JustinGuitar](https://www.youtube.com/results?search_query=justinguitar) (search link) — Justin Sandercoe's 1,800+ lesson structured free course; consistently cited as the best beginner-to-advanced pathway on YouTube.
 - [Marty Schwartz](https://www.youtube.com/results?search_query=marty+music+guitar) (search link) — one of the longest-running guitar teachers on YouTube; song and technique lessons with an energetic style.

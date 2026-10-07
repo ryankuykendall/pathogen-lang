@@ -70,6 +70,64 @@ A 24-page "bold and easy" geometric coloring interior: one script, 24 seeds,
 uniform 2 pt lines, KDP-spec pages — plus a contact-sheet preview. Friction
 log becomes the multi-page PDF feature spec.
 
+## Project ideas (as of 2026-10-07)
+Tiered by Pathogen skill and readiness. Web-researched; a dated snapshot.
+
+### Beginner — buildable today
+- **Single mandala page** — The mandala is still the staple of printable
+  coloring pages sold singly on Etsy. One page is rings of a few motifs
+  rotated around a centre, which is transform work, with a seed choosing petal
+  counts and proportions. The output is a single letter-size PDF with bleed
+  and crop marks and identical line weights throughout; change the seed and a
+  different page comes out.
+- **Tessellation pattern page** — Geometric pattern pages, sold in bundles of
+  thirty or forty, are fields of repeating tiles: hexagons, stars,
+  interlocking arcs. A Grid lays out one cell and the loop fills the page,
+  with noise nudging a parameter so the repeat is not mechanical. Every shape
+  closes and every line joins, which is exactly where AI-generated interiors
+  fail review, and the page exports print-ready.
+- **Botanical line-art page** — Leaves, ferns and flower sprays are the other
+  evergreen subject and sit close to the cottagecore niche. A stem drawn as a
+  curve, with leaflets placed along it by transforms and sized by noise, gives
+  a frond; a handful of fronds arranged around the page gives a composition.
+  It is deterministic, so a page a customer liked can be regenerated exactly.
+
+### Intermediate — several features, or one gap
+- **Etsy printable ten-pack** — Sellers list packs of ten or twenty related
+  pages as a zip of PDFs. With one script and ten seeds the pack is coherent
+  by construction, sharing a border, a line weight and a family of motifs.
+  Each page can be exported today, one run at a time; the single gap is CLI
+  batch generation, which would map a seed range to finished files.
+- **Niche motif collection** — Publishers now win with narrow themes such as
+  mushrooms, moths or dark-academia ornament instead of generic mandalas. A
+  niche is a small library of motif functions recombined across pages by Grid,
+  transforms and noise. All of that runs today inside one file. Modules are
+  the gap: a motif library per niche that several books and several sellers'
+  scripts can import instead of copy.
+- **Color-by-number geometric page** — A tessellation in which every region
+  carries a small number and a key maps numbers to colours, popular for
+  children's activity books and classroom packs. Grid gives the regions, a
+  palette picked with harmonies gives the key, and a seeded rule assigns the
+  numbers. The gap is number formatting, needed to print tidy numerals inside
+  the cells and in the key.
+
+### Advanced — depends on a named gap
+- **Complete book interior** — Beyond the art, a publishable interior needs a
+  title page, a copyright page, a this-book-belongs-to page, a pen test page
+  and page numbers kept clear of the gutter. Publishers assemble these by hand
+  in Canva for every title. Page furniture is the named gap, and the
+  opportunity is an interior where front matter and numbering are generated
+  with the pages.
+- **Two editions from one source** — Sellers often release the same designs
+  twice: a detailed edition, and a large-print edition with heavier lines for
+  seniors, children or markers. Redrawing each page at a new weight is the
+  cost today. Line-weight consistency profiles are the gap: map every stroke
+  to an outline and an interior weight per edition, so one script yields both
+  books at exact, uniform weights.
+
+Sources: bookcoverslab.com, gumroad.com, payhip.com, creativemarket.com,
+  fiverr.com, tes.com
+
 ## Top YouTube channels (as of 2026-08-31)
 - [Paul Marles (Self Publishing Central)](https://www.youtube.com/results?search_query=Paul+Marles+KDP) (search link) — the most-cited voice in low/no-content KDP publishing (journals, planners, coloring books, puzzle books); channel walks through the full publish-and-scale workflow.
 - *Thin YouTube presence for channels dedicated specifically to coloring-book publishing; nearest-adjacent coverage is general Amazon KDP / self-publishing channels (Feedspot maintains a 15-channel self-publishing list) and one-off coloring-book KDP tutorial videos, many now AI-workflow-focused.*

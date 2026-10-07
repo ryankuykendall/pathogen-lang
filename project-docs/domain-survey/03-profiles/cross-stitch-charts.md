@@ -69,6 +69,71 @@ A parametric band sampler: motif functions repeated with symmetry, muted
 palette, full chart kit output (symbols, gridlines, legend, skein counts) as a
 print-ready PDF.
 
+## Project ideas (as of 2026-10-07)
+Tiered by Pathogen skill and readiness. Web-researched; a dated snapshot.
+
+### Beginner — buildable today
+- **Mini ornament chart** — Small finishable designs such as snowflakes,
+  hearts and stars, on roughly twenty-by-twenty stitches, sell by the hundred
+  in ornament books and beginner Etsy shops. A snowflake is one wedge mirrored
+  around the centre, so a symmetry rule over a Grid fills the cells. Palette
+  colours shade them and a text symbol sits in each cell. It is a plain chart,
+  without a computed legend.
+- **Repeating border strip** — Greek keys, zigzags, hearts and vines running
+  around samplers and along towel bands. A border is one short repeat tiled
+  along a line, with a corner unit where it turns, which makes it a loop
+  instead of cell-by-cell placement. The Grid holds the cells, two or three
+  palette colours fill them, and the repeat length and count are parameters a
+  designer can change.
+- **Biscornu top** — The eight-cornered pincushion is stitched as two small
+  squares, and its designs are nearly always symmetric in four or eight
+  directions. One triangular wedge of the Grid is drawn and the rest follows
+  by reflection, so a mistake cannot break the symmetry. Layers hold colour
+  cells beneath text symbols, and a limited palette suits the current taste
+  for muted, quickly finished projects.
+
+### Intermediate — several features, or one gap
+- **Alphabet sampler** — Letters A to Z, often each with a small picture,
+  remain a perennial sampler type and the base for personalised name
+  pieces. Every letter is a small cell bitmap written as a motif function and
+  laid out in rows on the Grid, with a border around them. The gap is modules:
+  an alphabet is the motif library a designer most wants to reuse.
+- **Coordinated mini-set** — Three or four small charts meant to hang
+  together, in step with the move toward smaller projects and limited
+  palettes. One motif function is called with different parameters, all
+  drawing from a single palette value, so the set stays coordinated however
+  often it is revised. It combines Grid, palette types, text symbols and
+  layers, and needs nothing that is missing.
+- **Beginner kit chart with stitch counts** — Kit sellers pack a chart with
+  fabric and floss, and need the design size in stitches and the number of
+  stitches in each colour. Both are counts over the Grid that a script can
+  total. Printing them neatly beside the chart is where it stops: number
+  formatting is the single general gap, and the DMC-coded legend still waits
+  on the chart-rendering kit.
+
+### Advanced — depends on a named gap
+- **Blackwork fill sampler** — Blackwork uses repeating line patterns worked
+  in backstitch along the grid's edges instead of filled crosses, and is sold
+  as fill samplers, mini frames and biscornu sets. The fills are pure
+  repeat-and-symmetry geometry, which suits Pathogen well. Backstitch, or
+  line-on-grid, notation is the named gap: lines drawn between cell corners,
+  charted and keyed alongside ordinary stitches.
+- **Pet portrait from a photo** — Custom pet portraits are a standing
+  commission product, and converters turn a photo into a noisy chart with far
+  too many colours. A useful version reduces the image to a dozen floss
+  colours on purpose. DMC and Anchor palette data with nearest-colour mapping
+  is the gap named here, together with image sampling; the palette discipline
+  is what incumbents handle badly.
+- **Full-coverage chart across pages** — Large full-coverage pieces, with
+  every cell stitched, run to hundreds of stitches a side and cannot be read
+  on one sheet. Published charts split them over many pages, with shaded
+  overlap rows and a key showing how the pages join. Multi-page chart
+  splitting with overlap keys is the gap; it would let one Grid of any size
+  become a printable booklet.
+
+Sources: etsy.com, leisurearts.com, needlework-tips-and-techniques.com,
+  woodartsupply.com, gumroad.com
+
 ## Top YouTube channels (as of 2026-08-31)
 - [Peacock & Fig](https://www.youtube.com/channel/UCgmJnzKypmELKswQt2R2U5A) — Dana's tutorial-focused channel: cross stitch, blackwork, and embroidery techniques plus pattern-design behind-the-scenes — the best on-ramp before diving into FlossTube proper.
 - [Cross Stitch the Globe](https://www.youtube.com/channel/UCTyD4_-gnJj7QsmUl-2hhQg) — classic FlossTube format: works-in-progress, finished objects, plans, and hauls.

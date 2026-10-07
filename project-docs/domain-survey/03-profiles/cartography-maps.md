@@ -70,6 +70,69 @@ A hex-crawl campaign map: seeded coastline + ridge hatching + river network
 + numbered hex overlay in one style definition, regenerated at player and
 DM variants — shared to r/mapmaking for reception.
 
+## Project ideas (as of 2026-10-07)
+Tiered by Pathogen skill and readiness. Web-researched; a dated snapshot.
+
+### Beginner — buildable today
+- **Seeded island map** — The first map most worldbuilders draw is a lone
+  island with a wobbly coast and a name. A closed outline displaced by
+  deterministic noise gives the coastline, a few inward offsets give the
+  classic shoreline ripple rings, and text-on-path curves the sea's name
+  around the bay. A different seed is a different island, which makes the idea
+  of generated maps tangible.
+- **Compass rose** — Mapmaking books devote whole tutorials to the compass
+  rose, and every map wants one. It is pure radial geometry: long and short
+  points alternating around a centre, each split into a light and a dark half,
+  with cardinal letters as text. Point counts and lengths are parameters, so a
+  simple four-point rose and an ornate thirty-two-point one share a source.
+- **Border and scale-bar frame** — A map reads as finished once it has a ruled
+  neatline, an alternating black-and-white border band, a scale bar and a
+  title cartouche. All of these are repeated rectangles, offsets of the page
+  edge and a few text labels. Built once with the page size as a parameter,
+  the frame goes around every later map on its own layer.
+
+### Intermediate — several features, or one gap
+- **Dungeon floor plan** — Old-school dungeon maps are rooms and corridors on
+  a square grid with thick walls and hatched solid rock. Rooms unioned with
+  boolean operations give the floor, an outward offset gives the walls, a Grid
+  supplies the squares, and layers hold secret doors and room keys for a
+  referee's copy. It uses several shipped features and needs no terrain
+  generators at all.
+- **Labelled regional map** — A campaign's regional map carries rivers, roads,
+  borders and place names, with river and mountain-range names curving along
+  the features. Noise shapes the coast and the river courses, text-on-path
+  sets the curved names, and layers keep political borders separate from
+  terrain. Drawing rivers by hand rather than from flow logic keeps this
+  inside what is shipped today.
+- **Tunable island generator** — Worldbuilders like to drag controls until a
+  landmass looks right: roughness, number of bays, island count. The program
+  is the seeded island with more parameters exposed. The one gap is parameter
+  sliders in the playground [G], which the profile lists for the fantasy side;
+  until then the values are edited as numbers in the source, which works but
+  loses the playful loop.
+
+### Advanced — depends on a named gap
+- **Hand-inked parchment map** — The look the community prizes is
+  Tolkien-style inked linework, where coasts and mountain strokes wobble
+  slightly as if drawn with a dip pen. Pathogen's lines are mechanically
+  clean. Hand-drawn stroke aesthetics [D], roughen and jitter filters on
+  paths, is what the profile calls the main gap, and it largely decides
+  whether r/mapmaking sees output as a map or as a diagram.
+- **Illustrated town map** — Town maps crowd hundreds of small house, tree and
+  tower symbols along streets, with labels that stay legible over the detail.
+  Placing the symbols is easy with Grid and hash; drawing them and haloing the
+  labels is not provided. Map-icon libraries and label-on-path conventions
+  with halos [D] is the gap, and a shared icon set is what makes a
+  recognisable house style.
+- **Real trail map from OpenStreetMap** — Hiking clubs and race organisers
+  want a printable map of their own route with contours, paths and waypoints
+  from open data. The styling, labelling and print output suit Pathogen well;
+  the data cannot get in. GIS import of GeoJSON or OSM [G] is, in the
+  profile's words, the entire gate, which is why the real-world half is
+  deferred.
+
+Sources: forbiddenplanet.com, tabletopbookshelf.com, divisionplus.itch.io
+
 ## Top YouTube channels (as of 2026-08-31)
 - [WASD20](https://www.youtube.com/results?search_query=wasd20+fantasy+maps) (search link) — Nate's hand-drawn fantasy-map tutorial series (search results cite 278k subscribers); the standard entry point for D&D map making.
 - [Deven Rue](https://www.youtube.com/results?search_query=deven+rue+cartography) (search link) — professional fantasy cartographer (Middle-earth, Skyrim, campaign-world commissions) showing her drawing process.

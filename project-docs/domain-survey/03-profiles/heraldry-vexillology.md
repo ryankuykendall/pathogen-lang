@@ -70,6 +70,72 @@ A blazon starter kit: field divisions + three ordinaries + tincture
 validation as a module, rendering the same arms on shield, banner, and
 roundel — posted to r/heraldry for critique.
 
+## Project ideas (as of 2026-10-07)
+Tiered by Pathogen skill and readiness. Web-researched; a dated snapshot.
+
+### Beginner — buildable today
+- **Exact-ratio national flag set** — Redrawing flags to their official
+  proportions is the entry exercise of vexillology: tricolors, Nordic crosses,
+  cantons with stars. Each is rectangles, polygons and a star at stated
+  fractions of the hoist. In Pathogen the ratio and stripe fractions are named
+  values, so the same source redraws a 2:3 flag at 1:2, and every color comes
+  from one small palette.
+- **Parted-field shield** — The first heraldry drawing: a heater shield parted
+  per pale, per fess or quarterly in two tinctures. Draw the shield outline
+  once, then intersect it with plain rectangles using boolean ops to get each
+  part, filled from a hand-set palette. It teaches that divisions are
+  clipping, the idea the whole domain rests on, using nothing beyond shipped
+  machinery.
+- **Seal-on-a-bedsheet redesign** — Replacing a state or city flag that is
+  just a seal on a blue field is the recurring contest brief on r/vexillology.
+  A good entry is a handful of bold shapes in two or three colors, well within
+  polygons, transforms and a palette. Because the layout is parametric, the
+  designer can post stripe-width and color variants for critique in minutes.
+
+### Intermediate — several features, or one gap
+- **Finalist comparison sheet** — Civic redesign campaigns, like the recent
+  Illinois finalist round, ask the public to compare many candidates side by
+  side. One layout function, a list of palettes and emblem choices, a tiled
+  sheet at identical ratio and a text label under each gives twenty variants
+  on one page. All shipped; reusing the layout functions across campaigns
+  waits on modules, the one general gap.
+- **Ordinaries reference chart** — Heraldry primers open with a chart of the
+  honorable ordinaries: pale, fess, bend, chevron, cross, saltire, chief and
+  bordure. Each is a band or polygon intersected with the shield outline, so
+  the chart is eight boolean operations laid out with captions. It combines
+  boolean ops, transforms, palettes and text, and is the natural teaching page
+  for the blazonry-is-code narrative.
+- **Flag construction sheet** — Official flag specifications are published as
+  construction sheets: the flag drawn in outline with every stripe, canton and
+  star position marked in units of the hoist. Pathogen can draw the flag and
+  its measurement labels from the same named values, so drawing and numbers
+  cannot disagree. It combines geometry, text and transforms, and suits a
+  documentation-loving community that writes style guides.
+
+### Advanced — depends on a named gap
+- **Counterchanged arms** — Arms such as per pale argent and sable, a chevron
+  counterchanged, swap tinctures wherever a charge crosses the division line,
+  an effect admired on r/heraldry and tedious in Inkscape. It depends on
+  counterchange as an operation, a named domain gap. Since the swap is boolean
+  intersection under the hood, Pathogen can offer it as one call that stays
+  correct across shield shapes.
+- **Semé fields and charge arrangements** — Blazons say three roses in chief,
+  a mullet in base, or semé-de-lis for a field strewn with small charges cut
+  at the edge. Rendering those phrases depends on the charge placement
+  conventions listed as a domain gap. Encoding the conventions once gives
+  every later arms correct positions on any shield, which hand-placing traced
+  charges in a vector editor never does.
+- **SCA device submission sheet** — Registering a device with the SCA College
+  of Arms requires a black-and-white line drawing and a matching color
+  emblazon on the kingdom's shield form. Generating both from one description
+  depends on the shield/field shape library and the tincture palette, both
+  domain gaps. Two outputs that cannot drift apart is a practical win for the
+  heralds who check submissions.
+
+Sources: reddit.com, will.illinois.edu, heraldry.sca.org,
+  herald.poore-house.com, herald.atlantia.sca.org, heraldicart.org,
+  crwflags.com
+
 ## Top YouTube channels (as of 2026-08-31)
 - [Vexillographer](https://www.youtube.com/user/vexillographer) — geography and vexillology channel; flag content mixed with broader geo topics.
 - [Voice of Vexillology, Flags & Heraldry](https://www.youtube.com/results?search_query=voice+of+vexillology+flags+heraldry) (search link) — Chris McMaddish's channel covering both flags and heraldry — the rare channel spanning our exact domain pair.

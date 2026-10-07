@@ -68,6 +68,25 @@ every later profile follows.
 
 ## Status log
 
+- **2026-10-07 (project-idea ladders)** — All 50 profiles now carry a
+  **Project ideas (as of 2026-10-07)** section: beginner / intermediate /
+  advanced, 2–4 projects each, every entry a 50–75 word summary of the
+  project and its Pathogen opportunity. Tiers measure Pathogen skill and
+  readiness, not craft difficulty (user decision): beginner is buildable
+  today from the profile's "Pathogen fit today"; intermediate combines
+  shipped features or meets one named `[G]` gap; advanced depends on a named
+  `[D]`/`[G]` gap. Borderline projects sit in the higher tier with their
+  dependency named (user decision): 17 first-pass beginner entries across
+  nine profiles were moved up or replaced on that rule. 450 entries,
+  web-researched across five parallel passes;
+  each `Sources:` line lists the domains drawn on. Sourcing caveats: the
+  passes worked from search-result summaries, not opened pages; a handful of
+  entries rest on the profile's own gap list or on well-known genres rather
+  than a search hit (dataviz unit-dot poster, luthiery slot-depth chart);
+  thin niches carry an italic note (guilloche, kirigami, string art, tattoo
+  flash, PCB badge art, planners). Popularity is not measured — no sales
+  data. `00-method/profile-template.md` updated with the section contract.
+
 - **2026-08-31 (post-synthesis additions)** — (1) `dxf-export-research.md`:
   user direction recorded — declare DXF intent in-language (plausibly riding
   the units-v2 declaration slot) + DXF-native Y-up live preview via a
