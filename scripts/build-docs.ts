@@ -105,6 +105,7 @@ const DOC_FILES: Record<string, string> = {
   'security.md': 'security',
   'publishing.md': 'publishing',
   'exporting.md': 'exporting',
+  'snapshots.md': 'snapshots',
 };
 
 // Fallback title from filename

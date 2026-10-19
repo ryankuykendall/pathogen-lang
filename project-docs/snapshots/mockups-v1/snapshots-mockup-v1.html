@@ -1,0 +1,788 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mockup v1 — Workspace Snapshots: capture, filmstrip, gallery, viewer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baumans&family=DM+Sans:wght@400;500;600&family=Inconsolata:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  /* ===== Real playground tokens (playground/styles/theme.css) ===== */
+  :root {
+    --bg-primary: #f7f0e3; --bg-secondary: #fdf6ed; --bg-tertiary: rgba(28,23,34,0.05); --bg-elevated: #ffffff;
+    --text-primary: #1c1722; --text-secondary: #5a4f6a; --text-tertiary: #9087a0;
+    --border-color: rgba(28,23,34,0.10); --border-subtle: rgba(28,23,34,0.06); --border-strong: rgba(28,23,34,0.18);
+    --accent-color: #c0518e; --accent-hover: #b04680; --accent-subtle: rgba(192,81,142,0.10); --accent-text: #fffaf2;
+    --secondary-accent: #9461c4; --secondary-accent-subtle: rgba(148,97,196,0.16); --secondary-accent-text: #5e3590;
+    --success-color: #10b981; --success-bg: #ecfdf5; --success-border: #a7f3d0;
+    --warning-color: #f59e0b; --warning-bg: #fffbeb; --warning-border: #fde68a;
+    --error-color: #ef4444; --error-bg: #fef2f2; --error-border: #fecaca; --error-text: #dc2626;
+    --info-color: #3b82f6; --info-bg: #eff6ff; --info-border: #bfdbfe;
+    --hover-bg: rgba(0,0,0,0.04); --active-bg: rgba(0,0,0,0.08); --focus-ring: rgba(192,81,142,0.4);
+    --shadow-sm: 0 1px 2px rgba(28,23,34,0.05);
+    --shadow-md: 0 4px 6px -1px rgba(28,23,34,0.07), 0 2px 4px -1px rgba(28,23,34,0.04);
+    --shadow-lg: 0 10px 15px -3px rgba(28,23,34,0.08), 0 4px 6px -2px rgba(28,23,34,0.04);
+    --shadow-xl: 0 20px 25px -5px rgba(28,23,34,0.10), 0 10px 10px -5px rgba(28,23,34,0.04);
+    --radius-sm: 4px; --radius-md: 8px; --radius-lg: 12px; --radius-xl: 16px; --radius-full: 9999px;
+    --font-mono: 'Inconsolata', 'SF Mono', Monaco, monospace;
+    --font-brand: 'Baumans', cursive;
+    --font-body: 'DM Sans', system-ui, sans-serif;
+    --code-keyword: #6d3aa6; --code-fn: #a83d80; --code-num: #d97a6e; --code-comment: #9087a0; --code-str: #5a8a72;
+    --canvas-bg: #f4f4f4; --fs-bg: #f1e9dc;
+    --mock-page: #ece4d6;
+  }
+  [data-theme='dark'] {
+    --bg-primary: #14101c; --bg-secondary: #100c17; --bg-tertiary: rgba(255,250,242,0.05); --bg-elevated: #1a1424;
+    --text-primary: #f6e9da; --text-secondary: #b5a8c4; --text-tertiary: #7a6f8a;
+    --border-color: rgba(246,233,218,0.10); --border-subtle: rgba(246,233,218,0.05); --border-strong: rgba(246,233,218,0.20);
+    --accent-color: #f7b56e; --accent-hover: #ffc585; --accent-subtle: rgba(247,181,110,0.15); --accent-text: #1a1424;
+    --secondary-accent: #c4a4e8; --secondary-accent-subtle: rgba(196,164,232,0.16); --secondary-accent-text: #d4bcef;
+    --success-color: #22c55e; --success-bg: rgba(34,197,94,0.15); --success-border: rgba(34,197,94,0.3);
+    --warning-color: #e0a840; --warning-bg: rgba(224,168,64,0.15); --warning-border: rgba(224,168,64,0.3);
+    --error-color: #ef4444; --error-bg: rgba(239,68,68,0.18); --error-border: rgba(239,68,68,0.5); --error-text: #fcd5d5;
+    --info-color: #3b82f6; --info-bg: rgba(59,130,246,0.15); --info-border: rgba(59,130,246,0.3);
+    --hover-bg: rgba(255,255,255,0.06); --active-bg: rgba(255,255,255,0.1); --focus-ring: rgba(247,181,110,0.4);
+    --shadow-sm: 0 1px 2px rgba(0,0,0,0.3);
+    --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.4), 0 2px 4px -1px rgba(0,0,0,0.3);
+    --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.4), 0 4px 6px -2px rgba(0,0,0,0.3);
+    --shadow-xl: 0 20px 25px -5px rgba(0,0,0,0.5), 0 10px 10px -5px rgba(0,0,0,0.4);
+    --code-keyword: #c4a4e8; --code-fn: #f29ac4; --code-num: #f7b56e; --code-comment: #7a6f8a; --code-str: #9fd1b5;
+    --canvas-bg: #f4f4f4; --fs-bg: #14101c;
+    --mock-page: #0b0811;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body { background: var(--mock-page); color: var(--text-primary); font-family: var(--font-body); font-size: 14px; }
+  button { font-family: inherit; color: inherit; }
+
+  /* ===== Mockup harness (not part of the design) ===== */
+  .harness { position: sticky; top: 0; z-index: 50; display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center;
+    padding: 10px 20px; background: #1c1722; color: #f6e9da; font-size: 13px; }
+  .harness h1 { margin: 0 12px 0 0; font-size: 14px; font-weight: 600; }
+  .harness nav { display: flex; gap: 4px; flex-wrap: wrap; }
+  .harness nav button, .harness .tgl { background: transparent; border: 1px solid rgba(246,233,218,0.2); color: #f6e9da;
+    border-radius: 6px; padding: 4px 10px; cursor: pointer; font-size: 12px; }
+  .harness nav button[aria-pressed='true'] { background: #f6e9da; color: #1c1722; }
+  .harness .spacer { flex: 1; }
+  .notes { max-width: 1240px; margin: 20px auto 0; padding: 0 20px; color: var(--text-secondary); line-height: 1.5; }
+  .notes h2 { color: var(--text-primary); font-size: 18px; margin: 0 0 4px; }
+  .notes p { margin: 4px 0; }
+  .statebar { max-width: 1240px; margin: 10px auto; padding: 0 20px; display: flex; gap: 6px; flex-wrap: wrap; align-items: center; font-size: 12px; color: var(--text-secondary); }
+  .statebar button { border: 1px solid var(--border-strong); background: var(--bg-elevated); border-radius: var(--radius-full); padding: 4px 12px; cursor: pointer; font-size: 12px; }
+  .statebar button[aria-pressed='true'] { background: var(--text-primary); color: var(--bg-primary); border-color: transparent; }
+  .statebar .lbl { font-weight: 600; margin-right: 2px; text-transform: uppercase; letter-spacing: .06em; font-size: 11px; }
+  .statebar .sep { width: 1px; height: 18px; background: var(--border-strong); margin: 0 6px; }
+  .screen { display: none; }
+  .screen.active { display: block; }
+  .frame { max-width: 1240px; margin: 0 auto 40px; padding: 0 20px; }
+  .window { position: relative; border-radius: 12px; overflow: hidden; box-shadow: 0 30px 60px -20px rgba(0,0,0,0.35); border: 1px solid var(--border-color);
+    background: linear-gradient(180deg, var(--bg-secondary), var(--bg-primary)); }
+  .callout { position: absolute; z-index: 40; background: #2563eb; color: #fff; font-size: 11px; font-weight: 600; padding: 3px 8px; border-radius: 999px; box-shadow: 0 2px 6px rgba(0,0,0,.3); pointer-events: none; white-space: nowrap; }
+
+  /* ===== App chrome (faithful to current playground) ===== */
+  .topnav { display: flex; align-items: center; justify-content: space-between; padding: 8px 20px; height: 52px; border-bottom: 1px solid var(--border-subtle); }
+  .brand { font-family: var(--font-brand); font-size: 22px; line-height: 1; }
+  .brand span { color: var(--secondary-accent); }
+  .brand small { display: block; font-family: var(--font-mono); font-size: 9px; color: var(--text-tertiary); letter-spacing: .04em; margin-top: 2px; }
+  .navpill { display: flex; gap: 2px; padding: 4px; border: 1px solid var(--border-color); border-radius: 10px; background: var(--bg-tertiary); }
+  .navpill a { padding: 6px 12px; border-radius: 7px; color: var(--text-secondary); text-decoration: none; font-size: 13px; }
+  .navpill a.on { background: var(--secondary-accent-subtle); color: var(--secondary-accent-text); font-weight: 500; }
+  .navright { display: flex; gap: 8px; align-items: center; }
+  .avatar { width: 30px; height: 30px; border-radius: 50%; background: linear-gradient(135deg, #e16a8f, #6d3aa6); color: #fff; display: grid; place-items: center; font-size: 12px; font-weight: 600; }
+  .ghost-pill { border: 1px solid var(--border-color); border-radius: 999px; padding: 6px 12px; font-size: 13px; background: var(--bg-tertiary); }
+
+  .crumbbar { display: flex; align-items: center; justify-content: space-between; padding: 0 16px; height: 42px; border-bottom: 1px solid var(--border-subtle); }
+  .crumbs { font-size: 13px; color: var(--text-secondary); }
+  .crumbs b { color: var(--text-primary); font-weight: 500; }
+  .controls { display: flex; align-items: center; gap: 6px; position: relative; }
+  .ctl { display: inline-flex; align-items: center; gap: 6px; height: 26px; padding: 0 10px; font-size: 12px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--bg-elevated); cursor: pointer; color: var(--text-primary); }
+  .ctl:hover { background: var(--hover-bg); }
+  .ctl.icon { width: 26px; padding: 0; justify-content: center; }
+  .ctl svg { width: 14px; height: 14px; }
+  .ctl kbd { font-family: var(--font-mono); font-size: 10px; color: var(--text-tertiary); }
+  .ctl.snap { border-color: var(--accent-color); color: var(--accent-color); font-weight: 600; }
+  .ctl.snap:hover { background: var(--accent-subtle); }
+  .ctl.snap[disabled] { border-color: var(--border-color); color: var(--text-tertiary); cursor: not-allowed; background: var(--bg-elevated); font-weight: 500; }
+  .ctl.snap.flash { animation: flash .5s ease; }
+  @keyframes flash { 0% { box-shadow: 0 0 0 0 var(--focus-ring); } 100% { box-shadow: 0 0 0 10px transparent; } }
+  .chip { height: 26px; display: inline-flex; align-items: center; padding: 0 8px; font-family: var(--font-mono); font-size: 11px; border-radius: 4px; }
+  .chip.ok { background: var(--success-bg); color: var(--success-color); border: 1px solid var(--success-border); }
+  .chip.busy { background: var(--info-bg); color: var(--info-color); border: 1px solid var(--info-border); }
+  .chip.err { background: var(--error-bg); color: var(--error-text); border: 1px solid var(--error-border); }
+  .group { display: inline-flex; }
+  .group .ctl { border-radius: 0; }
+  .group .ctl:first-child { border-radius: 4px 0 0 4px; }
+  .group .ctl:last-child { border-radius: 0 4px 4px 0; border-left: none; }
+  .savestate { font-size: 12px; color: var(--text-tertiary); margin-right: 6px; }
+
+  .tooltip { position: absolute; top: 32px; right: 0; z-index: 30; background: #1c1722; color: #f6e9da; font-size: 12px; padding: 6px 9px; border-radius: 6px; width: 240px; line-height: 1.4; box-shadow: var(--shadow-lg); }
+
+  .work { display: grid; grid-template-columns: 1fr 1fr; height: 560px; }
+  .work.with-strip { grid-template-rows: 1fr auto; }
+  .editor { background: var(--bg-secondary); border-right: 2px solid var(--border-color); font-family: var(--font-mono); font-size: 13px; line-height: 20px; padding: 10px 0; overflow: hidden; position: relative; }
+  .editor .ln { display: flex; }
+  .editor .ln i { width: 30px; text-align: right; padding-right: 8px; color: var(--text-tertiary); font-style: normal; }
+  .editor .k { color: var(--code-keyword); } .editor .f { color: var(--code-fn); } .editor .n { color: var(--code-num); } .editor .c { color: var(--code-comment); }
+  .editor .dirty { background: var(--warning-bg); }
+  .preview { position: relative; padding: 18px 22px; display: flex; flex-direction: column; min-height: 0; }
+  .canvas { flex: 1; min-height: 0; background: var(--canvas-bg); border-radius: 4px; display: grid; place-items: center; overflow: hidden; position: relative; border: 1px solid var(--border-subtle); }
+  .canvas svg.art { height: 92%; width: auto; aspect-ratio: 1; box-shadow: 0 1px 3px rgba(0,0,0,.08); }
+  .canvas.compiling svg.art { opacity: .35; filter: blur(1px); }
+  .floater { position: absolute; top: 26px; right: 30px; display: flex; flex-direction: column; gap: 6px; }
+  .round { width: 30px; height: 30px; border-radius: 8px; background: var(--bg-elevated); border: 1px solid var(--border-color); display: grid; place-items: center; box-shadow: var(--shadow-sm); cursor: pointer; color: var(--text-secondary); }
+  .round svg { width: 15px; height: 15px; }
+  .zoom { position: absolute; left: 50%; bottom: 26px; transform: translateX(-50%); display: flex; gap: 14px; align-items: center; padding: 4px 14px; border-radius: 999px; background: var(--bg-elevated); border: 1px solid var(--border-color); font-size: 11px; color: var(--text-secondary); box-shadow: var(--shadow-sm); }
+  .footerbar { grid-column: 1 / -1; display: flex; gap: 18px; align-items: center; padding: 8px 16px; border-top: 1px solid var(--border-subtle); font-size: 11px; letter-spacing: .06em; color: var(--text-secondary); text-transform: uppercase; }
+  .footerbar code { font-family: var(--font-mono); text-transform: none; background: var(--bg-tertiary); padding: 3px 6px; border-radius: 4px; letter-spacing: 0; }
+
+  /* ===== Toast (variant A) ===== */
+  .toast { position: absolute; z-index: 35; display: flex; gap: 12px; align-items: center; padding: 10px 12px 10px 10px; width: 360px;
+    background: var(--bg-elevated); border: 1px solid var(--border-color); border-radius: var(--radius-lg); box-shadow: var(--shadow-xl); animation: rise .25s ease; }
+  @keyframes rise { from { transform: translateY(8px); opacity: 0; } }
+  .toast .thumb { width: 56px; height: 56px; border-radius: 6px; overflow: hidden; flex: none; border: 1px solid var(--border-subtle); background: #fff; }
+  .toast .thumb svg { width: 100%; height: 100%; display: block; }
+  .toast .body { flex: 1; min-width: 0; }
+  .toast .title { font-weight: 600; font-size: 13px; display: flex; align-items: center; gap: 6px; }
+  .toast .title .tick { width: 16px; height: 16px; border-radius: 50%; background: var(--success-color); color: #fff; display: grid; place-items: center; font-size: 10px; }
+  .toast .sub { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+  .toast .sub.warn { color: var(--warning-color); }
+  .toast .acts { display: flex; gap: 10px; margin-top: 6px; font-size: 12px; }
+  .toast .acts a { color: var(--accent-color); text-decoration: none; font-weight: 600; cursor: pointer; }
+  .toast .x { align-self: flex-start; background: none; border: none; color: var(--text-tertiary); cursor: pointer; font-size: 14px; }
+  .toast.err .title .tick { background: var(--error-color); }
+  .toast .note-in { margin-top: 6px; display: flex; gap: 6px; }
+  .toast .note-in input { flex: 1; font: inherit; font-size: 12px; padding: 5px 8px; border: 1px solid var(--border-strong); border-radius: 6px; background: var(--bg-secondary); color: var(--text-primary); }
+  .toast .note-in button { font-size: 12px; border: none; background: var(--accent-color); color: var(--accent-text); border-radius: 6px; padding: 0 10px; cursor: pointer; }
+  .toast .bar { position: absolute; left: 10px; right: 10px; bottom: 0; height: 2px; background: var(--accent-subtle); overflow: hidden; border-radius: 2px; }
+  .toast .bar::after { content: ''; position: absolute; inset: 0; background: var(--accent-color); transform-origin: left; animation: drain 6s linear forwards; }
+  @keyframes drain { to { transform: scaleX(0); } }
+
+  /* ===== Popover (variant B) ===== */
+  .popover { position: absolute; z-index: 35; width: 320px; background: var(--bg-elevated); border: 1px solid var(--border-color); border-radius: var(--radius-lg); box-shadow: var(--shadow-xl); padding: 12px; animation: rise .2s ease; }
+  .popover::before { content: ''; position: absolute; top: -6px; left: 40px; width: 10px; height: 10px; background: var(--bg-elevated); border-left: 1px solid var(--border-color); border-top: 1px solid var(--border-color); transform: rotate(45deg); }
+  .popover .row { display: flex; gap: 10px; }
+  .popover .thumb { width: 72px; height: 72px; border-radius: 6px; overflow: hidden; border: 1px solid var(--border-subtle); flex: none; background: #fff; }
+  .popover .thumb svg { width: 100%; height: 100%; }
+  .popover label { display: block; font-size: 11px; color: var(--text-tertiary); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 3px; }
+  .popover input, .popover textarea { width: 100%; font: inherit; font-size: 13px; padding: 6px 8px; border: 1px solid var(--border-strong); border-radius: 6px; background: var(--bg-secondary); color: var(--text-primary); }
+  .popover textarea { resize: none; height: 46px; margin-top: 8px; }
+  .popover .foot { display: flex; justify-content: space-between; align-items: center; margin-top: 10px; font-size: 12px; color: var(--text-tertiary); }
+  .btn-primary { background: var(--accent-color); color: var(--accent-text); border: none; border-radius: 6px; padding: 6px 14px; font-weight: 600; font-size: 13px; cursor: pointer; }
+  .btn-primary:hover { background: var(--accent-hover); }
+  .btn { background: var(--bg-elevated); border: 1px solid var(--border-strong); border-radius: 6px; padding: 6px 12px; font-size: 13px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
+  .btn:hover { background: var(--hover-bg); }
+  .btn svg { width: 14px; height: 14px; }
+  .btn.danger { color: var(--error-color); }
+
+  /* ===== Filmstrip ===== */
+  .strip { grid-column: 1 / -1; border-top: 1px solid var(--border-color); background: var(--bg-secondary); }
+  .strip-head { display: flex; align-items: center; gap: 10px; padding: 6px 14px; font-size: 12px; cursor: pointer; user-select: none; }
+  .strip-head .caret { transition: transform .15s; display: inline-block; color: var(--text-tertiary); }
+  .strip.collapsed .caret { transform: rotate(-90deg); }
+  .strip-head b { font-weight: 600; }
+  .badge { background: var(--secondary-accent-subtle); color: var(--secondary-accent-text); border-radius: 999px; padding: 1px 8px; font-size: 11px; font-weight: 600; }
+  .strip-head .peek { display: flex; gap: 4px; margin-left: 4px; }
+  .strip-head .peek span { width: 22px; height: 22px; border-radius: 4px; overflow: hidden; border: 1px solid var(--border-subtle); background: #fff; }
+  .strip-head .peek svg { width: 100%; height: 100%; display: block; }
+  .strip:not(.collapsed) .peek { display: none; }
+  .strip-head .right { margin-left: auto; display: flex; gap: 12px; color: var(--text-secondary); }
+  .strip-head .right a { color: var(--accent-color); text-decoration: none; font-weight: 600; }
+  .strip-body { display: flex; gap: 10px; padding: 4px 14px 12px; overflow-x: auto; }
+  .strip.collapsed .strip-body { display: none; }
+  .frame-card { flex: none; width: 104px; cursor: pointer; }
+  .frame-card .img { width: 104px; height: 104px; border-radius: 8px; overflow: hidden; border: 1px solid var(--border-color); background: #fff; position: relative; transition: transform .12s, box-shadow .12s; }
+  .frame-card:hover .img { transform: translateY(-2px); box-shadow: var(--shadow-lg); }
+  .frame-card .img svg { width: 100%; height: 100%; display: block; }
+  .frame-card .meta { font-size: 11px; color: var(--text-tertiary); margin-top: 4px; display: flex; justify-content: space-between; }
+  .frame-card .meta b { color: var(--text-secondary); font-weight: 600; }
+  .frame-card.new .img { outline: 2px solid var(--accent-color); outline-offset: 2px; }
+  .frame-card .notedot { position: absolute; top: 5px; right: 5px; width: 18px; height: 18px; border-radius: 50%; background: rgba(28,23,34,.7); color: #fff; font-size: 10px; display: grid; place-items: center; }
+  .frame-card.stale .img::after { content: 'edited'; position: absolute; left: 5px; bottom: 5px; font-size: 9px; background: var(--warning-color); color: #1c1722; padding: 1px 5px; border-radius: 3px; font-weight: 600; }
+
+  /* ===== Fullscreen ===== */
+  .fs { position: relative; height: 640px; background: var(--fs-bg); display: grid; place-items: center; }
+  .fs .art-wrap { height: 92%; aspect-ratio: 1; background: var(--canvas-bg); box-shadow: 0 0 0 1px rgba(0,0,0,.05); }
+  .fs .art-wrap svg { width: 100%; height: 100%; display: block; }
+  .fs .mini { position: absolute; left: 18px; top: 18px; width: 112px; height: 112px; border-radius: 6px; overflow: hidden; border: 3px solid var(--bg-elevated); box-shadow: var(--shadow-lg); background: #fff; }
+  .fs .mini svg { width: 100%; height: 100%; }
+  .fs .exit { position: absolute; left: 140px; top: 18px; }
+  .fs .chrome-right { position: absolute; right: 18px; top: 18px; display: flex; flex-direction: column; gap: 8px; }
+  .fs .round { background: var(--bg-elevated); }
+  .fs .round.snap { background: var(--accent-color); color: var(--accent-text); border-color: transparent; box-shadow: 0 4px 14px rgba(192,81,142,.35); }
+  [data-theme='dark'] .fs .round.snap { box-shadow: 0 4px 14px rgba(247,181,110,.3); }
+  .fs .round.snap[disabled] { background: var(--bg-elevated); color: var(--text-tertiary); box-shadow: none; border: 1px solid var(--border-color); }
+  .fs .zoom { bottom: 20px; }
+  .fs .count { position: absolute; right: 56px; top: 125px; font-size: 11px; color: var(--text-secondary); background: var(--bg-elevated); border: 1px solid var(--border-color); border-radius: 999px; padding: 2px 8px; }
+  .fs .rail { position: absolute; right: 18px; bottom: 18px; display: flex; gap: 6px; padding: 6px; background: var(--bg-elevated); border: 1px solid var(--border-color); border-radius: 10px; box-shadow: var(--shadow-lg); }
+  .fs .rail span { width: 40px; height: 40px; border-radius: 5px; overflow: hidden; border: 1px solid var(--border-subtle); background: #fff; }
+  .fs .rail span svg { width: 100%; height: 100%; display: block; }
+  .fs .rail span.new { outline: 2px solid var(--accent-color); outline-offset: 1px; }
+  .fs .rail a { align-self: center; font-size: 11px; color: var(--accent-color); text-decoration: none; font-weight: 600; padding: 0 6px; }
+
+  /* ===== Gallery page ===== */
+  .gallery { padding: 22px 28px 30px; min-height: 640px; }
+  .g-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+  .g-head h2 { margin: 0; font-size: 26px; font-weight: 600; letter-spacing: -.01em; }
+  .g-head p { margin: 4px 0 0; color: var(--text-secondary); font-size: 13px; }
+  .g-tools { display: flex; gap: 8px; align-items: center; }
+  .select { display: inline-flex; align-items: center; gap: 8px; border: 1px solid var(--border-strong); border-radius: 6px; padding: 6px 10px; font-size: 13px; background: var(--bg-elevated); }
+  .seg { display: inline-flex; border: 1px solid var(--border-strong); border-radius: 6px; overflow: hidden; }
+  .seg button { border: none; background: var(--bg-elevated); padding: 6px 10px; font-size: 12px; cursor: pointer; }
+  .seg button.on { background: var(--text-primary); color: var(--bg-primary); }
+  .day { margin: 22px 0 10px; font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--text-tertiary); font-weight: 600; display: flex; gap: 10px; align-items: center; }
+  .day::after { content: ''; flex: 1; height: 1px; background: var(--border-subtle); }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px; }
+  .card { background: var(--bg-elevated); border: 1px solid var(--border-color); border-radius: var(--radius-lg); overflow: hidden; cursor: pointer; transition: transform .12s, box-shadow .12s; position: relative; }
+  .card:hover { transform: translateY(-2px); box-shadow: var(--shadow-lg); }
+  .card .img { aspect-ratio: 1; background: #fff; border-bottom: 1px solid var(--border-subtle); }
+  .card .img svg { width: 100%; height: 100%; display: block; }
+  .card .info { padding: 9px 11px 11px; }
+  .card .ws { font-size: 13px; font-weight: 600; display: flex; justify-content: space-between; gap: 8px; }
+  .card .ws span.n { color: var(--text-tertiary); font-weight: 500; font-family: var(--font-mono); font-size: 12px; }
+  .card .note { font-size: 12px; color: var(--text-secondary); margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-height: 16px; }
+  .card .note.empty { color: var(--text-tertiary); font-style: italic; }
+  .card .when { font-size: 11px; color: var(--text-tertiary); margin-top: 4px; display: flex; gap: 6px; align-items: center; }
+  .card .gone { font-size: 10px; border: 1px dashed var(--border-strong); border-radius: 4px; padding: 0 5px; }
+  .card .kebab { position: absolute; top: 8px; right: 8px; width: 26px; height: 26px; border-radius: 6px; background: rgba(255,255,255,.9); border: 1px solid rgba(0,0,0,.08); display: none; place-items: center; color: #1c1722; }
+  .card:hover .kebab { display: grid; }
+  .card .sel { position: absolute; top: 8px; left: 8px; width: 20px; height: 20px; border-radius: 5px; background: rgba(255,255,255,.9); border: 1.5px solid rgba(28,23,34,.35); display: none; }
+  .card:hover .sel { display: block; }
+  .list .row { display: grid; grid-template-columns: 56px 1fr 180px 120px 40px; gap: 14px; align-items: center; padding: 8px 10px; border-bottom: 1px solid var(--border-subtle); font-size: 13px; }
+  .list .row .img { width: 56px; height: 56px; border-radius: 6px; overflow: hidden; border: 1px solid var(--border-subtle); background: #fff; }
+  .list .row .img svg { width: 100%; height: 100%; display: block; }
+  .list .row .t { color: var(--text-tertiary); font-size: 12px; }
+  .empty-state { text-align: center; padding: 70px 20px; color: var(--text-secondary); }
+  .empty-state .icon { width: 64px; height: 64px; margin: 0 auto 14px; border-radius: 16px; background: var(--accent-subtle); color: var(--accent-color); display: grid; place-items: center; }
+  .empty-state h3 { color: var(--text-primary); margin: 0 0 6px; font-size: 18px; }
+  .empty-state p { max-width: 420px; margin: 0 auto; line-height: 1.5; }
+  .kbd { font-family: var(--font-mono); font-size: 11px; border: 1px solid var(--border-strong); border-bottom-width: 2px; border-radius: 4px; padding: 0 5px; background: var(--bg-elevated); }
+  .quota { display: flex; align-items: center; gap: 10px; font-size: 12px; color: var(--text-secondary); }
+  .meter { width: 120px; height: 6px; border-radius: 3px; background: var(--bg-tertiary); overflow: hidden; }
+  .meter i { display: block; height: 100%; background: var(--secondary-accent); }
+  .meter.full i { background: var(--warning-color); }
+
+  /* ===== Viewer modal ===== */
+  .scrim { position: absolute; inset: 0; background: rgba(20,16,28,.55); backdrop-filter: blur(3px); display: grid; place-items: center; z-index: 20; }
+  .viewer { width: min(1100px, 94%); height: 600px; background: var(--bg-elevated); border-radius: var(--radius-xl); box-shadow: var(--shadow-xl); display: grid; grid-template-rows: auto 1fr auto; overflow: hidden; position: relative; }
+  .v-head { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-bottom: 1px solid var(--border-subtle); }
+  .v-head .t { font-weight: 600; font-size: 15px; }
+  .v-head .t small { color: var(--text-tertiary); font-weight: 500; font-family: var(--font-mono); font-size: 12px; margin-left: 6px; }
+  .v-head .m { color: var(--text-tertiary); font-size: 12px; }
+  .v-head .close { margin-left: auto; }
+  .v-body { display: grid; grid-template-columns: 1fr; min-height: 0; position: relative; background: var(--bg-primary); }
+  .v-body.code-open { grid-template-columns: 1fr 1fr; }
+  .mw-preview { position: relative; display: grid; place-items: center; min-height: 0; }
+  .mw-preview .art { height: 88%; aspect-ratio: 1; background: #fff; box-shadow: var(--shadow-md); }
+  .mw-preview .art svg { width: 100%; height: 100%; display: block; }
+  .mw-bar { position: absolute; top: 12px; left: 50%; transform: translateX(-50%); display: flex; gap: 2px; padding: 4px; border-radius: 10px; background: color-mix(in srgb, var(--bg-elevated) 70%, transparent); backdrop-filter: blur(10px); border: 1px solid var(--border-color); box-shadow: var(--shadow-md); }
+  .mw-bar button { border: none; background: transparent; font-size: 12px; padding: 5px 9px; border-radius: 7px; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; color: var(--text-secondary); }
+  .mw-bar button.on { background: var(--secondary-accent-subtle); color: var(--secondary-accent-text); }
+  .mw-bar svg { width: 13px; height: 13px; }
+  .mw-code { border-left: 1px solid var(--border-color); background: var(--bg-secondary); font-family: var(--font-mono); font-size: 12.5px; line-height: 19px; padding: 12px 0; overflow: auto; display: none; }
+  .v-body.code-open .mw-code { display: block; }
+  .mw-code .ln { display: flex; }
+  .mw-code .ln i { width: 30px; text-align: right; padding-right: 8px; color: var(--text-tertiary); font-style: normal; }
+  .mw-code .k { color: var(--code-keyword); } .mw-code .f { color: var(--code-fn); } .mw-code .n { color: var(--code-num); } .mw-code .c { color: var(--code-comment); }
+  .nav-arrow { position: absolute; top: 50%; transform: translateY(-50%); width: 38px; height: 38px; border-radius: 50%; background: var(--bg-elevated); border: 1px solid var(--border-color); box-shadow: var(--shadow-md); display: grid; place-items: center; cursor: pointer; z-index: 3; font-size: 16px; }
+  .nav-arrow.l { left: 14px; } .nav-arrow.r { right: 14px; }
+  .v-body.code-open .nav-arrow.r { right: calc(50% + 14px); }
+  .nocompile { position: absolute; left: 14px; bottom: 12px; font-size: 11px; color: var(--text-tertiary); display: flex; align-items: center; gap: 6px; }
+  .nocompile i { width: 7px; height: 7px; border-radius: 50%; background: var(--success-color); display: inline-block; }
+  .v-foot { display: flex; align-items: center; gap: 8px; padding: 10px 14px; border-top: 1px solid var(--border-subtle); flex-wrap: wrap; }
+  .v-foot .note-field { flex: 1; min-width: 200px; display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-secondary); }
+  .v-foot .note-field input { flex: 1; font: inherit; border: 1px dashed transparent; background: transparent; padding: 5px 6px; border-radius: 6px; color: var(--text-primary); }
+  .v-foot .note-field input:hover, .v-foot .note-field input:focus { border-color: var(--border-strong); background: var(--bg-secondary); outline: none; }
+  .filmstrip-mini { display: flex; gap: 6px; padding: 8px 14px; border-top: 1px solid var(--border-subtle); background: var(--bg-secondary); overflow-x: auto; }
+  .filmstrip-mini span { flex: none; width: 46px; height: 46px; border-radius: 5px; overflow: hidden; border: 1px solid var(--border-subtle); background: #fff; cursor: pointer; opacity: .65; }
+  .filmstrip-mini span.cur { opacity: 1; outline: 2px solid var(--accent-color); outline-offset: 1px; }
+  .filmstrip-mini svg { width: 100%; height: 100%; display: block; }
+  .menu { position: absolute; z-index: 30; background: var(--bg-elevated); border: 1px solid var(--border-color); border-radius: 10px; box-shadow: var(--shadow-xl); padding: 5px; width: 230px; font-size: 13px; }
+  .menu div { padding: 7px 10px; border-radius: 6px; display: flex; justify-content: space-between; cursor: pointer; }
+  .menu div:hover { background: var(--hover-bg); }
+  .menu div small { color: var(--text-tertiary); }
+  .menu hr { border: none; border-top: 1px solid var(--border-subtle); margin: 4px 0; }
+
+  /* ===== Edge states ===== */
+  .edge-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 20px; }
+  .edge { background: linear-gradient(180deg, var(--bg-secondary), var(--bg-primary)); border: 1px solid var(--border-color); border-radius: 12px; padding: 18px; position: relative; min-height: 230px; }
+  .edge h4 { margin: 0 0 4px; font-size: 13px; }
+  .edge > p { margin: 0 0 14px; font-size: 12px; color: var(--text-secondary); }
+  .edge .toast { position: relative; animation: none; }
+</style>
+</head>
+<body>
+
+<div class="harness">
+  <h1>Snapshots — mockup v1</h1>
+  <nav id="screens">
+    <button data-s="capture" aria-pressed="true">1 · Capture</button>
+    <button data-s="fullscreen">2 · Fullscreen</button>
+    <button data-s="strip">3 · Filmstrip</button>
+    <button data-s="gallery">4 · /snapshots</button>
+    <button data-s="viewer">5 · Viewer</button>
+    <button data-s="edge">6 · Edge states</button>
+  </nav>
+  <span class="spacer"></span>
+  <button class="tgl" id="theme">Toggle light / dark</button>
+</div>
+
+<!-- ============ 1. CAPTURE ============ -->
+<section class="screen active" id="s-capture">
+  <div class="notes">
+    <h2>1 · Capture from the workspace</h2>
+    <p>A <b>Snapshot</b> button sits in the breadcrumb bar next to Refresh. It is always visible when you're signed in. Shortcut <span class="kbd">⌘⇧S</span>. Click it to compare the two feedback variants below. The snapshot always pairs the image with the code that <i>rendered</i> it, not unrendered edits in the editor.</p>
+  </div>
+  <div class="statebar" id="cap-states">
+    <span class="lbl">Feedback</span>
+    <button data-v="toast" aria-pressed="true">A · Instant + toast</button>
+    <button data-v="popover">B · Name popover</button>
+    <span class="sep"></span>
+    <span class="lbl">Compile</span>
+    <button data-c="ok" aria-pressed="true">Rendered</button>
+    <button data-c="busy">Compiling</button>
+    <button data-c="stale">Edited since render</button>
+    <button data-c="err">Error</button>
+  </div>
+  <div class="frame"><div class="window" id="cap-window">
+    <div class="topnav">
+      <div class="brand">Pathogen <span>Studio</span><small>built on Pathogen v0.8.0</small></div>
+      <div class="navpill"><a class="on">Workspaces</a><a>Docs</a><a>Explore</a><a>Featured</a><a>Blog</a><a>Preferences</a></div>
+      <div class="navright"><span class="ghost-pill">⌘</span><span class="avatar">RK</span></div>
+    </div>
+    <div class="crumbbar">
+      <div class="crumbs">Workspaces &nbsp;/&nbsp; <b>Scatter Rings</b></div>
+      <div class="controls" id="cap-controls">
+        <span class="chip ok" id="cap-chip">Ready · 0.4s</span>
+        <span class="group"><button class="ctl" title="Re-roll random values">↻ Refresh</button><button class="ctl snap" id="cap-snap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>Snapshot <kbd>⌘⇧S</kbd></button></span>
+        <button class="ctl">Console</button>
+        <button class="ctl">Copy Code</button>
+        <span class="savestate">Saved</span>
+        <button class="ctl icon">⋮</button>
+      </div>
+    </div>
+    <div class="work">
+      <div class="editor" id="cap-editor"></div>
+      <div class="preview">
+        <div class="canvas" id="cap-canvas"></div>
+        <div class="floater"><span class="round" title="Fullscreen">⤢</span></div>
+        <div class="zoom"><span>−</span><span>Fit</span><span>+</span><span>100%</span></div>
+      </div>
+    </div>
+    <div class="footerbar"><span>Viewbox <code>0 0 400 400</code></span><span>BG <code>#ffffff</code></span><span>Grid <code>off</code></span></div>
+  </div></div>
+</section>
+
+<!-- ============ 2. FULLSCREEN ============ -->
+<section class="screen" id="s-fullscreen">
+  <div class="notes">
+    <h2>2 · Fullscreen capture</h2>
+    <p>In fullscreen the camera button joins the right-hand chrome under Layers / Export / Refresh. It is filled with the accent color because it's the main action while iterating. After a capture, a small tray at the bottom right shows the most recent snapshots. Press Refresh then Snapshot repeatedly to see it fill.</p>
+  </div>
+  <div class="statebar" id="fs-states">
+    <span class="lbl">Try it</span>
+    <button id="fs-refresh">↻ Refresh (re-roll)</button>
+    <button id="fs-snap">📷 Snapshot</button>
+    <span class="sep"></span>
+    <span class="lbl">Tray</span>
+    <button data-t="on" aria-pressed="true">Show recent tray</button>
+    <button data-t="off">Toast only</button>
+  </div>
+  <div class="frame"><div class="window">
+    <div class="fs" id="fs-stage">
+      <div class="art-wrap" id="fs-art"></div>
+      <div class="mini" id="fs-mini"></div>
+      <span class="round exit">⤡</span>
+      <div class="chrome-right">
+        <span class="round" title="Layers"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2 2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg></span>
+        <span class="round" title="Export"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg></span>
+        <span class="round" title="Refresh" id="fs-refresh-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-3-6.7L21 8M21 3v5h-5"/></svg></span>
+        <button class="round snap" title="Snapshot (⌘⇧S)" id="fs-snap-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg></button>
+      </div>
+      <div class="zoom"><span>−</span><span>Fit</span><span>+</span><span>100%</span></div>
+      <div class="rail" id="fs-rail" style="display:none"></div>
+    </div>
+  </div></div>
+</section>
+
+<!-- ============ 3. FILMSTRIP ============ -->
+<section class="screen" id="s-strip">
+  <div class="notes">
+    <h2>3 · Workspace filmstrip</h2>
+    <p>A collapsible strip under the editor and preview lists <i>this workspace's</i> snapshots, newest first. When collapsed it's a 32px row with a count and three tiny thumbnails. Clicking a frame opens the viewer (screen 5). <b>View all →</b> goes to <code>/snapshots</code> filtered to this workspace. The ✎ badge marks snapshots with a note.</p>
+  </div>
+  <div class="statebar" id="strip-states">
+    <span class="lbl">Strip</span>
+    <button data-st="open" aria-pressed="true">Expanded</button>
+    <button data-st="closed">Collapsed</button>
+    <button data-st="empty">Empty (first visit)</button>
+  </div>
+  <div class="frame"><div class="window">
+    <div class="crumbbar">
+      <div class="crumbs">Workspaces &nbsp;/&nbsp; <b>Scatter Rings</b></div>
+      <div class="controls"><span class="chip ok">Ready · 0.4s</span><span class="group"><button class="ctl">↻ Refresh</button><button class="ctl snap">📷 Snapshot <kbd>⌘⇧S</kbd></button></span><button class="ctl">Console</button><button class="ctl icon">⋮</button></div>
+    </div>
+    <div class="work with-strip" style="height:640px">
+      <div class="editor" id="strip-editor"></div>
+      <div class="preview"><div class="canvas" id="strip-canvas"></div></div>
+      <div class="strip" id="strip"></div>
+    </div>
+  </div></div>
+</section>
+
+<!-- ============ 4. GALLERY ============ -->
+<section class="screen" id="s-gallery">
+  <div class="notes">
+    <h2>4 · /snapshots — all snapshots</h2>
+    <p>A new top-level page, linked from the Workspaces landing page and the workspace ⋮ menu. Cards are grouped by day and show a pre-rendered PNG thumbnail, so the page loads fast and nothing recompiles. Filter by workspace. A snapshot whose workspace was deleted keeps the old name with a <i>deleted</i> tag, and you can still open it, export it, or start a new workspace from it. Hover a card for the ⋯ menu.</p>
+  </div>
+  <div class="statebar" id="gal-states">
+    <span class="lbl">View</span>
+    <button data-g="grid" aria-pressed="true">Grid</button>
+    <button data-g="list">List</button>
+    <button data-g="filtered">Filtered to one workspace</button>
+    <button data-g="empty">Empty</button>
+    <span class="sep"></span>
+    <button data-g="menu">Card ⋯ menu open</button>
+  </div>
+  <div class="frame"><div class="window">
+    <div class="topnav">
+      <div class="brand">Pathogen <span>Studio</span><small>built on Pathogen v0.8.0</small></div>
+      <div class="navpill"><a class="on">Workspaces</a><a>Docs</a><a>Explore</a><a>Featured</a><a>Blog</a><a>Preferences</a></div>
+      <div class="navright"><span class="avatar">RK</span></div>
+    </div>
+    <div class="gallery" id="gallery"></div>
+  </div></div>
+</section>
+
+<!-- ============ 5. VIEWER ============ -->
+<section class="screen" id="s-viewer">
+  <div class="notes">
+    <h2>5 · Snapshot viewer</h2>
+    <p>Opens over the gallery or the workspace. The body is the existing <code>&lt;mini-workspace&gt;</code> (glass control bar, pan/zoom, code toggle). It loads the <b>stored SVG and code</b>, so nothing is compiled. Use ← / → or the arrows to step through snapshots, and the strip at the bottom to jump. <b>Export…</b> opens the normal Export modal (SVG / PNG / PDF) on this stored image. <b>Start new workspace</b> copies the code into a new workspace. Random values re-roll there, as the note on hover explains.</p>
+  </div>
+  <div class="statebar" id="v-states">
+    <span class="lbl">Code</span>
+    <button data-vc="closed" aria-pressed="true">Code hidden</button>
+    <button data-vc="open">Code open</button>
+    <span class="sep"></span>
+    <button data-vc="fork">Hover “Start new workspace”</button>
+  </div>
+  <div class="frame"><div class="window" style="height:700px">
+    <div class="gallery" id="v-bg" style="filter:saturate(.6)"></div>
+    <div class="scrim">
+      <div class="viewer">
+        <div class="v-head">
+          <span class="t">Scatter Rings <small>#7 of 12</small></span>
+          <span class="m">Oct 19, 1:12 PM · 400 × 400 · 38 KB</span>
+          <span class="close"><button class="ctl icon">✕</button></span>
+        </div>
+        <div class="v-body" id="v-body">
+          <div class="mw-preview">
+            <div class="mw-bar"><button class="on">Preview</button><button id="v-code-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m16 18 6-6-6-6M8 6l-6 6 6 6"/></svg>Code</button><button>⤢</button></div>
+            <div class="art" id="v-art"></div>
+            <div class="nocompile"><i></i>Stored render · no recompile</div>
+          </div>
+          <div class="mw-code" id="v-code"></div>
+          <span class="nav-arrow l">‹</span><span class="nav-arrow r">›</span>
+        </div>
+        <div>
+          <div class="filmstrip-mini" id="v-film"></div>
+          <div class="v-foot" style="position:relative">
+            <div class="note-field">✎ <input value="denser cluster bottom-left — keep this one" aria-label="Note"></div>
+            <button class="btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>Copy code</button>
+            <button class="btn" id="v-fork">＋ Start new workspace</button>
+            <button class="btn danger">Delete</button>
+            <button class="btn-primary">Export… <span style="opacity:.7;font-weight:500">SVG · PNG · PDF</span></button>
+            <div class="tooltip" id="v-fork-tip" style="display:none; top:auto; bottom:48px; right:200px; width:280px">Creates <b>“Scatter Rings (from snapshot #7)”</b> with this code. <br>This program uses <code>randomRange()</code>, so the new workspace will draw a fresh variation. This snapshot keeps the exact image.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div></div>
+</section>
+
+<!-- ============ 6. EDGE ============ -->
+<section class="screen" id="s-edge">
+  <div class="notes">
+    <h2>6 · Edge states</h2>
+    <p>Every failure says what happened and what to do next. Nothing fails silently.</p>
+  </div>
+  <div class="frame"><div class="edge-grid" id="edge"></div></div>
+</section>
+
+<script>
+/* ---------- deterministic "art" so every snapshot looks different ---------- */
+function rng(seed) { let s = seed >>> 0 || 1; return () => (s = (s * 1664525 + 1013904223) >>> 0) / 4294967296; }
+const PALETTES = [
+  ['#1c1722'], ['#c0518e', '#6d3aa6'], ['#e89254', '#1c1722'], ['#3d6b9e', '#5a8a72'], ['#a83d80', '#f7b56e', '#1c1722']
+];
+function art(seed, opts = {}) {
+  const r = rng(seed * 7919 + 13), pal = PALETTES[seed % PALETTES.length];
+  const n = 6 + Math.floor(r() * 7);
+  let s = `<svg class="${opts.cls || ''}" viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg"><rect width="400" height="400" fill="#fff"/>`;
+  for (let i = 0; i < n; i++) {
+    const cx = 40 + r() * 320, cy = 40 + r() * 320, rad = 18 + r() * 34, c = pal[i % pal.length];
+    s += `<circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="${rad.toFixed(1)}" fill="none" stroke="${c}" stroke-width="${(5 + r() * 6).toFixed(1)}"/>`;
+  }
+  if (seed % 3 === 0) { // a flowing ribbon on some
+    let d = `M 20 ${200 + (r() - .5) * 120}`;
+    for (let x = 60; x <= 380; x += 40) d += ` Q ${x - 20} ${80 + r() * 240} ${x} ${120 + r() * 160}`;
+    s += `<path d="${d}" fill="none" stroke="${pal[0]}" stroke-width="2" opacity=".5"/>`;
+  }
+  return s + '</svg>';
+}
+const CODE = [
+  ['k', 'define'], ' ViewBox(', ['n', '0'], ', ', ['n', '0'], ', ', ['n', '400'], ', ', ['n', '400'], ');', '\n',
+  ['c', '// Scatter Rings — re-roll with Refresh, keep the good ones'], '\n',
+  ['k', 'let'], ' count = ', ['f', 'randomRange'], '(', ['n', '6'], ', ', ['n', '12'], ');', '\n',
+  ['k', 'for'], ' (i ', ['k', 'in'], ' ', ['n', '0'], '..count) {', '\n',
+  '  ', ['k', 'let'], ' x = ', ['f', 'randomRange'], '(', ['n', '40'], ', ', ['n', '360'], ');', '\n',
+  '  ', ['k', 'let'], ' y = ', ['f', 'randomRange'], '(', ['n', '40'], ', ', ['n', '360'], ');', '\n',
+  '  ', ['k', 'let'], ' radius = ', ['f', 'randomRange'], '(', ['n', '18'], ', ', ['n', '52'], ');', '\n',
+  '  ', ['f', 'circle'], '(x, y, radius);', '\n',
+  '}', '\n',
+];
+function codeHtml(dirtyLine) {
+  let html = '', line = '', ln = 1;
+  const flush = () => { html += `<div class="ln${ln === dirtyLine ? ' dirty' : ''}"><i>${ln}</i><span>${line || '&nbsp;'}</span></div>`; line = ''; ln++; };
+  for (const tok of CODE) {
+    if (tok === '\n') { flush(); continue; }
+    if (Array.isArray(tok)) line += `<span class="${tok[0]}">${tok[1]}</span>`;
+    else line += tok.replace(/ /g, '&nbsp;');
+  }
+  flush();
+  return html;
+}
+
+/* ---------- harness ---------- */
+document.getElementById('theme').onclick = () => {
+  const el = document.documentElement;
+  el.setAttribute('data-theme', el.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
+};
+function pressGroup(container, attr, val) {
+  container.querySelectorAll(`[${attr}]`).forEach(b => b.setAttribute('aria-pressed', String(b.getAttribute(attr) === val)));
+}
+document.getElementById('screens').onclick = e => {
+  const b = e.target.closest('button'); if (!b) return;
+  pressGroup(e.currentTarget, 'data-s', b.dataset.s);
+  document.querySelectorAll('.screen').forEach(s => s.classList.toggle('active', s.id === 's-' + b.dataset.s));
+};
+
+/* ---------- 1. capture ---------- */
+const cap = { v: 'toast', c: 'ok', seed: 7, n: 7 };
+const capWin = document.getElementById('cap-window');
+function renderCapture() {
+  document.getElementById('cap-editor').innerHTML = codeHtml(cap.c === 'stale' ? 5 : 0);
+  const canvas = document.getElementById('cap-canvas');
+  canvas.innerHTML = art(cap.seed, { cls: 'art' });
+  canvas.classList.toggle('compiling', cap.c === 'busy');
+  const chip = document.getElementById('cap-chip');
+  chip.className = 'chip ' + ({ ok: 'ok', stale: 'ok', busy: 'busy', err: 'err' })[cap.c];
+  chip.textContent = ({ ok: 'Ready · 0.4s', stale: 'Ready · 0.4s', busy: 'Compiling… 00:02', err: '1 error' })[cap.c];
+  const btn = document.getElementById('cap-snap');
+  btn.disabled = cap.c === 'busy' || cap.c === 'err';
+  capWin.querySelectorAll('.toast,.popover,.tooltip,.callout').forEach(n => n.remove());
+  if (btn.disabled) {
+    const tip = document.createElement('div'); tip.className = 'tooltip';
+    tip.innerHTML = cap.c === 'busy' ? 'Snapshot is available when this render finishes, so the image and code always match.' : 'Fix the error first. A snapshot saves the last successful render, and this code has no successful render yet.';
+    tip.style.right = '220px';
+    document.getElementById('cap-controls').appendChild(tip);
+  }
+}
+document.getElementById('cap-states').onclick = e => {
+  const b = e.target.closest('button'); if (!b) return;
+  if (b.dataset.v) { cap.v = b.dataset.v; pressGroup(e.currentTarget, 'data-v', cap.v); }
+  if (b.dataset.c) { cap.c = b.dataset.c; pressGroup(e.currentTarget, 'data-c', cap.c); }
+  renderCapture();
+};
+document.getElementById('cap-snap').onclick = () => {
+  const btn = document.getElementById('cap-snap');
+  btn.classList.remove('flash'); void btn.offsetWidth; btn.classList.add('flash');
+  capWin.querySelectorAll('.toast,.popover').forEach(n => n.remove());
+  cap.n++;
+  if (cap.v === 'toast') {
+    const t = document.createElement('div'); t.className = 'toast';
+    t.style.right = '24px'; t.style.bottom = '60px';
+    const stale = cap.c === 'stale';
+    t.innerHTML = `<div class="thumb">${art(cap.seed)}</div>
+      <div class="body"><div class="title"><span class="tick">✓</span>Snapshot #${cap.n} saved</div>
+      <div class="sub ${stale ? 'warn' : ''}">${stale ? 'Saved the code that drew this image. Your newer edits (line 5) haven’t rendered yet.' : 'Scatter Rings · image + code'}</div>
+      <div class="acts"><a data-a="note">Add note</a><a>View</a><a style="color:var(--text-tertiary)">Undo</a></div></div>
+      <button class="x">✕</button><div class="bar"></div>`;
+    t.querySelector('[data-a=note]').onclick = () => {
+      const acts = t.querySelector('.acts');
+      acts.outerHTML = `<div class="note-in"><input placeholder="What's interesting about this one?" autofocus><button>Save</button></div>`;
+      t.querySelector('.bar').remove(); t.querySelector('input').focus();
+    };
+    t.querySelector('.x').onclick = () => t.remove();
+    capWin.appendChild(t);
+  } else {
+    const p = document.createElement('div'); p.className = 'popover';
+    const rect = btn.getBoundingClientRect(), wr = capWin.getBoundingClientRect();
+    p.style.top = (rect.bottom - wr.top + 10) + 'px'; p.style.left = (rect.left - wr.left - 20) + 'px';
+    p.innerHTML = `<div class="row"><div class="thumb">${art(cap.seed)}</div><div style="flex:1"><label>Name</label><input value="Scatter Rings #${cap.n}"></div></div>
+      <textarea placeholder="Note (optional)"></textarea>
+      <div class="foot"><span><span class="kbd">⏎</span> save · <span class="kbd">esc</span> cancel</span><button class="btn-primary">Save snapshot</button></div>`;
+    p.querySelector('.btn-primary').onclick = () => p.remove();
+    capWin.appendChild(p);
+    p.querySelector('input').select();
+  }
+};
+renderCapture();
+
+/* ---------- 2. fullscreen ---------- */
+const fs = { seed: 21, taken: [], tray: true };
+function renderFs() {
+  document.getElementById('fs-art').innerHTML = art(fs.seed);
+  document.getElementById('fs-mini').innerHTML = art(fs.seed);
+  const rail = document.getElementById('fs-rail');
+  rail.style.display = fs.tray && fs.taken.length ? 'flex' : 'none';
+  rail.innerHTML = fs.taken.slice(-5).reverse().map((s, i) => `<span class="${i === 0 ? 'new' : ''}">${art(s)}</span>`).join('') + `<a>All ${fs.taken.length + 9} →</a>`;
+}
+function fsSnap() {
+  fs.taken.push(fs.seed);
+  const stage = document.getElementById('fs-stage');
+  stage.querySelectorAll('.toast').forEach(n => n.remove());
+  const flash = document.createElement('div');
+  flash.style.cssText = 'position:absolute;inset:0;background:#fff;opacity:.5;pointer-events:none;transition:opacity .35s';
+  stage.appendChild(flash); requestAnimationFrame(() => { flash.style.opacity = 0; setTimeout(() => flash.remove(), 400); });
+  if (!fs.tray) {
+    const t = document.createElement('div'); t.className = 'toast';
+    t.style.right = '66px'; t.style.top = '150px';
+    t.innerHTML = `<div class="thumb">${art(fs.seed)}</div><div class="body"><div class="title"><span class="tick">✓</span>Snapshot #${fs.taken.length + 9} saved</div><div class="acts"><a>Add note</a><a>View</a></div></div><button class="x">✕</button><div class="bar"></div>`;
+    t.querySelector('.x').onclick = () => t.remove();
+    stage.appendChild(t);
+  }
+  renderFs();
+}
+document.getElementById('fs-snap-btn').onclick = fsSnap;
+document.getElementById('fs-snap').onclick = fsSnap;
+document.getElementById('fs-refresh').onclick = document.getElementById('fs-refresh-btn').onclick = () => { fs.seed += 3; renderFs(); };
+document.getElementById('fs-states').addEventListener('click', e => {
+  const b = e.target.closest('[data-t]'); if (!b) return;
+  fs.tray = b.dataset.t === 'on'; pressGroup(e.currentTarget, 'data-t', b.dataset.t); renderFs();
+});
+renderFs();
+
+/* ---------- 3. filmstrip ---------- */
+const stripSeeds = [7, 30, 12, 44, 3, 18, 51, 9, 26, 38, 15, 60];
+const notes = { 30: 1, 44: 1, 9: 1 };
+const ago = ['just now', '2m', '6m', '9m', '14m', '31m', '1h', '1h', '2h', 'yday', 'yday', '3d'];
+function renderStrip(mode) {
+  document.getElementById('strip-editor').innerHTML = codeHtml(0);
+  document.getElementById('strip-canvas').innerHTML = art(7, { cls: 'art' });
+  const el = document.getElementById('strip');
+  el.className = 'strip' + (mode === 'closed' ? ' collapsed' : '');
+  const count = mode === 'empty' ? 0 : stripSeeds.length;
+  const head = `<div class="strip-head"><span class="caret">▾</span><b>Snapshots</b><span class="badge">${count}</span>
+    <span class="peek">${stripSeeds.slice(0, 3).map(s => `<span>${art(s)}</span>`).join('')}</span>
+    <span class="right">${count ? '<span>Newest first</span><a>View all →</a>' : ''}</span></div>`;
+  const body = mode === 'empty'
+    ? `<div class="strip-body" style="color:var(--text-secondary);font-size:12px;padding:10px 14px 16px">No snapshots yet. Press <span class="kbd">⌘⇧S</span> or 📷 Snapshot to save the current image together with the code that drew it.</div>`
+    : `<div class="strip-body">${stripSeeds.map((s, i) => `<div class="frame-card ${i === 0 ? 'new' : ''} ${i === 2 ? 'stale' : ''}"><div class="img">${art(s)}${notes[s] ? '<span class="notedot">✎</span>' : ''}</div><div class="meta"><b>#${12 - i}</b><span>${ago[i]}</span></div></div>`).join('')}</div>`;
+  el.innerHTML = head + body;
+  el.querySelector('.strip-head').onclick = () => renderStrip(el.classList.contains('collapsed') ? 'open' : 'closed');
+}
+document.getElementById('strip-states').onclick = e => {
+  const b = e.target.closest('button'); if (!b) return;
+  pressGroup(e.currentTarget, 'data-st', b.dataset.st); renderStrip(b.dataset.st);
+};
+renderStrip('open');
+
+/* ---------- 4. gallery ---------- */
+const SNAPS = [
+  { ws: 'Scatter Rings', n: 12, seed: 7, note: '', when: '1:31 PM', day: 'Today' },
+  { ws: 'Scatter Rings', n: 11, seed: 30, note: 'denser cluster bottom-left — keep this one', when: '1:29 PM', day: 'Today' },
+  { ws: 'Scatter Rings', n: 10, seed: 12, note: '', when: '1:25 PM', day: 'Today' },
+  { ws: 'Ribbon Study', n: 4, seed: 45, note: 'print candidate (A3)', when: '11:02 AM', day: 'Today' },
+  { ws: 'Ribbon Study', n: 3, seed: 3, note: '', when: '10:58 AM', day: 'Today' },
+  { ws: 'Tide Lines', n: 8, seed: 18, note: 'colors finally right', when: '6:40 PM', day: 'Yesterday' },
+  { ws: 'Tide Lines', n: 7, seed: 51, note: '', when: '6:22 PM', day: 'Yesterday' },
+  { ws: 'Orbit Sketch', n: 2, seed: 9, note: 'before the refactor', when: 'Oct 16', day: 'Earlier', gone: true },
+  { ws: 'Orbit Sketch', n: 1, seed: 26, note: '', when: 'Oct 16', day: 'Earlier', gone: true },
+  { ws: 'Tide Lines', n: 6, seed: 38, note: '', when: 'Oct 15', day: 'Earlier' },
+];
+function cardHtml(s) {
+  return `<div class="card"><span class="sel"></span><span class="kebab">⋯</span><div class="img">${art(s.seed)}</div>
+    <div class="info"><div class="ws">${s.ws}<span class="n">#${s.n}</span></div>
+    <div class="note ${s.note ? '' : 'empty'}">${s.note || 'No note'}</div>
+    <div class="when">${s.when}${s.gone ? '<span class="gone">workspace deleted</span>' : ''}</div></div></div>`;
+}
+function renderGallery(mode, target = 'gallery') {
+  const el = document.getElementById(target);
+  const filtered = mode === 'filtered';
+  const list = filtered ? SNAPS.filter(s => s.ws === 'Scatter Rings') : SNAPS;
+  let html = `<div class="g-head"><div><h2>Snapshots</h2><p>${mode === 'empty' ? '' : `${filtered ? '3 of 248' : '248'} snapshots · images and the code that made them`}</p></div>
+    <div class="g-tools">
+      <span class="quota"><span class="meter"><i style="width:50%"></i></span>248 / 500</span>
+      <span class="select">${filtered ? '<b>Scatter Rings</b> ✕' : 'All workspaces'} ▾</span>
+      <span class="seg"><button class="${mode !== 'list' ? 'on' : ''}">▦</button><button class="${mode === 'list' ? 'on' : ''}">☰</button></span>
+    </div></div>`;
+  if (mode === 'empty') {
+    html += `<div class="empty-state"><div class="icon"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg></div>
+      <h3>No snapshots yet</h3><p>In any workspace, press <b>📷 Snapshot</b> or <span class="kbd">⌘⇧S</span> to keep the image you're looking at together with the code that drew it. Your snapshots collect here, ready to export or to start a new workspace from.</p></div>`;
+  } else if (mode === 'list') {
+    html += `<div class="list" style="margin-top:18px">${list.map(s => `<div class="row"><span class="img">${art(s.seed)}</span><span><b>${s.ws}</b> <span class="t">#${s.n}</span><br><span class="t">${s.note || '—'}</span></span><span class="t">${s.day} · ${s.when}</span><span class="t">${s.gone ? 'workspace deleted' : ''}</span><span>⋯</span></div>`).join('')}</div>`;
+  } else {
+    const days = [...new Set(list.map(s => s.day))];
+    for (const d of days) html += `<div class="day">${d}</div><div class="grid">${list.filter(s => s.day === d).map(cardHtml).join('')}</div>`;
+  }
+  el.innerHTML = html;
+  el.style.position = 'relative';
+  if (mode === 'menu') {
+    const card = el.querySelectorAll('.card')[1];
+    card.querySelector('.kebab').style.display = 'grid';
+    const m = document.createElement('div'); m.className = 'menu';
+    const r = card.getBoundingClientRect(), er = el.getBoundingClientRect();
+    m.style.left = (r.right - er.left - 30) + 'px'; m.style.top = (r.top - er.top + 40) + 'px';
+    m.innerHTML = `<div>Open <small>↵</small></div><div>Export…</div><div>Copy code</div><div>Download SVG</div><div>Start new workspace</div><div>Go to workspace</div><hr><div>Edit note</div><div style="color:var(--error-color)">Delete</div>`;
+    el.appendChild(m);
+  }
+}
+document.getElementById('gal-states').onclick = e => {
+  const b = e.target.closest('button'); if (!b) return;
+  pressGroup(e.currentTarget, 'data-g', b.dataset.g); renderGallery(b.dataset.g);
+};
+renderGallery('grid');
+
+/* ---------- 5. viewer ---------- */
+renderGallery('grid', 'v-bg');
+document.getElementById('v-art').innerHTML = art(30);
+document.getElementById('v-code').innerHTML = codeHtml(0);
+document.getElementById('v-film').innerHTML = stripSeeds.map(s => `<span class="${s === 30 ? 'cur' : ''}" data-seed="${s}">${art(s)}</span>`).join('');
+document.getElementById('v-film').onclick = e => {
+  const sp = e.target.closest('span[data-seed]'); if (!sp) return;
+  document.querySelectorAll('#v-film span').forEach(x => x.classList.toggle('cur', x === sp));
+  document.getElementById('v-art').innerHTML = art(+sp.dataset.seed);
+};
+function setCode(open) { document.getElementById('v-body').classList.toggle('code-open', open); document.getElementById('v-code-btn').classList.toggle('on', open); }
+document.getElementById('v-code-btn').onclick = () => setCode(!document.getElementById('v-body').classList.contains('code-open'));
+document.getElementById('v-states').onclick = e => {
+  const b = e.target.closest('button'); if (!b) return;
+  pressGroup(e.currentTarget, 'data-vc', b.dataset.vc);
+  document.getElementById('v-fork-tip').style.display = b.dataset.vc === 'fork' ? 'block' : 'none';
+  if (b.dataset.vc !== 'fork') setCode(b.dataset.vc === 'open');
+};
+document.getElementById('v-fork').onmouseenter = () => document.getElementById('v-fork-tip').style.display = 'block';
+document.getElementById('v-fork').onmouseleave = () => document.getElementById('v-fork-tip').style.display = 'none';
+
+/* ---------- 6. edge states ---------- */
+const edges = [
+  ['Signed out', 'The button is still visible, so people can find the feature. Clicking it asks you to sign in. Nothing is lost: the render stays on screen.',
+    `<div class="toast" style="width:100%"><div class="thumb">${art(5)}</div><div class="body"><div class="title">Sign in to save snapshots</div><div class="sub">Snapshots are stored in your account so you can open them from any device.</div><div class="acts"><a>Sign in</a><a style="color:var(--text-tertiary)">Not now</a></div></div></div>`],
+  ['Quota reached (500)', 'Says exactly why, and links to where you can free up space.',
+    `<div class="toast err" style="width:100%"><div class="thumb">${art(8)}</div><div class="body"><div class="title"><span class="tick">!</span>Snapshot not saved</div><div class="sub">You have 500 of 500 snapshots. Delete some to make room.</div><div class="acts"><a>Manage snapshots</a></div></div></div>`],
+  ['Upload failed (network)', 'The captured image is held in memory, so Retry doesn’t need a new render.',
+    `<div class="toast err" style="width:100%"><div class="thumb">${art(11)}</div><div class="body"><div class="title"><span class="tick">!</span>Couldn’t reach the server</div><div class="sub">Your snapshot is held here. Retry when you’re back online.</div><div class="acts"><a>Retry</a><a>Download SVG instead</a></div></div></div>`],
+  ['Image too large (> 12 MB)', 'Very dense outputs, e.g. thousands of dashed offsets. Suggests a way around it.',
+    `<div class="toast err" style="width:100%"><div class="thumb">${art(14)}</div><div class="body"><div class="title"><span class="tick">!</span>Snapshot too large (18.4 MB)</div><div class="sub">Snapshots are limited to 12 MB. Try a lower Precision, or export this one directly.</div><div class="acts"><a>Open Export…</a></div></div></div>`],
+  ['Saving (slow connection)', 'Shown only if the upload takes longer than about 600 ms. You can keep working while it saves.',
+    `<div class="toast" style="width:100%"><div class="thumb">${art(17)}</div><div class="body"><div class="title">Saving snapshot…</div><div class="sub">2.1 MB · you can keep editing</div></div></div>`],
+  ['Unsaved workspace (scratch)', 'Snapshots belong to a workspace. In a scratch buffer the first snapshot saves the workspace first.',
+    `<div class="toast" style="width:100%"><div class="thumb">${art(20)}</div><div class="body"><div class="title"><span class="tick">✓</span>Saved as “Untitled 14” + snapshot #1</div><div class="sub">Snapshots need a workspace, so we created one.</div><div class="acts"><a>Rename</a><a>View</a></div></div></div>`],
+];
+document.getElementById('edge').innerHTML = edges.map(([h, p, body]) => `<div class="edge"><h4>${h}</h4><p>${p}</p>${body}</div>`).join('');
+</script>
+</body>
+</html>

@@ -164,6 +164,13 @@ class MemoryD1Statement implements D1PreparedStatement {
         .sort((a, b) => (b.transitioned_at - a.transitioned_at) || (b.id - a.id));
       return (rows[0] ? (rows[0] as unknown as T) : null);
     }
+    // Workspace snapshots (migration 0003): this fake models the table as
+    // always empty. Suites that exercise snapshots use real SQLite
+    // (tests/api/snapshots.test.ts); this keeps workspace reads/deletes in
+    // the other suites working now that they consult the table.
+    if (q === 'select count(*) as c from snapshots where workspace_id = ?') {
+      return { c: 0 } as unknown as T;
+    }
     throw new Error(`MemoryD1: unsupported query: ${this.query}`);
   }
 
@@ -178,6 +185,7 @@ class MemoryD1Statement implements D1PreparedStatement {
         .sort((a, b) => (b.transitioned_at - a.transitioned_at) || (b.id - a.id));
       return { results: rows as unknown as T[] };
     }
+    if (q === 'select id from snapshots where workspace_id = ?') return { results: [] };
     throw new Error(`MemoryD1: unsupported all() query: ${this.query}`);
   }
 
@@ -240,6 +248,7 @@ class MemoryD1Statement implements D1PreparedStatement {
       });
       return { success: true, meta: { changes: 1 } };
     }
+    if (q === 'delete from snapshots where workspace_id = ?') return { success: true, meta: { changes: 0 } };
     throw new Error(`MemoryD1: unsupported run() query: ${this.query}`);
   }
 

@@ -21,6 +21,7 @@ import { readSessionTokenFromRequest, getSessionUserId } from '../auth/session.j
 import { findUserById } from '../auth/users.js';
 import { UserFeature } from '../auth/types.js';
 import { removeFromPublicIndex } from './public-index.js';
+import { countSnapshotsForWorkspace, deleteSnapshotsForWorkspace, routeSnapshotRequest } from './snapshots.js';
 import {
   addToFeatured,
   addToFlaggedUsers,
@@ -229,10 +230,7 @@ async function requirePublishingFeature(request: Request, env: Env): Promise<Res
   }
   const features = computeUserFeatures(user, env);
   if (!features.includes(UserFeature.Publishing)) {
-    return publishingError(
-      'Publishing is not available for this account',
-      'publishing-not-available',
-    );
+    return publishingError('Publishing is not available for this account', 'publishing-not-available');
   }
   return null;
 }
@@ -386,7 +384,15 @@ export const apiHandlers: Record<string, (request: Request, env: Env, ...args: s
       // Thumbnail timestamps now live in the sidecar; the inline fields on the
       // doc are legacy and may be stale, so the sidecar wins.
       const meta = await readThumbMeta(env, workspace.id, workspace);
-      return jsonResponse({ ...workspace, ...meta, publicationState, rereviewPending });
+      // Snapshots are owner-only; the count drives the editor's split
+      // Snapshot button. Other viewers get no count at all.
+      // A D1 failure leaves the count unknown (undefined) instead of failing
+      // the workspace load.
+      const snapshotCount =
+        workspace.userId === userId
+          ? await countSnapshotsForWorkspace(env, workspace.id).catch(() => undefined)
+          : undefined;
+      return jsonResponse({ ...workspace, ...meta, publicationState, rereviewPending, snapshotCount });
     } catch (err) {
       return errorResponse('Failed to load workspace: ' + (err as Error).message, 500);
     }
@@ -547,6 +553,11 @@ export const apiHandlers: Record<string, (request: Request, env: Env, ...args: s
       const workspace: Workspace = JSON.parse(wsJson);
       if (workspace.userId !== userId) return errorResponse('Access denied', 403);
 
+      // Snapshots are deleted with their workspace (docs/snapshots.md). Runs
+      // first: if it throws, the workspace is left intact rather than
+      // deleted with its snapshots orphaned.
+      const deletedSnapshots = await deleteSnapshotsForWorkspace(env, id);
+
       await env.WORKSPACES.delete(`workspace:${id}`);
 
       const workspaceIdsJson = await env.WORKSPACES.get(`user:${userId}:workspaces`);
@@ -572,7 +583,7 @@ export const apiHandlers: Record<string, (request: Request, env: Env, ...args: s
         removeFromFeatured(env, id),
       ]);
 
-      return jsonResponse({ success: true });
+      return jsonResponse({ success: true, deletedSnapshots });
     } catch (err) {
       return errorResponse('Failed to delete workspace: ' + (err as Error).message, 500);
     }
@@ -830,8 +841,7 @@ export const apiHandlers: Record<string, (request: Request, env: Env, ...args: s
 
     const url = new URL(request.url);
     const rawKind = url.searchParams.get('kind');
-    const kind: 'manual' | 'auto' | 'all' =
-      rawKind === 'auto' ? 'auto' : rawKind === 'all' ? 'all' : 'manual';
+    const kind: 'manual' | 'auto' | 'all' = rawKind === 'auto' ? 'auto' : rawKind === 'all' ? 'all' : 'manual';
 
     try {
       const wsJson = await env.WORKSPACES.get(`workspace:${id}`);
@@ -1004,8 +1014,7 @@ export const apiHandlers: Record<string, (request: Request, env: Env, ...args: s
       // approval record, reject preserves the prior one (re-review fail
       // doesn't unpublish; admin must explicitly flag or owner must
       // unpublish to remove from /explore).
-      const queueEntry =
-        (await getReviewQueueEntry(env, id)) || (await getRereviewQueueEntry(env, id));
+      const queueEntry = (await getReviewQueueEntry(env, id)) || (await getRereviewQueueEntry(env, id));
       if (!queueEntry) return errorResponse('No pending submission for this workspace', 404);
 
       const wsJson = await env.WORKSPACES.get(`workspace:${id}`);
@@ -1171,9 +1180,7 @@ export const apiHandlers: Record<string, (request: Request, env: Env, ...args: s
     try {
       const approvals = await listAllApprovals(env);
       // Newest-first by approvedAt.
-      approvals.sort((a, b) =>
-        (b.approvedAt || '') > (a.approvedAt || '') ? 1 : -1,
-      );
+      approvals.sort((a, b) => ((b.approvedAt || '') > (a.approvedAt || '') ? 1 : -1));
       // Approved tab = currently public AND not featured AND not
       // workspace-flagged. Featured workspaces appear on their own tab
       // (disjoint sets — cleaner action buttons per the simplification
@@ -1275,9 +1282,7 @@ export const apiHandlers: Record<string, (request: Request, env: Env, ...args: s
     if (!(await isAdminRequest(request, env))) return errorResponse('Unauthorized', 401);
     try {
       const rejections = await listAllRejections(env);
-      rejections.sort((a, b) =>
-        (b.rejectedAt || '') > (a.rejectedAt || '') ? 1 : -1,
-      );
+      rejections.sort((a, b) => ((b.rejectedAt || '') > (a.rejectedAt || '') ? 1 : -1));
       const entries = await Promise.all(
         rejections.map(async (r) => {
           let name: string | null = null;
@@ -1773,6 +1778,10 @@ export async function handleApiRequest(request: Request, env: Env, apiPath: stri
   if (submitMatch && method === 'POST') {
     return apiHandlers.submitWorkspaceForReview(request, env, submitMatch[1]);
   }
+
+  // ─── Snapshots ────────────────────────────────────────────────────
+  const snapshotResponse = await routeSnapshotRequest(request, env, apiPath);
+  if (snapshotResponse) return snapshotResponse;
 
   // ─── Thumbnails ───────────────────────────────────────────────────
   const thumbUploadMatch = apiPath.match(/^\/workspace\/([^/]+)\/thumbnail$/);

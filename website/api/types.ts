@@ -24,7 +24,16 @@ export interface R2Bucket {
     value: ReadableStream | ArrayBuffer | string,
     options?: { httpMetadata?: { contentType?: string } },
   ): Promise<void>;
-  delete(key: string): Promise<void>;
+  // R2 accepts up to 1000 keys per delete call; batching matters because a
+  // Worker request has a subrequest budget (see deleteSnapshotsForWorkspace).
+  delete(keys: string | string[]): Promise<void>;
+  // Optional in this type only so older test doubles needn't implement it;
+  // the real binding always has it.
+  list?(options?: {
+    prefix?: string;
+    cursor?: string;
+    limit?: number;
+  }): Promise<{ objects: { key: string }[]; truncated: boolean; cursor?: string }>;
 }
 
 export interface D1PreparedStatement {

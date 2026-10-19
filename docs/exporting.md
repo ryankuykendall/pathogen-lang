@@ -8,6 +8,8 @@ Pathogen Studio exports any workspace from a single **Export** dialog — open i
 
 Whatever you see in the dialog's live preview is exactly what downloads: the preview shows your artwork, the optional legend, and the branding line as they will appear in the file.
 
+The same dialog opens from a saved [snapshot](#snapshots-snapshots) (**Export…** on the workspace's snapshots page). It exports the image you captured without recompiling, so random values don't change. The legend lists the snapshot's code.
+
 ## The legend (optional)
 
 A **legend** is a caption card embedded in the export — title, creator, date, description, and the Pathogen source that produced the artwork. It's off by default; flip **Include legend** on to add it.

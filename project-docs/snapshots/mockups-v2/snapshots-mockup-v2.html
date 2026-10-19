@@ -1,0 +1,713 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mockup v2 — Workspace Snapshots: popover capture, ingress, /workspace/:id/snapshots</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baumans&family=DM+Sans:wght@400;500;600&family=Inconsolata:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  /* ===== Real playground tokens (playground/styles/theme.css) ===== */
+  :root {
+    --bg-primary: #f7f0e3; --bg-secondary: #fdf6ed; --bg-tertiary: rgba(28,23,34,0.05); --bg-elevated: #ffffff;
+    --text-primary: #1c1722; --text-secondary: #5a4f6a; --text-tertiary: #9087a0;
+    --border-color: rgba(28,23,34,0.10); --border-subtle: rgba(28,23,34,0.06); --border-strong: rgba(28,23,34,0.18);
+    --accent-color: #c0518e; --accent-hover: #b04680; --accent-subtle: rgba(192,81,142,0.10); --accent-text: #fffaf2;
+    --secondary-accent: #9461c4; --secondary-accent-subtle: rgba(148,97,196,0.16); --secondary-accent-text: #5e3590;
+    --success-color: #10b981; --success-bg: #ecfdf5; --success-border: #a7f3d0;
+    --warning-color: #f59e0b; --warning-bg: #fffbeb; --warning-border: #fde68a;
+    --error-color: #ef4444; --error-bg: #fef2f2; --error-border: #fecaca; --error-text: #dc2626;
+    --info-color: #3b82f6; --info-bg: #eff6ff; --info-border: #bfdbfe;
+    --hover-bg: rgba(0,0,0,0.04); --active-bg: rgba(0,0,0,0.08); --focus-ring: rgba(192,81,142,0.4);
+    --shadow-sm: 0 1px 2px rgba(28,23,34,0.05);
+    --shadow-md: 0 4px 6px -1px rgba(28,23,34,0.07), 0 2px 4px -1px rgba(28,23,34,0.04);
+    --shadow-lg: 0 10px 15px -3px rgba(28,23,34,0.08), 0 4px 6px -2px rgba(28,23,34,0.04);
+    --shadow-xl: 0 20px 25px -5px rgba(28,23,34,0.10), 0 10px 10px -5px rgba(28,23,34,0.04);
+    --radius-sm: 4px; --radius-md: 8px; --radius-lg: 12px; --radius-xl: 16px;
+    --font-mono: 'Inconsolata', 'SF Mono', Monaco, monospace;
+    --font-brand: 'Baumans', cursive;
+    --font-body: 'DM Sans', system-ui, sans-serif;
+    --code-keyword: #6d3aa6; --code-fn: #a83d80; --code-num: #d97a6e; --code-comment: #9087a0;
+    --canvas-bg: #f4f4f4; --fs-bg: #f1e9dc; --mock-page: #ece4d6;
+  }
+  [data-theme='dark'] {
+    --bg-primary: #14101c; --bg-secondary: #100c17; --bg-tertiary: rgba(255,250,242,0.05); --bg-elevated: #1a1424;
+    --text-primary: #f6e9da; --text-secondary: #b5a8c4; --text-tertiary: #7a6f8a;
+    --border-color: rgba(246,233,218,0.10); --border-subtle: rgba(246,233,218,0.05); --border-strong: rgba(246,233,218,0.20);
+    --accent-color: #f7b56e; --accent-hover: #ffc585; --accent-subtle: rgba(247,181,110,0.15); --accent-text: #1a1424;
+    --secondary-accent: #c4a4e8; --secondary-accent-subtle: rgba(196,164,232,0.16); --secondary-accent-text: #d4bcef;
+    --success-color: #22c55e; --success-bg: rgba(34,197,94,0.15); --success-border: rgba(34,197,94,0.3);
+    --warning-color: #e0a840; --warning-bg: rgba(224,168,64,0.15); --warning-border: rgba(224,168,64,0.3);
+    --error-color: #ef4444; --error-bg: rgba(239,68,68,0.18); --error-border: rgba(239,68,68,0.5); --error-text: #fcd5d5;
+    --info-color: #3b82f6; --info-bg: rgba(59,130,246,0.15); --info-border: rgba(59,130,246,0.3);
+    --hover-bg: rgba(255,255,255,0.06); --active-bg: rgba(255,255,255,0.1); --focus-ring: rgba(247,181,110,0.4);
+    --shadow-sm: 0 1px 2px rgba(0,0,0,0.3);
+    --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.4), 0 2px 4px -1px rgba(0,0,0,0.3);
+    --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.4), 0 4px 6px -2px rgba(0,0,0,0.3);
+    --shadow-xl: 0 20px 25px -5px rgba(0,0,0,0.5), 0 10px 10px -5px rgba(0,0,0,0.4);
+    --code-keyword: #c4a4e8; --code-fn: #f29ac4; --code-num: #f7b56e; --code-comment: #7a6f8a;
+    --canvas-bg: #f4f4f4; --fs-bg: #14101c; --mock-page: #0b0811;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body { background: var(--mock-page); color: var(--text-primary); font-family: var(--font-body); font-size: 14px; }
+  button { font-family: inherit; color: inherit; }
+  code { font-family: var(--font-mono); }
+
+  /* ===== Mockup harness ===== */
+  .harness { position: sticky; top: 0; z-index: 50; display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; padding: 10px 20px; background: #1c1722; color: #f6e9da; font-size: 13px; }
+  .harness h1 { margin: 0 12px 0 0; font-size: 14px; font-weight: 600; }
+  .harness nav { display: flex; gap: 4px; flex-wrap: wrap; }
+  .harness nav button, .harness .tgl { background: transparent; border: 1px solid rgba(246,233,218,0.2); color: #f6e9da; border-radius: 6px; padding: 4px 10px; cursor: pointer; font-size: 12px; }
+  .harness nav button[aria-pressed='true'] { background: #f6e9da; color: #1c1722; }
+  .harness .spacer { flex: 1; }
+  .notes { max-width: 1240px; margin: 20px auto 0; padding: 0 20px; color: var(--text-secondary); line-height: 1.5; }
+  .notes h2 { color: var(--text-primary); font-size: 18px; margin: 0 0 4px; }
+  .notes p { margin: 4px 0; }
+  .notes .changed { display: inline-block; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: #fff; background: #2563eb; border-radius: 4px; padding: 1px 6px; margin-right: 6px; }
+  .statebar { max-width: 1240px; margin: 10px auto; padding: 0 20px; display: flex; gap: 6px; flex-wrap: wrap; align-items: center; font-size: 12px; color: var(--text-secondary); }
+  .statebar button { border: 1px solid var(--border-strong); background: var(--bg-elevated); border-radius: 999px; padding: 4px 12px; cursor: pointer; font-size: 12px; }
+  .statebar button[aria-pressed='true'] { background: var(--text-primary); color: var(--bg-primary); border-color: transparent; }
+  .statebar .lbl { font-weight: 600; text-transform: uppercase; letter-spacing: .06em; font-size: 11px; }
+  .statebar .sep { width: 1px; height: 18px; background: var(--border-strong); margin: 0 6px; }
+  .screen { display: none; }
+  .screen.active { display: block; }
+  .frame { max-width: 1240px; margin: 0 auto 40px; padding: 0 20px; }
+  .window { position: relative; border-radius: 12px; overflow: hidden; box-shadow: 0 30px 60px -20px rgba(0,0,0,0.35); border: 1px solid var(--border-color); background: linear-gradient(180deg, var(--bg-secondary), var(--bg-primary)); }
+
+  /* ===== App chrome ===== */
+  .topnav { display: flex; align-items: center; justify-content: space-between; padding: 8px 20px; height: 52px; border-bottom: 1px solid var(--border-subtle); }
+  .brand { font-family: var(--font-brand); font-size: 22px; line-height: 1; }
+  .brand span { color: var(--secondary-accent); }
+  .brand small { display: block; font-family: var(--font-mono); font-size: 9px; color: var(--text-tertiary); letter-spacing: .04em; margin-top: 2px; }
+  .navpill { display: flex; gap: 2px; padding: 4px; border: 1px solid var(--border-color); border-radius: 10px; background: var(--bg-tertiary); }
+  .navpill a { padding: 6px 12px; border-radius: 7px; color: var(--text-secondary); text-decoration: none; font-size: 13px; }
+  .navpill a.on { background: var(--secondary-accent-subtle); color: var(--secondary-accent-text); font-weight: 500; }
+  .avatar { width: 30px; height: 30px; border-radius: 50%; background: linear-gradient(135deg, #e16a8f, #6d3aa6); color: #fff; display: grid; place-items: center; font-size: 12px; font-weight: 600; }
+  .crumbbar { display: flex; align-items: center; justify-content: space-between; padding: 0 16px; height: 42px; border-bottom: 1px solid var(--border-subtle); position: relative; }
+  .crumbs { font-size: 13px; color: var(--text-secondary); display: flex; align-items: center; gap: 6px; }
+  .crumbs b { color: var(--text-primary); font-weight: 500; }
+  .crumbs a { color: var(--text-secondary); text-decoration: none; cursor: pointer; }
+  .crumbs a:hover { color: var(--text-primary); text-decoration: underline; }
+  .crumb-chip { display: inline-flex; align-items: center; gap: 5px; height: 22px; padding: 0 8px; border-radius: 999px; border: 1px solid var(--border-color); background: var(--bg-tertiary); font-size: 12px; color: var(--text-secondary); cursor: pointer; margin-left: 4px; }
+  .crumb-chip:hover { background: var(--hover-bg); color: var(--text-primary); }
+  .crumb-chip svg { width: 12px; height: 12px; }
+  .controls { display: flex; align-items: center; gap: 6px; position: relative; }
+  .ctl { display: inline-flex; align-items: center; gap: 6px; height: 26px; padding: 0 10px; font-size: 12px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--bg-elevated); cursor: pointer; color: var(--text-primary); position: relative; }
+  .ctl:hover { background: var(--hover-bg); }
+  .ctl[disabled] { color: var(--text-tertiary); cursor: not-allowed; }
+  .ctl[disabled]:hover { background: var(--bg-elevated); }
+  .ctl.icon { width: 26px; padding: 0; justify-content: center; }
+  .ctl svg { width: 14px; height: 14px; }
+  .ctl.pressed { background: var(--active-bg); }
+  .ctl .count { font-size: 11px; color: var(--text-tertiary); font-variant-numeric: tabular-nums; }
+  .group { display: inline-flex; }
+  .group .ctl { border-radius: 0; }
+  .group .ctl:first-child { border-radius: 4px 0 0 4px; }
+  .group .ctl:last-child { border-radius: 0 4px 4px 0; border-left: none; }
+  .chip { height: 26px; display: inline-flex; align-items: center; padding: 0 8px; font-family: var(--font-mono); font-size: 11px; border-radius: 4px; }
+  .chip.ok { background: var(--success-bg); color: var(--success-color); border: 1px solid var(--success-border); }
+  .chip.busy { background: var(--info-bg); color: var(--info-color); border: 1px solid var(--info-border); }
+  .chip.err { background: var(--error-bg); color: var(--error-text); border: 1px solid var(--error-border); }
+  .savestate { font-size: 12px; color: var(--text-tertiary); margin-right: 6px; }
+  .tooltip { position: absolute; z-index: 30; background: #1c1722; color: #f6e9da; font-size: 12px; padding: 6px 9px; border-radius: 6px; width: 250px; line-height: 1.4; box-shadow: var(--shadow-lg); }
+  [data-theme='dark'] .tooltip { background: #f6e9da; color: #1c1722; }
+  .kbd { font-family: var(--font-mono); font-size: 11px; border: 1px solid var(--border-strong); border-bottom-width: 2px; border-radius: 4px; padding: 0 5px; background: var(--bg-elevated); }
+
+  .work { display: grid; grid-template-columns: 1fr 1fr; height: 560px; }
+  .editor { background: var(--bg-secondary); border-right: 2px solid var(--border-color); font-family: var(--font-mono); font-size: 13px; line-height: 20px; padding: 10px 0; overflow: hidden; }
+  .ln { display: flex; }
+  .ln i { width: 30px; text-align: right; padding-right: 8px; color: var(--text-tertiary); font-style: normal; flex: none; }
+  .k { color: var(--code-keyword); } .f { color: var(--code-fn); } .n { color: var(--code-num); } .c { color: var(--code-comment); }
+  .ln.dirty { background: var(--warning-bg); }
+  .preview { position: relative; padding: 18px 22px; display: flex; flex-direction: column; min-height: 0; }
+  .canvas { flex: 1; min-height: 0; background: var(--canvas-bg); border-radius: 4px; display: grid; place-items: center; overflow: hidden; border: 1px solid var(--border-subtle); }
+  .canvas svg { height: 92%; width: auto; aspect-ratio: 1; box-shadow: 0 1px 3px rgba(0,0,0,.08); }
+  .canvas.compiling svg { opacity: .35; filter: blur(1px); }
+  .round { width: 30px; height: 30px; border-radius: 8px; background: var(--bg-elevated); border: 1px solid var(--border-color); display: grid; place-items: center; box-shadow: var(--shadow-sm); cursor: pointer; color: var(--text-secondary); padding: 0; position: relative; }
+  .round:hover { background: var(--hover-bg); color: var(--text-primary); }
+  .round svg { width: 15px; height: 15px; }
+  .round[disabled] { color: var(--text-tertiary); opacity: .55; cursor: not-allowed; }
+  .round.pressed { background: var(--active-bg); color: var(--text-primary); }
+  .floater { position: absolute; top: 26px; right: 30px; }
+  .zoom { position: absolute; left: 50%; bottom: 26px; transform: translateX(-50%); display: flex; gap: 14px; align-items: center; padding: 4px 14px; border-radius: 999px; background: var(--bg-elevated); border: 1px solid var(--border-color); font-size: 11px; color: var(--text-secondary); box-shadow: var(--shadow-sm); }
+  .footerbar { display: flex; gap: 18px; align-items: center; padding: 8px 16px; border-top: 1px solid var(--border-subtle); font-size: 11px; letter-spacing: .06em; color: var(--text-secondary); text-transform: uppercase; }
+  .footerbar code { text-transform: none; background: var(--bg-tertiary); padding: 3px 6px; border-radius: 4px; letter-spacing: 0; }
+
+  /* ===== Capture popover ===== */
+  .popover { position: absolute; z-index: 35; width: 330px; background: var(--bg-elevated); border: 1px solid var(--border-color); border-radius: var(--radius-lg); box-shadow: var(--shadow-xl); padding: 12px; animation: rise .18s ease; }
+  @keyframes rise { from { transform: translateY(6px); opacity: 0; } }
+  .popover::before { content: ''; position: absolute; width: 10px; height: 10px; background: var(--bg-elevated); transform: rotate(45deg); }
+  .popover.down::before { top: -6px; left: var(--arrow, 40px); border-left: 1px solid var(--border-color); border-top: 1px solid var(--border-color); }
+  .popover.left::before { right: -6px; top: var(--arrow, 18px); border-right: 1px solid var(--border-color); border-top: 1px solid var(--border-color); }
+  .popover .row { display: flex; gap: 10px; }
+  .popover .thumb { width: 76px; height: 76px; border-radius: 6px; overflow: hidden; border: 1px solid var(--border-subtle); flex: none; background: #fff; }
+  .popover .thumb svg { width: 100%; height: 100%; display: block; }
+  .popover label { display: block; font-size: 11px; color: var(--text-tertiary); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 3px; }
+  .popover input, .popover textarea { width: 100%; font: inherit; font-size: 13px; padding: 6px 8px; border: 1px solid var(--border-strong); border-radius: 6px; background: var(--bg-secondary); color: var(--text-primary); }
+  .popover input:focus, .popover textarea:focus { outline: 2px solid var(--focus-ring); outline-offset: 0; }
+  .popover textarea { resize: none; height: 44px; margin-top: 8px; }
+  .popover .warn { margin-top: 8px; font-size: 12px; line-height: 1.4; padding: 6px 8px; border-radius: 6px; background: var(--warning-bg); border: 1px solid var(--warning-border); color: var(--text-primary); }
+  .popover .err { margin-top: 8px; font-size: 12px; line-height: 1.4; padding: 6px 8px; border-radius: 6px; background: var(--error-bg); border: 1px solid var(--error-border); color: var(--text-primary); }
+  .popover .foot { display: flex; justify-content: space-between; align-items: center; margin-top: 10px; font-size: 12px; color: var(--text-tertiary); gap: 8px; }
+  .popover .foot a { color: var(--text-secondary); text-decoration: none; cursor: pointer; }
+  .popover .foot a:hover { color: var(--text-primary); text-decoration: underline; }
+  .popover .done { display: flex; gap: 10px; align-items: center; }
+  .popover .done .tick { width: 18px; height: 18px; border-radius: 50%; background: var(--success-color); color: #fff; display: inline-grid; place-items: center; font-size: 11px; margin-right: 6px; }
+  .popover .done .t { font-weight: 600; font-size: 13px; display: flex; align-items: center; }
+  .popover .done .s { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+  .popover .done .links { display: flex; gap: 12px; margin-top: 6px; font-size: 12px; }
+  .popover .done .links a { color: var(--text-primary); font-weight: 600; text-decoration: none; cursor: pointer; }
+  .popover .done .links a:hover { text-decoration: underline; }
+  .popover .progress { height: 3px; border-radius: 2px; background: var(--bg-tertiary); overflow: hidden; margin-top: 10px; }
+  .popover .progress i { display: block; height: 100%; width: 45%; background: var(--text-secondary); animation: indet 1.1s ease-in-out infinite; }
+  @keyframes indet { from { transform: translateX(-100%); } to { transform: translateX(230%); } }
+  .btn-primary { background: var(--accent-color); color: var(--accent-text); border: none; border-radius: 6px; padding: 6px 14px; font-weight: 600; font-size: 13px; cursor: pointer; white-space: nowrap; }
+  .btn-primary:hover { background: var(--accent-hover); }
+  .btn { background: var(--bg-elevated); border: 1px solid var(--border-strong); border-radius: 6px; padding: 6px 12px; font-size: 13px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+  .btn:hover { background: var(--hover-bg); }
+  .btn svg { width: 14px; height: 14px; }
+  .btn.danger { color: var(--error-color); }
+
+  /* ===== Fullscreen ===== */
+  .fs { position: relative; height: 640px; background: var(--fs-bg); display: grid; place-items: center; }
+  .fs .art-wrap { height: 92%; aspect-ratio: 1; background: var(--canvas-bg); }
+  .fs .art-wrap svg { width: 100%; height: 100%; display: block; }
+  .fs .mini { position: absolute; left: 18px; top: 18px; width: 112px; height: 112px; border-radius: 6px; overflow: hidden; border: 3px solid var(--bg-elevated); box-shadow: var(--shadow-lg); background: #fff; }
+  .fs .mini svg { width: 100%; height: 100%; }
+  .fs .exit { position: absolute; left: 140px; top: 18px; }
+  .fs .chrome-right { position: absolute; right: 18px; top: 18px; display: flex; flex-direction: column; gap: 8px; }
+  .fs .zoom { bottom: 20px; }
+  .fs .rail { position: absolute; right: 18px; bottom: 18px; display: flex; gap: 6px; padding: 6px; background: var(--bg-elevated); border: 1px solid var(--border-color); border-radius: 10px; box-shadow: var(--shadow-lg); animation: rise .2s ease; }
+  .fs .rail span { width: 40px; height: 40px; border-radius: 5px; overflow: hidden; border: 1px solid var(--border-subtle); background: #fff; }
+  .fs .rail span svg { width: 100%; height: 100%; display: block; }
+  .fs .rail span.new { outline: 2px solid var(--text-secondary); outline-offset: 1px; }
+  .fs .rail a { align-self: center; font-size: 11px; color: var(--text-primary); text-decoration: none; font-weight: 600; padding: 0 6px; cursor: pointer; }
+
+  /* ===== Ingress comparison ===== */
+  .ingress-grid { display: grid; gap: 22px; }
+  .ingress-card { border: 1px solid var(--border-color); border-radius: 12px; overflow: visible; background: linear-gradient(180deg, var(--bg-secondary), var(--bg-primary)); position: relative; }
+  .ingress-card header { padding: 12px 16px 4px; }
+  .ingress-card header h3 { margin: 0; font-size: 14px; }
+  .ingress-card header p { margin: 2px 0 0; font-size: 12px; color: var(--text-secondary); line-height: 1.45; }
+  .ingress-card .crumbbar { border-top: 1px solid var(--border-subtle); margin-top: 10px; }
+  .ingress-card .pad { height: 210px; position: relative; }
+  .menu { position: absolute; z-index: 30; background: var(--bg-elevated); border: 1px solid var(--border-color); border-radius: 10px; box-shadow: var(--shadow-xl); padding: 5px; width: 240px; font-size: 13px; }
+  .menu div { padding: 7px 10px; border-radius: 6px; display: flex; justify-content: space-between; gap: 10px; cursor: pointer; }
+  .menu div:hover, .menu div.hl { background: var(--hover-bg); }
+  .menu div small { color: var(--text-tertiary); }
+  .menu hr { border: none; border-top: 1px solid var(--border-subtle); margin: 4px 0; }
+  .menu .peek { display: flex; gap: 4px; padding: 2px 10px 8px; justify-content: flex-start; cursor: default; }
+  .menu .peek:hover { background: none; }
+  .menu .peek span { width: 34px; height: 34px; border-radius: 4px; overflow: hidden; border: 1px solid var(--border-subtle); background: #fff; }
+  .menu .peek svg { width: 100%; height: 100%; display: block; }
+  .pros { display: flex; gap: 18px; padding: 10px 16px 14px; font-size: 12px; color: var(--text-secondary); border-top: 1px solid var(--border-subtle); }
+  .pros b { color: var(--text-primary); }
+
+  /* ===== Snapshots page ===== */
+  .snap-page { display: grid; grid-template-rows: minmax(0,1fr) auto auto; grid-template-columns: minmax(0,1fr); height: 720px; }
+  .stage { position: relative; display: grid; grid-template-columns: 1fr; min-height: 0; padding: 14px 18px 10px; gap: 14px; }
+  .stage.code-open { grid-template-columns: 1fr 1fr; }
+  .mw { position: relative; min-height: 0; border-radius: 12px; background: var(--canvas-bg); border: 1px solid var(--border-color); display: grid; place-items: center; overflow: hidden; }
+  .mw .art { height: 90%; aspect-ratio: 1; background: #fff; box-shadow: var(--shadow-md); }
+  .mw .art svg { width: 100%; height: 100%; display: block; }
+  .mw-bar { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); display: flex; gap: 2px; padding: 4px; border-radius: 10px; background: color-mix(in srgb, var(--bg-elevated) 72%, transparent); backdrop-filter: blur(10px); border: 1px solid var(--border-color); box-shadow: var(--shadow-md); z-index: 2; }
+  .mw-bar button { border: none; background: transparent; font-size: 12px; padding: 5px 9px; border-radius: 7px; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; color: var(--text-secondary); }
+  .mw-bar button.on { background: var(--secondary-accent-subtle); color: var(--secondary-accent-text); }
+  .mw-bar svg { width: 13px; height: 13px; }
+  .mw .nocompile { position: absolute; left: 12px; bottom: 10px; font-size: 11px; color: #6b6275; display: flex; align-items: center; gap: 6px; }
+  .mw .nocompile i { width: 7px; height: 7px; border-radius: 50%; background: var(--success-color); display: inline-block; }
+  .mw .zoom { bottom: 10px; }
+  .code-pane { display: none; min-height: 0; border-radius: 12px; border: 1px solid var(--border-color); background: var(--bg-secondary); font-family: var(--font-mono); font-size: 12.5px; line-height: 19px; padding: 12px 0; overflow: auto; position: relative; }
+  .stage.code-open .code-pane { display: block; }
+  .code-pane .diffnote { position: absolute; right: 10px; top: 8px; font-family: var(--font-body); font-size: 11px; color: var(--text-tertiary); }
+  .nav-arrow { position: absolute; top: 50%; transform: translateY(-50%); width: 36px; height: 36px; border-radius: 50%; background: var(--bg-elevated); border: 1px solid var(--border-color); box-shadow: var(--shadow-md); display: grid; place-items: center; cursor: pointer; z-index: 3; font-size: 16px; color: var(--text-secondary); }
+  .nav-arrow.l { left: 28px; } .nav-arrow.r { right: 28px; }
+  .stage.code-open .nav-arrow.r { right: calc(50% + 21px); }
+  .detail { display: flex; align-items: center; gap: 10px; padding: 8px 18px 10px; flex-wrap: wrap; }
+  .detail .name { font-weight: 600; font-size: 15px; }
+  .detail .name small { color: var(--text-tertiary); font-weight: 500; font-family: var(--font-mono); font-size: 12px; margin-left: 6px; }
+  .detail .meta { font-size: 12px; color: var(--text-tertiary); }
+  .detail .note { flex: 1; min-width: 180px; display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--text-tertiary); }
+  .detail .note input { flex: 1; font: inherit; border: 1px dashed transparent; background: transparent; padding: 5px 6px; border-radius: 6px; color: var(--text-primary); }
+  .detail .note input:hover, .detail .note input:focus { border-color: var(--border-strong); background: var(--bg-secondary); outline: none; }
+  .detail .acts { display: flex; gap: 6px; position: relative; }
+  .film { border-top: 1px solid var(--border-color); background: var(--bg-secondary); padding: 10px 18px 12px; }
+  .film-head { display: flex; align-items: center; gap: 10px; font-size: 12px; color: var(--text-secondary); margin-bottom: 8px; }
+  .film-head b { color: var(--text-primary); }
+  .film-head .r { margin-left: auto; display: flex; gap: 10px; align-items: center; }
+  .seg { display: inline-flex; border: 1px solid var(--border-strong); border-radius: 6px; overflow: hidden; }
+  .seg button { border: none; background: var(--bg-elevated); padding: 3px 9px; font-size: 11px; cursor: pointer; }
+  .seg button.on { background: var(--text-primary); color: var(--bg-primary); }
+  .film-row { display: flex; gap: 8px; overflow-x: auto; padding: 3px 3px 4px; }
+  .fcard { flex: none; width: 92px; cursor: pointer; }
+  .fcard .img { width: 92px; height: 92px; border-radius: 8px; overflow: hidden; border: 1px solid var(--border-color); background: #fff; position: relative; transition: transform .1s; opacity: .8; }
+  .fcard:hover .img { transform: translateY(-2px); opacity: 1; }
+  .fcard.cur .img { opacity: 1; outline: 2px solid var(--text-primary); outline-offset: 2px; }
+  .fcard .img svg { width: 100%; height: 100%; display: block; }
+  .fcard .m { font-size: 11px; color: var(--text-tertiary); margin-top: 5px; display: flex; justify-content: space-between; }
+  .fcard .m b { color: var(--text-secondary); }
+  .fcard .notedot { position: absolute; top: 4px; right: 4px; width: 17px; height: 17px; border-radius: 50%; background: rgba(28,23,34,.7); color: #fff; font-size: 10px; display: grid; place-items: center; }
+  .film-day { flex: none; writing-mode: vertical-rl; transform: rotate(180deg); font-size: 10px; text-transform: uppercase; letter-spacing: .08em; color: var(--text-tertiary); font-weight: 600; border-left: 1px solid var(--border-subtle); padding: 0 4px 0 6px; margin-left: 2px; text-align: center; }
+  .empty-state { text-align: center; padding: 60px 20px; color: var(--text-secondary); }
+  .empty-state .icon { width: 60px; height: 60px; margin: 0 auto 14px; border-radius: 16px; background: var(--bg-tertiary); color: var(--text-secondary); display: grid; place-items: center; }
+  .empty-state h3 { color: var(--text-primary); margin: 0 0 6px; font-size: 18px; }
+  .empty-state p { max-width: 440px; margin: 0 auto 16px; line-height: 1.5; }
+
+  /* ===== Edge states ===== */
+  .edge-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(370px, 1fr)); gap: 20px; }
+  .edge { background: linear-gradient(180deg, var(--bg-secondary), var(--bg-primary)); border: 1px solid var(--border-color); border-radius: 12px; padding: 18px; min-height: 270px; }
+  .edge h4 { margin: 0 0 4px; font-size: 13px; }
+  .edge > p { margin: 0 0 14px; font-size: 12px; color: var(--text-secondary); line-height: 1.45; }
+  .edge .popover { position: relative; animation: none; width: 100%; }
+  .edge .popover::before { display: none; }
+</style>
+</head>
+<body>
+
+<div class="harness">
+  <h1>Snapshots — mockup v2</h1>
+  <nav id="screens">
+    <button data-s="capture" aria-pressed="true">1 · Capture</button>
+    <button data-s="fullscreen">2 · Fullscreen</button>
+    <button data-s="ingress">3 · Getting to snapshots</button>
+    <button data-s="page">4 · /workspace/…/snapshots</button>
+    <button data-s="edge">5 · Edge states</button>
+  </nav>
+  <span class="spacer"></span>
+  <button class="tgl" id="theme">Toggle light / dark</button>
+</div>
+
+<!-- ============ 1. CAPTURE ============ -->
+<section class="screen active" id="s-capture">
+  <div class="notes">
+    <h2>1 · Capture — name popover</h2>
+    <p><span class="changed">v2</span>The Snapshot button now uses the same neutral style as Refresh, Console and Copy Code. The popover is the only feedback: you name the snapshot, press <span class="kbd">⏎</span>, and the popover shows "Saved" with a link to this workspace's snapshots before closing itself. <span class="kbd">⌘⇧S</span> opens it. Pressing <span class="kbd">⌘⇧S</span> twice saves without a name.</p>
+  </div>
+  <div class="statebar" id="cap-states">
+    <span class="lbl">Popover</span>
+    <button data-p="closed">Closed</button>
+    <button data-p="open" aria-pressed="true">Naming</button>
+    <button data-p="saving">Saving…</button>
+    <button data-p="saved">Saved</button>
+    <span class="sep"></span>
+    <span class="lbl">Compile</span>
+    <button data-c="ok" aria-pressed="true">Rendered</button>
+    <button data-c="busy">Compiling</button>
+    <button data-c="stale">Edited since render</button>
+    <button data-c="err">Error</button>
+  </div>
+  <div class="frame"><div class="window" id="cap-window">
+    <div class="topnav">
+      <div class="brand">Pathogen <span>Studio</span><small>built on Pathogen v0.8.0</small></div>
+      <div class="navpill"><a class="on">Workspaces</a><a>Docs</a><a>Explore</a><a>Featured</a><a>Blog</a><a>Preferences</a></div>
+      <span class="avatar">RK</span>
+    </div>
+    <div class="crumbbar">
+      <div class="crumbs"><a>Workspaces</a> / <b>Scatter Rings</b></div>
+      <div class="controls" id="cap-controls">
+        <span class="chip ok" id="cap-chip">Ready · 0.4s</span>
+        <button class="ctl">↻ Refresh</button>
+        <button class="ctl" id="cap-snap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>Snapshot</button>
+        <button class="ctl">Console</button>
+        <button class="ctl">Copy Code</button>
+        <span class="savestate">Saved</span>
+        <button class="ctl icon">⋮</button>
+      </div>
+    </div>
+    <div class="work">
+      <div class="editor" id="cap-editor"></div>
+      <div class="preview">
+        <div class="canvas" id="cap-canvas"></div>
+        <div class="floater"><span class="round">⤢</span></div>
+        <div class="zoom"><span>−</span><span>Fit</span><span>+</span><span>100%</span></div>
+      </div>
+    </div>
+    <div class="footerbar"><span>Viewbox <code>0 0 400 400</code></span><span>BG <code>#ffffff</code></span><span>Grid <code>off</code></span></div>
+  </div></div>
+</section>
+
+<!-- ============ 2. FULLSCREEN ============ -->
+<section class="screen" id="s-fullscreen">
+  <div class="notes">
+    <h2>2 · Fullscreen capture</h2>
+    <p><span class="changed">v2</span>The camera button now has the same style as Refresh. The naming popover opens to its left, and the recent tray at the bottom right fills as you save. "All →" in the tray opens this workspace's snapshots page (screen 4). Try Refresh → Snapshot → ⏎ a few times.</p>
+  </div>
+  <div class="statebar" id="fs-states">
+    <span class="lbl">Try it</span>
+    <button id="fs-refresh">↻ Refresh (re-roll)</button>
+    <button id="fs-snap">📷 Snapshot</button>
+    <button id="fs-save">⏎ Save</button>
+  </div>
+  <div class="frame"><div class="window">
+    <div class="fs" id="fs-stage">
+      <div class="art-wrap" id="fs-art"></div>
+      <div class="mini" id="fs-mini"></div>
+      <span class="round exit">⤡</span>
+      <div class="chrome-right">
+        <button class="round" title="Layers"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2 2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg></button>
+        <button class="round" title="Export"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg></button>
+        <button class="round" title="Refresh" id="fs-refresh-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-3-6.7L21 8M21 3v5h-5"/></svg></button>
+        <button class="round" title="Snapshot (⌘⇧S)" id="fs-snap-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg></button>
+      </div>
+      <div class="zoom"><span>−</span><span>Fit</span><span>+</span><span>100%</span></div>
+      <div class="rail" id="fs-rail" style="display:none"></div>
+    </div>
+  </div></div>
+</section>
+
+<!-- ============ 3. INGRESS ============ -->
+<section class="screen" id="s-ingress">
+  <div class="notes">
+    <h2>3 · Getting to a workspace's snapshots</h2>
+    <p><span class="changed">v2</span>The footer filmstrip is gone. Here are three ways into <code>/workspace/:id/snapshots</code> that add little or nothing to the workspace. They aren't exclusive. Every option also gets the two links that already exist in the flow: <b>"View snapshots"</b> in the Saved popover, and <b>"All →"</b> in the fullscreen tray. Pick one or combine them.</p>
+  </div>
+  <div class="frame"><div class="ingress-grid" id="ingress"></div></div>
+</section>
+
+<!-- ============ 4. SNAPSHOTS PAGE ============ -->
+<section class="screen" id="s-page">
+  <div class="notes">
+    <h2>4 · <code>/workspace/:slugId/snapshots</code></h2>
+    <p><span class="changed">v2</span>Snapshots are now a child of the workspace, not a peer of Workspaces. The viewer and the gallery are merged into this one page: the mini-workspace on top shows the stored SVG with a code toggle and pan/zoom, nothing recompiled, and a filmstrip of every snapshot sits below. Use <span class="kbd">←</span> <span class="kbd">→</span> or click a frame to move through them. The URL updates (<code>…/snapshots/7</code>) so you can link to a single snapshot. "Back to editor" returns to the live workspace.</p>
+  </div>
+  <div class="statebar" id="page-states">
+    <span class="lbl">State</span>
+    <button data-pg="preview" aria-pressed="true">Preview</button>
+    <button data-pg="code">Code open</button>
+    <button data-pg="menu">More ⋯ open</button>
+    <button data-pg="fork">Hover "Start new workspace"</button>
+    <button data-pg="empty">No snapshots yet</button>
+  </div>
+  <div class="frame"><div class="window" id="page-window"></div></div>
+</section>
+
+<!-- ============ 5. EDGE ============ -->
+<section class="screen" id="s-edge">
+  <div class="notes">
+    <h2>5 · Edge states</h2>
+    <p><span class="changed">v2</span>Same cases as v1, now shown inside the naming popover instead of toasts. The popover stays open on an error, so nothing you typed is lost, and it offers the next step.</p>
+  </div>
+  <div class="frame"><div class="edge-grid" id="edge"></div></div>
+</section>
+
+<script>
+/* ---------- deterministic art ---------- */
+function rng(seed) { let s = seed >>> 0 || 1; return () => (s = (s * 1664525 + 1013904223) >>> 0) / 4294967296; }
+const PALETTES = [['#1c1722'], ['#c0518e', '#6d3aa6'], ['#e89254', '#1c1722'], ['#3d6b9e', '#5a8a72'], ['#a83d80', '#f7b56e', '#1c1722']];
+function art(seed) {
+  const r = rng(seed * 7919 + 13), pal = PALETTES[seed % PALETTES.length];
+  const n = 6 + Math.floor(r() * 7);
+  let s = `<svg viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg"><rect width="400" height="400" fill="#fff"/>`;
+  for (let i = 0; i < n; i++) {
+    const cx = 40 + r() * 320, cy = 40 + r() * 320, rad = 18 + r() * 34;
+    s += `<circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="${rad.toFixed(1)}" fill="none" stroke="${pal[i % pal.length]}" stroke-width="${(5 + r() * 6).toFixed(1)}"/>`;
+  }
+  if (seed % 3 === 0) {
+    let d = `M 20 ${200 + (r() - .5) * 120}`;
+    for (let x = 60; x <= 380; x += 40) d += ` Q ${x - 20} ${80 + r() * 240} ${x} ${120 + r() * 160}`;
+    s += `<path d="${d}" fill="none" stroke="${pal[0]}" stroke-width="2" opacity=".5"/>`;
+  }
+  return s + '</svg>';
+}
+const CODE = [
+  ['k', 'define'], ' ViewBox(', ['n', '0'], ', ', ['n', '0'], ', ', ['n', '400'], ', ', ['n', '400'], ');', '\n',
+  ['c', '// Scatter Rings — re-roll with Refresh, keep the good ones'], '\n',
+  ['k', 'let'], ' count = ', ['f', 'randomRange'], '(', ['n', '6'], ', ', ['n', '12'], ');', '\n',
+  ['k', 'for'], ' (i ', ['k', 'in'], ' ', ['n', '0'], '..count) {', '\n',
+  '  ', ['k', 'let'], ' x = ', ['f', 'randomRange'], '(', ['n', '40'], ', ', ['n', '360'], ');', '\n',
+  '  ', ['k', 'let'], ' y = ', ['f', 'randomRange'], '(', ['n', '40'], ', ', ['n', '360'], ');', '\n',
+  '  ', ['k', 'let'], ' radius = ', ['f', 'randomRange'], '(', ['n', '18'], ', ', ['n', '52'], ');', '\n',
+  '  ', ['f', 'circle'], '(x, y, radius);', '\n', '}', '\n',
+];
+function codeHtml(dirtyLine) {
+  let html = '', line = '', ln = 1;
+  const flush = () => { html += `<div class="ln${ln === dirtyLine ? ' dirty' : ''}"><i>${ln}</i><span>${line || '&nbsp;'}</span></div>`; line = ''; ln++; };
+  for (const tok of CODE) {
+    if (tok === '\n') { flush(); continue; }
+    line += Array.isArray(tok) ? `<span class="${tok[0]}">${tok[1]}</span>` : tok.replace(/ /g, '&nbsp;');
+  }
+  flush();
+  return html;
+}
+const CAM = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>`;
+const STACK = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="7" width="14" height="14" rx="2"/><path d="M3 17V5a2 2 0 0 1 2-2h12"/></svg>`;
+
+/* ---------- popover bodies (shared by capture, fullscreen, edge) ---------- */
+function popNaming(n, seed, extra = '') {
+  return `<div class="row"><div class="thumb">${art(seed)}</div><div style="flex:1"><label>Name</label><input value="Scatter Rings #${n}"></div></div>
+    <textarea placeholder="Note (optional)"></textarea>${extra}
+    <div class="foot"><span><span class="kbd">⏎</span> save · <span class="kbd">esc</span> cancel</span><button class="btn-primary" data-save>Save snapshot</button></div>`;
+}
+function popSaving(n, seed) {
+  return `<div class="row"><div class="thumb">${art(seed)}</div><div style="flex:1"><label>Name</label><input value="Scatter Rings #${n}" disabled></div></div>
+    <div class="progress"><i></i></div><div class="foot"><span>Saving · 2.1 MB</span><span>You can keep editing</span></div>`;
+}
+function popSaved(n, seed, total) {
+  return `<div class="done"><div class="thumb" style="width:56px;height:56px">${art(seed)}</div><div>
+    <div class="t"><span class="tick">✓</span>Saved “Scatter Rings #${n}”</div>
+    <div class="s">Image + the code that drew it</div>
+    <div class="links"><a>View snapshots (${total}) →</a><a style="color:var(--text-tertiary);font-weight:500">Undo</a></div></div></div>`;
+}
+
+/* ---------- harness ---------- */
+document.getElementById('theme').onclick = () => {
+  const el = document.documentElement;
+  el.setAttribute('data-theme', el.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
+};
+function pressGroup(container, attr, val) {
+  container.querySelectorAll(`[${attr}]`).forEach(b => b.setAttribute('aria-pressed', String(b.getAttribute(attr) === val)));
+}
+document.getElementById('screens').onclick = e => {
+  const b = e.target.closest('button'); if (!b) return;
+  pressGroup(e.currentTarget, 'data-s', b.dataset.s);
+  document.querySelectorAll('.screen').forEach(s => s.classList.toggle('active', s.id === 's-' + b.dataset.s));
+};
+
+/* ---------- 1. capture ---------- */
+const cap = { p: 'open', c: 'ok', n: 13, seed: 7 };
+const capWin = document.getElementById('cap-window');
+function renderCapture() {
+  document.getElementById('cap-editor').innerHTML = codeHtml(cap.c === 'stale' ? 5 : 0);
+  const canvas = document.getElementById('cap-canvas');
+  canvas.innerHTML = art(cap.seed);
+  canvas.classList.toggle('compiling', cap.c === 'busy');
+  const chip = document.getElementById('cap-chip');
+  chip.className = 'chip ' + ({ ok: 'ok', stale: 'ok', busy: 'busy', err: 'err' })[cap.c];
+  chip.textContent = ({ ok: 'Ready · 0.4s', stale: 'Ready · 0.4s', busy: 'Compiling… 00:02', err: '1 error' })[cap.c];
+  const btn = document.getElementById('cap-snap');
+  btn.disabled = cap.c === 'busy' || cap.c === 'err';
+  capWin.querySelectorAll('.popover,.tooltip').forEach(n => n.remove());
+  const br = btn.getBoundingClientRect(), wr = capWin.getBoundingClientRect();
+  if (btn.disabled) {
+    const tip = document.createElement('div'); tip.className = 'tooltip';
+    tip.innerHTML = cap.c === 'busy' ? 'Snapshot is available when this render finishes, so the image and code always match.' : 'Fix the error first. A snapshot saves the last successful render, and this code has none yet.';
+    tip.style.top = (br.bottom - wr.top + 8) + 'px'; tip.style.left = (br.left - wr.left - 20) + 'px';
+    capWin.appendChild(tip);
+    btn.classList.remove('pressed');
+    return;
+  }
+  btn.classList.toggle('pressed', cap.p !== 'closed');
+  if (cap.p === 'closed') return;
+  const p = document.createElement('div'); p.className = 'popover down';
+  p.style.top = (br.bottom - wr.top + 10) + 'px'; p.style.left = (br.left - wr.left - 20) + 'px';
+  const warn = cap.c === 'stale' ? `<div class="warn">You've edited line 5 since this rendered. The snapshot saves the code that drew <b>this</b> image, not your newer edits.</div>` : '';
+  p.innerHTML = cap.p === 'open' ? popNaming(cap.n, cap.seed, warn) : cap.p === 'saving' ? popSaving(cap.n, cap.seed) : popSaved(cap.n, cap.seed, cap.n);
+  capWin.appendChild(p);
+  const save = p.querySelector('[data-save]');
+  if (save) save.onclick = () => { setCap('saving'); setTimeout(() => setCap('saved'), 700); };
+  const input = p.querySelector('input:not([disabled])'); if (input) input.select();
+}
+function setCap(state) { cap.p = state; pressGroup(document.getElementById('cap-states'), 'data-p', state); renderCapture(); }
+document.getElementById('cap-states').onclick = e => {
+  const b = e.target.closest('button'); if (!b) return;
+  if (b.dataset.p) { cap.p = b.dataset.p; pressGroup(e.currentTarget, 'data-p', cap.p); }
+  if (b.dataset.c) { cap.c = b.dataset.c; pressGroup(e.currentTarget, 'data-c', cap.c); }
+  renderCapture();
+};
+document.getElementById('cap-snap').onclick = () => setCap(cap.p === 'closed' || cap.p === 'saved' ? 'open' : 'closed');
+// The page loads on the Capture screen, so layout is ready for positioning.
+requestAnimationFrame(renderCapture);
+
+/* ---------- 2. fullscreen ---------- */
+const fs = { seed: 21, taken: [], open: false };
+function renderFs() {
+  document.getElementById('fs-art').innerHTML = art(fs.seed);
+  document.getElementById('fs-mini').innerHTML = art(fs.seed);
+  const rail = document.getElementById('fs-rail');
+  rail.style.display = fs.taken.length ? 'flex' : 'none';
+  rail.innerHTML = fs.taken.slice(-5).reverse().map((s, i) => `<span class="${i === 0 ? 'new' : ''}">${art(s)}</span>`).join('') + `<a>All ${fs.taken.length + 12} →</a>`;
+  const stage = document.getElementById('fs-stage');
+  stage.querySelectorAll('.popover').forEach(n => n.remove());
+  const btn = document.getElementById('fs-snap-btn');
+  btn.classList.toggle('pressed', fs.open);
+  if (!fs.open) return;
+  const p = document.createElement('div'); p.className = 'popover left';
+  const br = btn.getBoundingClientRect(), sr = stage.getBoundingClientRect();
+  p.style.top = (br.top - sr.top - 8) + 'px'; p.style.right = (sr.right - br.left + 12) + 'px';
+  p.innerHTML = popNaming(fs.taken.length + 13, fs.seed);
+  p.querySelector('[data-save]').onclick = fsSave;
+  stage.appendChild(p);
+  p.querySelector('input').select();
+}
+function fsSave() { if (!fs.open) return; fs.taken.push(fs.seed); fs.open = false; renderFs(); }
+document.getElementById('fs-snap-btn').onclick = document.getElementById('fs-snap').onclick = () => { fs.open = !fs.open; renderFs(); };
+document.getElementById('fs-save').onclick = fsSave;
+document.getElementById('fs-refresh').onclick = document.getElementById('fs-refresh-btn').onclick = () => { fs.seed += 3; fs.open = false; renderFs(); };
+
+/* ---------- 3. ingress ---------- */
+function crumbbar(left, right) {
+  return `<div class="crumbbar"><div class="crumbs">${left}</div><div class="controls">
+    <span class="chip ok">Ready · 0.4s</span><button class="ctl">↻ Refresh</button>${right}
+    <button class="ctl">Console</button><button class="ctl">Copy Code</button><span class="savestate">Saved</span><button class="ctl icon">⋮</button></div></div>`;
+}
+const snapBtn = `<button class="ctl">${CAM}Snapshot</button>`;
+const INGRESS = [
+  {
+    h: 'A · Breadcrumb chip', p: 'A small chip after the workspace name: <i>Workspaces / Scatter Rings</i> <b>[▣ 12]</b>. It reads as "this workspace has 12 snapshots", sits where the URL hierarchy lives, and on the snapshots page becomes the third breadcrumb level. It costs one small chip.',
+    bar: crumbbar(`<a>Workspaces</a> / <b>Scatter Rings</b><span class="crumb-chip" title="12 snapshots">${STACK}12</span>`, snapBtn),
+    pros: '<span><b>+</b> Discoverable, mirrors the URL</span><span><b>+</b> No new toolbar button</span><span><b>−</b> The count is the only label until you hover</span>',
+    tipAt: '.crumb-chip', tip: 'Snapshots of this workspace (12)',
+  },
+  {
+    h: 'B · Split Snapshot button', p: 'The Snapshot button gets a second half showing the count. The left half captures, the right half opens the snapshots page. Taking and finding snapshots stay together in one control.',
+    bar: crumbbar(`<a>Workspaces</a> / <b>Scatter Rings</b>`, `<span class="group"><button class="ctl">${CAM}Snapshot</button><button class="ctl" title="View snapshots"><span class="count">12</span> ›</button></span>`),
+    pros: '<span><b>+</b> One control for capture and browse</span><span><b>+</b> The count updates live as you save</span><span><b>−</b> Two click targets in one small button</span>',
+  },
+  {
+    h: 'C · ⋮ menu only', p: 'Nothing new in the bar beyond the Snapshot button. The ⋮ overflow menu gets a "Snapshots" item with a peek of the latest three. This is the quietest option, but the hardest to discover.',
+    bar: crumbbar(`<a>Workspaces</a> / <b>Scatter Rings</b>`, snapBtn),
+    pros: '<span><b>+</b> Zero added chrome</span><span><b>−</b> Hidden; relies on the Saved-popover and tray links</span>',
+    menu: true,
+  },
+];
+document.getElementById('ingress').innerHTML = INGRESS.map((o, i) => `<div class="ingress-card" data-i="${i}"><header><h3>${o.h}</h3><p>${o.p}</p></header>${o.bar}<div class="pad"></div><div class="pros">${o.pros}</div></div>`).join('');
+function placeIngressExtras() {
+  document.querySelectorAll('.ingress-card').forEach(card => {
+    card.querySelectorAll('.menu,.tooltip').forEach(n => n.remove());
+    const o = INGRESS[+card.dataset.i], cr = card.getBoundingClientRect();
+    if (o.tipAt) {
+      const t = card.querySelector(o.tipAt), r = t.getBoundingClientRect();
+      const tip = document.createElement('div'); tip.className = 'tooltip'; tip.style.width = 'auto';
+      tip.textContent = o.tip; tip.style.left = (r.left - cr.left) + 'px'; tip.style.top = (r.bottom - cr.top + 8) + 'px';
+      card.appendChild(tip);
+    }
+    if (o.menu) {
+      const k = card.querySelector('.ctl.icon'), r = k.getBoundingClientRect();
+      const m = document.createElement('div'); m.className = 'menu';
+      m.style.right = (cr.right - r.right) + 'px'; m.style.top = (r.bottom - cr.top + 6) + 'px';
+      m.innerHTML = `<div>Export… <small>⌘⇧E</small></div><div class="hl">Snapshots <small>12</small></div>
+        <div class="peek">${[7, 30, 12].map(s => `<span>${art(s)}</span>`).join('')}</div><hr>
+        <div>Format document</div><div>Rename</div><div>Copy URL</div><div>Copy workspace</div><div>Set thumbnail</div><div>Publish…</div>`;
+      card.appendChild(m);
+    }
+    if (+card.dataset.i === 1) { // point at the count half
+      const c = card.querySelector('.group .ctl:last-child'), r = c.getBoundingClientRect();
+      const tip = document.createElement('div'); tip.className = 'tooltip'; tip.style.width = 'auto';
+      tip.textContent = 'View snapshots (12)'; tip.style.left = (r.left - cr.left - 30) + 'px'; tip.style.top = (r.bottom - cr.top + 8) + 'px';
+      card.appendChild(tip);
+    }
+  });
+}
+
+/* ---------- 4. snapshots page ---------- */
+const SNAPS = [
+  { n: 12, seed: 7, name: 'Scatter Rings #12', note: '', when: '1:31 PM', day: 'Today' },
+  { n: 11, seed: 30, name: 'dense bottom-left', note: 'keep this one — print candidate', when: '1:29 PM', day: 'Today' },
+  { n: 10, seed: 12, name: 'Scatter Rings #10', note: '', when: '1:25 PM', day: 'Today' },
+  { n: 9, seed: 45, name: 'two big rings', note: 'try thicker strokes', when: '1:18 PM', day: 'Today' },
+  { n: 8, seed: 3, name: 'Scatter Rings #8', note: '', when: '1:12 PM', day: 'Today' },
+  { n: 7, seed: 18, name: 'sparse', note: '', when: '6:40 PM', day: 'Yesterday' },
+  { n: 6, seed: 51, name: 'Scatter Rings #6', note: '', when: '6:22 PM', day: 'Yesterday' },
+  { n: 5, seed: 9, name: 'first good one', note: 'the one that started it', when: '6:10 PM', day: 'Yesterday' },
+  { n: 4, seed: 26, name: 'Scatter Rings #4', note: '', when: 'Oct 15', day: 'Oct 15' },
+  { n: 3, seed: 38, name: 'Scatter Rings #3', note: '', when: 'Oct 15', day: 'Oct 15' },
+  { n: 2, seed: 15, name: 'Scatter Rings #2', note: '', when: 'Oct 15', day: 'Oct 15' },
+  { n: 1, seed: 60, name: 'Scatter Rings #1', note: '', when: 'Oct 15', day: 'Oct 15' },
+];
+const page = { cur: 1, state: 'preview' };
+function renderPage() {
+  const win = document.getElementById('page-window');
+  const s = SNAPS[page.cur];
+  const top = `<div class="topnav"><div class="brand">Pathogen <span>Studio</span><small>built on Pathogen v0.8.0</small></div>
+    <div class="navpill"><a class="on">Workspaces</a><a>Docs</a><a>Explore</a><a>Featured</a><a>Blog</a><a>Preferences</a></div><span class="avatar">RK</span></div>`;
+  const crumbs = `<div class="crumbbar"><div class="crumbs"><a>Workspaces</a> / <a>Scatter Rings</a> / <b>Snapshots</b>${page.state === 'empty' ? '' : ` <span style="color:var(--text-tertiary)">· ${s.name}</span>`}</div>
+    <div class="controls"><span class="savestate">12 of 500 used</span><button class="ctl">← Back to editor</button></div></div>`;
+  if (page.state === 'empty') {
+    win.innerHTML = top + crumbs + `<div class="empty-state" style="height:600px;padding-top:110px"><div class="icon">${CAM.replace('<svg', '<svg width="28" height="28"')}</div>
+      <h3>No snapshots of Scatter Rings yet</h3><p>In the editor, press <b>Snapshot</b> or <span class="kbd">⌘⇧S</span> to keep the image you're looking at together with the code that drew it. They'll collect here, ready to export or to start a new workspace from.</p>
+      <button class="btn">← Back to editor</button></div>`;
+    return;
+  }
+  const codeOpen = page.state === 'code';
+  const days = [];
+  SNAPS.forEach((x, i) => { if (!i || SNAPS[i - 1].day !== x.day) days.push(i); });
+  const film = SNAPS.map((x, i) => `${days.includes(i) ? `<span class="film-day">${x.day}</span>` : ''}<div class="fcard ${i === page.cur ? 'cur' : ''}" data-i="${i}"><div class="img">${art(x.seed)}${x.note ? '<span class="notedot">✎</span>' : ''}</div><div class="m"><b>#${x.n}</b><span>${x.when}</span></div></div>`).join('');
+  win.innerHTML = top + crumbs + `<div class="snap-page">
+    <div class="stage ${codeOpen ? 'code-open' : ''}">
+      <div class="mw">
+        <div class="mw-bar"><button class="${codeOpen ? '' : 'on'}" data-mw="preview">Preview</button><button class="${codeOpen ? 'on' : ''}" data-mw="code"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m16 18 6-6-6-6M8 6l-6 6 6 6"/></svg>Code</button><button>⤢</button></div>
+        <div class="art">${art(s.seed)}</div>
+        <div class="nocompile"><i></i>Stored render · no recompile</div>
+        <div class="zoom"><span>−</span><span>Fit</span><span>+</span><span>100%</span></div>
+      </div>
+      <div class="code-pane"><span class="diffnote">Differs from the current editor in 0 lines</span>${codeHtml(0)}</div>
+      <span class="nav-arrow l" data-nav="-1">‹</span><span class="nav-arrow r" data-nav="1">›</span>
+    </div>
+    <div class="detail">
+      <span class="name">${s.name}<small>#${s.n} of 12</small></span>
+      <span class="meta">${s.day} ${s.when} · 400 × 400 · 38 KB</span>
+      <span class="note">✎<input value="${s.note}" placeholder="Add a note…" aria-label="Note"></span>
+      <span class="acts">
+        <button class="btn">Copy code</button>
+        <button class="btn" id="pg-fork">＋ Start new workspace</button>
+        <button class="btn" id="pg-more">⋯</button>
+        <button class="btn-primary">Export…</button>
+      </span>
+    </div>
+    <div class="film"><div class="film-head"><b>12 snapshots</b><span>newest first · <span class="kbd">←</span> <span class="kbd">→</span> to step</span>
+      <span class="r"><span class="seg"><button class="on">Newest</button><button>Oldest</button><button>With notes</button></span></span></div>
+      <div class="film-row">${film}</div></div>
+  </div>`;
+  win.querySelectorAll('.fcard').forEach(c => c.onclick = () => { page.cur = +c.dataset.i; renderPage(); });
+  win.querySelectorAll('[data-nav]').forEach(a => a.onclick = () => { page.cur = Math.max(0, Math.min(SNAPS.length - 1, page.cur + +a.dataset.nav)); renderPage(); });
+  win.querySelectorAll('[data-mw]').forEach(b => b.onclick = () => { page.state = b.dataset.mw; pressGroup(document.getElementById('page-states'), 'data-pg', page.state); renderPage(); });
+  const acts = win.querySelector('.acts');
+  if (page.state === 'menu') {
+    const m = document.createElement('div'); m.className = 'menu'; m.style.right = '80px'; m.style.bottom = '40px';
+    m.innerHTML = `<div>Download SVG</div><div>Rename</div><div>Open in editor (replace code)…</div><hr><div style="color:var(--error-color)">Delete snapshot</div>`;
+    acts.appendChild(m);
+  }
+  if (page.state === 'fork') {
+    const t = document.createElement('div'); t.className = 'tooltip'; t.style.width = '300px'; t.style.bottom = '40px'; t.style.right = '90px';
+    t.innerHTML = 'Creates <b>“Scatter Rings — dense bottom-left”</b> with this code. This program uses <code>randomRange()</code>, so the new workspace will draw a fresh variation. This snapshot keeps the exact image.';
+    acts.appendChild(t);
+  }
+}
+document.getElementById('page-states').onclick = e => {
+  const b = e.target.closest('button'); if (!b) return;
+  page.state = b.dataset.pg; pressGroup(e.currentTarget, 'data-pg', page.state); renderPage();
+};
+document.addEventListener('keydown', e => {
+  if (!document.getElementById('s-page').classList.contains('active') || e.target.tagName === 'INPUT') return;
+  if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') { page.cur = Math.max(0, Math.min(SNAPS.length - 1, page.cur + (e.key === 'ArrowRight' ? 1 : -1))); renderPage(); }
+});
+
+/* ---------- 5. edge states ---------- */
+const edges = [
+  ['Signed out', 'The button is still visible, so people can find the feature. The popover explains instead of naming.',
+    `<div class="row"><div class="thumb">${art(5)}</div><div style="flex:1"><div style="font-weight:600;font-size:13px">Sign in to save snapshots</div><div style="font-size:12px;color:var(--text-secondary);margin-top:3px;line-height:1.4">Snapshots are stored in your account with the code that drew them.</div></div></div>
+     <div class="foot"><a>Not now</a><button class="btn-primary">Sign in</button></div>`],
+  ['Quota reached (500)', 'Checked when the popover opens, so you aren\'t asked to type a name only to be refused.',
+    `<div class="row"><div class="thumb">${art(8)}</div><div style="flex:1"><label>Name</label><input value="Scatter Rings #13" disabled></div></div>
+     <div class="err">You've used all 500 snapshots. Delete some to make room.</div>
+     <div class="foot"><a>Cancel</a><button class="btn">Manage snapshots</button></div>`],
+  ['Upload failed (network)', 'The name, note and captured image are kept. Retry doesn\'t need a new render.',
+    popNaming(13, 11, `<div class="err">Couldn't reach the server. Your snapshot is held here.</div>`).replace('Save snapshot', 'Retry').replace('<span><span class="kbd">⏎</span> save · <span class="kbd">esc</span> cancel</span>', '<a>Download SVG instead</a>')],
+  ['Image too large (> 12 MB)', 'Checked before upload. Suggests a way around it.',
+    `<div class="row"><div class="thumb">${art(14)}</div><div style="flex:1"><label>Name</label><input value="Scatter Rings #13" disabled></div></div>
+     <div class="err">This render is 18.4 MB. Snapshots are limited to 12 MB. Try a lower Precision, or export it directly.</div>
+     <div class="foot"><a>Cancel</a><button class="btn">Open Export…</button></div>`],
+  ['Saving (slow connection)', 'Shown only if the upload takes longer than about 600 ms. Closing the popover doesn\'t cancel the upload.',
+    popSaving(13, 17)],
+  ['Unsaved scratch buffer', 'Snapshots belong to a workspace, so the popover offers to save one first and names it.',
+    `<div class="row"><div class="thumb">${art(20)}</div><div style="flex:1"><label>Workspace name</label><input value="Untitled 14"></div></div>
+     <div class="warn">Snapshots are kept with a workspace. Saving this one creates the workspace “Untitled 14”.</div>
+     <div class="foot"><a>Cancel</a><button class="btn-primary">Save workspace + snapshot</button></div>`],
+];
+document.getElementById('edge').innerHTML = edges.map(([h, p, body]) => `<div class="edge"><h4>${h}</h4><p>${p}</p><div class="popover">${body}</div></div>`).join('');
+
+/* re-layout positioned overlays when a screen becomes visible */
+document.getElementById('screens').addEventListener('click', e => {
+  const s = e.target.closest('button')?.dataset.s;
+  requestAnimationFrame(() => {
+    if (s === 'capture') renderCapture();
+    if (s === 'fullscreen') renderFs();
+    if (s === 'ingress') placeIngressExtras();
+    if (s === 'page') renderPage();
+  });
+});
+renderFs(); renderPage();
+</script>
+</body>
+</html>
