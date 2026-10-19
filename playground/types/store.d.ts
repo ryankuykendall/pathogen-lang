@@ -42,6 +42,12 @@ export interface StoreState {
   workspaceUpdatedAt: string | null;
   workspaceManualThumbnailAt: string | null;
 
+  // Snapshots — see state/store.ts for semantics.
+  renderedCode: string | null;
+  snapshotCount: number | null;
+  recentSnapshots: { id: string; n: number; cardUrl: string }[];
+  snapshotsPage: { workspaceName: string; workspaceSlugId: string; currentName: string | null } | null;
+
   // Save status
   saveStatus: 'idle' | 'modified' | 'saving' | 'saved' | 'error';
   saveError: string | null;

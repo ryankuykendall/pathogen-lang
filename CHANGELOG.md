@@ -5,6 +5,37 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] - 2026-10-19 (workspace snapshots)
+
+### Added
+
+#### Playground
+
+- **Snapshots.** One button saves the picture in the preview together with the exact code that drew it. A split **Snapshot** button sits between Refresh and Console (the count half opens the workspace's snapshots); fullscreen preview has a camera button under Refresh and a tray of this visit's snapshots. A small panel takes a name and an optional note, then confirms with *Saved · View snapshots · Undo*. The image is captured at the click, so pressing Refresh while naming doesn't change it; the code is the code of the last successful render, and the panel says so when the editor has unrendered edits. The button is disabled while compiling and on errors. Signed-out users are asked to sign in; a scratch buffer is saved as a new workspace first. A failed upload keeps the capture for Retry or Download SVG, and closing the panel mid-upload doesn't cancel it.
+- **`/workspace/:id/snapshots[/:n]`**: the stock mini-workspace shows the stored SVG and code (nothing recompiles), with name, details and an editable note beneath and a filmstrip of every snapshot (←/→ to step; Newest / Oldest / With notes). Copy code, Start new workspace, Export… (the normal dialog; the legend lists the snapshot's code) and ⋯ Rename / Delete live in the breadcrumb bar. Deleting a workspace now names its snapshot count in the confirmation.
+
+#### Core
+
+- **Snapshots API** on the API Worker: `POST/GET /workspace/:id/snapshots`, `GET /snapshot/:sid[/svg|/code|/card]`, `PUT/DELETE /snapshot/:sid`, `POST /snapshot/:sid/workspace`. Signed-in, owner-only; both POSTs require `X-Pathogen-Snapshot` so they are CORS-preflighted. Limits: 12 MB SVG, 1 MB code, 500 per account (enforced atomically). Stored SVG is served with a script-blocking CSP. Deleting a workspace deletes its snapshots (batched R2 deletes plus a prefix sweep). D1 migration `0003_snapshots.sql` — applied to production on 2026-10-19.
+
+#### Documentation
+
+- `docs/snapshots.md` (new): taking, browsing, exporting and starting from snapshots, the random re-roll caveat up front, deletion with the workspace, and limits. `docs/exporting.md` points to exporting from a snapshot. Content-reviewed (4 personas, 20 findings applied).
+- `docs/path-blocks.md` / `docs/markers.md`: `boundingBox()` and `centerPoint()` count moves that draw nothing — the box follows the pen, not the ink — with a table, which results are ink-only, and the recipe for the ink box (94819a5).
+
+#### Development
+
+- `tests/api/snapshots.test.ts` runs the snapshot SQL against real SQLite (`node:sqlite`) built from the migration files; race, batching and cascade tests are mutation-checked. `tests/playground-snapshots.test.ts` covers capture, the changed-line helper and the SVG sanitizer used before export.
+- `project-docs/snapshots/verify/verify-snapshots.mjs`: puppeteer end-to-end run against the local stack (42 checks, light + dark screenshots).
+- Snapshot design trail in `project-docs/snapshots/`: mockups v1–v3, primer, docs and code review dispositions.
+- `project-docs/domain-survey/`: beginner / intermediate / advanced project ideas for all 50 domains (4f70154).
+
+### Changed
+
+#### Playground
+
+- The thumbnail service's hero rasterizer moved to `utils/svg-raster.ts`, shared with snapshot cards (same output).
+
 ## [Unreleased] - 2026-10-03 (smooth curves in stroke geometry; a piece that starts at the pen)
 
 ### Added

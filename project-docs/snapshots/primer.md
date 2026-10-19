@@ -1,10 +1,11 @@
 # Workspace Snapshots — primer
 
-Status (2026-10-19): **Phases 0–2 done** — mockups accepted, `docs/snapshots.md` written + reviewed ([reviews/docs-snapshots-disposition.md](reviews/docs-snapshots-disposition.md)), API built + reviewed ([reviews/api-code-review-disposition.md](reviews/api-code-review-disposition.md)). **Next: Phase 3 (playground).**
+Status (2026-10-19): **Phases 0–3 done** — playground UI built, code-reviewed ([reviews/playground-code-review-disposition.md](reviews/playground-code-review-disposition.md)) and verified end-to-end (`verify/verify-snapshots.mjs`, 42/42). Earlier: **Phases 0–2 done** — mockups accepted, `docs/snapshots.md` written + reviewed ([reviews/docs-snapshots-disposition.md](reviews/docs-snapshots-disposition.md)), API built + reviewed ([reviews/api-code-review-disposition.md](reviews/api-code-review-disposition.md)). **Next: Phase 3 (playground).**
 
 Phase 2 notes for Phase 3:
 - API: `POST/GET /workspace/:id/snapshots`, `GET /snapshot/:sid[/svg|/code|/card]`, `PUT/DELETE /snapshot/:sid`, `POST /snapshot/:sid/workspace`. Both POSTs need header `X-Pathogen-Snapshot: 1`. `GET /workspace/:id` returns `snapshotCount` to the owner. Error codes: `snapshot-sign-in-required` (401), `snapshot-quota-reached` (409), `snapshot-svg-too-large` / `snapshot-code-too-large` (413), `snapshots-unavailable` (503).
 - Snapshot files are **owner-only behind the session cookie** (`credentials: 'include'`). `<mini-workspace svg-src>` must fetch with credentials (check how it fetches) or the viewer must fetch and pass the SVG in. The export path parses the SVG into the app's DOM — sanitize first (e.g. `sanitizeSVGFragment`) since the server doesn't.
+- **Production D1: migration 0003 applied 2026-10-19** with `wrangler d1 migrations apply svg-path-extended-users --remote` (production's `d1_migrations` log was intact: 0001, 0002 → now 0003; table + both indexes verified, 0 rows).
 - Local dev: the local D1 had 0001/0002 applied by hand (empty `d1_migrations`), so 0003 was applied with `wrangler d1 execute --local --file migrations/0003_snapshots.sql`. **Production: run `wrangler d1 migrations apply svg-path-extended-users --remote` (or execute 0003) before the playground UI ships.** The API is safe to deploy without it (count → 0, cascade no-op, snapshot routes → 503).
 
 > **Read first:** [Revised plan (post-mockups)](#revised-plan-post-mockups). It supersedes the original approved plan at the bottom of this file.

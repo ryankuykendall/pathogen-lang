@@ -1,7 +1,7 @@
 // Landing View - Workspace list with list/grid toggle
 // Route: /
 
-import { thumbnailApi, workspaceApi } from '../../services/api.js';
+import { snapshotApi, thumbnailApi, workspaceApi } from '../../services/api.js';
 import { hasFeature, UserFeature, type CurrentUser } from '../../services/auth.js';
 import {
   precheckCompile,
@@ -259,8 +259,25 @@ class LandingView extends HTMLElement {
         }
         break;
 
-      case 'delete':
-        if (confirm('Are you sure you want to delete this workspace? This cannot be undone.')) {
+      case 'delete': {
+        // Snapshots are deleted with their workspace (docs/snapshots.md), so
+        // the confirmation says how many. Signed-out / unavailable → no count.
+        let snapshotCount = 0;
+        if (store.get('currentUser')) {
+          // Bounded wait: a slow network mustn't hold up the confirmation.
+          const timeout = new Promise<null>((resolve) => setTimeout(() => resolve(null), 1500));
+          try {
+            const listed = await Promise.race([snapshotApi.list(id), timeout]);
+            snapshotCount = listed?.count ?? 0;
+          } catch {
+            snapshotCount = 0;
+          }
+        }
+        const snapshotLine =
+          snapshotCount > 0
+            ? ` This also deletes its ${snapshotCount} snapshot${snapshotCount === 1 ? '' : 's'}; export any you want to keep first.`
+            : '';
+        if (confirm(`Are you sure you want to delete this workspace?${snapshotLine} This cannot be undone.`)) {
           try {
             await workspaceApi.delete(id);
             // Remove from local state
@@ -276,6 +293,7 @@ class LandingView extends HTMLElement {
           }
         }
         break;
+      }
     }
   }
 

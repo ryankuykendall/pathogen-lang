@@ -242,8 +242,115 @@ export const thumbnailApi = {
   },
 };
 
+// Snapshots API (docs/snapshots.md; server: website/api/snapshots.ts).
+// Every route is owner-only behind the session cookie. Both POSTs carry the
+// X-Pathogen-Snapshot header — the server requires it so the request is
+// CORS-preflighted.
+
+export interface SnapshotRecord {
+  id: string;
+  workspaceId: string;
+  n: number;
+  name: string;
+  note: string;
+  width: number | null;
+  height: number | null;
+  background: string | null;
+  svgBytes: number;
+  codeBytes: number;
+  seed: string | null;
+  createdAt: string;
+}
+
+export type SnapshotFileKind = 'svg' | 'code' | 'card';
+
+const SNAPSHOT_HEADER = { 'X-Pathogen-Snapshot': '1' };
+
+async function snapshotError(response: Response, fallback: string): Promise<ApiError> {
+  let data: { error?: string } | null = null;
+  try {
+    data = await response.json();
+  } catch {
+    /* non-JSON error body */
+  }
+  return Object.assign(new Error(data?.error || fallback), {
+    kind: 'http' as const,
+    status: response.status,
+    data,
+  });
+}
+
+async function snapshotFetch(url: string, init: RequestInit): Promise<Response> {
+  try {
+    return await fetch(url, { ...init, credentials: 'include' });
+  } catch (cause) {
+    throw Object.assign(new Error(networkErrorMessage(API_BASE)), {
+      kind: 'network' as const,
+      apiBase: API_BASE,
+      url,
+      cause,
+    }) as ApiError;
+  }
+}
+
+export const snapshotApi = {
+  async create(
+    workspaceId: string,
+    payload: {
+      svg: string;
+      code: string;
+      card: Blob;
+      meta: { name?: string; note?: string; width?: number; height?: number; background?: string };
+    },
+  ): Promise<{ snapshot: SnapshotRecord; count: number }> {
+    const form = new FormData();
+    form.append('svg', new Blob([payload.svg], { type: 'image/svg+xml' }), 'image.svg');
+    form.append('code', new Blob([payload.code], { type: 'text/plain' }), 'code.pathogen');
+    form.append('card', payload.card, 'card.png');
+    form.append('meta', JSON.stringify(payload.meta));
+    const response = await snapshotFetch(`${API_BASE}/workspace/${workspaceId}/snapshots`, {
+      method: 'POST',
+      headers: SNAPSHOT_HEADER,
+      body: form,
+    });
+    if (!response.ok) throw await snapshotError(response, 'Snapshot upload failed');
+    return response.json();
+  },
+
+  async list(workspaceId: string): Promise<{ snapshots: SnapshotRecord[]; count: number }> {
+    return apiRequest(`/workspace/${workspaceId}/snapshots`) as Promise<{
+      snapshots: SnapshotRecord[];
+      count: number;
+    }>;
+  },
+
+  async update(id: string, data: { name?: string; note?: string }): Promise<SnapshotRecord> {
+    return apiRequest(`/snapshot/${id}`, { method: 'PUT', body: JSON.stringify(data) }) as Promise<SnapshotRecord>;
+  },
+
+  async remove(id: string): Promise<{ success: boolean; count: number }> {
+    return apiRequest(`/snapshot/${id}`, { method: 'DELETE' }) as Promise<{ success: boolean; count: number }>;
+  },
+
+  async startWorkspace(id: string): Promise<{ id: string; slug: string; name: string }> {
+    return apiRequest(`/snapshot/${id}/workspace`, { method: 'POST', headers: SNAPSHOT_HEADER }) as Promise<{
+      id: string;
+      slug: string;
+      name: string;
+    }>;
+  },
+
+  /** Fetch one stored file with the session cookie. */
+  async file(id: string, kind: SnapshotFileKind): Promise<Blob> {
+    const response = await snapshotFetch(`${API_BASE}/snapshot/${id}/${kind}`, { method: 'GET' });
+    if (!response.ok) throw await snapshotError(response, `Could not load the snapshot ${kind}`);
+    return response.blob();
+  },
+};
+
 export default {
   workspaceApi,
   preferencesApi,
   thumbnailApi,
+  snapshotApi,
 };

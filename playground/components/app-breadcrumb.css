@@ -460,3 +460,71 @@
     font-size: 0.6875rem;
   }
 }
+
+/* ---------- Snapshot split button (docs/snapshots.md) ----------
+   Neutral, like Refresh / Copy Code: the accent is reserved for the
+   popover's Save button. */
+.snapshot-split {
+  display: inline-grid;
+  grid-auto-flow: column;
+  align-items: stretch;
+}
+
+.snapshot-btn,
+.snapshot-count-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  font-size: 0.75rem;
+  font-family: inherit;
+  background: transparent;
+  border: 1px solid var(--border-color, rgba(28, 23, 34, 0.10));
+  border-radius: 4px;
+  color: var(--text-secondary, #5a4f6a);
+  cursor: pointer;
+  transition: background var(--transition-base, 0.15s ease), color var(--transition-base, 0.15s ease);
+}
+
+.snapshot-split.has-count .snapshot-btn {
+  border-radius: 4px 0 0 4px;
+}
+
+.snapshot-count-btn {
+  border-radius: 0 4px 4px 0;
+  margin-left: -1px;
+  gap: 3px;
+}
+
+.snapshot-count-btn .count {
+  font-variant-numeric: tabular-nums;
+  color: var(--text-tertiary, #9087a0);
+}
+
+.snapshot-btn:hover:not(:disabled),
+.snapshot-count-btn:hover {
+  background: var(--bg-tertiary, rgba(28, 23, 34, 0.05));
+  color: var(--text-primary, #1c1722);
+  z-index: 1;
+}
+
+.snapshot-btn:disabled {
+  color: var(--text-tertiary, #9087a0);
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.snapshot-btn:focus-visible,
+.snapshot-count-btn:focus-visible {
+  outline: 2px solid var(--focus-ring, rgba(192, 81, 142, 0.4));
+  outline-offset: 1px;
+}
+
+.menu-dropdown .danger-item {
+  color: var(--error-color, #ef4444);
+}
+
+.menu-icon-spacer {
+  display: inline-block;
+  width: 16px;
+}

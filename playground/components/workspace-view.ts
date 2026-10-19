@@ -21,6 +21,8 @@ import { autosave, SaveStatus } from '../services/autosave.js';
 import compilerWorker, { editorCompiler } from '../services/compiler-worker.js';
 import { formatFontSubstitutions } from '../services/font-loader.js';
 import thumbnailService from '../services/thumbnail-service.js';
+import { SnapshotController } from '../services/snapshot-controller.js';
+import type { CaptureSnapshotDetail } from '../services/snapshot-controller.js';
 import tabCoordinator from '../services/tab-coordinator.js';
 import { getUserId } from '../services/user-id.js';
 import { parseWorkspaceSlugId } from '../utils/router.js';
@@ -89,6 +91,18 @@ export class WorkspaceView extends HTMLElement {
   private _handleWorkspaceConflict: ((e: Event) => void) | null = null;
 
   private _handleFullscreenChange: ((e: Event) => void) | null = null;
+
+  // Snapshots (docs/snapshots.md): capture popover + flow, and the two
+  // document events the Snapshot buttons dispatch.
+  private _snapshots = new SnapshotController({
+    getPreview: () => this.previewPane?.preview ?? null,
+    exitFullscreen: () => (this.previewPane as unknown as { exitFullscreen?: () => void })?.exitFullscreen?.(),
+    openExport: () => this._handleOpenExport?.(),
+  });
+
+  private _handleCaptureSnapshot: ((e: Event) => void) | null = null;
+
+  private _handleOpenSnapshots: (() => void) | null = null;
 
   private _multiTabUnsubscribe: (() => void) | null = null;
   private _fontWarningsUnsubscribe: (() => void) | null = null;
@@ -384,6 +398,7 @@ export class WorkspaceView extends HTMLElement {
 
     this.previewPane.clear();
     this.previewPane.showLoading();
+    this._snapshots.resetForWorkspace();
 
     // Reset workspace state
     store.update({
@@ -400,6 +415,10 @@ export class WorkspaceView extends HTMLElement {
       saveError: null,
       // The size belongs to the previous workspace's compile output
       exportSvgBytes: null,
+      // Snapshot state belongs to the previous workspace too.
+      renderedCode: null,
+      snapshotCount: null,
+      recentSnapshots: [],
     });
     // Disarm pending size computes until this workspace's first successful
     // compile — see _sizeArmed.
@@ -477,6 +496,8 @@ export class WorkspaceView extends HTMLElement {
         workspaceOwnerId: workspace.userId,
         workspaceUpdatedAt: workspace.updatedAt,
         workspaceManualThumbnailAt: workspace.manualThumbnailAt ?? null,
+        // Present for the owner only (null when unknown / D1 unavailable).
+        snapshotCount: typeof workspace.snapshotCount === 'number' ? workspace.snapshotCount : null,
         code: workspace.code,
         currentFileName: workspace.name,
       });
@@ -728,6 +749,19 @@ export class WorkspaceView extends HTMLElement {
     };
     document.addEventListener('refresh-preview', this._handleRefreshPreview);
 
+    // Snapshot button (breadcrumb split button / fullscreen chrome) and the
+    // count half / tray "All →" link.
+    this._handleCaptureSnapshot = (e: Event): void => {
+      if (store.get('currentView') !== 'workspace') return;
+      this._snapshots.handleCapture((e as CustomEvent<CaptureSnapshotDetail>).detail);
+    };
+    document.addEventListener('capture-snapshot', this._handleCaptureSnapshot);
+    this._handleOpenSnapshots = (): void => {
+      if (store.get('currentView') !== 'workspace') return;
+      this._snapshots.openSnapshotsPage();
+    };
+    document.addEventListener('open-snapshots', this._handleOpenSnapshots);
+
     // Cancel the running compile (the Cancel control beside the
     // "Compiling..." chip, in the breadcrumb and the fullscreen chrome).
     this._handleCancelCompile = (): void => {
@@ -928,6 +962,9 @@ export class WorkspaceView extends HTMLElement {
     if (this._handleKeydown) document.removeEventListener('keydown', this._handleKeydown, true);
     if (this._handleOpenExport) document.removeEventListener('open-export', this._handleOpenExport);
     if (this._handleRefreshPreview) document.removeEventListener('refresh-preview', this._handleRefreshPreview);
+    if (this._handleCaptureSnapshot) document.removeEventListener('capture-snapshot', this._handleCaptureSnapshot);
+    if (this._handleOpenSnapshots) document.removeEventListener('open-snapshots', this._handleOpenSnapshots);
+    this._snapshots.destroy();
     if (this._handleCancelCompile) document.removeEventListener('cancel-compile', this._handleCancelCompile);
     if (this._handleCopyDebugInfo) document.removeEventListener('copy-debug-info', this._handleCopyDebugInfo);
     if (this._handleSetThumbnail) document.removeEventListener('set-thumbnail', this._handleSetThumbnail);
@@ -1211,6 +1248,9 @@ export class WorkspaceView extends HTMLElement {
           compilationStatus: 'completed',
           compilationError: null,
           calledStdlibFunctions: result.calledStdlibFunctions || [],
+          // The code that drew what's now on screen — a snapshot pairs the
+          // image with this, not with later unrendered edits.
+          renderedCode: code,
         });
       });
 

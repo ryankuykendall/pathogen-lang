@@ -20,6 +20,7 @@ import './views/preferences-view.js';
 import './views/storybook-view.js';
 import './views/storybook-detail-view.js';
 import './workspace-view.js';
+import './views/workspace-snapshots-view.js';
 import styles from './app-shell.css';
 
 interface NavigateDetail {
@@ -142,6 +143,7 @@ class AppShell extends HTMLElement {
       'landing-view': 'landing',
       'new-workspace-view': 'new-workspace',
       'workspace-view': 'workspace',
+      'workspace-snapshots-view': 'workspace-snapshots',
       'preferences-view': 'preferences',
       'docs-view': 'docs',
       'storybook-view': 'storybook',
@@ -166,6 +168,7 @@ class AppShell extends HTMLElement {
         <landing-view></landing-view>
         <new-workspace-view></new-workspace-view>
         <workspace-view></workspace-view>
+        <workspace-snapshots-view></workspace-snapshots-view>
         <preferences-view></preferences-view>
         <docs-view></docs-view>
         <storybook-view></storybook-view>

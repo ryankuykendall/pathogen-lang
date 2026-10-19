@@ -30,6 +30,22 @@ interface ComponentSpec {
   render: (container: HTMLElement, props: Record<string, unknown>, controls: ControlEvents) => void;
 }
 
+// Deterministic sample artwork for the snapshot stories: rings in a seeded
+// layout, as an SVG data URL (stand-in for a real card PNG).
+function STORY_ART(seed: number): string {
+  let state = (seed * 7919 + 13) >>> 0 || 1;
+  const rand = (): number => (state = (state * 1664525 + 1013904223) >>> 0) / 4294967296;
+  const palettes = [['#1c1722'], ['#c0518e', '#6d3aa6'], ['#e89254', '#1c1722'], ['#3d6b9e', '#5a8a72']];
+  const pal = palettes[seed % palettes.length];
+  let body = '';
+  const count = 6 + Math.floor(rand() * 6);
+  for (let i = 0; i < count; i++) {
+    body += `<circle cx="${(40 + rand() * 320).toFixed(0)}" cy="${(40 + rand() * 320).toFixed(0)}" r="${(18 + rand() * 34).toFixed(0)}" fill="none" stroke="${pal[i % pal.length]}" stroke-width="${(5 + rand() * 6).toFixed(0)}"/>`;
+  }
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400"><rect width="400" height="400" fill="#fff"/>${body}</svg>`;
+  return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+}
+
 export const componentRegistry: ComponentSpec[] = [
   // === Editor Core ===
   {
@@ -1587,6 +1603,160 @@ dot.apply { circle(100, 100, 14); }`;
           controls.on('open', (v) => apply({ ...props, open: Boolean(v) }));
           controls.on('count', (v) => apply({ ...props, count: Number(v) }));
         });
+      });
+    },
+  },
+  // === Snapshots (docs/snapshots.md) ===
+  {
+    id: 'snapshot-popover',
+    name: 'Snapshot Popover',
+    category: 'Snapshots',
+    description:
+      'Capture panel opened by the Snapshot button: name + note, saving, saved, and every error state. Fixed-position; the owner anchors it to the button.',
+    notes:
+      'Controlled: the owner calls openAt(rect, placement) then setState(...). Events: snapshot-popover-save/retry/undo/view/sign-in/download-svg/open-export/close. Enter saves from the name; in the note Enter adds a line and Cmd/Ctrl+Enter saves; Esc closes. The Saved state closes itself after 4 s unless hovered.',
+    stories: [
+      { name: 'Naming', props: { kind: 'naming', placement: 'below' } },
+      { name: 'Edited since render', props: { kind: 'naming', staleLine: 5, placement: 'below' } },
+      { name: 'Saving', props: { kind: 'saving', placement: 'below' } },
+      { name: 'Saved', props: { kind: 'saved', placement: 'below' } },
+      { name: 'Signed out', props: { kind: 'signed-out', placement: 'below' } },
+      { name: 'Scratch buffer', props: { kind: 'scratch', placement: 'below' } },
+      { name: 'Upload failed', props: { kind: 'error-retry', placement: 'below' } },
+      { name: 'Quota reached', props: { kind: 'error-quota', placement: 'below' } },
+      { name: 'Too large', props: { kind: 'error-large', placement: 'below' } },
+      { name: 'Fullscreen (left of button)', props: { kind: 'naming', placement: 'left' } },
+    ],
+    // Each story is one state; there are no live controls.
+    controls: [],
+    render: (container, props) => {
+      void import('../components/shared/snapshot-popover.js').then(() => {
+        const thumb = STORY_ART(7);
+        container.style.minHeight = '320px';
+        const anchor = document.createElement('button');
+        anchor.textContent = 'Snapshot';
+        anchor.style.cssText = 'margin: 8px 0 0 380px; padding: 4px 10px; font-size: 12px;';
+        container.appendChild(anchor);
+        const pop = document.createElement('snapshot-popover') as HTMLElement & {
+          openAt: (r: DOMRect, p: string, el?: Element) => void;
+          setState: (s: Record<string, unknown>) => void;
+        };
+        container.appendChild(pop);
+        const kind = String(props.kind);
+        const base = { thumbUrl: thumb, name: 'Scatter Rings #13' };
+        const state: Record<string, unknown> =
+          kind === 'naming'
+            ? { ...base, kind, staleLine: props.staleLine ?? null }
+            : kind === 'saving'
+              ? { ...base, kind, sizeLabel: '2.1 MB' }
+              : kind === 'saved'
+                ? { ...base, kind, total: 13 }
+                : kind === 'signed-out'
+                  ? { kind, thumbUrl: thumb }
+                  : kind === 'scratch'
+                    ? { kind, thumbUrl: thumb, workspaceName: 'Untitled 14' }
+                    : kind === 'error-retry'
+                      ? {
+                          ...base,
+                          kind: 'error',
+                          note: 'keep this one',
+                          retry: true,
+                          message: "Couldn't reach the server. Your snapshot is held here.",
+                        }
+                      : kind === 'error-quota'
+                        ? {
+                            ...base,
+                            kind: 'error',
+                            note: '',
+                            message: "You've used all 500 snapshots. Delete some to make room.",
+                          }
+                        : {
+                            ...base,
+                            kind: 'error',
+                            note: '',
+                            exportInstead: true,
+                            message:
+                              'This render is 18.4 MB. Snapshots are limited to 12 MB. Try a lower Precision, or export it directly.',
+                          };
+        // After layout, so the anchor rect is real.
+        setTimeout(() => {
+          pop.openAt(anchor.getBoundingClientRect(), String(props.placement || 'below'), anchor);
+          pop.setState(state);
+        }, 50);
+        // Stories reopen instead of closing so the state stays inspectable.
+        pop.addEventListener('snapshot-popover-close', () => pop.setState(state));
+      });
+    },
+  },
+  {
+    id: 'snapshot-tray',
+    name: 'Snapshot Tray',
+    category: 'Snapshots',
+    description:
+      'Fullscreen-preview tray of this visit’s snapshots, newest first, with “All n →” to the snapshots page.',
+    stories: [
+      { name: 'One snapshot', props: { count: 1 } },
+      { name: 'Five + more', props: { count: 7 } },
+      { name: 'Empty (hidden)', props: { count: 0 } },
+    ],
+    controls: [{ name: 'count', type: 'number', label: 'Snapshots taken', default: 3, min: 0, max: 12 }],
+    render: (container, props, controls) => {
+      void import('../components/shared/snapshot-tray.js').then(() => {
+        const tray = document.createElement('snapshot-tray') as HTMLElement & {
+          items: { id: string; n: number; cardUrl: string }[];
+          total: number | null;
+        };
+        container.appendChild(tray);
+        const apply = (count: number): void => {
+          tray.items = Array.from({ length: count }, (_, i) => ({
+            id: `s${i}`,
+            n: 12 + count - i,
+            cardUrl: STORY_ART(3 + i * 7),
+          }));
+          tray.total = count ? count + 12 : null;
+        };
+        apply(Number(props.count));
+        controls.on('count', (v) => apply(Number(v)));
+      });
+    },
+  },
+  {
+    id: 'snapshot-filmstrip',
+    name: 'Snapshot Filmstrip',
+    category: 'Snapshots',
+    description:
+      'Row of snapshot frames grouped by day, with sort (Newest / Oldest / With notes). Click selects; ←/→ is handled by the page.',
+    stories: [
+      { name: 'Twelve snapshots', props: { count: 12 } },
+      { name: 'Single', props: { count: 1 } },
+      { name: 'Cards still loading', props: { count: 6, pending: true } },
+    ],
+    controls: [{ name: 'count', type: 'number', label: 'Snapshots', default: 12, min: 0, max: 40 }],
+    render: (container, props, controls) => {
+      void import('../components/shared/snapshot-filmstrip.js').then(() => {
+        const strip = document.createElement('snapshot-filmstrip') as HTMLElement & {
+          snapshots: { id: string; n: number; note: string; createdAt: string }[];
+          cardUrls: Map<string, string>;
+          currentId: string | null;
+        };
+        container.appendChild(strip);
+        const apply = (count: number): void => {
+          const now = Date.now();
+          const list = Array.from({ length: count }, (_, i) => ({
+            id: `s${i}`,
+            n: count - i,
+            note: i % 4 === 1 ? 'keep this one' : '',
+            createdAt: new Date(now - i * 3 * 3_600_000).toISOString(),
+          }));
+          strip.snapshots = list;
+          strip.cardUrls = props.pending ? new Map() : new Map(list.map((s, i) => [s.id, STORY_ART(i * 5 + 2)]));
+          strip.currentId = list[1]?.id ?? list[0]?.id ?? null;
+        };
+        apply(Number(props.count));
+        strip.addEventListener('snapshot-select', (e) => {
+          strip.currentId = (e as CustomEvent<{ id: string }>).detail.id;
+        });
+        controls.on('count', (v) => apply(Number(v)));
       });
     },
   },

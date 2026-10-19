@@ -103,6 +103,20 @@ export const store = createStore({
   workspaceUpdatedAt: null, // Last update timestamp
   workspaceManualThumbnailAt: null, // null = no manual thumbnail; the crop modal uses this to decide whether to show the Clear button
 
+  // Snapshots (docs/snapshots.md). renderedCode is the source of the LAST
+  // SUCCESSFUL render — what a snapshot pairs with the preview image, which
+  // can differ from `code` while an edit hasn't rendered yet. snapshotCount is
+  // the owner's count for the current workspace (null = unknown / not owner).
+  // recentSnapshots feeds the fullscreen tray: this visit's captures, newest
+  // first, with an object URL for the card image already in memory.
+  renderedCode: null as string | null,
+  snapshotCount: null as number | null,
+  recentSnapshots: [] as { id: string; n: number; cardUrl: string }[],
+  // Breadcrumb data for the /workspace/:slugId/snapshots page (set by
+  // workspace-snapshots-view; null elsewhere). currentName = the selected
+  // snapshot's name, which also turns on the page's action buttons.
+  snapshotsPage: null as null | { workspaceName: string; workspaceSlugId: string; currentName: string | null },
+
   // Save status for autosave
   saveStatus: 'idle', // 'idle', 'modified', 'saving', 'saved', 'error'
   saveError: null, // Error message if save failed

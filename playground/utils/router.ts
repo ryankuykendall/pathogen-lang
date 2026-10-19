@@ -37,6 +37,8 @@ export const routes: RouteDefinition[] = [
   { path: '/workspaces', view: 'landing' },
   { path: '/workspace/new', view: 'new-workspace' }, // Must be before :slugId route
   { path: '/workspace/:slugId', view: 'workspace' }, // Format: slug--id or just id
+  { path: '/workspace/:slugId/snapshots', view: 'workspace-snapshots' }, // docs/snapshots.md
+  { path: '/workspace/:slugId/snapshots/:n', view: 'workspace-snapshots' },
   { path: '/preferences', view: 'preferences' },
   // /docs is now a static SEO page served by the worker — no SPA route needed
   { path: '/storybook', view: 'storybook-detail' },

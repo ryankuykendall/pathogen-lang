@@ -12,6 +12,7 @@
 // workspace-view.ts has been listening for since the previous implementation.
 
 import { workspaceApi } from '../services/api.js';
+import { getUserId } from '../services/user-id.js';
 import { hasFeature, UserFeature } from '../services/auth.js';
 import type { CurrentUser } from '../services/auth.js';
 import {
@@ -28,6 +29,17 @@ import { compilationStatusStyles, compilationStatusView } from '../utils/compila
 import { materialIcon } from '../utils/material-icons.js';
 import { formatBytes } from '../utils/format-bytes.js';
 import styles from './app-breadcrumb.css';
+
+// Inline (the material sprite has no camera glyph); same 24-unit stroke style
+// as the preview pane's chrome icons.
+const CAMERA_ICON = `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>`;
+
+/** Shape of store.snapshotsPage, set by workspace-snapshots-view. */
+interface SnapshotsPageCrumbs {
+  workspaceName: string;
+  workspaceSlugId: string;
+  currentName: string | null;
+}
 
 interface ViewConfig {
   label: string;
@@ -46,6 +58,7 @@ const viewConfig: Record<string, ViewConfig> = {
   landing: { label: 'Workspaces', parent: null, showBreadcrumb: false },
   'new-workspace': { label: 'New Workspace', parent: 'landing', showBreadcrumb: true },
   workspace: { label: 'Workspace', parent: 'landing', showBreadcrumb: true },
+  'workspace-snapshots': { label: 'Snapshots', parent: 'workspace', showBreadcrumb: true },
   preferences: { label: 'Preferences', parent: 'landing', showBreadcrumb: true },
   docs: { label: 'Documentation', parent: 'landing', showBreadcrumb: true },
   storybook: { label: 'Component Storybook', parent: 'landing', showBreadcrumb: true },
@@ -92,6 +105,9 @@ class AppBreadcrumb extends HTMLElement {
         'compilationStatus',
         'calledStdlibFunctions',
         'exportSvgBytes',
+        'renderedCode',
+        'snapshotCount',
+        'snapshotsPage',
       ],
       () => this.render(),
     );
@@ -164,6 +180,19 @@ class AppBreadcrumb extends HTMLElement {
     const crumbs: BreadcrumbItem[] = [];
 
     crumbs.push({ label: 'Workspaces', route: '/', isCurrent: currentView === 'landing' });
+
+    if (currentView === 'workspace-snapshots') {
+      const page = store.get('snapshotsPage') as SnapshotsPageCrumbs | null;
+      const slugId = page?.workspaceSlugId ?? routeParams.slugId ?? '';
+      crumbs.push({ label: page?.workspaceName || 'Workspace', route: `/workspace/${slugId}`, isCurrent: false });
+      if (page?.currentName) {
+        crumbs.push({ label: 'Snapshots', route: `/workspace/${slugId}/snapshots`, isCurrent: false });
+        crumbs.push({ label: page.currentName, route: null, isCurrent: true });
+      } else {
+        crumbs.push({ label: 'Snapshots', route: null, isCurrent: true });
+      }
+      return crumbs;
+    }
 
     if (currentView !== 'landing') {
       if (currentView === 'blog-post') {
@@ -255,6 +284,69 @@ class AppBreadcrumb extends HTMLElement {
     );
     el.textContent = text;
     el.className = `compilation-status ${className}`;
+  }
+
+  /**
+   * Split Snapshot button (docs/snapshots.md): the left half opens the
+   * capture popover (workspace-view owns it), the right half shows this
+   * workspace's snapshot count and opens its snapshots page. Shown for the
+   * owner's workspaces and scratch buffers; hidden on someone else's
+   * workspace. Disabled until there is a successful render to capture.
+   */
+  getSnapshotButtonHtml(): string {
+    const workspaceId = store.get('workspaceId') as string | null;
+    const ownerId = store.get('workspaceOwnerId') as string | null;
+    const currentUser = store.get('currentUser') as CurrentUser | null;
+    const isOwn = !!workspaceId && !!ownerId && (ownerId === getUserId() || ownerId === currentUser?.id);
+    if (workspaceId && !isOwn) return '';
+
+    const status = store.get('compilationStatus') as string | null;
+    const renderedCode = store.get('renderedCode') as string | null;
+    let disabledReason: string | null = null;
+    if (status === 'compiling' || status === 'rendering') {
+      disabledReason = 'Snapshot is available when this render finishes, so the image and code always match.';
+    } else if (status === 'error') {
+      disabledReason = 'Fix the error first. A snapshot always pairs the image with code that rendered successfully.';
+    } else if (renderedCode == null) {
+      disabledReason = 'Snapshot is available once the preview has rendered.';
+    }
+    const count = store.get('snapshotCount') as number | null;
+    const showCount = !!workspaceId && !!currentUser && count != null;
+    const snapBtn = `<button id="snapshot-btn" class="snapshot-btn" ${
+      disabledReason
+        ? `disabled aria-disabled="true" title="${disabledReason}"`
+        : 'title="Save this image with the code that drew it"'
+    }>${CAMERA_ICON}<span>Snapshot</span></button>`;
+    if (!showCount) return `<span class="snapshot-split">${snapBtn}</span>`;
+    return `<span class="snapshot-split has-count">${snapBtn}<button id="snapshot-count-btn" class="snapshot-count-btn" title="View snapshots (${count})" aria-label="View snapshots (${count})"><span class="count">${count}</span> ›</button></span>`;
+  }
+
+  /** Actions for the snapshots page (the page itself sits below the bar). */
+  getSnapshotsPageControlsHtml(): string {
+    const page = store.get('snapshotsPage') as SnapshotsPageCrumbs | null;
+    if (!page?.currentName) return '';
+    return `
+      <div class="workspace-controls-wrapper">
+        <div class="controls-left">
+          <span id="copy-feedback" class="copy-feedback">Copied!</span>
+          <button class="secondary-btn" data-snapshot-action="copy-code" title="Copy this snapshot's code">Copy code</button>
+          <button class="secondary-btn" data-snapshot-action="start-workspace" title="Create a new workspace with this snapshot's code">+ Start new workspace</button>
+          <button class="secondary-btn" data-snapshot-action="export" title="Export this snapshot as SVG, PNG, or PDF">Export…</button>
+        </div>
+        <div class="controls-right">
+          <div class="menu-container">
+            <button class="menu-btn" title="More actions" aria-haspopup="menu" aria-expanded="${this._menuOpen}">
+              ${materialIcon('more-vert', { size: 18, className: 'kebab-icon' })}
+            </button>
+            <div class="menu-dropdown ${this._menuOpen ? 'open' : ''}" role="menu">
+              <button data-action="snapshot-rename">${materialIcon('edit', { size: 16, className: 'menu-icon' })}<span>Rename</span></button>
+              <div class="menu-divider"></div>
+              <button data-action="snapshot-delete" class="danger-item"><span class="menu-icon-spacer"></span><span>Delete snapshot</span></button>
+            </div>
+            <span class="overflow-feedback"></span>
+          </div>
+        </div>
+      </div>`;
   }
 
   getOverflowMenuHtml(): string {
@@ -414,6 +506,7 @@ class AppBreadcrumb extends HTMLElement {
               `
                   : ''
               }
+              ${this.getSnapshotButtonHtml()}
               <div class="toggle-bar">
                 <button id="console-toggle" class="toggle-btn ${consoleOpen ? 'active' : ''}" title="Show console output">Console</button>
               </div>
@@ -430,6 +523,7 @@ class AppBreadcrumb extends HTMLElement {
         `
             : ''
         }
+        ${currentView === 'workspace-snapshots' ? this.getSnapshotsPageControlsHtml() : ''}
       </div>
     `;
 
@@ -462,6 +556,31 @@ class AppBreadcrumb extends HTMLElement {
     // Refresh button (only present when usesRandom)
     this.shadowRoot!.querySelector('#refresh-btn')?.addEventListener('click', () => {
       this.dispatchEvent(new CustomEvent('refresh-preview', { bubbles: true, composed: true }));
+    });
+
+    // Snapshot split button: capture (workspace-view opens the popover at
+    // this rect) and the count half → the workspace's snapshots page.
+    const snapshotBtn = this.shadowRoot!.querySelector<HTMLButtonElement>('#snapshot-btn');
+    snapshotBtn?.addEventListener('click', () => {
+      this.dispatchEvent(
+        new CustomEvent('capture-snapshot', {
+          bubbles: true,
+          composed: true,
+          detail: { anchor: snapshotBtn.getBoundingClientRect(), placement: 'below', anchorEl: snapshotBtn },
+        }),
+      );
+    });
+    this.shadowRoot!.querySelector('#snapshot-count-btn')?.addEventListener('click', () => {
+      this.dispatchEvent(new CustomEvent('open-snapshots', { bubbles: true, composed: true }));
+    });
+
+    // Snapshots page actions; workspace-snapshots-view handles them.
+    this.shadowRoot!.querySelectorAll<HTMLButtonElement>('[data-snapshot-action]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const action = btn.dataset.snapshotAction!;
+        this.dispatchEvent(new CustomEvent('snapshot-action', { bubbles: true, composed: true, detail: { action } }));
+        if (action === 'copy-code') this.showCopyFeedback();
+      });
     });
 
     // Cancel button (only present while compiling); workspace-view handles it
@@ -521,6 +640,16 @@ class AppBreadcrumb extends HTMLElement {
         break;
       case 'toggle-publish':
         await this.handlePublishToggle();
+        break;
+      case 'snapshot-rename':
+      case 'snapshot-delete':
+        this.dispatchEvent(
+          new CustomEvent('snapshot-action', {
+            bubbles: true,
+            composed: true,
+            detail: { action: action === 'snapshot-rename' ? 'rename' : 'delete' },
+          }),
+        );
         break;
     }
   }

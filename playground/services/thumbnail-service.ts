@@ -3,6 +3,7 @@
 
 import { thumbnailApi } from './api.js';
 import { createSvgSnapshot } from '../utils/svg-snapshot.js';
+import { aspectFit, rasterizeSvgString } from '../utils/svg-raster.js';
 
 const SIZES = [1024, 512, 256];
 const MAX_RASTER_SIZE = 4096; // Supersample ceiling (pixels) — balances quality vs memory
@@ -220,51 +221,11 @@ async function uploadHeroFromSvgString(
   canvasHeight: number,
   adminToken?: string,
 ): Promise<void> {
-  const w = canvasWidth > 0 ? canvasWidth : 200;
-  const h = canvasHeight > 0 ? canvasHeight : 200;
   // Aspect-fit to HERO_MAX_DIM (never upscale beyond source units). outW:outH
   // equals the source ratio, so drawImage into it preserves aspect.
-  const scale = Math.min(1, HERO_MAX_DIM / Math.max(w, h));
-  const outW = Math.max(1, Math.round(w * scale));
-  const outH = Math.max(1, Math.round(h * scale));
-
-  const svgBlob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' });
-  const url = URL.createObjectURL(svgBlob);
-  try {
-    const img: HTMLImageElement = await new Promise((resolve, reject) => {
-      const image = new Image();
-      image.onload = () => resolve(image);
-      image.onerror = () => reject(new Error('Failed to load hero SVG image'));
-      image.src = url;
-    });
-    let blob: Blob;
-    if (typeof OffscreenCanvas !== 'undefined') {
-      const canvas = new OffscreenCanvas(outW, outH);
-      const ctx = canvas.getContext('2d')!;
-      ctx.imageSmoothingEnabled = true;
-      ctx.imageSmoothingQuality = 'high';
-      ctx.fillStyle = '#ffffff';
-      ctx.fillRect(0, 0, outW, outH);
-      ctx.drawImage(img, 0, 0, outW, outH);
-      blob = await canvas.convertToBlob({ type: 'image/png' });
-    } else {
-      const canvas = document.createElement('canvas');
-      canvas.width = outW;
-      canvas.height = outH;
-      const ctx = canvas.getContext('2d')!;
-      ctx.imageSmoothingEnabled = true;
-      ctx.imageSmoothingQuality = 'high';
-      ctx.fillStyle = '#ffffff';
-      ctx.fillRect(0, 0, outW, outH);
-      ctx.drawImage(img, 0, 0, outW, outH);
-      blob = await new Promise<Blob>((resolve, reject) =>
-        canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('toBlob returned null'))), 'image/png'),
-      );
-    }
-    await thumbnailApi.uploadHero(workspaceId, blob, { adminToken });
-  } finally {
-    URL.revokeObjectURL(url);
-  }
+  const { width: outW, height: outH } = aspectFit(canvasWidth, canvasHeight, HERO_MAX_DIM);
+  const blob = await rasterizeSvgString(svgString, outW, outH);
+  await thumbnailApi.uploadHero(workspaceId, blob, { adminToken });
 }
 
 /**

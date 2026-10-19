@@ -20,6 +20,9 @@ import { compilationStatusStyles, compilationStatusView } from '../utils/compila
 import type { FontBinaryEntry } from '../services/font-loader.js';
 import { fontBinariesToCss } from '../services/font-loader.js';
 import { perfSpan } from '../utils/perf-marks.js';
+import { getUserId } from '../services/user-id.js';
+import './shared/snapshot-tray.js';
+import type { SnapshotTray } from './shared/snapshot-tray.js';
 
 // Runtime access to the render API is via the bundled global (the playground
 // loads `dist/index.global.js` rather than importing `src/` directly). Typed
@@ -36,6 +39,8 @@ declare const window: Window & {
 const LAYERS_ICON = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>`;
 
 const REFRESH_ICON = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>`;
+
+const CAMERA_ICON = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>`;
 
 const DOWNLOAD_ICON = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>`;
 
@@ -205,6 +210,7 @@ export class SvgPreviewPane extends HTMLElement {
     this._applyUsesRandom();
     this._applyInspectorOpen();
     this._applyCompilationStatus();
+    this._applySnapshotChrome();
   }
 
   disconnectedCallback(): void {
@@ -401,6 +407,21 @@ export class SvgPreviewPane extends HTMLElement {
     subscribe('calledStdlibFunctions', () => {
       this._applyUsesRandom();
     });
+    // Fullscreen snapshot button + tray.
+    subscribe(
+      [
+        'workspaceId',
+        'workspaceOwnerId',
+        'currentUser',
+        'compilationStatus',
+        'renderedCode',
+        'recentSnapshots',
+        'snapshotCount',
+      ],
+      () => {
+        this._applySnapshotChrome();
+      },
+    );
     // Drives the fullscreen status chip (breadcrumb owns it in normal mode).
     // compilationElapsedMs ticks the "Compiling... MM:SS" clock in place.
     subscribe(['compilationStatus', 'compilationElapsedMs'], () => {
@@ -1104,11 +1125,64 @@ export class SvgPreviewPane extends HTMLElement {
     this.shadowRoot!.querySelector('#refresh-btn')?.addEventListener('click', () => {
       this.dispatchEvent(new CustomEvent('refresh-preview', { bubbles: true, composed: true }));
     });
+    // Snapshot: same event as the breadcrumb's split button; the popover opens
+    // to the left of this button.
+    const snapshotBtn = this.shadowRoot!.querySelector<HTMLButtonElement>('#snapshot-btn');
+    snapshotBtn?.addEventListener('click', () => {
+      this.dispatchEvent(
+        new CustomEvent('capture-snapshot', {
+          bubbles: true,
+          composed: true,
+          detail: { anchor: snapshotBtn.getBoundingClientRect(), placement: 'left', anchorEl: snapshotBtn },
+        }),
+      );
+    });
+    this.shadowRoot!.querySelector('#snapshot-tray')?.addEventListener('snapshot-tray-open-all', () => {
+      this.dispatchEvent(new CustomEvent('open-snapshots', { bubbles: true, composed: true }));
+    });
     // Cancel beside the fullscreen status chip: same event as the breadcrumb's
     // Cancel; workspace-view's document listener handles it.
     this.shadowRoot!.querySelector('#cancel-compile-btn')?.addEventListener('click', () => {
       this.dispatchEvent(new CustomEvent('cancel-compile', { bubbles: true, composed: true }));
     });
+  }
+
+  /**
+   * Fullscreen snapshot chrome (docs/snapshots.md). Mirrors the breadcrumb's
+   * split button rules: shown on the owner's workspaces and scratch buffers,
+   * disabled until there's a successful render; the tray lists this visit's
+   * captures.
+   */
+  private _applySnapshotChrome(): void {
+    const workspaceId = store.get('workspaceId') as string | null;
+    const ownerId = store.get('workspaceOwnerId') as string | null;
+    const currentUser = store.get('currentUser') as { id?: string } | null;
+    const isOwn = !!workspaceId && !!ownerId && (ownerId === getUserId() || ownerId === currentUser?.id);
+    this.classList.toggle('can-snapshot', !workspaceId || isOwn);
+
+    const status = store.get('compilationStatus') as string | null;
+    const btn = this.shadowRoot!.querySelector<HTMLButtonElement>('#snapshot-btn');
+    if (btn) {
+      const busy = status === 'compiling' || status === 'rendering';
+      const blocked = busy || status === 'error' || store.get('renderedCode') == null;
+      btn.disabled = blocked;
+      btn.title = busy
+        ? 'Snapshot is available when this render finishes'
+        : status === 'error'
+          ? 'Fix the error first — a snapshot pairs the image with code that rendered'
+          : 'Save this image with the code that drew it';
+    }
+    const tray = this.shadowRoot!.querySelector('#snapshot-tray') as SnapshotTray | null;
+    if (tray) {
+      tray.items = (store.get('recentSnapshots') as SnapshotTray['items']) || [];
+      tray.total = store.get('snapshotCount') as number | null;
+    }
+  }
+
+  /** Leave fullscreen if it's on (used before navigating to the snapshots page). */
+  exitFullscreen(): void {
+    if (!this.classList.contains('fullscreen')) return;
+    this.shadowRoot!.querySelector<HTMLButtonElement>('#fullscreen-toggle')?.click();
   }
 
   private _applyUsesRandom(): void {
@@ -1350,7 +1424,8 @@ export class SvgPreviewPane extends HTMLElement {
 
         #inspector-open-btn,
         #export-btn,
-        #refresh-btn {
+        #refresh-btn,
+        #snapshot-btn {
           width: 32px;
           height: 32px;
           padding: 0;
@@ -1377,7 +1452,8 @@ export class SvgPreviewPane extends HTMLElement {
            icon on hover. */
         #inspector-open-btn:hover,
         #export-btn:hover,
-        #refresh-btn:hover {
+        #refresh-btn:hover,
+        #snapshot-btn:hover:not(:disabled) {
           border-color: var(--accent-hover, #b04680);
           color: var(--accent-contrast, #1c1722);
           background: var(--accent-color, #c0518e);
@@ -1386,7 +1462,8 @@ export class SvgPreviewPane extends HTMLElement {
 
         #inspector-open-btn svg,
         #export-btn svg,
-        #refresh-btn svg {
+        #refresh-btn svg,
+        #snapshot-btn svg {
           width: 16px;
           height: 16px;
         }
@@ -1396,12 +1473,38 @@ export class SvgPreviewPane extends HTMLElement {
            Refresh additionally requires a program that calls random/randomRange
            (.uses-random, toggled from the calledStdlibFunctions subscription). */
         #export-btn,
-        #refresh-btn {
+        #refresh-btn,
+        #snapshot-btn {
           display: none;
         }
 
         :host(.fullscreen) #export-btn {
           display: grid;
+        }
+
+        /* Snapshot (docs/snapshots.md): fullscreen only, styled exactly like
+           Refresh. .can-snapshot is toggled from the store (own workspace or
+           scratch); disabled while there's no successful render to capture. */
+        :host(.fullscreen.can-snapshot) #snapshot-btn {
+          display: grid;
+        }
+
+        #snapshot-btn:disabled {
+          opacity: 0.55;
+          cursor: not-allowed;
+        }
+
+        /* This visit's snapshots, bottom-right, fullscreen only. */
+        #snapshot-tray {
+          display: none;
+          position: absolute;
+          right: 1rem;
+          bottom: 1rem;
+          z-index: 10;
+        }
+
+        :host(.fullscreen) #snapshot-tray {
+          display: block;
         }
 
         :host(.fullscreen.uses-random) #refresh-btn {
@@ -1467,7 +1570,10 @@ export class SvgPreviewPane extends HTMLElement {
         <button id="inspector-open-btn" title="Toggle inspector">${LAYERS_ICON}</button>
         <button id="export-btn" title="Export as SVG, PNG, or PDF">${DOWNLOAD_ICON}</button>
         <button id="refresh-btn" title="Generate new random values">${REFRESH_ICON}</button>
+        <button id="snapshot-btn" title="Save this image with the code that drew it">${CAMERA_ICON}</button>
       </div>
+
+      <snapshot-tray id="snapshot-tray"></snapshot-tray>
 
       <pathogen-zoom-pill></pathogen-zoom-pill>
 

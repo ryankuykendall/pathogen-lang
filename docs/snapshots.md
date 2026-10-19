@@ -51,7 +51,7 @@ The breadcrumb at the top (`Workspaces / Scatter Rings / Snapshots / …`) takes
 
 The page shows one snapshot at a time in a preview you can pan and zoom, using the same viewer as code examples elsewhere on the site. **Code** opens the snapshot's source beside the image. Below the preview are the snapshot's name, number, date, dimensions, file size and note. Click the note, or the ✎ pencil if it has none yet, to edit it.
 
-Along the bottom, a **filmstrip** shows every snapshot of the workspace, newest first and grouped by day. Click a frame, or use the **←** and **→** keys, to step through them. You can also sort oldest first or show only snapshots that have a note. Each snapshot has its own address (`…/snapshots/7`), so the browser's back button and bookmarks work.
+Along the bottom, a **filmstrip** shows every snapshot of the workspace, newest first and grouped by day. Click a frame, or use the **←** and **→** keys, to step through them. You can also sort oldest first or show only snapshots that have a note. Each snapshot has its own address (`…/snapshots/7`), so you can bookmark one and come straight back to it.
 
 The preview shows the saved image. Nothing is recompiled, so even heavy artwork appears without waiting for a compile.
 
