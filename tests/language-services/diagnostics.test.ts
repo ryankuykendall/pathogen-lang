@@ -303,6 +303,19 @@ describe('getDiagnostics', () => {
       expect(diags.every((d) => !d.message.includes('Available fonts: none'))).toBe(true);
     });
 
+    it('does not surface an error for Font.info / Font.characters / Font.glyphs', () => {
+      // Regression: these once reported "font 'X' is not loaded" on the
+      // fontless pass, so every Font program showed a false error squiggle.
+      for (const call of ['Font.info(s)', 'Font.characters(s, "digit")', 'Font.glyphs(s, "Cyrillic")']) {
+        const source = `
+          @font "Raleway" 700;
+          let s = #{ font-family: Raleway; font-weight: 700; };
+          let result = ${call};
+        `;
+        expect(diagnose(source)).toEqual([]);
+      }
+    });
+
     it('does not surface "requires fonts to be loaded" for TextBlock.toPathBlock', () => {
       const source = `
         @font "Inconsolata" 400;

@@ -105,7 +105,10 @@ import {
   type CapSpec,
 } from './variable-offset-geometry';
 import { estimateTextBoundingBox, bboxOverlaps, bboxPathIntersects, bboxPathIntersectionPoints, resolveFontFamily, resolveFontWeight, resolveEffectiveFontSize } from './font-metrics';
-import { getFont, lookupGlyph, recordMissingGlyph, buildMissingGlyphReports, splitContours } from './font-provider';
+import { getFont, getGlyphName, lookupGlyph, recordMissingGlyph, buildMissingGlyphReports, splitContours } from './font-provider';
+import { buildFontCoverageRequests, fontCharacters, fontGlyphs, fontInfo } from './font-namespace';
+import type { FontNamespaceDeps } from './font-namespace';
+import { blockOf, categoryOf, scriptOf } from './unicode-props';
 import { normalizeCodeText, tokenizeLine, getTokenColor } from './code-snippet';
 
 import type { PathContext, TransformState } from './context';
@@ -166,6 +169,7 @@ import type {
   ObjectValue,
   PathBlockCommand,
   PathBlockNamespace,
+  FontNamespace,
   PathBlockValue,
   PathLayerState,
   PathRecordOutput,
@@ -273,6 +277,7 @@ export type {
   ObjectValue,
   PathBlockCommand,
   PathBlockNamespace,
+  FontNamespace,
   PathBlockValue,
   PathCommandMeta,
   PathLayerState,
@@ -1090,6 +1095,10 @@ function lookupVariable(scope: Scope, name: string, line?: number, column?: numb
   if (name === 'PathBlock') {
     return { type: 'PathBlockNamespace' } as PathBlockNamespace;
   }
+  // Font namespace (Font.info / Font.characters / Font.glyphs — docs/fonts.md)
+  if (name === 'Font') {
+    return { type: 'FontNamespace' } as FontNamespace;
+  }
   // Cap namespace (end caps for compoundVariableOffset)
   if (name === 'Cap') {
     return { type: 'CapNamespace' } as CapNamespace;
@@ -1285,6 +1294,41 @@ function parseMapSliceOptions(val: Value, mkErr: (message: string) => Error): { 
  * at the origin" it meant the opposite, and each method picked by hand
  * (project-docs/placement-audit/03-principles.md, "The mechanism").
  */
+/** Expando properties a glyph PathBlock carries (fromGlyph / Font.glyphs). */
+type GlyphBlock = PathBlockValue & { advanceWidth: number; char: string; glyphName: string | null };
+
+/**
+ * One glyph PathBlock per character, exactly as PathBlock.fromGlyph has
+ * always built them: outline normalized to the origin (empty for spaces),
+ * with `advanceWidth`, the source `char` and the font's `glyphName` attached.
+ * Characters no loaded variant covers render as .notdef and are recorded for
+ * the missing-glyph report. Shared by PathBlock.fromGlyph and Font.glyphs.
+ */
+function makeGlyphBlocks(
+  chars: string[],
+  registry: FontRegistry,
+  family: string,
+  weight: number,
+  fontSize: number,
+  evalState: EvaluationState | undefined,
+): Value[] {
+  const glyphs: Value[] = [];
+  for (const char of chars) {
+    const lookup = lookupGlyph(registry, family, weight, 'normal', char, fontSize)!;
+    if (lookup.missing && evalState) recordMissingGlyph(evalState, family, weight, char);
+    const block: PathBlockValue =
+      lookup.commands.length === 0
+        ? { type: 'PathBlockValue' as const, commands: [], records: [], startPoint: { x: 0, y: 0 }, endPoint: { x: 0, y: 0 } }
+        : fromCommandsKeepingFrame(lookup.commands);
+    const glyph = block as GlyphBlock;
+    glyph.advanceWidth = lookup.advanceWidth;
+    glyph.char = char;
+    glyph.glyphName = lookup.missing ? null : getGlyphName(lookup.fontData, char);
+    glyphs.push(glyph);
+  }
+  return glyphs;
+}
+
 function fromCommandsKeepingFrame(cmds: PathBlockCommand[]): PathBlockValue {
   return buildDerivedPathBlock(cmds, 0, 0);
 }
@@ -6171,43 +6215,37 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
           throw mError(`Font '${fontFamily}' not found in font registry. Available fonts: ${available || 'none'}`);
         }
 
-        // Convert each character to a PathBlockValue
-        const glyphs: Value[] = [];
-        for (const char of textArg) {
-          const lookup = lookupGlyph(registry, fontFamily, fontWeight, 'normal', char, fontSize)!;
-          const { commands, advanceWidth } = lookup;
-          if (lookup.missing && scope.evalState) {
-            recordMissingGlyph(scope.evalState, fontFamily, fontWeight, char);
-          }
-
-          if (commands.length === 0) {
-            // Space or empty glyph — return an empty PathBlockValue with advanceWidth
-            const pb: PathBlockValue = {
-              type: 'PathBlockValue' as const,
-              commands: [],
-              records: [],
-              startPoint: { x: 0, y: 0 },
-              endPoint: { x: 0, y: 0 },
-            };
-            // Store advanceWidth + source char as expando properties
-            (pb as PathBlockValue & { advanceWidth: number; char: string }).advanceWidth = advanceWidth;
-            (pb as PathBlockValue & { advanceWidth: number; char: string }).char = char;
-            glyphs.push(pb);
-            continue;
-          }
-
-          // Normalize to (0,0) origin
-          const normalized = fromCommandsKeepingFrame(commands);
-          // Attach advanceWidth + source char as expando properties
-          (normalized as PathBlockValue & { advanceWidth: number; char: string }).advanceWidth = advanceWidth;
-          (normalized as PathBlockValue & { advanceWidth: number; char: string }).char = char;
-          glyphs.push(normalized);
-        }
-
+        const glyphs = makeGlyphBlocks(Array.from(textArg), registry, fontFamily, fontWeight, fontSize, scope.evalState);
         return { type: 'ArrayValue' as const, elements: glyphs };
       }
       default:
         throw mError(`Unknown PathBlock method: ${expr.method}`);
+    }
+  }
+
+  // FontNamespace methods (Font.info / Font.characters / Font.glyphs — docs/fonts.md)
+  if (typeof obj === 'object' && obj !== null && 'type' in obj && obj.type === 'FontNamespace') {
+    const args = expr.args.map((arg) => evaluateExpression(arg, scope));
+    const deps: FontNamespaceDeps = {
+      evalState: scope.evalState,
+      makeGlyphs: (chars, family, weight, fontSize) =>
+        makeGlyphBlocks(chars, scope.evalState!.fontRegistry!, family, weight, fontSize, scope.evalState),
+      warnLargeSelection: (message) =>
+        warn(scope.evalState, 'font-glyph', message, { line: getLine(expr), column: getCol(expr) }),
+    };
+    try {
+      switch (expr.method) {
+        case 'info':
+          return fontInfo(deps, args);
+        case 'characters':
+          return fontCharacters(deps, args);
+        case 'glyphs':
+          return fontGlyphs(deps, args);
+        default:
+          throw new Error(`Unknown Font method: ${expr.method}. Font has info(), characters() and glyphs()`);
+      }
+    } catch (err) {
+      throw mError((err as Error).message);
     }
   }
 
@@ -6797,6 +6835,45 @@ function evaluateMemberExpression(expr: MemberExpression, scope: Scope): Value {
             `'${expr.property}' is only available on glyphs produced by PathBlock.fromGlyph() — it classifies the source character. Use 'isEmpty' to test whether any PathBlock has no commands`,
           );
         return boolVal(CHAR_CLASS_PREDICATES[expr.property](char));
+      }
+      case 'script':
+      case 'block':
+      case 'category':
+      case 'isLetter':
+      case 'isDigit':
+      case 'isPunctuation':
+      case 'isSymbol': {
+        // Unicode classification of the source character (docs/fonts.md).
+        const char = (obj as PathBlockValue & { char?: string }).char;
+        if (char === undefined)
+          throw new Error(
+            `'${expr.property}' is only available on glyphs produced by PathBlock.fromGlyph() or Font.glyphs() — it classifies the source character. Composing or transforming a glyph produces a new block without it`,
+          );
+        const cp = char.codePointAt(0)!;
+        switch (expr.property) {
+          case 'script':
+            return scriptOf(cp);
+          case 'block':
+            return blockOf(cp);
+          case 'category':
+            return categoryOf(char);
+          case 'isLetter':
+            return boolVal(categoryOf(char) === 'letter');
+          case 'isDigit':
+            return boolVal(categoryOf(char) === 'digit');
+          case 'isPunctuation':
+            return boolVal(categoryOf(char) === 'punctuation');
+          default:
+            return boolVal(categoryOf(char) === 'symbol');
+        }
+      }
+      case 'glyphName': {
+        const glyph = obj as PathBlockValue & { char?: string; glyphName?: string | null };
+        if (glyph.char === undefined)
+          throw new Error(
+            "'glyphName' is only available on glyphs produced by PathBlock.fromGlyph() or Font.glyphs() — it is the font's name for the glyph",
+          );
+        return glyph.glyphName ?? null;
       }
       default:
         throw new Error(`Property '${expr.property}' does not exist on PathBlock`);
@@ -11472,6 +11549,7 @@ function buildCompileResult(mainAccum: PathStore, evalState: EvaluationState): C
   for (const warning of missingGlyphWarnings) {
     warn(evalState, 'font-glyph', warning.replace(/^\[warn\] /, ''));
   }
+  const fontCoverageRequests = buildFontCoverageRequests(evalState.fontCoverageRequests);
 
   return {
     layers,
@@ -11487,6 +11565,7 @@ function buildCompileResult(mainAccum: PathStore, evalState: EvaluationState): C
     ...(evalState.trace ? { commands: evalState.pathContext.commands.map((c) => ({ ...c, args: [...c.args] })) } : {}),
     calledStdlibFunctions: Array.from(evalState.calledStdlibFunctions),
     ...(missingGlyphs.length > 0 ? { missingGlyphs } : {}),
+    ...(fontCoverageRequests.length > 0 ? { fontCoverageRequests } : {}),
     viewBox: evalState.viewBox
       ? {
           originX: evalState.viewBox.originX,
@@ -11498,11 +11577,24 @@ function buildCompileResult(mainAccum: PathStore, evalState: EvaluationState): C
   };
 }
 
+/**
+ * Attach the Font namespace's slice requests to an error thrown mid-program,
+ * so the playground can fetch them and recompile (see
+ * playground/services/compiler-worker.ts).
+ */
+function annotateFontCoverage(err: unknown, evalState: EvaluationState | undefined): void {
+  if (!(err instanceof Error) || !evalState?.fontCoverageRequests?.size) return;
+  (err as Error & { fontCoverageRequests?: unknown }).fontCoverageRequests = buildFontCoverageRequests(
+    evalState.fontCoverageRequests,
+  );
+}
+
 export function evaluate(
   program: Program,
   options?: { toFixed?: number; fonts?: FontRegistry; trace?: boolean; strict?: StrictOption },
 ): CompileResult {
   setNumberFormat(options?.toFixed);
+  let annotateState: EvaluationState | undefined;
   try {
     const pathContext = createPathContext({ trackHistory: !!options?.trace });
     const logs: LogEntry[] = [];
@@ -11528,6 +11620,7 @@ export function evaluate(
       cssProperties: new Map(),
       fontRegistry: options?.fonts,
     };
+    annotateState = evalState;
 
     const scope = createScope();
     scope.evalState = evalState;
@@ -11546,6 +11639,12 @@ export function evaluate(
     runSubscriptionDispatch(scope, evalState);
 
     return buildCompileResult(accum, evalState);
+  } catch (err) {
+    // A program that fails after a Font call on a sliced family (e.g. it
+    // indexes a selection that's empty until the slices arrive) still tells
+    // the playground host which slices to fetch before it retries.
+    annotateFontCoverage(err, annotateState);
+    throw err;
   } finally {
     resetNumberFormat();
   }
@@ -11572,6 +11671,7 @@ export interface EvaluateWithContextResult {
   cssProperties: CSSPropertyDeclaration[];
   viewBox?: import('./types').ViewBoxValue;
   missingGlyphs?: Array<{ family: string; weight: number; chars: string[] }>;
+  fontCoverageRequests?: Array<{ family: string; weight: number; ranges: [number, number][] | null }>;
 }
 
 /**
@@ -11599,6 +11699,7 @@ export function evaluateWithContext(
   options: EvaluateWithContextOptions = {},
 ): EvaluateWithContextResult {
   setNumberFormat(options.toFixed);
+  let annotateState: EvaluationState | undefined;
   try {
     const pathContext = createPathContext({ trackHistory: (options.trackHistory ?? false) || !!options.trace });
     const logs: LogEntry[] = [];
@@ -11625,6 +11726,7 @@ export function evaluateWithContext(
       cssProperties: new Map(),
       fontRegistry: options.fonts,
     };
+    annotateState = evalState;
 
     const scope = createScope();
     scope.evalState = evalState;
@@ -11673,7 +11775,14 @@ export function evaluateWithContext(
       cssProperties: compileResult.cssProperties,
       viewBox: compileResult.viewBox,
       ...(compileResult.missingGlyphs ? { missingGlyphs: compileResult.missingGlyphs } : {}),
+      ...(compileResult.fontCoverageRequests ? { fontCoverageRequests: compileResult.fontCoverageRequests } : {}),
     };
+  } catch (err) {
+    // A program that fails after a Font call on a sliced family (e.g. it
+    // indexes a selection that's empty until the slices arrive) still tells
+    // the playground host which slices to fetch before it retries.
+    annotateFontCoverage(err, annotateState);
+    throw err;
   } finally {
     resetNumberFormat();
   }

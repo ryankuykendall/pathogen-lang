@@ -1,0 +1,193 @@
+//-- Every glyph knows what kind of character it is. The Latin-1
+//-- Supplement block, laid out like a code chart, tinted by category.
+
+define ViewBox(0, 0, 520, 312);
+@font "Raleway" 700;
+
+// ─── Core tokens ───────────────────────────────────────────────
+let bg_color = Color(CSSVar('--bg', #d0d7f0));
+let fg_auto = Color('#0d1638');
+let fg_muted = Color('#0d1638').alpha(0.6);
+let fg_hair = Color('#0d1638').alpha(0.22);
+let letterColor = Color('#0d1638').alpha(0.45);
+let punctuationColor = Color(CSSVar('--punctuation', #b07a12));
+let symbolColor = Color(CSSVar('--symbol', #3a64b8));
+let numberColor = Color(CSSVar('--number', #17818a));
+let otherColor = Color(CSSVar('--other', #8a3c8a));
+let font = 'sans-serif';
+
+let bg = PathLayer('bg') #{
+  fill: bg_color;
+  stroke: none;
+};
+bg.apply {
+  rect(0, 0, 520, 312);
+}
+
+let cells = PathLayer('cells') #{
+  fill: none;
+  stroke: fg_hair;
+  stroke-width: 0.5;
+};
+let letters = PathLayer('letters') #{
+  fill: letterColor;
+  stroke: none;
+};
+let punctuation = PathLayer('punctuation') #{
+  fill: punctuationColor;
+  stroke: none;
+};
+let symbols = PathLayer('symbols') #{
+  fill: symbolColor;
+  stroke: none;
+};
+let numbers = PathLayer('numbers') #{
+  fill: numberColor;
+  stroke: none;
+};
+let others = PathLayer('others') #{
+  fill: otherColor;
+  stroke: none;
+};
+let eyebrow = TextLayer('eyebrow') #{
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 3;
+  fill: fg_muted;
+};
+let selection = TextLayer('selection') #{
+  font-family: monospace;
+  font-size: 10;
+  fill: fg_auto;
+};
+let emptyLabels = TextLayer('empty-labels') #{
+  font-family: font;
+  font-size: 7.5;
+  letter-spacing: 0.8;
+  fill: otherColor;
+  text-anchor: middle;
+};
+// A second signal besides colour: each non-letter cell carries its
+// category's initial in the corner, keyed in the legend.
+let kindMarks = TextLayer('kind-marks') #{
+  font-family: font;
+  font-size: 7.5;
+  font-weight: 700;
+  fill: fg_muted;
+  text-anchor: end;
+};
+let legend = TextLayer('legend') #{
+  font-family: font;
+  font-size: 8;
+  letter-spacing: 0.5;
+  fill: fg_auto;
+};
+
+// ─── Components: one layer per category, so each takes its own fill ─
+let chart = GroupLayer('chart');
+chart.append(cells,
+    letters,
+    punctuation,
+    symbols,
+    numbers,
+    others,
+    emptyLabels,
+    kindMarks);
+let captions = GroupLayer('captions');
+captions.append(eyebrow, selection, legend);
+
+let styles = #{
+  font-family: Raleway;
+  font-weight: 700;
+  font-size: 20;
+};
+
+// ─── The block, one cell per code point ────────────────────────
+let left = 28;
+let top = 62;
+let cellWidth = 29;
+let cellHeight = 34;
+let block = Font.glyphs(styles, 'Latin-1 Supplement');
+let firstCodePoint = block[0].codePoint;
+
+eyebrow.apply {
+  text(left, 30)`LATIN-1 SUPPLEMENT · ${block.length} GLYPHS · TINTED BY CATEGORY`;
+}
+selection.apply {
+  text(left, 46)`Font.glyphs(styles, "Latin-1 Supplement")`;
+}
+
+let letterCount = 0;
+let punctuationCount = 0;
+let symbolCount = 0;
+let numberCount = 0;
+let otherCount = 0;
+
+for (glyph in block) {
+  let offset = glyph.codePoint - firstCodePoint;
+  let cellLeft = calc(left + offset % 16 * cellWidth);
+  let cellTop = calc(top + floor(offset / 16) * cellHeight);
+  cells.apply {
+    rect(cellLeft, cellTop, cellWidth, cellHeight);
+  }
+  // Pick a layer from what the glyph says about itself.
+  // (Latin-1 has no plain digits: ¹ ² ³ and the fractions are 'number'.)
+  let target = others;
+  let mark = 'O';
+  if (glyph.isLetter) {
+    target = letters;
+    mark = '';
+    letterCount = letterCount + 1;
+  } else if (glyph.isPunctuation) {
+    target = punctuation;
+    mark = 'P';
+    punctuationCount = punctuationCount + 1;
+  } else if (glyph.isSymbol) {
+    target = symbols;
+    mark = 'S';
+    symbolCount = symbolCount + 1;
+  } else if (glyph.category == 'number') {
+    target = numbers;
+    mark = 'N';
+    numberCount = numberCount + 1;
+  } else {
+    otherCount = otherCount + 1;
+  }
+  if (mark != '') {
+    kindMarks.apply {
+      text(calc(cellLeft + cellWidth - 3), calc(cellTop + 9))`${mark}`;
+    }
+  }
+  if (glyph.isEmpty) {
+    // A space draws nothing: show its code point instead.
+    emptyLabels.apply {
+      text(calc(cellLeft + cellWidth / 2), calc(cellTop + 20))`${glyph.codePoint}`;
+    }
+  } else {
+    target.apply {
+      M calc(cellLeft + (cellWidth - glyph.advanceWidth) / 2) calc(cellTop + 24) glyph.draw()
+    }
+  }
+}
+
+// ─── Legend, from the counts gathered above ─────────────────────
+let legendY = calc(top + 6 * cellHeight + 26);
+fn legendEntry(target, x, label) {
+  target.apply {
+    rect(x,
+        calc(legendY - 7),
+        8,
+        8);
+  }
+  legend.apply {
+    text(calc(x + 12), legendY)`${label}`;
+  }
+}
+// Five entries spaced evenly across the chart's width.
+let legendStep = 16 * cellWidth / 5;
+legendEntry(letters, left, `letter ${letterCount}`);
+legendEntry(punctuation, calc(left + legendStep), `P punctuation ${punctuationCount}`);
+legendEntry(symbols, calc(left + 2 * legendStep), `S symbol ${symbolCount}`);
+legendEntry(numbers, calc(left + 3 * legendStep), `N number ${numberCount}`);
+legendEntry(others, calc(left + 4 * legendStep), `O space/other ${otherCount}`);

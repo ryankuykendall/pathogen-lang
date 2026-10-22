@@ -1,0 +1,104 @@
+//-- A selection can be a list of code points. Capitals aren't a category,
+//-- but they are a range: A–Z is 65–90, and А–Я is 1040–1071.
+
+define ViewBox(0, 0, 520, 285);
+@font "Raleway" 700;
+
+// ─── Core tokens ───────────────────────────────────────────────
+let bg_color = Color(CSSVar('--bg', #d0d7f0));
+let fg_auto = Color('#0d1638');
+let fg_muted = Color('#0d1638').alpha(0.6);
+let fg_hair = Color('#0d1638').alpha(0.22);
+let latinColor = Color(CSSVar('--latin', #3a64b8));
+let cyrillicColor = Color(CSSVar('--cyrillic', #a8452f));
+let font = 'sans-serif';
+
+let bg = PathLayer('bg') #{
+  fill: bg_color;
+  stroke: none;
+};
+bg.apply {
+  rect(0, 0, 520, 285);
+}
+
+let cells = PathLayer('cells') #{
+  fill: none;
+  stroke: fg_hair;
+  stroke-width: 0.5;
+};
+let latinGlyphs = PathLayer('latin-glyphs') #{
+  fill: latinColor;
+  stroke: none;
+};
+let cyrillicGlyphs = PathLayer('cyrillic-glyphs') #{
+  fill: cyrillicColor;
+  stroke: none;
+};
+let eyebrow = TextLayer('eyebrow') #{
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 3;
+  fill: fg_muted;
+};
+let selection = TextLayer('selection') #{
+  font-family: monospace;
+  font-size: 10;
+  fill: fg_auto;
+};
+let codePoints = TextLayer('code-points') #{
+  font-family: font;
+  font-size: 7.5;
+  letter-spacing: 0.3;
+  fill: fg_muted;
+  text-anchor: middle;
+};
+
+// ─── Components ────────────────────────────────────────────────
+let grids = GroupLayer('grids');
+grids.append(cells, latinGlyphs, cyrillicGlyphs, codePoints);
+let captions = GroupLayer('captions');
+captions.append(eyebrow, selection);
+
+let styles = #{
+  font-family: Raleway;
+  font-weight: 700;
+  font-size: 20;
+};
+
+// ─── A grid of glyphs, each centred in a cell over its code point ─
+let left = 28;
+let cellWidth = 29;
+let cellHeight = 38;
+let columns = 16;
+
+fn drawGrid(target, glyphs, top) {
+  for ([glyph, i] in glyphs) {
+    let cellLeft = calc(left + i % columns * cellWidth);
+    let cellTop = calc(top + floor(i / columns) * cellHeight);
+    let baseline = calc(cellTop + 21);
+    cells.apply {
+      rect(cellLeft, cellTop, cellWidth, cellHeight);
+    }
+    target.apply {
+      M calc(cellLeft + (cellWidth - glyph.advanceWidth) / 2) baseline glyph.draw()
+    }
+    codePoints.apply {
+      text(calc(cellLeft + cellWidth / 2), calc(cellTop + 34))`${glyph.codePoint}`;
+    }
+  }
+}
+
+let latinCapitals = Font.glyphs(styles, (65..90));
+let cyrillicCapitals = Font.glyphs(styles, (1040..1071));
+
+eyebrow.apply {
+  text(left, 30)`LATIN CAPITALS · ${latinCapitals.length} GLYPHS`;
+  text(left, 164)`CYRILLIC CAPITALS · ${cyrillicCapitals.length} GLYPHS`;
+}
+selection.apply {
+  text(left, 44)`Font.glyphs(styles, (65..90))`;
+  text(left, 178)`Font.glyphs(styles, (1040..1071))`;
+}
+drawGrid(latinGlyphs, latinCapitals, 54);
+drawGrid(cyrillicGlyphs, cyrillicCapitals, 188);

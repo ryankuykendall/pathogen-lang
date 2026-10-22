@@ -1,0 +1,5 @@
+@font "Raleway" 700;
+let styles = #{ font-family: Raleway; font-weight: 700; font-size: 20; };
+for ([glyph, k] in Font.glyphs(styles, "Inherited")) { if (k < 3) { log(glyph.char, glyph.advanceWidth, glyph.boundingBox()); } }
+let a = PathBlock.fromGlyph("A", styles)[0];
+log(a.boundingBox(), a.advanceWidth);

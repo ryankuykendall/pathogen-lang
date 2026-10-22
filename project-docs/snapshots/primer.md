@@ -23,6 +23,10 @@ Phase 2 notes for Phase 3:
 5. **Scratch buffer (new idea in the mockup):** should the first snapshot from an unsaved scratch buffer create a workspace automatically, or should it ask?
 6. **Toast "Undo":** delete the snapshot just taken. Keep or drop?
 
+## Later change (user, 2026-10-19, after launch)
+
+- **SVG cap raised from 12 MB to 50 MB** ("I make so very large SVGs"). The API no longer copies uploads in memory: sizes come from the `File`, format checks read only the first bytes, and the `File` goes straight to R2 — so a 50 MB upload stays well inside the Worker's 128 MB. Older sections below still say 12 MB; they record what was decided then.
+
 ## v1 review feedback (user, 2026-10-19)
 
 1. Capture: use **B, the name popover**. No accent color on the Snapshot button border or text; style it like the other toolbar buttons.

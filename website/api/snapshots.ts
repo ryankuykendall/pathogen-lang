@@ -26,8 +26,13 @@ import { errorResponse, generateNanoId, hashContent, jsonResponse, slugify } fro
 export const SNAPSHOT_LIMITS = {
   /** Snapshots per account, across all workspaces. */
   perUser: 500,
-  /** Bytes of SVG per snapshot (same cap as the approval SVG). */
-  svgBytes: 12 * 1024 * 1024,
+  /**
+   * Bytes of SVG per snapshot. The handler adds no copies of its own (sizes
+   * come from the File, format checks read the first bytes, R2 gets the
+   * File itself); request.formData() still buffers the body. A 49 MB upload
+   * was verified against the local wrangler/workerd runtime only.
+   */
+  svgBytes: 50 * 1024 * 1024,
   /** Bytes of Pathogen source per snapshot. */
   codeBytes: 1024 * 1024,
   /** Bytes of the PNG card thumbnail. */
@@ -256,9 +261,13 @@ export async function deleteSnapshotsForWorkspace(env: Env, workspaceId: string)
   return rows.length;
 }
 
-async function readUpload(file: FormDataEntryValue | null): Promise<Uint8Array | null> {
-  if (!file || typeof file === 'string') return null;
-  return new Uint8Array(await file.arrayBuffer());
+function asFile(entry: FormDataEntryValue | null): File | null {
+  return entry && typeof entry !== 'string' ? entry : null;
+}
+
+/** First bytes of an upload, for format checks (no full copy). */
+async function head(file: Blob, bytes = 512): Promise<Uint8Array> {
+  return new Uint8Array(await file.slice(0, bytes).arrayBuffer());
 }
 
 function hasPngMagic(bytes: Uint8Array): boolean {
@@ -323,30 +332,30 @@ export const snapshotHandlers = {
       return errorResponse('Expected multipart form data', 400);
     }
 
-    const svg = await readUpload(form.get('svg'));
-    const code = await readUpload(form.get('code'));
-    const card = await readUpload(form.get('card'));
+    const svg = asFile(form.get('svg'));
+    const code = asFile(form.get('code'));
+    const card = asFile(form.get('card'));
     if (!svg || !code || !card) return errorResponse('Missing svg, code or card', 400);
 
-    if (svg.byteLength > SNAPSHOT_LIMITS.svgBytes) {
+    if (svg.size > SNAPSHOT_LIMITS.svgBytes) {
       return tooLarge(
         'snapshot-svg-too-large',
-        `This render is ${formatMb(svg.byteLength)}. Snapshots are limited to ${formatMb(SNAPSHOT_LIMITS.svgBytes)}.`,
-        svg.byteLength,
+        `This render is ${formatMb(svg.size)}. Snapshots are limited to ${formatMb(SNAPSHOT_LIMITS.svgBytes)}.`,
+        svg.size,
         SNAPSHOT_LIMITS.svgBytes,
       );
     }
-    if (code.byteLength > SNAPSHOT_LIMITS.codeBytes) {
+    if (code.size > SNAPSHOT_LIMITS.codeBytes) {
       return tooLarge(
         'snapshot-code-too-large',
-        `This program is ${formatMb(code.byteLength)}. Snapshots can hold up to ${formatMb(SNAPSHOT_LIMITS.codeBytes)} of code.`,
-        code.byteLength,
+        `This program is ${formatMb(code.size)}. Snapshots can hold up to ${formatMb(SNAPSHOT_LIMITS.codeBytes)} of code.`,
+        code.size,
         SNAPSHOT_LIMITS.codeBytes,
       );
     }
-    if (card.byteLength > SNAPSHOT_LIMITS.cardBytes) return errorResponse('Card image is too large', 413);
-    if (!looksLikeSvg(svg)) return errorResponse('svg is not an SVG document', 400);
-    if (!hasPngMagic(card)) return errorResponse('card is not a PNG image', 400);
+    if (card.size > SNAPSHOT_LIMITS.cardBytes) return errorResponse('Card image is too large', 413);
+    if (!looksLikeSvg(await head(svg))) return errorResponse('svg is not an SVG document', 400);
+    if (!hasPngMagic(await head(card, PNG_MAGIC.length))) return errorResponse('card is not a PNG image', 400);
 
     let meta: Record<string, unknown> = {};
     const rawMeta = form.get('meta');
@@ -387,11 +396,11 @@ export const snapshotHandlers = {
     // Files first, row second: a failed insert leaves files we can delete,
     // whereas a row without files would list a broken snapshot.
     const id = generateNanoId();
-    const files: Record<R2FileKind, Uint8Array> = { svg, code, card };
+    const files: Record<R2FileKind, File> = { svg, code, card };
     await Promise.all(
       R2_FILE_KINDS.map((kind) =>
-        // readUpload's Uint8Array owns its whole buffer, so .buffer is exactly the file.
-        env.THUMBNAILS.put(r2Key(workspaceId, id, kind), files[kind].buffer as ArrayBuffer, {
+        // The File itself: R2 reads it without another in-memory copy.
+        env.THUMBNAILS.put(r2Key(workspaceId, id, kind), files[kind], {
           httpMetadata: { contentType: R2_FILES[kind].contentType },
         }),
       ),
@@ -425,8 +434,8 @@ export const snapshotHandlers = {
             parseFiniteOrNull(meta.width),
             parseFiniteOrNull(meta.height),
             background,
-            svg.byteLength,
-            code.byteLength,
+            svg.size,
+            code.size,
             null,
             createdAt,
             userId,

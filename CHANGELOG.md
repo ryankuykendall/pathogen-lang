@@ -5,6 +5,42 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] - 2026-10-19 (the Font namespace: what a font contains)
+
+### Added
+
+#### Core
+
+- **`Font.info(styles)`, `Font.characters(styles, selection?)` and `Font.glyphs(styles, selection?)`** — ask a font loaded with `@font` what it contains. `Font.info` returns names (family, style, version, designer, license…), metrics scaled to the style's font-size (cap height, x-height, ascender…) and coverage: character / glyph / unmapped counts plus the Unicode **scripts**, **blocks** and **categories** present, with counts. `Font.characters` returns the characters as a string; `Font.glyphs` returns them as glyph PathBlocks, identical to `PathBlock.fromGlyph` for the same characters, and warns above 5,000. A selection is a script name (`"Cyrillic"`), a block name (`"Latin-1 Supplement"`), a category (`"digit"`), an array of code points (`(48..57)`), or an object combining them (`{ script: "Cyrillic", category: "letter" }`); unknown names suggest the closest. Glyphs that no character maps to (alternates, ligatures) are counted but not listed.
+- **New glyph properties** on every glyph PathBlock (`fromGlyph` too): `script`, `block`, `category`, `isLetter`, `isDigit`, `isPunctuation`, `isSymbol`, `glyphName`.
+- Unicode 16 block and script tables (`src/evaluator/unicode-data.generated.ts`, `npm run generate:unicode-data` from vendored UCD files). Completions, hover and signature help for `Font.*`, the info object and the new properties are generated from `pathogen-api.ts`.
+
+#### Playground
+
+- `Font` calls on a family Google serves in slices fetch exactly the slices they need (a script, block or code-point selection) or all of them (`Font.info`, unselected or category calls; a banner note says how many). A program that fails because a selection was empty before its slices arrived is retried once they're loaded. Failed slices wait 60 s before another attempt. Measured on Noto Sans SC after loading all 101 slices: about 70 ms more per keystroke.
+
+#### Documentation
+
+- `docs/fonts.md` (new): the three functions, selections, categories, the new glyph properties, slice loading, errors. Every example compiled through the CLI; content-reviewed (12 findings applied).
+- **Blog: "What's in the Font? Reading the Packing List"** (`website/blog/whats-in-the-font.md`, samples in `website/blog/samples/post57/`). Five samples climb from `Font.characters(styles, "digit")` to a type specimen that reads its name, metrics, Latin-1 letters and script coverage from the font and lays itself out for any family (checked with 11 families across the CLI and the playground). Content-reviewed (19 findings applied).
+
+### Fixed
+
+#### Core
+
+- The editor no longer shows a false "font is not loaded" error on every `Font` call. Editor diagnostics run without fonts; `Font` calls now report that the same way `fromGlyph` does, so the check recognises it and stays quiet.
+- `Font.info` reported Google-served weights under the variable font's default name ("Raleway Thin", "Raleway Thin Bold"). It now reports the family that was loaded ("Raleway", "Raleway Bold").
+
+### Changed
+
+#### Core
+
+- **Snapshot images can be up to 50 MB** (was 12 MB). The API no longer copies uploads in memory: sizes come from the uploaded file, format checks read only its first bytes, and the file goes straight to R2. Verified with a 49 MB upload against the local Workers runtime.
+
+#### Development
+
+- `project-docs/glyph-listing/`: proposals v1/v2 with the decisions, CLI doc-example renders, playground verification (`verify/verify-font-namespace.mjs`, 10/10 against real Google Fonts) and the keystroke measurement; review dispositions in `reviews-disposition.md`.
+
 ## [Unreleased] - 2026-10-19 (workspace snapshots)
 
 ### Added

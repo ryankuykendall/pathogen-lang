@@ -1676,7 +1676,7 @@ dot.apply { circle(100, 100, 14); }`;
                             note: '',
                             exportInstead: true,
                             message:
-                              'This render is 18.4 MB. Snapshots are limited to 12 MB. Try a lower Precision, or export it directly.',
+                              'This render is 61.2 MB. Snapshots are limited to 50 MB. Try a lower Precision, or export it directly.',
                           };
         // After layout, so the anchor rect is real.
         setTimeout(() => {

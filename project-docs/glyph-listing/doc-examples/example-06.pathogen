@@ -1,0 +1,6 @@
+@font "Raleway" 700;
+let styles = #{ font-family: Raleway; font-weight: 700; font-size: 40; };
+
+for (glyph in Font.glyphs(styles, "Latin-1 Supplement")) {
+  if (glyph.isLetter) { log(glyph.char, glyph.glyphName); }    // ª ordfeminine, µ uni00B5, º ordmasculine, À Agrave, …
+}

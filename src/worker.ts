@@ -12,6 +12,8 @@ export interface FontBuffer {
   buffer: ArrayBuffer;
   // Codepoint coverage claim of a Google Fonts subset slice (see FontData.unicodeRanges)
   unicodeRanges?: Array<[number, number]>;
+  // More slices of this family exist than were sent (see FontData.partial)
+  partial?: boolean;
 }
 
 export interface WorkerRequest {
@@ -28,6 +30,8 @@ export interface WorkerResponse {
   success: boolean;
   result?: unknown;
   error?: string;
+  /** Font slices a failed compile needed (see FontData.partial); the host fetches them and retries. */
+  fontCoverageRequests?: unknown;
 }
 
 /**
@@ -36,7 +40,7 @@ export interface WorkerResponse {
 function buildRegistryFromBuffers(buffers: FontBuffer[]): FontRegistry {
   const registry = createFontRegistry();
   for (const fb of buffers) {
-    addFont(registry, fb.family, fb.weight, fb.style, fb.buffer, fb.unicodeRanges);
+    addFont(registry, fb.family, fb.weight, fb.style, fb.buffer, fb.unicodeRanges, fb.partial);
   }
   return registry;
 }
@@ -82,6 +86,9 @@ self.onmessage = (event: MessageEvent<WorkerRequest>) => {
       type,
       success: false,
       error: e instanceof Error ? e.message : String(e),
+      ...(e instanceof Error && 'fontCoverageRequests' in e
+        ? { fontCoverageRequests: (e as Error & { fontCoverageRequests: unknown }).fontCoverageRequests }
+        : {}),
     };
 
     self.postMessage(response);

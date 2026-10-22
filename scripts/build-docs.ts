@@ -91,6 +91,7 @@ const DOC_FILES: Record<string, string> = {
   'subscriptions.md': 'subscriptions',
   'variable-offset.md': 'variableOffset',
   'textblock.md': 'textBlock',
+  'fonts.md': 'fonts',
   'color.md': 'color',
   'gradients.md': 'gradients',
   'cssvar.md': 'cssVar',

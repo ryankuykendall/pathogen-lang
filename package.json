@@ -64,6 +64,7 @@
     "inspect:pdf": "tsx scripts/inspect-pdf.ts",
     "serve:bbwp": "tsx scripts/serve-bbwp.ts",
     "update:bbwp-index": "tsx scripts/update-bbwp-index.ts",
+    "generate:unicode-data": "tsx scripts/generate-unicode-data.ts",
     "backfill:approval-svgs": "tsx scripts/backfill-approval-svgs.ts",
     "build:vscode": "tsx scripts/build-vscode-extension.ts",
     "build:vscode:install": "tsx scripts/build-vscode-extension.ts --install",

@@ -516,6 +516,96 @@ export declare namespace PathBlock {
   function fromGlyph(text: string, styles: Value): PathogenArray<PathogenPathBlock>;
 }
 
+/** Font — what a loaded font contains: Font.info(), Font.characters(), Font.glyphs() (docs/fonts.md) @boost 8 @kind variable */
+export declare namespace Font {
+  /** Font.info(styles) — Names, metrics (scaled to font-size) and coverage of a font loaded with @font: scripts, blocks and categories with counts */
+  function info(styles: Value): PathogenFontInfo;
+  /** Font.characters(styles, selection?) — The font's characters as a string, in code-point order; selection is a script, block or category name, an array of code points, or { script, block, category, codePoints } */
+  function characters(styles: Value, selection?: Value): string;
+  /** Font.glyphs(styles, selection?) — The font's glyphs as glyph PathBlocks in code-point order (the same glyphs PathBlock.fromGlyph builds); warns above 5,000 */
+  function glyphs(styles: Value, selection?: Value): PathogenArray<PathogenPathBlock>;
+}
+
+/** @type FontInfo */
+export interface PathogenFontInfo {
+  /** Family name, e.g. "Roboto" */
+  readonly family: string;
+  /** Style name, e.g. "Regular", "Bold Italic" */
+  readonly style: string;
+  /** Full name, e.g. "Roboto Bold" */
+  readonly fullName: string;
+  /** The font's version string */
+  readonly version: string;
+  /** Designer, or null */
+  readonly designer: string | null;
+  /** Designer's website, or null */
+  readonly designerUrl: string | null;
+  /** License description, or null */
+  readonly license: string | null;
+  /** Link to the license, or null */
+  readonly licenseUrl: string | null;
+  /** Weight class, 100–900 */
+  readonly weight: number;
+  /** True for italic and oblique styles */
+  readonly isItalic: boolean;
+  /** True when every glyph has the same width */
+  readonly isMonospace: boolean;
+  /** The font's design grid per em (unscaled) */
+  readonly unitsPerEm: number;
+  /** Height reserved above the baseline, at the style's font-size */
+  readonly ascender: number;
+  /** Depth below the baseline (negative), at the style's font-size */
+  readonly descender: number;
+  /** Recommended extra space between lines, at the style's font-size */
+  readonly lineGap: number;
+  /** Height of a flat capital such as H, at the style's font-size */
+  readonly capHeight: number;
+  /** Height of a lowercase x, at the style's font-size */
+  readonly xHeight: number;
+  /** Every glyph, including unmapped ones */
+  readonly glyphCount: number;
+  /** Characters with their own glyph */
+  readonly characterCount: number;
+  /** Glyphs no single character maps to (alternates, ligatures, joined forms) */
+  readonly unmappedCount: number;
+  /** { name, count } per writing system, most characters first */
+  readonly scripts: PathogenArray<PathogenFontScript>;
+  /** { name, count, size, start, end } per Unicode block, in code-point order */
+  readonly blocks: PathogenArray<PathogenFontBlock>;
+  /** { name, count } per character category present */
+  readonly categories: PathogenArray<PathogenFontCategory>;
+}
+
+/** @type FontScript */
+export interface PathogenFontScript {
+  /** Script name, e.g. "Latin", "Cyrillic", "Common" */
+  readonly name: string;
+  /** Characters of this script in the font */
+  readonly count: number;
+}
+
+/** @type FontBlock */
+export interface PathogenFontBlock {
+  /** Block name, e.g. "Latin-1 Supplement" */
+  readonly name: string;
+  /** Characters of this block in the font */
+  readonly count: number;
+  /** Code points the block holds */
+  readonly size: number;
+  /** First code point of the block */
+  readonly start: number;
+  /** Last code point of the block */
+  readonly end: number;
+}
+
+/** @type FontCategory */
+export interface PathogenFontCategory {
+  /** letter, mark, digit, number, punctuation, symbol, whitespace or other */
+  readonly name: string;
+  /** Characters of this category in the font */
+  readonly count: number;
+}
+
 /** @type ColorInstance */
 export interface PathogenColorInstance {
   /** CSS color string */
@@ -929,20 +1019,36 @@ export interface PathogenPathBlock {
   readonly contours: PathogenArray<PathogenPathBlock>;
   /** True when the block has no path commands (e.g. a space glyph) */
   readonly isEmpty: boolean;
-  /** Source character of a fromGlyph() glyph (fromGlyph results only) */
+  /** Source character of a glyph (glyphs from fromGlyph or Font.glyphs only) */
   readonly char: string;
-  /** True when the fromGlyph() source character is whitespace (fromGlyph results only) */
+  /** True when the source character is whitespace (glyphs from fromGlyph or Font.glyphs only) */
   readonly isWhitespace: boolean;
-  /** True when the fromGlyph() source character is a horizontal space — space, no-break space, ideographic space, … (fromGlyph results only) */
+  /** True when the source character is a horizontal space — space, no-break space, ideographic space, … (glyphs from fromGlyph or Font.glyphs only) */
   readonly isSpace: boolean;
-  /** True when the fromGlyph() source character is a tab (fromGlyph results only) */
+  /** True when the source character is a tab (glyphs from fromGlyph or Font.glyphs only) */
   readonly isTab: boolean;
-  /** True when the fromGlyph() source character is a line break — \n, \r, U+2028, … (fromGlyph results only) */
+  /** True when the source character is a line break — \n, \r, U+2028, … (glyphs from fromGlyph or Font.glyphs only) */
   readonly isNewline: boolean;
-  /** True when the fromGlyph() source character is a combining mark that overlays the previous glyph (fromGlyph results only) */
+  /** True when the source character is a combining mark that overlays the previous glyph (glyphs from fromGlyph or Font.glyphs only) */
   readonly isMark: boolean;
-  /** Unicode code point of the fromGlyph() source character (fromGlyph results only) */
+  /** Unicode code point of the source character (glyphs from fromGlyph or Font.glyphs only) */
   readonly codePoint: number;
+  /** Writing system of the source character, e.g. "Latin", "Cyrillic", "Common" (glyphs only) */
+  readonly script: string;
+  /** Unicode block of the source character, e.g. "Latin-1 Supplement" (glyphs only) */
+  readonly block: string;
+  /** Category of the source character: letter, mark, digit, number, punctuation, symbol, whitespace, other (glyphs only) */
+  readonly category: string;
+  /** True when the source character is a letter (glyphs only) */
+  readonly isLetter: boolean;
+  /** True when the source character is a decimal digit (glyphs only) */
+  readonly isDigit: boolean;
+  /** True when the source character is punctuation (glyphs only) */
+  readonly isPunctuation: boolean;
+  /** True when the source character is a symbol — math, currency, arrows, … (glyphs only) */
+  readonly isSymbol: boolean;
+  /** The font's name for the glyph, e.g. "Aacute"; null when the font omits names (glyphs only) */
+  readonly glyphName: string | null;
 
   // Core methods
   /** draw() — Emit path at the current pen position; returns a ProjectedPath */

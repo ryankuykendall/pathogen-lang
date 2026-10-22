@@ -1646,7 +1646,7 @@ Each glyph PathBlock records where it came from and whether it drew anything:
 | `isMark` | `boolean` | `true` for combining marks — accents and vowel signs that overlay the previous glyph (see below) |
 | `isEmpty` | `boolean` | `true` when the glyph produced no outline commands (spaces, and other outline-less characters) |
 
-`char`, `codePoint`, and the `is*` classifications exist only on glyphs produced by `fromGlyph` — reading them on any other PathBlock is an error. `isEmpty` works on every PathBlock (and ProjectedPath).
+`char`, `codePoint`, and the `is*` classifications exist only on glyphs produced by `fromGlyph` or [`Font.glyphs`](#fonts-fontglyphsstyles-selection) — reading them on any other PathBlock is an error. `isEmpty` works on every PathBlock (and ProjectedPath).
 
 Use `isNewline` to honor hard line breaks during layout:
 

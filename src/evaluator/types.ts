@@ -48,6 +48,7 @@ export type Value =
   | SubpathValue
   | SubscriptionValue
   | PathBlockNamespace
+  | FontNamespace
   | MarkerNamespace
   | ProjectedPathValue
   | CyclerValue
@@ -536,6 +537,14 @@ export interface MarkerNamespace {
  */
 export interface PathBlockNamespace {
   type: 'PathBlockNamespace';
+}
+
+/**
+ * Sentinel for the Font namespace (Font.info, Font.characters, Font.glyphs —
+ * docs/fonts.md)
+ */
+export interface FontNamespace {
+  type: 'FontNamespace';
 }
 
 // ---------------------------------------------------------------------------
@@ -1162,6 +1171,12 @@ export interface CompileResult {
    * genuinely absent from the font.
    */
   missingGlyphs?: Array<{ family: string; weight: number; chars: string[] }>;
+  /**
+   * Code-point ranges `Font.*` calls read from a family that arrived as
+   * unicode-range slices (null = the whole font). The playground host fetches
+   * the slices covering them and recompiles. Absent when no call needed it.
+   */
+  fontCoverageRequests?: Array<{ family: string; weight: number; ranges: [number, number][] | null }>;
 }
 
 // ---------------------------------------------------------------------------
@@ -1182,6 +1197,12 @@ export interface FontData {
    * the buffer makes no claim and its cmap is the arbiter.
    */
   unicodeRanges?: Array<[number, number]>;
+  /**
+   * The host knows this family has more unicode-range slices than are
+   * loaded (playground Google Fonts). The Font namespace then asks the host
+   * for the slices it needs (EvaluationState.fontCoverageRequests).
+   */
+  partial?: boolean;
   _parsed?: unknown; // lazily parsed opentype.js Font object
 }
 
@@ -1241,6 +1262,7 @@ export interface EvaluationState {
   cssProperties: Map<string, CSSPropertyDeclaration>; // @property declarations from Color(CSSVar(...))
   fontRegistry?: FontRegistry; // Loaded font data for precise metrics and glyph extraction
   missingGlyphs?: Map<string, Set<string>>; // "family:weight" → chars with no glyph in any variant
+  fontCoverageRequests?: Map<string, [number, number][] | null>; // "family:weight" → ranges Font.* read (null = all)
   viewBox?: ViewBoxValue & { loc?: SourceLocation }; // Resolved viewBox from `define ViewBox(...)`
   subscriptions?: SubscriptionValue[]; // registration order; dispatched at program end
   dispatching?: SubscriptionValue | null; // the subscription whose callback is running

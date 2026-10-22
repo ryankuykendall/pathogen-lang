@@ -1,0 +1,12 @@
+@font "Raleway" 700;
+let styles = #{ font-family: Raleway; font-weight: 700; font-size: 48; };
+let info = Font.info(styles);
+log(info.family, info.style, info.weight, info.characterCount, info.glyphCount, info.unmappedCount);
+log(info.capHeight, info.xHeight, info.unitsPerEm, info.isItalic, info.isMonospace);
+for (s in info.scripts) { log(s.name, s.count); }
+for (c in info.categories) { log(c.name, c.count); }
+for (b in info.blocks) { log(b.name, b.count, b.size); }
+log(Font.characters(styles, "digit"));
+log(Font.characters(styles, { script: "Cyrillic", category: "letter" }).length);
+let g = Font.glyphs(styles, (65..67));
+for (x in g) { log(x.char, x.glyphName, x.script, x.block, x.category, x.isLetter, x.advanceWidth); }

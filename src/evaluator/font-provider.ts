@@ -75,9 +75,11 @@ export function addFont(
   style: 'normal' | 'italic',
   buffer: ArrayBuffer,
   unicodeRanges?: Array<[number, number]>,
+  partial?: boolean,
 ): void {
   const fontData: FontData = { family, weight, style, buffer };
   if (unicodeRanges) fontData.unicodeRanges = unicodeRanges;
+  if (partial) fontData.partial = true;
   const existing = registry.fonts.get(family);
   if (existing) {
     existing.push(fontData);
@@ -416,4 +418,182 @@ export function splitContours(commands: PathBlockCommand[]): PathBlockCommand[][
   // subpath rule in subpaths.ts. Glyph outlines always read `m … z`, so this
   // matches the former z-split exactly for fonts.
   return splitSubpathCommands(commands);
+}
+
+// ---------------------------------------------------------------------------
+// Font inventory (Font namespace — docs/fonts.md)
+// ---------------------------------------------------------------------------
+
+export interface FontCoverage {
+  /** The variants that make up this family+weight+style (one, or many slices). */
+  variants: FontData[];
+  /** The variant names and metrics are read from. */
+  primary: FontData;
+  /** Every mapped code point, ascending, de-duplicated across slices. */
+  codePoints: number[];
+  /** Glyphs no code point maps to (alternates, ligatures, contextual forms). */
+  unmappedCount: number;
+  /** All glyphs: .notdef + mapped glyphs + unmapped glyphs. */
+  glyphCount: number;
+  /** True when the family arrived (or is still arriving) as unicode-range slices (playground Google Fonts). */
+  isSplit: boolean;
+}
+
+/**
+ * The characters a family+weight can draw, read from the cmap of every
+ * variant at the best-matching weight and style. Slices are gated by their
+ * declared unicodeRanges, like lookupGlyph. For sliced families the glyph
+ * counts are summed per slice (a glyph shared by two slices counts twice);
+ * a single complete file gives exact counts.
+ */
+export function getFontCoverage(
+  registry: FontRegistry,
+  family: string,
+  weight = 400,
+  style: 'normal' | 'italic' = 'normal',
+): FontCoverage | null {
+  const ordered = getFontVariants(registry, family, weight, style);
+  if (ordered.length === 0) return null;
+  const best = ordered[0];
+  const variants = ordered.filter((v) => v.weight === best.weight && v.style === best.style);
+  const primary = variants.find((v) => !v.unicodeRanges) ?? variants[0];
+
+  const codePoints = new Set<number>();
+  let unmappedCount = 0;
+  let glyphCount = 1; // .notdef, once
+  for (const v of variants) {
+    const font = getParsedFont(v);
+    const map = (font.tables.cmap?.glyphIndexMap ?? {}) as Record<string, number>;
+    const mappedGlyphs = new Set<number>();
+    for (const [key, glyphIndex] of Object.entries(map)) {
+      if (!glyphIndex) continue;
+      const cp = Number(key);
+      if (v.unicodeRanges && !v.unicodeRanges.some(([lo, hi]) => cp >= lo && cp <= hi)) continue;
+      codePoints.add(cp);
+      mappedGlyphs.add(glyphIndex);
+    }
+    const allMapped = new Set(Object.values(map).filter((g) => g > 0));
+    unmappedCount += Math.max(0, font.numGlyphs - 1 - allMapped.size);
+    glyphCount += Math.max(0, font.numGlyphs - 1 - allMapped.size) + mappedGlyphs.size;
+  }
+
+  return {
+    variants,
+    primary,
+    codePoints: [...codePoints].sort((a, b) => a - b),
+    unmappedCount,
+    glyphCount,
+    isSplit: variants.some((v) => !!v.unicodeRanges || !!v.partial),
+  };
+}
+
+export interface FontIdentity {
+  family: string;
+  style: string;
+  fullName: string;
+  version: string;
+  designer: string | null;
+  designerUrl: string | null;
+  license: string | null;
+  licenseUrl: string | null;
+  weight: number;
+  isItalic: boolean;
+  isMonospace: boolean;
+  unitsPerEm: number;
+  ascender: number;
+  descender: number;
+  lineGap: number;
+  capHeight: number;
+  xHeight: number;
+}
+
+function englishName(font: import('opentype.js').Font, ...keys: string[]): string | null {
+  const names = font.names as unknown as Record<string, Record<string, string> | undefined>;
+  for (const key of keys) {
+    const entry = names[key];
+    const value = entry?.en ?? (entry ? Object.values(entry)[0] : undefined);
+    if (value) return value;
+  }
+  return null;
+}
+
+/** Height of a glyph's ink above the baseline, in font units (0 when absent). */
+function glyphTop(font: import('opentype.js').Font, char: string): number {
+  if (font.charToGlyphIndex(char) <= 0) return 0;
+  const box = font.charToGlyph(char).getBoundingBox();
+  return Number.isFinite(box.y2) ? box.y2 : 0;
+}
+
+/**
+ * The family and full name Font.info reports. The font's name table is the
+ * source, with one exception: Google Fonts cuts each weight from a variable
+ * font and some files keep the default instance's name, so Raleway Bold
+ * says its family is "Raleway Thin". When the table's family is the family
+ * that was loaded plus extra words, the loaded name wins and the full name
+ * is rebuilt from it. A table name unrelated to the loaded one (a local file
+ * registered under its file name) is kept as the font's own.
+ */
+export function resolveFamilyNames(
+  loadedFamily: string,
+  tableFamily: string | null,
+  tableFullName: string | null,
+  style: string,
+): { family: string; fullName: string } {
+  if (!tableFamily) return { family: loadedFamily, fullName: tableFullName ?? `${loadedFamily} ${style}` };
+  const leaked = tableFamily !== loadedFamily && tableFamily.toLowerCase().startsWith(`${loadedFamily.toLowerCase()} `);
+  if (leaked) return { family: loadedFamily, fullName: `${loadedFamily} ${style}` };
+  return { family: tableFamily, fullName: tableFullName ?? `${tableFamily} ${style}` };
+}
+
+/**
+ * Names, style flags and metrics from the `name`, `OS/2`, `post`, `head` and
+ * `hhea` tables. Metrics other than unitsPerEm are scaled to `fontSize`.
+ * Cap height and x-height fall back to measuring `H` / `x` when OS/2 omits
+ * them (older fonts).
+ */
+export function getFontIdentity(fontData: FontData, fontSize: number): FontIdentity {
+  const font = getParsedFont(fontData);
+  const os2 = font.tables.os2 as
+    | { usWeightClass?: number; fsSelection?: number; sTypoLineGap?: number; sCapHeight?: number; sxHeight?: number }
+    | undefined;
+  const post = font.tables.post as { isFixedPitch?: number; italicAngle?: number } | undefined;
+  const head = font.tables.head as { macStyle?: number } | undefined;
+  const scale = fontSize / font.unitsPerEm;
+  const style = englishName(font, 'preferredSubfamily', 'fontSubfamily') ?? 'Regular';
+  const { family, fullName } = resolveFamilyNames(
+    fontData.family,
+    englishName(font, 'preferredFamily', 'fontFamily'),
+    englishName(font, 'fullName'),
+    style,
+  );
+  const capUnits = os2?.sCapHeight && os2.sCapHeight > 0 ? os2.sCapHeight : glyphTop(font, 'H');
+  const xUnits = os2?.sxHeight && os2.sxHeight > 0 ? os2.sxHeight : glyphTop(font, 'x');
+  return {
+    family,
+    style,
+    fullName,
+    version: englishName(font, 'version') ?? '',
+    designer: englishName(font, 'designer'),
+    designerUrl: englishName(font, 'designerURL'),
+    license: englishName(font, 'license'),
+    licenseUrl: englishName(font, 'licenseURL'),
+    weight: os2?.usWeightClass ?? fontData.weight,
+    isItalic:
+      ((os2?.fsSelection ?? 0) & 1) === 1 || ((head?.macStyle ?? 0) & 2) === 2 || (post?.italicAngle ?? 0) !== 0,
+    isMonospace: (post?.isFixedPitch ?? 0) !== 0,
+    unitsPerEm: font.unitsPerEm,
+    ascender: font.ascender * scale,
+    descender: font.descender * scale,
+    lineGap: (os2?.sTypoLineGap ?? 0) * scale,
+    capHeight: capUnits * scale,
+    xHeight: xUnits * scale,
+  };
+}
+
+/** The font's own name for the glyph a character maps to; null when the font omits names. */
+export function getGlyphName(fontData: FontData, char: string): string | null {
+  const font = getParsedFont(fontData);
+  if (font.charToGlyphIndex(char) <= 0) return null;
+  const name = font.charToGlyph(char).name;
+  return name || null;
 }

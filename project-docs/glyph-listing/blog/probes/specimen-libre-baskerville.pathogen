@@ -1,0 +1,277 @@
+//-- A one-page type specimen, every part of it read from the font: its
+//-- name, its vertical metrics, its Latin-1 letters and the writing
+//-- systems it covers. Change `family` and it redraws.
+
+define ViewBox(0, 0, 520, 470);
+
+let family = 'Libre Baskerville';
+@font family 700;
+
+// ─── Core tokens ───────────────────────────────────────────────
+let bg_color = Color(CSSVar('--bg', #d0d7f0));
+let fg_auto = Color('#0d1638');
+let fg_muted = Color('#0d1638').alpha(0.6);
+let fg_hair = Color('#0d1638').alpha(0.22);
+let accent = Color(CSSVar('--accent', #3a64b8));
+let guideColor = Color(CSSVar('--guide', #a8452f));
+let font = 'sans-serif';
+
+let bg = PathLayer('bg') #{
+  fill: bg_color;
+  stroke: none;
+};
+bg.apply {
+  rect(0, 0, 520, 470);
+}
+
+let ink = PathLayer('ink') #{
+  fill: fg_auto;
+  stroke: none;
+};
+let guides = PathLayer('guides') #{
+  fill: none;
+  stroke: guideColor;
+  stroke-width: 0.5;
+  stroke-dasharray: 3 4;
+};
+let rules = PathLayer('rules') #{
+  fill: none;
+  stroke: fg_hair;
+  stroke-width: 0.5;
+};
+let track = PathLayer('track') #{
+  fill: fg_hair;
+  stroke: none;
+};
+let bars = PathLayer('bars') #{
+  fill: accent;
+  stroke: none;
+};
+let eyebrow = TextLayer('eyebrow') #{
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 3;
+  fill: fg_muted;
+};
+let guideLabels = TextLayer('guide-labels') #{
+  font-family: font;
+  font-size: 8;
+  letter-spacing: 0.5;
+  fill: guideColor;
+  text-anchor: end;
+};
+let small = TextLayer('small') #{
+  font-family: font;
+  font-size: 8;
+  letter-spacing: 0.5;
+  fill: fg_auto;
+};
+
+// ─── Components ────────────────────────────────────────────────
+let type = GroupLayer('type');
+type.append(ink);
+let metricGuides = GroupLayer('metric-guides');
+metricGuides.append(guides, guideLabels);
+let coverage = GroupLayer('coverage');
+coverage.append(track, bars);
+let captions = GroupLayer('captions');
+captions.append(rules, eyebrow, small);
+
+// One style per size. Font.info scales every metric to its font-size.
+fn styleAt(size) {
+  return #{
+    font-family: family;
+    font-weight: 700;
+    font-size: size;
+  };
+}
+
+// The page: content stays inside these edges. Every section below
+// measures the font and takes the room it needs, top to bottom.
+let left = 20;
+let right = 500;
+let bottom = 452;
+
+// Draws a string in the font from a baseline point.
+fn drawWord(word, size, x, baseline) {
+  let pen = x;
+  ink.apply {
+    for (glyph in PathBlock.fromGlyph(word, styleAt(size))) {
+      M pen baseline glyph.draw()
+      pen = calc(pen + glyph.advanceWidth);
+    }
+  }
+}
+
+// How wide a string sets at a size, and the largest size (up to `size`)
+// at which it fits in `room`. Widths scale with font-size.
+fn wordWidth(word, size) {
+  let width = 0;
+  for (glyph in PathBlock.fromGlyph(word, styleAt(size))) {
+    width = calc(width + glyph.advanceWidth);
+  }
+  return width;
+}
+fn fitSize(word, size, room) {
+  return min(size, size * room / wordWidth(word, size));
+}
+
+// ─── 1. The name, set in the font itself ───────────────────────
+let info = Font.info(styleAt(34));
+eyebrow.apply {
+  text(left, 28)`TYPE SPECIMEN · ${info.characterCount} CHARACTERS · ${info.glyphCount} GLYPHS`;
+}
+drawWord(info.fullName,
+    fitSize(info.fullName, 34, right - left),
+    left,
+    66);
+
+// ─── 2. Vertical metrics, drawn as guide lines ─────────────────
+// The sample word gets 300 units of width, leaving room for the labels;
+// the baseline sits as far down as this font's ascender needs.
+let metricSize = fitSize('Hxgp', 84, 300);
+let metrics = Font.info(styleAt(metricSize));
+let metricsTop = 96;
+let baseline = calc(metricsTop + 12 + metrics.ascender);
+eyebrow.apply {
+  text(left, metricsTop)`VERTICAL METRICS · FONT-SIZE ${round(metricSize)} · ${metrics.unitsPerEm} UNITS PER EM`;
+}
+drawWord('Hxgp',
+    metricSize,
+    calc(left + 10),
+    baseline);
+
+// Top to bottom. Each label sits just above its line; when that would
+// crowd the label before it (cap height close to the ascender, or equal
+// to the x-height in a capitals-only font), it moves below its line.
+let metricLines = [
+  {
+    label: 'ascender',
+    height: metrics.ascender,
+  },
+  {
+    label: 'cap height',
+    height: metrics.capHeight,
+  },
+  {
+    label: 'x-height',
+    height: metrics.xHeight,
+  },
+  {
+    label: 'baseline',
+    height: 0,
+  },
+  {
+    label: 'descender',
+    height: metrics.descender,
+  },
+];
+let previousLabelY = -100;
+for (line in metricLines) {
+  let y = calc(baseline - line.height);
+  guides.apply {
+    M left y
+    H right
+  }
+  let labelY = calc(y - 3);
+  if (labelY < previousLabelY + 10) {
+    labelY = max(calc(y + 10), calc(previousLabelY + 10));
+  }
+  guideLabels.apply {
+    text(right, labelY)`${line.label} ${round(line.height)}`;
+  }
+  previousLabelY = labelY;
+}
+
+// ─── 4 (laid out first). Coverage, pinned to the bottom edge ────
+// Up to five scripts, one 18-unit row each.
+let shownScripts = min(5, info.scripts.length);
+let coverageTop = calc(bottom - 8 - (shownScripts - 1) * 18);
+let barLeft = 100;
+let barWidth = 360;
+let most = info.scripts[0].count;
+
+// ─── 3. Every Latin-1 letter, in the space left between ────────
+let lettersRule = calc(baseline - metrics.descender + 14);
+let lettersTop = calc(lettersRule + 24);
+let lettersRoom = calc(coverageTop - 22 - 8 - lettersTop);
+let selection = {
+  block: 'Latin-1 Supplement',
+  category: 'letter',
+};
+
+// Wraps the letters at `size` from the top of their space; draws them
+// when asked, and returns the height the lines take.
+fn setLetters(size, draw) {
+  let lineHeight = size * 1.5;
+  let x = left;
+  let y = calc(lettersTop + size);
+  for (glyph in Font.glyphs(styleAt(size), selection)) {
+    if (x + glyph.advanceWidth > right) {
+      x = left;
+      y = calc(y + lineHeight);
+    }
+    if (draw) {
+      ink.apply {
+        M x y glyph.draw()
+      }
+    }
+    x = calc(x + glyph.advanceWidth + size / 5);
+  }
+  return calc(y - lettersTop + lineHeight / 3);
+}
+
+// The largest size, up to 20, whose lines fit the space.
+let letterSize = 10;
+for (size in [
+  10,
+  12,
+  14,
+  16,
+  18,
+  20,
+]) {
+  if (setLetters(size, false) <= lettersRoom) {
+    letterSize = size;
+  }
+}
+setLetters(letterSize, true);
+
+rules.apply {
+  M left lettersRule
+  H right
+}
+eyebrow.apply {
+  text(left, calc(lettersRule + 16))`LATIN-1 LETTERS · ${Font.characters(styleAt(letterSize), selection).length} · FONT-SIZE ${letterSize}`;
+}
+
+// ─── 4. Coverage, drawn ────────────────────────────────────────
+rules.apply {
+  M left calc(coverageTop - 22)
+  H right
+}
+eyebrow.apply {
+  text(left, calc(coverageTop - 6))`SCRIPTS`;
+}
+for ([script, i] in info.scripts) {
+  if (i < shownScripts) {
+    let y = calc(coverageTop + i * 18);
+    track.apply {
+      rect(barLeft,
+          calc(y + 3),
+          barWidth,
+          4);
+    }
+    bars.apply {
+      rect(barLeft,
+          calc(y + 3),
+          max(calc(barWidth * script.count / most), 1.5),
+          4);
+    }
+    small.apply {
+      text(left, calc(y + 8))`${script.name}`;
+      text(calc(barLeft + barWidth + 8), calc(y + 8))`${script.count}`;
+    }
+  }
+}

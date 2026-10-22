@@ -321,6 +321,7 @@ export const STDLIB_COMPLETIONS: CompletionEntry[] = [
   { label: 'Color', kind: 'variable', detail: 'Color — Color creation and manipulation', boost: 8 },
   { label: 'Cap', kind: 'function', detail: 'End-cap constructors for compoundVariableOffset ribbons', boost: 6 },
   { label: 'PathBlock', kind: 'variable', detail: 'PathBlock — Glyph-outline namespace; path-block literals use @{ ... } syntax', boost: 10 },
+  { label: 'Font', kind: 'variable', detail: 'Font — what a loaded font contains: Font.info(), Font.characters(), Font.glyphs() (docs/fonts.md)', boost: 8 },
 ];
 
 /** Type member completion sets keyed by Pathogen type name */
@@ -337,6 +338,66 @@ export const TYPE_MEMBERS: Record<string, MemberCompletionSet> = {
       { label: 'toRad', kind: 'function', detail: 'toRad() — Same angle, displayed in radians', boost: 8, insertText: 'toRad()$0', isSnippet: true },
       { label: 'toPi', kind: 'function', detail: 'toPi() — Same angle, displayed in multiples of π', boost: 8, insertText: 'toPi()$0', isSnippet: true },
       { label: 'toTurns', kind: 'function', detail: 'toTurns() — Same angle, displayed in full circles', boost: 8, insertText: 'toTurns()$0', isSnippet: true },
+    ],
+  },
+  'FontInfo': {
+    properties: [
+      { label: 'family', kind: 'property', detail: 'Family name, e.g. "Roboto"', boost: 8 },
+      { label: 'style', kind: 'property', detail: 'Style name, e.g. "Regular", "Bold Italic"', boost: 8 },
+      { label: 'fullName', kind: 'property', detail: 'Full name, e.g. "Roboto Bold"', boost: 8 },
+      { label: 'version', kind: 'property', detail: 'The font\'s version string', boost: 8 },
+      { label: 'designer', kind: 'property', detail: 'Designer, or null', boost: 8 },
+      { label: 'designerUrl', kind: 'property', detail: 'Designer\'s website, or null', boost: 8 },
+      { label: 'license', kind: 'property', detail: 'License description, or null', boost: 8 },
+      { label: 'licenseUrl', kind: 'property', detail: 'Link to the license, or null', boost: 8 },
+      { label: 'weight', kind: 'property', detail: 'Weight class, 100–900', boost: 8 },
+      { label: 'isItalic', kind: 'property', detail: 'True for italic and oblique styles', boost: 8 },
+      { label: 'isMonospace', kind: 'property', detail: 'True when every glyph has the same width', boost: 8 },
+      { label: 'unitsPerEm', kind: 'property', detail: 'The font\'s design grid per em (unscaled)', boost: 8 },
+      { label: 'ascender', kind: 'property', detail: 'Height reserved above the baseline, at the style\'s font-size', boost: 8 },
+      { label: 'descender', kind: 'property', detail: 'Depth below the baseline (negative), at the style\'s font-size', boost: 8 },
+      { label: 'lineGap', kind: 'property', detail: 'Recommended extra space between lines, at the style\'s font-size', boost: 8 },
+      { label: 'capHeight', kind: 'property', detail: 'Height of a flat capital such as H, at the style\'s font-size', boost: 8 },
+      { label: 'xHeight', kind: 'property', detail: 'Height of a lowercase x, at the style\'s font-size', boost: 8 },
+      { label: 'glyphCount', kind: 'property', detail: 'Every glyph, including unmapped ones', boost: 8 },
+      { label: 'characterCount', kind: 'property', detail: 'Characters with their own glyph', boost: 8 },
+      { label: 'unmappedCount', kind: 'property', detail: 'Glyphs no single character maps to (alternates, ligatures, joined forms)', boost: 8 },
+      { label: 'scripts', kind: 'property', detail: '{ name, count } per writing system, most characters first', boost: 8 },
+      { label: 'blocks', kind: 'property', detail: '{ name, count, size, start, end } per Unicode block, in code-point order', boost: 8 },
+      { label: 'categories', kind: 'property', detail: '{ name, count } per character category present', boost: 8 },
+    ],
+    methods: [
+
+    ],
+  },
+  'FontScript': {
+    properties: [
+      { label: 'name', kind: 'property', detail: 'Script name, e.g. "Latin", "Cyrillic", "Common"', boost: 8 },
+      { label: 'count', kind: 'property', detail: 'Characters of this script in the font', boost: 8 },
+    ],
+    methods: [
+
+    ],
+  },
+  'FontBlock': {
+    properties: [
+      { label: 'name', kind: 'property', detail: 'Block name, e.g. "Latin-1 Supplement"', boost: 8 },
+      { label: 'count', kind: 'property', detail: 'Characters of this block in the font', boost: 8 },
+      { label: 'size', kind: 'property', detail: 'Code points the block holds', boost: 8 },
+      { label: 'start', kind: 'property', detail: 'First code point of the block', boost: 8 },
+      { label: 'end', kind: 'property', detail: 'Last code point of the block', boost: 8 },
+    ],
+    methods: [
+
+    ],
+  },
+  'FontCategory': {
+    properties: [
+      { label: 'name', kind: 'property', detail: 'letter, mark, digit, number, punctuation, symbol, whitespace or other', boost: 8 },
+      { label: 'count', kind: 'property', detail: 'Characters of this category in the font', boost: 8 },
+    ],
+    methods: [
+
     ],
   },
   'ColorInstance': {
@@ -591,13 +652,21 @@ export const TYPE_MEMBERS: Record<string, MemberCompletionSet> = {
       { label: 'anchor', kind: 'property', detail: 'Spine-space position of a variableOffset/compoundVariableOffset result (the translation removed by origin normalization)', boost: 8 },
       { label: 'contours', kind: 'property', detail: 'Per-contour PathBlocks', boost: 8 },
       { label: 'isEmpty', kind: 'property', detail: 'True when the block has no path commands (e.g. a space glyph)', boost: 8 },
-      { label: 'char', kind: 'property', detail: 'Source character of a fromGlyph() glyph (fromGlyph results only)', boost: 8 },
-      { label: 'isWhitespace', kind: 'property', detail: 'True when the fromGlyph() source character is whitespace (fromGlyph results only)', boost: 8 },
-      { label: 'isSpace', kind: 'property', detail: 'True when the fromGlyph() source character is a horizontal space — space, no-break space, ideographic space, … (fromGlyph results only)', boost: 8 },
-      { label: 'isTab', kind: 'property', detail: 'True when the fromGlyph() source character is a tab (fromGlyph results only)', boost: 8 },
-      { label: 'isNewline', kind: 'property', detail: 'True when the fromGlyph() source character is a line break — \\n, \\r, U+2028, … (fromGlyph results only)', boost: 8 },
-      { label: 'isMark', kind: 'property', detail: 'True when the fromGlyph() source character is a combining mark that overlays the previous glyph (fromGlyph results only)', boost: 8 },
-      { label: 'codePoint', kind: 'property', detail: 'Unicode code point of the fromGlyph() source character (fromGlyph results only)', boost: 8 },
+      { label: 'char', kind: 'property', detail: 'Source character of a glyph (glyphs from fromGlyph or Font.glyphs only)', boost: 8 },
+      { label: 'isWhitespace', kind: 'property', detail: 'True when the source character is whitespace (glyphs from fromGlyph or Font.glyphs only)', boost: 8 },
+      { label: 'isSpace', kind: 'property', detail: 'True when the source character is a horizontal space — space, no-break space, ideographic space, … (glyphs from fromGlyph or Font.glyphs only)', boost: 8 },
+      { label: 'isTab', kind: 'property', detail: 'True when the source character is a tab (glyphs from fromGlyph or Font.glyphs only)', boost: 8 },
+      { label: 'isNewline', kind: 'property', detail: 'True when the source character is a line break — \\n, \\r, U+2028, … (glyphs from fromGlyph or Font.glyphs only)', boost: 8 },
+      { label: 'isMark', kind: 'property', detail: 'True when the source character is a combining mark that overlays the previous glyph (glyphs from fromGlyph or Font.glyphs only)', boost: 8 },
+      { label: 'codePoint', kind: 'property', detail: 'Unicode code point of the source character (glyphs from fromGlyph or Font.glyphs only)', boost: 8 },
+      { label: 'script', kind: 'property', detail: 'Writing system of the source character, e.g. "Latin", "Cyrillic", "Common" (glyphs only)', boost: 8 },
+      { label: 'block', kind: 'property', detail: 'Unicode block of the source character, e.g. "Latin-1 Supplement" (glyphs only)', boost: 8 },
+      { label: 'category', kind: 'property', detail: 'Category of the source character: letter, mark, digit, number, punctuation, symbol, whitespace, other (glyphs only)', boost: 8 },
+      { label: 'isLetter', kind: 'property', detail: 'True when the source character is a letter (glyphs only)', boost: 8 },
+      { label: 'isDigit', kind: 'property', detail: 'True when the source character is a decimal digit (glyphs only)', boost: 8 },
+      { label: 'isPunctuation', kind: 'property', detail: 'True when the source character is punctuation (glyphs only)', boost: 8 },
+      { label: 'isSymbol', kind: 'property', detail: 'True when the source character is a symbol — math, currency, arrows, … (glyphs only)', boost: 8 },
+      { label: 'glyphName', kind: 'property', detail: 'The font\'s name for the glyph, e.g. "Aacute"; null when the font omits names (glyphs only)', boost: 8 },
     ],
     methods: [
       { label: 'draw', kind: 'function', detail: 'draw() — Emit path at the current pen position; returns a ProjectedPath', boost: 8, insertText: 'draw()$0', isSnippet: true },
@@ -1141,6 +1210,16 @@ export const NAMESPACE_MEMBERS: Record<string, MemberCompletionSet> = {
       { label: 'fromGlyph', kind: 'function', detail: 'PathBlock.fromGlyph(text, styles) — Array of glyph-outline PathBlocks (requires font-family in styles)', boost: 8, insertText: 'fromGlyph(\'${1:text}\', ${2:styles})$0', isSnippet: true },
     ],
   },
+  'Font': {
+    properties: [
+
+    ],
+    methods: [
+      { label: 'info', kind: 'function', detail: 'Font.info(styles) — Names, metrics (scaled to font-size) and coverage of a font loaded with @font: scripts, blocks and categories with counts', boost: 8, insertText: 'info(${1:styles})$0', isSnippet: true },
+      { label: 'characters', kind: 'function', detail: 'Font.characters(styles, selection?) — The font\'s characters as a string, in code-point order; selection is a script, block or category name, an array of code points, or { script, block, category, codePoints }', boost: 8, insertText: 'characters(${1:styles})$0', isSnippet: true },
+      { label: 'glyphs', kind: 'function', detail: 'Font.glyphs(styles, selection?) — The font\'s glyphs as glyph PathBlocks in code-point order (the same glyphs PathBlock.fromGlyph builds); warns above 5,000', boost: 8, insertText: 'glyphs(${1:styles})$0', isSnippet: true },
+    ],
+  },
 };
 
 /** Signature data for signature help, keyed by function name */
@@ -1594,6 +1673,10 @@ export const TYPE_METHOD_RETURNS: Record<string, Record<string, string>> = {
 /** Per-type data-property types (resolves destructured bindings like let { origin } = grid) */
 export const TYPE_PROPERTY_TYPES: Record<string, Record<string, string>> = {
   'Angle': { deg: 'number', rad: 'number', pi: 'number', turns: 'number' },
+  'FontInfo': { family: 'string', style: 'string', fullName: 'string', version: 'string', weight: 'number', isItalic: 'boolean', isMonospace: 'boolean', unitsPerEm: 'number', ascender: 'number', descender: 'number', lineGap: 'number', capHeight: 'number', xHeight: 'number', glyphCount: 'number', characterCount: 'number', unmappedCount: 'number', scripts: 'array', blocks: 'array', categories: 'array' },
+  'FontScript': { name: 'string', count: 'number' },
+  'FontBlock': { name: 'string', count: 'number', size: 'number', start: 'number', end: 'number' },
+  'FontCategory': { name: 'string', count: 'number' },
   'ColorInstance': { css: 'string', hex: 'string', oklch: 'string', hsl: 'string', rgb: 'string', lightness: 'number', chroma: 'number', hue: 'number', a: 'number' },
   'ViewBox': { originX: 'number', originY: 'number', width: 'number', height: 'number' },
   'DashPiece': { path: 'PathBlock', kind: 'string', t0: 'number', t1: 'number' },
@@ -1608,7 +1691,7 @@ export const TYPE_PROPERTY_TYPES: Record<string, Record<string, string>> = {
   'Subpath': { index: 'number', closed: 'boolean', block: 'PathBlock', commands: 'array', start: 'Point', end: 'Point' },
   'Subscription': { source: 'string', selector: 'string', active: 'boolean', count: 'number' },
   'Endpoint': { x: 'number', y: 'number', point: 'Point', label: 'string', index: 'number', command: 'Command', next: 'Command', isJoint: 'boolean' },
-  'PathBlock': { length: 'number', vertices: 'array', subPathCount: 'number', subPathCommands: 'array', commands: 'array', d: 'string', startPoint: 'Point', endPoint: 'Point', advanceWidth: 'number', anchor: 'Point', contours: 'array', isEmpty: 'boolean', char: 'string', isWhitespace: 'boolean', isSpace: 'boolean', isTab: 'boolean', isNewline: 'boolean', isMark: 'boolean', codePoint: 'number' },
+  'PathBlock': { length: 'number', vertices: 'array', subPathCount: 'number', subPathCommands: 'array', commands: 'array', d: 'string', startPoint: 'Point', endPoint: 'Point', advanceWidth: 'number', anchor: 'Point', contours: 'array', isEmpty: 'boolean', char: 'string', isWhitespace: 'boolean', isSpace: 'boolean', isTab: 'boolean', isNewline: 'boolean', isMark: 'boolean', codePoint: 'number', script: 'string', block: 'string', category: 'string', isLetter: 'boolean', isDigit: 'boolean', isPunctuation: 'boolean', isSymbol: 'boolean' },
   'PolarVector': { angle: 'number', distance: 'number' },
   'Cycler': { length: 'number' },
   'TextLayer': { name: 'string' },
@@ -1641,6 +1724,7 @@ export const TYPE_PROPERTY_TYPES: Record<string, Record<string, string>> = {
 
 /** Per-type array element types for members typed PathogenArray<X> / X[] (parallel to TYPE_METHOD_RETURNS / TYPE_PROPERTY_TYPES, whose values stay bare 'array') */
 export const TYPE_ELEMENT_TYPES: Record<string, Record<string, string>> = {
+  'FontInfo': { scripts: 'FontScript', blocks: 'FontBlock', categories: 'FontCategory' },
   'ColorInstance': { analogous: 'ColorInstance', triadic: 'ColorInstance', tetradic: 'ColorInstance', splitComplementary: 'ColorInstance' },
   'array': { seams: 'PathBlock' },
   'Call': { commands: 'Command' },
@@ -1659,6 +1743,7 @@ export const NAMESPACE_METHOD_RETURNS: Record<string, Record<string, { type: str
   'Object': { keys: { type: 'array' }, values: { type: 'array' }, entries: { type: 'array' } },
   'Color': { mix: { type: 'ColorInstance' }, palette: { type: 'array', elementType: 'ColorInstance' }, lightDark: { type: 'ColorInstance' } },
   'PathBlock': { fromGlyph: { type: 'array', elementType: 'PathBlock' } },
+  'Font': { info: { type: 'FontInfo' }, characters: { type: 'string' }, glyphs: { type: 'array', elementType: 'PathBlock' } },
 };
 
 /** Per-type trailing-block param types from @blockparams tags (resolves {|go, pb| ...} params on method calls) */

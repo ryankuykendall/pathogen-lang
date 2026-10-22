@@ -1,0 +1,151 @@
+//-- Font.info lists the writing systems a font covers, with a count for
+//-- each. One bar per script, longest first, plus a few of its glyphs.
+
+define ViewBox(0, 0, 520, 300);
+@font "Raleway" 700;
+
+// ─── Core tokens ───────────────────────────────────────────────
+let bg_color = Color(CSSVar('--bg', #d0d7f0));
+let fg_auto = Color('#0d1638');
+let fg_muted = Color('#0d1638').alpha(0.6);
+let fg_hair = Color('#0d1638').alpha(0.22);
+let accent = Color(CSSVar('--accent', #3a64b8));
+let font = 'sans-serif';
+
+let bg = PathLayer('bg') #{
+  fill: bg_color;
+  stroke: none;
+};
+bg.apply {
+  rect(0, 0, 520, 300);
+}
+
+let track = PathLayer('track') #{
+  fill: fg_hair;
+  stroke: none;
+};
+let bars = PathLayer('bars') #{
+  fill: accent;
+  stroke: none;
+};
+let samples = PathLayer('sample-glyphs') #{
+  fill: fg_auto;
+  stroke: none;
+};
+let eyebrow = TextLayer('eyebrow') #{
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 3;
+  fill: fg_muted;
+};
+let heading = TextLayer('heading') #{
+  font-family: font;
+  font-size: 22;
+  font-weight: 200;
+  fill: fg_auto;
+};
+let names = TextLayer('script-names') #{
+  font-family: font;
+  font-size: 10;
+  font-weight: 700;
+  letter-spacing: 1;
+  fill: fg_auto;
+};
+let counts = TextLayer('counts') #{
+  font-family: font;
+  font-size: 10;
+  fill: fg_muted;
+  text-anchor: end;
+};
+let glyphNames = TextLayer('glyph-names') #{
+  font-family: font;
+  font-size: 8;
+  fill: fg_muted;
+};
+
+// ─── Components ────────────────────────────────────────────────
+let chart = GroupLayer('chart');
+chart.append(track, bars, names, counts);
+let glyphSamples = GroupLayer('glyph-samples');
+glyphSamples.append(samples, glyphNames);
+let captions = GroupLayer('captions');
+captions.append(eyebrow, heading);
+
+// ─── Ask the font ──────────────────────────────────────────────
+let styles = #{
+  font-family: Raleway;
+  font-weight: 700;
+  font-size: 20;
+};
+let info = Font.info(styles);
+
+eyebrow.apply {
+  text(15, 30)`FONT.INFO(STYLES).SCRIPTS`;
+}
+heading.apply {
+  text(15, 58)`${info.fullName}: ${info.characterCount} characters`;
+}
+
+// ─── One row per script ────────────────────────────────────────
+let nameColumn = 15;
+let barLeft = 100;
+let barWidth = 220;
+let countColumn = 360;
+let sampleColumn = 375;
+let rowTop = 82;
+let rowHeight = 34;
+let most = info.scripts[0].count;
+let carrier = PathBlock.fromGlyph('o', styles)[0];
+
+for ([script, i] in info.scripts) {
+  let y = calc(rowTop + i * rowHeight);
+  let filled = calc(barWidth * script.count / most);
+  track.apply {
+    rect(barLeft,
+        calc(y + 8),
+        barWidth,
+        6);
+  }
+  bars.apply {
+    rect(barLeft,
+        calc(y + 8),
+        max(filled, 1.5),
+        6);
+  }
+  names.apply {
+    text(nameColumn, calc(y + 15))`${script.name}`;
+  }
+  counts.apply {
+    text(countColumn, calc(y + 15))`${script.count}`;
+  }
+  // The first few glyphs of this script that draw something. An accent
+  // (category 'mark') has no width of its own and nothing to sit on, so each one
+  // is centred over an "o".
+  samples.apply {
+    let x = sampleColumn;
+    let shown = 0;
+    for (glyph in Font.glyphs(styles, script.name)) {
+      if (shown < 6 && !glyph.isEmpty) {
+        if (glyph.category == 'mark') {
+          let box = glyph.boundingBox();
+          M x calc(y + 17) carrier.draw()
+          M calc(x + carrier.advanceWidth / 2 - box.x - box.width / 2) calc(y + 17) glyph.draw()
+          x = calc(x + carrier.advanceWidth + 3);
+        } else {
+          M x calc(y + 17) glyph.draw()
+          x = calc(x + glyph.advanceWidth + 3);
+        }
+        shown = shown + 1;
+      }
+    }
+  }
+  // A script with one character gets its glyph's name, so a lone small
+  // mark reads as deliberate.
+  if (script.count == 1) {
+    let lone = Font.glyphs(styles, script.name)[0];
+    glyphNames.apply {
+      text(calc(sampleColumn + lone.advanceWidth + 8), calc(y + 15))`← ${lone.glyphName}`;
+    }
+  }
+}

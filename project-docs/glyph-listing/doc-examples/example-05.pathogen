@@ -1,0 +1,10 @@
+define ViewBox(0, 0, 440, 90);
+@font "Raleway" 700;
+let styles = #{ font-family: Raleway; font-weight: 700; font-size: 32; };
+
+let digits = Font.glyphs(styles, "digit");
+
+for ([glyph, i] in digits) {
+  M calc(20 + (i % 10) * 40) calc(50 + floor(i / 10) * 50)
+  glyph.draw()
+}

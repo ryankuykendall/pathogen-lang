@@ -1,0 +1,11 @@
+@font "Raleway" 700;
+let styles = #{ font-family: Raleway; font-weight: 700; font-size: 48; };
+
+let info = Font.info(styles);
+log(info.family, info.characterCount);      // Raleway 936
+
+for (script in info.scripts) {
+  log(script.name, script.count);           // Latin 481, Cyrillic 238, Common 187, …
+}
+
+let cyrillic = Font.glyphs(styles, "Cyrillic");

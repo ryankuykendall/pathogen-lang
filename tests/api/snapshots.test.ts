@@ -10,7 +10,7 @@
 //     owner-only access, and the X-Pathogen-Snapshot upload header
 //   - per-workspace numbering (#1, #2…, max+1, retry on a UNIQUE race),
 //     default name "<workspace> #n"
-//   - limits: 12 MB SVG, 1 MB code, PNG card check, 500 per account
+//   - limits: 50 MB SVG, 1 MB code, PNG card check, 500 per account
 //   - files served with the right type; SVG with script-blocking CSP
 //   - rename / note, delete (row + R2 files), workspace delete cascade
 //   - start a new workspace from a snapshot's code
@@ -93,7 +93,7 @@ class MemoryR2 implements R2Bucket {
     return { body: new Response(value).body! };
   }
 
-  async put(key: string, value: ReadableStream | ArrayBuffer | string): Promise<void> {
+  async put(key: string, value: ReadableStream | ArrayBuffer | Blob | string): Promise<void> {
     if (this.failPutsFor && key.endsWith(this.failPutsFor)) throw new Error('R2 put failed');
     if (typeof value === 'string') this.store.set(key, new TextEncoder().encode(value));
     else if (value instanceof ArrayBuffer) this.store.set(key, new Uint8Array(value.slice(0)));
@@ -366,12 +366,21 @@ describe.skipIf(!sqlite)('snapshots API', () => {
   });
 
   describe('limits', () => {
-    it('rejects an SVG over 12 MB with a size message and stores nothing', async () => {
+    it('rejects an SVG over 50 MB with a size message and stores nothing', async () => {
       const big = `<svg xmlns="http://www.w3.org/2000/svg">${' '.repeat(SNAPSHOT_LIMITS.svgBytes)}</svg>`;
       const res = await postSnapshot(ctx, alice, ws, snapshotForm({ svg: big }));
       expect(res.status).toBe(413);
-      expect(await res.json()).toMatchObject({ code: 'snapshot-svg-too-large', limit: 12 * 1024 * 1024 });
+      expect(await res.json()).toMatchObject({ code: 'snapshot-svg-too-large', limit: 50 * 1024 * 1024 });
       expect(ctx.r2.keys('snapshots/')).toEqual([]);
+    });
+
+    it('accepts a 49 MB SVG and stores it byte-for-byte', async () => {
+      const body = `<svg xmlns="http://www.w3.org/2000/svg">${'<path d="M0 0L1 1"/>'.repeat(Math.floor((49 * 1024 * 1024) / 20))}</svg>`;
+      const res = await postSnapshot(ctx, alice, ws, snapshotForm({ svg: body }));
+      expect(res.status).toBe(201);
+      const { snapshot } = (await res.json()) as SnapshotBody;
+      expect(snapshot.svgBytes).toBe(body.length);
+      expect(ctx.r2.text(`snapshots/${ws}/${snapshot.id}/image.svg`)?.length).toBe(body.length);
     });
 
     it('rejects more than 1 MB of code', async () => {
@@ -603,7 +612,7 @@ describe.skipIf(!sqlite)('snapshots API', () => {
       const res = await handleApiRequest(
         new Request(`${BASE}/workspace/${ws}/snapshots`, {
           method: 'POST',
-          headers: { Cookie: alice, 'X-Pathogen-Snapshot': '1', 'Content-Length': String(20 * 1024 * 1024) },
+          headers: { Cookie: alice, 'X-Pathogen-Snapshot': '1', 'Content-Length': String(60 * 1024 * 1024) },
           body: 'x',
         }),
         ctx.env,

@@ -41,6 +41,7 @@ program.parse();
 | `compile-bbwp.ts` | Compile `.pathogen` → SVG → HTML artifact in `website/bbwp/` |
 | `serve-bbwp.ts` | HTTP server for browsing BBWP artifacts (default port 3001) |
 | `update-bbwp-index.ts` | Regenerate `website/bbwp/index.html` from directory listing |
+| `generate-unicode-data.ts` | `npm run generate:unicode-data` — writes `src/evaluator/unicode-data.generated.ts` (Unicode block ranges from the vendored `scripts/unicode/Blocks-16.0.0.txt`, script ranges from the JS engine's `\p{Script=…}`), used by the `Font` namespace and the glyph `script`/`block` properties. Refuses to run when Node's Unicode version differs from the vendored files. |
 | `check-links.ts` | Puppeteer link checker for blog posts and documentation pages |
 | `inspect-pdf.ts` | PDF/raster inspection CLI (`npm run inspect:pdf`): page + embedded-image summary, image extraction, pixel statistics (uniform/black detection — the black-page failure signature), decoded content streams. Shares `scripts/lib/pdf-inspect.ts` with the unified-export E2E harness. |
 | `validate-samples.ts` | Puppeteer sample validator (`npm run validate:samples [-- <dir>]`, default every post under `website/blog/samples`): margins (`--margin`), text/text, text/geometry and geometry/geometry collisions, dead space, GroupLayer usage, formatter cleanliness; writes `<dir>/previews/*.png`. Needs `compile:samples` first. Soft gate; `--strict` exits 1. |

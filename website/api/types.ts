@@ -21,7 +21,7 @@ export interface R2Bucket {
   get(key: string): Promise<R2Object | null>;
   put(
     key: string,
-    value: ReadableStream | ArrayBuffer | string,
+    value: ReadableStream | ArrayBuffer | Blob | string,
     options?: { httpMetadata?: { contentType?: string } },
   ): Promise<void>;
   // R2 accepts up to 1000 keys per delete call; batching matters because a

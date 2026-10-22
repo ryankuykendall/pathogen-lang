@@ -1,0 +1,109 @@
+//-- Two rows, one call: fromGlyph draws a string of characters. In the top
+//-- row you typed the string; in the bottom row the font wrote it.
+
+define ViewBox(0, 0, 520, 230);
+@font "Raleway" 700;
+
+// ─── Core tokens ───────────────────────────────────────────────
+let bg_color = Color(CSSVar('--bg', #d0d7f0));
+let fg_auto = Color('#0d1638');
+let fg_muted = Color('#0d1638').alpha(0.6);
+let fg_hair = Color('#0d1638').alpha(0.22);
+let accent = Color(CSSVar('--accent', #3a64b8));
+let font = 'sans-serif';
+
+let bg = PathLayer('bg') #{
+  fill: bg_color;
+  stroke: none;
+};
+bg.apply {
+  rect(0, 0, 520, 230);
+}
+
+let rules = PathLayer('rules') #{
+  fill: none;
+  stroke: fg_hair;
+  stroke-width: 0.5;
+};
+let typedRow = PathLayer('typed-glyphs') #{
+  fill: fg_muted;
+  stroke: none;
+};
+let askedRow = PathLayer('asked-glyphs') #{
+  fill: accent;
+  stroke: none;
+};
+let eyebrow = TextLayer('eyebrow') #{
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 3;
+  fill: fg_muted;
+};
+let code = TextLayer('code') #{
+  font-family: monospace;
+  font-size: 10;
+  fill: fg_auto;
+};
+let answer = TextLayer('answer') #{
+  font-family: monospace;
+  font-size: 10;
+  fill: accent;
+};
+
+// ─── Components ────────────────────────────────────────────────
+let glyphRows = GroupLayer('glyph-rows');
+glyphRows.append(typedRow, askedRow);
+let captions = GroupLayer('captions');
+captions.append(rules, eyebrow, code, answer);
+
+// ─── The glyphs ────────────────────────────────────────────────
+let styles = #{
+  font-family: Raleway;
+  font-weight: 700;
+  font-size: 40;
+};
+
+// Before: you type the characters you already know about.
+let typed = '0123456789';
+// After: the font lists the characters it has.
+let asked = Font.characters(styles, 'digit');
+
+// Draws a string's glyphs left to right from a baseline point.
+fn drawRow(target, characters, left, baseline) {
+  target.apply {
+    let x = left;
+    for (glyph in PathBlock.fromGlyph(characters, styles)) {
+      M x baseline glyph.draw()
+      x = calc(x + glyph.advanceWidth);
+    }
+  }
+}
+
+let left = 30;
+let topBaseline = 92;
+let bottomBaseline = 192;
+
+drawRow(typedRow, typed, left, topBaseline);
+drawRow(askedRow, asked, left, bottomBaseline);
+
+// ─── Labels and baselines ──────────────────────────────────────
+rules.apply {
+  M 15 topBaseline
+  H 505
+  M 15 bottomBaseline
+  H 505
+}
+eyebrow.apply {
+  text(left, 32)`TYPED BY HAND`;
+  text(left, 132)`ASKED OF THE FONT`;
+}
+code.apply {
+  text(left, 48)`PathBlock.fromGlyph("0123456789", styles)`;
+  text(left, 148)`PathBlock.fromGlyph(Font.characters(styles, "digit"), styles)`;
+}
+
+// What Font.characters handed back: an ordinary string.
+answer.apply {
+  text(290, 180)`returns "${asked}", ${asked.length} characters`;
+}

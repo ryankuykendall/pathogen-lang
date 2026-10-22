@@ -1,0 +1,9 @@
+@font "Raleway" 700;
+let styles = #{ font-family: Raleway; font-weight: 700; font-size: 32; };
+let info = Font.info(styles);
+for (script in info.scripts) { log(script.name, script.count); }
+for (category in info.categories) { log(category.name, category.count); }
+log(info.fullName, info.designer, info.ascender, info.descender, info.capHeight, info.xHeight, info.unitsPerEm, info.glyphCount, info.unmappedCount);
+log(Font.characters(styles, "punctuation"));
+log(Font.characters(styles, "symbol"));
+log(Font.characters(styles, (1040..1071)));

@@ -1,0 +1,7 @@
+@font "Raleway" 700;
+let styles = #{ font-family: Raleway; font-weight: 700; font-size: 32; };
+let digits = Font.characters(styles, "digit");
+for (char in digits) { log(char); }
+log(digits.length, split(digits, "")[2]);
+let one = PathBlock.fromGlyph("8", styles);
+log(one.advanceWidth, one.boundingBox());

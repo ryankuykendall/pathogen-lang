@@ -1,0 +1,16 @@
+@font "Raleway" 700;
+let styles = #{
+  font-family: Raleway;
+  font-weight: 700;
+};
+for (glyph in Font.glyphs(styles, "Unknown")) {
+  log(glyph.char, glyph.codePoint, glyph.block, glyph.glyphName);
+}
+for (glyph in Font.glyphs(styles, "Greek")) {
+  log(glyph.char, glyph.codePoint, glyph.block, glyph.glyphName);
+}
+for (glyph in Font.glyphs(styles, [181, 937, 8486])) {
+  log(glyph.char, glyph.codePoint, glyph.script, glyph.category, glyph.glyphName);
+}
+let info = Font.info(styles);
+log(info.unmappedCount, info.glyphCount, info.characterCount, info.license);

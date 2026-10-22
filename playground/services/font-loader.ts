@@ -12,6 +12,8 @@ export interface FontBinaryEntry {
   unicodeRanges?: Array<[number, number]>;
   /** Source URL of the subset slice — dedup identity across recompiles. */
   subsetUrl?: string;
+  /** More slices of this family exist than this set carries (see FontData.partial). */
+  partial?: boolean;
 }
 
 export interface FontResolutionFailure {
@@ -96,6 +98,11 @@ const fontSubsetIndex: Map<string, FontSubsetSlice[]> = new Map();
 
 // In-flight slice fetch dedup, keyed by slice URL.
 const pendingSliceFetches: Map<string, Promise<ArrayBuffer>> = new Map();
+
+// Slice URL → when its last fetch failed. Failed slices wait this long before
+// the next attempt, so an offline session doesn't re-request on every compile.
+const failedSliceAt: Map<string, number> = new Map();
+const SLICE_RETRY_AFTER_MS = 60_000;
 
 /**
  * Fetch a font binary from Google Fonts CDN.
@@ -308,6 +315,77 @@ function sliceToEntry(family: string, weight: number, slice: FontSubsetSlice): F
 }
 
 /**
+ * Download every not-yet-fetched slice in `slices` (deduplicated with
+ * concurrent requests for the same URL). Never throws: a failed slice is
+ * left unfetched.
+ */
+async function fetchSlices(slices: FontSubsetSlice[]): Promise<void> {
+  const now = Date.now();
+  await Promise.all(
+    slices
+      .filter((slice) => !slice.fetched)
+      // A slice that just failed isn't retried on every keystroke compile.
+      .filter((slice) => now - (failedSliceAt.get(slice.url) ?? -Infinity) > SLICE_RETRY_AFTER_MS)
+      .map(async (slice) => {
+        try {
+          let promise = pendingSliceFetches.get(slice.url);
+          if (!promise) {
+            promise = (async () => {
+              const res = await fetch(slice.url);
+              if (!res.ok) throw new Error(`Font subset fetch failed: ${res.status}`);
+              let buf = await res.arrayBuffer();
+              if (isWoff2(buf)) buf = await decompressWoff2(buf);
+              return buf;
+            })();
+            pendingSliceFetches.set(slice.url, promise);
+          }
+          slice.buffer = await promise;
+          slice.fetched = true;
+          failedSliceAt.delete(slice.url);
+        } catch {
+          // Leave unfetched — a subset failure must not abort a compile.
+          failedSliceAt.set(slice.url, Date.now());
+        } finally {
+          pendingSliceFetches.delete(slice.url);
+        }
+      }),
+  );
+}
+
+/**
+ * Font namespace support (docs/fonts.md): fetch the slices of `family`
+ * whose unicode-range overlaps `ranges` — or every slice when `ranges` is
+ * null (Font.info, unselected Font.characters / Font.glyphs). Returns the
+ * non-primary fetched slices as binary entries, how many slices that took
+ * (`newlyFetched`, for the warning-banner note), and how many failed.
+ * A family served as one block has no index: nothing to fetch.
+ */
+export async function fetchFontSubsetsForRanges(
+  family: string,
+  weight: number,
+  ranges: Array<[number, number]> | null,
+): Promise<{ entries: FontBinaryEntry[]; sliceCount: number; newlyFetched: number; newBytes: number; failed: number }> {
+  const slices = lookupSubsetSlices(family, weight);
+  if (!slices) return { entries: [], sliceCount: 0, newlyFetched: 0, newBytes: 0, failed: 0 };
+  const needed = slices.filter(
+    (s) =>
+      ranges === null ||
+      !s.unicodeRanges ||
+      s.unicodeRanges.some(([lo, hi]) => ranges.some(([a, b]) => lo <= b && a <= hi)),
+  );
+  const before = new Set(needed.filter((s) => s.fetched));
+  await fetchSlices(needed);
+  const newly = needed.filter((s) => s.fetched && !before.has(s));
+  return {
+    entries: needed.filter((s) => s.fetched && !s.primary).map((s) => sliceToEntry(family, weight, s)),
+    sliceCount: needed.length,
+    newlyFetched: newly.length,
+    newBytes: newly.reduce((n, s) => n + (s.buffer?.byteLength ?? 0), 0),
+    failed: needed.filter((s) => !s.fetched).length,
+  };
+}
+
+/**
  * Fetch the unicode-range subset slices of `family` that cover `chars`.
  *
  * Used after a compile reports characters no loaded buffer could render:
@@ -341,32 +419,7 @@ export async function fetchFontSubsetsForChars(
     for (const slice of covering(char)) needed.add(slice);
   }
 
-  await Promise.all(
-    Array.from(needed)
-      .filter((slice) => !slice.fetched)
-      .map(async (slice) => {
-        try {
-          let promise = pendingSliceFetches.get(slice.url);
-          if (!promise) {
-            promise = (async () => {
-              const res = await fetch(slice.url);
-              if (!res.ok) throw new Error(`Font subset fetch failed: ${res.status}`);
-              let buf = await res.arrayBuffer();
-              if (isWoff2(buf)) buf = await decompressWoff2(buf);
-              return buf;
-            })();
-            pendingSliceFetches.set(slice.url, promise);
-          }
-          slice.buffer = await promise;
-          slice.fetched = true;
-        } catch {
-          // Leave unfetched — its chars stay uncovered. A subset failure must
-          // not abort a compile that already succeeded.
-        } finally {
-          pendingSliceFetches.delete(slice.url);
-        }
-      }),
-  );
+  await fetchSlices(Array.from(needed));
 
   const uncoveredChars = chars.filter((char) => !covering(char).some((s) => s.fetched));
   const entries = Array.from(needed)
@@ -384,6 +437,11 @@ export function getFetchedSubsetEntries(family: string, weight: number): FontBin
   const slices = lookupSubsetSlices(family, weight);
   if (!slices) return [];
   return slices.filter((s) => s.fetched && !s.primary).map((s) => sliceToEntry(family, weight, s));
+}
+
+/** True when Google serves `family` at `weight` as several unicode-range slices. */
+export function hasSubsetSlices(family: string, weight: number): boolean {
+  return (lookupSubsetSlices(family, weight)?.length ?? 0) > 1;
 }
 
 /** One @font-face block from a Google Fonts css2 response. */

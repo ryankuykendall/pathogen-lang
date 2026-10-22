@@ -11,6 +11,8 @@ import {
   extractFontReferencesFromCompileResult,
   extractUnknownFontDirectiveFamilies,
   fetchFontSubsetsForChars,
+  fetchFontSubsetsForRanges,
+  hasSubsetSlices,
   getFetchedSubsetEntries,
   resolveFontBinaries,
 } from './font-loader.js';
@@ -92,7 +94,7 @@ export class CompilerWorkerClient {
       this.worker = w;
 
       w.onmessage = (event: MessageEvent) => {
-        const { id, success, result, error } = event.data;
+        const { id, success, result, error, fontCoverageRequests } = event.data;
         const pending = this.pendingRequests.get(id);
 
         if (pending) {
@@ -100,7 +102,9 @@ export class CompilerWorkerClient {
           if (success) {
             pending.resolve(result);
           } else {
-            pending.reject(new Error(error));
+            // Keep the Font slices a failed compile needed, so compileAs can
+            // fetch them and retry (see recoverFontCoverage).
+            pending.reject(Object.assign(new Error(error), fontCoverageRequests ? { fontCoverageRequests } : {}));
           }
         }
       };
@@ -272,10 +276,15 @@ export class CompilerWorkerClient {
     const withSubsets = appendCachedSubsetEntries(binaries);
     const recompile = async (bins: FontBinaryEntry[]) =>
       this.sendRequest(type, source, compilationId, isStale, options, bins);
-    const first = await recompile(withSubsets);
-    const glyphPass = await resolveMissingGlyphSubsets(first, recompile, withSubsets);
+    const { first, binaries: startBinaries, notices: retryNotices } = await recoverFontCoverage(recompile, withSubsets);
+    const glyphPass = await resolveMissingGlyphSubsets(first, recompile, startBinaries);
     const post = await resolvePostCompileFonts(glyphPass.result, glyphPass.binaries);
-    return attachFontDiagnostics(glyphPass.result, post.binaries, [...substitutions, ...post.substitutions], notices);
+    return attachFontDiagnostics(
+      glyphPass.result,
+      post.binaries,
+      [...substitutions, ...post.substitutions],
+      [...notices, ...retryNotices, ...glyphPass.notices],
+    );
   }
 
   /**
@@ -538,7 +547,12 @@ function formatFontFailures(failures: FontResolutionResult['failures']): string 
  * binaries so steady-state compiles of a CJK program carry full coverage up
  * front and skip the missing-glyph recompile below.
  */
-function appendCachedSubsetEntries(binaries: FontBinaryEntry[]): FontBinaryEntry[] {
+function appendCachedSubsetEntries(input: FontBinaryEntry[]): FontBinaryEntry[] {
+  // A family Google serves in slices is marked partial on its primary entry,
+  // so the Font namespace knows to ask for the slices it needs.
+  const binaries = input.map((b) =>
+    !b.subsetUrl && hasSubsetSlices(b.family, b.weight) ? { ...b, partial: true } : b,
+  );
   const extras: FontBinaryEntry[] = [];
   for (const b of binaries) {
     if (b.subsetUrl) continue; // already a subset slice
@@ -552,14 +566,32 @@ function appendCachedSubsetEntries(binaries: FontBinaryEntry[]): FontBinaryEntry
   return extras.length > 0 ? [...binaries, ...extras] : binaries;
 }
 
+/** Entries of `fetched` not already in `current` (or earlier in `fetched`), by slice identity. */
+function newBinaryEntries(current: FontBinaryEntry[], fetched: FontBinaryEntry[]): FontBinaryEntry[] {
+  const out: FontBinaryEntry[] = [];
+  for (const entry of fetched) {
+    const seen = [...current, ...out].some(
+      (b) => b.family === entry.family && b.weight === entry.weight && b.subsetUrl === entry.subsetUrl,
+    );
+    if (!seen) out.push(entry);
+  }
+  return out;
+}
+
 /**
- * Missing-glyph resolution: the initial load fetches only the primary
- * (latin) slice of a Google Fonts family, but fromGlyph/toPathBlock text is
- * only known at eval time. When a compile reports characters no loaded
- * buffer covers, fetch the unicode-range slices covering them and recompile
- * with the augmented set. Capped at 2 passes and gated on progress (new
- * entries fetched), so a font that genuinely lacks the characters
- * terminates immediately — its result keeps the evaluator's [warn] logs.
+ * Missing-glyph and font-coverage resolution. The initial load fetches only
+ * the primary (latin) slice of a Google Fonts family, but which characters a
+ * program needs is only known at eval time:
+ *   - `missingGlyphs`: fromGlyph / toPathBlock text no loaded buffer covers →
+ *     fetch the slices covering those characters;
+ *   - `fontCoverageRequests`: Font.info / Font.characters / Font.glyphs read a
+ *     sliced family (docs/fonts.md) → fetch the slices overlapping the
+ *     requested ranges, or all of them for a null range.
+ * Then recompile with the augmented set. Capped at 2 passes and gated on
+ * progress (new entries fetched), so a font that genuinely lacks the
+ * characters terminates immediately — its result keeps the evaluator's
+ * [warn] logs. `notices` feed the warning banner (whole-font loads, slices
+ * that failed).
  *
  * Exported for unit tests.
  */
@@ -567,34 +599,92 @@ export async function resolveMissingGlyphSubsets(
   result: unknown,
   recompile: (binaries: FontBinaryEntry[]) => Promise<unknown>,
   binaries: FontBinaryEntry[],
-): Promise<{ result: unknown; binaries: FontBinaryEntry[] }> {
+): Promise<{ result: unknown; binaries: FontBinaryEntry[]; notices: string[] }> {
   let currentResult = result;
   let currentBinaries = binaries;
+  const notices: string[] = [];
 
   for (let pass = 0; pass < 2; pass++) {
     if (!currentResult || typeof currentResult !== 'object') break;
-    const reports = (currentResult as {
-      missingGlyphs?: Array<{ family: string; weight: number; chars: string[] }>;
-    }).missingGlyphs;
-    if (!Array.isArray(reports) || reports.length === 0) break;
-
-    const newEntries: FontBinaryEntry[] = [];
-    for (const report of reports) {
-      const { entries } = await fetchFontSubsetsForChars(report.family, report.weight, report.chars);
-      for (const entry of entries) {
-        const seen = [...currentBinaries, ...newEntries].some(
-          (b) => b.family === entry.family && b.weight === entry.weight && b.subsetUrl === entry.subsetUrl,
-        );
-        if (!seen) newEntries.push(entry);
-      }
-    }
-
-    if (newEntries.length === 0) break; // nothing fetchable — warnings stand
-    currentBinaries = [...currentBinaries, ...newEntries];
+    const fetched = await fetchForFontReports(currentResult, currentBinaries);
+    notices.push(...fetched.notices);
+    if (fetched.newEntries.length === 0) break; // nothing fetchable — warnings stand
+    currentBinaries = [...currentBinaries, ...fetched.newEntries];
     currentResult = await recompile(currentBinaries);
   }
 
-  return { result: currentResult, binaries: currentBinaries };
+  return { result: currentResult, binaries: currentBinaries, notices };
+}
+
+type FontReports = {
+  missingGlyphs?: { family: string; weight: number; chars: string[] }[];
+  fontCoverageRequests?: { family: string; weight: number; ranges: [number, number][] | null }[];
+};
+
+/**
+ * Fetch the slices a compile result (or a failed compile's error) asked for:
+ * its missing glyphs and its Font-namespace coverage requests. Returns the
+ * entries not already in `current`, plus warning-banner notices.
+ */
+async function fetchForFontReports(
+  source: unknown,
+  current: FontBinaryEntry[],
+): Promise<{ newEntries: FontBinaryEntry[]; notices: string[] }> {
+  const r = source as FontReports;
+  const reports = Array.isArray(r.missingGlyphs) ? r.missingGlyphs : [];
+  const requests = Array.isArray(r.fontCoverageRequests) ? r.fontCoverageRequests : [];
+  const fetched: FontBinaryEntry[] = [];
+  const notices: string[] = [];
+  for (const report of reports) {
+    fetched.push(...(await fetchFontSubsetsForChars(report.family, report.weight, report.chars)).entries);
+  }
+  for (const request of requests) {
+    const got = await fetchFontSubsetsForRanges(request.family, request.weight, request.ranges);
+    fetched.push(...got.entries);
+    if (request.ranges === null && got.newlyFetched > 0) {
+      notices.push(
+        `Loaded all ${got.sliceCount} slices of "${request.family}" from Google Fonts ` +
+          `(${(got.newBytes / (1024 * 1024)).toFixed(1)} MB) for a Font call that needs the whole font.`,
+      );
+    }
+    if (got.failed > 0) {
+      notices.push(
+        `${got.failed} of ${got.sliceCount} slices of "${request.family}" could not be loaded; Font results may be incomplete.`,
+      );
+    }
+  }
+  return { newEntries: newBinaryEntries(current, fetched), notices };
+}
+
+/**
+ * First compile, with recovery: a program can fail *because* a Font call
+ * ran before the slices it needs were loaded — e.g. it indexes
+ * `Font.glyphs(styles, "Cyrillic")[0]`, which is empty while only the latin
+ * slice is present. The evaluator attaches the call's slice requests to the
+ * error; fetch them and compile again (up to twice, for a later call that
+ * depends on the first). When nothing new can be fetched, the program's own
+ * error stands.
+ *
+ * Exported for unit tests.
+ */
+export async function recoverFontCoverage(
+  recompile: (binaries: FontBinaryEntry[]) => Promise<unknown>,
+  binaries: FontBinaryEntry[],
+): Promise<{ first: unknown; binaries: FontBinaryEntry[]; notices: string[] }> {
+  let current = binaries;
+  const notices: string[] = [];
+  for (let attempt = 0; ; attempt++) {
+    try {
+      return { first: await recompile(current), binaries: current, notices };
+    } catch (err) {
+      const requests = (err as FontReports).fontCoverageRequests;
+      if (attempt >= 2 || !Array.isArray(requests) || requests.length === 0) throw err;
+      const fetched = await fetchForFontReports({ fontCoverageRequests: requests }, current);
+      notices.push(...fetched.notices);
+      if (fetched.newEntries.length === 0) throw err;
+      current = [...current, ...fetched.newEntries];
+    }
+  }
 }
 
 /**

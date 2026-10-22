@@ -1,0 +1,8 @@
+@font "Raleway" 700;
+let info = Font.info(#{ font-family: Raleway; font-weight: 700; font-size: 48; });
+
+log(info.style);             // Bold
+log(info.capHeight);         // 34.08  (in the units of your drawing, at font-size 48)
+for (category in info.categories) {
+  log(category.name, category.count);   // letter 739, mark 24, digit 10, number 29, …
+}

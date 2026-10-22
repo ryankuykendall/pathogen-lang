@@ -74,7 +74,7 @@ Copying a workspace doesn't copy its snapshots.
 ## Limits
 
 - **500 snapshots per account**, across all workspaces. When you reach the limit, the panel explains why the snapshot can't be saved. To make room, delete snapshots from a workspace's snapshots page. There's no single list of all your snapshots yet, so open each workspace's page in turn. The count on its **Snapshot** button shows how many it holds.
-- **12 MB per snapshot image.** Extremely dense artwork, such as thousands of dashed offset strokes, can produce larger SVGs. The panel reports the size and suggests lowering the workspace **Precision** setting or exporting that render directly instead.
+- **50 MB per snapshot image.** Extremely dense artwork, such as thousands of dashed offset strokes, can produce larger SVGs. The panel reports the size and suggests lowering the workspace **Precision** setting or exporting that render directly instead.
 - **1 MB of code per snapshot.** Programs larger than this can't be saved as snapshots.
 
 If the upload fails, for example because you've gone offline, the panel keeps your name, note and captured image. **Retry** sends it again without re-rendering, or you can download the SVG instead.

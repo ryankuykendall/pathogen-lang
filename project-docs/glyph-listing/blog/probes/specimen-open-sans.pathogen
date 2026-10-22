@@ -1,0 +1,183 @@
+//-- A one-page type specimen, every part of it read from the font: its
+//-- name, its vertical metrics, its Latin-1 letters and the writing
+//-- systems it covers. Change `family` and it redraws.
+
+define ViewBox(0, 0, 520, 470);
+
+let family = "Open Sans";
+@font family 700;
+
+// ─── Core tokens ───────────────────────────────────────────────
+let bg_color = Color(CSSVar('--bg', #d0d7f0));
+let fg_auto = Color('#0d1638');
+let fg_muted = Color('#0d1638').alpha(0.6);
+let fg_hair = Color('#0d1638').alpha(0.22);
+let accent = Color(CSSVar('--accent', #3a64b8));
+let guideColor = Color(CSSVar('--guide', #a8452f));
+let font = 'sans-serif';
+
+let bg = PathLayer('bg') #{
+  fill: bg_color;
+  stroke: none;
+};
+bg.apply {
+  rect(0, 0, 520, 470);
+}
+
+let ink = PathLayer('ink') #{
+  fill: fg_auto;
+  stroke: none;
+};
+let guides = PathLayer('guides') #{
+  fill: none;
+  stroke: guideColor;
+  stroke-width: 0.5;
+  stroke-dasharray: 3 4;
+};
+let rules = PathLayer('rules') #{
+  fill: none;
+  stroke: fg_hair;
+  stroke-width: 0.5;
+};
+let track = PathLayer('track') #{
+  fill: fg_hair;
+  stroke: none;
+};
+let bars = PathLayer('bars') #{
+  fill: accent;
+  stroke: none;
+};
+let eyebrow = TextLayer('eyebrow') #{
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 3;
+  fill: fg_muted;
+};
+let guideLabels = TextLayer('guide-labels') #{
+  font-family: font;
+  font-size: 8;
+  letter-spacing: 0.5;
+  fill: guideColor;
+  text-anchor: end;
+};
+let small = TextLayer('small') #{
+  font-family: font;
+  font-size: 8;
+  letter-spacing: 0.5;
+  fill: fg_auto;
+};
+
+// One style per size. Font.info scales every metric to its font-size.
+fn styleAt(size) {
+  return #{
+    font-family: family;
+    font-weight: 700;
+    font-size: size;
+  };
+}
+
+let left = 20;
+let right = 500;
+
+// Draws a string in the font from a baseline point; returns where it ended.
+fn drawWord(word, size, x, baseline) {
+  let pen = x;
+  ink.apply {
+    for (glyph in PathBlock.fromGlyph(word, styleAt(size))) {
+      M pen baseline
+      glyph.draw()
+      pen = calc(pen + glyph.advanceWidth);
+    }
+  }
+  return pen;
+}
+
+// ─── 1. The name, set in the font itself ───────────────────────
+let info = Font.info(styleAt(34));
+eyebrow.apply {
+  text(left, 28)`TYPE SPECIMEN · ${info.characterCount} CHARACTERS · ${info.glyphCount} GLYPHS`
+}
+drawWord(info.fullName, 34, left, 66);
+
+// ─── 2. Vertical metrics, drawn as guide lines ─────────────────
+let metricSize = 84;
+let metrics = Font.info(styleAt(metricSize));
+let baseline = 190;
+let wordEnd = drawWord("Hxgp", metricSize, calc(left + 10), baseline);
+
+fn guide(height, label) {
+  let y = calc(baseline - height);
+  guides.apply {
+    M left y
+    H right
+  }
+  guideLabels.apply {
+    text(right, calc(y - 3))`${label} ${round(height)}`
+  }
+}
+guide(metrics.ascender, "ascender");
+guide(metrics.capHeight, "cap height");
+guide(metrics.xHeight, "x-height");
+guide(0, "baseline");
+guide(metrics.descender, "descender");
+
+// ─── 3. Every Latin-1 letter, set at text size and wrapped ─────
+let letterSize = 20;
+let letterStyles = styleAt(letterSize);
+let letters = Font.glyphs(letterStyles, {
+  block: "Latin-1 Supplement",
+  category: "letter",
+});
+let lettersTop = 248;
+let lineHeight = 30;
+
+rules.apply {
+  M left 226
+  H right
+}
+eyebrow.apply {
+  text(left, 242)`LATIN-1 LETTERS · ${letters.length}`
+}
+ink.apply {
+  let x = left;
+  let y = calc(lettersTop + lineHeight - 8);
+  for (glyph in letters) {
+    if (x + glyph.advanceWidth > right) {
+      x = left;
+      y = calc(y + lineHeight);
+    }
+    M x y
+    glyph.draw()
+    x = calc(x + glyph.advanceWidth + 4);
+  }
+}
+
+// ─── 4. Coverage: the first five writing systems ───────────────
+let coverageTop = 368;
+let barLeft = 100;
+let barWidth = 360;
+let most = info.scripts[0].count;
+
+rules.apply {
+  M left calc(coverageTop - 22)
+  H right
+}
+eyebrow.apply {
+  text(left, calc(coverageTop - 6))`SCRIPTS`
+}
+for ([script, i] in info.scripts) {
+  if (i < 5) {
+    let y = calc(coverageTop + i * 18);
+    track.apply {
+      rect(barLeft, calc(y + 3), barWidth, 4);
+    }
+    bars.apply {
+      rect(barLeft, calc(y + 3), max(calc(barWidth * script.count / most), 1.5), 4);
+    }
+    small.apply {
+      text(left, calc(y + 8))`${script.name}`
+      text(calc(barLeft + barWidth + 8), calc(y + 8))`${script.count}`
+    }
+  }
+}

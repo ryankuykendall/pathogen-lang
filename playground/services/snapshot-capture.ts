@@ -100,6 +100,6 @@ export function utf8Bytes(text: string): number {
 
 /** Client-side mirror of the server caps, checked before uploading. */
 export const SNAPSHOT_CLIENT_LIMITS = {
-  svgBytes: 12 * 1024 * 1024,
+  svgBytes: 50 * 1024 * 1024,
   codeBytes: 1024 * 1024,
 } as const;

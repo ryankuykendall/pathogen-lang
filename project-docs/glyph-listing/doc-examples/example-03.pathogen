@@ -1,0 +1,5 @@
+@font "Raleway" 700;
+let info = Font.info(#{ font-family: Raleway; font-weight: 700; });
+for (block in info.blocks) {
+  log(`${block.name}: ${block.count} of ${block.size}`);   // Basic Latin: 97 of 128, Latin-1 Supplement: 96 of 128, …
+}

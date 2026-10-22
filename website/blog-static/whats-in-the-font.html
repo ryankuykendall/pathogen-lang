@@ -1,0 +1,1355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>What's in the Font? Reading the Packing List — Pathogen Studio</title>
+  <meta name="description" content="Font.info, Font.characters and Font.glyphs ask a font what it contains — its writing systems, its kinds of character, its metrics — and hand back glyphs that know what they are.">
+  <link rel="canonical" href="https://pathogen.studio/blog/whats-in-the-font">
+  <meta property="og:title" content="What's in the Font? Reading the Packing List — Pathogen Studio">
+  <meta property="og:description" content="Font.info, Font.characters and Font.glyphs ask a font what it contains — its writing systems, its kinds of character, its metrics — and hand back glyphs that know what they are.">
+  <meta property="og:url" content="https://pathogen.studio/blog/whats-in-the-font">
+  <meta property="og:type" content="article">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Baumans&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=DM+Serif+Display:ital@0;1&family=Inconsolata:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles/theme.css">
+  <script>
+    // Flash prevention — apply saved theme before paint
+    (function(){var t=localStorage.getItem('pathogen-theme');if(t==='light'||t==='dark'){document.documentElement.setAttribute('data-theme',t);document.documentElement.setAttribute('data-active-theme',t)}else{document.documentElement.setAttribute('data-active-theme',window.matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light')}})();
+  </script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"BlogPosting","headline":"What's in the Font? Reading the Packing List","description":"Font.info, Font.characters and Font.glyphs ask a font what it contains — its writing systems, its kinds of character, its metrics — and hand back glyphs that know what they are.","datePublished":"2026-10-20","url":"https://pathogen.studio/blog/whats-in-the-font","author":{"@type":"Organization","name":"Pedestal Design","url":"https://pathogen.studio"}}</script>
+  <style>
+    /* Reset */
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    /* body styles (font-family, background, color, atmospheric grain) are
+     * defined globally in /styles/theme.css. */
+
+    /* Site header is shared via /styles/site-header.css */
+    .site-header { position: sticky; top: 0; z-index: 50; }
+
+    /* Breadcrumb */
+    .breadcrumb-bar {
+      border-bottom: 1px solid var(--border-color, #e2e8f0);
+      padding: 0.625rem 1rem;
+      min-height: 32px;
+    }
+    .breadcrumb {
+      display: flex; align-items: center;
+      font-size: 0.8125rem; color: var(--text-secondary, #666);
+      max-width: 800px; margin: 0 auto;
+    }
+    .breadcrumb-link {
+      color: var(--text-secondary, #666); text-decoration: none;
+      transition: color 0.15s ease;
+    }
+    .breadcrumb-link:hover { color: var(--accent-color, #10b981); text-decoration: underline; }
+    .breadcrumb-current { color: var(--text-primary, #1a1a2e); font-weight: 500; }
+    .breadcrumb .separator { margin: 0 0.5rem; color: var(--text-tertiary, #94a3b8); }
+
+    /* Blog content area */
+    .blog-main { max-width: 800px; margin: 0 auto; padding: 2rem 1rem; }
+
+    /* Content styling — mirrors docs content area */
+    .blog-content h2 { margin: 1.5rem 0 1rem; font-size: 1.25rem; font-weight: 600; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border-color, #e2e8f0); }
+    .blog-content h3 { margin: 1.5rem 0 0.75rem; font-size: 1rem; font-weight: 600; }
+    .blog-content h4 { margin: 1rem 0 0.5rem; font-size: 0.9375rem; font-weight: 600; }
+    .blog-content p { margin: 0 0 1rem; line-height: 1.6; }
+    code { font-family: 'Inconsolata', monospace; font-size: 0.875em; background: var(--bg-tertiary, #f0f1f2); padding: 0.125rem 0.375rem; border-radius: 3px; }
+    pre { border-radius: 8px; overflow-x: auto; font-family: monospace; font-size: 0.875rem; line-height: 1.5; margin: 0 0 1rem; }
+    pre code { background: none; padding: 1rem; display: block; font-size: inherit; font-family: inherit; }
+    .blog-content ul, .blog-content ol { margin: 0 0 1rem; padding-left: 1.5rem; }
+    .blog-content li { margin-bottom: 0.5rem; line-height: 1.5; }
+    table { width: 100%; border-collapse: collapse; margin: 0 0 1rem; font-size: 0.875rem; }
+    th, td { padding: 0.75rem; text-align: left; border-bottom: 1px solid var(--border-color, #e2e8f0); }
+    th { font-weight: 600; background: var(--bg-secondary, #fff); }
+    td code { white-space: nowrap; }
+    hr { border: none; border-top: 1px solid var(--border-color, #e2e8f0); margin: 2rem 0; }
+    .blog-content a { color: var(--accent-color, #10b981); }
+    .blog-content img { max-width: 100%; height: auto; border-radius: 8px; }
+    .blog-content blockquote { border-left: 3px solid var(--accent-color, #10b981); padding-left: 1rem; margin: 0 0 1rem; color: var(--text-secondary, #64748b); }
+    reactive-svg { display: block; margin: 1.5rem 0; }
+
+    /* Blog index cards */
+    .blog-cards { display: flex; flex-direction: column; gap: 1.5rem; }
+    .blog-card {
+      display: block; padding: 1.5rem; border-radius: 12px;
+      border: 1px solid var(--border-color, #e2e8f0);
+      background: var(--bg-secondary, #fff);
+      text-decoration: none; color: inherit;
+      transition: box-shadow 0.15s ease, border-color 0.15s ease;
+    }
+    .blog-card:hover {
+      box-shadow: 0 4px 6px -1px rgba(0,0,0,0.07), 0 2px 4px -1px rgba(0,0,0,0.04);
+      border-color: var(--accent-color, #10b981);
+    }
+    .blog-card h2, .blog-card h3 { margin: 0 0 0.5rem; font-size: 1.125rem; font-weight: 600; border: none; padding: 0; }
+    .blog-card time, .blog-card-part { font-size: 0.8125rem; color: var(--text-tertiary, #94a3b8); }
+    .blog-card p { margin: 0.5rem 0 0; font-size: 0.9375rem; color: var(--text-secondary, #64748b); line-height: 1.5; }
+
+    /* Series grouping on the index */
+    .blog-series {
+      display: flex; flex-direction: column; gap: 1rem;
+      padding: 1.5rem; border-radius: 12px;
+      border: 1px solid var(--border-color, #e2e8f0);
+      background: var(--bg-primary, #f8fafc);
+    }
+    .blog-series-header h2 { margin: 0 0 0.5rem; font-size: 1.25rem; font-weight: 600; border: none; padding: 0; }
+    .blog-series-eyebrow {
+      margin: 0 0 0.375rem; font-size: 0.75rem; font-weight: 600;
+      letter-spacing: 0.05em; text-transform: uppercase;
+      color: var(--accent-color, #10b981);
+    }
+    .blog-series-description { margin: 0; font-size: 0.9375rem; color: var(--text-secondary, #64748b); line-height: 1.5; }
+    .blog-series-spotlight { border-color: var(--accent-color, #10b981); background: var(--bg-secondary, #fff); }
+    .blog-series-pill {
+      display: inline-block; margin-bottom: 0.5rem; padding: 0.1875rem 0.625rem;
+      border-radius: 999px; font-size: 0.6875rem; font-weight: 700;
+      letter-spacing: 0.06em; text-transform: uppercase;
+      color: var(--bg-secondary, #fff); background: var(--accent-color, #10b981);
+    }
+    .blog-series-earlier-label { margin: 0 0 0.375rem; font-size: 0.8125rem; font-weight: 600; color: var(--text-secondary, #64748b); }
+    .blog-series-earlier ol { margin: 0; padding-left: 1.375rem; display: flex; flex-direction: column; gap: 0.375rem; }
+    .blog-series-earlier li { font-size: 0.9375rem; line-height: 1.4; }
+    .blog-series-earlier a { color: inherit; text-decoration: none; }
+    .blog-series-earlier a:hover { color: var(--accent-color, #10b981); text-decoration: underline; }
+    .blog-series-earlier time { font-size: 0.8125rem; color: var(--text-tertiary, #94a3b8); margin-left: 0.375rem; }
+
+    /* Post header */
+    .post-header { margin-bottom: 2rem; }
+    .post-header h1 { font-size: 1.75rem; font-weight: 600; margin-bottom: 0.5rem; }
+    .post-meta { font-size: 0.875rem; color: var(--text-secondary, #64748b); }
+    .back-link { display: inline-block; margin-bottom: 1.5rem; font-size: 0.875rem; color: var(--accent-color, #10b981); text-decoration: none; }
+    .back-link:hover { text-decoration: underline; }
+
+    /* Syntax highlighting */
+    pre code.hljs {
+  display: block;
+  overflow-x: auto;
+  padding: 1em
+}
+code.hljs {
+  padding: 3px 5px
+}
+/*!
+  Theme: GitHub Dark
+  Description: Dark theme as seen on github.com
+  Author: github.com
+  Maintainer: @Hirse
+  Updated: 2021-05-15
+
+  Outdated base version: https://github.com/primer/github-syntax-dark
+  Current colors taken from GitHub's CSS
+*/
+.hljs {
+  color: #c9d1d9;
+  background: #0d1117
+}
+.hljs-doctag,
+.hljs-keyword,
+.hljs-meta .hljs-keyword,
+.hljs-template-tag,
+.hljs-template-variable,
+.hljs-type,
+.hljs-variable.language_ {
+  /* prettylights-syntax-keyword */
+  color: #ff7b72
+}
+.hljs-title,
+.hljs-title.class_,
+.hljs-title.class_.inherited__,
+.hljs-title.function_ {
+  /* prettylights-syntax-entity */
+  color: #d2a8ff
+}
+.hljs-attr,
+.hljs-attribute,
+.hljs-literal,
+.hljs-meta,
+.hljs-number,
+.hljs-operator,
+.hljs-variable,
+.hljs-selector-attr,
+.hljs-selector-class,
+.hljs-selector-id {
+  /* prettylights-syntax-constant */
+  color: #79c0ff
+}
+.hljs-regexp,
+.hljs-string,
+.hljs-meta .hljs-string {
+  /* prettylights-syntax-string */
+  color: #a5d6ff
+}
+.hljs-built_in,
+.hljs-symbol {
+  /* prettylights-syntax-variable */
+  color: #ffa657
+}
+.hljs-comment,
+.hljs-code,
+.hljs-formula {
+  /* prettylights-syntax-comment */
+  color: #8b949e
+}
+.hljs-name,
+.hljs-quote,
+.hljs-selector-tag,
+.hljs-selector-pseudo {
+  /* prettylights-syntax-entity-tag */
+  color: #7ee787
+}
+.hljs-subst {
+  /* prettylights-syntax-storage-modifier-import */
+  color: #c9d1d9
+}
+.hljs-section {
+  /* prettylights-syntax-markup-heading */
+  color: #1f6feb;
+  font-weight: bold
+}
+.hljs-bullet {
+  /* prettylights-syntax-markup-list */
+  color: #f2cc60
+}
+.hljs-emphasis {
+  /* prettylights-syntax-markup-italic */
+  color: #c9d1d9;
+  font-style: italic
+}
+.hljs-strong {
+  /* prettylights-syntax-markup-bold */
+  color: #c9d1d9;
+  font-weight: bold
+}
+.hljs-addition {
+  /* prettylights-syntax-markup-inserted */
+  color: #aff5b4;
+  background-color: #033a16
+}
+.hljs-deletion {
+  /* prettylights-syntax-markup-deleted */
+  color: #ffdcd7;
+  background-color: #67060c
+}
+.hljs-char.escape_,
+.hljs-link,
+.hljs-params,
+.hljs-property,
+.hljs-punctuation,
+.hljs-tag {
+  /* purposely ignored */
+  
+}
+    
+/* pathogen fence tokens (highlightPathogen classes) */
+.hljs .kw { color: #ff7b72; }
+.hljs .pr { color: #7ee787; }
+.hljs .fn { color: #d2a8ff; }
+.hljs .tp { color: #ffa657; }
+.hljs .num { color: #79c0ff; }
+.hljs .str { color: #a5d6ff; }
+.hljs .cm { color: #8b949e; font-style: italic; }
+.hljs .op { color: #ff7b72; }
+
+
+    @media (max-width: 768px) {
+      .blog-main { padding: 1.5rem 0.75rem; }
+      .blog-content pre { font-size: 0.8125rem; }
+      .blog-content table { display: block; overflow-x: auto; }
+    }
+  </style>
+  <link rel="stylesheet" href="/styles/site-header.css">
+</head>
+<body>
+  <header class="site-header">
+  <div class="site-header-inner">
+    <a class="logo" href="/">
+      <span class="logo-main">Pathogen <em>Studio</em></span>
+      <span class="logo-sub">built on Pathogen v0.8.0</span>
+    </a>
+    <nav class="tabs-wrap" aria-label="Primary">
+          <a class="nav-link" href="/workspaces">Workspaces</a>
+          <a class="nav-link" href="/docs">Docs</a>
+          <a class="nav-link" href="/explore">Explore</a>
+          <a class="nav-link" href="/featured">Featured</a>
+          <a class="nav-link active" href="/blog">Blog</a>
+          <a class="nav-link" href="/preferences">Preferences</a>
+    </nav>
+    <div class="actions">
+      <theme-toggle></theme-toggle>
+      <account-menu></account-menu>
+    </div>
+  </div>
+</header>
+  <div class="breadcrumb-bar"><nav class="breadcrumb" aria-label="Breadcrumb"><a class="breadcrumb-link" href="/">Home</a><span class="separator">/</span><a class="breadcrumb-link" href="/blog">Blog</a><span class="separator">/</span><span class="breadcrumb-current">What's in the Font? Reading the Packing List</span></nav></div>
+  <main class="blog-main">
+    <article>
+      <header class="post-header">
+        <h1>What's in the Font? Reading the Packing List</h1>
+        <p class="post-meta"><time datetime="2026-10-20">October 20, 2026</time></p>
+      </header>
+      <div class="blog-content">
+        <blockquote>
+<p><strong>Prerequisites:</strong> This post assumes you have loaded a font with
+<a href="/docs#path-blocks-font-directive"><code>@font</code></a> and drawn a glyph with
+<code>PathBlock.fromGlyph</code>. If not, start with
+<a href="/blog/pathblock-glyph-extraction">From Fonts to Paths</a>. The full
+reference for everything below is the <a href="/docs#fonts-fonts">Fonts</a> page.</p>
+</blockquote>
+<p>A font file is a box of drawings with a packing list taped inside the
+lid. Each drawing, a <strong>glyph</strong>, is the shape of one character, and the
+packing list says which character each glyph is for. Until now, Pathogen
+let you reach into the box only for a drawing you could already name:
+<code>PathBlock.fromGlyph(&quot;A&quot;, styles)</code> works when you know to ask for <code>A</code>.</p>
+<p>Three functions read the packing list itself. <code>Font.characters</code> returns
+the characters a font has, as a string. <code>Font.glyphs</code> returns them as
+drawable glyphs. <code>Font.info</code> describes the whole box: names, sizes, and
+counts by writing system. That&#39;s what you need to check that a font
+covers your readers&#39; languages before you commit to it, to build a
+character picker, or to make a generative piece out of every glyph a
+font has. This post climbs from a ten-character string
+to a type specimen that reads everything it shows from the font.</p>
+<h2>What to know first</h2>
+<ul>
+<li><strong>The numbers here come from one file.</strong> Every sample uses Raleway
+Bold, compiled in the CLI from the font file in this project&#39;s
+<code>fonts/</code> folder. Open a sample in the playground and Google Fonts
+serves its own current release of Raleway, which lists 856 characters
+rather than 936. Same functions, different box.</li>
+<li><strong>Some glyphs aren&#39;t on the packing list.</strong> A font can hold drawings no
+single character points to: ligatures such as a joined <code>fi</code>, alternate
+shapes, letters that join differently mid-word. Raleway Bold has 81 of
+them, plus one every font carries: the empty box drawn for a character
+it doesn&#39;t have. That&#39;s why 936 characters and 81 extras come to 1,018
+glyphs. <code>Font.info</code> counts them as <code>unmappedCount</code>, but none of the three
+functions can hand them to you yet.</li>
+<li><strong>Big fonts are big.</strong> A Chinese font such as Noto Sans SC maps more
+than 13,000 characters, and <code>Font.glyphs</code> warns past 5,000. In the
+playground, where Google delivers a large font in pieces, <code>Font.info</code>
+and any category selection (such as <code>&quot;digit&quot;</code>) read the whole font:
+about 4 MB for Noto Sans SC. A script, block or code-point selection
+downloads only the pieces it touches.</li>
+<li><strong>The VS Code preview doesn&#39;t load fonts yet</strong>, so <code>Font</code> calls, like
+<code>fromGlyph</code>, work in the CLI and the playground but not there.</li>
+</ul>
+<h2>The font writes the string</h2>
+<p><code>fromGlyph</code> takes a string of characters and returns one glyph per
+character. In the top row below, you typed that string. In the bottom
+row, the font wrote it: <code>Font.characters(styles, &quot;digit&quot;)</code> returns every
+digit the font has, as an ordinary string, and the string goes into
+<code>fromGlyph</code> in exactly the same place.</p>
+<p><mini-workspace code-open caption="Top: ten digits typed by hand. Bottom: the same call, with the string supplied by Font.characters(styles, &quot;digit&quot;). The result is an ordinary ten-character string.">
+  <code>//-- Two rows, one call: fromGlyph draws a string of characters. In the top
+//-- row you typed the string; in the bottom row the font wrote it.
+
+define ViewBox(0, 0, 520, 230);
+@font "Raleway" 700;
+
+// ─── Core tokens ───────────────────────────────────────────────
+let bg_color = Color(CSSVar('--bg', #d0d7f0));
+let fg_auto = Color('#0d1638');
+let fg_muted = Color('#0d1638').alpha(0.6);
+let fg_hair = Color('#0d1638').alpha(0.22);
+let accent = Color(CSSVar('--accent', #3a64b8));
+let font = 'sans-serif';
+
+let bg = PathLayer('bg') #{
+  fill: bg_color;
+  stroke: none;
+};
+bg.apply {
+  rect(0, 0, 520, 230);
+}
+
+let rules = PathLayer('rules') #{
+  fill: none;
+  stroke: fg_hair;
+  stroke-width: 0.5;
+};
+let typedRow = PathLayer('typed-glyphs') #{
+  fill: fg_muted;
+  stroke: none;
+};
+let askedRow = PathLayer('asked-glyphs') #{
+  fill: accent;
+  stroke: none;
+};
+let eyebrow = TextLayer('eyebrow') #{
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 3;
+  fill: fg_muted;
+};
+let code = TextLayer('code') #{
+  font-family: monospace;
+  font-size: 10;
+  fill: fg_auto;
+};
+let answer = TextLayer('answer') #{
+  font-family: monospace;
+  font-size: 10;
+  fill: accent;
+};
+
+// ─── Components ────────────────────────────────────────────────
+let glyphRows = GroupLayer('glyph-rows');
+glyphRows.append(typedRow, askedRow);
+let captions = GroupLayer('captions');
+captions.append(rules, eyebrow, code, answer);
+
+// ─── The glyphs ────────────────────────────────────────────────
+let styles = #{
+  font-family: Raleway;
+  font-weight: 700;
+  font-size: 40;
+};
+
+// Before: you type the characters you already know about.
+let typed = '0123456789';
+// After: the font lists the characters it has.
+let asked = Font.characters(styles, 'digit');
+
+// Draws a string's glyphs left to right from a baseline point.
+fn drawRow(target, characters, left, baseline) {
+  target.apply {
+    let x = left;
+    for (glyph in PathBlock.fromGlyph(characters, styles)) {
+      M x baseline glyph.draw()
+      x = calc(x + glyph.advanceWidth);
+    }
+  }
+}
+
+let left = 30;
+let topBaseline = 92;
+let bottomBaseline = 192;
+
+drawRow(typedRow, typed, left, topBaseline);
+drawRow(askedRow, asked, left, bottomBaseline);
+
+// ─── Labels and baselines ──────────────────────────────────────
+rules.apply {
+  M 15 topBaseline
+  H 505
+  M 15 bottomBaseline
+  H 505
+}
+eyebrow.apply {
+  text(left, 32)`TYPED BY HAND`;
+  text(left, 132)`ASKED OF THE FONT`;
+}
+code.apply {
+  text(left, 48)`PathBlock.fromGlyph("0123456789", styles)`;
+  text(left, 148)`PathBlock.fromGlyph(Font.characters(styles, "digit"), styles)`;
+}
+
+// What Font.characters handed back: an ordinary string.
+answer.apply {
+  text(290, 180)`returns "${asked}", ${asked.length} characters`;
+}
+</code>
+  <img src="/blog/samples/post57/01-digits.svg" alt="Top: ten digits typed by hand. Bottom: the same call, with the string supplied by Font.characters(styles, &quot;digit&quot;). The result is an ordinary ten-character string." loading="lazy">
+</mini-workspace></p>
+<p>The two rows match, and that is the point: nothing downstream of the
+string changed. The difference is who knew which characters exist. For
+digits you could have typed them yourself. For a font&#39;s Cyrillic, or
+every accented capital it carries, you couldn&#39;t, and that is where the
+font&#39;s own list earns its place.</p>
+<p>&quot;digit&quot; is a <strong>category</strong>, the kind of character something is. There are
+eight: letter, mark (a combining accent), digit, number (other numerals
+such as ½ or ²), punctuation, symbol, whitespace and other. The
+categories come from Unicode, not from the font, which is why every font
+answers the same question the same way.</p>
+<p>(The digits dip and rise because Raleway&#39;s figures are <em>old-style</em>:
+some sit below the line and some climb above it, like lowercase letters.
+That&#39;s the design, not a layout bug.)</p>
+<h2>Reading the packing list</h2>
+<p><code>Font.info(styles)</code> returns an object describing the font. Its
+<code>scripts</code> property lists the <strong>writing systems</strong> the font covers, Latin,
+Cyrillic, Greek and so on, each with a count, most characters first.</p>
+<p><mini-workspace code-open caption="Font.info(styles).scripts for Raleway Bold, one bar per script, with the first few glyphs of each drawn beside it. Accents (Inherited) are drawn over an o, since they have no width of their own.">
+  <code>//-- Font.info lists the writing systems a font covers, with a count for
+//-- each. One bar per script, longest first, plus a few of its glyphs.
+
+define ViewBox(0, 0, 520, 300);
+@font "Raleway" 700;
+
+// ─── Core tokens ───────────────────────────────────────────────
+let bg_color = Color(CSSVar('--bg', #d0d7f0));
+let fg_auto = Color('#0d1638');
+let fg_muted = Color('#0d1638').alpha(0.6);
+let fg_hair = Color('#0d1638').alpha(0.22);
+let accent = Color(CSSVar('--accent', #3a64b8));
+let font = 'sans-serif';
+
+let bg = PathLayer('bg') #{
+  fill: bg_color;
+  stroke: none;
+};
+bg.apply {
+  rect(0, 0, 520, 300);
+}
+
+let track = PathLayer('track') #{
+  fill: fg_hair;
+  stroke: none;
+};
+let bars = PathLayer('bars') #{
+  fill: accent;
+  stroke: none;
+};
+let samples = PathLayer('sample-glyphs') #{
+  fill: fg_auto;
+  stroke: none;
+};
+let eyebrow = TextLayer('eyebrow') #{
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 3;
+  fill: fg_muted;
+};
+let heading = TextLayer('heading') #{
+  font-family: font;
+  font-size: 22;
+  font-weight: 200;
+  fill: fg_auto;
+};
+let names = TextLayer('script-names') #{
+  font-family: font;
+  font-size: 10;
+  font-weight: 700;
+  letter-spacing: 1;
+  fill: fg_auto;
+};
+let counts = TextLayer('counts') #{
+  font-family: font;
+  font-size: 10;
+  fill: fg_muted;
+  text-anchor: end;
+};
+let glyphNames = TextLayer('glyph-names') #{
+  font-family: font;
+  font-size: 8;
+  fill: fg_muted;
+};
+
+// ─── Components ────────────────────────────────────────────────
+let chart = GroupLayer('chart');
+chart.append(track, bars, names, counts);
+let glyphSamples = GroupLayer('glyph-samples');
+glyphSamples.append(samples, glyphNames);
+let captions = GroupLayer('captions');
+captions.append(eyebrow, heading);
+
+// ─── Ask the font ──────────────────────────────────────────────
+let styles = #{
+  font-family: Raleway;
+  font-weight: 700;
+  font-size: 20;
+};
+let info = Font.info(styles);
+
+eyebrow.apply {
+  text(15, 30)`FONT.INFO(STYLES).SCRIPTS`;
+}
+heading.apply {
+  text(15, 58)`${info.fullName}: ${info.characterCount} characters`;
+}
+
+// ─── One row per script ────────────────────────────────────────
+let nameColumn = 15;
+let barLeft = 100;
+let barWidth = 220;
+let countColumn = 360;
+let sampleColumn = 375;
+let rowTop = 82;
+let rowHeight = 34;
+let most = info.scripts[0].count;
+let carrier = PathBlock.fromGlyph('o', styles)[0];
+
+for ([script, i] in info.scripts) {
+  let y = calc(rowTop + i * rowHeight);
+  let filled = calc(barWidth * script.count / most);
+  track.apply {
+    rect(barLeft,
+        calc(y + 8),
+        barWidth,
+        6);
+  }
+  bars.apply {
+    rect(barLeft,
+        calc(y + 8),
+        max(filled, 1.5),
+        6);
+  }
+  names.apply {
+    text(nameColumn, calc(y + 15))`${script.name}`;
+  }
+  counts.apply {
+    text(countColumn, calc(y + 15))`${script.count}`;
+  }
+  // The first few glyphs of this script that draw something. An accent
+  // (category 'mark') has no width of its own and nothing to sit on, so each one
+  // is centred over an "o".
+  samples.apply {
+    let x = sampleColumn;
+    let shown = 0;
+    for (glyph in Font.glyphs(styles, script.name)) {
+      if (shown &lt; 6 &amp;&amp; !glyph.isEmpty) {
+        if (glyph.category == 'mark') {
+          let box = glyph.boundingBox();
+          M x calc(y + 17) carrier.draw()
+          M calc(x + carrier.advanceWidth / 2 - box.x - box.width / 2) calc(y + 17) glyph.draw()
+          x = calc(x + carrier.advanceWidth + 3);
+        } else {
+          M x calc(y + 17) glyph.draw()
+          x = calc(x + glyph.advanceWidth + 3);
+        }
+        shown = shown + 1;
+      }
+    }
+  }
+  // A script with one character gets its glyph's name, so a lone small
+  // mark reads as deliberate.
+  if (script.count == 1) {
+    let lone = Font.glyphs(styles, script.name)[0];
+    glyphNames.apply {
+      text(calc(sampleColumn + lone.advanceWidth + 8), calc(y + 15))`← ${lone.glyphName}`;
+    }
+  }
+}
+</code>
+  <img src="/blog/samples/post57/02-coverage-bars.svg" alt="Font.info(styles).scripts for Raleway Bold, one bar per script, with the first few glyphs of each drawn beside it. Accents (Inherited) are drawn over an o, since they have no width of their own." loading="lazy">
+</mini-workspace></p>
+<p>Three of those names aren&#39;t writing systems. <strong>Common</strong> holds characters
+many scripts share: most punctuation, the digits 0–9, currency signs.
+<strong>Inherited</strong> holds combining accents, which take on the script of
+whatever letter they sit on. <strong>Unknown</strong> holds characters Unicode gives
+no meaning to: Raleway&#39;s single one sits at a <em>private-use</em> code point,
+one Unicode leaves free for a font to use as it likes, and holds a
+helper glyph its designer named <code>commaaccent</code>.</p>
+<p>Look twice at the Cyrillic row, too. Its first characters, Ѐ and Ё, are
+drawn exactly like Latin È and Ë, and Ѕ like S. Same shape, different
+character, which is why a font lists them separately.</p>
+<p>A count tells you a script is present, not that it is complete. Raleway&#39;s
+five Greek characters aren&#39;t an alphabet. They are Δ, π, μ and two
+different Ω, the Greek letter and the ohm sign, kept for mathematics and
+units. When completeness matters, look at <code>blocks</code> instead. A <strong>block</strong>
+is a fixed, named stretch of the Unicode chart, so each entry can say how
+much of it the font fills:</p>
+<pre><code class="hljs language-pathogen">@font <span class="str">"Raleway"</span> <span class="num">700</span>;
+<span class="kw">let</span> <span class="id">info</span> = <span class="id">Font</span>.<span class="id">info</span>(#{ <span class="pr">font-family</span>: <span class="id">Raleway</span>; <span class="pr">font-weight</span>: <span class="num">700</span>; });
+<span class="kw">for</span> (<span class="id">block</span> <span class="kw">in</span> <span class="id">info</span>.<span class="id">blocks</span>) {
+  <span class="id">log</span>(`${<span class="id">block</span>.<span class="id">name</span>}: ${<span class="id">block</span>.<span class="id">count</span>} of ${<span class="id">block</span>.<span class="id">size</span>}`);
+}
+<span class="cm">// Basic Latin: 97 of 128, Latin-1 Supplement: 96 of 128, …</span>
+</code></pre><p>Read <code>size</code> with care: it counts every code point in the block, including
+invisible control codes no font draws. Latin-1 Supplement&#39;s first 32 are
+controls, so 96 of 128 means Raleway has every printable character in
+the block (the next sample shows all 96), and Basic Latin&#39;s 97 is every
+printable character there too.</p>
+<h2>Asking for part of the list</h2>
+<p>Both <code>Font.characters</code> and <code>Font.glyphs</code> take an optional second
+argument, a <strong>selection</strong>, that narrows the answer. A name selects a
+script (<code>&quot;Cyrillic&quot;</code>), a block (<code>&quot;Latin-1 Supplement&quot;</code>) or a category
+(<code>&quot;punctuation&quot;</code>). Misspell one and the error suggests the closest real
+name.</p>
+<p>A selection can also be a list of <strong>code points</strong>. A code point is the
+number Unicode gives every character: <code>A</code> is 65, <code>ж</code> is 1078. Capitals
+aren&#39;t one of the eight categories, but within one alphabet they are
+usually a run of numbers, so a range selects them. <em>Usually</em>: Russian&#39;s
+Ё sits apart at 1025, so the А–Я range below draws 32 of its 33
+capitals. To include it, list code points yourself: any array of them,
+such as <code>[1025, 1040, 1041]</code>, works as a selection.</p>
+<p><mini-workspace code-open caption="Capitals by code-point range: A–Z is 65 to 90, А–Я is 1040 to 1071. Each glyph is centred in its cell over its code point.">
+  <code>//-- A selection can be a list of code points. Capitals aren't a category,
+//-- but they are a range: A–Z is 65–90, and А–Я is 1040–1071.
+
+define ViewBox(0, 0, 520, 285);
+@font "Raleway" 700;
+
+// ─── Core tokens ───────────────────────────────────────────────
+let bg_color = Color(CSSVar('--bg', #d0d7f0));
+let fg_auto = Color('#0d1638');
+let fg_muted = Color('#0d1638').alpha(0.6);
+let fg_hair = Color('#0d1638').alpha(0.22);
+let latinColor = Color(CSSVar('--latin', #3a64b8));
+let cyrillicColor = Color(CSSVar('--cyrillic', #a8452f));
+let font = 'sans-serif';
+
+let bg = PathLayer('bg') #{
+  fill: bg_color;
+  stroke: none;
+};
+bg.apply {
+  rect(0, 0, 520, 285);
+}
+
+let cells = PathLayer('cells') #{
+  fill: none;
+  stroke: fg_hair;
+  stroke-width: 0.5;
+};
+let latinGlyphs = PathLayer('latin-glyphs') #{
+  fill: latinColor;
+  stroke: none;
+};
+let cyrillicGlyphs = PathLayer('cyrillic-glyphs') #{
+  fill: cyrillicColor;
+  stroke: none;
+};
+let eyebrow = TextLayer('eyebrow') #{
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 3;
+  fill: fg_muted;
+};
+let selection = TextLayer('selection') #{
+  font-family: monospace;
+  font-size: 10;
+  fill: fg_auto;
+};
+let codePoints = TextLayer('code-points') #{
+  font-family: font;
+  font-size: 7.5;
+  letter-spacing: 0.3;
+  fill: fg_muted;
+  text-anchor: middle;
+};
+
+// ─── Components ────────────────────────────────────────────────
+let grids = GroupLayer('grids');
+grids.append(cells, latinGlyphs, cyrillicGlyphs, codePoints);
+let captions = GroupLayer('captions');
+captions.append(eyebrow, selection);
+
+let styles = #{
+  font-family: Raleway;
+  font-weight: 700;
+  font-size: 20;
+};
+
+// ─── A grid of glyphs, each centred in a cell over its code point ─
+let left = 28;
+let cellWidth = 29;
+let cellHeight = 38;
+let columns = 16;
+
+fn drawGrid(target, glyphs, top) {
+  for ([glyph, i] in glyphs) {
+    let cellLeft = calc(left + i % columns * cellWidth);
+    let cellTop = calc(top + floor(i / columns) * cellHeight);
+    let baseline = calc(cellTop + 21);
+    cells.apply {
+      rect(cellLeft, cellTop, cellWidth, cellHeight);
+    }
+    target.apply {
+      M calc(cellLeft + (cellWidth - glyph.advanceWidth) / 2) baseline glyph.draw()
+    }
+    codePoints.apply {
+      text(calc(cellLeft + cellWidth / 2), calc(cellTop + 34))`${glyph.codePoint}`;
+    }
+  }
+}
+
+let latinCapitals = Font.glyphs(styles, (65..90));
+let cyrillicCapitals = Font.glyphs(styles, (1040..1071));
+
+eyebrow.apply {
+  text(left, 30)`LATIN CAPITALS · ${latinCapitals.length} GLYPHS`;
+  text(left, 164)`CYRILLIC CAPITALS · ${cyrillicCapitals.length} GLYPHS`;
+}
+selection.apply {
+  text(left, 44)`Font.glyphs(styles, (65..90))`;
+  text(left, 178)`Font.glyphs(styles, (1040..1071))`;
+}
+drawGrid(latinGlyphs, latinCapitals, 54);
+drawGrid(cyrillicGlyphs, cyrillicCapitals, 188);
+</code>
+  <img src="/blog/samples/post57/03-two-alphabets.svg" alt="Capitals by code-point range: A–Z is 65 to 90, А–Я is 1040 to 1071. Each glyph is centred in its cell over its code point." loading="lazy">
+</mini-workspace></p>
+<p>To combine conditions, pass an object. Every key must match, so this asks
+for the letters in the Latin-1 Supplement block, leaving out its
+punctuation, symbols and fractions (65 of Raleway&#39;s 96; the specimen at
+the end uses exactly this):</p>
+<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">accentedLetters</span> = <span class="id">Font</span>.<span class="id">glyphs</span>(<span class="id">styles</span>, { <span class="id">block</span>: <span class="str">"Latin-1 Supplement"</span>, <span class="id">category</span>: <span class="str">"letter"</span> });
+</code></pre><p>The keys are <code>script</code>, <code>block</code>, <code>category</code> and <code>codePoints</code>. The
+<a href="/docs#fonts-selections">Selections</a> reference has the full rules.</p>
+<h2>Glyphs that know what they are</h2>
+<p>Every glyph <code>Font.glyphs</code> returns, and every glyph from <code>fromGlyph</code>,
+now carries what Unicode says about its character: <code>script</code>, <code>block</code>,
+<code>category</code>, <code>isLetter</code>, <code>isDigit</code>, <code>isPunctuation</code>, <code>isSymbol</code>, and the
+<code>glyphName</code> the designer gave it, alongside the older <code>char</code>,
+<code>codePoint</code>, <code>isMark</code> and <code>isEmpty</code>. So code can sort glyphs by kind
+without a hand-made table of which character is which.</p>
+<p>Below, the whole Latin-1 Supplement block is laid out like a code chart,
+one cell per code point, and each glyph picks its layer, and so its
+colour, from its own properties.</p>
+<p><mini-workspace code-open caption="Font.glyphs(styles, &quot;Latin-1 Supplement&quot;) in code-point order, sixteen to a row, tinted by what each glyph says about itself. The legend counts are gathered in the same loop.">
+  <code>//-- Every glyph knows what kind of character it is. The Latin-1
+//-- Supplement block, laid out like a code chart, tinted by category.
+
+define ViewBox(0, 0, 520, 312);
+@font "Raleway" 700;
+
+// ─── Core tokens ───────────────────────────────────────────────
+let bg_color = Color(CSSVar('--bg', #d0d7f0));
+let fg_auto = Color('#0d1638');
+let fg_muted = Color('#0d1638').alpha(0.6);
+let fg_hair = Color('#0d1638').alpha(0.22);
+let letterColor = Color('#0d1638').alpha(0.45);
+let punctuationColor = Color(CSSVar('--punctuation', #b07a12));
+let symbolColor = Color(CSSVar('--symbol', #3a64b8));
+let numberColor = Color(CSSVar('--number', #17818a));
+let otherColor = Color(CSSVar('--other', #8a3c8a));
+let font = 'sans-serif';
+
+let bg = PathLayer('bg') #{
+  fill: bg_color;
+  stroke: none;
+};
+bg.apply {
+  rect(0, 0, 520, 312);
+}
+
+let cells = PathLayer('cells') #{
+  fill: none;
+  stroke: fg_hair;
+  stroke-width: 0.5;
+};
+let letters = PathLayer('letters') #{
+  fill: letterColor;
+  stroke: none;
+};
+let punctuation = PathLayer('punctuation') #{
+  fill: punctuationColor;
+  stroke: none;
+};
+let symbols = PathLayer('symbols') #{
+  fill: symbolColor;
+  stroke: none;
+};
+let numbers = PathLayer('numbers') #{
+  fill: numberColor;
+  stroke: none;
+};
+let others = PathLayer('others') #{
+  fill: otherColor;
+  stroke: none;
+};
+let eyebrow = TextLayer('eyebrow') #{
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 3;
+  fill: fg_muted;
+};
+let selection = TextLayer('selection') #{
+  font-family: monospace;
+  font-size: 10;
+  fill: fg_auto;
+};
+let emptyLabels = TextLayer('empty-labels') #{
+  font-family: font;
+  font-size: 7.5;
+  letter-spacing: 0.8;
+  fill: otherColor;
+  text-anchor: middle;
+};
+// A second signal besides colour: each non-letter cell carries its
+// category's initial in the corner, keyed in the legend.
+let kindMarks = TextLayer('kind-marks') #{
+  font-family: font;
+  font-size: 7.5;
+  font-weight: 700;
+  fill: fg_muted;
+  text-anchor: end;
+};
+let legend = TextLayer('legend') #{
+  font-family: font;
+  font-size: 8;
+  letter-spacing: 0.5;
+  fill: fg_auto;
+};
+
+// ─── Components: one layer per category, so each takes its own fill ─
+let chart = GroupLayer('chart');
+chart.append(cells,
+    letters,
+    punctuation,
+    symbols,
+    numbers,
+    others,
+    emptyLabels,
+    kindMarks);
+let captions = GroupLayer('captions');
+captions.append(eyebrow, selection, legend);
+
+let styles = #{
+  font-family: Raleway;
+  font-weight: 700;
+  font-size: 20;
+};
+
+// ─── The block, one cell per code point ────────────────────────
+let left = 28;
+let top = 62;
+let cellWidth = 29;
+let cellHeight = 34;
+let block = Font.glyphs(styles, 'Latin-1 Supplement');
+let firstCodePoint = block[0].codePoint;
+
+eyebrow.apply {
+  text(left, 30)`LATIN-1 SUPPLEMENT · ${block.length} GLYPHS · TINTED BY CATEGORY`;
+}
+selection.apply {
+  text(left, 46)`Font.glyphs(styles, "Latin-1 Supplement")`;
+}
+
+let letterCount = 0;
+let punctuationCount = 0;
+let symbolCount = 0;
+let numberCount = 0;
+let otherCount = 0;
+
+for (glyph in block) {
+  let offset = glyph.codePoint - firstCodePoint;
+  let cellLeft = calc(left + offset % 16 * cellWidth);
+  let cellTop = calc(top + floor(offset / 16) * cellHeight);
+  cells.apply {
+    rect(cellLeft, cellTop, cellWidth, cellHeight);
+  }
+  // Pick a layer from what the glyph says about itself.
+  // (Latin-1 has no plain digits: ¹ ² ³ and the fractions are 'number'.)
+  let target = others;
+  let mark = 'O';
+  if (glyph.isLetter) {
+    target = letters;
+    mark = '';
+    letterCount = letterCount + 1;
+  } else if (glyph.isPunctuation) {
+    target = punctuation;
+    mark = 'P';
+    punctuationCount = punctuationCount + 1;
+  } else if (glyph.isSymbol) {
+    target = symbols;
+    mark = 'S';
+    symbolCount = symbolCount + 1;
+  } else if (glyph.category == 'number') {
+    target = numbers;
+    mark = 'N';
+    numberCount = numberCount + 1;
+  } else {
+    otherCount = otherCount + 1;
+  }
+  if (mark != '') {
+    kindMarks.apply {
+      text(calc(cellLeft + cellWidth - 3), calc(cellTop + 9))`${mark}`;
+    }
+  }
+  if (glyph.isEmpty) {
+    // A space draws nothing: show its code point instead.
+    emptyLabels.apply {
+      text(calc(cellLeft + cellWidth / 2), calc(cellTop + 20))`${glyph.codePoint}`;
+    }
+  } else {
+    target.apply {
+      M calc(cellLeft + (cellWidth - glyph.advanceWidth) / 2) calc(cellTop + 24) glyph.draw()
+    }
+  }
+}
+
+// ─── Legend, from the counts gathered above ─────────────────────
+let legendY = calc(top + 6 * cellHeight + 26);
+fn legendEntry(target, x, label) {
+  target.apply {
+    rect(x,
+        calc(legendY - 7),
+        8,
+        8);
+  }
+  legend.apply {
+    text(calc(x + 12), legendY)`${label}`;
+  }
+}
+// Five entries spaced evenly across the chart's width.
+let legendStep = 16 * cellWidth / 5;
+legendEntry(letters, left, `letter ${letterCount}`);
+legendEntry(punctuation, calc(left + legendStep), `P punctuation ${punctuationCount}`);
+legendEntry(symbols, calc(left + 2 * legendStep), `S symbol ${symbolCount}`);
+legendEntry(numbers, calc(left + 3 * legendStep), `N number ${numberCount}`);
+legendEntry(others, calc(left + 4 * legendStep), `O space/other ${otherCount}`);
+</code>
+  <img src="/blog/samples/post57/04-kinds-of-character.svg" alt="Font.glyphs(styles, &quot;Latin-1 Supplement&quot;) in code-point order, sixteen to a row, tinted by what each glyph says about itself. The legend counts are gathered in the same loop." loading="lazy">
+</mini-workspace></p>
+<p>A few cells are worth a second look. ª and º are letters, not symbols:
+Spanish and Portuguese use them in ordinals such as 1º. The superscript
+digits ¹ ² ³ and the fractions are <em>numbers</em>, not digits, because
+<code>digit</code> means the ten plain digits of a script. µ is a letter in the
+Common script: the micro sign is a different character from the Greek μ in
+the Greek block, and a font draws the two separately. The first cell,
+160, is the no-break space, which draws nothing, and the dash marked O is
+the soft hyphen, an invisible line-break hint that this font gives a
+visible shape.</p>
+<h2>A specimen that reads itself</h2>
+<p>A type specimen is the sheet a foundry (the company that makes and
+sells a typeface) prints to show off a font: its
+name, its proportions, its characters, its reach. Here is one where every
+part comes from the font, so nothing on it was typed in from a
+datasheet.</p>
+<p><mini-workspace code-open caption="Raleway Bold's specimen: the name set in the font itself, vertical metrics drawn as guide lines, every Latin-1 letter, and up to five of its scripts. Change the family line at the top and it redraws.">
+  <code>//-- A one-page type specimen, every part of it read from the font: its
+//-- name, its vertical metrics, its Latin-1 letters and the writing
+//-- systems it covers. Change `family` and it redraws.
+
+define ViewBox(0, 0, 520, 470);
+
+let family = 'Raleway';
+@font family 700;
+
+// ─── Core tokens ───────────────────────────────────────────────
+let bg_color = Color(CSSVar('--bg', #d0d7f0));
+let fg_auto = Color('#0d1638');
+let fg_muted = Color('#0d1638').alpha(0.6);
+let fg_hair = Color('#0d1638').alpha(0.22);
+let accent = Color(CSSVar('--accent', #3a64b8));
+let guideColor = Color(CSSVar('--guide', #a8452f));
+let font = 'sans-serif';
+
+let bg = PathLayer('bg') #{
+  fill: bg_color;
+  stroke: none;
+};
+bg.apply {
+  rect(0, 0, 520, 470);
+}
+
+let ink = PathLayer('ink') #{
+  fill: fg_auto;
+  stroke: none;
+};
+let guides = PathLayer('guides') #{
+  fill: none;
+  stroke: guideColor;
+  stroke-width: 0.5;
+  stroke-dasharray: 3 4;
+};
+let rules = PathLayer('rules') #{
+  fill: none;
+  stroke: fg_hair;
+  stroke-width: 0.5;
+};
+let track = PathLayer('track') #{
+  fill: fg_hair;
+  stroke: none;
+};
+let bars = PathLayer('bars') #{
+  fill: accent;
+  stroke: none;
+};
+let eyebrow = TextLayer('eyebrow') #{
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 3;
+  fill: fg_muted;
+};
+let guideLabels = TextLayer('guide-labels') #{
+  font-family: font;
+  font-size: 8;
+  letter-spacing: 0.5;
+  fill: guideColor;
+  text-anchor: end;
+};
+let small = TextLayer('small') #{
+  font-family: font;
+  font-size: 8;
+  letter-spacing: 0.5;
+  fill: fg_auto;
+};
+
+// ─── Components ────────────────────────────────────────────────
+let type = GroupLayer('type');
+type.append(ink);
+let metricGuides = GroupLayer('metric-guides');
+metricGuides.append(guides, guideLabels);
+let coverage = GroupLayer('coverage');
+coverage.append(track, bars);
+let captions = GroupLayer('captions');
+captions.append(rules, eyebrow, small);
+
+// One style per size. Font.info scales every metric to its font-size.
+fn styleAt(size) {
+  return #{
+    font-family: family;
+    font-weight: 700;
+    font-size: size;
+  };
+}
+
+// The page: content stays inside these edges. Every section below
+// measures the font and takes the room it needs, top to bottom.
+let left = 20;
+let right = 500;
+let bottom = 452;
+
+// Draws a string in the font from a baseline point.
+fn drawWord(word, size, x, baseline) {
+  let pen = x;
+  ink.apply {
+    for (glyph in PathBlock.fromGlyph(word, styleAt(size))) {
+      M pen baseline glyph.draw()
+      pen = calc(pen + glyph.advanceWidth);
+    }
+  }
+}
+
+// How wide a string sets at a size, and the largest size (up to `size`)
+// at which it fits in `room`. Widths scale with font-size.
+fn wordWidth(word, size) {
+  let width = 0;
+  for (glyph in PathBlock.fromGlyph(word, styleAt(size))) {
+    width = calc(width + glyph.advanceWidth);
+  }
+  return width;
+}
+fn fitSize(word, size, room) {
+  return min(size, size * room / wordWidth(word, size));
+}
+
+// ─── 1. The name, set in the font itself ───────────────────────
+let info = Font.info(styleAt(34));
+eyebrow.apply {
+  text(left, 28)`TYPE SPECIMEN · ${info.characterCount} CHARACTERS · ${info.glyphCount} GLYPHS`;
+}
+drawWord(info.fullName,
+    fitSize(info.fullName, 34, right - left),
+    left,
+    66);
+
+// ─── 2. Vertical metrics, drawn as guide lines ─────────────────
+// The sample word gets 300 units of width, leaving room for the labels;
+// the baseline sits as far down as this font's ascender needs.
+let metricSize = fitSize('Hxgp', 84, 300);
+let metrics = Font.info(styleAt(metricSize));
+let metricsTop = 96;
+let baseline = calc(metricsTop + 12 + metrics.ascender);
+eyebrow.apply {
+  text(left, metricsTop)`VERTICAL METRICS · FONT-SIZE ${round(metricSize)} · ${metrics.unitsPerEm} UNITS PER EM`;
+}
+drawWord('Hxgp',
+    metricSize,
+    calc(left + 10),
+    baseline);
+
+// Top to bottom. Each label sits just above its line; when that would
+// crowd the label before it (cap height close to the ascender, or equal
+// to the x-height in a capitals-only font), it moves below its line.
+let metricLines = [
+  {
+    label: 'ascender',
+    height: metrics.ascender,
+  },
+  {
+    label: 'cap height',
+    height: metrics.capHeight,
+  },
+  {
+    label: 'x-height',
+    height: metrics.xHeight,
+  },
+  {
+    label: 'baseline',
+    height: 0,
+  },
+  {
+    label: 'descender',
+    height: metrics.descender,
+  },
+];
+let previousLabelY = -100;
+for (line in metricLines) {
+  let y = calc(baseline - line.height);
+  guides.apply {
+    M left y
+    H right
+  }
+  let labelY = calc(y - 3);
+  if (labelY &lt; previousLabelY + 10) {
+    labelY = max(calc(y + 10), calc(previousLabelY + 10));
+  }
+  guideLabels.apply {
+    text(right, labelY)`${line.label} ${round(line.height)}`;
+  }
+  previousLabelY = labelY;
+}
+
+// ─── 4 (laid out first). Coverage, pinned to the bottom edge ────
+// Up to five scripts, one 18-unit row each.
+let shownScripts = min(5, info.scripts.length);
+let coverageTop = calc(bottom - 8 - (shownScripts - 1) * 18);
+let barLeft = 100;
+let barWidth = 360;
+let most = info.scripts[0].count;
+
+// ─── 3. Every Latin-1 letter, in the space left between ────────
+let lettersRule = calc(baseline - metrics.descender + 14);
+let lettersTop = calc(lettersRule + 24);
+let lettersRoom = calc(coverageTop - 22 - 8 - lettersTop);
+let selection = {
+  block: 'Latin-1 Supplement',
+  category: 'letter',
+};
+
+// Wraps the letters at `size` from the top of their space; draws them
+// when asked, and returns the height the lines take.
+fn setLetters(size, draw) {
+  let lineHeight = size * 1.5;
+  let x = left;
+  let y = calc(lettersTop + size);
+  for (glyph in Font.glyphs(styleAt(size), selection)) {
+    if (x + glyph.advanceWidth &gt; right) {
+      x = left;
+      y = calc(y + lineHeight);
+    }
+    if (draw) {
+      ink.apply {
+        M x y glyph.draw()
+      }
+    }
+    x = calc(x + glyph.advanceWidth + size / 5);
+  }
+  return calc(y - lettersTop + lineHeight / 3);
+}
+
+// The largest size, up to 20, whose lines fit the space.
+let letterSize = 10;
+for (size in [
+  10,
+  12,
+  14,
+  16,
+  18,
+  20,
+]) {
+  if (setLetters(size, false) &lt;= lettersRoom) {
+    letterSize = size;
+  }
+}
+setLetters(letterSize, true);
+
+rules.apply {
+  M left lettersRule
+  H right
+}
+eyebrow.apply {
+  text(left, calc(lettersRule + 16))`LATIN-1 LETTERS · ${Font.characters(styleAt(letterSize), selection).length} · FONT-SIZE ${letterSize}`;
+}
+
+// ─── 4. Coverage, drawn ────────────────────────────────────────
+rules.apply {
+  M left calc(coverageTop - 22)
+  H right
+}
+eyebrow.apply {
+  text(left, calc(coverageTop - 6))`SCRIPTS`;
+}
+for ([script, i] in info.scripts) {
+  if (i &lt; shownScripts) {
+    let y = calc(coverageTop + i * 18);
+    track.apply {
+      rect(barLeft,
+          calc(y + 3),
+          barWidth,
+          4);
+    }
+    bars.apply {
+      rect(barLeft,
+          calc(y + 3),
+          max(calc(barWidth * script.count / most), 1.5),
+          4);
+    }
+    small.apply {
+      text(left, calc(y + 8))`${script.name}`;
+      text(calc(barLeft + barWidth + 8), calc(y + 8))`${script.count}`;
+    }
+  }
+}
+</code>
+  <img src="/blog/samples/post57/05-specimen.svg" alt="Raleway Bold's specimen: the name set in the font itself, vertical metrics drawn as guide lines, every Latin-1 letter, and up to five of its scripts. Change the family line at the top and it redraws." loading="lazy">
+</mini-workspace></p>
+<p>From the top:</p>
+<ul>
+<li><strong>The name</strong> is <code>info.fullName</code>, drawn with <code>fromGlyph</code> in the font it
+names. It is measured first, by adding up its glyphs&#39; <code>advanceWidth</code>,
+and set smaller if it wouldn&#39;t fit across the page.</li>
+<li><strong>The guide lines</strong> come from <code>Font.info</code>&#39;s metrics. Type designers
+draw each letter on a square grid called the <em>em</em>; Raleway&#39;s is 1,000
+units on a side, and <code>font-size</code> sets how big that square comes out.
+<code>Font.info</code> has already scaled each metric to the style&#39;s font-size,
+so <code>capHeight</code> is how tall an <code>H</code> will be in your drawing, and the
+guide line goes exactly there. The <em>x-height</em> is the height of a
+lowercase x; the <em>ascender</em> and <em>descender</em> are the room the font
+reserves above and below the baseline for tall letters and for the
+tails of g and p. The labels are in those same drawing
+units, at the font-size the eyebrow names. The baseline sits as low as
+this font&#39;s ascender needs, so a tall font gets a taller band.</li>
+<li><strong>The letters</strong> are one selection object:
+<code>{ block: &quot;Latin-1 Supplement&quot;, category: &quot;letter&quot; }</code>, wrapped using
+each glyph&#39;s <code>advanceWidth</code>. The specimen tries sizes from 10 to 20
+and keeps the largest whose lines fit the space left over.</li>
+<li><strong>The scripts</strong> are the same <code>scripts</code> list as before, up to five,
+pinned to the bottom edge.</li>
+</ul>
+<p>Because every section measures the font before taking its room, you can
+change the <code>family</code> line at the top without touching the layout. It holds up for
+a wide display face like Unbounded or Syncopate, for Bebas Neue, which
+has only capitals (so its x-height line lands on its cap height, and
+the labels stack instead of colliding), and for Noto Sans SC, where Han
+tops the script list. In the playground, any Google Fonts family works;
+one without a bold weight is drawn at its nearest weight, and the name
+on the page says which (Bebas Neue comes out &quot;Regular&quot;). In the CLI the
+font file needs to be on your disk; the
+<a href="/docs#path-blocks-font-directive"><code>@font</code> reference</a> says where it
+looks.</p>
+<h2>Where to go next</h2>
+<p>Open the specimen in the playground and set <code>family</code> to the font you&#39;re
+considering. The <a href="/docs#fonts-fonts">Fonts</a> page covers everything <code>Font.info</code> returns,
+including the names (designer, license, version) and the full metrics
+table, along with every selection rule and error message. If you&#39;d rather
+shape the glyphs than list them, <a href="/blog/pathblock-glyph-extraction">From Fonts to
+Paths</a> cuts, offsets and rearranges
+them.</p>
+
+      </div>
+    </article>
+  </main>
+  <auth-modal></auth-modal>
+  <!-- Eagerly register the <color-input> custom element so the chip and inspector
+       color pickers can mount. Same load pattern as playground/index.html.
+       Without this, <pathogen-color-input> waits on whenDefined('color-input')
+       indefinitely and renders an empty shadow root — the bug was that the
+       inspector chips and mini-workspace glass-bar chips both looked blank and
+       didn't respond to clicks on blog pages. -->
+  <script type="importmap">
+    {
+      "imports": {
+        "hdr-color-input": "/vendor/hdr-color-input.js"
+      }
+    }
+  </script>
+  <script type="module" src="/vendor/hdr-color-input.js"></script>
+  <script src="/components/shared/theme-toggle.js" type="module"></script>
+  <script src="/components/shared/account-menu.js" type="module"></script>
+  <script src="/components/shared/auth-modal.js" type="module"></script>
+  <script src="/components/blog/reactive-svg.js" type="module"></script>
+  <!-- shared pan/zoom controller (window.PathogenPanZoom) — load before mini-preview -->
+  <script src="/dist/pan-zoom.global.js"></script>
+  <script src="/components/blog/mini-workspace.js" type="module"></script>
+  <script src="/components/blog/mini-preview.js" type="module"></script>
+</body>
+</html>

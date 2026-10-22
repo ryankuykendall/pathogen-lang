@@ -214,7 +214,7 @@ export class SnapshotController {
         name: defaultName,
         note: '',
         exportInstead: true,
-        message: `This render is ${formatBytes(pending.svgBytes)}. Snapshots are limited to 12 MB. Try a lower Precision, or export it directly.`,
+        message: `This render is ${formatBytes(pending.svgBytes)}. Snapshots are limited to ${SNAPSHOT_CLIENT_LIMITS.svgBytes / (1024 * 1024)} MB. Try a lower Precision, or export it directly.`,
       });
       return;
     }

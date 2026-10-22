@@ -151,6 +151,94 @@ describe('resolveMissingGlyphSubsets', () => {
     expect(binaries).toEqual([primary]);
   });
 
+  it('fetches the slices a Font selection overlaps (fontCoverageRequests), then stops', async () => {
+    const { resolveMissingGlyphSubsets } = await import('../playground/services/compiler-worker');
+    const primary = await seedSubsetIndex('FontCoverageRangeTest');
+
+    // Ranges overlap only k1 (U+D700-D7A3).
+    const first = { fontCoverageRequests: [{ family: 'FontCoverageRangeTest', weight: 400, ranges: [[0xd7a0, 0xd7a3]] }] };
+    const second = { fontCoverageRequests: [{ family: 'FontCoverageRangeTest', weight: 400, ranges: [[0xd7a0, 0xd7a3]] }] };
+    const recompile = vi.fn(async () => second);
+
+    const { result, binaries, notices } = await resolveMissingGlyphSubsets(first, recompile, [primary]);
+
+    expect(recompile).toHaveBeenCalledTimes(1); // second pass finds nothing new
+    expect(result).toBe(second);
+    expect(binaries.map((b) => b.subsetUrl)).toEqual([undefined, 'https://fonts.gstatic.com/s/fake/k1.woff2']);
+    expect(notices).toEqual([]);
+  });
+
+  it('a whole-font request (ranges null) fetches every slice and notes it for the banner', async () => {
+    const { resolveMissingGlyphSubsets } = await import('../playground/services/compiler-worker');
+    const primary = await seedSubsetIndex('FontCoverageAllTest');
+
+    const first = { fontCoverageRequests: [{ family: 'FontCoverageAllTest', weight: 400, ranges: null }] };
+    const recompile = vi.fn(async () => ({}));
+
+    const { binaries, notices } = await resolveMissingGlyphSubsets(first, recompile, [primary]);
+
+    expect(recompile).toHaveBeenCalledTimes(1);
+    expect(binaries.map((b) => b.subsetUrl).sort()).toEqual(
+      [undefined, 'https://fonts.gstatic.com/s/fake/k0.woff2', 'https://fonts.gstatic.com/s/fake/k1.woff2'].sort(),
+    );
+    expect(notices).toEqual([
+      'Loaded all 3 slices of "FontCoverageAllTest" from Google Fonts (0.0 MB) for a Font call that needs the whole font.',
+    ]);
+  });
+
+  it('recoverFontCoverage: a compile that failed before its slices loaded is retried once they are fetched', async () => {
+    const { recoverFontCoverage } = await import('../playground/services/compiler-worker');
+    const primary = await seedSubsetIndex('FontCoverageRetryTest');
+    const failure = Object.assign(new Error('Index 0 is out of range'), {
+      fontCoverageRequests: [{ family: 'FontCoverageRetryTest', weight: 400, ranges: [[0xac00, 0xac10]] }],
+    });
+    const ok = { layers: [] };
+    const recompile = vi.fn().mockRejectedValueOnce(failure).mockResolvedValueOnce(ok);
+
+    const { first, binaries } = await recoverFontCoverage(recompile, [primary]);
+
+    expect(first).toBe(ok);
+    expect(recompile).toHaveBeenCalledTimes(2);
+    expect(binaries.map((b) => b.subsetUrl)).toEqual([undefined, 'https://fonts.gstatic.com/s/fake/k0.woff2']);
+  });
+
+  it('recoverFontCoverage: a second dependent failure is recovered too', async () => {
+    const { recoverFontCoverage } = await import('../playground/services/compiler-worker');
+    const primary = await seedSubsetIndex('FontCoverageTwoStepTest');
+    const fail = (lo: number, hi: number) =>
+      Object.assign(new Error('Index 0 is out of range'), {
+        fontCoverageRequests: [{ family: 'FontCoverageTwoStepTest', weight: 400, ranges: [[lo, hi]] }],
+      });
+    const ok = { layers: [] };
+    const recompile = vi
+      .fn()
+      .mockRejectedValueOnce(fail(0xac00, 0xac10)) // needs k0
+      .mockRejectedValueOnce(fail(0xd700, 0xd710)) // then needs k1
+      .mockResolvedValueOnce(ok);
+    const { first, binaries } = await recoverFontCoverage(recompile, [primary]);
+    expect(first).toBe(ok);
+    expect(recompile).toHaveBeenCalledTimes(3);
+    expect(binaries.map((b) => b.subsetUrl)).toEqual([
+      undefined,
+      'https://fonts.gstatic.com/s/fake/k0.woff2',
+      'https://fonts.gstatic.com/s/fake/k1.woff2',
+    ]);
+  });
+
+  it('recoverFontCoverage: with nothing to fetch, the original error stands', async () => {
+    const { recoverFontCoverage } = await import('../playground/services/compiler-worker');
+    const primary = await seedSubsetIndex('FontCoverageNoRetryTest');
+    const failure = Object.assign(new Error('Index 0 is out of range'), {
+      fontCoverageRequests: [{ family: 'FontCoverageNoRetryTest', weight: 400, ranges: [[0x4e00, 0x4e09]] }],
+    });
+    const recompile = vi.fn().mockRejectedValueOnce(failure);
+    await expect(recoverFontCoverage(recompile, [primary])).rejects.toBe(failure);
+    expect(recompile).toHaveBeenCalledTimes(1);
+    // A plain failure is never retried.
+    const plain = new Error('Unknown variable x');
+    await expect(recoverFontCoverage(vi.fn().mockRejectedValueOnce(plain), [primary])).rejects.toBe(plain);
+  });
+
   it('never exceeds 2 recompile passes even if misses keep being reported', async () => {
     const { resolveMissingGlyphSubsets } = await import('../playground/services/compiler-worker');
     const primary = await seedSubsetIndex('GlyphLoopCapTest');

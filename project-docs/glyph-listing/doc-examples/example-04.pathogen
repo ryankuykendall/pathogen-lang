@@ -1,0 +1,6 @@
+@font "Raleway" 700;
+let styles = #{ font-family: Raleway; font-weight: 700; font-size: 32; };
+
+let cyrillic = Font.characters(styles, "Cyrillic");
+log(cyrillic.length);                               // 238: how many Cyrillic characters Raleway Bold has
+let glyphs = PathBlock.fromGlyph(cyrillic, styles); // the same glyphs Font.glyphs(styles, "Cyrillic") returns
