@@ -33,6 +33,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `docs/projects.md` (new, "Projects and Files"): the project folder, `pathogen.json`, writing paths, each tool, errors.
 - `docs/cli.md`: "Compile a Folder" and "Fonts and Files". `docs/path-blocks.md`: "Font Loading by Environment" rewritten for every tool. `docs/fonts.md`: complete fonts vs browser slices — Raleway Bold has 936 characters in the complete file and 856 in the slices, from the same release (the old "older download" explanation was wrong). `docs/security.md`: "Compile-side inputs". `docs/debug.md`: the new warning codes.
 - Blog posts "What's in the Font?" and "The VS Code Developer Experience" carry dated update notes.
+- README: the Quick Start, Library Usage and Syntax Overview examples compile again (they predated mandatory semicolons; `circle()` now prints relative arcs; `compile()` returns an object, so the example reads `result.layers[0].data` and shows `generateSvg`), the math list says `ln`, `PI()` and `TAU()`, the CLI options list `<folder>`, `--root` and `--offline`, the examples run `npx pathogen-lang` (npm's `pathogen` is an unrelated package, so `npx pathogen` works only after an install), and doc links point at pathogen.studio so they work on npmjs.com.
 
 ### Changed
 

@@ -31,34 +31,38 @@ npm install pathogen-lang
 
 ```bash
 # Compile inline code
-npx pathogen -e 'circle(100, 100, 50)'
-# Output: M 50 100 A 50 50 0 1 1 150 100 A 50 50 0 1 1 50 100
+npx pathogen-lang -e 'circle(100, 100, 50);'
+# Output: M 50 100 a 50 50 0 1 1 100 0 a 50 50 0 1 1 -100 0
 
 # Compile a file
-npx pathogen --src=input.svgx
+npx pathogen-lang input.pathogen
 
 # Output as SVG file
-npx pathogen -e 'circle(100, 100, 50)' --output-svg-file=circle.svg
+npx pathogen-lang -e 'circle(100, 100, 50);' --output-svg-file=circle.svg
 ```
 
-The package also exposes a longer alias `pathogen-lang` if it's clearer in scripts (e.g. `npx pathogen-lang -e ...`).
+Once the package is installed, the shorter `pathogen` command does the same. Without a local install, `npx pathogen` would fetch a different npm package of that name, so scripts should use `pathogen-lang`.
 
 ### Library Usage
 
 ```typescript
-import { compile } from 'pathogen-lang';
+import { compile, generateSvg } from 'pathogen-lang';
 
-const pathData = compile(`
+const result = compile(`
   let r = 50;
   let cx = 100;
   let cy = 100;
-  circle(cx, cy, r)
+  circle(cx, cy, r);
 `);
 
-// Use in SVG
+// The path data of the program's drawing
+const pathData = result.layers[0].data;
 const svg = `<svg viewBox="0 0 200 200">
   <path d="${pathData}" fill="none" stroke="black"/>
 </svg>`;
+
+// Or the whole document, with every layer, style and definition
+const svgDocument = generateSvg(result, { viewBox: '0 0 200 200' });
 ```
 
 ### Loading fonts in Node
@@ -122,6 +126,7 @@ const result = compile(source, { fonts: buildFontRegistry(fonts).registry });
 // Variables
 let radius = 50;
 let cx = 100;
+let cy = 100;
 
 // Use variables directly
 M cx cy
@@ -131,14 +136,14 @@ L calc(cx + radius) calc(cy * 2)
 
 // For loops
 for (i in 0..5) {
-  circle(calc(20 + i * 40), 100, 15)
+  circle(calc(20 + i * 40), 100, 15);
 }
 
 // Conditionals
 if (radius > 30) {
-  circle(cx, cy, radius)
+  circle(cx, cy, radius);
 } else {
-  rect(cx, cy, 50, 50)
+  rect(cx, cy, 50, 50);
 }
 
 // Custom functions
@@ -150,14 +155,14 @@ fn diamond(x, y, size) {
   Z
 }
 
-diamond(100, 100, 40)
+diamond(100, 100, 40);
 ```
 
 ## Standard Library
 
 ### Math Functions
 
-`sin`, `cos`, `tan`, `sqrt`, `abs`, `min`, `max`, `floor`, `ceil`, `round`, `pow`, `log`, `exp`, `lerp`, `clamp`, `map`, `rad`, `deg`, `PI`, `TAU`, `random`
+`sin`, `cos`, `tan`, `sqrt`, `abs`, `min`, `max`, `floor`, `ceil`, `round`, `pow`, `ln`, `exp`, `lerp`, `clamp`, `map`, `rad`, `deg`, `PI()`, `TAU()`, `random`
 
 ### Path Functions
 
@@ -173,15 +178,15 @@ diamond(100, 100, 40)
 
 ## Documentation
 
-- [Syntax Reference](docs/syntax.md) - Complete language syntax
-- [Standard Library](docs/stdlib.md) - All built-in functions
-- [CLI Reference](docs/cli.md) - Command line options
-- [Examples](docs/examples.md) - Practical examples and recipes
+- [Syntax Reference](https://pathogen.studio/docs#syntax-syntax-reference) - Complete language syntax
+- [Standard Library](https://pathogen.studio/docs#stdlib-standard-library-reference) - All built-in functions
+- [CLI Reference](https://pathogen.studio/docs#cli-cli-reference) - Command line options
+- [Examples](https://pathogen.studio/docs#examples-examples) - Practical examples and recipes
 
 ## CLI Options
 
 ```
---src=<file>              Input source file
+<file>                    Input source file (or --src=<file>)
 <folder>                  The "main" named in <folder>/pathogen.json
 -e <code>                 Inline code
 -o, --output <file>       Output path data to file
