@@ -3,6 +3,10 @@
     "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"
   },
   "permissions": {
+    "allow": [
+      "Bash(git grep *)",
+      "Bash(git check-ignore *)"
+    ],
     "deny": [
       "Read(./node_modules/**)",
       "Read(./dist/**)",

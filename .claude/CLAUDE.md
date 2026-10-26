@@ -134,6 +134,15 @@ Build → end-to-end install verify → test all advertised features → full te
 - **Doc-first exploration**: When planning compiler features, explore `docs/` in parallel with `src/` since doc-first is the workflow
 - **Debugging samples**: before hand-inspecting SVG output, read [`project-docs/developer-experience/pathogen-debugging-playbook.md`](project-docs/developer-experience/pathogen-debugging-playbook.md). The loop is `npx tsx src/cli.ts file --json` (warnings and per-fragment records first), then `--output-svg-file` + `--png` and Read the PNG; `assert()` pins invariants; `npm run validate:samples` gates published samples. The playbook also lists the language and tooling traps that cost prior sessions.
 
+### Shell Commands (applies to every agent)
+
+A Bash call that isn't auto-approved costs the user a permission prompt. A 2026-10-23 scan of 3,486 calls found nearly all prompts came from command *shape*, not the commands themselves:
+
+- **One simple command per call.** No `cd` to the working directory (the shell already starts there), no `&&`/`;` chains, `$( … )`, loops or heredocs.
+- **Files go through the tools.** Read files with Read (use offset/limit), create and change them with Write/Edit — never `cat > … <<EOF`, `sed -i`, `cp`, `printf >` or other `>` redirects.
+- **Stay inside the project.** Scratch files go in `./tmp/` (gitignored), never `/tmp` or the session scratchpad.
+- **Run code through the allowlisted runners**: `npx vitest run <file>`, `npm run <script>`, `npx tsx <file>` — write probe code to `tmp/*.ts` first. No `python3`, `node -e`, `awk`, `bash -c` or `curl`.
+
 ## Agents
 
 Project agents in `.claude/agents/`:
