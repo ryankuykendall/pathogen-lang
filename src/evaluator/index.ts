@@ -2444,6 +2444,65 @@ function evaluateLayerConstructor(expr: LayerConstructorExpression, scope: Scope
 }
 
 /**
+ * EvaluationState fields each block state (`@{ }`, `&{ }`) keeps for itself:
+ *  - pathContext, layers, layerOrder, activeLayerName, defaultLayerName,
+ *    transformState: a block's own pen and layer bookkeeping;
+ *  - viewBox: the `viewbox` lookup reads it from the ROOT scope (lookupVariable);
+ *  - rootAccum: a block accumulates into its own store;
+ *  - subscriptions: `.subscribe()` is refused inside blocks (see the subscribe
+ *    method), because a callback made there would run against the block's
+ *    empty layer table after the block is gone;
+ *  - argTracked: a per-statement sink, saved and restored on one state;
+ *    sharing it would feed an inner block's commands to the outer statement.
+ */
+type BlockLocalField =
+  | 'pathContext'
+  | 'layers'
+  | 'layerOrder'
+  | 'activeLayerName'
+  | 'defaultLayerName'
+  | 'transformState'
+  | 'viewBox'
+  | 'rootAccum'
+  | 'subscriptions'
+  | 'argTracked';
+
+/**
+ * The program-wide part of an evaluation state, shared by reference with every
+ * synthetic block state. Blocks get their own pen, layer bookkeeping and
+ * accumulator (BlockLocalField), but diagnostics, defs, loaded fonts,
+ * glyph/coverage reports, strict mode and the running subscription are the
+ * program's own.
+ *
+ * Every EvaluationState field must be either listed here or in
+ * BlockLocalField: the `satisfies` below fails to compile, naming the field,
+ * when a new one is neither. (fontRegistry, strictWarnings and missingGlyphs
+ * were once dropped silently from blocks.)
+ */
+function sharedProgramState(parent: EvaluationState | undefined) {
+  return {
+    logs: parent?.logs ?? [],
+    warnings: parent?.warnings ?? [],
+    strictWarnings: parent?.strictWarnings,
+    trace: parent?.trace,
+    calledStdlibFunctions: parent?.calledStdlibFunctions ?? new Set<string>(),
+    masks: parent?.masks ?? new Map(),
+    clipPaths: parent?.clipPaths ?? new Map(),
+    gradients: parent?.gradients ?? new Map(),
+    patterns: parent?.patterns ?? new Map(),
+    markers: parent?.markers ?? new Map(),
+    filters: parent?.filters ?? new Map(),
+    cssProperties: parent?.cssProperties ?? new Map(),
+    fontRegistry: parent?.fontRegistry,
+    missingGlyphs: parent?.missingGlyphs,
+    fontCoverageRequests: parent?.fontCoverageRequests,
+    // `sub.unsubscribe()` inside a block in a subscription callback must see
+    // the callback's subscription, as it does outside the block.
+    dispatching: parent?.dispatching,
+  } satisfies Partial<EvaluationState> & Record<Exclude<keyof EvaluationState, BlockLocalField>, unknown>;
+}
+
+/**
  * Evaluate a PathBlockExpression — captures relative path commands into a PathBlockValue
  */
 function evaluatePathBlockExpression(expr: PathBlockExpression, scope: Scope): PathBlockValue {
@@ -2460,23 +2519,13 @@ function evaluatePathBlockExpression(expr: PathBlockExpression, scope: Scope): P
 
   // Create an isolated evaluation state for the block
   const blockEvalState: EvaluationState & { _insidePathBlock: boolean } = {
+    ...sharedProgramState(scope.evalState),
     pathContext: blockContext,
-    logs: scope.evalState?.logs ?? [],
-    warnings: scope.evalState?.warnings ?? [],
-    trace: scope.evalState?.trace,
-    calledStdlibFunctions: scope.evalState?.calledStdlibFunctions ?? new Set(),
     layers: new Map(), // Empty — layer definitions not allowed
     layerOrder: [],
     activeLayerName: null,
     defaultLayerName: null,
     transformState: createTransformState(),
-    masks: scope.evalState?.masks ?? new Map(),
-    clipPaths: scope.evalState?.clipPaths ?? new Map(),
-    gradients: scope.evalState?.gradients ?? new Map(),
-    patterns: scope.evalState?.patterns ?? new Map(),
-    markers: scope.evalState?.markers ?? new Map(),
-    filters: scope.evalState?.filters ?? new Map(),
-    cssProperties: scope.evalState?.cssProperties ?? new Map(),
     _insidePathBlock: true,
   };
   blockScope.evalState = blockEvalState;
@@ -2584,23 +2633,13 @@ function evaluateTextBlockExpression(expr: TextBlockExpression, scope: Scope): T
 
   // Create an isolated evaluation state for the block
   const blockEvalState: EvaluationState & { _insideTextBlock: boolean } = {
+    ...sharedProgramState(scope.evalState),
     pathContext: scope.evalState?.pathContext ?? createPathContext({}),
-    logs: scope.evalState?.logs ?? [],
-    warnings: scope.evalState?.warnings ?? [],
-    trace: scope.evalState?.trace,
-    calledStdlibFunctions: scope.evalState?.calledStdlibFunctions ?? new Set(),
     layers: new Map(), // Empty — layer definitions not allowed
     layerOrder: [],
     activeLayerName: null,
     defaultLayerName: null,
     transformState: createTransformState(),
-    masks: scope.evalState?.masks ?? new Map(),
-    clipPaths: scope.evalState?.clipPaths ?? new Map(),
-    gradients: scope.evalState?.gradients ?? new Map(),
-    patterns: scope.evalState?.patterns ?? new Map(),
-    markers: scope.evalState?.markers ?? new Map(),
-    filters: scope.evalState?.filters ?? new Map(),
-    cssProperties: scope.evalState?.cssProperties ?? new Map(),
     _insideTextBlock: true,
   };
   blockScope.evalState = blockEvalState;
@@ -2744,32 +2783,14 @@ function evaluateTextBlockBody(stmts: Statement[], scope: Scope, elements: TextB
       continue;
     }
 
-    if (stmt.type === 'LetDeclaration') {
-      const value = evaluateExpression(stmt.value, scope);
-      if (stmt.pattern) {
-        bindDestructuringPattern(stmt.pattern, value, scope, getLine(stmt));
-      } else {
-        setVariable(scope, stmt.name, value);
-      }
-      continue;
-    }
-
-    if (stmt.type === 'AssignmentStatement') {
-      const value = evaluateExpression(stmt.value, scope);
-      setVariable(scope, stmt.name, value);
-      continue;
-    }
-
-    if (stmt.type === 'ExpressionStatement') {
-      evaluateExpression(stmt.expression, scope);
-      continue;
-    }
-
-    // Other statement types silently skipped (e.g., EnumDefinition, FunctionDefinition)
-    if (stmt.type === 'FunctionDefinition') {
-      setVariable(scope, stmt.name, { type: 'UserFunction' as const, params: stmt.params, body: stmt.body });
-      continue;
-    }
+    // Every other statement — let, assignments, enums, functions, expressions,
+    // return — runs exactly as it does at the top level: `x = …` updates the
+    // existing binding (or errors when undeclared) instead of creating a
+    // block-local copy, `let r = blk.draw()` binds the drawn path's result,
+    // and nothing is skipped silently. Text blocks hold no path data, so any
+    // path a right-hand side draws goes to a throwaway store.
+    const flow = evaluateStatementToAccum(stmt, scope, createPathStore());
+    if (flow) return flow;
   }
   return undefined;
 }
@@ -2979,6 +3000,15 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
     if (expr.method === 'subscribe') {
       if (obj.layer.layerType !== 'PathLayer') {
         throw mError(`.subscribe() is only available on PathLayer references`);
+      }
+      // A subscription made inside a block would never be dispatched, and its
+      // callback would see only the block's own (empty) layer table.
+      if (scope.evalState) {
+        const flags = scope.evalState as EvaluationState & { _insidePathBlock?: boolean; _insideTextBlock?: boolean };
+        if (flags._insidePathBlock || flags._insideTextBlock) {
+          const kind = flags._insidePathBlock ? 'path' : 'text';
+          throw mError(`Cannot call .subscribe() inside a ${kind} block. Subscribe outside the block.`);
+        }
       }
       const cb = resolveCallbackBlock(expr, scope, workerExpr);
       if (!cb) {
@@ -11619,6 +11649,10 @@ export function evaluate(
       filters: new Map(),
       cssProperties: new Map(),
       fontRegistry: options?.fonts,
+      // Created up front (not lazily) so blocks share the same maps — see
+      // sharedProgramState. Reports are emitted only when non-empty.
+      missingGlyphs: new Map(),
+      fontCoverageRequests: new Map(),
     };
     annotateState = evalState;
 
@@ -11725,6 +11759,10 @@ export function evaluateWithContext(
       filters: new Map(),
       cssProperties: new Map(),
       fontRegistry: options.fonts,
+      // Created up front (not lazily) so blocks share the same maps — see
+      // sharedProgramState. Reports are emitted only when non-empty.
+      missingGlyphs: new Map(),
+      fontCoverageRequests: new Map(),
     };
     annotateState = evalState;
 

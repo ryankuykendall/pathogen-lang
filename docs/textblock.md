@@ -43,11 +43,15 @@ let t = &{
 Inside a text block you can use:
 - **`text()` statements** — the core text elements
 - **`let`, `for`, `if`, `switch`** — control flow for dynamic content
+- **Assignments** — `y = y + 16;` and `list[i] = …` update the variable where it was declared, inside the block or outside it, as they do anywhere else
+- **`enum` definitions** — like `let`, the name exists only inside the block
 - **User-defined functions** — called as expressions
 
 Not allowed inside text blocks:
 - Path commands (`M`, `L`, etc.)
 - Layer definitions or apply blocks
+- `define ViewBox`
+- `.subscribe()` — see [Subscriptions](#subscriptions-things-to-know-first)
 - Nested text blocks
 
 ## Types

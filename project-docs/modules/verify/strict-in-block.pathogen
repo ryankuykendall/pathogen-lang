@@ -1,0 +1,8 @@
+// Repro (2026-10-22): --strict never fired for a warning raised inside @{ }.
+// The same NaN warning at the top level exits 1 under --strict; inside the
+// block it exited 0. Fixed alongside atblock-fonts.pathogen.
+// Run: npx tsx src/cli.ts project-docs/modules/verify/strict-in-block.pathogen --strict
+let b = @{
+  m calc(0/0) 10
+};
+M 0 0

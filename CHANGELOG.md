@@ -5,6 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] - 2026-10-23 (blocks share the program's fonts, strict mode and statements)
+
+### Fixed
+
+#### Core
+
+- **`PathBlock.fromGlyph` and `Font.*` inside `@{ }` and `&{ }`** said "no fonts were loaded" even when `@font` had loaded the font: a block evaluates with its own state, and that state left out the loaded fonts and the missing-glyph and Font-coverage reports. Every program-wide part of the state is now shared with blocks, and a new field that is neither shared nor listed as block-local fails to compile.
+- **`--strict` reaches inside blocks.** A NaN or Infinity inside `@{ }` stayed a warning even under `--strict` / `--strict=non-finite`. All 299 blog samples still build with `--strict=non-finite`.
+- **Statements inside `&{ }` behave as they do at the top level.** `x = 2` updates the variable declared outside the block (it created a hidden copy); `arr[i] = …`, `o['k'] = …` and `enum` definitions run (they were skipped); `let r = blk.draw()` binds the drawn path's result; assigning to an undeclared name is the usual positioned error.
+- **`sub.unsubscribe()` inside a block in a subscription callback** stops delivery, as it does outside the block (it was ignored).
+
+### Changed
+
+#### Core
+
+- `.subscribe()` inside a path block or text block is an error: `Cannot call .subscribe() inside a path block. Subscribe outside the block.` Such a subscription was never delivered, silently. Subscribing inside a loop or a function still works.
+
+#### Documentation
+
+- `docs/textblock.md` lists assignments and `enum` among the statements a text block can use, and `define ViewBox` and `.subscribe()` among those it can't; `docs/subscriptions.md` says not to subscribe inside a block.
+
 ## [Unreleased] - 2026-10-19 (the Font namespace: what a font contains)
 
 ### Added

@@ -1,0 +1,14 @@
+// Repro (2026-10-22): PathBlock.fromGlyph inside @{ } said "no fonts were
+// loaded" although the font loaded — the block's evaluation state omitted the
+// font registry. The top-level call on line 8 always worked; line 11 failed.
+// Fixed by sharing program-wide state with blocks (sharedProgramState).
+// Run from the repo root: npx tsx src/cli.ts project-docs/modules/verify/atblock-fonts.pathogen --print-logs
+@font "../../../fonts/Raleway/Raleway-Bold.ttf";
+let styles = #{ font-family: Raleway-Bold; font-size: 48; };
+let top = PathBlock.fromGlyph("A", styles);
+let inside = null;
+let b = @{
+  inside = PathBlock.fromGlyph("A", styles);
+  m 0 0
+};
+log("top-level glyphs:", top.length, "in-block glyphs:", inside.length);

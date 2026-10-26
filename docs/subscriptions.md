@@ -35,6 +35,7 @@ layer('shape').apply {
 - **A callback may not draw into the layer it subscribed to.** That is an error the moment it happens, on the statement that wrote. Subscriptions annotate other layers.
 - **Subscription output lands after everything the program drew directly into the target.** That changes where a dash pattern is in its cycle and where markers go. Give annotations their own layer and this never matters.
 - **Only drawing after the `subscribe` call is delivered.** Query the layer for what came before. Calling `unsubscribe()` stops delivery from that point.
+- **Don't subscribe inside a path block or text block.** A block (`@{ }` or `&{ }`) keeps its own drawing state, separate from the program's, so a subscription made inside one could never be delivered; `.subscribe()` there is an error. Subscribing inside a loop is fine.
 
 ## Subscribing
 
