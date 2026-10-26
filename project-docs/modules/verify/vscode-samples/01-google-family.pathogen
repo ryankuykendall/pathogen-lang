@@ -1,0 +1,16 @@
+// Interactive VS Code check 1: a Google family, downloaded once into the cache.
+// Expected in the preview: "Rg" drawn as outlines from Raleway Bold, the log
+// line in the Output, and no warnings. Hover and the Problems panel stay quiet.
+define ViewBox(0, 0, 320, 160);
+
+@font "Raleway" 700;
+
+let style = #{ font-family: Raleway; font-weight: 700; font-size: 96; };
+let info = Font.info(style);
+log(info.fullName, info.weight);
+
+let glyphs = PathBlock.fromGlyph("Rg", style);
+M 30 120
+glyphs[0].draw()
+M 150 120
+glyphs[1].draw()

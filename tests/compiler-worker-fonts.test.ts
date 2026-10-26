@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, afterEach } from 'vitest';
+import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
 import { annotateUncuratedResolution } from '../playground/services/compiler-worker';
 import type { FontBinaryEntry } from '../playground/services/font-loader';
 
@@ -264,5 +264,95 @@ describe('resolveMissingGlyphSubsets', () => {
     const { result } = await resolveMissingGlyphSubsets(plain, recompile, []);
     expect(result).toBe(plain);
     expect(recompile).not.toHaveBeenCalled();
+  });
+});
+
+describe('the shared @font plan in the playground (same rules and messages as the CLI)', () => {
+  beforeEach(async () => {
+    // The playground reaches the shared code through the library global.
+    const lib = await import('../src');
+    (globalThis as Record<string, unknown>).window = Object.assign(
+      ((globalThis as Record<string, unknown>).window as object | undefined) ?? {},
+      {
+        PathogenLang: {
+          parse: lib.parse,
+          resolveFontDirectives: lib.resolveFontDirectives,
+          planFontDirectives: lib.planFontDirectives,
+        },
+      },
+    );
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => {
+        throw new Error('no network in this test');
+      }),
+    );
+  });
+  afterEach(() => {
+    delete ((globalThis as Record<string, unknown>).window as { PathogenLang?: unknown }).PathogenLang;
+    vi.unstubAllGlobals();
+  });
+
+  it('a source mistake stops the compile with the CLI message at its line', async () => {
+    const { resolveFontsForSource } = await import('../playground/services/compiler-worker');
+    const result = await resolveFontsForSource('M 0 0\n@font "serif";');
+    expect(result.sourceError).toBe(
+      'Line 2, col 1: @font "serif": serif is a CSS generic family, not a font. Name a font family instead, such as @font "Noto Serif";',
+    );
+    expect(fetch).not.toHaveBeenCalled();
+  });
+
+  it('a file path is skipped with a warning that names the family to use, and nothing is fetched', async () => {
+    const { resolveFontsForSource } = await import('../playground/services/compiler-worker');
+    const result = await resolveFontsForSource('@font "./fonts/Raleway-Bold.ttf";\nM 0 0');
+    expect(result.sourceError).toBeUndefined();
+    expect(result.failures).toEqual([]);
+    expect(result.notices).toEqual([
+      '@font "./fonts/Raleway-Bold.ttf": the playground can\'t load font files yet, so this font was skipped. Use the Google Fonts family instead: @font "Raleway" 700;',
+    ]);
+    expect(fetch).not.toHaveBeenCalled();
+  });
+
+  it('when the program also calls the font, its error keeps the file-path warning for the banner', async () => {
+    const lib = await import('../src');
+    const global = window as unknown as { PathogenLang: Record<string, unknown> };
+    global.PathogenLang = { ...global.PathogenLang, compile: lib.compile };
+    const { compile } = await import('../playground/services/compiler-worker');
+    // A file font's family is its file name, as in the CLI.
+    const source = [
+      '@font "./fonts/Raleway-Bold.ttf";',
+      'let s = #{ font-family: Raleway-Bold; font-size: 48; };',
+      'let g = PathBlock.fromGlyph("A", s);',
+    ].join('\n');
+    const err = (await compile(source, 1, undefined, {}).catch((e: unknown) => e)) as Error & { fontNotices?: string[] };
+    expect(err.message).toMatch(/no fonts were loaded/);
+    expect(err.fontNotices).toEqual([
+      '@font "./fonts/Raleway-Bold.ttf": the playground can\'t load font files yet, so this font was skipped. Use the Google Fonts family instead: @font "Raleway" 700;',
+    ]);
+  });
+
+  it('the no-worker fallback registers fonts with their partial flag, as the worker does', async () => {
+    const { fallbackSync } = await import('../playground/services/compiler-worker');
+    const added: unknown[][] = [];
+    (window as unknown as { PathogenLang: Record<string, unknown> }).PathogenLang = {
+      createFontRegistry: () => ({ fonts: new Map() }),
+      addFont: (...args: unknown[]) => added.push(args),
+      ensureOpentype: async () => undefined,
+      compile: () => 'compiled',
+    };
+    const sliced = {
+      ...binary('Noto Sans SC'),
+      unicodeRanges: [[0x4e00, 0x4e3f]] as [number, number][],
+      partial: true,
+    };
+    await expect(fallbackSync('compile', 'M 0 0', {}, [sliced])).resolves.toBe('compiled');
+    expect(added.map((args) => [args[1], args[6]])).toEqual([['Noto Sans SC', true]]);
+  });
+
+  it('a file named outside the curated list gets a general suggestion', async () => {
+    const { fileFontNotice } = await import('../playground/services/font-loader');
+    expect(fileFontNotice('../art/MyHandwriting.otf')).toBe(
+      '@font "../art/MyHandwriting.otf": the playground can\'t load font files yet, so this font was skipped. Use a family from Google Fonts instead, such as @font "Inter";',
+    );
   });
 });

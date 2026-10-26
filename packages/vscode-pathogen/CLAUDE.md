@@ -25,7 +25,9 @@ The extension spawns the language server as a child process. The server imports 
 | File | Purpose |
 |------|---------|
 | `src/extension.ts` | Entry point. Starts LanguageClient, registers preview command |
-| `src/preview.ts` | SVG preview webview panel — functional; webview consumes the bundled library via `<script src="${compilerUri}">` and renders via the shared `buildSvgTree` + `mountInto` adapters. Pan/zoom is the shared `PanZoomController` (`window.PathogenPanZoom`, loaded from a second bundled script `compiler/pan-zoom.global.js`) — CSS-transform during the gesture, baked into the viewBox on idle; wheel + drag + touch pinch |
+| `src/preview.ts` | The preview panel's VS Code glue (`PreviewPanel`): owns its listeners, shows the active `.pathogen` document, loads its fonts through `FontSession` and posts numbered `fonts` / `update` messages |
+| `src/font-session.ts` | Fonts for the preview, loaded in the extension host by the CLI's loader (`pathogen-lang` + `pathogen-lang/node`, from the bundled `server/node_modules`). No `vscode` import — tested by `tests/vscode-font-session.test.ts` |
+| `src/webview-html.ts` | The webview page and its inline script: compiles with the bundled library (`<script src="${compilerUri}">`), a fresh font registry per compile from the update's `fontIds`, `@font-face` for live `<text>`, renders via the shared `buildSvgTree` + `mountInto`. Pan/zoom is the shared `PanZoomController` (`window.PathogenPanZoom`, from `compiler/pan-zoom.global.js`) — CSS-transform during the gesture, baked into the viewBox on idle; wheel + drag + touch pinch. No `vscode` import — `project-docs/modules/verify/verify-vscode-fonts.mjs` loads it under its real CSP |
 | `syntaxes/pathogen.tmLanguage.json` | TextMate grammar for syntax highlighting |
 | `snippets/pathogen.code-snippets` | Code snippets (for, fn, if, switch, shapes, etc. — 35 as of 2026-09) |
 | `language-configuration.json` | Comment toggling, brackets, auto-closing, indentation, folding |
@@ -37,6 +39,7 @@ The extension spawns the language server as a child process. The server imports 
 | File | Purpose |
 |------|---------|
 | `src/server.ts` | LSP adapter — each `connection.on*` handler wraps a language-services function |
+| `src/fonts.ts` | Fonts for diagnostics (`DiagnosticFonts`): installed and cached fonts first, a background download when needed, then a recheck — diagnostics never wait for the network |
 
 ## LSP Capabilities
 
@@ -74,7 +77,7 @@ cd packages/vscode-pathogen && npm run watch
 
 **Dependency chain**: If `src/language-services/` changes → rebuild root lib (`npm run build`) → rebuild language server → extension picks up changes.
 
-**Testing**: No test suites exist yet for either package (`"test": "echo 'No tests yet'"`).
+**Testing**: The packages have no test scripts of their own (`"test": "echo 'No tests yet'"`); their logic is tested from the root suite — `tests/vscode-font-session.test.ts` (the preview's fonts) and `tests/language-server-fonts.test.ts` (diagnostics' fonts), with `pathogen-lang` mapped to the sources in `vitest.config.ts`. End to end: `node project-docs/modules/verify/verify-vscode-fonts.mjs` after `npm run build:vscode` (extension host, the real webview under its CSP, the bundled language server).
 
 ## TextMate Grammar
 
@@ -107,7 +110,7 @@ For the full cross-system checklist, see `project-docs/developer-experience/cros
 
 ## Readiness Status
 
-The extension's **preview webview is functional** — the `Broken: Preview panel shows placeholder` item previously here has been resolved. The preview consumes the bundled `pathogen-lang` library via `<script src="${compilerUri}">`, compiles Pathogen source in-webview, and renders through the shared `buildSvgTree` + `mountInto` adapters (as of the 2026-04-21 render-pipeline unification; see [`project-docs/render-pipeline-unification/PLAN.md`](../../project-docs/render-pipeline-unification/PLAN.md) Phase 5). Features working today: SVG render, layer visibility toggle, CSSVar panel, palette, recompile button, navigator, and pan/zoom.
+The extension's **preview webview is functional** — the `Broken: Preview panel shows placeholder` item previously here has been resolved. The preview consumes the bundled `pathogen-lang` library via `<script src="${compilerUri}">`, compiles Pathogen source in-webview, and renders through the shared `buildSvgTree` + `mountInto` adapters (as of the 2026-04-21 render-pipeline unification; see [`project-docs/render-pipeline-unification/PLAN.md`](../../project-docs/render-pipeline-unification/PLAN.md) Phase 5). Features working today: SVG render, layer visibility toggle, CSSVar panel, palette, recompile button, navigator, pan/zoom, and fonts (since 2026-10-23: `@font` files and families load in the extension host exactly as in the CLI, so `fromGlyph` / `Font.*` geometry is byte-identical to the CLI's, and live `<text>` renders in the loaded face). The extension declares `untrustedWorkspaces: { supported: false }`, so it doesn't run in Restricted Mode.
 
 **Pan/zoom (2026-06).** The preview adopted the shared `PanZoomController` (`src/ui/pan-zoom-controller.ts` → `dist/pan-zoom.global.js` → `window.PathogenPanZoom`); `scripts/build-vscode-extension.ts` copies that bundle into `compiler/` next to `index.global.js`, and the webview loads it via a second nonce'd `<script>`. Pan/zoom uses a CSS transform during the gesture and bakes into the `viewBox` on idle (the large-SVG perf win — see [`project-docs/pan-zoom-performance/findings-and-recommendations.md`](../../project-docs/pan-zoom-performance/findings-and-recommendations.md)); adds touch pinch-zoom; and splits the navigator viewport rect into its own GPU-promoted overlay SVG. Verified headless (`getWebviewContent` is exported for this): the webview compiles a real scene, pans/zooms, and bakes cleanly. The final interactive feel still wants a `.vsix` install/reload (see Development Lifecycle).
 

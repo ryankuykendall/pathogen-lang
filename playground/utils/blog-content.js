@@ -38501,7 +38501,7 @@ layer('title').apply {
   'vscode-developer-experience': `<img src="/blog/vscode-hero.png" alt="Pathogen VS Code extension showing code editor with inlay hints and code lens on the left, live preview panel with layer inspector on the right" loading="lazy"><p>A programming language lives or dies by its developer experience. You can have the most expressive syntax in the world, but if the editor doesn&#39;t help you write it — if completions are wrong, errors are confusing, and there&#39;s no way to see what you&#39;re building — adoption stalls.</p>
 <p>This post documents how we built a complete VS Code extension for the <a href="/docs">Pathogen language</a>, from parser migration through a 10-phase developer experience effort. Whether you&#39;re writing Pathogen code and want to understand the tools available to you, or you&#39;re building your own language server and want to learn from the implementation, here&#39;s what we built and what we learned.</p>
 <blockquote>
-<p><strong>Try it now:</strong> The Pathogen playground is available at <a href="/">pedestal.design/pathogen</a> with the same language intelligence described here. The VS Code extension source is in <code>packages/vscode-pathogen/</code> in the repository.</p>
+<p><strong>Try it now:</strong> The Pathogen playground is available at <a href="/">pathogen.studio</a> with the same language intelligence described here. The VS Code extension source is in <code>packages/vscode-pathogen/</code> in the repository.</p>
 </blockquote>
 <h2>The roadmap: 10 phases</h2>
 <p>We organized the work into phases, each delivering a complete, testable improvement. Here&#39;s the full arc:</p>
@@ -38804,12 +38804,12 @@ consumerSubs.apply {
 <p>The extension now covers the <a href="https://code.visualstudio.com/api/language-extensions/language-server-extension-guide">golden set</a> from the VS Code language extension guide: syntax highlighting, diagnostics, completions, hover, definition/references, formatting, rename, code actions, semantic tokens, and inlay hints. Plus a live preview panel that most language extensions don&#39;t offer.</p>
 <p>Where we&#39;re heading:</p>
 <ul>
-<li><strong>Multi-file project support</strong> — workspace-level features like <code>@font</code> path resolution, cross-file references, and shared layer libraries. This is the step from &quot;single-file tool&quot; to &quot;project-aware IDE.&quot;</li>
+<li><strong>Multi-file project support</strong> — workspace-level features like <code>@font</code> path resolution, cross-file references, and shared layer libraries. This is the step from &quot;single-file tool&quot; to &quot;project-aware IDE.&quot; <em>Update, October 26, 2026:</em> the first piece has landed — the preview now loads <code>@font</code> fonts, and paths resolve inside a <a href="/docs#projects-the-project-folder">project folder</a>.</li>
 <li><strong>Visual debugging</strong> — click a point on the SVG and highlight the path command that produced it. Trace a color swatch back to its gradient stop. See bounding boxes overlaid on layers.</li>
 <li><strong>Extension marketplace publishing</strong> — making installation a one-click experience instead of building from source.</li>
 <li><strong>Deeper type flow</strong> — tracking types through function returns, complex assignment chains, and generic array element types.</li>
 </ul>
-<p>The Pathogen language is available at <a href="/">pedestal.design/pathogen</a>, with the same completions, hover, and diagnostics in the browser. The full VS Code extension source lives in <code>packages/vscode-pathogen/</code> — pull requests welcome.</p>
+<p>The Pathogen language is available at <a href="/">pathogen.studio</a>, with the same completions, hover, and diagnostics in the browser. The full VS Code extension source lives in <code>packages/vscode-pathogen/</code> — pull requests welcome.</p>
 `,
   'whats-in-the-font': `<blockquote>
 <p><strong>Prerequisites:</strong> This post assumes you have loaded a font with
@@ -38851,8 +38851,12 @@ playground, where Google delivers a large font in pieces, <code>Font.info</code>
 and any category selection (such as <code>&quot;digit&quot;</code>) read the whole font:
 about 4 MB for Noto Sans SC. A script, block or code-point selection
 downloads only the pieces it touches.</li>
-<li><strong>The VS Code preview doesn&#39;t load fonts yet</strong>, so <code>Font</code> calls, like
-<code>fromGlyph</code>, work in the CLI and the playground but not there.</li>
+<li><strong>The VS Code preview didn&#39;t load fonts when this post went out</strong>, so
+<code>Font</code> calls, like <code>fromGlyph</code>, worked in the CLI and the playground but
+not there. <em>Update, October 26, 2026:</em> it does now, the same way the CLI
+does — see <a href="/docs#path-blocks-font-loading-by-environment">Font Loading by Environment</a>.
+And the 856 above isn&#39;t a different release of Raleway: browsers get
+the font from Google in slices, and the slices leave 80 characters out.</li>
 </ul>
 <h2>The font writes the string</h2>
 <p><code>fromGlyph</code> takes a string of characters and returns one glyph per

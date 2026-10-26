@@ -61,6 +61,61 @@ const svg = `<svg viewBox="0 0 200 200">
 </svg>`;
 ```
 
+### Loading fonts in Node
+
+`compile()` reads no files. When a program uses `@font`, load its fonts first and pass them in. `pathogen-lang/node` loads them the way the CLI does: files inside the [project folder](https://pathogen.studio/docs#projects-the-project-folder), installed fonts, then Google Fonts through a download cache.
+
+```typescript
+import { readFileSync } from 'node:fs';
+import { dirname, relative, sep } from 'node:path';
+
+import { buildFontRegistry, compile, ensureOpentype, resolveFonts } from 'pathogen-lang';
+import {
+  createNodeFontHost,
+  defaultCacheDir,
+  findProjectRoot,
+  fontDirsFromEnv,
+  loadProjectFileSync,
+  offlineReason,
+} from 'pathogen-lang/node';
+
+const file = 'poster/main.pathogen';
+const source = readFileSync(file, 'utf8');
+const programDir = dirname(file);
+
+// The project folder, and a check of its pathogen.json, as the CLI does.
+const { root, projectFile } = findProjectRoot(programDir);
+if (projectFile) {
+  const project = loadProjectFileSync(projectFile);
+  if (!project.ok) throw new Error(project.message);
+}
+
+const host = createNodeFontHost({
+  root,
+  programDir,
+  offlineReason: offlineReason(false), // honours PATHOGEN_OFFLINE=1
+  cacheDir: defaultCacheDir(), // honours PATHOGEN_CACHE_DIR
+  fontDirs: fontDirsFromEnv(process.env.PATHOGEN_FONT_DIRS),
+});
+
+// The program's path inside the project folder, with forward slashes.
+const entry = `/${relative(root, file).split(sep).join('/')}`;
+const { fonts, messages } = await resolveFonts(source, { host, entry });
+for (const m of messages) {
+  const where = m.line === undefined ? file : `${file}:${m.line}:${m.column}`;
+  console.error(`${where}: ${m.severity}: ${m.message}`);
+}
+// An error means a font could not be loaded. A warning lets the compile run:
+// with downloads off, a family that isn't found leaves only the calls that
+// need it (PathBlock.fromGlyph, TextBlock.toPathBlock(), Font.*) to fail.
+if (messages.some((m) => m.severity === 'error')) process.exit(1);
+
+// Fonts are parsed with opentype.js, which loads on demand: load it before
+// building the font registry.
+await ensureOpentype();
+const result = compile(source, { fonts: buildFontRegistry(fonts).registry });
+```
+
 ## Syntax Overview
 
 ```
@@ -127,9 +182,12 @@ diamond(100, 100, 40)
 
 ```
 --src=<file>              Input source file
+<folder>                  The "main" named in <folder>/pathogen.json
 -e <code>                 Inline code
 -o, --output <file>       Output path data to file
 --output-svg-file=<file>  Output complete SVG file
+--root=<folder>           Project folder for @font paths (default: nearest pathogen.json, else the file's folder)
+--offline                 Never download fonts (PATHOGEN_OFFLINE=1 does the same)
 
 SVG styling (with --output-svg-file):
 --stroke=<color>          Stroke color (default: #000)

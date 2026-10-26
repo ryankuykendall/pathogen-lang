@@ -1,0 +1,35 @@
+{
+  "at": "2026-10-25T20:11:49.094Z",
+  "results": [
+    {
+      "name": "a file path in @font shows the warning that names the family to use",
+      "ok": true,
+      "detail": "   \n       @font \"./fonts/Raleway-Bold.ttf\": the playground can't load font files yet, so this font was skipped. Use the Google Fonts family instead: @font \"Raleway\" 700; Dismiss \n         \n         \n"
+    },
+    {
+      "name": "the rest of the program still renders",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "a glyph call on the skipped file fails, and the warning banner explains it",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "@font \"serif\" stops the compile with the CLI message at its line",
+      "ok": true,
+      "detail": "    Line 2, col 1: @font \"serif\": serif is a CSS generic family, not a font. Name a font family instead, such as @font \"Noto Serif\"; Copy Debug Info \n        :h"
+    },
+    {
+      "name": "a Google family still loads and draws glyphs",
+      "ok": true,
+      "detail": "272 chars of path data"
+    },
+    {
+      "name": "the served bundle exposes the shared plan",
+      "ok": true,
+      "detail": "function"
+    }
+  ]
+}

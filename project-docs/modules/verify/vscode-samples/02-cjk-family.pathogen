@@ -1,0 +1,13 @@
+// Interactive VS Code check 2: a large CJK family (a 10.5 MB complete file
+// the first time; cached after). Expected: 你好 drawn as outlines — every
+// character, with no missing-glyph warning, unlike browser slices.
+define ViewBox(0, 0, 320, 160);
+
+@font "Noto Sans SC";
+
+let style = #{ font-family: "Noto Sans SC"; font-size: 110; };
+let glyphs = PathBlock.fromGlyph("你好", style);
+M 30 125
+glyphs[0].draw()
+M 160 125
+glyphs[1].draw()

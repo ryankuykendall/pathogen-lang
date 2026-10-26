@@ -256,7 +256,7 @@ function loadCoverage(fn: string, deps: FontNamespaceDeps, font: ResolvedFont, r
     // preview, which loads none yet). Same wording as fromGlyph, so
     // getDiagnostics recognises it as a font-availability error, not the user's.
     throw new Error(
-      `${fn}: no fonts were loaded. Add @font "${font.family}"; — if you already have, look for a font-loading error above.`,
+      `${fn}: no fonts were loaded. Add @font "${font.family}"; — if you already have, look for a font-loading message above.`,
     );
   }
   const coverage = cachedCoverage(deps.evalState!, registry, font.family, font.weight);

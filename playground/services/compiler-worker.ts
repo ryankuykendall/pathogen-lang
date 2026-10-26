@@ -12,8 +12,10 @@ import {
   extractUnknownFontDirectiveFamilies,
   fetchFontSubsetsForChars,
   fetchFontSubsetsForRanges,
+  fileFontNotice,
   hasSubsetSlices,
   getFetchedSubsetEntries,
+  planFontDirectivesViaLibrary,
   resolveFontBinaries,
 } from './font-loader.js';
 import type {
@@ -269,22 +271,40 @@ export class CompilerWorkerClient {
     isStale: ((id: number) => boolean) | undefined,
     options?: Record<string, unknown>,
   ): Promise<unknown> {
-    const { binaries, failures, substitutions, notices } = await resolveFontsForSource(source);
+    const { binaries, failures, substitutions, notices, sourceError } = await resolveFontsForSource(source);
+    // A failed compile keeps this compile's font notices (a skipped file
+    // path, a substituted weight): they explain errors such as "no fonts were
+    // loaded", and the workspace shows them instead of clearing the banner.
+    const withFontNotices = (err: unknown): unknown =>
+      err && typeof err === 'object'
+        ? Object.assign(err, { fontNotices: notices, fontSubstitutions: substitutions })
+        : err;
+    if (sourceError) {
+      throw withFontNotices(new Error(sourceError));
+    }
     if (failures.length > 0) {
-      throw new Error(formatFontFailures(failures));
+      throw withFontNotices(new Error(formatFontFailures(failures)));
     }
     const withSubsets = appendCachedSubsetEntries(binaries);
     const recompile = async (bins: FontBinaryEntry[]) =>
       this.sendRequest(type, source, compilationId, isStale, options, bins);
-    const { first, binaries: startBinaries, notices: retryNotices } = await recoverFontCoverage(recompile, withSubsets);
-    const glyphPass = await resolveMissingGlyphSubsets(first, recompile, startBinaries);
-    const post = await resolvePostCompileFonts(glyphPass.result, glyphPass.binaries);
-    return attachFontDiagnostics(
-      glyphPass.result,
-      post.binaries,
-      [...substitutions, ...post.substitutions],
-      [...notices, ...retryNotices, ...glyphPass.notices],
-    );
+    try {
+      const {
+        first,
+        binaries: startBinaries,
+        notices: retryNotices,
+      } = await recoverFontCoverage(recompile, withSubsets);
+      const glyphPass = await resolveMissingGlyphSubsets(first, recompile, startBinaries);
+      const post = await resolvePostCompileFonts(glyphPass.result, glyphPass.binaries);
+      return attachFontDiagnostics(
+        glyphPass.result,
+        post.binaries,
+        [...substitutions, ...post.substitutions],
+        [...notices, ...retryNotices, ...glyphPass.notices],
+      );
+    } catch (err) {
+      throw withFontNotices(err);
+    }
   }
 
   /**
@@ -349,8 +369,10 @@ let _fallbackWarned = false;
  * against the same fonts the worker would have used. Without this,
  * sandboxed-iframe / CSP-restricted environments where the Worker fails
  * to init silently dropped fonts, surfacing as "requires font data".
+ *
+ * Exported for unit tests.
  */
-async function fallbackSync(
+export async function fallbackSync(
   type: CompilationType,
   source: string,
   options?: Record<string, unknown>,
@@ -385,7 +407,9 @@ async function fallbackSync(
     }
     const registry = lib.createFontRegistry();
     for (const fb of fontBuffers) {
-      lib.addFont(registry, fb.family, fb.weight, fb.style, fb.buffer, fb.unicodeRanges);
+      // `partial` as the worker passes it (src/worker.ts): without it, Font.*
+      // on a family served in slices would see only the slices loaded so far.
+      lib.addFont(registry, fb.family, fb.weight, fb.style, fb.buffer, fb.unicodeRanges, fb.partial);
     }
     compileOptions = { ...(options ?? {}), fonts: registry };
   }
@@ -424,12 +448,42 @@ async function fallbackSync(
  * 4. **Uncurated success** (notice, non-fatal): a family outside the curated
  *    picker list that Google Fonts served anyway — reported so the user
  *    knows they've left the curated set.
+ *
+ * With the library loaded, the shared plan (`planFontDirectives`, the same
+ * function the CLI and VS Code run) comes first:
+ *
+ * 5. **Source mistakes** (`sourceError`): `@font "serif"`, a bare file name,
+ *    a web address, `@font` inside a block, an unresolvable identifier — the
+ *    CLI's message at the directive's line, thrown as the compile error.
+ * 6. **File paths** (notice, non-fatal): the playground can't read files
+ *    yet, so the directive is skipped with a warning that suggests a family.
+ *
+ * Exported for unit tests.
  */
-async function resolveFontsForSource(
+export async function resolveFontsForSource(
   source: string,
-): Promise<FontResolutionResult & { notices: string[] }> {
-  const refs = extractFontReferences(source);
-  const unknownDirectives = extractUnknownFontDirectiveFamilies(source);
+): Promise<FontResolutionResult & { notices: string[]; sourceError?: string }> {
+  const plan = planFontDirectivesViaLibrary(source);
+  if (plan && plan.errors.length > 0) {
+    // Every mistake, one per line, as the CLI and the VS Code preview list
+    // them; the first leads with its position so the editor marks its line.
+    const sourceError = plan.errors
+      .map((e) =>
+        e.line !== undefined
+          ? `Line ${e.line}${e.column !== undefined ? `, col ${e.column}` : ''}: ${e.message}`
+          : e.message,
+      )
+      .join('\n');
+    return { binaries: [], failures: [], substitutions: [], notices: [], sourceError };
+  }
+  const fileNotices = plan ? plan.directives.filter((d) => d.kind === 'file').map((d) => fileFontNotice(d.source)) : [];
+  const withFileNotices = (
+    result: FontResolutionResult & { notices: string[] },
+  ): FontResolutionResult & { notices: string[] } =>
+    fileNotices.length > 0 ? { ...result, notices: [...fileNotices, ...result.notices] } : result;
+
+  const refs = extractFontReferences(source, plan);
+  const unknownDirectives = extractUnknownFontDirectiveFamilies(source, plan);
 
   const unknownFailures = unknownDirectives
     .filter((u) => u.kind === 'unresolved-identifier')
@@ -454,7 +508,9 @@ async function resolveFontsForSource(
     // form matched at all.
     const wellFormed =
       /@font\s+["'][^"']+["']/.test(source) || /@font\s+[A-Za-z_]\w*(?:\s+\d+)?\s*;?/.test(source);
-    if (!wellFormed && /@font\b/.test(source)) {
+    // With the shared plan the parser has already read every directive, so
+    // this guess (for sources that don't parse yet) isn't needed.
+    if (!plan && !wellFormed && /@font\b/.test(source)) {
       const sample = (source.match(/@font[^\n]{0,80}/) ?? [''])[0].trim();
       return {
         binaries: [],
@@ -472,22 +528,22 @@ async function resolveFontsForSource(
         notices: [],
       };
     }
-    return { binaries: [], failures: [], substitutions: [], notices: [] };
+    return withFileNotices({ binaries: [], failures: [], substitutions: [], notices: [] });
   }
 
   if (refs.length === 0) {
-    return { binaries: [], failures: unknownFailures, substitutions: [], notices: [] };
+    return withFileNotices({ binaries: [], failures: unknownFailures, substitutions: [], notices: [] });
   }
 
   const resolved = await resolveFontBinaries(refs);
   const { notices, failures } = annotateUncuratedResolution(resolved, uncuratedFamilies);
 
-  return {
+  return withFileNotices({
     binaries: resolved.binaries,
     failures: [...unknownFailures, ...failures],
     substitutions: resolved.substitutions,
     notices,
-  };
+  });
 }
 
 /**

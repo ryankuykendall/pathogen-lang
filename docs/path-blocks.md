@@ -1506,7 +1506,7 @@ Font integration lets you convert text characters into PathBlock values — turn
 
 ### @font Directive
 
-The `@font` directive declares a font for use in the program. It must appear at the top level (not inside a function or block).
+The `@font` directive declares a font for use in the program. It must appear at the top level; one inside a function or block is an error: `@font must be at the top level of the program, not inside a function or block.`
 
 ```
 @font "Inter";
@@ -1532,7 +1532,7 @@ let family = "Inter";
 
 | Part | Required | Description |
 |------|----------|-------------|
-| Source | Yes | Font family name (e.g., `"Inter"`), file path (e.g., `"./fonts/Custom.ttf"`), or a top-level `let` variable bound to a string literal |
+| Source | Yes | Font family name (e.g., `"Inter"`), file path (e.g., `"./fonts/Custom.ttf"` — see [Font Loading by Environment](#path-blocks-font-loading-by-environment)), or a top-level `let` variable bound to a string literal |
 | Weight | No | Numeric weight 100–900 (default: 400) |
 
 Because fonts are loaded by the host environment *before* the program runs, a variable source must be resolvable statically: a top-level `let` whose value is a plain string literal. Referencing anything else fails with:
@@ -1542,12 +1542,64 @@ Because fonts are loaded by the host environment *before* the program runs, a va
 Declare it at the top level: let x = "Family Name";
 ```
 
-**Font loading by environment:**
+#### Font Loading by Environment
 
-- **CLI**: Loads from local file paths (relative to source file), or resolves family names against font files on disk. Named lookup searches, in order: any directories in the `PATHOGEN_FONT_DIRS` environment variable (colon-separated), a `fonts/` directory found by walking up from the source file (so a project-local font mirror works from anywhere in the repo), and the system font directories (`/Library/Fonts`, `/System/Library/Fonts`, `~/Library/Fonts` on macOS; equivalent paths on Linux/Windows). Files are matched by the Google Fonts naming convention — `@font "Playfair Display" 700;` finds `PlayfairDisplay-Bold.ttf` — so a family name that works in the playground also compiles in the CLI when the font file is mirrored locally.
-- **Playground**: Fetches from Google Fonts CDN automatically. Google serves large fonts split into per-script subsets (a Korean family like `"Nanum Gothic"` or `"Moirai One"` ships as ~100 small slices); the playground loads the Latin subset up front and fetches additional slices automatically when the text you render needs them — no extra directives required
+The directive is declarative: the tool you're using loads every font before the program runs. A file path and a family name are found differently, and the tools differ in where they look.
 
-The directive is declarative metadata — the host environment loads fonts before compilation begins. If a font cannot be found, the CLI logs a warning and compilation continues; in the playground it is a compile error (what counts as "cannot be found" is explained below).
+**A file path** (`"./fonts/Baumans-Regular.ttf"`) follows the [project path rules](#projects-writing-paths): `./` and `../` start at the file the directive is written in, `/` at the project folder; the path stays inside the project folder, uses forward slashes, and must match the letter case on disk. A font loaded from a file takes the file's name as its family — `./fonts/Baumans-Regular.ttf` is `font-family: Baumans-Regular` — and the weight after the path labels it (default 400), so write the file's real weight to make `font-weight` in your styles match: `@font "./fonts/Raleway-Bold.ttf" 700;`. `.ttf`, `.otf`, `.woff` and `.woff2` files all work.
+
+**A family name** (`"Raleway"`) is looked up in different places by each tool:
+
+| Tool | Where it looks |
+|------|----------------|
+| CLI and VS Code preview | Folders on your computer, then Google Fonts, in the four steps below |
+| Playground | Google Fonts. Google sends web browsers a large font as slices, each covering part of the Unicode chart (a Korean family like `"Nanum Gothic"` or `"Moirai One"` comes as about 100 of them); the playground loads the Latin slice up front and fetches others when the text you render needs them — no extra directives required. File paths don't work in the playground yet: they produce a warning that suggests a family instead. |
+
+In the CLI and the VS Code preview, each step looks for the weight you asked for:
+
+1. The folders listed in the `PATHOGEN_FONT_DIRS` environment variable.
+2. The nearest `fonts/` folder: in the program's folder, or up to seven folders above it.
+3. The system font folders, listed below.
+4. Google Fonts, which sends the complete font. It is downloaded once and kept in a cache folder.
+
+If none of them has that weight, the nearest weight is used, with a `font-weight` warning that says which: Google Fonts' nearest weight when Google has the family, otherwise the nearest weight installed on your computer. The installed weight is also used when Google Fonts can't be reached or downloads are off.
+
+Steps 1 and 2 also search each folder directly inside them, along with its `static/` folder, so a family unzipped from Google Fonts into `fonts/` works as is. Step 3 searches each system folder two levels deep, since Linux keeps families in folders such as `/usr/share/fonts/truetype/<family>/`:
+
+| System | Font folders |
+|--------|--------------|
+| macOS | `/Library/Fonts`, `/System/Library/Fonts`, `/System/Library/Fonts/Supplemental`, `~/Library/Fonts` |
+| Linux | `/usr/share/fonts`, `/usr/local/share/fonts`, `~/.fonts`, `~/.local/share/fonts` |
+| Windows | `C:\Windows\Fonts`, and the fonts installed for you alone in `%LOCALAPPDATA%\Microsoft\Windows\Fonts` |
+
+Font files on your computer are found by name, in any letter case. For `@font "Playfair Display" 700;`, these names are found, each as `.ttf` or `.otf`:
+
+- `PlayfairDisplay-Bold.ttf`, as Google Fonts names its files, and the same with the family's spaces kept (`Playfair Display-Bold.ttf`) or made hyphens (`Playfair-Display-Bold.ttf`)
+- `Playfair Display Bold.ttf`, as macOS names its own fonts (`Georgia Bold.ttf`)
+- at weight 400, also the family name alone: `PlayfairDisplay.ttf` or `Playfair Display.ttf` (`Georgia.ttf`)
+- `Inter_18pt-Bold.ttf`, as Google Fonts names the files of a family that comes in optical sizes. When there are several sizes (Inter has 18pt, 24pt and 28pt), the smallest is used.
+
+The weight names are Thin (100), ExtraLight (200), Light (300), Regular (400), Medium (500), SemiBold (600), Bold (700), ExtraBold (800) and Black (900). A file named any other way isn't found — Windows' `arialbd.ttf`, for example. Copy it into your project's `fonts/` folder as `Arial-Bold.ttf` for `@font "Arial" 700;`, or keep its name and load it by path: `@font "./fonts/arialbd.ttf" 700;` (its family is then `arialbd`).
+
+A file that isn't a complete font is passed over. Font collections (`.ttc`) can't be loaded at all, and macOS keeps many of its own fonts in them: `@font "Menlo";` says no font of that name is installed, although Menlo is. Some of those families, such as Helvetica and Avenir, are served by Google Fonts and download instead.
+
+Because the CLI and VS Code load the complete font while the playground loads slices, a family can have fewer characters in the playground — see [what the font file knows](#fonts-before-you-start-what-the-font-file-knows).
+
+**A family named only in a style block.** When a text layer's style names a curated family that no `@font` loads — `font-family: Raleway;` — the playground and the VS Code preview load it anyway so the live text shows in that face. Glyph calls are stricter: in the CLI and VS Code, `PathBlock.fromGlyph`, `TextBlock.toPathBlock()` and `Font.*` need an `@font` for the family. The playground loads such a family for them too, so a program that relies on that works only in the playground. Write the `@font`.
+
+Downloaded fonts are cached in `~/Library/Caches/pathogen-lang/fonts` on macOS, `$XDG_CACHE_HOME/pathogen-lang/fonts` (or `~/.cache/pathogen-lang/fonts`) on Linux, and `%LOCALAPPDATA%\pathogen-lang\fonts` on Windows; set `PATHOGEN_CACHE_DIR` to use another folder. When you're online, a cached font is checked for a newer release every 30 days. To never download, pass `--offline` to the CLI or set `PATHOGEN_OFFLINE=1`. VS Code has no switch of its own: it reads `PATHOGEN_OFFLINE` from your shell profile when it starts, even when opened from the Dock or a launcher, but a variable you `export` in one terminal only reaches a VS Code started from that terminal. Opening a program in VS Code is enough to download its fonts, since the editor's error checking loads them as well as the preview.
+
+**When a font can't be loaded**, compilation stops with an error at the `@font` line, in every tool. That covers a file that's missing or isn't a font, a family that is neither on your computer nor on Google Fonts, and a download that fails while no weight of the family is on your computer or in the cache. Three cases are warnings instead, and compilation continues:
+
+| Case | Warning code |
+|------|--------------|
+| The family exists, but not at that weight — on Google Fonts, or on your computer when Google Fonts can't supply it: the nearest weight is used, and the warning says which | `font-weight` |
+| You turned downloads off, and the family isn't on your computer or in the cache: only the calls that need the font — `PathBlock.fromGlyph`, `TextBlock.toPathBlock()`, `Font.*` — fail | `font-load` |
+| In the playground, a file path | — |
+
+The codes work with [strict mode](#debug-strict-mode): `--strict=font-load` makes an offline miss stop the compile.
+
+Generic families such as `serif`, `sans-serif` or `monospace` aren't fonts and can't be loaded: `@font "serif";` is an error that asks for a family name. The messages for file paths are listed in [Projects and Files](#projects-errors).
 
 **Curated families vs. any Google Font (playground)**
 
@@ -1757,5 +1809,5 @@ The program still compiles; the warning tells you the font itself lacks those ch
 | First argument not a string | `PathBlock.fromGlyph() first argument must be a string` |
 | Second argument not a style block | `PathBlock.fromGlyph() second argument must be a style block` |
 | Style block missing font-family | `PathBlock.fromGlyph() requires font-family in style block` |
-| No fonts loaded | `PathBlock.fromGlyph() requires font data, but no fonts were loaded. If you wrote an @font directive, font loading may have failed earlier — look for a preceding font-loading error.` |
+| No fonts loaded | `PathBlock.fromGlyph() requires font data, but no fonts were loaded. If you wrote an @font directive, font loading may have failed earlier — look for a preceding font-loading message.` |
 | Font not in registry | `Font 'X' not found in font registry. Available fonts: [list]` |

@@ -90,4 +90,18 @@ export default defineConfig([
     sourcemap: true,
     noExternal: [/.*/],
   },
+  // Node adapters for the shared font loader (`pathogen-lang/node`): project
+  // file reads, installed-font search, the download cache, offline switches.
+  // Used by the CLI, the VS Code extension host and the language server.
+  // Node-only (fs, os, path), so the browser bundles never include it; the
+  // loader itself (resolveFonts) lives in the main entry. Node 20 = the
+  // Electron runtime of the extension host and the language server.
+  {
+    entry: { node: 'src/node/index.ts' },
+    format: ['esm', 'cjs'],
+    platform: 'node',
+    target: 'node20',
+    dts,
+    sourcemap: true,
+  },
 ]);

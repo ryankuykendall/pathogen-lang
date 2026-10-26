@@ -11,7 +11,7 @@ A programming language lives or dies by its developer experience. You can have t
 
 This post documents how we built a complete VS Code extension for the [Pathogen language](/docs), from parser migration through a 10-phase developer experience effort. Whether you're writing Pathogen code and want to understand the tools available to you, or you're building your own language server and want to learn from the implementation, here's what we built and what we learned.
 
-> **Try it now:** The Pathogen playground is available at [pedestal.design/pathogen](/) with the same language intelligence described here. The VS Code extension source is in `packages/vscode-pathogen/` in the repository.
+> **Try it now:** The Pathogen playground is available at [pathogen.studio](/) with the same language intelligence described here. The VS Code extension source is in `packages/vscode-pathogen/` in the repository.
 
 ## The roadmap: 10 phases
 
@@ -179,9 +179,9 @@ The extension now covers the [golden set](https://code.visualstudio.com/api/lang
 
 Where we're heading:
 
-- **Multi-file project support** — workspace-level features like `@font` path resolution, cross-file references, and shared layer libraries. This is the step from "single-file tool" to "project-aware IDE."
+- **Multi-file project support** — workspace-level features like `@font` path resolution, cross-file references, and shared layer libraries. This is the step from "single-file tool" to "project-aware IDE." *Update, October 26, 2026:* the first piece has landed — the preview now loads `@font` fonts, and paths resolve inside a [project folder](/docs#projects-the-project-folder).
 - **Visual debugging** — click a point on the SVG and highlight the path command that produced it. Trace a color swatch back to its gradient stop. See bounding boxes overlaid on layers.
 - **Extension marketplace publishing** — making installation a one-click experience instead of building from source.
 - **Deeper type flow** — tracking types through function returns, complex assignment chains, and generic array element types.
 
-The Pathogen language is available at [pedestal.design/pathogen](/), with the same completions, hover, and diagnostics in the browser. The full VS Code extension source lives in `packages/vscode-pathogen/` — pull requests welcome.
+The Pathogen language is available at [pathogen.studio](/), with the same completions, hover, and diagnostics in the browser. The full VS Code extension source lives in `packages/vscode-pathogen/` — pull requests welcome.

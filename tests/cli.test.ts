@@ -1,6 +1,5 @@
 import { spawnSync } from 'node:child_process';
-import { existsSync, mkdirSync, readFileSync, unlinkSync, writeFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { copyFileSync, existsSync, mkdirSync, readFileSync, rmSync, unlinkSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
@@ -10,6 +9,8 @@ import { extractSVGElements } from './helpers';
 
 const CLI_PATH = join(__dirname, '..', 'src', 'cli.ts');
 const TMP_DIR = join(__dirname, 'tmp');
+/** macOS and Windows by default: this file is found under another letter case. */
+const caseInsensitiveFs = existsSync(__filename.toUpperCase());
 
 function runCli(args: string[], input?: string): { stdout: string; stderr: string; status: number } {
   try {
@@ -30,6 +31,18 @@ function runCli(args: string[], input?: string): { stdout: string; stderr: strin
       status: 1,
     };
   }
+}
+
+/** A program that draws "A" from the font a directive loads, after `M 10 100`. */
+function glyphProgram(fontDirective: string, family: string): string {
+  return `${fontDirective}\nlet g = PathBlock.fromGlyph("A", #{ font-family: ${family}; font-size: 48; });\nM 10 100\ng[0].draw()\n`;
+}
+
+/** The path data of a run that drew its glyph: it succeeded, said nothing, and printed more than the move. */
+function drawnGlyph(result: { status: number; stdout: string; stderr: string }): string {
+  expect([result.status, result.stderr]).toEqual([0, '']);
+  expect(result.stdout.startsWith('M 10 100 ')).toBe(true);
+  return result.stdout;
 }
 
 describe('CLI', () => {
@@ -155,7 +168,7 @@ describe('CLI', () => {
       expect(existsSync(outputTxt)).toBe(true);
     });
 
-    it('applies a text layer\'s transform to every <text> in the SVG file', () => {
+    it("applies a text layer's transform to every <text> in the SVG file", () => {
       writeFileSync(
         inputFile,
         "let font = 'sans-serif';\nlet t = TextLayer('t') #{ font-family: font; rotate: -0.5pi; };\nt.apply { text(10, 20)`a`; text(30, 40, 30deg)`b`; }",
@@ -173,7 +186,9 @@ describe('CLI', () => {
       );
       runCli([`--src=${inputFile}`, `--output-svg-file=${outputSvg}`]);
       const svg = readFileSync(outputSvg, 'utf-8');
-      expect(svg).toMatch(/<g data-layer-name="dims" id="dims" fill="none" stroke="#333" stroke-width="2" marker-end="url\(#arrow\)">/);
+      expect(svg).toMatch(
+        /<g data-layer-name="dims" id="dims" fill="none" stroke="#333" stroke-width="2" marker-end="url\(#arrow\)">/,
+      );
       expect(svg).toContain('<path d="M 10 20 L 90 20"/>');
       expect(svg).toContain('<path d="M 10 40 L 90 40"/>');
       expect(svg).not.toContain('marker-scope');
@@ -276,14 +291,7 @@ describe('CLI', () => {
     });
 
     it('--viewBox flag is used when source has no `define ViewBox`', () => {
-      runCli([
-        '-e',
-        'M 0 0',
-        `--output-svg-file=${outputSvg}`,
-        '--viewBox=0 0 100 100',
-        '--width=100',
-        '--height=100',
-      ]);
+      runCli(['-e', 'M 0 0', `--output-svg-file=${outputSvg}`, '--viewBox=0 0 100 100', '--width=100', '--height=100']);
       const content = readFileSync(outputSvg, 'utf-8');
       const [svg] = extractSVGElements(content, 'svg');
       expect(svg).toMatchObject({ viewBox: '0 0 100 100', width: '100', height: '100' });
@@ -662,7 +670,9 @@ describe('CLI', () => {
       ]);
       const svg = readFileSync(outputSvg, 'utf-8');
       expect(svg).toContain('viewBox="-100 -100 200 200"');
-      expect(svg).toContain('<pattern id="g" x="-100" y="-100" width="200" height="200" patternUnits="userSpaceOnUse">');
+      expect(svg).toContain(
+        '<pattern id="g" x="-100" y="-100" width="200" height="200" patternUnits="userSpaceOnUse">',
+      );
       // Wedges are tile-local: the user-space centre (0, 0) is (100, 100) inside the tile.
       expect(svg).toContain('<path d="M 100 100 L ');
     });
@@ -754,53 +764,45 @@ describe('CLI', () => {
   });
 
   describe('@font directive with identifier source', () => {
-    it('loads a font file via a top-level let variable', () => {
-      const inputFile = join(TMP_DIR, 'font-var.pathogen');
+    it('loads a font file via a top-level let variable, exactly as the literal path does', () => {
+      const viaVariable = join(TMP_DIR, 'font-var.pathogen');
+      const viaLiteral = join(TMP_DIR, 'font-literal.pathogen');
       writeFileSync(
-        inputFile,
-        `let fontPath = "../fixtures/fonts/Inter-Regular.ttf";
-@font fontPath;
-let g = PathBlock.fromGlyph("A", #{ font-family: Inter-Regular; font-size: 48; });
-M 10 100
-g[0].draw()
-`,
+        viaVariable,
+        glyphProgram('let fontPath = "../fixtures/fonts/Inter-Regular.ttf";\n@font fontPath;', 'Inter-Regular'),
       );
-      const result = runCli([`--src=${inputFile}`]);
-      expect(result.status).toBe(0);
-      // Glyph outlines produce curve commands beyond the initial move
-      expect(result.stdout).toMatch(/M 10 100/);
-      expect(result.stdout.length).toBeGreaterThan(40);
-
-      unlinkSync(inputFile);
+      writeFileSync(viaLiteral, glyphProgram('@font "../fixtures/fonts/Inter-Regular.ttf";', 'Inter-Regular'));
+      try {
+        expect(drawnGlyph(runCli([`--src=${viaVariable}`]))).toBe(drawnGlyph(runCli([viaLiteral])));
+      } finally {
+        unlinkSync(viaVariable);
+        unlinkSync(viaLiteral);
+      }
     });
 
     it('fails with a positioned error when the identifier is not a top-level string', () => {
       const result = runCli(['-e', '@font mystery;\nM 0 0']);
-      expect(result.status).not.toBe(0);
-      expect(result.stderr).toMatch(/references 'mystery'/);
+      expect(result.status).toBe(1);
+      expect(result.stdout).toBe('');
+      expect(result.stderr).toMatch(/^<inline>:1:\d+: error: .*references 'mystery'/m);
       expect(result.stderr).toMatch(/not a top-level string variable/);
     });
   });
 
   describe('@font named-family resolution against a project fonts/ directory', () => {
     it('resolves a Google-style family name by walking up to the repo fonts/ dir', () => {
-      // fonts/Baumans/Baumans-Regular.ttf, found by walking up from tests/tmp.
-      const inputFile = join(TMP_DIR, 'font-named.pathogen');
-      writeFileSync(
-        inputFile,
-        `@font "Baumans";
-let g = PathBlock.fromGlyph("A", #{ font-family: Baumans; font-size: 48; });
-M 10 100
-g[0].draw()
-`,
-      );
-      const result = runCli([`--src=${inputFile}`]);
-      expect(result.status).toBe(0);
-      expect(result.stderr).not.toMatch(/not found locally/);
-      expect(result.stdout).toMatch(/M 10 100/);
-      expect(result.stdout.length).toBeGreaterThan(40);
-
-      unlinkSync(inputFile);
+      // fonts/Baumans/Baumans-Regular.ttf, found by walking up from tests/tmp:
+      // the same file a path names, so the same outline.
+      const byFamily = join(TMP_DIR, 'font-named.pathogen');
+      const byPath = join(TMP_DIR, 'font-named-path.pathogen');
+      writeFileSync(byFamily, glyphProgram('@font "Baumans";', 'Baumans'));
+      writeFileSync(byPath, glyphProgram('@font "../../fonts/Baumans/Baumans-Regular.ttf";', 'Baumans-Regular'));
+      try {
+        expect(drawnGlyph(runCli([`--src=${byFamily}`]))).toBe(drawnGlyph(runCli([byPath])));
+      } finally {
+        unlinkSync(byFamily);
+        unlinkSync(byPath);
+      }
     });
 
     it('maps weights to Google filename suffixes (700 → -Bold, 200 → -ExtraLight)', () => {
@@ -821,7 +823,7 @@ ro[0].draw()
       );
       const result = runCli([`--src=${inputFile}`]);
       expect(result.status).toBe(0);
-      expect(result.stderr).not.toMatch(/not found locally/);
+      expect(result.stderr).not.toMatch(/warning:|error:/);
       expect(result.stdout).toMatch(/M 10 100/);
       expect(result.stdout).toMatch(/M 80 100/);
 
@@ -829,25 +831,418 @@ ro[0].draw()
     });
 
     it('honors PATHOGEN_FONT_DIRS as an explicit search path', () => {
+      // A family whose only file is in a folder named by PATHOGEN_FONT_DIRS:
+      // the walked-up fonts/ folder and the system folders don't have it.
+      const envFonts = join(TMP_DIR, 'env-fonts');
+      mkdirSync(envFonts, { recursive: true });
+      copyFileSync(
+        join(__dirname, '..', 'fonts', 'Baumans', 'Baumans-Regular.ttf'),
+        join(envFonts, 'Envonly-Regular.ttf'),
+      );
       const inputFile = join(TMP_DIR, 'font-envdir.pathogen');
       writeFileSync(
         inputFile,
-        `@font "Baumans";
-let g = PathBlock.fromGlyph("A", #{ font-family: Baumans; font-size: 48; });
+        `@font "Envonly";
+let g = PathBlock.fromGlyph("A", #{ font-family: Envonly; font-size: 48; });
 M 10 100
 g[0].draw()
 `,
       );
-      const result = spawnSync('npx', ['tsx', CLI_PATH, `--src=${inputFile}`], {
-        encoding: 'utf-8',
-        cwd: tmpdir(), // outside the repo, so walk-up cannot find fonts/
-        env: { ...process.env, PATHOGEN_FONT_DIRS: join(__dirname, '..', 'fonts') },
-      });
-      expect(result.status).toBe(0);
-      expect(result.stderr || '').not.toMatch(/not found locally/);
-      expect(result.stdout || '').toMatch(/M 10 100/);
+      const run = (env: NodeJS.ProcessEnv) =>
+        spawnSync('npx', ['tsx', CLI_PATH, inputFile], { encoding: 'utf-8', cwd: join(__dirname, '..'), env });
+      try {
+        const without = run(process.env);
+        expect(without.status).toBe(1);
+        expect(without.stderr).toMatch(/warning: @font "Envonly": not on this computer/);
 
-      unlinkSync(inputFile);
+        const withDirs = run({ ...process.env, PATHOGEN_FONT_DIRS: envFonts });
+        expect(withDirs.status).toBe(0);
+        expect(withDirs.stderr).not.toMatch(/warning:|error:/);
+        expect(withDirs.stdout).toMatch(/M 10 100/);
+      } finally {
+        unlinkSync(inputFile);
+        rmSync(envFonts, { recursive: true, force: true });
+      }
+    });
+  });
+
+  describe('@font file paths and the project folder (docs/projects.md)', () => {
+    // tests/tmp is inside the repo, whose pathogen.json makes the repo the
+    // project folder for files that have none of their own.
+    const fence = join(TMP_DIR, 'fence');
+    const fenceMain = join(fence, 'main.pathogen');
+
+    beforeAll(() => {
+      mkdirSync(fence, { recursive: true });
+      writeFileSync(join(fence, 'pathogen.json'), '{}\n');
+      writeFileSync(fenceMain, '@font "../../fixtures/fonts/Inter-Regular.ttf";\nM 0 0\n');
+    });
+
+    afterAll(() => {
+      rmSync(fence, { recursive: true, force: true });
+    });
+
+    it('a leading / means the project folder', () => {
+      // From tests/tmp, /fonts/… and ../../fonts/… name the same file.
+      const rooted = join(TMP_DIR, 'font-rooted.pathogen');
+      const relative = join(TMP_DIR, 'font-relative.pathogen');
+      writeFileSync(rooted, glyphProgram('@font "/fonts/Baumans/Baumans-Regular.ttf";', 'Baumans-Regular'));
+      writeFileSync(relative, glyphProgram('@font "../../fonts/Baumans/Baumans-Regular.ttf";', 'Baumans-Regular'));
+      try {
+        expect(drawnGlyph(runCli([rooted]))).toBe(drawnGlyph(runCli([relative])));
+      } finally {
+        unlinkSync(rooted);
+        unlinkSync(relative);
+      }
+    });
+
+    describe('--root with code from -e or standard input, and with a file outside it', () => {
+      const fixtures = join(__dirname, 'fixtures');
+      const interProgram = glyphProgram('@font "./fonts/Inter-Regular.ttf";', 'Inter-Regular');
+
+      it('code with no @font compiles whatever the project folder', () => {
+        expect(runCli([`--root=${fixtures}`, '-e', 'M 0 0 L 10 10'])).toEqual({
+          stdout: 'M 0 0 L 10 10\n',
+          stderr: '',
+          status: 0,
+        });
+        expect(runCli([`--root=${fixtures}`, '-'], 'M 0 0 L 10 10').stdout).toBe('M 0 0 L 10 10\n');
+      });
+
+      it("when the current folder isn't in the project folder, the code's paths start at the project folder", () => {
+        const fromInline = drawnGlyph(runCli([`--root=${fixtures}`, '-e', interProgram]));
+        const fromStdin = drawnGlyph(runCli([`--root=${fixtures}`, '-'], interProgram));
+        expect(fromStdin).toBe(fromInline);
+      });
+
+      it('…and so does the search for a family in a fonts/ folder', () => {
+        // The tests run from the repo, whose own fonts/ has no Inter: only
+        // tests/fixtures/fonts/ does.
+        const byFamily = glyphProgram('@font "Inter";', 'Inter');
+        const fromInline = drawnGlyph(runCli([`--root=${fixtures}`, '-e', byFamily]));
+        const fromStdin = drawnGlyph(runCli([`--root=${fixtures}`, '-'], byFamily));
+        const byPath = drawnGlyph(runCli([`--root=${fixtures}`, '-e', interProgram]));
+        expect([fromInline, fromStdin]).toEqual([byPath, byPath]);
+      });
+
+      it.skipIf(!caseInsensitiveFs)(
+        'a --root spelled in another letter case than on disk is the same folder (macOS, Windows)',
+        () => {
+          const shouted = join(__dirname.replace(/tests$/, 'TESTS'), 'fixtures');
+          const program = join(TMP_DIR, 'case-root.pathogen');
+          writeFileSync(program, glyphProgram('@font "../fixtures/fonts/Inter-Regular.ttf";', 'Inter-Regular'));
+          try {
+            const expected = drawnGlyph(runCli([`--root=${fixtures}`, '-e', interProgram]));
+            expect([
+              drawnGlyph(runCli([`--root=${shouted}`, '-e', interProgram])),
+              drawnGlyph(runCli([`--root=${__dirname.replace(/tests$/, 'TESTS')}`, program])),
+            ]).toEqual([expected, expected]);
+          } finally {
+            unlinkSync(program);
+          }
+        },
+      );
+
+      it('a file outside the project folder compiles; only its @font paths have nowhere to start', () => {
+        const plain = join(TMP_DIR, 'outside-root-plain.pathogen');
+        const withFamily = join(TMP_DIR, 'outside-root-family.pathogen');
+        const withPath = join(TMP_DIR, 'outside-root-path.pathogen');
+        writeFileSync(plain, 'M 0 0 L 5 5\n');
+        writeFileSync(withFamily, '@font "Zzyzx Nonesuch";\nM 0 0\n');
+        writeFileSync(withPath, '@font "./x.ttf";\nM 0 0\n');
+        try {
+          expect(runCli([`--root=${fixtures}`, plain])).toEqual({ stdout: 'M 0 0 L 5 5\n', stderr: '', status: 0 });
+          expect(runCli([`--root=${fixtures}`, withFamily])).toEqual({
+            stdout: 'M 0 0\n',
+            stderr: `${withFamily}:1:1: warning: @font "Zzyzx Nonesuch": not on this computer, and downloads are off (PATHOGEN_OFFLINE=1). Calls that need this font will fail.\n`,
+            status: 0,
+          });
+          expect(runCli([`--root=${fixtures}`, withPath])).toEqual({
+            stdout: '',
+            stderr: `Error: ${withPath} is outside the project folder ${fixtures} given by --root, so its @font paths can't be followed.\n`,
+            status: 1,
+          });
+        } finally {
+          unlinkSync(plain);
+          unlinkSync(withFamily);
+          unlinkSync(withPath);
+        }
+      });
+    });
+
+    it('a folder named as a font, the project folder included, says it is a folder', () => {
+      const result = runCli(['-e', '@font "./tests";\n@font "/";\nM 0 0']);
+      expect(result.status).toBe(1);
+      expect(result.stderr).toBe(
+        '<inline>:1:1: error: @font path "./tests" is a folder, not a font file.\n' +
+          '<inline>:2:1: error: @font path "/" is a folder, not a font file.\n',
+      );
+    });
+
+    it('a font file cut short is an error at its @font line', () => {
+      const cut = join(TMP_DIR, 'Cut-Short.ttf');
+      const inter = readFileSync(join(__dirname, 'fixtures', 'fonts', 'Inter-Regular.ttf'));
+      writeFileSync(cut, inter.subarray(0, Math.floor(inter.length / 2)));
+      try {
+        const result = runCli(['-e', '@font "./tests/tmp/Cut-Short.ttf";\nM 0 0']);
+        expect([result.status, result.stderr]).toEqual([
+          1,
+          '<inline>:1:1: error: @font file "./tests/tmp/Cut-Short.ttf" is damaged or incomplete: its tables run past the end of the file.\n',
+        ]);
+      } finally {
+        unlinkSync(cut);
+      }
+    });
+
+    it('a path that leaves the project folder is an error naming the folder', () => {
+      const result = runCli([fenceMain]);
+      expect(result.status).toBe(1);
+      expect(result.stdout).toBe('');
+      expect(result.stderr).toBe(
+        `${fenceMain}:1:1: error: @font path "../../fixtures/fonts/Inter-Regular.ttf" leaves the project folder (${fence}). Move the file into the project folder, or move the project's pathogen.json (or add one) to a folder that contains both the program and the file, other than your home folder itself.\n`,
+      );
+    });
+
+    it('--root sets the project folder', () => {
+      const result = runCli([`--root=${__dirname}`, fenceMain]);
+      expect(result.status).toBe(0);
+      expect(result.stderr).toBe('');
+      expect(result.stdout.trim()).toBe('M 0 0');
+    });
+
+    it('--root must name a folder', () => {
+      const missing = join(TMP_DIR, 'no-such-folder');
+      const result = runCli([`--root=${missing}`, '-e', 'M 0 0']);
+      expect(result.status).toBe(1);
+      expect(result.stderr).toBe(`Error: --root=${missing} is not a folder.\n`);
+    });
+
+    it('a missing font file is an error, not a warning', () => {
+      const result = runCli(['-e', '@font "./no-such-font.ttf";\nM 0 0']);
+      expect(result.status).toBe(1);
+      expect(result.stdout).toBe('');
+      expect(result.stderr).toBe(
+        `<inline>:1:1: error: @font file "./no-such-font.ttf" was not found (looked for ${join(__dirname, '..', 'no-such-font.ttf')}).\n`,
+      );
+    });
+
+    it('letter case must match the file on disk, even where the system ignores it', () => {
+      const inputFile = join(TMP_DIR, 'font-case.pathogen');
+      writeFileSync(inputFile, '@font "../fixtures/fonts/inter-regular.ttf";\nM 0 0\n');
+      try {
+        const result = runCli([inputFile]);
+        expect(result.status).toBe(1);
+        expect(result.stderr).toBe(
+          `${inputFile}:1:1: error: @font file "../fixtures/fonts/inter-regular.ttf" differs from the file on disk only in letter case: "../fixtures/fonts/Inter-Regular.ttf". Paths are case-sensitive on every system.\n`,
+        );
+      } finally {
+        unlinkSync(inputFile);
+      }
+    });
+
+    it('a file name without ./ is an error that suggests the path', () => {
+      const result = runCli(['-e', '@font "Inter.ttf";\nM 0 0']);
+      expect(result.status).toBe(1);
+      expect(result.stderr).toBe(
+        `<inline>:1:1: error: @font "Inter.ttf" looks like a file name but isn't a path. File paths start with ./, ../ or / — did you mean "./Inter.ttf"?\n`,
+      );
+    });
+  });
+
+  describe('compiling a folder', () => {
+    const folder = join(TMP_DIR, 'folder-arg');
+
+    beforeAll(() => {
+      mkdirSync(folder, { recursive: true });
+      writeFileSync(join(folder, 'drawing.pathogen'), 'M 1 2 L 3 4\n');
+    });
+
+    afterAll(() => {
+      rmSync(folder, { recursive: true, force: true });
+    });
+
+    it('compiles the main named in its pathogen.json', () => {
+      writeFileSync(join(folder, 'pathogen.json'), '{ "main": "drawing.pathogen" }\n');
+      const result = runCli([folder]);
+      expect(result.status).toBe(0);
+      expect(result.stdout.trim()).toBe('M 1 2 L 3 4');
+    });
+
+    it('a pathogen.json without "main" says what to add', () => {
+      writeFileSync(join(folder, 'pathogen.json'), '{}\n');
+      const result = runCli([folder]);
+      expect(result.status).toBe(1);
+      expect(result.stderr).toBe(
+        `Error: ${join(folder, 'pathogen.json')} has no "main". Add "main": "your-program.pathogen", or compile a file directly.\n`,
+      );
+    });
+
+    it('a main that does not exist is an error', () => {
+      writeFileSync(join(folder, 'pathogen.json'), '{ "main": "missing.pathogen" }\n');
+      const result = runCli([folder]);
+      expect(result.status).toBe(1);
+      expect(result.stderr).toBe(
+        `Error: ${join(folder, 'pathogen.json')} names "main": "/missing.pathogen", which doesn't exist.\n`,
+      );
+    });
+
+    it('a folder with no pathogen.json is an error', () => {
+      const bare = join(TMP_DIR, 'folder-bare');
+      mkdirSync(bare, { recursive: true });
+      try {
+        const result = runCli([bare]);
+        expect(result.status).toBe(1);
+        expect(result.stderr).toBe(
+          `Error: ${bare} is a folder with no pathogen.json. Add one with "main", or compile a file directly.\n`,
+        );
+      } finally {
+        rmSync(bare, { recursive: true, force: true });
+      }
+    });
+
+    it('a trailing slash on the folder makes no difference', () => {
+      writeFileSync(join(folder, 'pathogen.json'), '{ "main": "drawing.pathogen" }\n');
+      expect(runCli([`${folder}/`])).toEqual({ stdout: 'M 1 2 L 3 4\n', stderr: '', status: 0 });
+    });
+
+    it('a pathogen.json saved with a byte-order mark works', () => {
+      writeFileSync(join(folder, 'pathogen.json'), `${String.fromCodePoint(0xfeff)}{ "main": "drawing.pathogen" }\n`);
+      expect(runCli([folder])).toEqual({ stdout: 'M 1 2 L 3 4\n', stderr: '', status: 0 });
+    });
+
+    it('a main in a subfolder: its ./ and ../ paths start there, and / at the project folder', () => {
+      const project = join(TMP_DIR, 'folder-arg-nested');
+      mkdirSync(join(project, 'src'), { recursive: true });
+      mkdirSync(join(project, 'type'), { recursive: true });
+      copyFileSync(
+        join(__dirname, 'fixtures', 'fonts', 'Inter-Regular.ttf'),
+        join(project, 'type', 'Inter-Regular.ttf'),
+      );
+      writeFileSync(join(project, 'pathogen.json'), '{ "main": "src/poster.pathogen" }\n');
+      try {
+        const poster = join(project, 'src', 'poster.pathogen');
+        writeFileSync(poster, glyphProgram('@font "../type/Inter-Regular.ttf";', 'Inter-Regular'));
+        const relative = drawnGlyph(runCli([project]));
+        writeFileSync(poster, glyphProgram('@font "/type/Inter-Regular.ttf";', 'Inter-Regular'));
+        expect(drawnGlyph(runCli([project]))).toBe(relative);
+      } finally {
+        rmSync(project, { recursive: true, force: true });
+      }
+    });
+
+    it('--root wins over the folder: a leading / then means the --root folder', () => {
+      const project = join(TMP_DIR, 'folder-arg-root');
+      mkdirSync(join(project, 'type'), { recursive: true });
+      copyFileSync(
+        join(__dirname, 'fixtures', 'fonts', 'Inter-Regular.ttf'),
+        join(project, 'type', 'Inter-Regular.ttf'),
+      );
+      writeFileSync(join(project, 'pathogen.json'), '{ "main": "main.pathogen" }\n');
+      writeFileSync(join(project, 'main.pathogen'), glyphProgram('@font "/type/Inter-Regular.ttf";', 'Inter-Regular'));
+      try {
+        drawnGlyph(runCli([project]));
+        expect(runCli([`--root=${TMP_DIR}`, project])).toEqual({
+          stdout: '',
+          stderr: `${join(project, 'main.pathogen')}:1:1: error: @font file "/type/Inter-Regular.ttf" was not found (looked for ${join(TMP_DIR, 'type', 'Inter-Regular.ttf')}). A leading / means the project folder, not your computer's root.\n`,
+          status: 1,
+        });
+      } finally {
+        rmSync(project, { recursive: true, force: true });
+      }
+    });
+
+    it('a pathogen.json or a main that is a folder is an error, not a crash', () => {
+      const odd = join(TMP_DIR, 'folder-arg-odd');
+      mkdirSync(join(odd, 'pathogen.json'), { recursive: true });
+      try {
+        expect(runCli([odd])).toEqual({
+          stdout: '',
+          stderr: `Error: pathogen.json (${odd}) is a folder, not a file.\n`,
+          status: 1,
+        });
+        rmSync(join(odd, 'pathogen.json'), { recursive: true });
+        mkdirSync(join(odd, 'drawing'), { recursive: true });
+        writeFileSync(join(odd, 'pathogen.json'), '{ "main": "drawing" }\n');
+        expect(runCli([odd])).toEqual({
+          stdout: '',
+          stderr: `Error: ${join(odd, 'drawing')} is a folder, not a file.\n`,
+          status: 1,
+        });
+      } finally {
+        rmSync(odd, { recursive: true, force: true });
+      }
+    });
+  });
+
+  describe('a pathogen.json found by walking up from the program', () => {
+    const project = join(TMP_DIR, 'walked-up');
+
+    beforeAll(() => {
+      mkdirSync(join(project, 'parts'), { recursive: true });
+      writeFileSync(join(project, 'pathogen.json'), '{ "mian": "main.pathogen" }\n');
+    });
+
+    afterAll(() => {
+      rmSync(project, { recursive: true, force: true });
+    });
+
+    it('a broken one stops a program that loads fonts, naming the problem', () => {
+      const program = join(project, 'parts', 'rack.pathogen');
+      writeFileSync(program, '@font "./x.ttf";\nM 0 0\n');
+      expect(runCli([program])).toEqual({
+        stdout: '',
+        stderr: `Error: pathogen.json (${project}) has an unknown key "mian". Known keys: main.\n`,
+        status: 1,
+      });
+    });
+
+    it('a program without @font reads no files, so it compiles, as in the editors', () => {
+      const program = join(project, 'parts', 'plain.pathogen');
+      writeFileSync(program, 'M 0 0 L 1 1\n');
+      expect(runCli([program])).toEqual({ stdout: 'M 0 0 L 1 1\n', stderr: '', status: 0 });
+    });
+  });
+
+  describe('with downloads off (tests run with PATHOGEN_OFFLINE=1)', () => {
+    const program = '@font "Zzyzx Nonesuch";\nM 0 0';
+    const warning = (reason: string) =>
+      `@font "Zzyzx Nonesuch": not on this computer, and downloads are off (${reason}). Calls that need this font will fail.`;
+
+    it('a family that is not installed is a font-load warning, and the compile continues', () => {
+      const result = runCli(['-e', program]);
+      expect(result.status).toBe(0);
+      expect(result.stdout.trim()).toBe('M 0 0');
+      expect(result.stderr).toBe(`<inline>:1:1: warning: ${warning('PATHOGEN_OFFLINE=1')}\n`);
+    });
+
+    it('--offline names itself as the reason', () => {
+      const result = runCli(['--offline', '-e', program]);
+      expect(result.stderr).toBe(`<inline>:1:1: warning: ${warning('--offline')}\n`);
+    });
+
+    it('--strict=font-load makes it an error', () => {
+      const result = runCli(['--strict=font-load', '-e', program]);
+      expect(result.status).toBe(1);
+      expect(result.stdout).toBe('');
+      expect(result.stderr).toBe(`<inline>:1:1: error: ${warning('PATHOGEN_OFFLINE=1')} (strict: font-load)\n`);
+    });
+
+    it('--json lists it with the other warnings', () => {
+      const result = runCli(['--json', '-e', program]);
+      expect(result.status).toBe(0);
+      const doc = JSON.parse(result.stdout) as { warnings: unknown[] };
+      expect(doc.warnings).toEqual([{ code: 'font-load', message: warning('PATHOGEN_OFFLINE=1'), line: 1, column: 1 }]);
+    });
+
+    it('a call that needs the font fails, and the warning is printed above its error', () => {
+      const result = runCli([
+        '-e',
+        `${program}\nlet g = PathBlock.fromGlyph("A", #{ font-family: "Zzyzx Nonesuch"; font-size: 48; });`,
+      ]);
+      expect(result.status).toBe(1);
+      const lines = result.stderr.trim().split('\n');
+      expect(lines[0]).toBe(`<inline>:1:1: warning: ${warning('PATHOGEN_OFFLINE=1')}`);
+      expect(lines[1]).toMatch(/^Error: .*no fonts were loaded.*look for a preceding font-loading message\.$/);
     });
   });
 });

@@ -1,8 +1,16 @@
+import { join } from 'node:path';
+
 import { expect } from 'vitest';
 
 import { parseSVGPath } from './helpers';
 
 import type { ParsedCommand } from './helpers';
+
+// Tests never download fonts, and never see this machine's font cache: every
+// CLI a test spawns inherits these. A test that needs a download or a cached
+// font passes its own PATHOGEN_OFFLINE / PATHOGEN_CACHE_DIR (docs/cli.md).
+process.env.PATHOGEN_OFFLINE = '1';
+process.env.PATHOGEN_CACHE_DIR = join(__dirname, 'tmp', 'no-font-cache');
 
 function formatCommand(cmd: ParsedCommand): string {
   if (cmd.args.length === 0) return cmd.command;

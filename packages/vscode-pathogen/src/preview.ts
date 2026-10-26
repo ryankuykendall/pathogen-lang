@@ -1,9 +1,19 @@
 import { randomBytes } from 'node:crypto';
+import * as fs from 'node:fs';
+import * as nodeModule from 'node:module';
+import * as path from 'node:path';
 
 import * as vscode from 'vscode';
 
-let currentPanel: vscode.WebviewPanel | undefined;
-let updateTimeout: ReturnType<typeof setTimeout> | undefined;
+import { FontSession } from './font-session';
+import { getWebviewContent } from './webview-html';
+
+import type { DocumentFonts, FontPayload, PathogenLib, PathogenNodeLib } from './font-session';
+
+// Headless webview tests load the page directly (project-docs/modules/verify/).
+export { getWebviewContent } from './webview-html';
+
+let current: PreviewPanel | undefined;
 
 /**
  * Open (or focus) the SVG preview panel for the active .pathogen file.
@@ -14,90 +24,241 @@ export function openPreview(context: vscode.ExtensionContext): void {
     vscode.window.showWarningMessage('Open a .pathogen file first.');
     return;
   }
-
-  if (currentPanel) {
-    currentPanel.reveal(vscode.ViewColumn.Beside);
-    sendSource(editor.document);
+  if (current) {
+    current.reveal();
+    current.show(editor.document);
     return;
   }
-
-  // Capture the editor BEFORE creating the panel — opening the panel
-  // changes the active editor focus, so activeTextEditor may be undefined
-  // by the time the webview sends its 'ready' message
-  const initialEditor = editor;
-
-  const compilerUri = getCompilerUri(context);
+  const compilerUri = findBundle(context, 'index.global.js');
   if (!compilerUri) {
     vscode.window.showErrorMessage('Pathogen: Could not find compiler bundle.');
     return;
   }
-
-  currentPanel = vscode.window.createWebviewPanel(
-    'pathogenPreview',
-    'Pathogen Preview',
-    { viewColumn: vscode.ViewColumn.Beside, preserveFocus: true },
-    {
-      enableScripts: true,
-      localResourceRoots: [
-        vscode.Uri.joinPath(context.extensionUri, 'server'),
-        vscode.Uri.joinPath(context.extensionUri, 'compiler'),
-      ],
-    },
-  );
-
-  const webviewCompilerUri = currentPanel.webview.asWebviewUri(compilerUri);
-  const panZoomUri = getPanZoomUri(context);
-  const webviewPanZoomUri = panZoomUri ? currentPanel.webview.asWebviewUri(panZoomUri).toString() : '';
-  // Tighten the webview CSP to match the playground iframe contract — see
-  // project-docs/security/iframe-sandbox-rationale.md and docs/security.md.
-  // The webview is already iframe-isolated by VS Code; this CSP is the
-  // structural defense that makes the article's recommended boundary explicit.
-  const { cspSource } = currentPanel.webview;
-  const nonce = generateNonce();
-  currentPanel.webview.html = getWebviewContent(webviewCompilerUri.toString(), webviewPanZoomUri, cspSource, nonce);
-
-  currentPanel.onDidDispose(
-    () => {
-      currentPanel = undefined;
-      if (updateTimeout) clearTimeout(updateTimeout);
-    },
-    null,
-    context.subscriptions,
-  );
-
-  currentPanel.webview.onDidReceiveMessage(
-    (msg) => {
-      if (msg.type === 'ready') {
-        // Use the captured editor from before the panel opened
-        sendSource(initialEditor.document);
-      }
-    },
-    null,
-    context.subscriptions,
-  );
-
-  const changeDisposable = vscode.workspace.onDidChangeTextDocument((e) => {
-    if (e.document.languageId === 'pathogen' && currentPanel) {
-      if (updateTimeout) clearTimeout(updateTimeout);
-      updateTimeout = setTimeout(() => sendSource(e.document), 150);
-    }
-  });
-  context.subscriptions.push(changeDisposable);
-
-  const editorDisposable = vscode.window.onDidChangeActiveTextEditor((ed) => {
-    if (ed?.document.languageId === 'pathogen' && currentPanel) {
-      sendSource(ed.document);
-    }
-  });
-  context.subscriptions.push(editorDisposable);
+  current = new PreviewPanel(context, compilerUri, editor.document);
 }
 
-function sendSource(document: vscode.TextDocument): void {
-  if (!currentPanel) return;
-  currentPanel.webview.postMessage({
-    type: 'update',
-    source: document.getText(),
-  });
+/**
+ * One preview panel. It shows one document at a time — the active .pathogen
+ * editor — and owns every listener it registers, so closing the panel removes
+ * them all. Fonts are loaded here, in the extension host, by the same loader
+ * and Node host as the CLI; the webview gets each font's bytes once.
+ */
+class PreviewPanel {
+  private readonly panel: vscode.WebviewPanel;
+  private readonly disposables: vscode.Disposable[] = [];
+  private readonly fonts: FontSession | null;
+  private readonly fontsUnavailable: string | null;
+  private document: vscode.TextDocument;
+  private debounce: ReturnType<typeof setTimeout> | undefined;
+  /** The newest push's number: the webview orders updates by it, and only its result is sent. */
+  private latest = 0;
+  private disposed = false;
+
+  constructor(context: vscode.ExtensionContext, compilerUri: vscode.Uri, document: vscode.TextDocument) {
+    this.document = document;
+    const libs = loadPathogen(context);
+    if (libs instanceof Error) {
+      this.fonts = null;
+      this.fontsUnavailable = `Fonts can't be loaded in this preview: ${libs.message} Rebuild the extension with \`npm run build:vscode:install\`.`;
+    } else {
+      this.fonts = new FontSession({
+        ...libs,
+        // The extension doesn't run in Restricted Mode (package.json declares
+        // untrustedWorkspaces unsupported); this guards the switch anyway.
+        offline: () => (vscode.workspace.isTrusted ? null : 'VS Code Restricted Mode'),
+      });
+      this.fontsUnavailable = null;
+    }
+
+    this.panel = vscode.window.createWebviewPanel(
+      'pathogenPreview',
+      'Pathogen Preview',
+      { viewColumn: vscode.ViewColumn.Beside, preserveFocus: true },
+      {
+        enableScripts: true,
+        localResourceRoots: [
+          vscode.Uri.joinPath(context.extensionUri, 'server'),
+          vscode.Uri.joinPath(context.extensionUri, 'compiler'),
+        ],
+      },
+    );
+    const panZoomUri = findBundle(context, 'pan-zoom.global.js');
+    const { webview } = this.panel;
+    // The webview CSP matches the playground iframe's contract — see
+    // project-docs/security/iframe-sandbox-rationale.md and docs/security.md.
+    webview.html = getWebviewContent(
+      webview.asWebviewUri(compilerUri).toString(),
+      panZoomUri ? webview.asWebviewUri(panZoomUri).toString() : '',
+      webview.cspSource,
+      generateNonce(),
+    );
+
+    this.panel.onDidDispose(() => this.dispose(), null, this.disposables);
+    webview.onDidReceiveMessage((msg: unknown) => this.onMessage(msg), null, this.disposables);
+    vscode.workspace.onDidChangeTextDocument(
+      (e) => {
+        // Only the document on show: edits to other files never replace it.
+        if (e.document.uri.toString() !== this.document.uri.toString()) return;
+        this.document = e.document;
+        if (this.debounce) clearTimeout(this.debounce);
+        this.debounce = setTimeout(() => this.push(this.document), 150);
+      },
+      null,
+      this.disposables,
+    );
+    vscode.window.onDidChangeActiveTextEditor(
+      (editor) => {
+        if (editor?.document.languageId === 'pathogen') this.show(editor.document);
+      },
+      null,
+      this.disposables,
+    );
+  }
+
+  reveal(): void {
+    this.panel.reveal(vscode.ViewColumn.Beside, true);
+  }
+
+  show(document: vscode.TextDocument): void {
+    this.document = document;
+    this.push(document);
+  }
+
+  private onMessage(msg: unknown): void {
+    if (!msg || typeof msg !== 'object') return;
+    const { type } = msg as { type?: unknown };
+    if (type === 'ready') {
+      // A hidden panel reloads its page and loses its fonts: send them again.
+      this.fonts?.forgetDelivered();
+      this.push(this.document);
+    } else if (type === 'needFonts' && this.fonts) {
+      const ids = (msg as { ids?: unknown }).ids;
+      if (Array.isArray(ids)) {
+        // Always answer, even with nothing: the page then knows the fonts
+        // aren't coming and says so, rather than waiting.
+        this.post({
+          type: 'fonts',
+          reply: true,
+          fonts: copies(this.fonts.payloads(ids.filter((id): id is string => typeof id === 'string'))),
+        }).catch(() => undefined);
+      }
+    } else if (type === 'displayFonts' && this.fonts) {
+      const families = (msg as { families?: unknown }).families;
+      if (Array.isArray(families)) {
+        this.loadDisplayFonts(families).catch(() => undefined);
+      }
+    }
+  }
+
+  /**
+   * Send a document to the webview: its fonts first (only new ones), then the
+   * update, numbered so the page never applies an older update over a newer
+   * one. Pushes don't wait for each other — a slow download for one file
+   * never holds up another — and a push that finishes after a newer one has
+   * started is dropped. (Identical font loads share one run in FontSession.)
+   */
+  private push(document: vscode.TextDocument): void {
+    const seq = ++this.latest;
+    this.send(document, seq).catch((err: unknown) => {
+      console.warn('[pathogen] preview update failed:', err);
+    });
+  }
+
+  private async send(document: vscode.TextDocument, seq: number): Promise<void> {
+    const source = document.getText();
+    const filePath = document.uri.scheme === 'file' ? document.uri.fsPath : undefined;
+    let loaded: DocumentFonts = { fontIds: [], notices: [], errors: [] };
+    if (this.fonts) {
+      // A first download can take a while: say so rather than look frozen.
+      const slow = setTimeout(() => {
+        if (seq === this.latest) this.post({ type: 'status', text: 'Loading fonts…' }).catch(() => undefined);
+      }, 400);
+      try {
+        loaded = await this.fonts.load(source, filePath);
+      } catch (err) {
+        loaded = { fontIds: [], notices: [], errors: [`Fonts couldn't be loaded: ${(err as Error).message}`] };
+      } finally {
+        clearTimeout(slow);
+      }
+    } else if (this.fontsUnavailable && /@font\b/.test(source)) {
+      loaded = { fontIds: [], notices: [this.fontsUnavailable], errors: [] };
+    }
+    if (this.disposed || seq !== this.latest) return;
+    const fresh = this.fonts?.undelivered(loaded.fontIds) ?? [];
+    if (fresh.length > 0) await this.post({ type: 'fonts', fonts: copies(fresh) });
+    await this.post({ type: 'update', seq, uri: document.uri.toString(), source, ...loaded });
+  }
+
+  private async loadDisplayFonts(families: unknown[]): Promise<void> {
+    // The session puts weights on the 100–900 grid.
+    const wanted = families
+      .filter(
+        (f): f is { family: string; weight?: unknown } => !!f && typeof (f as { family?: unknown }).family === 'string',
+      )
+      .map((f) => ({ family: f.family, weight: typeof f.weight === 'number' ? f.weight : 400 }));
+    const filePath = this.document.uri.scheme === 'file' ? this.document.uri.fsPath : undefined;
+    try {
+      const fresh = (await this.fonts?.loadDisplayFonts(wanted, filePath)) ?? [];
+      if (fresh.length > 0 && !this.disposed) await this.post({ type: 'fonts', fonts: copies(fresh) });
+    } catch (err) {
+      // Best effort, as in the playground: the face may still be installed on
+      // this computer, and the geometry never depends on it.
+      console.warn('[pathogen] display font load failed:', err);
+    }
+  }
+
+  private async post(message: unknown): Promise<void> {
+    if (this.disposed) return;
+    await this.panel.webview.postMessage(message);
+  }
+
+  private dispose(): void {
+    this.disposed = true;
+    current = undefined;
+    if (this.debounce) clearTimeout(this.debounce);
+    for (const d of this.disposables.splice(0)) d.dispose();
+  }
+}
+
+/** Each message gets its own copy of the font bytes, so a send can never empty the session's copy. */
+function copies(fonts: FontPayload[]): FontPayload[] {
+  return fonts.map((f) => ({ ...f, buffer: f.buffer.slice(0) }));
+}
+
+/**
+ * The shared loader (`pathogen-lang`) and its Node host (`pathogen-lang/node`):
+ * from the .vsix's bundled server/node_modules, or — running from source — the
+ * repo's own dist/. An Error says why neither loaded.
+ */
+function loadPathogen(context: vscode.ExtensionContext): { lib: PathogenLib; node: PathogenNodeLib } | Error {
+  const attempts: [string, () => { lib: PathogenLib; node: PathogenNodeLib }][] = [
+    [
+      'the bundled server/node_modules',
+      () => {
+        const bundled = nodeModule.createRequire(
+          path.join(context.extensionPath, 'server', 'node_modules', '_resolve.js'),
+        );
+        return { lib: bundled('pathogen-lang'), node: bundled('pathogen-lang/node') };
+      },
+    ],
+    [
+      "the repo's dist/",
+      () => {
+        const dist = path.join(context.extensionPath, '..', '..', 'dist');
+        const load = nodeModule.createRequire(path.join(dist, '_resolve.js'));
+        return { lib: load(path.join(dist, 'index.cjs')), node: load(path.join(dist, 'node.cjs')) };
+      },
+    ],
+  ];
+  const failures: string[] = [];
+  for (const [where, attempt] of attempts) {
+    try {
+      return attempt();
+    } catch (err) {
+      failures.push(`${where}: ${(err as Error).message}`);
+    }
+  }
+  return new Error(`pathogen-lang could not be loaded (${failures.join('; ')}).`);
 }
 
 /**
@@ -112,845 +273,11 @@ function generateNonce(): string {
   return randomBytes(16).toString('base64').replace(/[+/=]/g, '');
 }
 
-function getCompilerUri(context: vscode.ExtensionContext): vscode.Uri | null {
-  const fs = require('node:fs');
-  const bundled = vscode.Uri.joinPath(context.extensionUri, 'compiler', 'index.global.js');
+/** A webview bundle: the .vsix copy in compiler/, or the repo's dist/ when running from source. */
+function findBundle(context: vscode.ExtensionContext, name: string): vscode.Uri | null {
+  const bundled = vscode.Uri.joinPath(context.extensionUri, 'compiler', name);
   if (fs.existsSync(bundled.fsPath)) return bundled;
-  const dev = vscode.Uri.joinPath(context.extensionUri, '..', '..', 'dist', 'index.global.js');
+  const dev = vscode.Uri.joinPath(context.extensionUri, '..', '..', 'dist', name);
   if (fs.existsSync(dev.fsPath)) return dev;
   return null;
-}
-
-/** The shared pan/zoom controller bundle (window.PathogenPanZoom). */
-function getPanZoomUri(context: vscode.ExtensionContext): vscode.Uri | null {
-  const fs = require('node:fs');
-  const bundled = vscode.Uri.joinPath(context.extensionUri, 'compiler', 'pan-zoom.global.js');
-  if (fs.existsSync(bundled.fsPath)) return bundled;
-  const dev = vscode.Uri.joinPath(context.extensionUri, '..', '..', 'dist', 'pan-zoom.global.js');
-  if (fs.existsSync(dev.fsPath)) return dev;
-  return null;
-}
-
-// Exported for headless webview tests (renders the full HTML given asset URIs).
-export function getWebviewContent(compilerUri: string, panZoomUri: string, cspSource: string, nonce: string): string {
-  // CSP rationale (see project-docs/security/iframe-sandbox-rationale.md):
-  //  - default-src 'none'        — nothing loads unless explicitly allow-listed.
-  //  - script-src 'nonce-${nonce}' ${cspSource}
-  //                              — only scripts carrying our per-load nonce
-  //                                or served from VS Code's controlled origin.
-  //  - style-src ${cspSource} 'unsafe-inline'
-  //                              — VS Code style sheet + inline styles needed
-  //                                for the toolbar/preview chrome.
-  //  - img-src data: ${cspSource}
-  //                              — data: URIs (gpu gradient images) and
-  //                                VS Code-controlled images only.
-  //  - font-src data: ${cspSource}
-  //                              — same.
-  //  - connect-src 'none'        — no fetch/xhr from the webview.
-  const csp =
-    `default-src 'none'; ` +
-    `script-src 'nonce-${nonce}' ${cspSource}; ` +
-    `style-src ${cspSource} 'unsafe-inline'; ` +
-    `img-src data: ${cspSource}; ` +
-    `font-src data: ${cspSource}; ` +
-    `connect-src 'none';`;
-  return `<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta http-equiv="Content-Security-Policy" content="${csp}">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body {
-      background: var(--vscode-editor-background, #1e1e1e);
-      color: var(--vscode-editor-foreground, #d4d4d4);
-      font-family: var(--vscode-font-family, system-ui, sans-serif);
-      display: flex;
-      flex-direction: column;
-      height: 100vh;
-      overflow: hidden;
-    }
-
-    /* Toolbar */
-    .toolbar {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      padding: 4px 8px;
-      background: var(--vscode-titleBar-activeBackground, #333);
-      border-bottom: 1px solid var(--vscode-panel-border, #444);
-      font-size: 11px;
-      flex-shrink: 0;
-    }
-    .toolbar .status { flex: 1; opacity: 0.7; }
-    .toolbar .info { opacity: 0.5; }
-    .toolbar button {
-      background: transparent;
-      border: 1px solid var(--vscode-button-border, #555);
-      color: var(--vscode-button-foreground, #ccc);
-      padding: 2px 8px;
-      border-radius: 3px;
-      cursor: pointer;
-      font-size: 11px;
-      font-family: inherit;
-    }
-    .toolbar button:hover {
-      background: var(--vscode-button-hoverBackground, #444);
-    }
-    .toolbar button.active {
-      background: var(--vscode-button-background, #0e639c);
-      color: var(--vscode-button-foreground, #fff);
-      border-color: var(--vscode-button-background, #0e639c);
-    }
-
-    /* Main layout */
-    .main {
-      flex: 1;
-      display: flex;
-      overflow: hidden;
-    }
-
-    /* Preview canvas */
-    .preview-container {
-      flex: 1;
-      position: relative;
-      overflow: hidden;
-    }
-    .preview-container.can-pan { cursor: grab; }
-    .preview-container.panning { cursor: grabbing; }
-
-    #preview {
-      display: block;
-      width: 100%;
-      height: 100%;
-    }
-
-    /* Scroll hint */
-    .scroll-hint {
-      position: absolute;
-      inset: 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: rgba(0,0,0,0.5);
-      z-index: 20;
-      pointer-events: none;
-      opacity: 0;
-      transition: opacity 0.2s;
-    }
-    .scroll-hint.visible { opacity: 1; }
-    .scroll-hint span {
-      color: #fff;
-      font-size: 12px;
-      padding: 6px 12px;
-      background: rgba(0,0,0,0.7);
-      border-radius: 6px;
-    }
-
-    /* Navigator minimap */
-    .navigator {
-      position: absolute;
-      top: 8px;
-      left: 8px;
-      width: 100px;
-      height: 100px;
-      background: var(--vscode-editor-background, #1e1e1e);
-      border: 1px solid var(--vscode-panel-border, #444);
-      border-radius: 4px;
-      overflow: hidden;
-      z-index: 10;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-    }
-    /* Content SVG and viewport-rect overlay are stacked, not nested, and the
-       content layer is GPU-promoted, so moving the viewport rect each pan frame
-       doesn't re-rasterize the heavy minimap paths. */
-    .navigator svg { position: absolute; inset: 0; width: 100%; height: 100%; }
-    #navigator-svg { transform: translateZ(0); backface-visibility: hidden; }
-    #navigator-overlay { pointer-events: none; }
-    #navigator-viewport {
-      fill: rgba(14, 99, 156, 0.15);
-      stroke: var(--vscode-focusBorder, #0e639c);
-      stroke-width: 1;
-      vector-effect: non-scaling-stroke;
-      cursor: move;
-    }
-
-    /* Zoom control is the shared <pathogen-zoom-pill>, registered by the
-       already-loaded pan-zoom.global.js bundle. Its theming falls back to
-       --vscode-* variables automatically. */
-
-    /* Side panel (layers, vars, palette) */
-    .side-panel {
-      width: 220px;
-      border-left: 1px solid var(--vscode-panel-border, #444);
-      overflow-y: auto;
-      font-size: 11px;
-      display: none;
-      flex-shrink: 0;
-    }
-    .side-panel.visible { display: block; }
-
-    .panel-section {
-      border-bottom: 1px solid var(--vscode-panel-border, #444);
-    }
-    .panel-header {
-      padding: 6px 8px;
-      font-weight: 600;
-      font-size: 10px;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      color: var(--vscode-descriptionForeground, #888);
-      background: var(--vscode-sideBarSectionHeader-background, #2a2a2a);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
-    .panel-header .badge {
-      padding: 1px 5px;
-      border-radius: 8px;
-      background: var(--vscode-badge-background, #4d4d4d);
-      color: var(--vscode-badge-foreground, #fff);
-      font-size: 9px;
-    }
-
-    /* Layer rows */
-    .layer-row {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      padding: 3px 8px;
-      cursor: default;
-    }
-    .layer-row:hover {
-      background: var(--vscode-list-hoverBackground, #2a2d2e);
-    }
-    .color-dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      flex-shrink: 0;
-      border: 1px solid var(--vscode-panel-border, #555);
-    }
-    .layer-name {
-      flex: 1;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-    .type-badge {
-      font-size: 9px;
-      padding: 0 4px;
-      border-radius: 3px;
-      background: var(--vscode-badge-background, #4d4d4d);
-      color: var(--vscode-badge-foreground, #fff);
-      flex-shrink: 0;
-    }
-    .eye-btn {
-      background: none;
-      border: none;
-      cursor: pointer;
-      padding: 2px;
-      color: var(--vscode-foreground, #ccc);
-      opacity: 0.5;
-      flex-shrink: 0;
-      display: flex;
-      align-items: center;
-      border-radius: 3px;
-    }
-    .eye-btn:hover { opacity: 1; background: var(--vscode-list-hoverBackground, #2a2d2e); }
-    .eye-btn.hidden { opacity: 0.3; color: var(--vscode-disabledForeground, #666); }
-
-    /* CSS Variable rows */
-    .var-row {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      padding: 4px 8px;
-    }
-    .var-row:hover {
-      background: var(--vscode-list-hoverBackground, #2a2d2e);
-    }
-    .var-name {
-      flex: 1;
-      font-family: var(--vscode-editor-font-family, monospace);
-      font-size: 10px;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-    .var-color {
-      width: 20px;
-      height: 20px;
-      padding: 0;
-      border: 1px solid var(--vscode-panel-border, #555);
-      border-radius: 3px;
-      cursor: pointer;
-      flex-shrink: 0;
-    }
-    .var-reset {
-      background: none;
-      border: none;
-      color: var(--vscode-descriptionForeground, #888);
-      cursor: pointer;
-      font-size: 12px;
-      padding: 0 2px;
-      display: none;
-    }
-    .var-reset.active { display: inline; }
-    .var-reset:hover { color: var(--vscode-errorForeground, #f48771); }
-
-    /* Color palette */
-    .color-row {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      padding: 3px 8px;
-    }
-    .swatch {
-      width: 12px;
-      height: 12px;
-      border-radius: 2px;
-      flex-shrink: 0;
-      border: 1px solid var(--vscode-panel-border, #555);
-    }
-    .color-value {
-      font-family: var(--vscode-editor-font-family, monospace);
-      font-size: 10px;
-      opacity: 0.7;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-
-    /* Error display */
-    .error {
-      color: var(--vscode-errorForeground, #f48771);
-      padding: 16px;
-      font-size: 12px;
-      white-space: pre-wrap;
-      word-break: break-word;
-      max-width: 500px;
-    }
-    .error-title {
-      font-weight: 600;
-      margin-bottom: 6px;
-    }
-    .empty-msg {
-      padding: 8px;
-      opacity: 0.5;
-      font-style: italic;
-      text-align: center;
-    }
-  </style>
-</head>
-<body>
-  <div class="toolbar">
-    <span class="status" id="status">Loading compiler...</span>
-    <span class="info" id="info"></span>
-    <button id="recompile-btn" title="Recompile (new random values)">&#x21bb;</button>
-    <button id="reset-btn" title="Reset zoom/pan and CSS overrides">Reset</button>
-    <button id="toggle-panel" title="Toggle layers/colors panel">Inspector</button>
-  </div>
-
-  <div class="main">
-    <div class="preview-container" id="preview-container">
-      <svg id="preview" xmlns="http://www.w3.org/2000/svg">
-        <rect id="preview-bg" width="100%" height="100%" fill="white"></rect>
-        <g id="preview-content"></g>
-      </svg>
-
-      <div class="scroll-hint" id="scroll-hint"><span></span></div>
-
-      <div class="navigator" id="navigator">
-        <svg id="navigator-svg" xmlns="http://www.w3.org/2000/svg">
-          <rect id="navigator-bg" width="100%" height="100%" fill="white"></rect>
-          <g id="navigator-paths"></g>
-        </svg>
-        <svg id="navigator-overlay" xmlns="http://www.w3.org/2000/svg">
-          <rect id="navigator-viewport"></rect>
-        </svg>
-      </div>
-
-      <pathogen-zoom-pill id="zoom-pill"></pathogen-zoom-pill>
-    </div>
-
-    <div class="side-panel" id="side-panel">
-      <div class="panel-section" id="layers-section">
-        <div class="panel-header">Layers <span class="badge" id="layers-badge">0</span></div>
-        <div id="layers-list"></div>
-      </div>
-      <div class="panel-section" id="cssvar-section">
-        <div class="panel-header">CSS Variables <span class="badge" id="cssvar-badge">0</span></div>
-        <div id="cssvar-list"></div>
-      </div>
-      <div class="panel-section" id="palette-section">
-        <div class="panel-header">Colors <span class="badge" id="palette-badge">0</span></div>
-        <div id="palette-list"></div>
-      </div>
-    </div>
-  </div>
-
-  <script nonce="${nonce}" src="${compilerUri}"></script>
-  <script nonce="${nonce}" src="${panZoomUri}"></script>
-  <script nonce="${nonce}">
-  (function() {
-    const vscode = acquireVsCodeApi();
-    const preview = document.getElementById('preview');
-    const previewContent = document.getElementById('preview-content');
-    const previewBg = document.getElementById('preview-bg');
-    const container = document.getElementById('preview-container');
-    const scrollHint = document.getElementById('scroll-hint');
-    const status = document.getElementById('status');
-    const info = document.getElementById('info');
-    const navigatorSvg = document.getElementById('navigator-svg');
-    const navigatorOverlay = document.getElementById('navigator-overlay');
-    const navigatorPaths = document.getElementById('navigator-paths');
-    const navigatorViewport = document.getElementById('navigator-viewport');
-    const zoomPill = document.getElementById('zoom-pill');
-    const sidePanel = document.getElementById('side-panel');
-
-    if (typeof PathogenLang === 'undefined') {
-      container.innerHTML = '<div class="error"><div class="error-title">Compiler not loaded</div></div>';
-      return;
-    }
-    if (typeof PathogenPanZoom === 'undefined') {
-      container.innerHTML = '<div class="error"><div class="error-title">Pan/zoom controller not loaded</div></div>';
-      return;
-    }
-
-    status.textContent = 'Ready';
-
-    // --- State ---
-    let canvasW = 200, canvasH = 200;
-    let zoomLevel = 1, panX = 0, panY = 0;
-    let isNavDragging = false, navDragStartX = 0, navDragStartY = 0, navDragPanX = 0, navDragPanY = 0;
-    let scrollHintTimer = null;
-    let lastResult = null;
-    let layerVisibility = {};
-    let cssVarOverrides = {};
-
-    // SVG icons for layer visibility
-    const eyeOpenSvg = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>';
-    const eyeClosedSvg = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>';
-
-    // --- Zoom/Pan (shared controller) ---
-    // The controller owns the viewBox/transform (CSS-transform during the
-    // gesture, bake into viewBox on idle) and emits onChange → local state +
-    // chrome. The webview SVG is in this document (not a nested iframe), so
-    // listeners attach to the preview container.
-    const pz = new PathogenPanZoom.PanZoomController({
-      svg: preview,
-      eventTarget: container,
-      mode: 'transform',
-      canvas: { originX: 0, originY: 0, width: canvasW, height: canvasH },
-      view: { zoom: zoomLevel, panX: panX, panY: panY },
-      onChange: (v) => { zoomLevel = v.zoom; panX = v.panX; panY = v.panY; refreshChrome(); },
-      // Plain scroll zooms — this is a dedicated preview panel, not a long
-      // scrollable page, so no Ctrl/Cmd gate (unlike blog embeds). Zoom
-      // range/step come from the bundle's shared DEFAULTS (10%–2000%).
-      options: { wheelDampening: 0.002, requireModifierForWheel: false },
-    });
-    function refreshChrome() {
-      zoomPill.zoom = zoomLevel;
-      updateNavigatorViewport();
-      container.classList.toggle('can-pan', zoomLevel >= 0.5);
-    }
-
-    // The pill's buttons/% input call the controller directly.
-    zoomPill.controller = pz;
-    zoomPill.fadeTarget = container;
-
-    // (No scroll hint: plain scroll zooms directly, so the "Ctrl + scroll"
-    // hint that blog embeds use isn't needed here.)
-
-    // Grab cursor while panning; navigator drag (driven on the document so it
-    // tracks outside the minimap); end any controller gesture released anywhere.
-    container.addEventListener('pointerdown', () => { if (zoomLevel >= 0.5) container.classList.add('panning'); });
-    document.addEventListener('mousemove', (e) => {
-      if (!isNavDragging) return;
-      const pt = navigatorSvg.createSVGPoint();
-      pt.x = e.clientX; pt.y = e.clientY;
-      const ctm = navigatorSvg.getScreenCTM();
-      if (!ctm) return;
-      const svgPt = pt.matrixTransform(ctm.inverse());
-      pz.drive({ panX: navDragPanX + (svgPt.x - navDragStartX), panY: navDragPanY + (svgPt.y - navDragStartY) });
-    });
-    document.addEventListener('pointerup', () => { pz.endGesture(); container.classList.remove('panning'); });
-    document.addEventListener('mouseup', () => { isNavDragging = false; });
-
-    // --- Navigator ---
-    function updateNavigatorViewport() {
-      const vw = canvasW / zoomLevel, vh = canvasH / zoomLevel;
-      navigatorViewport.setAttribute('x', panX);
-      navigatorViewport.setAttribute('y', panY);
-      navigatorViewport.setAttribute('width', vw);
-      navigatorViewport.setAttribute('height', vh);
-    }
-    function updateNavigatorContent() {
-      navigatorPaths.innerHTML = '';
-      for (const child of previewContent.children) {
-        navigatorPaths.appendChild(child.cloneNode(true));
-      }
-      const pad = canvasW * 0.05;
-      const navVB = (-pad) + ' ' + (-pad) + ' ' + (canvasW + pad * 2) + ' ' + (canvasH + pad * 2);
-      navigatorSvg.setAttribute('viewBox', navVB);
-      // Overlay shares the content viewBox so the viewport rect aligns.
-      if (navigatorOverlay) navigatorOverlay.setAttribute('viewBox', navVB);
-      navigatorViewport.setAttribute('fill', 'rgba(14, 99, 156, 0.15)');
-      navigatorViewport.setAttribute('stroke', 'var(--vscode-focusBorder, #0e639c)');
-      navigatorViewport.setAttribute('stroke-width', '1');
-      navigatorViewport.setAttribute('vector-effect', 'non-scaling-stroke');
-      updateNavigatorViewport();
-    }
-
-    navigatorSvg.addEventListener('mousedown', (e) => {
-      const pt = navigatorSvg.createSVGPoint();
-      pt.x = e.clientX; pt.y = e.clientY;
-      const ctm = navigatorSvg.getScreenCTM();
-      if (!ctm) return;
-      const svgPt = pt.matrixTransform(ctm.inverse());
-      const vw = canvasW / zoomLevel, vh = canvasH / zoomLevel;
-      // Check if click is inside viewport
-      if (svgPt.x >= panX && svgPt.x <= panX + vw && svgPt.y >= panY && svgPt.y <= panY + vh) {
-        isNavDragging = true;
-        navDragStartX = svgPt.x; navDragStartY = svgPt.y;
-        navDragPanX = panX; navDragPanY = panY;
-      } else {
-        pz.setView({ panX: svgPt.x - vw / 2, panY: svgPt.y - vh / 2 }, { emit: true });
-      }
-      e.preventDefault();
-    });
-
-    // --- Toolbar buttons ---
-    document.getElementById('toggle-panel').addEventListener('click', () => {
-      sidePanel.classList.toggle('visible');
-      document.getElementById('toggle-panel').classList.toggle('active', sidePanel.classList.contains('visible'));
-    });
-
-    document.getElementById('recompile-btn').addEventListener('click', () => {
-      if (lastSource) compileAndRender(lastSource);
-    });
-
-    document.getElementById('reset-btn').addEventListener('click', () => {
-      cssVarOverrides = {};
-      layerVisibility = {};
-      pz.zoomToFit();
-      if (lastSource) compileAndRender(lastSource);
-    });
-
-    // --- Compile and render ---
-    function compileAndRender(source) {
-      const start = performance.now();
-      try {
-        // Apply CSS variable overrides to source
-        let modifiedSource = source;
-        for (const [varName, value] of Object.entries(cssVarOverrides)) {
-          // Replace CSSVar('--name', fallback) with the override value
-          const pattern = new RegExp("CSSVar\\\\('" + varName.replace(/[-/\\\\^$*+?.()|[\\\\]{}]/g, '\\\\$&') + "'[^)]*\\\\)", 'g');
-          modifiedSource = modifiedSource.replace(pattern, "Color('" + value + "')");
-        }
-
-        const result = PathogenLang.compile(modifiedSource);
-        lastResult = result;
-
-        // Canvas dims come from the COMPILED viewBox (the define ViewBox(...)
-        // construct), not a // viewBox comment — modern sources use the
-        // construct, and reading a comment left the canvas at the 200x200
-        // default so all content rendered off-screen.
-        const cvb = (result && result.viewBox) || { originX: 0, originY: 0, width: 200, height: 200 };
-        const originX = cvb.originX || 0;
-        const originY = cvb.originY || 0;
-        canvasW = cvb.width || 200;
-        canvasH = cvb.height || 200;
-        const vb = originX + ' ' + originY + ' ' + canvasW + ' ' + canvasH;
-
-        // Build the shared render tree and split its children across the two
-        // DOM targets: <defs>/<style> go next to previewBg (z-order below
-        // everything but not rendered directly); layer elements go into
-        // previewContent. Replaces the previous generateSvg() + DOMParser +
-        // importNode chain — same DOM shape, one fewer round-trip.
-        const tree = PathogenLang.buildSvgTree(result, {
-          viewBox: vb,
-          width: String(canvasW),
-          height: String(canvasH),
-        });
-
-        // Clear and clean up previous injections
-        previewContent.innerHTML = '';
-        preview.querySelectorAll('.injected-defs, .injected-style').forEach(el => el.remove());
-
-        const SVG_NS = 'http://www.w3.org/2000/svg';
-
-        for (const child of tree.children) {
-          if (!child || typeof child !== 'object' || !('tag' in child)) continue;
-          if (child.tag === 'defs') {
-            const defsEl = document.createElementNS(SVG_NS, 'defs');
-            defsEl.classList.add('injected-defs');
-            PathogenLang.mountInto(defsEl, child.children);
-            preview.insertBefore(defsEl, previewBg);
-          } else if (child.tag === 'style') {
-            // The shared renderer emits <style> with a RawText CDATA child.
-            // For a webview <style>, we need the raw CSS text (no CDATA
-            // wrapper) assigned to textContent.
-            const styleEl = document.createElementNS(SVG_NS, 'style');
-            styleEl.classList.add('injected-style');
-            const rawChild = child.children.find(c => c && typeof c === 'object' && 'raw' in c);
-            if (rawChild) {
-              const cssText = rawChild.raw.replace(/^<!\\[CDATA\\[\\n/, '').replace(/\\n\\s*\\]\\]>$/, '');
-              styleEl.textContent = cssText;
-            }
-            preview.insertBefore(styleEl, previewBg);
-          } else if (child.tag === 'script') {
-            // Metadata script — skip in VS Code preview.
-            continue;
-          } else {
-            PathogenLang.mountInto(previewContent, child);
-          }
-        }
-
-        // Apply layer visibility
-        applyLayerVisibility();
-
-        // Canvas dims may have changed — re-apply the viewBox via the controller.
-        pz.setCanvas({ originX: originX, originY: originY, width: canvasW, height: canvasH });
-        previewBg.setAttribute('x', originX);
-        previewBg.setAttribute('y', originY);
-        previewBg.setAttribute('width', canvasW);
-        previewBg.setAttribute('height', canvasH);
-
-        updateNavigatorContent();
-        updateSidePanel(result, source);
-
-        const ms = (performance.now() - start).toFixed(0);
-        status.textContent = 'Compiled';
-        info.textContent = result.layers.length + ' layer' + (result.layers.length !== 1 ? 's' : '') + ' \\u00b7 ' + ms + 'ms';
-      } catch (e) {
-        status.textContent = 'Error';
-        info.textContent = '';
-        previewContent.innerHTML = '';
-        // Show error as foreign object in SVG
-        const errDiv = document.createElement('div');
-        errDiv.className = 'error';
-        errDiv.innerHTML = '<div class="error-title">Compilation Error</div>' + escapeHtml(e.message || String(e));
-        container.querySelector('.error')?.remove();
-        const existingErr = document.querySelector('.preview-container > .error');
-        if (existingErr) existingErr.remove();
-        // Place error after the SVG
-        const errEl = document.createElement('div');
-        errEl.className = 'error';
-        errEl.style.position = 'absolute';
-        errEl.style.top = '16px';
-        errEl.style.left = '16px';
-        errEl.style.right = '16px';
-        errEl.style.zIndex = '30';
-        errEl.innerHTML = '<div class="error-title">Compilation Error</div>' + escapeHtml(e.message || String(e));
-        container.appendChild(errEl);
-      }
-    }
-
-    // --- Layer visibility ---
-    function applyLayerVisibility() {
-      for (const [name, visible] of Object.entries(layerVisibility)) {
-        const el = previewContent.querySelector('#' + CSS.escape(name));
-        if (el) el.style.display = visible ? '' : 'none';
-      }
-    }
-
-    // --- Side panel ---
-    function updateSidePanel(result, source) {
-      // Layers
-      const layersList = document.getElementById('layers-list');
-      layersList.innerHTML = '';
-      let layerCount = 0;
-      function addLayerRow(layer, depth) {
-        layerCount++;
-        const name = layer.name || '(default)';
-        const row = document.createElement('div');
-        row.className = 'layer-row';
-        if (depth > 0) row.style.paddingLeft = (8 + depth * 12) + 'px';
-
-        const dot = document.createElement('span');
-        dot.className = 'color-dot';
-        const color = layer.styles?.stroke || layer.styles?.fill || '#ccc';
-        if (color !== 'none') dot.style.background = color;
-        row.appendChild(dot);
-
-        const nameEl = document.createElement('span');
-        nameEl.className = 'layer-name';
-        nameEl.textContent = name;
-        nameEl.title = name;
-        row.appendChild(nameEl);
-
-        const badge = document.createElement('span');
-        badge.className = 'type-badge';
-        badge.textContent = layer.type;
-        row.appendChild(badge);
-
-        const eye = document.createElement('button');
-        eye.className = 'eye-btn';
-        const isVisible = layerVisibility[name] !== false;
-        eye.innerHTML = isVisible ? eyeOpenSvg : eyeClosedSvg;
-        eye.classList.toggle('hidden', !isVisible);
-        eye.title = isVisible ? 'Hide layer' : 'Show layer';
-        eye.addEventListener('click', () => {
-          layerVisibility[name] = layerVisibility[name] === false ? true : false;
-          applyLayerVisibility();
-          updateNavigatorContent();
-          const nowVisible = layerVisibility[name] !== false;
-          eye.innerHTML = nowVisible ? eyeOpenSvg : eyeClosedSvg;
-          eye.classList.toggle('hidden', !nowVisible);
-          eye.title = nowVisible ? 'Hide layer' : 'Show layer';
-        });
-        row.appendChild(eye);
-
-        layersList.appendChild(row);
-
-        if (layer.type === 'group' && layer.children) {
-          for (const child of layer.children) addLayerRow(child, depth + 1);
-        }
-      }
-      for (const layer of result.layers) addLayerRow(layer, 0);
-      document.getElementById('layers-badge').textContent = layerCount;
-
-      // CSS Variables
-      const cssvarList = document.getElementById('cssvar-list');
-      cssvarList.innerHTML = '';
-      // Scan the ORIGINAL source for CSSVar() calls — not the compiled result,
-      // because overridden variables get replaced before compilation and would disappear
-      const vars = new Map();
-      const cssVarSourcePattern = /CSSVar\\(\\s*'(--[\\w-]+)'\\s*(?:,\\s*([^)]+))?\\s*\\)/g;
-      let srcMatch;
-      while ((srcMatch = cssVarSourcePattern.exec(source)) !== null) {
-        if (!vars.has(srcMatch[1])) {
-          // Clean up fallback: remove quotes, Color() wrapper, # prefix handling
-          let fallback = (srcMatch[2] || '').trim().replace(/^['"]|['"]$/g, '');
-          if (fallback.startsWith('Color(')) fallback = fallback.replace(/^Color\\(['"]?|['"]?\\)$/g, '');
-          vars.set(srcMatch[1], fallback);
-        }
-      }
-      // Also include @property declarations from compiled result
-      if (result.cssProperties) {
-        for (const prop of result.cssProperties) {
-          if (!vars.has(prop.name)) vars.set(prop.name, prop.initialValue || '');
-        }
-      }
-      document.getElementById('cssvar-badge').textContent = vars.size;
-
-      if (vars.size === 0) {
-        cssvarList.innerHTML = '<div class="empty-msg">No CSS variables</div>';
-      } else {
-        for (const [varName, fallback] of vars) {
-          const row = document.createElement('div');
-          row.className = 'var-row';
-
-          const nameEl = document.createElement('span');
-          nameEl.className = 'var-name';
-          nameEl.textContent = varName;
-          nameEl.title = 'Default: ' + (fallback || 'none');
-          row.appendChild(nameEl);
-
-          const colorInput = document.createElement('input');
-          colorInput.type = 'color';
-          colorInput.className = 'var-color';
-          const currentVal = cssVarOverrides[varName] || fallback;
-          colorInput.value = toHex(currentVal) || '#000000';
-          colorInput.addEventListener('input', () => {
-            cssVarOverrides[varName] = colorInput.value;
-            resetBtn.classList.add('active');
-            compileAndRender(lastSource);
-          });
-          row.appendChild(colorInput);
-
-          const resetBtn = document.createElement('button');
-          resetBtn.className = 'var-reset' + (cssVarOverrides[varName] ? ' active' : '');
-          resetBtn.textContent = '\\u00d7';
-          resetBtn.title = 'Reset to default';
-          resetBtn.addEventListener('click', () => {
-            delete cssVarOverrides[varName];
-            resetBtn.classList.remove('active');
-            compileAndRender(lastSource);
-          });
-          row.appendChild(resetBtn);
-
-          cssvarList.appendChild(row);
-        }
-      }
-
-      // Palette
-      const paletteList = document.getElementById('palette-list');
-      paletteList.innerHTML = '';
-      const allColors = new Set();
-      const colorProps = ['stroke', 'fill', 'color', 'stop-color'];
-      const skipValues = new Set(['none', 'inherit', 'transparent', 'currentColor']);
-      for (const layer of result.layers) {
-        for (const prop of colorProps) {
-          const val = layer.styles?.[prop];
-          if (val && !skipValues.has(val) && !val.startsWith('url(')) {
-            allColors.add(val);
-          }
-        }
-      }
-      document.getElementById('palette-badge').textContent = allColors.size;
-
-      if (allColors.size === 0) {
-        paletteList.innerHTML = '<div class="empty-msg">No colors</div>';
-      } else {
-        for (const color of allColors) {
-          const row = document.createElement('div');
-          row.className = 'color-row';
-
-          const swatch = document.createElement('span');
-          swatch.className = 'swatch';
-          swatch.style.background = color;
-          row.appendChild(swatch);
-
-          const val = document.createElement('span');
-          val.className = 'color-value';
-          val.textContent = color;
-          val.title = color;
-          row.appendChild(val);
-
-          paletteList.appendChild(row);
-        }
-      }
-    }
-
-    function toHex(color) {
-      if (!color) return null;
-      if (/^#[0-9a-fA-F]{6}$/.test(color)) return color;
-      if (/^#[0-9a-fA-F]{3}$/.test(color)) {
-        return '#' + color[1]+color[1] + color[2]+color[2] + color[3]+color[3];
-      }
-      // Try canvas conversion
-      try {
-        const ctx = document.createElement('canvas').getContext('2d');
-        ctx.fillStyle = color;
-        const result = ctx.fillStyle;
-        if (result.startsWith('#')) return result;
-      } catch {}
-      return null;
-    }
-
-    function escapeHtml(s) {
-      return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-    }
-
-    // --- Message handling ---
-    let lastSource = '';
-    window.addEventListener('message', (event) => {
-      const msg = event.data;
-      if (msg.type === 'update' && msg.source) {
-        lastSource = msg.source;
-        // Remove previous error overlay
-        container.querySelector('.error')?.remove();
-        compileAndRender(msg.source);
-      }
-    });
-
-    vscode.postMessage({ type: 'ready' });
-  })();
-  </script>
-</body>
-</html>`;
 }

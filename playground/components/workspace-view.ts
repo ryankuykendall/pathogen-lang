@@ -1285,9 +1285,18 @@ export class WorkspaceView extends HTMLElement {
       this.previewPane.setStale(true);
       const displayError = this.showError(e.message);
       this.consolePane.logs = [];
-      // A failed compile invalidates any weight-substitution warning — don't
-      // stack a stale warning banner on top of an unrelated error.
-      store.set('fontWarnings', []);
+      // A failed compile invalidates any older font warning — don't stack a
+      // stale banner on top of an unrelated error — but THIS compile's font
+      // notices stay (compiler-worker attaches them): a file path the
+      // playground skipped explains "no fonts were loaded".
+      const fontInfo = e as {
+        fontNotices?: string[];
+        fontSubstitutions?: Parameters<typeof formatFontSubstitutions>[0];
+      };
+      store.set('fontWarnings', [
+        ...formatFontSubstitutions(fontInfo.fontSubstitutions || []),
+        ...(fontInfo.fontNotices || []),
+      ]);
       store.set('layers', []);
       store.update({
         compilationStatus: 'error',

@@ -254,7 +254,7 @@ When you need text that renders identically without requiring fonts — or when 
 This is different from `PathBlock.fromGlyph()`, which returns an array of per-character PathBlocks. `.toPathBlock()` returns a single PathBlock containing all glyphs from the entire TextBlock, already laid out according to element positions, tspan offsets, and letter-spacing.
 
 **Requirements:**
-- Fonts must be loaded via [`@font` directive](#cli-cli-reference) or compile options
+- Fonts must be loaded via the [`@font` directive](#path-blocks-font-directive) or compile options
 - `font-family` must be set in the TextBlock's styles
 - Only available on TextBlockValue (not ProjectedTextValue)
 

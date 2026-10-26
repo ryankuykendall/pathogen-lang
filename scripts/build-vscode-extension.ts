@@ -19,6 +19,7 @@ import { execSync } from 'child_process';
 import * as fs from 'fs';
 import { builtinModules, createRequire } from 'module';
 import * as path from 'path';
+import { pathToFileURL } from 'url';
 
 const ROOT = path.resolve(import.meta.dirname, '..');
 const EXT_DIR = path.join(ROOT, 'packages', 'vscode-pathogen');
@@ -72,9 +73,10 @@ fs.cpSync(serverOut, path.join(BUNDLED_SERVER_DIR, 'out'), { recursive: true });
 //   2. the extension's runtime deps (vscode-languageclient), at the ranges
 //      packages/vscode-pathogen/package.json declares — extension.ts falls back
 //      to server/node_modules when the top-level require fails;
-//   3. the packages the CJS library bundle (dist/index.cjs) leaves external —
-//      derived by scanning the bundle for bare require() specifiers, at the
-//      ranges the root package.json declares.
+//   3. the packages the CJS library bundles (dist/index.cjs, and dist/node.cjs —
+//      the `pathogen-lang/node` font host the preview loads in the extension
+//      host) leave external — derived by scanning them for bare require() and
+//      import() specifiers, at the ranges the root package.json declares.
 //
 // One `npm install` resolves all of them (plus transitive deps such as
 // vscode-jsonrpc / semver / minimatch) into a single consistent tree. Earlier
@@ -92,9 +94,11 @@ const serverPkg = readJson(path.join(SERVER_DIR, 'package.json'));
 const extPkg = readJson(path.join(EXT_DIR, 'package.json'));
 const rootPkg = readJson(path.join(ROOT, 'package.json'));
 
-const cjsBundle = fs.readFileSync(path.join(ROOT, 'dist', 'index.cjs'), 'utf-8');
+const cjsBundles = ['index.cjs', 'node.cjs'].map((f) => fs.readFileSync(path.join(ROOT, 'dist', f), 'utf-8')).join('\n');
 const nodeBuiltins = new Set(builtinModules.flatMap((b) => [b, `node:${b}`]));
-const cjsExternals = [...new Set([...cjsBundle.matchAll(/require\(["']([^"']+)["']\)/g)].map((m) => m[1]))]
+const cjsExternals = [
+  ...new Set([...cjsBundles.matchAll(/(?:require|import)\(["']([^"']+)["']\)/g)].map((m) => m[1])),
+]
   .filter((spec) => !spec.startsWith('.') && !nodeBuiltins.has(spec))
   // "@scope/name/sub" → "@scope/name"; "name/sub" → "name"
   .map((spec) => (spec.startsWith('@') ? spec.split('/').slice(0, 2).join('/') : spec.split('/')[0]));
@@ -110,7 +114,7 @@ for (const name of cjsExternals) {
   const range = rootPkg.dependencies?.[name];
   if (!range) {
     throw new Error(
-      `dist/index.cjs requires "${name}" but it is not in the root package.json dependencies — ` +
+      `dist/index.cjs or dist/node.cjs requires "${name}" but it is not in the root package.json dependencies — ` +
         'add it there so the VS Code bundle can install it.',
     );
   }
@@ -141,17 +145,31 @@ console.log(
 );
 run('npm install --omit=dev --no-audit --no-fund --loglevel=error', BUNDLED_SERVER_DIR);
 
-// Now write pathogen-lang itself: the CJS entry the server requires
+// Now write pathogen-lang itself: the CJS entry the server requires, and the
+// `pathogen-lang/node` font host the preview loads in the extension host. The
+// exports map lists every subpath anything in the bundle requires — a subpath
+// it leaves out can't be required at all.
 const bundledModulesDir = path.join(BUNDLED_SERVER_DIR, 'node_modules');
 const bundledPathogenLang = path.join(bundledModulesDir, 'pathogen-lang');
 if (fs.existsSync(bundledPathogenLang)) {
   fs.rmSync(bundledPathogenLang, { recursive: true, force: true });
 }
 fs.mkdirSync(path.join(bundledPathogenLang, 'dist'), { recursive: true });
-fs.copyFileSync(path.join(ROOT, 'dist', 'index.cjs'), path.join(bundledPathogenLang, 'dist', 'index.cjs'));
+for (const file of ['index.cjs', 'node.cjs']) {
+  fs.copyFileSync(path.join(ROOT, 'dist', file), path.join(bundledPathogenLang, 'dist', file));
+}
 fs.writeFileSync(
   path.join(bundledPathogenLang, 'package.json'),
-  JSON.stringify({ name: 'pathogen-lang', version: rootPkg.version, main: './dist/index.cjs' }, null, 2),
+  JSON.stringify(
+    {
+      name: 'pathogen-lang',
+      version: rootPkg.version,
+      main: './dist/index.cjs',
+      exports: { '.': './dist/index.cjs', './node': './dist/node.cjs', './package.json': './package.json' },
+    },
+    null,
+    2,
+  ),
 );
 
 // Verify every runtime dependency actually resolves from the bundle before packaging.
@@ -159,6 +177,8 @@ const bundleRequire = createRequire(path.join(bundledModulesDir, '_resolve.js'))
 for (const name of [
   ...Object.keys(runtimeDeps),
   'pathogen-lang',
+  'pathogen-lang/node',
+  'woff2-encoder/decompress',
   'vscode-languageclient/node',
   'vscode-languageserver/node',
 ]) {
@@ -168,6 +188,24 @@ for (const name of [
     throw new Error(`Bundle is missing "${name}" — the .vsix would not activate. ${(err as Error).message}`);
   }
 }
+// The preview's font host must load and decode WOFF2 from the bundle, not just resolve.
+const fontHostEntry = bundleRequire('pathogen-lang/node') as {
+  createNodeFontHost?: (o: object) => { decodeWoff2?: (b: Uint8Array) => Promise<Uint8Array> };
+};
+if (typeof fontHostEntry.createNodeFontHost !== 'function') {
+  throw new Error('Bundle has pathogen-lang/node without createNodeFontHost — the preview could not load fonts.');
+}
+const woff2Encoder = (await import(pathToFileURL(bundleRequire.resolve('woff2-encoder')).href)) as {
+  compress: (b: Uint8Array) => Promise<Uint8Array>;
+};
+const sampleFont = new Uint8Array(fs.readFileSync(path.join(ROOT, 'tests', 'fixtures', 'fonts', 'Inter-Regular.ttf')));
+const decoded = await fontHostEntry
+  .createNodeFontHost({ root: ROOT, programDir: ROOT, offlineReason: 'build check', cacheDir: null, systemFontDirs: [] })
+  .decodeWoff2!(await woff2Encoder.compress(sampleFont));
+if (decoded[0] !== 0 || decoded[1] !== 1) {
+  throw new Error('Bundle could not decode WOFF2 through pathogen-lang/node — the preview would reject .woff2 fonts.');
+}
+console.log('  Checked: pathogen-lang/node loads from the bundle and decodes WOFF2');
 console.log(
   `  Bundled server + ${Object.keys(runtimeDeps).length} runtime deps to ${path.relative(ROOT, BUNDLED_SERVER_DIR)}`,
 );

@@ -14,6 +14,11 @@
   "activationEvents": [
     "onLanguage:pathogen"
   ],
+  "capabilities": {
+    "untrustedWorkspaces": {
+      "supported": false
+    }
+  },
   "main": "./out/extension.js",
   "contributes": {
     "languages": [

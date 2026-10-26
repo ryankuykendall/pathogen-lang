@@ -85,9 +85,18 @@ A malformed fragment, a blocked element, or a forbidden attribute throws a Patho
 
 When the playground or the static blog renders compiled SVG, it does so inside a sandboxed iframe with a strict Content-Security-Policy (`default-src 'none'; style-src 'unsafe-inline' data:; img-src data:; connect-src 'none'`). This is defense in depth: even if the compiler produced unsafe content (it won't), the iframe sandbox prevents the SVG from affecting the host page or making outbound requests.
 
-The VS Code preview surface uses the same CSP via the webview's `cspSource`.
+The VS Code preview renders compiled SVG inside the extension's webview, under its own Content-Security-Policy: everything is refused by default (`default-src 'none'`, including `connect-src 'none'`), scripts load only from the extension's own bundled files, and fonts and images come only as `data:` URIs or from the extension's own files. Fonts reach the preview from the extension itself, never by the page fetching them.
 
 If you embed `dist/index.global.js` in your own page and feed it user-supplied `.pathogen` source, you inherit the compiler contract automatically — the SVG produced is safe to embed inline. We still recommend you mount it inside your own iframe + CSP for layered defense.
+
+## Compile-side inputs
+
+Everything above is about what a program *outputs*. A program can also cause files to be *read* while it compiles — today, the fonts named by `@font`. These reads follow fixed rules:
+
+- **Only inside the project folder.** A file path can't leave the program's [project folder](#projects-the-project-folder): a path that tries (`../../.ssh/id_rsa`) is an error before anything is read, and so is a symbolic link inside the project that points outside it. A link leaves if it leads to a folder outside the project, or passes through one on its way back in; the folders above the project, which a link written as a full path goes through, don't count. Nothing outside the project is looked at, so the error messages never tell a program what exists there. The search for `pathogen.json` stops before your home folder, so a stray `pathogen.json` there can't widen the fence. A font *family name* is looked up in your font folders and the system font folders, but there the tool picks the file by the font naming convention — a program can't name an arbitrary file that way.
+- **Only fonts, and only for reading.** A file named by `@font` must be a font file. A program can't make the tools write or delete anything: they write only the outputs you ask for (`-o`, `--output-svg-file`, `--png`) and the font cache.
+- **One kind of download.** The CLI and the VS Code extension may download a font family from Google Fonts (`fonts.googleapis.com` and `fonts.gstatic.com`) when it isn't on your computer. Nothing else is fetched: a font file is taken only from `fonts.gstatic.com`, redirects aren't followed, and a download is abandoned past 64 MB, after 10 minutes, or when no data arrives for 30 seconds. `--offline` or `PATHOGEN_OFFLINE=1` turns this off. The VS Code extension stays off until you trust a folder (VS Code's Restricted Mode); a single file opened without a folder is trusted unless you've changed VS Code's `security.workspace.trust.emptyWindow` setting.
+- **The playground reads no files**, and fetches fonts from Google Fonts in your browser.
 
 ## Reporting a vulnerability
 

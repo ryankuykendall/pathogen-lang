@@ -102,6 +102,7 @@ const DOC_FILES: Record<string, string> = {
   'objects.md': 'objects',
   'debug.md': 'debug',
   'cli.md': 'cli',
+  'projects.md': 'projects',
   'examples.md': 'examples',
   'security.md': 'security',
   'publishing.md': 'publishing',

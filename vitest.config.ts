@@ -22,6 +22,14 @@ function jsTsFallback(): Plugin {
 
 export default defineConfig({
   plugins: [jsTsFallback()],
+  resolve: {
+    // The language server and extension import the library by package name;
+    // in tests that is the source, not a build that may be stale or missing.
+    alias: [
+      { find: /^pathogen-lang$/, replacement: resolve(import.meta.dirname, 'src/index.ts') },
+      { find: /^pathogen-lang\/node$/, replacement: resolve(import.meta.dirname, 'src/node/index.ts') },
+    ],
+  },
   test: {
     setupFiles: ['./tests/setup.ts'],
     include: ['tests/**/*.test.ts'],

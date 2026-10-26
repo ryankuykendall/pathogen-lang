@@ -36,6 +36,8 @@ import {
 } from 'vscode-languageserver/node';
 import { TextDocument } from 'vscode-languageserver-textdocument';
 
+import { DiagnosticFonts } from './fonts';
+
 import type {
   CompletionItem,
   Diagnostic,
@@ -54,9 +56,6 @@ const connection = createConnection(ProposedFeatures.all);
 // Document manager — full sync (sends entire document content on each change)
 const documents = new TextDocuments(TextDocument);
 
-// Workspace context — captured during initialization
-let workspaceRoot: string | null = null;
-
 // Whether the client understands `${1:x}`/`$0` snippet syntax in completions.
 // When false, snippet templates are stripped to plain text before sending.
 let clientSupportsSnippets = false;
@@ -64,17 +63,8 @@ let clientSupportsSnippets = false;
 connection.onInitialize((params: InitializeParams): InitializeResult => {
   clientSupportsSnippets = params.capabilities.textDocument?.completion?.completionItem?.snippetSupport === true;
 
-  // Capture workspace root for font path resolution and file-relative operations
-  if (params.rootUri) {
-    try {
-      workspaceRoot = new URL(params.rootUri).pathname;
-    } catch {
-      workspaceRoot = params.rootUri;
-    }
-  } else if (params.rootPath) {
-    workspaceRoot = params.rootPath;
-  }
-
+  // Paths in @font resolve per document, from its own URI (fonts.ts), never
+  // from a workspace root.
   return {
     capabilities: {
       textDocumentSync: TextDocumentSyncKind.Full,
@@ -497,25 +487,47 @@ documents.onDidChangeContent((change) => {
     uri,
     setTimeout(() => {
       validationTimers.delete(uri);
-      validateTextDocument(change.document);
+      void validateTextDocument(change.document);
     }, delay),
   );
 });
 
-// Clear diagnostics when a document is closed
+// Clear diagnostics when a document is closed — and a check still waiting to
+// run for it, which would otherwise publish diagnostics for a closed file.
 documents.onDidClose((event) => {
-  connection.sendDiagnostics({ uri: event.document.uri, diagnostics: [] });
+  const { uri } = event.document;
+  const pending = validationTimers.get(uri);
+  if (pending) clearTimeout(pending);
+  validationTimers.delete(uri);
+  diagnosticFonts.forget(uri);
+  connection.sendDiagnostics({ uri, diagnostics: [] });
+});
+
+// The fonts each document's @font directives name, loaded like the CLI does;
+// a background download re-checks the document when it lands.
+const diagnosticFonts = new DiagnosticFonts((uri) => {
+  const doc = documents.get(uri);
+  if (doc) void validateTextDocument(doc);
 });
 
 /**
  * Run the Pathogen compiler's diagnostic engine and publish results.
  */
-function validateTextDocument(textDocument: TextDocument): void {
+async function validateTextDocument(textDocument: TextDocument): Promise<void> {
   const source = textDocument.getText();
+  let fonts: Awaited<ReturnType<DiagnosticFonts['forDocument']>>;
+  try {
+    fonts = await diagnosticFonts.forDocument(textDocument.uri, source);
+  } catch (err) {
+    connection.console.error(`Pathogen: loading fonts for diagnostics failed: ${(err as Error).message}`);
+    fonts = undefined;
+  }
+  // A newer edit arrived while fonts loaded: its own validation will publish.
+  if (documents.get(textDocument.uri)?.version !== textDocument.version) return;
 
   // Wrap the LSP TextDocument in our language-services TextDocument
   const doc = new StringTextDocument(source);
-  const diagnostics = getDiagnostics(doc);
+  const diagnostics = getDiagnostics(doc, fonts ? { fonts } : {});
 
   // Convert language-services Diagnostic[] to LSP Diagnostic[]
   const lspDiagnostics: LSPDiagnostic[] = diagnostics.map(toLSPDiagnostic);

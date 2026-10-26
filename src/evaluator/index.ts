@@ -6236,7 +6236,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
           throw mError(
             'PathBlock.fromGlyph() requires font data, but no fonts were loaded. ' +
               'If you wrote an @font directive, font loading may have failed earlier — ' +
-              'look for a preceding font-loading error.',
+              'look for a preceding font-loading message.',
           );
         }
 

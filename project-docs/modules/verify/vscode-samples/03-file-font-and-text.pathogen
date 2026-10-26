@@ -1,0 +1,17 @@
+// Interactive VS Code check 3: a font file in the project (the repo root's
+// pathogen.json makes the repo the project folder, so "/fonts/…" is the repo's
+// fonts/ folder). Expected: outlined "Ab" on the left, live <text> "Ab" on the
+// right in the same Baumans face (not a fallback font).
+define ViewBox(0, 0, 400, 160);
+
+@font "/fonts/Baumans/Baumans-Regular.ttf";
+
+let style = #{ font-family: Baumans-Regular; font-size: 96; };
+let word = PathBlock.fromGlyph("Ab", style);
+M 20 130
+word[0].draw()
+M 90 130
+word[1].draw()
+
+define TextLayer('label') #{ font-family: Baumans-Regular; font-size: 40; fill: #555; }
+layer('label').apply { text(220, 130)`Ab` }

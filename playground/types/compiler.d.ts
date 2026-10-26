@@ -33,7 +33,18 @@ export interface LogGroup {
 /** Console row from the library's groupWarnLogEntries(): a plain entry or a family group. */
 export type LogRow = { kind: 'entry'; entry: LogEntry } | { kind: 'group'; first: LogEntry; count: number; instances: LogEntry[] };
 
-export type WarningCode = 'corner-op' | 'cut' | 'annotation-transfer' | 'font-glyph' | 'gradient';
+/** WARNING_CODES (src/evaluator/types.ts), in order; tests/playground-warning-codes.test.ts fails when they differ. */
+export type WarningCode =
+  | 'corner-op'
+  | 'cut'
+  | 'annotation-transfer'
+  | 'font-glyph'
+  | 'gradient'
+  | 'non-finite'
+  | 'layer-transform'
+  | 'marker-space'
+  | 'font-weight'
+  | 'font-load';
 
 export interface CompileWarning {
   code: WarningCode;

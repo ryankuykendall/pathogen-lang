@@ -28,6 +28,14 @@ Or with the explicit flag:
 pathogen-lang --src=input.pathogen
 ```
 
+### Compile a Folder
+
+```bash
+pathogen-lang my-gears
+```
+
+Compiles the program named by `main` in `my-gears/pathogen.json` — see [Projects and Files](#projects-pathogenjson).
+
 ### Compile Inline Code
 
 ```bash
@@ -43,6 +51,38 @@ echo 'let x = 50; circle(x, x, 25)' | pathogen-lang -
 ```bash
 cat myfile.pathogen | pathogen-lang -
 ```
+
+## Fonts and Files
+
+The CLI reads the files a program names — today, fonts in `@font` — from inside the program's [project folder](#projects-the-project-folder): the nearest folder with a `pathogen.json`, from the file's own folder upward, stopping before your home folder. If none has one, it's the file's own folder. Paths in `@font` start with `./`, `../` or `/`, and a leading `/` now means the project folder rather than your computer's root — see [What changed](#projects-projects-and-files).
+
+```bash
+pathogen-lang --root=. poster/main.pathogen   # use the current folder as the project folder
+```
+
+Code passed with `-e` or on standard input uses the current folder as its project folder, and its `./` paths start there too. With `--root` naming a folder the current folder isn't in, they start at that folder instead, and so does the search for a family's `fonts/` folder:
+
+```bash
+cat poster/main.pathogen | pathogen-lang --root=poster -   # ./fonts/… means poster/fonts/…, and families look in poster/fonts/
+```
+
+**Fonts named by family** (`@font "Raleway" 700;`) are looked up on your computer first — the folders in `PATHOGEN_FONT_DIRS`, then the nearest `fonts/` folder (in the program's folder or up to seven folders above it), then the system font folders — and otherwise downloaded once from Google Fonts. The CLI downloads the complete font file, so a family has all its characters, and keeps it in a cache folder for next time. When neither has the weight you asked for, the nearest weight is used, with a `font-weight` warning: Google Fonts' nearest weight, or the nearest one on your computer when Google Fonts doesn't have the family or can't be reached. [Font Loading by Environment](#path-blocks-font-loading-by-environment) has the details, including which file names are found and how weights are matched.
+
+```bash
+pathogen-lang --offline poster.pathogen          # never download
+PATHOGEN_OFFLINE=1 pathogen-lang poster.pathogen # the same, for a whole shell or CI job
+PATHOGEN_CACHE_DIR=./.font-cache pathogen-lang poster.pathogen
+```
+
+A font that can't be loaded stops the compile with an error at its `@font` line. With downloads off, a family that isn't on your computer or in the cache is a `font-load` warning instead, and only the calls that need it fail; add `--strict=font-load` to make it an error. If downloads fail on your network (a proxy, for example), unzip the family's Google Fonts download into the `fonts/` folder nearest your program (create one beside the program if there's none) — for example, to `fonts/Raleway/`. The CLI finds each weight there, `static/` folder included.
+
+| Option or variable | Effect |
+|--------------------|--------|
+| `--root=<folder>` | Use this folder as the project folder |
+| `--offline` | Never download fonts |
+| `PATHOGEN_OFFLINE=1` | Same as `--offline` |
+| `PATHOGEN_FONT_DIRS` | Extra font folders, separated by `:` (`;` on Windows), searched first |
+| `PATHOGEN_CACHE_DIR` | Where downloaded fonts are kept (default: your system's cache folder) |
 
 ## Output Options
 
@@ -202,7 +242,7 @@ pathogen-lang -v
 | Code | Meaning |
 |------|---------|
 | 0 | Success |
-| 1 | Error (parse error, failed assertion, file not found, unknown option, `--png` without puppeteer, a warning under `--strict`, etc.) |
+| 1 | Error (parse error, failed assertion, file not found, a font that can't be loaded — unless downloads are off, which makes it a warning — a path outside the project folder, unknown option, `--png` without puppeteer, a warning under `--strict`, etc.) |
 
 Warnings (see [Debug & Console](#debug-warnings)) are printed to stderr as `file:line:col: warning: message`; when the same warning repeats from one site with only its numbers changing, the first instance is followed by `  … N more like this`. Warnings do not change the exit code unless [`--strict`](#cli-warnings-and-strict-mode) is set, and `--json` lists every instance.
 

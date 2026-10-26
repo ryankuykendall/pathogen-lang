@@ -803,6 +803,8 @@ export const WARNING_CODES = [
   'non-finite', // NaN / Infinity reaching path data — SVG cannot represent it
   'layer-transform', // a subscription annotated across layers whose transforms differ
   'marker-space', // a shape appended to a Marker lies outside the marker's viewBox
+  'font-weight', // font loader: the requested weight wasn't available, the nearest was used
+  'font-load', // font loader: a family was skipped because downloads are off
 ] as const;
 
 export type WarningCode = (typeof WARNING_CODES)[number];

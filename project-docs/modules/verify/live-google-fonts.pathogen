@@ -1,0 +1,37 @@
+// Phase 0b live check — needs the network. The CLI downloads Google's
+// complete TTF for each family into its cache; a second run reads the cache.
+//
+//   PATHOGEN_CACHE_DIR=tmp/live-font-cache npx tsx src/cli.ts project-docs/modules/verify/live-google-fonts.pathogen --print-logs
+//
+// Lobster and Inter are not in the repo's fonts/ folder, so they must come
+// from Google. Baumans has only weight 400: asking for 700 uses 400, with a
+// font-weight warning.
+define ViewBox(0, 0, 400, 200);
+
+@font "Lobster";
+@font "Inter" 650;
+@font "Baumans" 700;
+
+let lobster = #{ font-family: Lobster; font-size: 96; };
+let inter = #{ font-family: Inter; font-weight: 650; font-size: 96; };
+let baumans = #{ font-family: Baumans; font-weight: 700; font-size: 96; };
+
+for (style in [lobster, inter, baumans]) {
+  let info = Font.info(style);
+  let total = 0;
+  for (category in info.categories) {
+    total = total + category.count;
+  }
+  log(info.fullName, info.weight, total);
+}
+
+let lobsterL = PathBlock.fromGlyph("L", lobster);
+let interG = PathBlock.fromGlyph("g", inter);
+let baumansB = PathBlock.fromGlyph("B", baumans);
+
+M 20 140
+lobsterL[0].draw()
+M 150 140
+interG[0].draw()
+M 280 140
+baumansB[0].draw()

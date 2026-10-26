@@ -7,7 +7,9 @@
 define ViewBox(0, 0, 240, 160);
 let {width, height} = viewbox;
 
-@font "/System/Library/Fonts/Supplemental/Georgia.ttf";
+// Georgia ships with macOS (/System/Library/Fonts/Supplemental). A leading /
+// in @font now means the project folder, so the family name finds it instead.
+@font "Georgia";
 let styles = #{
   font-family: Georgia;
   font-size: 120;

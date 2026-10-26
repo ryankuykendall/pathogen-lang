@@ -42,8 +42,9 @@ type FontFetchOutcome =
   | { ok: true; buffer: ArrayBuffer; weightUsed: number }
   | { ok: false; reason: string; code?: 'generic-family' };
 
-// CSS generic font families — not fetchable from Google Fonts
-const GENERIC_FONT_FAMILIES = new Set([
+// CSS generic font families — not fetchable from Google Fonts. Must equal
+// src/host/paths.ts GENERIC_FONT_FAMILIES (tests/host/google-fonts-parity.test.ts).
+export const GENERIC_FONT_FAMILIES = new Set([
   'serif', 'sans-serif', 'monospace', 'cursive', 'fantasy',
   'system-ui', 'ui-serif', 'ui-sans-serif', 'ui-monospace', 'ui-rounded',
   'emoji', 'math', 'fangsong',
@@ -631,12 +632,70 @@ export function extractTopLevelStringLets(source: string): Map<string, string> {
   return map;
 }
 
+/** Structural copy of `FontDirectivePlan` (src/host/load-fonts.ts), reached through the library global. */
+export interface FontDirectivePlanLike {
+  directives: { source: string; kind: 'file' | 'family'; weight?: number; line?: number; column?: number }[];
+  errors: { severity: 'error' | 'warning'; message: string; line?: number; column?: number }[];
+}
+
 interface PathogenLangGlobal {
   parse?: (source: string) => unknown;
   resolveFontDirectives?: (program: unknown) => {
     resolved: { family: string; weight?: number }[];
     errors: { message: string; identifier?: string }[];
   };
+  planFontDirectives?: (source: string) => FontDirectivePlanLike | null;
+}
+
+/**
+ * The shared first step of font loading — the CLI and VS Code run the same
+ * function — so the playground sorts each `@font` into a file, a family or a
+ * mistake exactly as they do, with the same messages. Null when the library
+ * global isn't loaded (or predates it) or the source doesn't parse mid-typing;
+ * callers then use the AST / regex scans below.
+ */
+export function planFontDirectivesViaLibrary(source: string): FontDirectivePlanLike | null {
+  try {
+    const lib =
+      typeof window !== 'undefined' ? ((window as { PathogenLang?: PathogenLangGlobal }).PathogenLang ?? null) : null;
+    return lib?.planFontDirectives ? lib.planFontDirectives(source) : null;
+  } catch {
+    return null;
+  }
+}
+
+const WEIGHT_NAMES: Record<string, number> = {
+  thin: 100,
+  extralight: 200,
+  light: 300,
+  regular: 400,
+  medium: 500,
+  semibold: 600,
+  bold: 700,
+  extrabold: 800,
+  black: 900,
+};
+
+/**
+ * The warning for a file path in `@font`, which the playground can't load yet
+ * (docs/projects.md § In each tool). A file named the Google Fonts way
+ * (`PlayfairDisplay-Bold.ttf`) whose family is in the curated list gets the
+ * exact directive to use instead.
+ */
+export function fileFontNotice(path: string): string {
+  const stem = path.replace(/^.*\//, '').replace(/\.(ttf|otf|woff2?)$/i, '');
+  const suffix = /[-_ ](Thin|ExtraLight|Light|Regular|Medium|SemiBold|Bold|ExtraBold|Black)(Italic)?$/i.exec(stem);
+  const family = (suffix ? stem.slice(0, suffix.index) : stem)
+    .replace(/[-_]+/g, ' ')
+    .replace(/([a-z])([A-Z])/g, '$1 $2')
+    .trim();
+  const weight = suffix ? WEIGHT_NAMES[suffix[1].toLowerCase()] : 400;
+  const lead = `@font "${path}": the playground can't load font files yet, so this font was skipped.`;
+  if (family && isKnownGoogleFont(family)) {
+    const directive = weight === 400 ? `@font "${family}";` : `@font "${family}" ${weight};`;
+    return `${lead} Use the Google Fonts family instead: ${directive}`;
+  }
+  return `${lead} Use a family from Google Fonts instead, such as @font "Inter";`;
 }
 
 /**
@@ -691,7 +750,10 @@ function resolveFontDirectivesViaAst(
  *   name is changing is the compile debounce; the caches (positive,
  *   in-flight dedup, negative TTL) kick in once the name stops changing.
  */
-export function extractFontReferences(source: string): { family: string; weight?: number }[] {
+export function extractFontReferences(
+  source: string,
+  plan: FontDirectivePlanLike | null = null,
+): { family: string; weight?: number }[] {
   const refs: Map<string, { family: string; weight?: number }> = new Map();
   const stringLets = extractTopLevelStringLets(source);
 
@@ -702,10 +764,15 @@ export function extractFontReferences(source: string): { family: string; weight?
     }
   };
 
-  // Directive scan — AST-based when the library is available (exact CLI
-  // parity), regex fallback otherwise.
-  const astResolved = resolveFontDirectivesViaAst(source);
-  if (astResolved) {
+  // Directive scan — the shared plan when the caller has one (exact CLI
+  // parity: files and source mistakes are never fetched), else AST-based when
+  // the library is available, else the regex fallback.
+  const astResolved = plan ? null : resolveFontDirectivesViaAst(source);
+  if (plan) {
+    for (const d of plan.directives) {
+      if (d.kind === 'family') addRef(d.source, d.weight);
+    }
+  } else if (astResolved) {
     for (const r of astResolved.resolved) {
       if (isFontFilePath(r.family)) continue;
       addRef(r.family, r.weight);
@@ -794,8 +861,23 @@ function isFontFilePath(value: string): boolean {
  */
 export function extractUnknownFontDirectiveFamilies(
   source: string,
+  plan: FontDirectivePlanLike | null = null,
 ): { family: string; weight?: number; kind?: 'unresolved-identifier' }[] {
   const seen: Map<string, { family: string; weight?: number; kind?: 'unresolved-identifier' }> = new Map();
+
+  // With the shared plan, an unresolvable identifier is one of the plan's
+  // positioned errors (reported by the caller), so only uncurated families
+  // are listed here.
+  if (plan) {
+    for (const d of plan.directives) {
+      if (d.kind !== 'family' || isKnownGoogleFont(d.source)) continue;
+      const key = `${d.source}:${d.weight ?? 0}`;
+      if (!seen.has(key)) {
+        seen.set(key, d.weight !== undefined ? { family: d.source, weight: d.weight } : { family: d.source });
+      }
+    }
+    return Array.from(seen.values());
+  }
 
   // AST-based path (exact CLI parity): resolved-but-unknown families report
   // the resolved name; an unresolvable identifier is an explicit-directive

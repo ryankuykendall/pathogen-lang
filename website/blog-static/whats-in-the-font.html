@@ -330,8 +330,12 @@ playground, where Google delivers a large font in pieces, <code>Font.info</code>
 and any category selection (such as <code>&quot;digit&quot;</code>) read the whole font:
 about 4 MB for Noto Sans SC. A script, block or code-point selection
 downloads only the pieces it touches.</li>
-<li><strong>The VS Code preview doesn&#39;t load fonts yet</strong>, so <code>Font</code> calls, like
-<code>fromGlyph</code>, work in the CLI and the playground but not there.</li>
+<li><strong>The VS Code preview didn&#39;t load fonts when this post went out</strong>, so
+<code>Font</code> calls, like <code>fromGlyph</code>, worked in the CLI and the playground but
+not there. <em>Update, October 26, 2026:</em> it does now, the same way the CLI
+does — see <a href="/docs#path-blocks-font-loading-by-environment">Font Loading by Environment</a>.
+And the 856 above isn&#39;t a different release of Raleway: browsers get
+the font from Google in slices, and the slices leave 80 characters out.</li>
 </ul>
 <h2>The font writes the string</h2>
 <p><code>fromGlyph</code> takes a string of characters and returns one glyph per

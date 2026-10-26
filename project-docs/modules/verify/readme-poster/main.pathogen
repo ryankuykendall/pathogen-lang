@@ -1,0 +1,8 @@
+// The program the README's "Loading fonts in Node" check compiles: a file
+// font and a family found in the repo's fonts/ folder (no download needed).
+@font "../../../../tests/fixtures/fonts/Inter-Regular.ttf";
+@font "Baumans";
+let interA = PathBlock.fromGlyph("A", #{ font-family: Inter-Regular; font-size: 48; });
+let baumansB = PathBlock.fromGlyph("B", #{ font-family: Baumans; font-size: 48; });
+interA[0].drawTo(10, 60);
+baumansB[0].drawTo(60, 60);

@@ -1,4 +1,8 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+
 import { describe, it, expect } from 'vitest';
+import { addFont, createFontRegistry } from '../../src/evaluator/font-provider';
 import { StringTextDocument } from '../../src/language-services/document';
 import { getDiagnostics } from '../../src/language-services/diagnostics';
 import { DiagnosticSeverity } from '../../src/language-services/types';
@@ -332,6 +336,56 @@ describe('getDiagnostics', () => {
       const diags = diagnose('let x = unknownVar;');
       expect(diags.length).toBeGreaterThanOrEqual(1);
       expect(diags.some((d) => /Undefined variable/i.test(d.message))).toBe(true);
+    });
+  });
+
+  describe('with the fonts a host loaded (the VS Code language server)', () => {
+    const interRegistry = () => {
+      const raw = readFileSync(join(__dirname, '../fixtures/fonts/Inter-Regular.ttf'));
+      const registry = createFontRegistry();
+      addFont(registry, 'Inter', 400, 'normal', raw.buffer.slice(raw.byteOffset, raw.byteOffset + raw.byteLength));
+      return registry;
+    };
+    const AFTER_A_GLYPH = [
+      '@font "Inter";',
+      'let s = #{ font-family: Inter; font-size: 48; };',
+      'let g = PathBlock.fromGlyph("A", s);',
+      'M calc(0/0) 10',
+    ].join('\n');
+
+    it('problems after a font call appear once the fonts are supplied', () => {
+      // Without fonts the evaluation stops at fromGlyph and reports nothing.
+      expect(diagnose(AFTER_A_GLYPH)).toEqual([]);
+      const diags = getDiagnostics(new StringTextDocument(AFTER_A_GLYPH), {
+        fonts: { registry: interRegistry(), messages: [] },
+      });
+      expect(diags.map((d) => [d.severity, d.range.start.line, d.source])).toEqual([
+        [DiagnosticSeverity.Warning, 3, 'pathogen-evaluator'],
+      ]);
+      expect(diags[0].message).toMatch(/^a path argument is NaN/);
+    });
+
+    it('the host’s font-loading messages appear at their @font lines', () => {
+      const source = 'M 0 0\n@font "Zzyzx Nonesuch";\n@font "./missing.ttf";';
+      const diags = getDiagnostics(new StringTextDocument(source), {
+        fonts: {
+          messages: [
+            { severity: 'warning', message: '@font "Zzyzx Nonesuch": not on this computer', line: 2, column: 1 },
+            { severity: 'error', message: '@font file "./missing.ttf" was not found', line: 3, column: 1 },
+          ],
+        },
+      });
+      expect(diags.map((d) => [d.severity, d.range.start.line, d.range.start.character, d.source, d.message])).toEqual([
+        [DiagnosticSeverity.Warning, 1, 0, 'pathogen-fonts', '@font "Zzyzx Nonesuch": not on this computer'],
+        [DiagnosticSeverity.Error, 2, 0, 'pathogen-fonts', '@font file "./missing.ttf" was not found'],
+      ]);
+    });
+
+    it('when the host loaded no fonts, a font call’s error is reported, as the CLI does', () => {
+      const source = '@font "Zzyzx Nonesuch";\nlet s = #{ font-family: "Zzyzx Nonesuch"; font-size: 48; };\nlet g = PathBlock.fromGlyph("A", s);';
+      const diags = getDiagnostics(new StringTextDocument(source), { fonts: { messages: [] } });
+      expect(diags.map((d) => [d.severity, d.range.start.line])).toEqual([[DiagnosticSeverity.Error, 2]]);
+      expect(diags[0].message).toMatch(/no fonts were loaded.*look for a preceding font-loading message\.$/);
     });
   });
 });

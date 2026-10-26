@@ -9,7 +9,9 @@ interface FontEntry {
 
 // Curated list of ~100 popular Google Fonts sorted by popularity
 // Each entry: { family, category, variants? }
-const CURATED_FONTS: FontEntry[] = [
+// src/host/google-fonts.ts carries the same list for the CLI and VS Code;
+// tests/host/google-fonts-parity.test.ts fails if the two differ.
+export const CURATED_FONTS: FontEntry[] = [
   { family: 'Roboto', category: 'sans-serif', variants: [100, 300, 400, 500, 700, 900] },
   { family: 'Open Sans', category: 'sans-serif', variants: [300, 400, 500, 600, 700, 800] },
   { family: 'Lato', category: 'sans-serif', variants: [100, 300, 400, 700, 900] },

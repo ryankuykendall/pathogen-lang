@@ -1,0 +1,100 @@
+{
+  "at": "2026-10-25T20:30:11.204Z",
+  "results": [
+    {
+      "name": "A1 a project font file loads in the extension host, byte for byte",
+      "ok": true,
+      "detail": "{\"errors\":[],\"fonts\":[[\"Baumans-Regular\",400,\"ttf\"]]}"
+    },
+    {
+      "name": "A2 a path that leaves the project folder is an error naming the folder",
+      "ok": true,
+      "detail": "Line 1, col 1: @font path \"../../fonts/Baumans/Baumans-Regular.ttf\" leaves the project folder (/Users/ryan/claude-code-projects/svg-path-extended/tmp/vscode-fonts-vVyz8u). Move the file into the project folder, or move the project's pathogen.json (or add one) to a folder that contains both the program and the file, other than your home folder itself."
+    },
+    {
+      "name": "A3 a Google family downloads as one complete TTF",
+      "ok": true,
+      "detail": "{\"errors\":[],\"notices\":[],\"bytes\":392208}"
+    },
+    {
+      "name": "A4 with downloads off, the cached copy is used (the CLI, extension and server share the cache)",
+      "ok": true,
+      "detail": "{\"fontIds\":[\"f1tu7qok\"],\"notices\":[],\"errors\":[]}"
+    },
+    {
+      "name": "A5 a family that is not cached, with downloads off, is a warning naming the reason",
+      "ok": true,
+      "detail": "Line 1, col 1: @font \"Zzyzx Nonesuch\": not on this computer, and downloads are off (VS Code Restricted Mode). Calls that need this font will fail."
+    },
+    {
+      "name": "B1 the page loads under its CSP and says ready",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "B2 an update naming a missing font asks for exactly that font",
+      "ok": true,
+      "detail": "[\"fxw8y5m\"]"
+    },
+    {
+      "name": "B3 fromGlyph renders in the preview with the same geometry as the CLI (same font file)",
+      "ok": true,
+      "detail": "1 preview paths vs 1 CLI layers; byte-identical: true"
+    },
+    {
+      "name": "B4 live <text> gets the loaded face as an inlined @font-face",
+      "ok": true,
+      "detail": "65537 chars of @font-face"
+    },
+    {
+      "name": "B5 the <text> element asks for that face",
+      "ok": true,
+      "detail": "Baumans-Regular"
+    },
+    {
+      "name": "B6 a downloaded Google font renders with the same geometry as the CLI",
+      "ok": true,
+      "detail": "byte-identical: true"
+    },
+    {
+      "name": "B7 a curated family used only for <text> is requested for display",
+      "ok": true,
+      "detail": "[[{\"family\":\"Raleway\",\"weight\":700}]]"
+    },
+    {
+      "name": "B8 a font error stops the compile and is shown; warnings fill the notices bar",
+      "ok": true,
+      "detail": "{\"error\":\"Compilation ErrorLine 2, col 1: @font file \\\"./x.ttf\\\" was not found\",\"notices\":\"Line 1, col 1: a notice\"}"
+    },
+    {
+      "name": "B9 an out-of-order older update is ignored",
+      "ok": true,
+      "detail": "Error"
+    },
+    {
+      "name": "B11 a reopened file still updates the preview",
+      "ok": true,
+      "detail": "[\"M 9 9 L 20 20\"]"
+    },
+    {
+      "name": "B12 fonts that never arrive end in a message",
+      "ok": true,
+      "detail": "Compilation ErrorSome fonts this program loads did not reach the preview. Close the preview and open it again."
+    },
+    {
+      "name": "B10 no Content-Security-Policy violations and no page errors",
+      "ok": true,
+      "detail": "{\"csp\":[],\"pageErrors\":[]}"
+    },
+    {
+      "name": "C1 the language server loads the font, so a problem after a font call reaches the Problems panel",
+      "ok": true,
+      "detail": "[[2,3,\"pathogen-evaluator\",\"a path argument is NaN — SVG cannot repr\"]]"
+    },
+    {
+      "name": "C2 a missing font file is an error at its @font line",
+      "ok": true,
+      "detail": "[[1,1,\"pathogen-fonts\",\"@font file \\\"./fonts/Missing.ttf\\\" was not found (looked for /\"]]"
+    }
+  ]
+}

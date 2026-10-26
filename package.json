@@ -18,6 +18,11 @@
       "import": "./dist/pan-zoom.js",
       "require": "./dist/pan-zoom.cjs",
       "browser": "./dist/pan-zoom.global.js"
+    },
+    "./node": {
+      "types": "./dist/node.d.ts",
+      "import": "./dist/node.js",
+      "require": "./dist/node.cjs"
     }
   },
   "bin": {

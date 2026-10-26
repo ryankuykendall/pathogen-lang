@@ -1,23 +1,32 @@
-import { existsSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { createServer } from 'node:http';
 import { dirname, extname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import {
-  addFont,
+  buildFontRegistry,
   compile,
-  createFontRegistry,
   ensureOpentype,
   generateSvg,
-  parse,
-  resolveFontDirectives,
+  planFontDirectives,
+  PROJECT_FILE_NAME,
+  resolveFonts,
   toJsonDocument,
   WARNING_CODES,
 } from '.';
 import { groupWarnings } from './evaluator/warning-groups';
-import type { SvgGeneratorOptions } from './svg-generator';
+import {
+  createNodeFontHost,
+  defaultCacheDir,
+  findProjectRoot,
+  fontDirsFromEnv,
+  loadProjectFileSync,
+  offlineReason,
+  projectEntry,
+} from './node';
 
 import type { CompileOptions, CompileResult, CompileWarning, FontRegistry, LogEntry, WarningCode } from '.';
+import type { SvgGeneratorOptions } from './svg-generator';
 
 interface CliOptions {
   svgOutput?: string;
@@ -37,6 +46,10 @@ interface CliOptions {
   pngOutput?: string;
   /** --strict (every warning is an error) or --strict=<codes>. */
   strict?: true | WarningCode[];
+  /** --offline: never download fonts. */
+  offline?: boolean;
+  /** --root=<folder>: the project folder, overriding the pathogen.json search. */
+  root?: string;
 }
 
 function printUsage() {
@@ -45,6 +58,7 @@ pathogen-lang - Extended SVG path syntax compiler
 
 Usage:
   pathogen-lang <file>       Compile a file
+  pathogen-lang <folder>     Compile the "main" named in <folder>/pathogen.json
   pathogen-lang -            Read from stdin
   pathogen-lang -e <code>    Compile inline code
   pathogen-lang --src=<file> Compile a file (explicit flag)
@@ -86,6 +100,11 @@ Options:
                                  powering the blog mini-workspace inspector
                                  (Layers / Palette / CSS Vars). Off by default;
                                  npm run compile:samples / compile:bbwp pass this.
+  --root=<folder>                The project folder that @font paths may reach
+                                 (default: the nearest folder with a
+                                 pathogen.json, else the file's own folder)
+  --offline                      Never download fonts from Google Fonts
+                                 (PATHOGEN_OFFLINE=1 does the same)
 
 Examples:
   pathogen-lang input.svgx
@@ -344,11 +363,66 @@ ${elements}${metadataSection}
 </svg>`;
 }
 
-function parseArgs(args: string[]): { source: string; options: CliOptions; outputFile?: string; sourceFile?: string } {
+/** Print `Error: <message>` and exit 1. */
+function fail(message: string): never {
+  console.error(`Error: ${message}`);
+  process.exit(1);
+}
+
+/** Read a text file the CLI needs, or stop with a message naming it (never a stack trace). */
+function readText(file: string, label: string): string {
+  try {
+    if (statSync(file).isDirectory()) fail(`${label} is a folder, not a file.`);
+    return readFileSync(file, 'utf-8');
+  } catch (err) {
+    fail(`${label} could not be read: ${(err as Error).message}`);
+  }
+}
+
+/**
+ * Read the program named on the command line. A folder means "the main in
+ * its pathogen.json" (docs/projects.md); the folder is then the project folder.
+ */
+function readInput(arg: string): { source: string; sourceFile: string; projectRoot?: string } {
+  let isFolder = false;
+  try {
+    isFolder = statSync(arg).isDirectory();
+  } catch {
+    // Not there at all: the read below reports it.
+  }
+  if (!isFolder) {
+    try {
+      return { source: readFileSync(arg, 'utf-8'), sourceFile: arg };
+    } catch {
+      fail(`Could not read file '${arg}'`);
+    }
+  }
+  const folder = arg.replace(/[\\/]+$/, '') || arg;
+  const projectFile = join(folder, PROJECT_FILE_NAME);
+  if (!existsSync(projectFile)) {
+    fail(`${folder} is a folder with no pathogen.json. Add one with "main", or compile a file directly.`);
+  }
+  const parsed = loadProjectFileSync(resolve(projectFile));
+  if (!parsed.ok) fail(parsed.message);
+  const mainPath = parsed.project.main;
+  if (!mainPath) fail(`${projectFile} has no "main". Add "main": "your-program.pathogen", or compile a file directly.`);
+  const mainFile = join(folder, ...mainPath.split('/').filter(Boolean));
+  if (!existsSync(mainFile)) fail(`${projectFile} names "main": "${mainPath}", which doesn't exist.`);
+  return { source: readText(mainFile, mainFile), sourceFile: mainFile, projectRoot: resolve(folder) };
+}
+
+function parseArgs(args: string[]): {
+  source: string;
+  options: CliOptions;
+  outputFile?: string;
+  sourceFile?: string;
+  projectRoot?: string;
+} {
   const options: CliOptions = {};
   let source: string | null = null;
   let outputFile: string | undefined;
   let sourceFile: string | undefined;
+  let projectRoot: string | undefined;
   let i = 0;
 
   while (i < args.length) {
@@ -510,6 +584,27 @@ function parseArgs(args: string[]): { source: string; options: CliOptions; outpu
       continue;
     }
 
+    if (arg === '--offline') {
+      options.offline = true;
+      i++;
+      continue;
+    }
+
+    if (arg.startsWith('--root=')) {
+      const root = arg.slice('--root='.length);
+      if (!root) fail('--root= needs a folder, e.g. --root=.');
+      let isFolder = false;
+      try {
+        isFolder = statSync(root).isDirectory();
+      } catch {
+        // reported below
+      }
+      if (!isFolder) fail(`--root=${root} is not a folder.`);
+      options.root = root;
+      i++;
+      continue;
+    }
+
     if (arg.startsWith('--to-fixed=')) {
       const val = arg.split('=')[1];
       const n = parseInt(val, 10);
@@ -522,17 +617,14 @@ function parseArgs(args: string[]): { source: string; options: CliOptions; outpu
       continue;
     }
 
-    // If not a flag, treat as input file or stdin
+    // If not a flag, treat as input file, folder, or stdin
     if (arg === '-') {
       source = readFileSync(0, 'utf-8');
     } else if (!arg.startsWith('-')) {
-      try {
-        source = readFileSync(arg, 'utf-8');
-        sourceFile = arg;
-      } catch (err) {
-        console.error(`Error: Could not read file '${arg}'`);
-        process.exit(1);
-      }
+      const input = readInput(arg);
+      source = input.source;
+      sourceFile = input.sourceFile;
+      projectRoot = input.projectRoot;
     } else {
       // A dash-prefixed argument no branch above recognized. Failing here
       // (rather than ignoring it) keeps a mistyped or retired flag such as
@@ -548,7 +640,7 @@ function parseArgs(args: string[]): { source: string; options: CliOptions; outpu
     process.exit(1);
   }
 
-  return { source, options, outputFile, sourceFile };
+  return { source, options, outputFile, sourceFile, projectRoot };
 }
 
 const MIME_TYPES: Record<string, string> = {
@@ -722,185 +814,90 @@ async function renderGpuSvg(result: CompileResult, options: CliOptions): Promise
 }
 
 /**
- * Scan parsed AST for @font directives and load local font files.
- * Returns a FontRegistry if any fonts were loaded, undefined otherwise.
+ * Load the fonts a program's @font directives name, through the shared loader
+ * (src/host/load-fonts.ts) and the Node host (src/node) — the same code the
+ * VS Code extension and language server use. Errors stop the CLI (exit 1) in
+ * the `file:line:col: error:` form warnings use; warnings are returned to be
+ * listed (and counted by --json and --strict) with the compile's own.
+ *
+ * A program without `@font` skips all of it, as in the editors: it reads no
+ * files, so a pathogen.json it doesn't need can't stop it.
  */
-async function loadFontsFromDirectives(source: string, sourceFile?: string): Promise<FontRegistry | undefined> {
-  let ast;
-  try {
-    ast = parse(source);
-  } catch {
-    return undefined; // Parse errors will be caught later by compile()
-  }
+async function loadFontsForCli(
+  source: string,
+  sourceFile: string | undefined,
+  options: CliOptions,
+  projectRoot: string | undefined,
+): Promise<{ registry?: FontRegistry; warnings: CompileWarning[] }> {
+  if (!source.includes('@font')) return { warnings: [] };
+  const where = sourceFile ?? '<inline>';
+  const programDir = sourceFile ? dirname(resolve(sourceFile)) : process.cwd();
 
-  const { resolved, errors } = resolveFontDirectives(ast);
-  if (errors.length > 0) {
-    // An unresolved @font identifier is a program error, unlike a merely
-    // missing font file (which stays a warning below).
-    for (const err of errors) {
-      const pos = err.loc ? ` at line ${err.loc.line}` : '';
-      console.error(`Error${pos}: ${err.message}`);
+  let root: string;
+  if (options.root) root = resolve(options.root);
+  else if (projectRoot) root = projectRoot;
+  else if (sourceFile) {
+    const found = findProjectRoot(programDir);
+    root = found.root;
+    if (found.projectFile) {
+      const parsed = loadProjectFileSync(found.projectFile);
+      if (!parsed.ok) fail(parsed.message);
     }
-    process.exit(1);
+  } else root = process.cwd();
+
+  // The program's own project path. Code from -e or stdin sits in the
+  // current folder, so its ./ paths start there (docs/projects.md) — or at
+  // the project folder, when --root names one the current folder isn't in.
+  const programFile = sourceFile ? resolve(sourceFile) : join(process.cwd(), '<inline>');
+  // Spelled as on disk, so `--root=Poster` for `poster/` is the same folder.
+  const inProject = projectEntry(root, programFile);
+  const outside = inProject === null;
+  let entry = inProject ?? '/<outside>';
+  // Where installed-font search looks for a fonts/ folder first.
+  let fontSearchDir = programDir;
+  if (outside && !sourceFile) {
+    entry = '/<inline>';
+    fontSearchDir = root;
+  } else if (outside && planFontDirectives(source)?.directives.some((d) => d.kind === 'file')) {
+    // A file outside the project folder still compiles; only @font paths
+    // would have nowhere to start from.
+    fail(`${sourceFile} is outside the project folder ${root} given by --root, so its @font paths can't be followed.`);
   }
 
-  if (resolved.length === 0) return undefined;
+  const host = createNodeFontHost({
+    root,
+    programDir: fontSearchDir,
+    offlineReason: offlineReason(!!options.offline),
+    cacheDir: defaultCacheDir(),
+    fontDirs: fontDirsFromEnv(process.env.PATHOGEN_FONT_DIRS),
+  });
+  const { fonts, messages } = await resolveFonts(source, { host, entry });
 
-  // Ensure opentype.js is loaded before parsing font files
-  await ensureOpentype();
-
-  const registry = createFontRegistry();
-  const baseDir = sourceFile ? dirname(resolve(sourceFile)) : process.cwd();
-
-  for (const directive of resolved) {
-    const fontSource = directive.family;
-    const weight = directive.weight ?? 400;
-
-    // Check if it's a file path (starts with ./ or ../ or / or contains file extension)
-    const isFilePath = /^[./]|^[a-zA-Z]:\\|\.(ttf|otf|woff|woff2)$/i.test(fontSource);
-
-    if (isFilePath) {
-      const fontPath = resolve(baseDir, fontSource);
-      if (!existsSync(fontPath)) {
-        console.warn(`[pathogen-lang] Font file not found: ${fontPath}`);
-        continue;
-      }
-      try {
-        const buffer = readFileSync(fontPath);
-        const arrayBuffer = buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength);
-        // Derive family name from filename if not obvious
-        const family = fontSource.replace(/^.*[\\/]/, '').replace(/\.(ttf|otf|woff|woff2)$/i, '');
-        addFont(registry, family, weight, 'normal', arrayBuffer);
-      } catch (err) {
-        console.warn(`[pathogen-lang] Failed to load font: ${fontPath} — ${(err as Error).message}`);
-      }
+  const warnings: CompileWarning[] = [];
+  let failed = false;
+  for (const m of messages) {
+    const pos = m.line != null ? `:${m.line}${m.column != null ? `:${m.column}` : ''}` : '';
+    const strict =
+      m.severity === 'warning' && m.code !== undefined && (options.strict === true || options.strict?.includes(m.code));
+    if (m.severity === 'error' || strict) {
+      process.stderr.write(`${where}${pos}: error: ${m.message}${strict ? ` (strict: ${m.code})` : ''}\n`);
+      failed = true;
+    } else if (m.code) {
+      warnings.push({
+        code: m.code,
+        message: m.message,
+        ...(m.line != null ? { line: m.line } : {}),
+        ...(m.column != null ? { column: m.column } : {}),
+      });
     } else {
-      // Named font (e.g., "Inter" or "Playfair Display" 700) — search project
-      // font directories (PATHOGEN_FONT_DIRS, then a fonts/ dir found by
-      // walking up from the source file), then system font directories.
-      // Filenames follow the Google Fonts convention: FamilyName-Weight.ttf.
-      const searchDirs = getNamedFontSearchDirs(baseDir);
-      const filenames = namedFontFilenames(fontSource, weight);
-      let found = false;
-      outer: for (const { dir, deep } of searchDirs) {
-        const dirs = deep ? [dir, ...listSubdirs(dir)] : [dir];
-        for (const d of dirs) {
-          for (const name of filenames) {
-            const candidate = join(d, name);
-            if (!existsSync(candidate)) continue;
-            try {
-              const buffer = readFileSync(candidate);
-              const arrayBuffer = buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength);
-              addFont(registry, fontSource, weight, 'normal', arrayBuffer);
-              found = true;
-              break outer;
-            } catch {
-              // Try next candidate
-            }
-          }
-        }
-      }
-      if (!found) {
-        console.warn(`[pathogen-lang] Font '${fontSource}' not found locally. CLI Google Fonts download coming in a future release.`);
-      }
+      // A warning without a code can't join --json or --strict, but is never dropped.
+      process.stderr.write(`${where}${pos}: warning: ${m.message}\n`);
     }
   }
-
-  return registry.fonts.size > 0 ? registry : undefined;
-}
-
-/** Google Fonts weight-name suffixes for named-font filename matching. */
-const WEIGHT_SUFFIXES: Record<number, string[]> = {
-  100: ['Thin'],
-  200: ['ExtraLight'],
-  300: ['Light'],
-  400: ['Regular'],
-  500: ['Medium'],
-  600: ['SemiBold'],
-  700: ['Bold'],
-  800: ['ExtraBold'],
-  900: ['Black'],
-};
-
-/** Candidate filenames for a family + weight, most specific first. The plain
- *  (suffix-less) name is kept as a fallback for any weight, preserving the
- *  historical behavior of loading `Family.ttf` under whatever weight was
- *  requested. */
-function namedFontFilenames(family: string, weight: number): string[] {
-  const bases = [family.replace(/\s+/g, ''), family, family.replace(/\s+/g, '-')];
-  const suffixes = [...(WEIGHT_SUFFIXES[weight] ?? []), ''];
-  const names: string[] = [];
-  for (const suffix of suffixes) {
-    for (const base of bases) {
-      for (const ext of ['ttf', 'otf']) {
-        names.push(suffix ? `${base}-${suffix}.${ext}` : `${base}.${ext}`);
-      }
-    }
-  }
-  return names;
-}
-
-/** Search-dir list for named fonts. Project dirs (env + walked-up fonts/)
- *  are searched one subdirectory deep — Google Fonts downloads unpack as
- *  fonts/Family_Name/File.ttf. System dirs stay shallow. */
-function getNamedFontSearchDirs(baseDir: string): { dir: string; deep: boolean }[] {
-  const dirs: { dir: string; deep: boolean }[] = [];
-  const envDirs = process.env.PATHOGEN_FONT_DIRS;
-  if (envDirs) {
-    for (const d of envDirs.split(':')) {
-      if (d) dirs.push({ dir: d, deep: true });
-    }
-  }
-  let cur = baseDir;
-  for (let i = 0; i < 8; i++) {
-    const fontsDir = join(cur, 'fonts');
-    if (existsSync(fontsDir)) {
-      dirs.push({ dir: fontsDir, deep: true });
-      break;
-    }
-    const parent = dirname(cur);
-    if (parent === cur) break;
-    cur = parent;
-  }
-  for (const d of getSystemFontDirs()) dirs.push({ dir: d, deep: false });
-  return dirs;
-}
-
-function listSubdirs(dir: string): string[] {
-  try {
-    return readdirSync(dir, { withFileTypes: true })
-      .filter((e) => e.isDirectory())
-      .map((e) => join(dir, e.name));
-  } catch {
-    return [];
-  }
-}
-
-/**
- * Get platform-specific system font directories.
- */
-function getSystemFontDirs(): string[] {
-  switch (process.platform) {
-    case 'darwin':
-      return [
-        '/Library/Fonts',
-        '/System/Library/Fonts',
-        join(process.env.HOME || '', 'Library/Fonts'),
-      ];
-    case 'linux':
-      return [
-        '/usr/share/fonts',
-        '/usr/local/share/fonts',
-        join(process.env.HOME || '', '.fonts'),
-        join(process.env.HOME || '', '.local/share/fonts'),
-      ];
-    case 'win32':
-      return [
-        join(process.env.WINDIR || 'C:\\Windows', 'Fonts'),
-      ];
-    default:
-      return [];
-  }
+  if (failed) process.exit(1);
+  if (fonts.length === 0) return { warnings };
+  await ensureOpentype();
+  return { registry: buildFontRegistry(fonts).registry, warnings };
 }
 
 function formatLogEntry(entry: LogEntry): string {
@@ -991,23 +988,28 @@ async function main() {
     process.exit(0);
   }
 
-  const { source, options, outputFile, sourceFile } = parseArgs(args);
+  const { source, options, outputFile, sourceFile, projectRoot } = parseArgs(args);
 
   try {
-    const fontRegistry = await loadFontsFromDirectives(source, sourceFile);
     if (options.json && (options.svgOutput || options.renderGpu || options.pngOutput)) {
       console.error('Error: --json cannot be combined with --output-svg-file, --render-gpu, or --png');
       process.exit(1);
     }
+    const fontLoad = await loadFontsForCli(source, sourceFile, options, projectRoot);
+    // Printed before compiling: a call that needs a font that didn't load
+    // stops the compile, and its error says to look for this message above.
+    outputWarnings(fontLoad.warnings, sourceFile);
     const compileOptions: CompileOptions = {
       ...(options.toFixed != null ? { toFixed: options.toFixed } : {}),
-      ...(fontRegistry ? { fonts: fontRegistry } : {}),
+      ...(fontLoad.registry ? { fonts: fontLoad.registry } : {}),
       ...(options.json ? { trace: true } : {}),
       ...(options.strict ? { strict: options.strict } : {}),
     };
     const result = compile(source, Object.keys(compileOptions).length > 0 ? compileOptions : undefined);
     outputLogs(result.logs, options);
     outputWarnings(result.warnings, sourceFile);
+    // --json lists every warning, font loading first.
+    result.warnings = [...fontLoad.warnings, ...result.warnings];
     const defaultPath = result.layers[0]?.data ?? '';
 
     // --json: the structured document instead of path data

@@ -5,6 +5,62 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] - 2026-10-23 (one font loader for every tool; fonts in the VS Code preview)
+
+### Added
+
+#### Core
+
+- **One font loader for the CLI, the VS Code preview and the language server** (`src/host/`, with the Node pieces in a new `pathogen-lang/node` entry). `@font` file paths follow one rule set everywhere: `./` and `../` start at the file, `/` at the project folder; forward slashes; exact letter case; no leaving the project folder, symbolic links included. A link that leads outside the project, or passes through an outside folder on its way back in, leaves it whatever is there: nothing outside the project is ever looked at, so the messages never say what exists there. A project folder, or a program's folder, spelled in another letter case than on disk (`--root=MY-PROJ`, `POSTERS/main.pathogen` for `posters/`, or the `c:\` VS Code hands over for `C:\`) is the same folder. Family names are looked up on the computer first, then downloaded from Google Fonts as one complete font file into a shared cache (`~/Library/Caches/pathogen-lang/fonts` on macOS, `~/.cache/pathogen-lang/fonts` on Linux, `%LOCALAPPDATA%\pathogen-lang\fonts` on Windows; `PATHOGEN_CACHE_DIR`), checked for a newer release every 30 days. A cached copy is used when Google can't be reached. A download gives up after 30 seconds with no data, so a large CJK font still finishes on a slow link, and is abandoned past 64 MB or 10 minutes. Font files come only from `fonts.gstatic.com`, and redirects aren't followed. The cache folder is shared by every tool and version, so a cached file that isn't a complete font, or an index entry that doesn't check out, counts as a miss; concurrent writers never share a temporary file.
+- **Damaged files are caught at their `@font` line**: a font file cut short, a WOFF2 file that won't decode, a folder named as a font (`@font "./fonts"`, `@font "/"`) and a `pathogen.json` that is a folder each get a message saying so, instead of an opaque failure in the first glyph call or a stack trace.
+- **Projects and `pathogen.json`.** The project folder is the nearest folder with a `pathogen.json`, from the program's folder upward, stopping before your home folder (recognized however the program's folder is spelled); otherwise the program's folder. v1 has one key, `main`; a byte-order mark at the start of the file is ignored. This repository now has one at its root.
+- **CLI:** downloads Google fonts by default (`--offline` or `PATHOGEN_OFFLINE=1` turns that off); `--root=<folder>` sets the project folder; `pathogen-lang <folder>` compiles the `main` in its `pathogen.json`. Font problems print as `file:line:col: error:` / `warning:` and count toward `--json` and `--strict`. Two new warning codes: `font-weight` (the nearest weight was used) and `font-load` (a family was skipped because downloads are off). Code from `-e` or standard input, with `--root` naming a folder the current folder isn't in, starts its paths and its search for a family's `fonts/` folder at that folder; a file outside the `--root` folder still compiles unless it has an `@font` path. A program without `@font` reads no files, as in the editors, so a broken `pathogen.json` it doesn't need can't stop it.
+- The installed-font search looks inside a family's `static/` folder, so a family unzipped from Google Fonts into `fonts/` works as is, and in macOS's `/System/Library/Fonts/Supplemental` (Georgia and friends). System font folders are searched two levels deep (Linux keeps families in `/usr/share/fonts/truetype/<family>/`), Windows' per-user font folder is searched, installed file names match in any letter case and Unicode form on every system (two Linux names that differ only in case are both tried), macOS's own names are found (`Georgia Bold.ttf`, `Times New Roman Bold.ttf`), and so are the files of a family that comes in optical sizes as Google's download names them (`Inter_18pt-Bold.ttf`; the smallest size is used), a file named `fonts` doesn't hide a `fonts/` folder above it, and an installed file that isn't a complete font is passed over. `PATHOGEN_FONT_DIRS` is split on `;` on Windows. `.woff2` files are decoded. A project path whose name differs from the file on disk only in Unicode form (macOS can store "é" as "e" plus an accent) finds the file.
+- Library: `resolveFonts` reports `retryable` (a stand-in weight after a network failure) beside `downloadsSkipped`; `pathogen-lang/node` adds `projectEntry` (a program's project path, spelled as on disk). `planFontDirectives`, `resolveFonts`, `buildFontRegistry`, `parseProjectFile`, `classifyFontSource`, `fontFaceCss`, `addFontData` and the Google Fonts helpers are exported; `getDiagnostics(document, { fonts })` accepts the fonts a host loaded. `pathogen-lang/node` exports the Node font host (`createNodeFontHost`, `findProjectRoot`, `loadProjectFile`, `defaultCacheDir`, `systemFontDirs`, …); the README shows how to load a program's fonts with it.
+
+#### VS Code Extension
+
+- **The preview loads fonts.** `@font` with `PathBlock.fromGlyph`, `TextBlock.toPathBlock()` and `Font.*` work in the preview, from the same font file the CLI uses, and the geometry is byte-identical to the CLI's (checked for a project font file and a downloaded Google font). Live `<text>` renders in the loaded face, and curated families that `<text>` names only in a style block are loaded for display, as in the playground. Font warnings show in a bar under the toolbar; a font error stops the compile, as in the CLI.
+- **The Problems panel shows what a real compile would**: font problems at their `@font` lines, and every warning and error after a font call (diagnostics used to stop at the first one). Diagnostics never wait for a download: they run with installed and cached fonts first and refresh when the download lands. A weight that stood in because the network failed is retried after 10 seconds in the preview and the Problems panel, as an error is, so the requested weight appears once the network is back.
+- The extension doesn't run in Restricted Mode (`untrustedWorkspaces: { supported: false }`), so an untrusted folder can't read files or download.
+
+#### Playground
+
+- A file path in `@font` is skipped with a warning that names the Google family to use (`Use the Google Fonts family instead: @font "Raleway" 700;`); it used to be skipped silently. `@font` source mistakes — `"serif"`, `"Inter.ttf"`, a web address, `@font` inside a block — stop the compile with the CLI's message at their line.
+
+#### Documentation
+
+- `docs/projects.md` (new, "Projects and Files"): the project folder, `pathogen.json`, writing paths, each tool, errors.
+- `docs/cli.md`: "Compile a Folder" and "Fonts and Files". `docs/path-blocks.md`: "Font Loading by Environment" rewritten for every tool. `docs/fonts.md`: complete fonts vs browser slices — Raleway Bold has 936 characters in the complete file and 856 in the slices, from the same release (the old "older download" explanation was wrong). `docs/security.md`: "Compile-side inputs". `docs/debug.md`: the new warning codes.
+- Blog posts "What's in the Font?" and "The VS Code Developer Experience" carry dated update notes.
+
+### Changed
+
+#### Core
+
+- **CLI: a font that can't be loaded is an error** (it was a warning): a missing or unreadable file, a family that is neither installed nor on Google Fonts, a failed download. With downloads turned off on purpose, a family that isn't installed or cached is a `font-load` warning, and only the calls that need it fail. With downloads on or off, a family installed at another weight stands in, with a `font-weight` warning, when Google Fonts can't supply the weight asked for (doesn't serve the family, can't be reached, or the download fails), so downloads on never do worse than downloads off.
+- **Stricter `@font` paths in every tool**: `"Inter.ttf"` needs `./`; `"fonts/Inter"`, computer paths (`/System/…`, `C:\…`, `~/…`), backslashes, web addresses and paths that leave the project folder are errors that say how to fix them. A leading `/` now means the project folder. Every `@font` program in this repository was compiled under the new rules (`project-docs/modules/verify/font-sweep-offline.md`); one demo used an absolute macOS path and now names the family.
+- **The CLI uses the network** to download Google fonts unless told not to.
+- An installed `Family.ttf` without a weight in its name counts as weight 400 only; it used to stand in for any weight.
+
+#### Development
+
+- `tests/setup.ts` sets `PATHOGEN_OFFLINE=1` and an empty cache folder, so tests never download fonts or read this machine's cache. `vitest.config.ts` maps `pathogen-lang` and `pathogen-lang/node` to the sources.
+- `scripts/build-vscode-extension.ts` ships `pathogen-lang/node` (with an `exports` map) and its `woff2-encoder` dependency, and refuses to package unless the bundle loads the font host and decodes WOFF2.
+- `project-docs/modules/`: the modules survey (v1) and decision log, the phase 0b plan and its review corrections, review dispositions, and the verification kit — `verify-vscode-fonts.mjs` (extension host, real webview under its CSP, bundled language server; 19/19), `verify-playground-fonts.mjs` (6/6), `sweep-font-programs.ts` (the repository's 73 `@font` programs, and all 299 blog samples under `--strict=non-finite`), `live-google-fonts.pathogen`, `smoke-node-entry.mjs`, `probe-sfnt-real-fonts.ts` (the font-file completeness check against 537 real fonts), `readme-node-example.ts` and `readme-node-example-v2.ts` (every README example against the built package), and `georgia-weights.pathogen` (macOS font names and the online weight fallback, live).
+- `tests/host/node-host.test.ts` drives downloads through a real HTTP server on `127.0.0.1` (redirect refusal, stall, size and time limits) and checks that `.woff` and `.woff2` files made from the Inter fixture draw exactly its glyphs. `tests/host/font-bytes.ts` makes the smallest font file the loader accepts, and a real WOFF 1.0 file from a TrueType one (the repo's `fonts/Raleway/*.woff` hold WOFF2 data).
+
+### Fixed
+
+#### Playground
+
+- The no-worker fallback dropped the `partial` flag of fonts Google serves in slices, so `Font.*` there saw only the slices loaded so far.
+- The playground's hand-kept `WarningCode` union had fallen three codes behind; it is in sync and guarded by `tests/playground-warning-codes.test.ts`.
+
+#### VS Code Extension
+
+- The preview no longer gains a duplicate set of listeners each time it is closed and reopened, and an edit to another `.pathogen` file no longer replaces the one on show. A preview that was hidden and shown again shows the current file.
+
 ## [Unreleased] - 2026-10-23 (blocks share the program's fonts, strict mode and statements)
 
 ### Fixed

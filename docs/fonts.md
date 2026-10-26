@@ -18,18 +18,18 @@ for (script in info.scripts) {
 let cyrillic = Font.glyphs(styles, "Cyrillic");
 ```
 
-The numbers in this page's comments come from the CLI with the Raleway Bold file in this project's `fonts/` folder. The playground loads Google's current release of Raleway, so expect different counts there: 856 characters rather than 936 (see the next section).
+The numbers in this page's comments come from the complete Raleway Bold file — the one Google Fonts sends the CLI and the VS Code preview. A copy of your own may be another release and count differently. The playground loads the slices Google Fonts sends to web browsers, which leave some characters out, so expect 856 characters there rather than 936 (see the next section).
 
 Every `Font` function takes the same style block as `fromGlyph`: `font-family` is required, `font-weight` picks which loaded weight to read (default 400; if that weight isn't loaded, the nearest one is used — write it as a number, since `bold` isn't understood), and `font-size` (default 16) scales the glyphs and the metrics.
 
 ## Before you start: what the font file knows
 
-Everything here is read from the font file itself, so the same font file gives the same answers in the CLI and the playground. The CLI reads the file on your disk and the playground reads the one Google Fonts serves, and those can be different releases of the same family: Raleway Bold from Google has 856 characters, while an older download of it has 936.
+Everything here is read from the font file itself, so the same file gives the same answers in every tool. The tools don't all load the same file, though. The CLI and the VS Code preview load a **complete** font: a copy on your computer, or the complete file they download from Google Fonts. The playground loads what Google Fonts sends to web browsers: the font cut into **slices**, each covering part of the Unicode chart, which together leave some characters out. Raleway Bold has 936 characters in the complete file and 856 in the browser slices.
 
 - **Only characters with their own glyph are listed.** Fonts also contain glyphs that no single character maps to: stylistic alternates, ligatures such as `fi`, and the joined forms Arabic letters take inside a word. `Font.info` counts them (`unmappedCount`), but `Font.glyphs` and `Font.characters` leave them out, because Pathogen has no way yet to ask for them.
 - **Scripts, blocks and categories come from Unicode, not from the font.** A font doesn't label its characters as "Cyrillic" or "punctuation". Pathogen looks up each character's *code point* — the number Unicode gives every character: `A` is 65, `ж` is 1078 — in the Unicode tables and groups it from there.
-- **Big fonts are big.** A Chinese font such as Noto Sans SC maps more than 13,000 characters (the version Google Fonts serves; the complete file has about 30,000). `Font.glyphs` returns them all if you ask, and logs a warning when one call returns more than 5,000 glyphs. Pass a [selection](#fonts-selections) to draw fewer.
-- **The VS Code preview doesn't load fonts yet**, so `Font` functions, like `PathBlock.fromGlyph`, work in the CLI and the playground but not in the VS Code preview. There, a `Font` call stops with the "no fonts were loaded" error listed below.
+- **Big fonts are big.** A Chinese font such as Noto Sans SC Regular maps 30,890 characters in the complete file the CLI and VS Code load — a 10.5 MB download the first time — and 13,633 in the playground's browser slices. `Font.glyphs` returns them all if you ask, and logs a warning when one call returns more than 5,000 glyphs. Pass a [selection](#fonts-selections) to draw fewer.
+- **Each tool finds fonts its own way.** [Font loading by environment](#path-blocks-font-loading-by-environment) says where the CLI, the VS Code preview and the playground look, and what happens when a font can't be found.
 
 ## Font.info(styles)
 
@@ -96,7 +96,7 @@ for (block in info.blocks) {
 }
 ```
 
-In the playground, a large Google font arrives in slices — separate files that each cover part of the Unicode chart (see [below](#fonts-in-the-playground-loading-the-whole-font)), and the slices can repeat a few shared glyphs. `characterCount`, `scripts`, `blocks` and `categories` come out the same as from the complete font file, but `glyphCount` and `unmappedCount` can be slightly higher there.
+In the playground, a large Google font arrives in slices — separate files that each cover part of the Unicode chart (see [below](#fonts-in-the-playground-loading-the-whole-font)). The slices leave some characters out and can repeat a few shared glyphs, so every count can differ from the complete file: Raleway Bold has 856 characters across its slices and 936 in the complete file, and `glyphCount` and `unmappedCount` can come out slightly higher.
 
 ## Font.characters(styles, selection?)
 
@@ -198,7 +198,7 @@ Google Fonts serves large families in slices, and the playground normally downlo
 - A selection fetches only the slices it overlaps. `Font.glyphs(styles, "Cyrillic")` on Raleway fetches the Cyrillic slices and nothing else. A category selection such as `"digit"` can't be narrowed to a range of the chart, so it fetches every slice.
 - `Font.info`, or `Font.characters` / `Font.glyphs` with no selection, needs the whole font, so every slice is fetched. For a large family that can be several megabytes; when they arrive, a note in the warning banner says how many slices were loaded. After that the slices stay loaded for the rest of your session.
 
-The CLI reads the complete font file, so it never needs this step.
+The CLI and the VS Code preview read complete font files, so they never need this step.
 
 ## Errors and warnings
 
@@ -207,10 +207,10 @@ The CLI reads the complete font file, so it never needs this step.
 | First argument isn't a style block | `Font.glyphs(): first argument must be a style block, e.g. #{ font-family: Inter; }` |
 | Wrong number of arguments | `Font.glyphs() expects 1 or 2 arguments (styles, selection?)` · `Font.info() expects 1 argument (styles)` |
 | No `font-family` in the style block | `Font.glyphs() requires font-family in the style block` |
-| A whole family was loaded (playground, warning banner — a note, not a problem) | `Loaded all 101 slices of "Noto Sans SC" from Google Fonts (4.4 MB) for a Font call that needs the whole font.` |
+| A whole family was loaded (playground, warning banner — expected, nothing to fix) | `Loaded all 101 slices of "Noto Sans SC" from Google Fonts (4.4 MB) for a Font call that needs the whole font.` |
 | A slice of the font couldn't be downloaded (playground, warning banner) | `2 of 18 slices of "Noto Sans SC" could not be loaded; Font results may be incomplete.` |
-| The family wasn't loaded with `@font` (other fonts were) | `Font.info(): font 'Raleway' is not loaded. Add @font "Raleway";` |
-| No font was loaded at all (no `@font`, a font that failed to load, or the VS Code preview) | `Font.info(): no fonts were loaded. Add @font "Raleway"; — if you already have, look for a font-loading error above.` |
+| The family wasn't loaded — no `@font` names it, or downloads were off (other fonts were loaded) | `Font.info(): font 'Raleway' is not loaded. Add @font "Raleway";` |
+| No font was loaded at all (no `@font`, or downloads were off and the font isn't on your computer) | `Font.info(): no fonts were loaded. Add @font "Raleway"; — if you already have, look for a font-loading message above.` |
 | Unknown selection name | `Font.glyphs(): no script, block or category named 'Cyrilic'. Did you mean 'Cyrillic'?` |
 | A selection that's not a name, array or object (e.g. a number) | `Font.glyphs(): selection must be a name, an array of code points, or an object such as { script: "Cyrillic" }` |
 | Unknown category in a selection object | `Font.glyphs(): no category named 'glyph'. Categories are letter, mark, digit, number, punctuation, symbol, whitespace, other` |

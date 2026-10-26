@@ -12,7 +12,28 @@ import { parser as lezerParser } from '../parser/pathogen.generated';
 
 import type { TextDocument } from './document';
 import type { Diagnostic } from './types';
+import type { FontRegistry } from '../evaluator/types';
 import { DiagnosticSeverity } from './types';
+
+/**
+ * What a host that loaded the document's fonts passes in — with the same
+ * loader as the CLI (`resolveFonts`, docs/path-blocks.md § Font Loading by
+ * Environment). The VS Code language server does; the playground compiles
+ * with its own fonts and reports font problems itself.
+ */
+export interface DiagnosticsOptions {
+  /**
+   * The host ran the font loader for this document. Font calls then evaluate
+   * as in the CLI — with `registry`, or with none when nothing loaded — so the
+   * warnings and errors after them appear too, and `messages` show at their
+   * `@font` lines. Without this, an error that only says no fonts were loaded
+   * is skipped: the host's own compile decides.
+   */
+  fonts?: {
+    registry?: FontRegistry;
+    messages: readonly { severity: 'error' | 'warning'; message: string; line?: number; column?: number }[];
+  };
+}
 
 // Parser error: "Parse error at line {line}, column {column}: {message}"
 const PARSE_ERROR_RE = /^Parse error at line (\d+), column (\d+): (.+)$/;
@@ -28,7 +49,7 @@ const EVAL_ERROR_LINE_RE = /^Line (\d+): (.+)$/;
  * errors in a single pass. Falls back to Parsimmon for detailed error messages
  * and for evaluator error detection.
  */
-export function getDiagnostics(document: TextDocument): Diagnostic[] {
+export function getDiagnostics(document: TextDocument, options: DiagnosticsOptions = {}): Diagnostic[] {
   const source = document.getText();
   const diagnostics: Diagnostic[] = [];
 
@@ -95,16 +116,24 @@ export function getDiagnostics(document: TextDocument): Diagnostic[] {
     return diagnostics;
   }
 
-  // Phase 3: Parse succeeded — try to evaluate.
+  // Phase 3: Parse succeeded — report the host's font loading, then evaluate.
+  for (const m of options.fonts?.messages ?? []) {
+    diagnostics.push({
+      range: makeRange(Math.max(0, (m.line ?? 1) - 1), Math.max(0, (m.column ?? 1) - 1), document),
+      severity: m.severity === 'error' ? DiagnosticSeverity.Error : DiagnosticSeverity.Warning,
+      message: m.message,
+      source: 'pathogen-fonts',
+    });
+  }
   //
-  // We pass no font registry here, so any program that uses font-requiring
-  // constructs (PathBlock.fromGlyph, TextBlock.toPathBlock, …) will throw
-  // "no fonts were loaded" on this fontless pass — even though the host's
-  // real compile (with fonts) may have succeeded in the worker. Such errors
-  // are language-services false positives, not real user errors. Filter
-  // them out so they don't mask the host's authoritative result.
+  // Without a font registry from the host, any program that uses
+  // font-requiring constructs (PathBlock.fromGlyph, TextBlock.toPathBlock, …)
+  // throws "no fonts were loaded" on this pass — even though the host's real
+  // compile (with fonts) may succeed. Such errors are false positives here,
+  // so they are skipped (below) rather than masking the host's result.
   try {
-    const result = evaluate(ast);
+    const registry = options.fonts?.registry;
+    const result = evaluate(ast, registry ? { fonts: registry } : undefined);
     // Non-fatal compiler warnings become Warning diagnostics on their line —
     // one per family (code + position + message with its numbers removed),
     // carrying the count, so a fillet over every glyph contour is one entry in
@@ -124,9 +153,9 @@ export function getDiagnostics(document: TextDocument): Diagnostic[] {
     }
   } catch (err) {
     const message = (err as Error).message;
-    if (isFontAvailabilityError(message)) {
-      // The host compile is the source of truth for font-related diagnostics.
-      // Skip — surfacing this here would override the real error/success.
+    if (!options.fonts && isFontAvailabilityError(message)) {
+      // No fonts from the host: its compile is the source of truth for
+      // font-related errors. Skip — surfacing this here would override it.
       return diagnostics;
     }
     const diag = parseEvaluatorError(message, document);

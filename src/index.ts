@@ -33,7 +33,46 @@ export {
   toSvgString,
 } from './render';
 export type { BuildDefsOptions, BuildLayersOptions, BuildTreeOptions, VNode, VNodeChild } from './render';
-export { createFontRegistry, addFont, getFont as getFontFromRegistry, ensureOpentype } from './evaluator/font-provider';
+export {
+  addFont,
+  addFontData,
+  createFontRegistry,
+  ensureOpentype,
+  getFont as getFontFromRegistry,
+} from './evaluator/font-provider';
+// Shared loader (docs/projects.md, docs/path-blocks.md § Font Loading by
+// Environment). Pure: no Node or DOM APIs — hosts supply I/O; the Node hosts
+// are in the `pathogen-lang/node` entry (src/node).
+export { buildFontRegistry, FONT_CACHE_TTL_MS, planFontDirectives, resolveFonts } from './host/load-fonts';
+export type {
+  FontDirectivePlan,
+  FontLoadMessage,
+  PlannedFontDirective,
+  ResolvedFont,
+  ResolveFontsOptions,
+  ResolveFontsResult,
+} from './host/load-fonts';
+export type { FontCache, FontHost, HostReadResult, LocalFontMatch } from './host/types';
+export {
+  classifyFontSource,
+  GENERIC_FONT_FAMILIES,
+  projectDirname,
+  projectPathStem,
+  resolveProjectPath,
+} from './host/paths';
+export { parseProjectFile, PROJECT_FILE_NAME } from './host/project';
+export type { ParsedProjectFile, ProjectFile } from './host/project';
+export {
+  CURATED_GOOGLE_FONTS,
+  curatedVariants,
+  fontFileKind,
+  formatWeightSubstitution,
+  lookupGoogleFont,
+  nearestWeight,
+} from './host/google-fonts';
+export type { FontFileKind, HostFetch, HostFetchResponse, WeightSubstitution } from './host/google-fonts';
+export { fontFaceCss, toBase64 } from './host/font-face-css';
+export type { FontFaceSource } from './host/font-face-css';
 
 export type {
   ArrayLiteral,
@@ -188,6 +227,7 @@ export {
 export type {
   TextDocument,
   Diagnostic,
+  DiagnosticsOptions,
   Position,
   Range,
   DocumentSymbol,

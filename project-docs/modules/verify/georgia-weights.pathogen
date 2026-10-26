@@ -1,0 +1,24 @@
+// Round-2 docs review, item 1, run with downloads ON (2026-10-25).
+//
+// Georgia: macOS keeps it as "Georgia.ttf" and "Georgia Bold.ttf" in
+// /System/Library/Fonts/Supplemental. 700 must load "Georgia Bold.ttf" (the
+// macOS name, with a space) from this computer, without asking Google.
+// (Google does serve Georgia, Verdana, Tahoma, Trebuchet MS and Times New
+// Roman from fonts.gstatic.com/l/…, so the review's "online Georgia errors"
+// was not true of Georgia itself; it was true of families Google doesn't serve.)
+//
+// Herculanum: installed at 400 only, and Google doesn't serve it. 700 used to
+// be an error saying it wasn't installed at all; now the installed 400 stands
+// in with a font-weight warning, as it always did with downloads off.
+define ViewBox(0, 0, 360, 140);
+
+@font "Georgia" 700;
+@font "Herculanum" 700;
+
+let georgia = PathBlock.fromGlyph("G", #{ font-family: Georgia; font-weight: 700; font-size: 96; });
+let herculanum = PathBlock.fromGlyph("G", #{ font-family: Herculanum; font-weight: 700; font-size: 96; });
+
+M 40 110
+georgia[0].draw();
+M 200 110
+herculanum[0].draw();

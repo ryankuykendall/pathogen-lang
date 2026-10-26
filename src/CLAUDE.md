@@ -41,7 +41,16 @@ src/
 │   ├── index.ts       # Combined exports + contextAwareFunctions set
 │   ├── math.ts        # Math/trig/interpolation functions
 │   └── path.ts        # Path helpers (circle, rect, polygon, star, etc.)
-├── cli.ts             # CLI entry point (file, stdin, inline, --output-svg-file, --print-logs)
+├── host/              # The shared pre-compile loader: pure decisions, no I/O (runs in Node, a Worker or a webview)
+│   ├── types.ts       # FontHost: what a surface provides (readFile, findLocalFont, fetch, cache, decodeWoff2)
+│   ├── paths.ts       # The @font path rule (./ ../ /), project paths, generic families
+│   ├── project.ts     # pathogen.json v1 validation
+│   ├── google-fonts.ts # css2 URLs/parsing (gstatic only), curated catalog + weight snapping, font-file checks
+│   ├── font-face-css.ts # @font-face CSS for live <text>
+│   └── load-fonts.ts  # planFontDirectives, resolveFonts (files → installed → cache → Google), buildFontRegistry
+├── node/
+│   └── index.ts       # `pathogen-lang/node`: the Node FontHost (project files, font search, file cache, downloads), used by the CLI, VS Code and the LSP
+├── cli.ts             # CLI entry point (file, folder, stdin, inline, --output-svg-file, --print-logs)
 ├── index.ts           # Library exports (compile, compileWithContext)
 └── worker.ts          # Web Worker entry point for async compilation
 ```
@@ -161,9 +170,13 @@ Context-aware functions receive the current path context and can read pen positi
 
 ```
 pathogen-lang <file>           Compile a file
+pathogen-lang <folder>         Compile the "main" in <folder>/pathogen.json
 pathogen-lang -                Read from stdin
 pathogen-lang -e <code>        Compile inline code
 pathogen-lang --src=<file>     Compile a file (explicit flag)
+
+--root=<folder>                    Project folder for @font paths (default: nearest pathogen.json, else the file's folder)
+--offline                          Never download fonts (PATHOGEN_OFFLINE=1 does the same; tests set it in tests/setup.ts)
 
 --print-logs                       Print log() output to stderr
 --log-file=<file>                  Write structured log data as JSON to file

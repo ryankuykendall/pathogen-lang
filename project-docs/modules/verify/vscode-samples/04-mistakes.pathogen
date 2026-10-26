@@ -1,0 +1,12 @@
+// Interactive VS Code check 4: problems in the Problems panel. Expected:
+//  - line 8: an error — the path leaves the project folder (the repo)
+//  - line 12: a warning — "a path argument is NaN", AFTER a font call
+//    (diagnostics used to stop at the first font call)
+// The preview shows the line 8 error and doesn't compile, as the CLI does.
+define ViewBox(0, 0, 200, 100);
+
+@font "../../../../../outside.ttf";
+@font "/fonts/Baumans/Baumans-Regular.ttf";
+let style = #{ font-family: Baumans-Regular; font-size: 48; };
+let g = PathBlock.fromGlyph("A", style);
+M calc(0 / 0) 10

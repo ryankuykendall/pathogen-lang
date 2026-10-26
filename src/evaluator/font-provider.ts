@@ -80,11 +80,20 @@ export function addFont(
   const fontData: FontData = { family, weight, style, buffer };
   if (unicodeRanges) fontData.unicodeRanges = unicodeRanges;
   if (partial) fontData.partial = true;
-  const existing = registry.fonts.get(family);
+  addFontData(registry, fontData);
+}
+
+/**
+ * Register an existing FontData object as is. Reusing the object from an
+ * earlier registry keeps its parsed font (`_parsed`), so an editor that
+ * rebuilds the registry on every keystroke doesn't re-parse a large font.
+ */
+export function addFontData(registry: FontRegistry, fontData: FontData): void {
+  const existing = registry.fonts.get(fontData.family);
   if (existing) {
     existing.push(fontData);
   } else {
-    registry.fonts.set(family, [fontData]);
+    registry.fonts.set(fontData.family, [fontData]);
   }
 }
 
