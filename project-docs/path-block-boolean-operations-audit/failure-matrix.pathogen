@@ -1,4 +1,4 @@
-// viewBox="0 0 6020 760"
+define ViewBox(0, 0, 6020, 760);
 // Boolean Operations Failure-Mode Stress Matrix
 //
 // 12 rows (3 fonts × 4 capitalizations) × 33 cols (3 states × 11 tracking values)
@@ -135,6 +135,19 @@ layer('state-dividers').apply {
   M calc(header_w + 22 * cell_w) header_h v calc(12 * cell_h)
 }
 
+// ─── Placing a union in its cell ───────────────────────────────────
+// A union result is a ProjectedPath. translateStartPointTo() moves its first
+// point to (x, y); shifting by the path's own startPoint puts its projection
+// origin (the word's origin) at (x, y) instead, where the glyph origins go in
+// the multi-color column. (2026-10-28: before this the union column used
+// drawTo(), which sat the word off by its first point, and the difference
+// column called project() on the union, which a ProjectedPath doesn't have,
+// so the program stopped there. AUDIT.md §2.17.)
+
+fn wordAt(word, x, y) {
+  return word.translateStartPointTo(calc(x + word.startPoint.x), calc(y + word.startPoint.y));
+}
+
 // ─── Cell rendering — three styles per font ────────────────────────
 
 // Bebas Neue rows (font_idx = 0)
@@ -184,7 +197,7 @@ for (cap_idx_b in 0..3) {
     let col_x_union_b = calc(header_w + (1 * 11 + tr_idx_b) * cell_w);
     let dx_union_b = calc(col_x_union_b + (cell_w - word_w_b) / 2);
     layer('union').apply {
-      combined_b.drawTo(dx_union_b, cell_baseline);
+      wordAt(combined_b, dx_union_b, cell_baseline).draw();
     }
 
     // ── State 2: difference ──
@@ -195,10 +208,10 @@ for (cap_idx_b in 0..3) {
     let plate_b = @{ h plate_w_b v plate_h_b h calc(-plate_w_b) z };
     let plate_proj_b = plate_b.project(calc(col_x_diff_b + plate_pad), calc(row_y_b + plate_pad));
     let dx_diff_b = calc(col_x_diff_b + (cell_w - word_w_b) / 2);
-    let combined_proj_b = combined_b.project(dx_diff_b, cell_baseline);
+    let combined_proj_b = wordAt(combined_b, dx_diff_b, cell_baseline);
     let cutout_b = plate_proj_b.difference(combined_proj_b);
     layer('diff').apply {
-      cutout_b.drawTo(0, 0);
+      cutout_b.draw();
     }
   }
 }
@@ -245,7 +258,7 @@ for (cap_idx_r in 0..3) {
     let col_x_union_r = calc(header_w + (1 * 11 + tr_idx_r) * cell_w);
     let dx_union_r = calc(col_x_union_r + (cell_w - word_w_r) / 2);
     layer('union').apply {
-      combined_r.drawTo(dx_union_r, cell_baseline_r);
+      wordAt(combined_r, dx_union_r, cell_baseline_r).draw();
     }
 
     let col_x_diff_r = calc(header_w + (2 * 11 + tr_idx_r) * cell_w);
@@ -255,10 +268,10 @@ for (cap_idx_r in 0..3) {
     let plate_r = @{ h plate_w_r v plate_h_r h calc(-plate_w_r) z };
     let plate_proj_r = plate_r.project(calc(col_x_diff_r + plate_pad_r), calc(row_y_r + plate_pad_r));
     let dx_diff_r = calc(col_x_diff_r + (cell_w - word_w_r) / 2);
-    let combined_proj_r = combined_r.project(dx_diff_r, cell_baseline_r);
+    let combined_proj_r = wordAt(combined_r, dx_diff_r, cell_baseline_r);
     let cutout_r = plate_proj_r.difference(combined_proj_r);
     layer('diff').apply {
-      cutout_r.drawTo(0, 0);
+      cutout_r.draw();
     }
   }
 }
@@ -305,7 +318,7 @@ for (cap_idx_l in 0..3) {
     let col_x_union_l = calc(header_w + (1 * 11 + tr_idx_l) * cell_w);
     let dx_union_l = calc(col_x_union_l + (cell_w - word_w_l) / 2);
     layer('union').apply {
-      combined_l.drawTo(dx_union_l, cell_baseline_l);
+      wordAt(combined_l, dx_union_l, cell_baseline_l).draw();
     }
 
     let col_x_diff_l = calc(header_w + (2 * 11 + tr_idx_l) * cell_w);
@@ -315,10 +328,10 @@ for (cap_idx_l in 0..3) {
     let plate_l = @{ h plate_w_l v plate_h_l h calc(-plate_w_l) z };
     let plate_proj_l = plate_l.project(calc(col_x_diff_l + plate_pad_l), calc(row_y_l + plate_pad_l));
     let dx_diff_l = calc(col_x_diff_l + (cell_w - word_w_l) / 2);
-    let combined_proj_l = combined_l.project(dx_diff_l, cell_baseline_l);
+    let combined_proj_l = wordAt(combined_l, dx_diff_l, cell_baseline_l);
     let cutout_l = plate_proj_l.difference(combined_proj_l);
     layer('diff').apply {
-      cutout_l.drawTo(0, 0);
+      cutout_l.draw();
     }
   }
 }

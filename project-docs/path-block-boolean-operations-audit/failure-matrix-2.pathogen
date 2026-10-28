@@ -1,4 +1,4 @@
-// viewBox="0 0 2020 840"
+define ViewBox(0, 0, 2020, 840);
 // Boolean Operations Failure-Mode Stress Matrix — v2 (union-focused with underlay)
 //
 // 12 rows (3 fonts × 4 capitalizations) × 8 cols (tracking 0.2..0.9)
@@ -113,6 +113,17 @@ layer('grid').apply {
   }
 }
 
+// ─── Drawing a union over its glyphs ───────────────────────────────
+// A union result is a ProjectedPath, and drawTo() moves a ProjectedPath's
+// first point to (x, y). Shifting by the path's own startPoint puts its
+// projection origin (the word's origin) at (x, y) instead, where the
+// underlay's glyph origins go. (2026-10-28: before this the overlay sat off
+// the glyphs by the word's first point. AUDIT.md §2.17.)
+
+fn drawWordAt(word, x, y) {
+  word.drawTo(calc(x + word.startPoint.x), calc(y + word.startPoint.y));
+}
+
 // ─── Cell rendering (one block per font for style-block resolution) ──
 
 // Bebas Neue rows (font_idx = 0)
@@ -157,7 +168,7 @@ for (cap_idx_b in 0..3) {
 
     // Union overlay
     layer('union').apply {
-      combined_b.drawTo(dx_b, cell_baseline);
+      drawWordAt(combined_b, dx_b, cell_baseline);
     }
   }
 }
@@ -202,7 +213,7 @@ for (cap_idx_r in 0..3) {
     }
 
     layer('union').apply {
-      combined_r.drawTo(dx_r, cell_baseline_r);
+      drawWordAt(combined_r, dx_r, cell_baseline_r);
     }
   }
 }
@@ -247,7 +258,7 @@ for (cap_idx_l in 0..3) {
     }
 
     layer('union').apply {
-      combined_l.drawTo(dx_l, cell_baseline_l);
+      drawWordAt(combined_l, dx_l, cell_baseline_l);
     }
   }
 }

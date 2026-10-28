@@ -1,4 +1,4 @@
-// viewBox="0 0 1080 900"
+define ViewBox(0, 0, 1080, 900);
 // Iteration 2 — word = "en", tracking = 0.5/0.6/0.7/0.8
 //
 // Bebas Neue 400 (1 row, UPPER only — all-caps font),
@@ -165,6 +165,17 @@ layer('cell-ids').apply {
   }
 }
 
+// ─── Drawing a union over its glyphs ───────────────────────────────
+// A union result is a ProjectedPath, and drawTo() moves a ProjectedPath's
+// first point to (x, y). Shifting by the path's own startPoint puts its
+// projection origin (the word's origin) at (x, y) instead, where the
+// underlay's glyph origins go. (2026-10-28: before this the overlay sat off
+// the glyphs by the word's first point. AUDIT.md §2.17.)
+
+fn drawWordAt(word, x, y) {
+  word.drawTo(calc(x + word.startPoint.x), calc(y + word.startPoint.y));
+}
+
 // ─── Cell rendering ────────────────────────────────────────────────
 
 // Bebas Neue (row 0, UPPER only)
@@ -198,8 +209,8 @@ for (tr_idx_b in 0..3) {
     layer('underlay-fill').apply { glyphs_b[mi_b].drawTo(gx_b, cell_baseline_b); }
     layer('underlay-stroke').apply { glyphs_b[mi_b].drawTo(gx_b, cell_baseline_b); }
   }
-  layer('union-fill').apply { combined_b.drawTo(dx_b, cell_baseline_b); }
-  layer('union-stroke').apply { combined_b.drawTo(dx_b, cell_baseline_b); }
+  layer('union-fill').apply { drawWordAt(combined_b, dx_b, cell_baseline_b); }
+  layer('union-stroke').apply { drawWordAt(combined_b, dx_b, cell_baseline_b); }
 }
 
 // Raleway 200 ExtraLight (rows 1..4)
@@ -236,8 +247,8 @@ for (cap_idx_r in 0..3) {
       layer('underlay-fill').apply { glyphs_r[mi_r].drawTo(gx_r, cell_baseline_r); }
       layer('underlay-stroke').apply { glyphs_r[mi_r].drawTo(gx_r, cell_baseline_r); }
     }
-    layer('union-fill').apply { combined_r.drawTo(dx_r, cell_baseline_r); }
-    layer('union-stroke').apply { combined_r.drawTo(dx_r, cell_baseline_r); }
+    layer('union-fill').apply { drawWordAt(combined_r, dx_r, cell_baseline_r); }
+    layer('union-stroke').apply { drawWordAt(combined_r, dx_r, cell_baseline_r); }
   }
 }
 
@@ -275,8 +286,8 @@ for (cap_idx_l in 0..3) {
       layer('underlay-fill').apply { glyphs_l[mi_l].drawTo(gx_l, cell_baseline_l); }
       layer('underlay-stroke').apply { glyphs_l[mi_l].drawTo(gx_l, cell_baseline_l); }
     }
-    layer('union-fill').apply { combined_l.drawTo(dx_l, cell_baseline_l); }
-    layer('union-stroke').apply { combined_l.drawTo(dx_l, cell_baseline_l); }
+    layer('union-fill').apply { drawWordAt(combined_l, dx_l, cell_baseline_l); }
+    layer('union-stroke').apply { drawWordAt(combined_l, dx_l, cell_baseline_l); }
   }
 }
 
@@ -314,8 +325,8 @@ for (cap_idx_p in 0..3) {
       layer('underlay-fill').apply { glyphs_p[mi_p].drawTo(gx_p, cell_baseline_p); }
       layer('underlay-stroke').apply { glyphs_p[mi_p].drawTo(gx_p, cell_baseline_p); }
     }
-    layer('union-fill').apply { combined_p.drawTo(dx_p, cell_baseline_p); }
-    layer('union-stroke').apply { combined_p.drawTo(dx_p, cell_baseline_p); }
+    layer('union-fill').apply { drawWordAt(combined_p, dx_p, cell_baseline_p); }
+    layer('union-stroke').apply { drawWordAt(combined_p, dx_p, cell_baseline_p); }
   }
 }
 
