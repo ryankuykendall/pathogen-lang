@@ -1460,6 +1460,21 @@ L 10 20 // end point`;
       expect(tl.parts.map((p: any) => (typeof p === 'string' ? p : p.name))).toEqual(['a', 'b']);
     });
 
+    it('an escaped dollar sign is a literal "${", not an interpolation', () => {
+      // docs/textblock.md "Escaping ${ in Code Text". The backslash used to
+      // stay in the text.
+      const ast = parse('let x = `\\${count} items`;');
+      const tl = (ast.body[0] as any).value;
+      expect(tl.parts).toEqual(['${count} items']);
+    });
+
+    it('an escaped dollar sign next to a real interpolation', () => {
+      const ast = parse('let x = `\\${n} is ${n}`;');
+      const tl = (ast.body[0] as any).value;
+      expect(tl.parts[0]).toBe('${n} is ');
+      expect(tl.parts[1].name).toBe('n');
+    });
+
     it('escaped backticks interleave with interpolations', () => {
       const ast = parse('let x = `esc \\` tick ${n} \\` more`;');
       const tl = (ast.body[0] as any).value;

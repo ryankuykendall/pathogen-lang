@@ -1869,6 +1869,15 @@ describe('Evaluator', () => {
       const result = compile('let n = 42; log(`The answer is \${n}`);');
       expect(result.logs[0].parts[0].value).toBe('The answer is 42');
     });
+
+    it('an escaped dollar sign gives a literal ${ in logs and in text (docs/textblock.md)', () => {
+      const logged = compile('let count = 3; log(`\\${count} items`); log(`${count} items`);');
+      expect(logged.logs.map((l) => l.parts[0].value)).toEqual(['${count} items', '3 items']);
+      const drawn = compile(
+        "define TextLayer('t') #{ font-size: 12; }; layer('t').apply { text(0, 10)`\\${count} items` }",
+      );
+      expect(drawn.layers[0].data).toBe('${count} items');
+    });
   });
 
   describe('string equality', () => {

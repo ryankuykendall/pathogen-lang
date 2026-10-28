@@ -2684,7 +2684,14 @@ function parseTemplateString(inner: string, baseOffset: number, source: string):
 }
 
 function unescapeTemplate(s: string): string {
-  return s.replace(/\\`/g, '`').replace(/\\\\/g, '\\').replace(/\\n/g, '\n').replace(/\\t/g, '\t');
+  // `\$` first: the grammar already keeps `\${` from opening an
+  // interpolation, so here it only has to drop the backslash (`\${` → `${`).
+  return s
+    .replace(/\\\$/g, '$')
+    .replace(/\\`/g, '`')
+    .replace(/\\\\/g, '\\')
+    .replace(/\\n/g, '\n')
+    .replace(/\\t/g, '\t');
 }
 
 function buildCalcExpression(cursor: TreeCursor, source: string): CalcExpression {

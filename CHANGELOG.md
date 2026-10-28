@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] - 2026-10-28 (a literal `${` in template literals)
+
+### Fixed
+
+#### Core
+
+- **`\$` in a template literal now gives a literal `$`.** `` `\${count} items` `` already kept `${count}` from being interpolated, but the backslash stayed in the string, so the text read `\${count} items` instead of `${count} items`, the escape `docs/textblock.md` documents. Template literals in text, logs and style values all go through the same step. No program in the repository uses `\$` apart from that docs example.
+
 ## [Unreleased] - 2026-10-28 (boolean operations no longer run out of memory)
 
 ### Fixed
