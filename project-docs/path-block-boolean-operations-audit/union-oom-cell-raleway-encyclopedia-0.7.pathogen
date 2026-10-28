@@ -1,0 +1,41 @@
+// The failure-matrix-2/-3 cell that ran out of memory before 2026-10-28:
+// Raleway ExtraLight, "Encyclopedia", tracking 0.7, glyphs unioned one at a
+// time. Gray = the glyphs, blue = the union on top. Where blue exactly covers
+// gray, the union is right.
+//
+// After the second union the outline grazes itself; the self-intersection
+// pre-pass cut a 2e-8 sliver there, and the third union's curve search split
+// the sliver forever. See AUDIT.md §2.17.
+//
+// Both layers draw the ProjectedPaths in place with draw(). (The matrices use
+// drawTo(), which moves a ProjectedPath's first point to the target, so their
+// blue overlays sit off the glyphs.)
+
+@font "../../fonts/Raleway/Raleway-ExtraLight.ttf"
+define ViewBox(-4, -20, 140, 30);
+
+let glyphsLayer = PathLayer('glyphs') #{ fill: #94a3b8; stroke: none; };
+let unionLayer = PathLayer('union') #{ fill: #1e40ab99; stroke: #1e3a8a; stroke-width: 0.08; };
+
+let styles = #{ font-family: Raleway-ExtraLight; font-size: 22; };
+let glyphs = PathBlock.fromGlyph("Encyclopedia", styles);
+let tracking = 0.7;
+
+let cursor = 0;
+let projected = [];
+for (glyph in glyphs) {
+  projected.push(glyph.project(cursor, 0));
+  cursor = calc(cursor + glyph.advanceWidth * tracking);
+}
+
+let combined = projected[0];
+for (i in 1..calc(glyphs.length - 1)) {
+  combined = combined.union(projected[i]);
+}
+
+layer('glyphs').apply {
+  for (piece in projected) { piece.draw(); }
+}
+layer('union').apply {
+  combined.draw();
+}

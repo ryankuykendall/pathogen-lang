@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] - 2026-10-28 (boolean operations no longer run out of memory)
+
+### Fixed
+
+#### Core
+
+- **`union()`, `difference()`, `intersection()`, `xor()` and `cut()` no longer run out of memory when two curves can't be told apart.** The search that finds where two curves cross never gave up. When one curve was a speck lying on the other (a few hundred-millionths of a unit long), or the two shared a stretch of the same curve, it split both into more and more pieces until the compiler ran out of memory. A ten-line program could hit it, and so did glyph unions: one cell of the boolean-operations failure matrices (Raleway ExtraLight "Encyclopedia" at tracking 0.7) never compiled. The search now stops after 100,000 steps and takes the points where one curve's end lies on the other, or, if neither end does, the places the search had narrowed in on. The most any curve pair in the 96 glyph unions of those matrices needs is about 17,000 steps, and a pair that finishes within the limit takes the same path as before. Two curves that just touch at a tangent point can need more; they used to get there slowly (about a second for one pair) and now stop at the limit, so the touching point can land slightly differently. In the test case it moved from x = 15.0004 to x = 14.9997, against a true touching point of x = 15. None of the 1,232 programs in the repository that the semantics audit can run changed. Two shapes that share a stretch of the same curve still draw that stretch twice, joined by a straight line inside the shape. The default nonzero fill is right, but a stroke or `fill-rule: evenodd` shows the extra piece.
+
 ## [Unreleased] - 2026-10-23 (one font loader for every tool; fonts in the VS Code preview)
 
 ### Added

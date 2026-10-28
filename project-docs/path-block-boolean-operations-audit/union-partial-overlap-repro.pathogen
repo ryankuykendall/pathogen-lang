@@ -1,0 +1,22 @@
+// union() of two shapes that share a stretch of the same curve.
+//
+// `half` starts with exactly the first half of `arc`'s curve (de Casteljau at
+// t = 0.5: control points (5, 10), (12.5, 15), end (20, 15)). Before the
+// 2026-10-28 fix the curve-intersection search could never separate the two
+// copies of the shared stretch and ran out of memory.
+//
+// See: AUDIT.md §2.17
+
+define ViewBox(-10, -20, 80, 50);
+
+let arc = @{
+  c 10 20 30 20 40 0
+  z
+};
+let half = @{
+  c 5 10 12.5 15 20 15
+  l 0 -25
+  z
+};
+
+arc.project(0, 0).union(half.project(0, 0)).drawTo(0, 0);

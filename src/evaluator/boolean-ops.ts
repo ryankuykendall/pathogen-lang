@@ -85,6 +85,18 @@ const GEOMETRIC_EPSILON = 1e-8;
 const PARAMETRIC_EPSILON = 1e-10;
 const BEZIER_CLIP_DEPTH = 60;
 const BEZIER_CLIP_T_TOL = 1e-9;
+/**
+ * Work limit for one cubic-cubic intersection search. Ordinary pairs need far
+ * fewer calls: the 96 glyph unions in project-docs/path-block-boolean-operations-audit/
+ * peak at about 17,000. A pair the search cannot separate (a speck lying on
+ * the other curve, or two curves sharing a stretch) splits into ever more
+ * overlapping pieces and used to exhaust memory; two curves kissing at a
+ * tangent point converge, but only after hundreds of thousands of calls. Past
+ * this limit `intersectInseparableCubics` answers instead. §2.17.
+ */
+const BEZIER_CLIP_MAX_CALLS = 100_000;
+/** How close a curve's endpoint must be to the other curve to count as lying on it, in user units. §2.17. */
+const INSEPARABLE_CONTACT_TOL = 1e-6;
 
 // ─── Polynomial Solvers ─────────────────────────────────────────────────────
 
@@ -759,12 +771,83 @@ function intersectCubicCubic(
   }
 
   const results: { tA: number; tB: number; point: Point }[] = [];
+  const budget = { calls: 0 };
   bezierClipRecurse(
     a0, a1, a2, a3, 0, 1,
     b0, b1, b2, b3, 0, 1,
-    results, 0,
+    results, 0, budget,
   );
+  if (budget.calls > BEZIER_CLIP_MAX_CALLS) {
+    return intersectInseparableCubics([a0, a1, a2, a3], [b0, b1, b2, b3], results);
+  }
   return dedupeIntersections(results);
+}
+
+interface CurveHit {
+  tA: number;
+  tB: number;
+  point: Point;
+}
+
+/**
+ * The answer for a cubic pair the clipping search gave up on (over
+ * BEZIER_CLIP_MAX_CALLS). That happens when the curves can't be told apart
+ * at the search's resolution: one is a speck lying on the other, they share
+ * a stretch, or they kiss at a tangent point.
+ *
+ * Two cubics that coincide over an interval are the same curve there, so a
+ * shared stretch ends where one of the curves ends, and the curves can't
+ * also cross elsewhere; a speck has no room to. So when an endpoint of
+ * either curve lies on the other, those contacts are the whole answer. A
+ * shared stretch is still not classified as a shared edge (§2.13); this only
+ * keeps the search from running away.
+ *
+ * With no endpoint contact (a kiss or a long graze), fall back to one result
+ * per cluster of what the search had found when it stopped. That is best
+ * effort: the search is depth-first, so it only saw the part of the pair it
+ * reached before the limit. §2.17.
+ */
+function intersectInseparableCubics(
+  a: [Point, Point, Point, Point],
+  b: [Point, Point, Point, Point],
+  found: CurveHit[],
+): CurveHit[] {
+  const tol = INSEPARABLE_CONTACT_TOL;
+  const onCurve = (pt: Point, c: [Point, Point, Point, Point]): number | null => {
+    // Prefer the curve's own endpoint parameter when the point sits on it.
+    if (dist(pt, c[0]) < tol) return 0;
+    if (dist(pt, c[3]) < tol) return 1;
+    const near = nearestOnCurve(pt, (t) => evalCubic(c[0], c[1], c[2], c[3], t));
+    return near.d2 < tol * tol ? near.t : null;
+  };
+  const hits: CurveHit[] = [];
+  for (const tA of [0, 1]) {
+    const pt = tA === 0 ? a[0] : a[3];
+    const tB = onCurve(pt, b);
+    if (tB !== null) hits.push({ tA, tB, point: { ...pt } });
+  }
+  for (const tB of [0, 1]) {
+    const pt = tB === 0 ? b[0] : b[3];
+    const tA = onCurve(pt, a);
+    if (tA !== null) hits.push({ tA, tB, point: { ...pt } });
+  }
+  if (hits.length > 0) return dedupeIntersections(hits);
+
+  // Clusters of the search's own results, in order along A. The list can
+  // hold tens of thousands of near-duplicates, too many for
+  // dedupeIntersections, which compares every pair.
+  const sorted = [...found].sort((p, q) => p.tA - q.tA);
+  const reps: CurveHit[] = [];
+  let start = 0;
+  for (let i = 1; i <= sorted.length; i++) {
+    const gap =
+      i === sorted.length || sorted[i].tA - sorted[i - 1].tA > tol || Math.abs(sorted[i].tB - sorted[i - 1].tB) > tol;
+    if (gap) {
+      reps.push(sorted[Math.floor((start + i - 1) / 2)]);
+      start = i;
+    }
+  }
+  return dedupeIntersections(reps);
 }
 
 function bezierClipRecurse(
@@ -772,7 +855,9 @@ function bezierClipRecurse(
   b0: Point, b1: Point, b2: Point, b3: Point, tBMin: number, tBMax: number,
   results: { tA: number; tB: number; point: Point }[],
   depth: number,
+  budget: { calls: number },
 ): void {
+  if (++budget.calls > BEZIER_CLIP_MAX_CALLS) return;
   if (depth > BEZIER_CLIP_DEPTH) return;
 
   // Bounding box rejection
@@ -809,10 +894,10 @@ function bezierClipRecurse(
     const [b0L, b1L, b2L, b3L] = subdivideCubic(b0, b1, b2, b3, 0.5);
     const [b0R, b1R, b2R, b3R] = subdivideCubicRight(b0, b1, b2, b3, 0.5);
 
-    bezierClipRecurse(a0L, a1L, a2L, a3L, tAMin, tAMid, b0L, b1L, b2L, b3L, tBMin, tBMid, results, depth + 1);
-    bezierClipRecurse(a0L, a1L, a2L, a3L, tAMin, tAMid, b0R, b1R, b2R, b3R, tBMid, tBMax, results, depth + 1);
-    bezierClipRecurse(a0R, a1R, a2R, a3R, tAMid, tAMax, b0L, b1L, b2L, b3L, tBMin, tBMid, results, depth + 1);
-    bezierClipRecurse(a0R, a1R, a2R, a3R, tAMid, tAMax, b0R, b1R, b2R, b3R, tBMid, tBMax, results, depth + 1);
+    bezierClipRecurse(a0L, a1L, a2L, a3L, tAMin, tAMid, b0L, b1L, b2L, b3L, tBMin, tBMid, results, depth + 1, budget);
+    bezierClipRecurse(a0L, a1L, a2L, a3L, tAMin, tAMid, b0R, b1R, b2R, b3R, tBMid, tBMax, results, depth + 1, budget);
+    bezierClipRecurse(a0R, a1R, a2R, a3R, tAMid, tAMax, b0L, b1L, b2L, b3L, tBMin, tBMid, results, depth + 1, budget);
+    bezierClipRecurse(a0R, a1R, a2R, a3R, tAMid, tAMax, b0R, b1R, b2R, b3R, tBMid, tBMax, results, depth + 1, budget);
     return;
   }
 
@@ -825,7 +910,7 @@ function bezierClipRecurse(
   bezierClipRecurse(
     subB[0], subB[1], subB[2], subB[3], newTBMin, newTBMax,
     a0, a1, a2, a3, tAMin, tAMax,
-    results, depth + 1,
+    results, depth + 1, budget,
   );
 }
 
@@ -4161,10 +4246,15 @@ function splitSegsIntoChains(segs: TransformCmd[]): { segs: TransformCmd[]; star
 
 /** Nearest point on a command to `pt` — coarse sampling + golden-section refine. */
 function nearestOnCmd(pt: Point, cmd: TransformCmd): { t: number; d2: number } {
+  return nearestOnCurve(pt, (t) => evalCmd(cmd, t));
+}
+
+/** Nearest point on a parametric curve to `pt` — coarse sampling + golden-section refine. */
+function nearestOnCurve(pt: Point, at: (t: number) => Point): { t: number; d2: number } {
   let bestT = 0;
   let bestD2 = Infinity;
   const f = (t: number): number => {
-    const p = evalCmd(cmd, t);
+    const p = at(t);
     return (p.x - pt.x) ** 2 + (p.y - pt.y) ** 2;
   };
   for (let i = 0; i <= 32; i++) {

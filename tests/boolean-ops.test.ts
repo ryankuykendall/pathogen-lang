@@ -2,7 +2,7 @@ import { readFileSync, existsSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 
 import { compile, createFontRegistry, addFont } from '../src';
-import { compilePath, parseSVGPath } from './helpers';
+import { compilePath, expectSVGPathCommandSequence, parseSVGPath } from './helpers';
 
 describe('Boolean Operations', () => {
   describe('union()', () => {
@@ -1253,5 +1253,281 @@ describe('holed subtrahend (multi-contour B without explicit z per ring)', () =>
     // not displaced.
     expect(d).toContain('m 20 50 a 30 30');
     expect(d).toContain('m 15 0 a 15 15');
+  });
+});
+
+type Ring = [number, number][];
+
+/**
+ * Flatten path data (M L H V Q C Z, absolute or relative, one segment per
+ * command) into closed rings, each curve as 16 chords.
+ */
+function flattenToRings(d: string): Ring[] {
+  const rings: Ring[] = [];
+  let ring: Ring | null = null;
+  let x = 0;
+  let y = 0;
+  let sx = 0;
+  let sy = 0;
+  const STEPS = 16;
+  const arity: Record<string, number> = { M: 2, L: 2, H: 1, V: 1, Q: 4, C: 6, Z: 0 };
+  const open = (): Ring => {
+    if (!ring) {
+      ring = [[x, y]];
+      sx = x;
+      sy = y;
+    }
+    return ring;
+  };
+  const close = () => {
+    if (ring && ring.length > 2) rings.push(ring);
+    ring = null;
+  };
+  for (const { command, args } of parseSVGPath(d)) {
+    const op = command.toUpperCase();
+    if (!(op in arity) || args.length !== arity[op]) {
+      throw new Error(`flattenToRings: unsupported ${command} with ${args.length} args`);
+    }
+    const ox = command === op ? 0 : x;
+    const oy = command === op ? 0 : y;
+    if (op === 'M') {
+      close();
+      x = ox + args[0];
+      y = oy + args[1];
+      open();
+    } else if (op === 'L') {
+      x = ox + args[0];
+      y = oy + args[1];
+      open().push([x, y]);
+    } else if (op === 'H') {
+      x = ox + args[0];
+      open().push([x, y]);
+    } else if (op === 'V') {
+      y = oy + args[0];
+      open().push([x, y]);
+    } else if (op === 'Q') {
+      const r = open();
+      const [x1, y1, x2, y2] = [ox + args[0], oy + args[1], ox + args[2], oy + args[3]];
+      for (let i = 1; i <= STEPS; i++) {
+        const t = i / STEPS;
+        const u = 1 - t;
+        r.push([u * u * x + 2 * u * t * x1 + t * t * x2, u * u * y + 2 * u * t * y1 + t * t * y2]);
+      }
+      x = x2;
+      y = y2;
+    } else if (op === 'C') {
+      const r = open();
+      const [x1, y1, x2, y2, x3, y3] = args.map((v, i) => v + (i % 2 === 0 ? ox : oy));
+      for (let i = 1; i <= STEPS; i++) {
+        const t = i / STEPS;
+        const u = 1 - t;
+        r.push([
+          u * u * u * x + 3 * u * u * t * x1 + 3 * u * t * t * x2 + t * t * t * x3,
+          u * u * u * y + 3 * u * u * t * y1 + 3 * u * t * t * y2 + t * t * t * y3,
+        ]);
+      }
+      x = x3;
+      y = y3;
+    } else {
+      x = sx;
+      y = sy;
+      close();
+    }
+  }
+  close();
+  return rings;
+}
+
+/** Nonzero-rule fill test against flattened rings. */
+function isFilled(rings: Ring[], px: number, py: number): boolean {
+  let winding = 0;
+  for (const ring of rings) {
+    for (let i = 0; i < ring.length; i++) {
+      const [x0, y0] = ring[i];
+      const [x1, y1] = ring[(i + 1) % ring.length];
+      const side = (x1 - x0) * (py - y0) - (px - x0) * (y1 - y0);
+      if (y0 <= py && y1 > py && side > 0) winding++;
+      else if (y1 <= py && y0 > py && side < 0) winding--;
+    }
+  }
+  return winding !== 0;
+}
+
+/** Distance from a point to the nearest edge of the flattened rings. */
+function distanceToEdges(rings: Ring[], px: number, py: number): number {
+  let best = Infinity;
+  for (const ring of rings) {
+    for (let i = 0; i < ring.length; i++) {
+      const [x0, y0] = ring[i];
+      const [x1, y1] = ring[(i + 1) % ring.length];
+      const dx = x1 - x0;
+      const dy = y1 - y0;
+      const len2 = dx * dx + dy * dy;
+      const t = len2 === 0 ? 0 : Math.max(0, Math.min(1, ((px - x0) * dx + (py - y0) * dy) / len2));
+      best = Math.min(best, Math.hypot(px - (x0 + t * dx), py - (y0 + t * dy)));
+    }
+  }
+  return best;
+}
+
+function expectFill(rings: Ring[], inside: [number, number][], outside: [number, number][]): void {
+  for (const [px, py] of inside) expect(isFilled(rings, px, py), `(${px}, ${py}) filled`).toBe(true);
+  for (const [px, py] of outside) expect(isFilled(rings, px, py), `(${px}, ${py}) empty`).toBe(false);
+}
+
+describe('curve pairs the intersection search cannot separate (AUDIT.md §2.17)', () => {
+  // The cubic-cubic search (Bezier clipping) splits both curves in four
+  // wherever clipping can't narrow them. A near-zero-length curve lying on
+  // the other curve, or two curves sharing a stretch, never separate, so the
+  // work doubled at every level until the compiler ran out of memory. Before
+  // the fix the first two programs died with "JavaScript heap out of memory"
+  // (512 MB heap, about 7 s) and the glyph chain hit the same runaway search
+  // at its third union; under vitest that kills the worker rather than
+  // failing a test. Repros: project-docs/path-block-boolean-operations-audit/union-*-repro.pathogen.
+
+  it('union() with a near-zero-length curve touching the other shape', () => {
+    const withSpeck = compilePath(`
+      let arc = @{ c 10 20 30 20 40 0 z };
+      let speck = @{ c 0.00000001 0 0.00000002 0 0.00000003 0 l 10 10 l -10 0 z };
+      arc.project(0, 0).union(speck.project(40, 0)).drawTo(0, 0);
+    `);
+    const withoutSpeck = compilePath(`
+      let arc = @{ c 10 20 30 20 40 0 z };
+      let triangle = @{ l 10 10 l -10 0 z };
+      arc.project(0, 0).union(triangle.project(40, 0)).drawTo(0, 0);
+    `);
+    // The two shapes touch at one point, so the union keeps both outlines.
+    // The speck stays as the triangle's first, near-zero segment.
+    expect(withoutSpeck).toBe('M 0 0 c 10 20 30 20 40 0 z l 10 10 l -10 0 z');
+    expectSVGPathCommandSequence(
+      withSpeck,
+      [
+        ['M', 0, 0],
+        ['c', 10, 20, 30, 20, 40, 0],
+        ['z'],
+        ['c', 1e-8, 0, 2e-8, 0, 3e-8, 0],
+        ['l', 10, 10],
+        ['l', -10, 0],
+        ['z'],
+      ],
+      { precision: 9 },
+    );
+  });
+
+  it('union() of two shapes sharing a stretch of the same curve fills the right region', () => {
+    // `half` starts with exactly the first half of `arc`'s curve (de
+    // Casteljau at t = 0.5). The union is the arc's region plus the part of
+    // `half` below y = 0: the whole curve, then (40, 0) → (20, 0) → (20, -10)
+    // → (0, 0). The shared half-curve is not yet recognised as a shared edge
+    // (§2.13), so the output also repeats it with a closing chord. That extra
+    // loop turns the same way as the outline and lies inside it, so under
+    // the nonzero rule it stays filled; (10, 9.5) is inside it.
+    const d = compilePath(`
+      let arc = @{ c 10 20 30 20 40 0 z };
+      let half = @{ c 5 10 12.5 15 20 15 l 0 -25 z };
+      arc.project(0, 0).union(half.project(0, 0)).drawTo(0, 0);
+    `);
+    expectFill(
+      flattenToRings(d),
+      [
+        [10, 5],
+        [30, 5],
+        [20, 12],
+        [10, 9.5],
+        [10, -2],
+        [18, -8],
+      ],
+      [
+        [30, -2],
+        [2, -5],
+        [10, 14],
+        [45, 0],
+        [25, -5],
+      ],
+    );
+  });
+
+  it('union() of two shapes whose curves kiss at one point keeps both outlines', () => {
+    // `lower` peaks at (15, 7.5) and `upper` dips to the same point, tangent
+    // there. Neither curve's end lies on the other, so this is the fallback
+    // that keeps one point per cluster of the search's results. Before the
+    // fix the search did converge, after about a second for this one pair.
+    const d = compilePath(`
+      let lower = @{ c 10 10 20 10 30 0 z };
+      let upper = @{ c 10 -10 20 -10 30 0 z };
+      lower.project(0, 0).union(upper.project(0, 15)).draw();
+    `);
+    expect(d).toHaveSVGCommandCount('z', 2);
+    // Both curves have x = 30t, so at x = 10 they sit at y = 6.67 and 8.33.
+    expectFill(
+      flattenToRings(d),
+      [
+        [15, 3],
+        [15, 12],
+        [5, 1],
+        [25, 14],
+      ],
+      [
+        [10, 7.5],
+        [20, 7.5],
+        [2, 7.5],
+        [15, -1],
+        [15, 16],
+      ],
+    );
+  });
+
+  const fontPath = 'fonts/Raleway/Raleway-ExtraLight.ttf';
+  const itWithRaleway = existsSync(fontPath) ? it : it.skip;
+  itWithRaleway('chained union of Raleway ExtraLight "Ency" at tracking 0.7 fills what the glyphs fill', () => {
+    // The failure-matrix-2 cell that ran out of memory: after two unions the
+    // outline grazes itself, the self-intersection pre-pass cuts a 2e-8
+    // sliver there, and the third union's search met the sliver.
+    const buf = readFileSync(fontPath);
+    const registry = createFontRegistry();
+    const bytes = buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength);
+    addFont(registry, 'Raleway-ExtraLight', 200, 'normal', bytes);
+    const setup = `
+@font "${fontPath}"
+let styles = #{ font-family: Raleway-ExtraLight; font-size: 22; };
+let glyphs = PathBlock.fromGlyph("Ency", styles);
+let cursor = 0;
+let projected = [];
+for (g in glyphs) {
+  projected.push(g.project(cursor, 0));
+  cursor = calc(cursor + g.advanceWidth * 0.7);
+}
+`;
+    // ProjectedPaths draw in place with draw(); both sides use the same
+    // projected glyphs, so the comparison needs no placement.
+    const unionSource = `${setup}
+let merged = projected[0];
+for (i in 1..3) { merged = merged.union(projected[i]); }
+merged.draw();
+`;
+    const glyphsSource = `${setup}
+for (p in projected) { p.draw(); }
+`;
+    const unionRings = flattenToRings(compile(unionSource, { fonts: registry }).layers[0].data);
+    const glyphRings = flattenToRings(compile(glyphsSource, { fonts: registry }).layers[0].data);
+    const xs = glyphRings.flat().map((p) => p[0]);
+    const ys = glyphRings.flat().map((p) => p[1]);
+    let filled = 0;
+    const mismatches: string[] = [];
+    for (let px = Math.min(...xs); px <= Math.max(...xs); px += 0.25) {
+      for (let py = Math.min(...ys); py <= Math.max(...ys); py += 0.25) {
+        // Skip points where flattening could decide the answer.
+        const nearEdge = distanceToEdges(glyphRings, px, py) < 0.05 || distanceToEdges(unionRings, px, py) < 0.05;
+        if (!nearEdge) {
+          const want = isFilled(glyphRings, px, py);
+          if (want) filled++;
+          if (isFilled(unionRings, px, py) !== want) {
+            mismatches.push(`(${px.toFixed(2)}, ${py.toFixed(2)}) want ${want ? 'filled' : 'empty'}`);
+          }
+        }
+      }
+    }
+    expect(filled).toBeGreaterThan(500);
+    expect(mismatches).toEqual([]);
   });
 });

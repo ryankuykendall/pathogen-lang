@@ -1,0 +1,21 @@
+// union() of two shapes whose curves kiss at one interior point.
+//
+// `lower` bulges up to y = 7.5 at x = 15; `upper` dips down to y = 7.5 at the
+// same point, and the two curves are tangent there. Neither curve's end lies
+// on the other. Before the 2026-10-28 fix the curve-intersection search kept
+// splitting both curves around the kiss and ran out of memory.
+//
+// See: AUDIT.md §2.17
+
+define ViewBox(-5, -5, 40, 25);
+
+let lower = @{
+  c 10 10 20 10 30 0
+  z
+};
+let upper = @{
+  c 10 -10 20 -10 30 0
+  z
+};
+
+lower.project(0, 0).union(upper.project(0, 15)).draw();

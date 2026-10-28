@@ -1,0 +1,25 @@
+// union() with a near-zero-length curve (a "speck") touching the other shape.
+//
+// The triangle's first segment is a cubic only 3e-8 long, starting exactly
+// where the arc ends. Before the 2026-10-28 fix the curve-intersection search
+// split the speck in two at every level without ever separating it from the
+// arc, and ran out of memory. The glyph matrices (failure-matrix-2/-3) hit the
+// same thing: the self-intersection pre-pass cut a 2e-8 sliver out of a
+// chained-union outline that grazes itself.
+//
+// See: AUDIT.md §2.17
+
+define ViewBox(-10, -20, 80, 50);
+
+let arc = @{
+  c 10 20 30 20 40 0
+  z
+};
+let speck = @{
+  c 0.00000001 0 0.00000002 0 0.00000003 0
+  l 10 10
+  l -10 0
+  z
+};
+
+arc.project(0, 0).union(speck.project(40, 0)).drawTo(0, 0);
