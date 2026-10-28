@@ -46,8 +46,8 @@ Use `.drawTo(x, y)` to emit `M x y` followed by the path's commands in a single 
 ```
 let shape = @{ v 20 h 20 v -20 z };
 
-shape.drawTo(10, 10)     // emits: M 10 10 v 20 h 20 v -20 z
-shape.drawTo(50, 50)     // reuse at a different position
+shape.drawTo(10, 10);     // emits: M 10 10 v 20 h 20 v -20 z
+shape.drawTo(50, 50);     // reuse at a different position
 ```
 
 `drawTo()` returns a `ProjectedPath` with absolute coordinates, just like `draw()`:
@@ -64,7 +64,7 @@ let proj = shape.drawTo(10, 10);
 ```
 let shape = @{ h 50 v 30 };
 let proj = shape.project(0, 0);
-proj.drawTo(100, 100)    // emits: M 100 100 h 50 v 30
+proj.drawTo(100, 100);    // emits: M 100 100 h 50 v 30
 ```
 
 ### Drawing a ProjectedPath in place
@@ -74,10 +74,10 @@ A ProjectedPath already knows where it lives, so `.draw()` on one draws it exact
 ```
 let pieces = plate.cut(knife);
 let placed = pieces[0].project(40, 60);
-placed.draw()                    // the piece, exactly where placed says it is
+placed.draw();                    // the piece, exactly where placed says it is
 
 for (seam in placed.segmentAll('cut')) {
-  seam.draw()                    // each healed seam, stroked on itself
+  seam.draw();                    // each healed seam, stroked on itself
 }
 ```
 
@@ -96,8 +96,8 @@ Because `startPoint` is always the first inked point, `drawTo(p.startPoint.x, p.
 The block and projection rows coincide only for a block with no leading move:
 
 ```
-@{ m 10 10 h 20 }.drawTo(100, 100)                // M 100 100 m 10 10 h 20  — ink at (110, 110)
-@{ m 10 10 h 20 }.project(0, 0).drawTo(100, 100)  // M 100 100 m 0 0 h 20    — ink at (100, 100)
+@{ m 10 10 h 20 }.drawTo(100, 100);                // M 100 100 m 10 10 h 20  — ink at (110, 110)
+@{ m 10 10 h 20 }.project(0, 0).drawTo(100, 100);  // M 100 100 m 0 0 h 20    — ink at (100, 100)
 ```
 
 Project first when you want the ink at the target.
@@ -124,8 +124,8 @@ Each of them records the translation it removed, as `anchor`:
 let shape = @{ h 100 v 40 };
 let slice = shape.subPath(0.2, 0.8);
 
-slice.startPoint     // Point(0, 0)   — re-based
-slice.anchor         // Point(28, 0)  — where it was cut from
+slice.startPoint;     // Point(0, 0)   — re-based
+slice.anchor;         // Point(28, 0)  — where it was cut from
 ```
 
 So a re-based result can always be put back using nothing but itself:
@@ -431,8 +431,8 @@ The result carries [`anchor`](#path-blocks-anchor-putting-a-re-based-result-back
 ```
 let loose = piece.translateStartPointTo(0, 0);
 
-loose.startPoint     // Point(0, 0)
-loose.anchor         // Point(50, 40) — where the piece's first point sat in the plate
+loose.startPoint;     // Point(0, 0)
+loose.anchor;         // Point(50, 40) — where the piece's first point sat in the plate
 loose.drawTo(loose.anchor.x, loose.anchor.y);    // the same ink as piece.drawTo(0, 0)
 ```
 
@@ -839,7 +839,7 @@ On a ProjectedPath the slice keeps its page coordinates — it stays where it wa
 let p = @{ h 100 v 50 };
 let proj = p.project(10, 20);
 let sub = proj.subPath(0.2, 0.8);  // ProjectedPath(40, 20 → 110, 40)
-sub.draw()                          // draws the middle 60% where it already is
+sub.draw();                          // draws the middle 60% where it already is
 ```
 
 Edge cases:
@@ -1046,7 +1046,7 @@ Elliptical fillet with a rotated ellipse (rotation in radians, default 0):
 
 ```
 let box = @{ h 60 v 40 h -60 z };
-let rotated = box.ellipticalFillet(12, 6, 0.3);
+let rotated = box.ellipticalFillet(12, 6, 0.3rad);
 M 10 10
 rotated.draw()
 ```
@@ -1068,7 +1068,7 @@ Elliptical fillet at a single vertex with rotation:
 
 ```
 let box = @{ h 60 v 40 h -60 z };
-let one = box.ellipticalFilletAtVertex(2, 15, 8, 0.5);
+let one = box.ellipticalFilletAtVertex(2, 15, 8, 0.5rad);
 M 10 10
 one.draw()
 ```
@@ -1469,10 +1469,10 @@ Returns the same path re-anchored to start at arc-length fraction `t`. Percent l
 On a **closed** path the result is seamless — the same loop, traversed from a new starting point, with the old seam healed:
 
 ```
-let star = @{
-  polygon(5, 40);
+let pentagon = @{
+  polygon(0, 0, 40, 5);
 };
-let rotated = star.startAt(40%);
+let rotated = pentagon.startAt(40%);
 ```
 
 This matters wherever the start point is load-bearing: where a dash pattern begins, where `subPath(0, t)` measures from, which corner `startAt(0)`-anchored effects treat as first.
@@ -1525,7 +1525,7 @@ let family = "Inter";
 
 **Syntax:**
 
-```
+```text
 @font "family-or-path" [weight];
 @font <variable> [weight];
 ```
@@ -1537,7 +1537,7 @@ let family = "Inter";
 
 Because fonts are loaded by the host environment *before* the program runs, a variable source must be resolvable statically: a top-level `let` whose value is a plain string literal. Referencing anything else fails with:
 
-```
+```text
 @font directive references 'x', which is not a top-level string variable.
 Declare it at the top level: let x = "Family Name";
 ```
@@ -1795,7 +1795,7 @@ In the playground, the extra script subsets are fetched automatically on the fir
 
 When a character has **no glyph in the font at all** — for example Hangul text with a Latin-only family, or an emoji — the glyph renders as the font's placeholder box and a warning is logged to the console pane:
 
-```
+```text
 [warn] Font 'Inter' (weight 400) has no loaded glyph for: 한 — rendered as placeholder boxes
 ```
 

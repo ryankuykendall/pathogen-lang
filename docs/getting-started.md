@@ -15,9 +15,9 @@ define default PathLayer('main-path-layer') #{
 };
 
 // A simple rectangle using variables
-let size = 50
-let x = 10
-let y = 10
+let size = 50;
+let x = 10;
+let y = 10;
 
 M x y
 h size
@@ -50,9 +50,9 @@ With pathogen-lang, you can use variables and loops:
 
 ```
 // pathogen-lang - DRY and readable
-let size = 60
+let size = 60;
 for (i in 0..3) {
-  rect(calc(20 + i * 80), 20, size, size)
+  rect(calc(20 + i * 80), 20, size, size);
 }
 ```
 
@@ -63,9 +63,9 @@ for (i in 0..3) {
 Store and reuse values:
 
 ```
-let width = 200
-let height = 100
-let centerX = calc(width / 2)
+let width = 200;
+let height = 100;
+let centerX = calc(width / 2);
 ```
 
 ### Expressions with calc()
@@ -73,7 +73,7 @@ let centerX = calc(width / 2)
 Use math in path commands:
 
 ```
-let r = 50
+let r = 50;
 M calc(100 - r) 100
 L calc(100 + r) 100
 ```
@@ -84,7 +84,7 @@ Repeat patterns easily:
 
 ```
 for (i in 0..10) {
-  circle(calc(20 + i * 30), 100, 10)
+  circle(calc(20 + i * 30), 100, 10);
 }
 ```
 
@@ -94,11 +94,11 @@ Define reusable shapes:
 
 ```
 fn square(x, y, size) {
-  rect(x, y, size, size)
+  rect(x, y, size, size);
 }
 
-square(10, 10, 50)
-square(70, 10, 50)
+square(10, 10, 50);
+square(70, 10, 50);
 ```
 
 ### Built-in Shapes
@@ -106,10 +106,10 @@ square(70, 10, 50)
 Common shapes are included:
 
 ```
-circle(100, 100, 50)
-rect(10, 10, 80, 60)
-polygon(100, 100, 40, 6)  // hexagon
-star(100, 100, 50, 25, 5)
+circle(100, 100, 50);
+rect(10, 10, 80, 60);
+polygon(100, 100, 40, 6);  // hexagon
+star(100, 100, 50, 25, 5);
 ```
 
 ## Next Steps

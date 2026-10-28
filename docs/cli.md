@@ -134,7 +134,7 @@ pathogen-lang -e 'let x = 42; log(x); M x 0' --print-logs
 ```
 
 Output on stderr:
-```
+```text
 [line 1] x = 42
 ```
 

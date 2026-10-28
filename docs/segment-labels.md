@@ -25,7 +25,7 @@ Here `top` names the first horizontal edge, the vertical edge rounds the corner 
 
 A path command may carry an optional `with` clause and an optional `as` clause, in that order:
 
-```
+```text
 <command> <args> [with <corner-op>] [as <label> (, <label>)*] ;
 ```
 

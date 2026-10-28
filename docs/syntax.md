@@ -70,8 +70,8 @@ Template literals are the sole string construction mechanism — the `+` operato
 
 ```
 let mode = "dark";
-if (mode == "dark") { /* ... */ }
-if (mode != "light") { /* ... */ }
+if (mode == "dark") { log("dark mode"); }
+if (mode != "light") { log("not light mode"); }
 ```
 
 ### `.length`
@@ -274,7 +274,7 @@ Each property is a `name: value;` declaration. The trailing `;` is required on *
 
 Style-block values are **native CSS syntax**, not Pathogen call syntax. This matters for CSS functions whose grammar is space-separated — the CSS filter functions (`blur`, `brightness`, `contrast`, `drop-shadow`, `grayscale`, `hue-rotate`, `invert`, `opacity`, `saturate`, `sepia`) take space-separated arguments, and commas inside them are a compile error:
 
-```
+```text
 // ✗ Compile error — Pathogen-style commas are not valid CSS here
 filter: drop-shadow(4px, 4px, 4px, shadowColor);
 // drop-shadow() uses space-separated CSS syntax:
@@ -305,7 +305,7 @@ CSS is strict about units per function, and a wrong one makes the browser drop t
 
 The table above is the **complete** list of checked functions. Any CSS function not listed — including `rotate`, `translate`, `skew`, `perspective`, the color functions, and `path()` — passes through unchecked.
 
-```
+```text
 filter: blur(4);              // ✗ blur() takes a length — "4" needs a unit (try 4px)
 filter: blur(4px);            // ✓
 filter: hue-rotate(90);       // ✗ hue-rotate() takes an angle — "90" needs a unit (try 90deg)
@@ -335,7 +335,7 @@ Pathogen checks a function's units only where CSS and SVG agree on the right ans
 
 A function also has to belong to the property it is used on — `fill: rotate(45);` is a compile error, since a transform function means nothing to `fill`:
 
-```
+```text
 fill: rotate(45);             // ✗ rotate() is not valid on "fill" — that property takes color functions
 fill: oklch(0.7 0.15 240);    // ✓
 clip-path: blur(4px);         // ✗ blur() is not valid on "clip-path" — that property takes basic shapes
@@ -470,8 +470,8 @@ if (x) {
 `null` is only equal to itself:
 
 ```
-if (x == null) { /* x is null */ }
-if (x != null) { /* x has a value */ }
+if (x == null) { log("x is null"); }
+if (x != null) { log("x has a value"); }
 ```
 
 `null == 0` evaluates to `0` (false) — null is distinct from zero.
@@ -514,11 +514,11 @@ let check = false;
 Booleans participate in arithmetic as their numeric values:
 
 ```
-true + 1     // 2
-true + true  // 2
-false + 1    // 1
-true == 1    // true
-false == 0   // true
+true + 1;     // 2
+true + true;  // 2
+false + 1;    // 1
+true == 1;    // true
+false == 0;   // true
 ```
 
 ### Display
@@ -537,20 +537,20 @@ log(`${true}`);  // true
 `false` is falsy (like `0` and `null`); `true` is truthy:
 
 ```
-if (true) { /* runs */ }
-if (false) { /* skipped */ }
+if (true) { log("runs"); }
+if (false) { log("skipped"); }
 
 let result = 5 > 3;  // true (BooleanValue)
-if (result) { /* runs */ }
+if (result) { log("runs"); }
 ```
 
 ### Logical Operators
 
 ```
-!true         // false
-!false        // true
-true && false // false
-false || true // true
+!true;         // false
+!false;        // true
+true && false; // false
+false || true; // true
 ```
 
 ### Arc Flags
@@ -605,7 +605,7 @@ grad.interpolation = Interpolation.OKLCH;
 Enum values are interchangeable with their string equivalents:
 
 ```
-Easing.Linear == 'linear'  // true
+Easing.Linear == 'linear';  // true
 ```
 
 The `Easing` curves are also callable as stdlib functions — the quadratic
@@ -1323,7 +1323,7 @@ Destructure to get both item and index with `for ([item, index] in list)`:
 ```
 let sizes = [5, 10, 15];
 for ([size, i] in sizes) {
-  circle(calc(i * 40 + 20), 50, size)
+  circle(calc(i * 40 + 20), 50, size);
 }
 ```
 
@@ -1594,7 +1594,7 @@ for (i in 5..1) {
 ```
 for (row in 0..2) {
   for (col in 0..2) {
-    circle(calc(col * 50 + 25), calc(row * 50 + 25), 10)
+    circle(calc(col * 50 + 25), calc(row * 50 + 25), 10);
   }
 }
 ```
@@ -2213,9 +2213,9 @@ Use `log()` to inspect the context during evaluation:
 
 ```
 M 10 20
-log(ctx)           // Logs full context as JSON
-log(ctx.position)  // Logs just position object
-log(ctx.position.x) // Logs just the x value
+log(ctx);           // Logs full context as JSON
+log(ctx.position);  // Logs just position object
+log(ctx.position.x); // Logs just the x value
 L 30 40
 ```
 
@@ -2245,7 +2245,7 @@ for (row in 0..rows) {
     let x = calc(col * spacing + 20);
     let y = calc(row * spacing + 20);
     let r = calc(5 + col + row);
-    circle(x, y, r)
+    circle(x, y, r);
   }
 }
 ```

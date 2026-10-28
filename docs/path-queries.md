@@ -285,7 +285,7 @@ Malformed selectors are errors too, naming the part that failed: an unknown noun
 
 ## Grammar
 
-```
+```text
 query      := selector ( ',' selector )*         one noun across the list
 selector   := compound ( ' ' compound )*         right side searched inside the left
 compound   := noun [ '(' arg (',' arg)* ')' ] filter* [ pseudo ]

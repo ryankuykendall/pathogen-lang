@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] - 2026-10-28 (every published docs example parses)
+
+### Fixed
+
+#### Documentation
+
+- **Every Pathogen example in the docs parses again.** 131 examples had stopped compiling, most of them written before `;` became mandatory between statements: the first example on Getting Started, every example on the Examples page, and blocks across the stdlib, layers, syntax, color, gradients and path-blocks pages. Copying one gave "Parse error … Missing ';'". They now have their semicolons. A few were out of date in other ways and now use today's language: a path block built from `M()`/`C()` calls and a four-argument `project()` (gradients), `layer PathLayer(…)` (color), `radians()` (layers), bare numbers where an angle needs a unit (layers, path blocks), `/* … */` placeholders (Pathogen has no block comments), a parameter named `layer` (a keyword, in stdlib), `polygon(5, 40)` (path blocks), and the old `${` style opener inside two JavaScript `compile()` examples (layers). The TextBlock section on escaping `${` was written for the old style opener; it now shows a real `${…}` in text, escaped and not. The text-rotation note in layers no longer says a bare number is radians (a rotation literal needs a unit), and the gradients page says a contour may end with `z` as well as `closePath()`. Blocks that show compiler output, signatures or grammar are tagged as text and render as plain text, and SVG output is highlighted as XML.
+
+#### Development
+
+- `tests/docs-examples.test.ts` parses every untagged or ```` ```pathogen ```` code block in `docs/`, reading the pages with the same Markdown parser the docs build uses, so an example that stops parsing fails the suite. A block that shows Pathogen failing to parse on purpose is tagged ```` ```pathogen invalid ````, which the site renders exactly like ```` ```pathogen ````. Examples are parsed, not run: one that leans on an earlier block is fine, and one that only fails at runtime isn't caught.
+- `scripts/build-docs.ts` registers highlight.js's plain-text and XML languages, so ```` ```text ```` blocks render plain and ```` ```xml ```` blocks as XML instead of being auto-detected.
+
 ## [Unreleased] - 2026-10-28 (a literal `${` in template literals)
 
 ### Fixed

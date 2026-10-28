@@ -64,7 +64,7 @@ M 10 10
 soft.draw();
 ```
 
-```
+```text
 Line 7, col 12: Fillet radius clamped at vertex 2: effective radius 10.00
 Line 7, col 12: Fillet skipped at vertex 2: radius too large for edge length
 Line 7, col 12: Fillet radius clamped at vertex 0: effective radius 10.00
@@ -90,7 +90,7 @@ M radius 0
 circle(50, 50, radius);
 ```
 
-```
+```text
 Line 2, col 3: `radius` is NaN in a path argument — SVG cannot represent it; the path will be drawn only up to here
 Line 3, col 1: circle(): argument 3 (`radius`) is NaN — SVG cannot represent it; the path will be drawn only up to here
 ```
@@ -112,7 +112,7 @@ pathogen-lang poster.pathogen --strict               # any warning is an error
 pathogen-lang poster.pathogen --strict=non-finite    # only these codes; comma-separate several
 ```
 
-```
+```text
 Error: Line 2, col 3: `radius` is NaN in a path argument — SVG cannot represent it; the path will be drawn only up to here (strict: non-finite)
 ```
 
@@ -269,7 +269,7 @@ Subpath start position (set by `M`/`m`, used by `Z`).
 
 Array of all executed commands with their positions:
 
-```
+```js
 // Each entry contains:
 {
   command: "L",        // Command letter

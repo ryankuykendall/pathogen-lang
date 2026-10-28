@@ -14,7 +14,7 @@ Every program runs inside a **project folder**. Think of it as a fence: paths in
 
 The project folder is the nearest folder with a `pathogen.json`, from the file's own folder upward, stopping before your home folder. If none has one, the project folder is the folder of the file you compile. Your home folder itself is never checked, so a stray `pathogen.json` there doesn't turn everything you own into one project.
 
-```
+```text
 my-gears/
   pathogen.json
   main.pathogen        ← project folder: my-gears/

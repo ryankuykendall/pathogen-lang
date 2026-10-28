@@ -11,6 +11,8 @@ import { siteHeaderHtml } from '../playground/utils/site-header-template.js';
 import bash from 'highlight.js/lib/languages/bash';
 import javascript from 'highlight.js/lib/languages/javascript';
 import json from 'highlight.js/lib/languages/json';
+import plaintext from 'highlight.js/lib/languages/plaintext';
+import xml from 'highlight.js/lib/languages/xml';
 import { Marked } from 'marked';
 import { markedHighlight } from 'marked-highlight';
 import { pathogenCodeCssDark, pathogenCodeCssLight } from './pathogen-code-css';
@@ -20,6 +22,10 @@ hljs.registerLanguage('js', javascript);
 hljs.registerLanguage('bash', bash);
 hljs.registerLanguage('shell', bash);
 hljs.registerLanguage('json', json);
+// ```text blocks (compiler output, signatures, grammar) render plain, and
+// ```xml blocks (SVG output) as XML, instead of being auto-detected.
+hljs.registerLanguage('text', plaintext);
+hljs.registerLanguage('xml', xml);
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, '..');

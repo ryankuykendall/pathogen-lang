@@ -123,7 +123,7 @@ This sets block-level styles that apply to all elements unless overridden by ele
 
 The `BBoxAnchor` enum provides named positions on a bounding box:
 
-```
+```text
 BBoxAnchor.TopLeft      BBoxAnchor.Top      BBoxAnchor.TopRight
 BBoxAnchor.Left         BBoxAnchor.Center   BBoxAnchor.Right
 BBoxAnchor.BottomLeft   BBoxAnchor.Bottom   BBoxAnchor.BottomRight
@@ -137,7 +137,7 @@ The `VerticalAnchor` enum names which **vertical font metric** lands on a target
 point. A baseline sits below the visual middle of a line of text, so aligning by
 baseline makes a rotated label look like it has drifted off the thing it labels:
 
-```
+```text
 VerticalAnchor.Baseline     VerticalAnchor.Midline
 VerticalAnchor.CapHeight    VerticalAnchor.Descender
 ```
@@ -312,7 +312,7 @@ The `name` must not collide with existing layer names (including the `-bg` and `
 ```pathogen
 let code = &{
   text(0, 0)`// Shape layer with styles
-define PathLayer('main') \${ fill: #3b82f6; }
+define PathLayer('main') #{ fill: #3b82f6; };
 
 let shape = rect(0, 0, 80, 60);
 layer('main').apply {
@@ -326,17 +326,19 @@ snippet << #{ translate-x: 400; translate-y: 100; };
 
 ### Escaping `${` in Code Text
 
-Template literals in Pathogen treat `${` as a string interpolation sequence. If your code text contains literal `${` (e.g., style blocks), escape the dollar sign with a backslash:
+Template literals in Pathogen treat `${` as a string interpolation sequence. If your text needs a literal `${` — code shown as text often does — escape the dollar sign with a backslash. Without the escape, the `${…}` is evaluated and its value goes into the text:
 
 ```pathogen
-// ✗ This fails — ${ triggers interpolation
-let code = &{ text(0,0)`let s = ${ fill: red; }` };
+let count = 3;
 
-// ✓ Escape the dollar sign
-let code = &{ text(0,0)`let s = \${ fill: red; }` };
+// ✗ Evaluated: the text reads "3 items"
+let shown = &{ text(0, 0)`${count} items` };
+
+// ✓ Escaped: the text reads "${count} items"
+let literal = &{ text(0, 0)`\${count} items` };
 ```
 
-`@{` and `&{` do **not** need escaping — they pass through template literals as plain text. Only `${` requires the `\$` escape.
+`#{`, `@{` and `&{` do **not** need escaping — they pass through template literals as plain text. Only `${` requires the `\$` escape.
 
 ### Syntax Highlighting Palette
 

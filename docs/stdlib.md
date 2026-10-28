@@ -528,7 +528,7 @@ These functions generate complete path segments.
 Draws a circle centered at (cx, cy) with radius r.
 
 ```
-circle(100, 100, 50)
+circle(100, 100, 50);
 ```
 
 Output: A full circle using two arc commands.
@@ -538,7 +538,7 @@ Output: A full circle using two arc commands.
 Draws a rectangle.
 
 ```
-rect(10, 10, 80, 60)
+rect(10, 10, 80, 60);
 ```
 
 ### roundRect(x, y, width, height, radius)
@@ -546,7 +546,7 @@ rect(10, 10, 80, 60)
 Draws a rectangle with rounded corners.
 
 ```
-roundRect(10, 10, 80, 60, 10)
+roundRect(10, 10, 80, 60, 10);
 ```
 
 ### polygon(cx, cy, radius, sides)
@@ -554,8 +554,8 @@ roundRect(10, 10, 80, 60, 10)
 Draws a regular polygon.
 
 ```
-polygon(100, 100, 50, 6)  // Hexagon
-polygon(100, 100, 50, 8)  // Octagon
+polygon(100, 100, 50, 6);  // Hexagon
+polygon(100, 100, 50, 8);  // Octagon
 ```
 
 ### star(cx, cy, outerRadius, innerRadius, points)
@@ -563,7 +563,7 @@ polygon(100, 100, 50, 8)  // Octagon
 Draws a star shape.
 
 ```
-star(100, 100, 50, 25, 5)  // 5-pointed star
+star(100, 100, 50, 25, 5);  // 5-pointed star
 ```
 
 ### radialWedge(innerRadius, outerRadius, fromAngle, toAngle, cornerRadius)
@@ -577,7 +577,7 @@ The centre is **wherever the cursor is**, so position it with a move first:
 
 ```
 M 100 100
-radialWedge(30, 70, -30deg, 30deg, 6)
+radialWedge(30, 70, -30deg, 30deg, 6);
 ```
 
 The output is entirely relative (`m`, `a`, `l`, `z`) with no absolute `M`, so it
@@ -599,7 +599,7 @@ sector with no radial thickness, which has no corners to round.
 for (i in 0..3) {
   let from = calc(i * 40deg);
   M 100 100
-  radialWedge(25, calc(40 + i * 15), from, calc(from + 30deg), 4)
+  radialWedge(25, calc(40 + i * 15), from, calc(from + 30deg), 4);
 }
 ```
 
@@ -608,7 +608,7 @@ for (i in 0..3) {
 Draws a line segment.
 
 ```
-line(0, 0, 100, 100)
+line(0, 0, 100, 100);
 ```
 
 ### arc(rx, ry, rotation, largeArc, sweep, x, y)
@@ -617,7 +617,7 @@ Draws an arc to (x, y). This is a direct wrapper around the SVG `A` command.
 
 ```
 M 50 100
-arc(50, 50, 0, 1, 1, 150, 100)
+arc(50, 50, 0, 1, 1, 150, 100);
 ```
 
 **`rotation` is in degrees, not radians.** This is the one angle in the language
@@ -628,9 +628,9 @@ bare number is therefore already degrees, and an angle with a unit converts to
 degrees rather than to radians:
 
 ```
-arc(60, 20, 45, 0, 1, 80, 0)      // 45 degrees
-arc(60, 20, 45deg, 0, 1, 80, 0)   // the same 45 degrees
-arc(60, 20, 0.25pi, 0, 1, 80, 0)  // also 45 degrees
+arc(60, 20, 45, 0, 1, 80, 0);      // 45 degrees
+arc(60, 20, 45deg, 0, 1, 80, 0);   // the same 45 degrees
+arc(60, 20, 0.25pi, 0, 1, 80, 0);  // also 45 degrees
 ```
 
 The same applies to a raw `A` or `a` command — `A 10 10 45deg 0 1 20 20` emits a
@@ -642,7 +642,7 @@ rotation of `45`. Every *other* angle in the standard library is radians; see
 Draws a quadratic bezier curve from (x1, y1) to (x2, y2) with control point (cx, cy).
 
 ```
-quadratic(0, 100, 50, 0, 100, 100)
+quadratic(0, 100, 50, 0, 100, 100);
 ```
 
 ### cubic(x1, y1, c1x, c1y, c2x, c2y, x2, y2)
@@ -650,7 +650,7 @@ quadratic(0, 100, 50, 0, 100, 100)
 Draws a cubic bezier curve.
 
 ```
-cubic(0, 100, 25, 0, 75, 0, 100, 100)
+cubic(0, 100, 25, 0, 75, 0, 100, 100);
 ```
 
 ### polarCubicBezier(start, pv1, pv2, end)
@@ -663,7 +663,7 @@ Draws a cubic bezier curve where control points are defined as polar vectors rel
 ```
 let a = Point(0, 100);
 let b = Point(100, 100);
-polarCubicBezier(a, PolarVector(rad(-60), 40), PolarVector(rad(-120), 40), b)
+polarCubicBezier(a, PolarVector(rad(-60), 40), PolarVector(rad(-120), 40), b);
 ```
 
 Output: `m` (relative move) followed by `c` (relative cubic) — matches the spline function convention.
@@ -673,10 +673,10 @@ PolarVector methods compose naturally for handle manipulation:
 ```
 let handle = PolarVector(rad(-45), 30);
 // Symmetric curve: mirror the handle for the other end
-polarCubicBezier(a, handle, handle.mirror(), b)
+polarCubicBezier(a, handle, handle.mirror(), b);
 
 // Wider version: scale the handle distance
-polarCubicBezier(a, handle.scale(1.5), handle.mirror().scale(1.5), b)
+polarCubicBezier(a, handle.scale(1.5), handle.mirror().scale(1.5), b);
 ```
 
 ### moveTo(x, y)
@@ -684,7 +684,7 @@ polarCubicBezier(a, handle.scale(1.5), handle.mirror().scale(1.5), b)
 Returns a move command. Useful inside functions.
 
 ```
-moveTo(50, 50)
+moveTo(50, 50);
 ```
 
 ### lineTo(x, y)
@@ -692,7 +692,7 @@ moveTo(50, 50)
 Returns a line command.
 
 ```
-lineTo(100, 100)
+lineTo(100, 100);
 ```
 
 ### closePath()
@@ -700,7 +700,7 @@ lineTo(100, 100)
 Returns a close path command.
 
 ```
-closePath()
+closePath();
 ```
 
 ### cubicSpline(points)
@@ -722,7 +722,7 @@ cubicSpline([
   { x: 0, y: 100, angle: 0, exit: 30 },
   { x: 50, y: 0, angle: 0, entry: 20, exit: 25 },
   { x: 100, y: 100, angle: 0, entry: 30 }
-])
+]);
 ```
 
 Output: `m` (relative move) followed by one `c` (relative cubic) command per segment. A single-point array emits only `m`. All spline functions use relative commands so they work naturally inside path blocks.
@@ -740,7 +740,7 @@ quadSpline(
   { x: 0, y: 0, angle: 0, exit: 30 },
   [{ x: 60, y: 0, exit: 30 }],
   { x: 120, y: 0 }
-)
+);
 ```
 
 Output: `m` followed by one `q` (relative quadratic) command per segment.
@@ -762,7 +762,7 @@ clippedQuadSpline(
   { x: 0, y: 0, angle: 0, exit: 100, exitTime: 0.5 },
   [],
   { x: 200, y: 0, entryTime: 0.5 }
-)
+);
 ```
 
 Output: `m` followed by one `c` (relative cubic) command per segment — not `q`.
@@ -845,9 +845,9 @@ gridLayer.apply {
 A convenience wrapper for one-line grid drawing:
 
 ```
-fn drawGridToLayer(layer, gridFn, type, angle, x, y, w, h, s) {
-  layer.ctx.transform.rotate.set(angle);
-  layer.apply { gridFn(type, x, y, w, h, s); }
+fn drawGridToLayer(targetLayer, gridFn, type, angle, x, y, width, height, spacing) {
+  targetLayer.ctx.transform.rotate.set(angle);
+  targetLayer.apply { gridFn(type, x, y, width, height, spacing); }
 }
 ```
 
@@ -916,7 +916,7 @@ Emits a line command (`L`) in the specified direction. Same as `polarMove`.
 
 ```
 M 100 100
-polarLine(45deg, 70.7)  // Draws line diagonally
+polarLine(45deg, 70.7);  // Draws line diagonally
 ```
 
 ### Arc Functions
@@ -934,7 +934,7 @@ Draws an arc defined by center offset and angles. Returns `{point, angle}` with 
 
 ```
 M 50 50
-arcFromCenter(50, 0, 50, 180deg, 270deg, 1)
+arcFromCenter(50, 0, 50, 180deg, 270deg, 1);
 // Center at (100, 50), arc from (50, 50) to (100, 100)
 ```
 
@@ -950,7 +950,7 @@ This function is ideal for creating continuous curved paths because it never emi
 
 ```
 M 100 100
-arcFromPolarOffset(0, 50, 90deg)
+arcFromPolarOffset(0, 50, 90deg);
 // Center at (150, 100), sweeps 90° clockwise
 // Ends at (150, 50)
 ```
@@ -974,17 +974,17 @@ Sets the heading to an absolute angle. No command is emitted and the cursor does
 
 ```
 M 50 100
-heading(0)           // Set heading to rightward
-tangentArc(20, 90deg) // Works immediately — no dummy segment needed
+heading(0);           // Set heading to rightward
+tangentArc(20, 90deg); // Works immediately — no dummy segment needed
 ```
 
 Inside [path blocks](#path-blocks-path-blocks), `heading()` avoids the offset artifacts that `h 0.01` causes with `z` closePath:
 
 ```
 let cLike = @{
-  heading(0)
-  tangentArc(20, 90deg)
-  tangentArc(20, -90deg)
+  heading(0);
+  tangentArc(20, 90deg);
+  tangentArc(20, -90deg);
   z  // Closes cleanly to start — no tiny offset
 };
 ```
@@ -995,17 +995,17 @@ Adds `delta` to the current heading (relative change). Requires an existing head
 
 ```
 M 50 100
-heading(0)          // Start heading rightward
-turn(90deg)         // Now heading downward
-tangentLine(30)     // Draws 30px down
+heading(0);          // Start heading rightward
+turn(90deg);         // Now heading downward
+tangentLine(30);     // Draws 30px down
 ```
 
 After drawing commands:
 
 ```
 M 0 0  L 50 0      // Heading is 0 (rightward)
-turn(45deg)         // Heading is now 45°
-tangentLine(20)     // Continues at 45°
+turn(45deg);         // Heading is now 45°
+tangentLine(20);     // Continues at 45°
 ```
 
 #### ctx.heading
@@ -1014,11 +1014,11 @@ The current heading (read-only), readable via the context object. Set by `headin
 
 ```
 M 0 0  L 50 0
-log(ctx.heading)   // 0 (rightward)
-heading(90deg)
-log(ctx.heading)   // π/2 (downward)
+log(ctx.heading);   // 0 (rightward)
+heading(90deg);
+log(ctx.heading);   // π/2 (downward)
 M 200 200
-log(ctx.heading)   // undefined (M clears the heading)
+log(ctx.heading);   // undefined (M clears the heading)
 ```
 
 ### Tangent Functions
@@ -1034,15 +1034,15 @@ You can also set the heading explicitly with `heading()`, adjust it with `turn()
 Draws a line continuing in the tangent direction from the previous command.
 
 ```
-arcFromPolarOffset(0, 50, 90deg)
-tangentLine(30)  // Continues in the arc's exit direction
+arcFromPolarOffset(0, 50, 90deg);
+tangentLine(30);  // Continues in the arc's exit direction
 ```
 
 After native SVG commands:
 
 ```
 M 50 100  L 150 100
-tangentLine(30)  // Continues rightward to (180, 100)
+tangentLine(30);  // Continues rightward to (180, 100)
 ```
 
 #### tangentArc(radius, sweepAngle)
@@ -1050,15 +1050,15 @@ tangentLine(30)  // Continues rightward to (180, 100)
 Draws an arc continuing tangent to the previous command.
 
 ```
-arcFromPolarOffset(0, 50, 90deg)
-tangentArc(30, 45deg)  // Smooth continuation with a smaller arc
+arcFromPolarOffset(0, 50, 90deg);
+tangentArc(30, 45deg);  // Smooth continuation with a smaller arc
 ```
 
 After native SVG commands:
 
 ```
 M 50 100  L 150 100
-tangentArc(30, 90deg)  // Smooth arc curving down from the line's endpoint
+tangentArc(30, 90deg);  // Smooth arc curving down from the line's endpoint
 ```
 
 ---
@@ -1100,5 +1100,5 @@ L calc(lerp(0, 100, 0.5)) calc(clamp(150, 0, 100))
 Path functions are called at the statement level:
 
 ```
-circle(100, 100, calc(25 + 25))  // calc() inside arguments
+circle(100, 100, calc(25 + 25));  // calc() inside arguments
 ```

@@ -518,7 +518,7 @@ layer('bg').apply {
 }
 
 layer('circle').apply {
-  circle(100, 100, 60)
+  circle(100, 100, 60);
 }
 ```
 
@@ -705,7 +705,7 @@ Topological gradients define smooth surfaces using closed-path contours at speci
 
 ### Constructor
 
-```
+```text
 TopoGradient(id, width, height)
 ```
 
@@ -719,7 +719,7 @@ TopoGradient(id, width, height)
 
 Each contour defines a closed path at a specific elevation with a color. Contours are the color stops of a topological gradient — the gradient interpolates between them based on distance.
 
-```
+```text
 g.contour(projectedPath, elevation, color)
 ```
 
@@ -729,7 +729,7 @@ g.contour(projectedPath, elevation, color)
 | `elevation` | number | Elevation level (0–1) |
 | `color` | Color | Color at this elevation |
 
-The path must be closed (end with `closePath()`). Use `@{ ... }` path blocks with `.project(x, y)` to position contours in absolute space.
+The path must be closed (end with `z` or `closePath()`). Use `@{ ... }` path blocks with `.project(x, y)` to position contours in absolute space.
 
 ### Properties
 
@@ -749,24 +749,23 @@ The path must be closed (end with `closePath()`). Use `@{ ... }` path blocks wit
 ```pathogen
 // Define contour shapes
 let shore = @{
-  M(0, 0)
-  C(100, -40, 250, 30, 300, 100)
-  C(270, 210, 30, 220, 0, 0)
-  closePath()
+  c 100 -40 250 30 300 100
+  c -30 110 -270 120 -300 -100
+  z
 };
 
-let peak = @{ circle(0, 0, 40); closePath() };
+let peak = @{ circle(0, 0, 40); closePath(); };
 
 let topo = TopoGradient('terrain', 400, 300) {|g|
-  g.contour(shore.project(50, 50), 0.3, Color('#f9e79f'))
-  g.contour(shore.scale(0.7, 0.7).project(100, 90), 0.55, Color('#27ae60'))
-  g.contour(peak.project(200, 150), 0.8, Color('#6e2c00'))
+  g.contour(shore.project(50, 50), 0.3, Color('#f9e79f'));
+  g.contour(shore.scale(0.7, 0.7).project(100, 90), 0.55, Color('#27ae60'));
+  g.contour(peak.project(200, 150), 0.8, Color('#6e2c00'));
 };
 topo.baseColor = Color('#1a5276');
 topo.easing = 'smoothstep';
 
-define PathLayer('bg') #{ fill: topo; }
-layer('bg').apply { rect(0, 0, 400, 300) }
+define PathLayer('bg') #{ fill: topo; };
+layer('bg').apply { rect(0, 0, 400, 300); }
 ```
 
 ### Programmatic Contours
@@ -777,8 +776,8 @@ Contours can be generated procedurally using loops:
 let topo = TopoGradient('rings', 400, 400) {|g|
   for ([level, i] in [0.2, 0.4, 0.6, 0.8]) {
     let r = calc(150 - i * 35);
-    let ring = @{ circle(0, 0, r); closePath() };
-    g.contour(ring.project(200, 200), level, Color('#27ae60'))
+    let ring = @{ circle(0, 0, r); closePath(); };
+    g.contour(ring.project(200, 200), level, Color('#27ae60'));
   }
 };
 topo.baseColor = Color('#1a5276');
@@ -791,12 +790,12 @@ Non-nested contours at the same elevation create separate features. Each pixel's
 ```pathogen
 let topo = TopoGradient('archipelago', 600, 400) {|g|
   // Main island
-  g.contour(mainIsland.project(100, 100), 0.35, Color('#f9e79f'))
-  g.contour(mainPeak.project(180, 160), 0.7, Color('#6e2c00'))
+  g.contour(mainIsland.project(100, 100), 0.35, Color('#f9e79f'));
+  g.contour(mainPeak.project(180, 160), 0.7, Color('#6e2c00'));
 
   // Small island (separate, not nested)
-  g.contour(smallIsland.project(450, 280), 0.35, Color('#f9e79f'))
-  g.contour(smallPeak.project(460, 290), 0.6, Color('#27ae60'))
+  g.contour(smallIsland.project(450, 280), 0.35, Color('#f9e79f'));
+  g.contour(smallPeak.project(460, 290), 0.6, Color('#27ae60'));
 };
 topo.baseColor = Color('#1a5276');
 ```
@@ -827,10 +826,10 @@ The solver uses Jacobi iteration: each non-boundary pixel is repeatedly replaced
 - **Laplace**: Solves for the harmonic function, producing physically correct potential field flow. Elevation changes smoothly around corners and between non-nested contours. Best for: terrain/height maps, natural-looking blends, multi-peak topologies.
 
 ```pathogen
-let s = @{ circle(0, 0, 80); closePath() };
+let s = @{ circle(0, 0, 80); closePath(); };
 let topo = TopoGradient('terrain', 400, 300) {|g|
-  g.contour(s.project(200, 150), 0.3, Color('#2ecc71'))
-  g.contour(s.project(200, 150, 0.5, 0.5), 0.7, Color('#e74c3c'))
+  g.contour(s.project(200, 150), 0.3, Color('#2ecc71'));
+  g.contour(s.scale(0.5, 0.5).project(200, 150), 0.7, Color('#e74c3c'));
 };
 topo.method = 'laplace';
 topo.iterations = 300;
@@ -855,7 +854,7 @@ TopoGradient is rasterized per-pixel:
 | `.contour() first argument must be a ProjectedPathValue` | Non-projected path |
 | `.contour() elevation must be between 0 and 1` | Out-of-range elevation |
 | `.contour() third argument must be a Color value` | Non-Color color |
-| `.contour() path must be closed` | Path not ending with closePath() |
+| `.contour() path must be closed` | Path not ending with `z` or `closePath()` |
 | `TopoGradient easing must be one of: ...` | Invalid easing value |
 | `TopoGradient iterations must be a number` | When setting iterations to a non-number |
 | `TopoGradient iterations must be between 1 and 2000` | When iterations is out of range |

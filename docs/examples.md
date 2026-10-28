@@ -7,19 +7,19 @@ Practical examples showing how to use pathogen-lang for common tasks.
 ### Simple Rectangle
 
 ```
-rect(10, 10, 180, 80)
+rect(10, 10, 180, 80);
 ```
 
 ### Circle
 
 ```
-circle(100, 100, 50)
+circle(100, 100, 50);
 ```
 
 ### Rounded Rectangle
 
 ```
-roundRect(20, 40, 160, 120, 15)
+roundRect(20, 40, 160, 120, 15);
 ```
 
 ## Using Variables
@@ -33,7 +33,7 @@ let cx = calc(width / 2);
 let cy = calc(height / 2);
 let r = 40;
 
-circle(cx, cy, r)
+circle(cx, cy, r);
 ```
 
 ### Configurable Star
@@ -45,7 +45,7 @@ let outerR = 60;
 let innerR = 25;
 let points = 5;
 
-star(centerX, centerY, outerR, innerR, points)
+star(centerX, centerY, outerR, innerR, points);
 ```
 
 ## Loops and Patterns
@@ -54,7 +54,7 @@ star(centerX, centerY, outerR, innerR, points)
 
 ```
 for (i in 0..5) {
-  circle(calc(30 + i * 35), 100, 15)
+  circle(calc(30 + i * 35), 100, 15);
 }
 ```
 
@@ -63,7 +63,7 @@ for (i in 0..5) {
 ```
 for (row in 0..5) {
   for (col in 0..5) {
-    circle(calc(20 + col * 40), calc(20 + row * 40), 5)
+    circle(calc(20 + col * 40), calc(20 + row * 40), 5);
   }
 }
 ```
@@ -75,7 +75,7 @@ let cx = 100;
 let cy = 100;
 
 for (i in 1..6) {
-  circle(cx, cy, calc(i * 15))
+  circle(cx, cy, calc(i * 15));
 }
 ```
 
@@ -93,7 +93,7 @@ for (i in 0..points) {
   let angle = calc(i / points * TAU());
   let x = calc(cx + cos(angle) * r);
   let y = calc(cy + sin(angle) * r);
-  circle(x, y, 5)
+  circle(x, y, 5);
 }
 ```
 
@@ -133,11 +133,11 @@ for (i in 0..petalCount) {
   let angle = calc(i / petalCount * TAU());
   let px = calc(cx + cos(angle) * 35);
   let py = calc(cy + sin(angle) * 35);
-  circle(px, py, petalRadius)
+  circle(px, py, petalRadius);
 }
 
 // Center
-circle(cx, cy, centerRadius)
+circle(cx, cy, centerRadius);
 ```
 
 ## Custom Functions
@@ -146,12 +146,12 @@ circle(cx, cy, centerRadius)
 
 ```
 fn square(x, y, size) {
-  rect(x, y, size, size)
+  rect(x, y, size, size);
 }
 
-square(10, 10, 50)
-square(70, 10, 50)
-square(130, 10, 50)
+square(10, 10, 50);
+square(70, 10, 50);
+square(130, 10, 50);
 ```
 
 ### Diamond Shape
@@ -165,7 +165,7 @@ fn diamond(cx, cy, size) {
   Z
 }
 
-diamond(100, 100, 40)
+diamond(100, 100, 40);
 ```
 
 ### Arrow
@@ -187,7 +187,7 @@ fn arrow(x1, y1, x2, y2, headSize) {
   L calc(x2 - cos(a2) * headSize) calc(y2 - sin(a2) * headSize)
 }
 
-arrow(20, 100, 180, 100, 15)
+arrow(20, 100, 180, 100, 15);
 ```
 
 ## Conditionals
@@ -198,9 +198,9 @@ arrow(20, 100, 180, 100, 15)
 let size = 80;
 
 if (size > 50) {
-  circle(100, 100, size)
+  circle(100, 100, size);
 } else {
-  rect(calc(100 - size / 2), calc(100 - size / 2), size, size)
+  rect(calc(100 - size / 2), calc(100 - size / 2), size, size);
 }
 ```
 
@@ -210,9 +210,9 @@ if (size > 50) {
 for (i in 0..10) {
   let x = calc(20 + i * 18);
   if (calc(i % 2) == 0) {
-    circle(x, 100, 8)
+    circle(x, 100, 8);
   } else {
-    rect(calc(x - 6), 94, 12, 12)
+    rect(calc(x - 6), 94, 12, 12);
   }
 }
 ```
@@ -245,7 +245,7 @@ for (i in 0..teeth) {
 Z
 
 // Center hole
-circle(cx, cy, 10)
+circle(cx, cy, 10);
 ```
 
 ### Recursive-Style Tree (using loops)
@@ -270,7 +270,7 @@ L startX 120
 for (i in 0..5) {
   let angle = calc(-1.57 + (i - 2) * 0.4);
   let len = calc(30 - abs(i - 2) * 5);
-  branch(startX, 120, len, angle, 0)
+  branch(startX, 120, len, angle, 0);
 }
 ```
 

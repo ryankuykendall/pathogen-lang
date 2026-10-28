@@ -125,9 +125,9 @@ L 100 150
 
 // Draw markers at the main layer's current position
 layer('markers').apply {
-  let px = layer('main').ctx.position.x
-  let py = layer('main').ctx.position.y
-  circle(px, py, 4)
+  let px = layer('main').ctx.position.x;
+  let py = layer('main').ctx.position.y;
+  circle(px, py, 4);
 }
 ```
 
@@ -146,7 +146,7 @@ Available context properties:
 Layer names can be **any expression** — a variable, a template literal, an array element, a member access, or a function call — both where a layer is defined and where `layer(...)` routes to it:
 
 ```
-let target = 'overlay'
+let target = 'overlay';
 define PathLayer(target) #{ stroke: blue; }
 
 layer(target).apply {
@@ -204,7 +204,7 @@ let l = PathLayer('outline') #{ stroke: red; };
 
 // Read: returns a StyleBlockValue copy
 let s = l.styles;
-log(s.stroke)  // "red"
+log(s.stroke);  // "red"
 
 // Write: replaces all styles
 l.styles = l.styles << #{ fill: blue; };
@@ -282,15 +282,15 @@ When using the JavaScript API, `compile()` returns a structured result:
 import { compile } from 'pathogen-lang';
 
 const result = compile(`
-  define default PathLayer('bg') ${
+  define default PathLayer('bg') #{
     stroke: #ddd;
     fill: none;
-  }
-  define PathLayer('fg') ${
+  };
+  define PathLayer('fg') #{
     stroke: #333;
     stroke-width: 2;
     fill: none;
-  }
+  };
 
   M 0 0 H 100 V 100 H 0 Z
 
@@ -357,15 +357,15 @@ layer('grid').apply {
 }
 
 // Shape (goes to default layer)
-let cx = 100
-let cy = 100
-let r = 60
-let sides = 6
+let cx = 100;
+let cy = 100;
+let r = 60;
+let sides = 6;
 
 for (i in 0..sides) {
-  let angle = calc(i * 360 / sides - 90)
-  let x = calc(cx + r * cos(radians(angle)))
-  let y = calc(cy + r * sin(radians(angle)))
+  let angle = calc(i * 360 / sides - 90);
+  let x = calc(cx + r * cos(rad(angle)));
+  let y = calc(cy + r * sin(rad(angle)));
   if (i == 0) { M x y } else { L x y }
 }
 Z
@@ -373,10 +373,10 @@ Z
 // Mark each vertex
 layer('points').apply {
   for (i in 0..sides) {
-    let angle = calc(i * 360 / sides - 90)
-    let x = calc(cx + r * cos(radians(angle)))
-    let y = calc(cy + r * sin(radians(angle)))
-    circle(x, y, 3)
+    let angle = calc(i * 360 / sides - 90);
+    let x = calc(cx + r * cos(rad(angle)));
+    let y = calc(cy + r * sin(rad(angle)));
+    circle(x, y, 3);
   }
 }
 ```
@@ -427,38 +427,38 @@ Note: `30deg` in the source becomes `rotate="30"` (degrees) in SVG output.
 
 ### tspan() — Only Inside text() Blocks
 
-```
+```text
 tspan()`content`                   // no offset
 tspan(dx, dy)`content`             // with offsets
 tspan(dx, dy, 45deg)`content`      // with offsets and rotation
 ```
 
-Position arguments (x, y, dx, dy) are plain numbers. Rotation follows the standard angle unit convention — bare numbers are radians, use `deg`/`rad`/`pi` suffixes for explicit units. Content is always a template literal.
+Position arguments (x, y, dx, dy) are plain numbers. Rotation is an angle, so a literal needs a unit — `45deg`, `0.5rad` or `0.25pi`; a bare `45` is an error (see [Angle Literals Require a Unit](#syntax-angle-literals-require-a-unit)). Content is always a template literal.
 
 ### Template Literals
 
 Template literals use backtick syntax with `${expression}` interpolation. They work everywhere — text content, log messages, variable values:
 
 ```
-let name = "World"
-let x = `Hello ${name}!`              // "Hello World!"
-let msg = `Score: ${2 + 3}`           // "Score: 5"
-log(`Position: ${ctx.position.x}`)    // in log messages
+let name = "World";
+let x = `Hello ${name}!`;              // "Hello World!"
+let msg = `Score: ${2 + 3}`;           // "Score: 5"
+log(`Position: ${ctx.position.x}`);    // in log messages
 ```
 
 Template literals are the sole string construction mechanism — `+` stays strictly numeric. String equality (`==`/`!=`) works for conditionals:
 
 ```
-let mode = "dark"
-if (mode == "dark") { /* ... */ }
-if (mode != "light") { /* ... */ }
+let mode = "dark";
+if (mode == "dark") { log("dark mode"); }
+if (mode != "light") { log("not light mode"); }
 ```
 
 ### TextLayer Output Format
 
 ```js
 const result = compile(`
-  define TextLayer('labels') ${ font-size: 14; fill: #333; }
+  define TextLayer('labels') #{ font-size: 14; fill: #333; };
   layer('labels').apply {
     text(50, 45)\`Start\`
     text(10, 180) {
@@ -591,7 +591,7 @@ define PathLayer('bright') #{ filter: brightness(level); };
 
 **Substitution is not unit-aware, and the compiler checks the result.** A numeric variable substitutes as a bare number, so `filter: blur(amount);` would emit `blur(4)` — a unitless length, which is invalid CSS. Rather than emit a declaration the browser silently drops, Pathogen rejects it:
 
-```
+```text
 blur() takes a length — "4" needs a unit (try 4px). Lengths without a valid
 unit are invalid CSS and the browser drops the whole declaration.
 ```
@@ -644,7 +644,7 @@ schedule.apply {
 
 The first field is the text itself, anchored by the layer or the per-text style; each field after a tab becomes a `<tspan>` with its own `x` and `text-anchor`, so the decimal points of an end-anchored column line up whatever the digit count:
 
-```
+```xml
 <text x="2" y="16" text-anchor="end">1<tspan x="13" text-anchor="end">7.0</tspan><tspan x="26" text-anchor="end">15.1</tspan><tspan x="42" text-anchor="end">24.0</tspan></text>
 ```
 
@@ -659,7 +659,7 @@ Apply SVG matrix transformations (translate, rotate, scale) at the layer level. 
 ```
 define PathLayer('shape') #{ stroke: #333; fill: none; }
 
-layer('shape').ctx.transform.translate.set(50, 50)
+layer('shape').ctx.transform.translate.set(50, 50);
 
 layer('shape').apply {
   M 0 0 L 100 0 L 100 100 Z
@@ -672,34 +672,34 @@ layer('shape').apply {
 Angles are in **radians** (consistent with polar commands). Use `deg` suffix for degrees — [Angle values](#syntax-angle-units) work here whether written inline or carried in a variable:
 
 ```
-layer('shape').ctx.transform.rotate.set(45deg)         // around origin
-layer('shape').ctx.transform.rotate.set(45deg, 50, 50) // around (50, 50)
+layer('shape').ctx.transform.rotate.set(45deg);         // around origin
+layer('shape').ctx.transform.rotate.set(45deg, 50, 50); // around (50, 50)
 ```
 
 ### Scale
 
 ```
-layer('shape').ctx.transform.scale.set(2, 2)             // uniform scale
-layer('shape').ctx.transform.scale.set(2, 2, 50, 50)     // scale around (50, 50)
+layer('shape').ctx.transform.scale.set(2, 2);             // uniform scale
+layer('shape').ctx.transform.scale.set(2, 2, 50, 50);     // scale around (50, 50)
 ```
 
 ### Reset
 
 ```
-layer('shape').ctx.transform.translate.reset()  // clear translate only
-layer('shape').ctx.transform.rotate.reset()     // clear rotate only
-layer('shape').ctx.transform.scale.reset()      // clear scale only
-layer('shape').ctx.transform.reset()            // clear all transforms
+layer('shape').ctx.transform.translate.reset();  // clear translate only
+layer('shape').ctx.transform.rotate.reset();     // clear rotate only
+layer('shape').ctx.transform.scale.reset();      // clear scale only
+layer('shape').ctx.transform.reset();            // clear all transforms
 ```
 
 ### Read Access
 
 ```
-layer('shape').ctx.transform.translate.x    // 0 if not set
-layer('shape').ctx.transform.translate.y
-layer('shape').ctx.transform.rotate.angle   // 0 if not set
-layer('shape').ctx.transform.scale.x        // 1 if not set (default scale)
-layer('shape').ctx.transform.scale.y        // 1 if not set
+layer('shape').ctx.transform.translate.x;    // 0 if not set
+layer('shape').ctx.transform.translate.y;
+layer('shape').ctx.transform.rotate.angle;   // 0 if not set
+layer('shape').ctx.transform.scale.x;        // 1 if not set (default scale)
+layer('shape').ctx.transform.scale.y;        // 1 if not set
 ```
 
 ### Default Layer Context
@@ -707,8 +707,8 @@ layer('shape').ctx.transform.scale.y        // 1 if not set
 Outside any `layer().apply` block, `ctx` refers to the default layer's context — including its transform. This is true whether or not you have named the default layer with `define default PathLayer`:
 
 ```
-ctx.transform.translate.set(25, 25)
-ctx.transform.rotate.set(45deg)
+ctx.transform.translate.set(25, 25);
+ctx.transform.rotate.set(45deg);
 M 0 0 L 100 0
 ```
 
@@ -718,7 +718,7 @@ Inside a `layer().apply` block, `ctx` refers to the active layer's context:
 
 ```
 layer('shape').apply {
-  ctx.transform.translate.set(10, 20)
+  ctx.transform.translate.set(10, 20);
   M 0 0 L 50 50
 }
 ```
@@ -728,9 +728,9 @@ layer('shape').apply {
 When multiple transforms are set, they are applied in SVG order: **translate → rotate → scale** (translate applied last visually):
 
 ```
-layer('shape').ctx.transform.translate.set(10, 20)
-layer('shape').ctx.transform.rotate.set(90deg)
-layer('shape').ctx.transform.scale.set(2, 2)
+layer('shape').ctx.transform.translate.set(10, 20);
+layer('shape').ctx.transform.rotate.set(90deg);
+layer('shape').ctx.transform.scale.set(2, 2);
 // Output: transform="translate(10, 20) rotate(90) scale(2, 2)"
 ```
 
@@ -778,7 +778,7 @@ The simplest habit is to give the annotating layer the same transform as the lay
 
 A [subscription](#subscriptions-subscriptions) that annotates across a transform boundary is warned about, because it is nearly always a mistake:
 
-```
+```text
 Subscription on 'moved' drew into 'dots', whose transform differs (translate(100, 50) vs none).
 Matches are in 'moved' coordinates, so the annotation will not line up — give 'dots' the same
 transform, or compose layer('moved').ctx.transform yourself
@@ -834,8 +834,8 @@ Each layer has independent transforms — setting a transform on one layer does 
 define PathLayer('a') #{ stroke: red; }
 define PathLayer('b') #{ stroke: blue; }
 
-layer('a').ctx.transform.translate.set(10, 10)
-layer('b').ctx.transform.scale.set(2, 2)
+layer('a').ctx.transform.translate.set(10, 10);
+layer('b').ctx.transform.scale.set(2, 2);
 // Layer 'a' gets translate(10, 10), layer 'b' gets scale(2, 2)
 ```
 
@@ -862,13 +862,13 @@ Use `.append(ref1, ref2, ...)` to add layers as children of a group. All argumen
 ```
 let panel = GroupLayer('panel') #{};
 let bg = PathLayer('bg') #{ fill: #eee; };
-bg.apply { rect(0, 0, 200, 200) }
+bg.apply { rect(0, 0, 200, 200); }
 
 let label = TextLayer('label') #{ font-size: 14; fill: #333; };
 label.apply { text(10, 20)`Panel Title` }
 
 // Append children to group
-panel.append(bg, label)
+panel.append(bg, label);
 ```
 
 Output SVG:
@@ -889,10 +889,10 @@ Groups can contain other groups, up to a maximum nesting depth of 10:
 let inner = GroupLayer('inner') #{};
 let child = PathLayer('child') #{};
 child.apply { M 5 5 }
-inner.append(child)
+inner.append(child);
 
 let outer = GroupLayer('outer') #{};
-outer.append(inner)
+outer.append(inner);
 ```
 
 ### Transforms
@@ -904,8 +904,8 @@ GroupLayers support both style block transforms and imperative transforms:
 let panel = GroupLayer('panel') #{ transform: translate(50, 100); };
 
 // Imperative transform
-panel.ctx.transform.rotate.set(0.785)
-panel.ctx.transform.scale.set(2, 2)
+panel.ctx.transform.rotate.set(45deg);
+panel.ctx.transform.scale.set(2, 2);
 ```
 
 When both are present, the style block transform takes precedence.
@@ -918,8 +918,8 @@ Appending a layer that already belongs to another group moves it. A warning log 
 let g1 = GroupLayer('g1') #{};
 let g2 = GroupLayer('g2') #{};
 let child = PathLayer('child') #{};
-g1.append(child)  // child is in g1
-g2.append(child)  // child moves to g2, warning logged
+g1.append(child);  // child is in g1
+g2.append(child);  // child moves to g2, warning logged
 ```
 
 ### No Apply Blocks
@@ -931,7 +931,7 @@ GroupLayers do not support `.apply` blocks. Use `.append()` to add children:
 // g.apply { M 0 0 }
 
 // Use .append() instead:
-g.append(myPath)
+g.append(myPath);
 ```
 
 ## Limitations

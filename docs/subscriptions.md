@@ -41,7 +41,7 @@ layer('shape').apply {
 
 ```
 let handle = layer('shape').subscribe('endpoint') {|match, index, subscription|
-  ...
+  // …
 };
 
 layer('shape').subscribe('command(a)') << annotateArc;   // a lambda or fn defined elsewhere
@@ -98,7 +98,7 @@ Position pseudo-selectors count within the window: `endpoint:first` is the first
 
 A callback may draw into a layer that has subscriptions of its own. Those fire in a following round, so annotations can be annotated. What cannot happen is a loop: if rounds keep producing new drawing, the compiler stops after eight and reports the chain it found, for example:
 
-```
+```text
 Subscriptions fed each other for 8 rounds: shape → dots → shape
 ```
 

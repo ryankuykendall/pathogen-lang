@@ -105,7 +105,7 @@ The result is an ordinary marker: `.append()` adds more shapes to it, and every 
 
 When the program finishes, every marker is checked once: if an appended shape's bounding box is not inside the marker's final viewBox, the compiler warns, naming both:
 
-```
+```text
 Marker 'dot': the appended shape spans -5…5 × -5…5 but the marker's viewBox is 0 0 10 10 — the part outside it is clipped. Use Marker.fromPathBlock(), set viewBox, or translate the shape
 ```
 
@@ -296,7 +296,7 @@ dimLines.apply {
 
 Each of the three lines is emitted as a `<path>` of its own inside one `<g>` that carries the layer's id, name, styles and transform:
 
-```
+```xml
 <g id="dim-lines" stroke="#b8860b" stroke-width="0.75" fill="none" marker-start="url(#dim-arrow)" marker-end="url(#dim-arrow)">
   <path d="M 10 20 L 90 20"/>
   <path d="M 10 40 L 90 40"/>
