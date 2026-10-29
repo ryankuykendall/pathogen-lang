@@ -334,6 +334,8 @@ deterministic per engine only.
 | `TAU()` | 6.28318... (2π) |
 | `mpi(x)` | `x * π` (multiply by π) |
 
+These are functions, so they need the parentheses: `PI()`. A bare `PI` names the function itself. Using it as a number, as in `PI / 2`, is an error that says to call it, and `log(PI)` shows `PI = StdlibFunction(PI)`. For an angle, the `pi` suffix is shorter: π is `1pi`, and `PI() / 2` as an angle is `0.5pi` (see [Angle Units](#syntax-angle-units)).
+
 ```
 // Draw a semicircle
 let r = 50;

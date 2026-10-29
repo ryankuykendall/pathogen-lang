@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] - 2026-10-29 (a function named without its parentheses says so)
+
+### Fixed
+
+#### Core
+
+- **A function used as a number names itself.** `PI` without its parentheses is the function, not π: `PI / 2` and `-PI` stopped with "Binary operator / requires numeric operands" or "Unary operator - requires numeric operand", `sin(PI)` returned NaN without a word, and `heading(PI)` put JavaScript source in its error. Each now says "`PI` is a function, not a number — call it: `PI()` (or, for an angle, write `1pi`)", for an operator, a comparison or `calc()`, and for an argument to a standard-library function ("sin(): argument 1 (`PI`) is a function, not a number — …"). User fns and lambdas get the same message ("`half` is a function, not a number — call it: `half(…)`"). `log(PI)` and `${PI}` in a template show `StdlibFunction(PI)` instead of the function's JavaScript source. A function is still a value: `let f = sin; f(0.5)` works as before.
+
+#### Documentation
+
+- The stdlib Constants section says `PI()`, `E()` and `TAU()` need their parentheses and points at the `pi` suffix for angles (π is `1pi`); Debug & Console says how a function displays in `log()`.
+
 ## [Unreleased] - 2026-10-28 (every published blog example parses)
 
 ### Fixed

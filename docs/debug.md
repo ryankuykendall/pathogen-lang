@@ -44,6 +44,8 @@ log(box);
 // box = PathBlock(4 commands: h 40 v 40 h -40 z)
 ```
 
+Functions show their parameters: `Function(x)` for a `fn`, `Lambda(x)` for a lambda. A standard-library function written without parentheses, like `PI`, shows as `StdlibFunction(PI)`; call it, `PI()`, for the number.
+
 ### log() has no value
 
 `log(...)` cannot be used where a value is expected. `let y = log(3);` is a compile error that points you at the right function: the natural logarithm is [`ln(x)`](#stdlib-exponential-logarithmic).

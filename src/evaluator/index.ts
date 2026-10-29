@@ -88,6 +88,7 @@ import {
   describeNullPathArg,
   isPathEmittingStdlib,
 } from './path-emit-guard';
+import { describeFunctionArgument, describeFunctionAsNumber, formatStdlibFunction, isStdlibFunctionValue } from './function-values';
 import { pathCut, pathDifference, pathIntersection, pathUnion, pathXor } from './boolean-ops';
 import {
   dashCommands,
@@ -2213,7 +2214,12 @@ function evaluateExpression(expr: Expression, scope: Scope): Value {
       const rightNum = toNumber(right);
 
       if (leftNum === undefined || rightNum === undefined) {
-        throw new Error(formatError(`Binary operator ${expr.operator} requires numeric operands`, getLineDeep(expr)));
+        // A function named without its parentheses (`PI / 2`) says so — function-values.ts.
+        const functionOperand =
+          describeFunctionAsNumber(left, expr.left) ?? describeFunctionAsNumber(right, expr.right);
+        throw new Error(
+          formatError(functionOperand ?? `Binary operator ${expr.operator} requires numeric operands`, getLineDeep(expr)),
+        );
       }
 
       // Angle propagation: an angle stays an angle through +/-, scaling, and
@@ -2275,7 +2281,10 @@ function evaluateExpression(expr: Expression, scope: Scope): Value {
       }
       const argNum = toNumber(arg);
       if (argNum === undefined) {
-        throw new Error(formatError(`Unary operator ${expr.operator} requires numeric operand`, getLine(expr)));
+        const functionOperand = describeFunctionAsNumber(arg, expr.argument);
+        throw new Error(
+          formatError(functionOperand ?? `Unary operator ${expr.operator} requires numeric operand`, getLine(expr)),
+        );
       }
       switch (expr.operator) {
         case '-':
@@ -6762,6 +6771,8 @@ function formatValueForDisplay(val: Value): string {
   if (typeof val === 'object' && val !== null && 'type' in val && val.type === 'UserFunction') {
     return `${val.isLambda ? 'Lambda' : 'Function'}(${val.params.join(', ')})`;
   }
+  // Never the function's JavaScript source (`()=>Math.PI`): its stdlib name.
+  if (isStdlibFunctionValue(val)) return formatStdlibFunction(val);
   return String(val);
 }
 
@@ -7500,6 +7511,9 @@ function evaluateStatementBuiltin(call: FunctionCall, scope: Scope): void {
         } else {
           stringValue = String(value);
         }
+      } else if (isStdlibFunctionValue(value)) {
+        // `log(PI)`: its stdlib name, never the function's JavaScript source.
+        stringValue = formatStdlibFunction(value);
       } else if (typeof value === 'number') {
         stringValue = String(value);
       } else if (typeof value === 'string') {
@@ -8526,6 +8540,9 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope): Value {
       const v = evaluateExpression(arg, scope);
       return isAngleValue(v) ? v.radians : v;
     });
+    // `heading(PI)`: a function named without its parentheses (function-values.ts).
+    const functionArg = describeFunctionArgument(call.name, call.args, args);
+    if (functionArg) throw new Error(formatError(functionArg, getLine(call), getCol(call)));
     // Every context-aware function is numeric geometry — null is never a
     // meaningful argument (polarLine used to coerce it to 0, tangentArc wrote
     // `A null null`). Checked before dispatch: these mutate the path context.
@@ -8569,6 +8586,10 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope): Value {
     }
 
     const stdlibArgs = call.args.map((arg) => evaluateExpression(arg, scope));
+
+    // `sin(PI)`: a function named without its parentheses would become NaN (function-values.ts).
+    const functionArg = describeFunctionArgument(call.name, call.args, stdlibArgs);
+    if (functionArg) throw new Error(formatError(functionArg, getLine(call), getCol(call)));
 
     // A path-emitting function must never write a non-number into `d`
     // (docs/syntax.md → Null). See path-emit-guard.ts.
