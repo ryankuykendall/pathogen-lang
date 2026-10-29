@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] - 2026-10-28 (`ctx.heading` with no direction reads `null`)
+
+### Fixed
+
+#### Core
+
+- **`ctx.heading` reads `null` when no direction is set** — before `heading()` or a drawing command sets one, and after `M` clears it. Reading it there was an error ("Property 'heading' does not exist on context object") while the stdlib docs said it read as undefined; the docs now say `null` and show `ctx.heading == null` as the test for it (not truthiness: a rightward heading is `0`). `layer(…).ctx.heading` behaves the same, and the JavaScript API's `compileWithContext(…).context.heading` is still `undefined` there.
+
 ## [Unreleased] - 2026-10-28 (builder blocks and a stray `return`)
 
 ### Fixed

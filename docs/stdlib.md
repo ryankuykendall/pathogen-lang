@@ -1010,7 +1010,7 @@ tangentLine(20);     // Continues at 45°
 
 #### ctx.heading
 
-The current heading (read-only), readable via the context object. Set by `heading()`, `turn()`, or any drawing command that establishes direction. `M` (moveTo) clears the heading.
+The current heading (read-only), readable via the context object. Set by `heading()`, `turn()`, or any drawing command that establishes direction. `M` (moveTo) clears the heading. Until `heading()` or a drawing command sets a direction (and at the start, before anything has), `ctx.heading` is `null`. Test for it with `ctx.heading == null` (see [Null](#syntax-null)), not truthiness: a rightward heading is `0`, which is also falsy.
 
 ```
 M 0 0  L 50 0
@@ -1018,7 +1018,7 @@ log(ctx.heading);   // 0 (rightward)
 heading(90deg);
 log(ctx.heading);   // π/2 (downward)
 M 200 200
-log(ctx.heading);   // undefined (M clears the heading)
+log(ctx.heading);   // null (M clears the heading)
 ```
 
 ### Tangent Functions

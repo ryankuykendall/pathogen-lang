@@ -121,15 +121,40 @@ function convertContextProperty(key: string, raw: unknown): Value {
 }
 
 /**
+ * The pen's own context record (`ctx`, `layer(…).ctx`), as opposed to a record
+ * nested in it such as `ctx.position`. Only that record has `heading`.
+ */
+function isPenContext(record: Record<string, unknown>): boolean {
+  return 'position' in record && 'commands' in record;
+}
+
+/**
  * Context objects have dynamic keys, so has/get/keys read the backing record
  * directly — no per-access allocation. `_transformState` is internal state
  * and is never exposed; `.transform` is synthesized from it by index.ts.
+ *
+ * `heading` is always a member of the pen's context: `null` until something
+ * sets a direction, and again after `M` clears it (docs/stdlib.md
+ * "ctx.heading"). The record itself leaves it out then, so the JS API's
+ * `result.context.heading` stays `undefined`.
  */
 const CONTEXT_OBJECT: StructDescriptor = {
   name: 'context object',
-  has: (value, key) => key !== '_transformState' && (value as ContextObject).value[key] !== undefined,
-  get: (value, key) => convertContextProperty(key, (value as ContextObject).value[key]),
-  keys: (value) => Object.keys((value as ContextObject).value).filter((k) => k !== '_transformState'),
+  has: (value, key) => {
+    if (key === '_transformState') return false;
+    const record = (value as ContextObject).value;
+    return record[key] !== undefined || (key === 'heading' && isPenContext(record));
+  },
+  get: (value, key) => {
+    const record = (value as ContextObject).value;
+    if (key === 'heading' && record[key] === undefined) return null;
+    return convertContextProperty(key, record[key]);
+  },
+  keys: (value) => {
+    const record = (value as ContextObject).value;
+    const keys = Object.keys(record).filter((k) => k !== '_transformState');
+    return isPenContext(record) && !keys.includes('heading') ? [...keys, 'heading'] : keys;
+  },
 };
 
 /**
