@@ -17,7 +17,7 @@ The fundamental shape in a radial bar chart is the **annular sector** — a ring
 
 ```pathogen
 M cx cy
-radialWedge(innerR, outerR, fromAngle, toAngle, cornerR)
+radialWedge(innerR, outerR, fromAngle, toAngle, cornerR);
 ```
 
 The center is wherever the cursor is positioned (via `M cx cy`). The function emits only relative commands (`m`, `a`, `l`, `z`) — no absolute `M` — so it composes naturally inside [PathBlocks](/blog/pathblock-introduction). Angles are in radians (use the `deg` suffix for degrees — e.g., `90deg`, `-45deg`), with `fromAngle` / `toAngle` following the same convention as [conic gradients](/blog/gradient-conic). The `cornerR` parameter controls the rounding at all four arc-line junctions.
@@ -33,14 +33,14 @@ We initially built annular sectors using a [PathBlock](/blog/pathblock-introduct
 ```pathogen
 fn makeWedge(innerR, outerR, sweep, startAngle, cornerR) {
   let w = @{
-    heading(calc(startAngle + 90deg))
-    tangentArc(innerR, sweep)
-    turn(-90deg)
-    tangentLine(calc(outerR - innerR))
-    turn(-90deg)
-    tangentArc(outerR, calc(-1 * sweep))
-    turn(-90deg)
-    tangentLine(calc(outerR - innerR))
+    heading(calc(startAngle + 90deg));
+    tangentArc(innerR, sweep);
+    turn(-90deg);
+    tangentLine(calc(outerR - innerR));
+    turn(-90deg);
+    tangentArc(outerR, calc(-1 * sweep));
+    turn(-90deg);
+    tangentLine(calc(outerR - innerR));
     z
   };
   return w.fillet(cornerR);
@@ -62,7 +62,7 @@ A radial bar maps a data value to the outer radius of an annular sector. The inn
 ```pathogen
 let outerR = calc(innerR + (maxR - innerR) * d.all / maxVal);
 M cx cy
-radialWedge(innerR, outerR, fromAngle, toAngle, cornerR)
+radialWedge(innerR, outerR, fromAngle, toAngle, cornerR);
 ```
 
 To compare two datasets (all games vs top 100), the Observable chart overlays a narrower dark bar on top of each wider red bar. The dark bar uses 50% of the angular width, centered within the slice:
@@ -92,7 +92,7 @@ Doing this manually requires separate TextLayers for left and right hemispheres,
 let label = &{ text(0, 0)`${d.name}` } << #{ font-size: 11; };
 catLabels.apply {
   label.radialProject(cx, cy, midAngle, labelR,
-    'start', 1, VerticalAnchor.Midline).draw()
+    'start', 1, VerticalAnchor.Midline).draw();
 }
 ```
 

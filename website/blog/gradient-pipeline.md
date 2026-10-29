@@ -34,7 +34,7 @@ let card = GroupLayer('card-1') #{
   translate-x: 20;
   translate-y: 25;
 };
-card.append(fill_layer, label_layer, tag_layer)
+card.append(fill_layer, label_layer, tag_layer);
 ```
 
 The `translate-x`, `translate-y`, `rotate`, and `scale` convenience properties in the style block compile to a `transform` attribute on the `<g>` element. This is simpler than writing raw `transform: translate(20, 25)` and composes correctly when multiple transforms are needed (the order is always translate, rotate, scale).

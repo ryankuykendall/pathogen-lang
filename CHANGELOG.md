@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] - 2026-10-28 (every published blog example parses)
+
+### Fixed
+
+#### Documentation
+
+- **Every Pathogen example on the blog parses again.** 60 examples across 21 posts had stopped compiling, most of them written before `;` became mandatory between statements; they now have their semicolons. Some were out of date in other ways and now use today's language: an elliptical-fillet rotation and three `polarProject()` angles that needed units (`0.3rad`, `-0.5pi` — `PI` on its own is the function `PI()`), a variable named `layer` (a keyword; glyph extraction), and `...` placeholders, now `// …` comments. The heading post now says `ctx.heading` reads `null` at the start and after `M`, and no longer says `turn()` can set a heading when there is none (it rotates the current one). The broken-lines retrospective gets an October 2026 editor's note: a stdlib shape after `M` now parses when the statement ends with `;`, and still ignores the move, as the post warned; its bare style declarations now sit in a `#{ … }` block, so the example is checked. Formulas, signatures, routing tables and config snippets are tagged as text, SVG attributes as XML, and the three examples shown failing on purpose (two historical parse errors, half-typed code showing completions) as `pathogen invalid`.
+- **The boolean-operations post draws its results where they belong.** It said a boolean result is always a PathBlock re-based to `(0, 0)`; a result now follows its receiver — a ProjectedPath in, a ProjectedPath out, in page coordinates — so `drawTo(0, 0)` moved each result's first point instead, and the closing example's sample dots no longer sat on its outline. The examples now project shapes where they go and `.draw()` the result, the prose states the receiver rule (with an editor's note), a chain that called `.project()` on a ProjectedPath is fixed, and a variable named after `circle()` is now `disc`.
+
+### Changed
+
+#### Development
+
+- `tests/docs-examples.test.ts` checks the blog's examples as well as the docs', with a floor on how many each holds. `scripts/build-blog.ts` registers a plain `text` language, so those fences render as typed instead of being guessed at by auto-detection, and `website/blog/CLAUDE.md` lists the tags and the parse rule.
+
 ## [Unreleased] - 2026-10-28 (`ctx.heading` with no direction reads `null`)
 
 ### Fixed

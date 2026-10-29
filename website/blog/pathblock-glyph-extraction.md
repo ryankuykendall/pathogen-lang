@@ -65,7 +65,7 @@ Each glyph PathBlock is a full PathBlock value with all the standard properties 
 let glyphs = PathBlock.fromGlyph("A", #{ font-family: Inter; font-size: 72; });
 
 // Draw the glyph
-glyphs[0].drawTo(50, 100)
+glyphs[0].drawTo(50, 100);
 
 // Query its geometry
 log(glyphs[0].length);           // total outline arc-length
@@ -93,7 +93,7 @@ let glyphs = PathBlock.fromGlyph("PATHOGEN", styles);
 let cursor_x = 60;
 let baseline_y = 140;
 for (g in glyphs) {
-  g.drawTo(cursor_x, baseline_y)
+  g.drawTo(cursor_x, baseline_y);
   cursor_x = calc(cursor_x + g.advanceWidth);
 }
 ```
@@ -137,7 +137,7 @@ let contours = glyphs[0].contours;
 
 // Draw each contour with different styling
 for (c in contours) {
-  c.drawTo(50, 100)
+  c.drawTo(50, 100);
 }
 ```
 
@@ -156,12 +156,12 @@ let fills  = [Color('#3b82f630'), Color('#22c55e30'), Color('#f59e0b30')];
 let contours = glyphs[0].contours;
 let ci = 0;
 for (c in contours) {
-  let layer = PathLayer('c' + ci) #{
+  let contourLayer = PathLayer('c' + ci) #{
     fill: fills[ci];
     stroke: colors[ci];
     stroke-width: 1.5;
   };
-  layer.apply { c.drawTo(50, 100) }
+  contourLayer.apply { c.drawTo(50, 100); }
   ci = calc(ci + 1);
 }
 ```
@@ -190,7 +190,7 @@ Offset each character vertically using a sine function:
 let idx = 0;
 for (g in glyphs) {
   let y_offset = calc(sin(idx * 0.8) * 15);
-  g.drawTo(cursor_x, calc(baseline + y_offset))
+  g.drawTo(cursor_x, calc(baseline + y_offset));
   cursor_x = calc(cursor_x + g.advanceWidth);
   idx = calc(idx + 1);
 }
@@ -207,7 +207,7 @@ let idx = 0;
 for (g in glyphs) {
   let s = calc(0.5 + idx * 0.25);
   let scaled = g.scale(s, s);
-  scaled.drawTo(cursor_x, baseline)
+  scaled.drawTo(cursor_x, baseline);
   cursor_x = calc(cursor_x + g.advanceWidth * s);
   idx = calc(idx + 1);
 }
@@ -226,7 +226,7 @@ for (g in glyphs) {
   let cx = calc(arc_cx + cos(angle) * arc_r);
   let cy = calc(arc_cy + sin(angle) * arc_r);
   let rotated = g.rotateAtVertexIndex(0, calc(angle + 0.5pi));
-  rotated.drawTo(cx, cy)
+  rotated.drawTo(cx, cy);
   arc_cursor = calc(arc_cursor + g.advanceWidth);
 }
 ```
@@ -314,7 +314,7 @@ let glyphs = PathBlock.fromGlyph("HELLO", styles);
 let cursor_x = 50;
 let baseline_y = 120;
 for (g in glyphs) {
-  g.drawTo(cursor_x, baseline_y)
+  g.drawTo(cursor_x, baseline_y);
   cursor_x = calc(cursor_x + g.advanceWidth);
 }
 ```

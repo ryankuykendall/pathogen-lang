@@ -31,7 +31,8 @@ The `slug` must match the filename (without `.md`).
 - Open posts that assume prior material with a `> **Prerequisites:** …` blockquote naming assumed knowledge, with links — per [Voice and Audience](../guidelines/voice-and-audience.md)
 - Use proper heading hierarchy (h1 title auto-added, start content at h2)
 - Use `<code>` for inline code, fenced code blocks with language tags
-- Supported syntax highlighting languages: javascript/js, bash/shell, json, html/xml, toml
+- Supported syntax highlighting languages: pathogen, javascript/js, bash/shell, json, html/xml, toml, text (plain: compiler output, signatures, formulas)
+- Every untagged or ```pathogen fence must parse — `tests/docs-examples.test.ts` checks the blog as well as `docs/`. Code that isn't Pathogen takes its own tag; Pathogen shown failing on purpose is tagged ```pathogen invalid (it renders exactly like ```pathogen)
 - Images/assets go in `website/blog/assets/` and are referenced relatively
 
 ## Blog Sample Pipeline (`website/blog/samples/`)

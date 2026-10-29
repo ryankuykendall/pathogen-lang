@@ -22,7 +22,7 @@ Both behaviors meant the same thing: the SPA's client-side router never got a ch
 
 CloudFlare Pages documentation prominently features the `_redirects` file as the solution for SPA routing. The syntax seems simple enough:
 
-```
+```text
 /svg-path-extended/docs  /svg-path-extended/index.html  200
 /svg-path-extended/preferences  /svg-path-extended/index.html  200
 /svg-path-extended/*  /svg-path-extended/index.html  200
@@ -38,7 +38,7 @@ The `200` status code is supposed to perform a "rewrite"—serve the content of 
 
 Wrangler produced warnings like:
 
-```
+```text
 Infinite loop detected in this rule and has been ignored. This will cause
 a redirect to strip `.html` or `/index` and end up triggering this rule again.
 ```

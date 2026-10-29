@@ -22,8 +22,8 @@ let outer = @{
 };
 
 let topo = TopoGradient('terrain', 400, 400) {|g|
-  g.contour(outer.project(60, 60), 0.25, Color('#f9e79f'))
-  g.contour(mid.project(90, 90),   0.5,  Color('#27ae60'))
+  g.contour(outer.project(60, 60), 0.25, Color('#f9e79f'));
+  g.contour(mid.project(90, 90),   0.5,  Color('#27ae60'));
   g.contour(peak.project(180, 170), 0.8, Color('#6e2c00'))
 };
 topo.baseColor = Color('#1a5276');
@@ -44,11 +44,11 @@ Contours do not need to be nested. Two separate closed paths at the same elevati
 ```pathogen
 let topo = TopoGradient('twins', 500, 350) {|g|
   // Left peak — warm tones
-  g.contour(island.project(30, 60),  0.3, Color('#f9e79f'))
-  g.contour(summit.project(130, 120), 0.7, Color('#e74c3c'))
+  g.contour(island.project(30, 60),  0.3, Color('#f9e79f'));
+  g.contour(summit.project(130, 120), 0.7, Color('#e74c3c'));
 
   // Right peak — cool tones
-  g.contour(island.project(260, 80),  0.3, Color('#aed9e0'))
+  g.contour(island.project(260, 80),  0.3, Color('#aed9e0'));
   g.contour(summit.project(360, 140), 0.7, Color('#5e60ce'))
 };
 ```

@@ -11,7 +11,7 @@ Grid patterns show up everywhere — engineering overlays, graph paper, game boa
 
 ## Square Grids
 
-```pathogen
+```text
 squareGrid(type, x, y, width, height, cellSize)
 ```
 
@@ -28,7 +28,7 @@ The grid fills as many complete cells as fit: `floor(width / cellSize)` columns 
 
 ## Triangle Grids
 
-```pathogen
+```text
 triangleGrid(type, x, y, width, height, cellSize)
 ```
 
@@ -40,7 +40,7 @@ The intersection marks on triangle grids are edge-aligned — six arms at 60° i
 
 ## Hexagon Grids
 
-```pathogen
+```text
 hexagonGrid(type, x, y, width, height, cellSize, orientation?)
 ```
 

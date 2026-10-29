@@ -17,7 +17,7 @@ Pathogen turns out to be a surprisingly capable tool for this kind of work. If y
 
 The Clifford attractor is defined by two equations:
 
-```
+```text
 xₙ₊₁ = sin(a · yₙ) + c · cos(a · xₙ)
 yₙ₊₁ = sin(b · xₙ) + d · cos(b · yₙ)
 ```

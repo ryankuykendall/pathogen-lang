@@ -13,6 +13,7 @@ import { siteHeaderHtml } from '../playground/utils/site-header-template.js';
 import bash from 'highlight.js/lib/languages/bash';
 import javascript from 'highlight.js/lib/languages/javascript';
 import json from 'highlight.js/lib/languages/json';
+import plaintext from 'highlight.js/lib/languages/plaintext';
 import xml from 'highlight.js/lib/languages/xml';
 import { marked } from 'marked';
 import { markedHighlight } from 'marked-highlight';
@@ -25,6 +26,9 @@ hljs.registerLanguage('json', json);
 hljs.registerLanguage('html', xml);
 hljs.registerLanguage('xml', xml);
 hljs.registerLanguage('toml', bash); // Close enough for toml highlighting
+// Compiler output, signatures, formulas, config files: shown as typed, not
+// guessed at by highlightAuto (tests/docs-examples.test.ts skips this tag).
+hljs.registerLanguage('text', plaintext);
 // Pathogen fences are highlighted by the real Lezer parser (see the
 // markedHighlight callback), NOT by hljs-as-javascript — which split dashed
 // style properties like `stroke-width` into two differently-colored tokens.

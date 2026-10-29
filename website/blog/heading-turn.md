@@ -12,7 +12,7 @@ The old workaround was a dummy segment:
 ```pathogen
 M 50 100
 h 0.01            // invisible line to set heading rightward
-tangentArc(20, 90deg)
+tangentArc(20, 90deg);
 ```
 
 This sets the heading, but the 0.01px offset accumulates. When you close a path with `z`, it draws a line back to `(50.01, 100)` instead of `(50, 100)` — a tiny but visible artifact.
@@ -23,8 +23,8 @@ This sets the heading, but the 0.01px offset accumulates. When you close a path 
 
 ```pathogen
 M 50 100
-heading(0)           // set heading rightward — nothing drawn
-tangentArc(20, 90deg) // works immediately
+heading(0);           // set heading rightward — nothing drawn
+tangentArc(20, 90deg); // works immediately
 ```
 
 Angles follow SVG's coordinate conventions: 0 is rightward, positive angles rotate clockwise (downward in SVG's y-down coordinate system). Use the `deg` suffix for degrees.
@@ -35,18 +35,18 @@ Angles follow SVG's coordinate conventions: 0 is rightward, positive angles rota
 
 ```pathogen
 M 50 100
-heading(0)          // start rightward
-turn(90deg)         // now downward
-tangentLine(30)     // draws 30px down
+heading(0);          // start rightward
+turn(90deg);         // now downward
+tangentLine(30);     // draws 30px down
 ```
 
 Negative deltas turn counter-clockwise. Multiple `turn()` calls accumulate:
 
 ```pathogen
-heading(0)
-turn(45deg)         // 45°
-turn(45deg)         // 90°
-tangentLine(20)     // draws at 90°
+heading(0);
+turn(45deg);         // 45°
+turn(45deg);         // 90°
+tangentLine(20);     // draws at 90°
 ```
 
 ## Shapes Without Dummy Segments
@@ -62,20 +62,20 @@ The demo below shows four shapes built entirely with `heading`, `turn`, `tangent
 ```pathogen
 fn sharpPoly(sides, sideLen) {
   let ext = calc(360 / sides);
-  heading(calc(ext / 2 * PI() / 180))
+  heading(calc(ext / 2 * PI() / 180));
   for (i in 0..sides) {
-    tangentLine(sideLen)
-    turn(calc(ext * PI() / 180))
+    tangentLine(sideLen);
+    turn(calc(ext * PI() / 180));
   }
 }
 
 fn roundedPoly(sides, sideLen, r) {
   let ext = calc(360 / sides);
   let straight = calc(sideLen - 2 * r * tan(ext / 2 * PI() / 180));
-  heading(calc(ext / 2 * PI() / 180))
+  heading(calc(ext / 2 * PI() / 180));
   for (i in 0..sides) {
-    tangentLine(straight)
-    tangentArc(r, calc(ext * PI() / 180))
+    tangentLine(straight);
+    tangentArc(r, calc(ext * PI() / 180));
   }
 }
 ```
@@ -92,32 +92,32 @@ The showcase below draws triangles through decagons — eight polygons in each r
 // With h 0.01 — z closes to (0.01, 0), leaving a gap
 let old = @{
   h 0.01
-  tangentArc(20, 270deg)
+  tangentArc(20, 270deg);
   z
 };
 
 // With heading — z closes cleanly to (0, 0)
 let clean = @{
-  heading(0)
-  tangentArc(20, 270deg)
+  heading(0);
+  tangentArc(20, 270deg);
   z
 };
 ```
 
 ## Reading the Current Heading
 
-The current heading is available via `ctx.heading` — a read-only property that returns the tangent angle in radians, or `undefined` after an `M` (since moves don't establish direction):
+The current heading is available via `ctx.heading` — a read-only property that returns the tangent angle in radians, or `null` at the start and after an `M` (since moves don't establish direction):
 
 ```pathogen
 M 0 0  L 50 0
-log(ctx.heading)   // 0 (rightward)
-heading(90deg)
-log(ctx.heading)   // 1.5708 (π/2, downward)
+log(ctx.heading);   // 0 (rightward)
+heading(90deg);
+log(ctx.heading);   // 1.5708 (π/2, downward)
 M 200 200
-log(ctx.heading)   // undefined (M clears heading)
+log(ctx.heading);   // null (M clears the heading)
 ```
 
-Any drawing command that establishes a direction — `L`, `H`, `V`, `C`, `S`, `Q`, `T`, `A`, `Z`, and stdlib path functions — sets the heading automatically. `heading()` and `turn()` let you set it explicitly when no drawing command has run yet.
+Any drawing command that establishes a direction — `L`, `H`, `V`, `C`, `S`, `Q`, `T`, `A`, `Z`, and stdlib path functions — sets the heading automatically. `heading()` sets it explicitly at any point — including after an `M`, when there is none — and `turn()` rotates whatever heading is current.
 
 Together, these two functions eliminate the dummy-segment workaround, enable clean `z` closure in path blocks, and unlock procedural shape construction — from simple arcs to regular polygons with any number of sides. They pair naturally with `tangentLine` and `tangentArc` to build complex shapes from simple, composable operations.
 

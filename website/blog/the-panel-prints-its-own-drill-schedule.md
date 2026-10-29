@@ -96,7 +96,7 @@ its bounding box, which is to say the hole's position and diameter:
 rightHoles.subscribe('call(circle)') {|hole, i|
   let centre = hole.block.centerPoint();
   let r = hole.block.boundingBox().width / 2;
-  ...
+  // …
 };
 ```
 

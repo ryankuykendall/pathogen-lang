@@ -20,7 +20,7 @@ Boolean operations are the heavy machinery of computational geometry. Given two 
 
 ## The Four Operations
 
-All four operations take two closed paths and return a new PathBlock. Both operands must be closed (end with `z` or have coincident start/end points).
+All four operations take two closed paths and return a new path of the same kind as the one they're called on. Both operands must be closed (end with `z` or have coincident start/end points).
 
 ### Union
 
@@ -86,36 +86,38 @@ From the [documentation](/docs#path-blocks-requirements-and-behavior):
 - **Both paths must be closed.** Open paths throw an error.
 - **The `other` argument** can be a PathBlock or ProjectedPath.
 - **Multi-component results** produce multiple subpaths (`M...z M...z`). This happens naturally with XOR and certain difference operations.
-- **Results are PathBlocks** normalized to `(0, 0)` origin, so they work with all PathBlock methods.
+- **The receiver decides the result:** a PathBlock in, a PathBlock out; a ProjectedPath in, a ProjectedPath out, in page coordinates. Either way it works with fillets, sampling and further boolean operations.
+
+> **Editor's note, October 2026:** when this post was written, a boolean result was always a PathBlock re-based to `(0, 0)`. Results now follow their receiver, so the examples below draw them in place with `.draw()`.
 
 ## Using with `.project()`
 
 Boolean operations need absolute coordinates to compute intersections. Use [`.project(x, y)`](/docs#path-blocks-projecting-without-drawing) to position shapes before combining them:
 
 ```pathogen
-let circle = @{ circle(0, 0, 30) };
-let a = circle.project(50, 50);
-let b = circle.project(70, 50);
+let disc = @{ circle(0, 0, 30); };
+let a = disc.project(50, 50);
+let b = disc.project(70, 50);
 let result = a.union(b);
-result.drawTo(0, 0)
+result.draw();
 ```
 
-The result is a PathBlock at `(0, 0)` origin. Use `.drawTo(x, y)` to place it anywhere.
+The result is a ProjectedPath in page coordinates: the shapes stay where you projected them, so `.draw()` puts the union there.
 
 ## Chaining with Transforms
 
-Since boolean operations return PathBlocks, you can chain them with [fillets](/docs#path-blocks-fillets), [chamfers](/docs#path-blocks-chamfers), [parametric sampling](/docs#path-blocks-parametric-sampling), or even more boolean operations:
+Since a boolean operation returns a path of the same kind, you can chain it with [fillets](/docs#path-blocks-fillets), [chamfers](/docs#path-blocks-chamfers), [parametric sampling](/docs#path-blocks-parametric-sampling), or even more boolean operations:
 
 ```pathogen
 let sq = @{ h 50 v 50 h -50 z };
-let combined = sq.project(0, 0).union(sq.project(25, 25));
+let combined = sq.project(10, 10).union(sq.project(35, 35));
 let rounded = combined.fillet(5);
-rounded.drawTo(10, 10)
+rounded.draw();
 ```
 
 This creates a union of two overlapping squares, then rounds all the corners with a 5px fillet. The composability is the whole point — each operation produces a value that feeds into the next.
 
-The pipeline below shows the three stages: overlapping input squares, the union result, and the union with an 8px fillet applied. Each step returns a PathBlock that feeds into the next.
+The pipeline below shows the three stages: overlapping input squares, the union result, and the union with an 8px fillet applied. Each step returns a path that feeds into the next.
 
 <mini-workspace src="samples/post9/boolean-chaining.pathogen" caption="Chaining pipeline — overlapping squares → union → union + fillet(8)"></mini-workspace>
 
@@ -124,11 +126,11 @@ The pipeline below shows the three stages: overlapping input squares, the union 
 Pathogen's [standard library](/docs#stdlib-path-functions) provides PathBlock-returning functions for common shapes — `circle()`, `rect()`, `polygon()`, `star()`, and more. These work directly with boolean operations:
 
 ```pathogen
-let plate = @{ rect(0, 0, 80, 80) };
-let hole = @{ circle(0, 0, 10) };
+let plate = @{ rect(0, 0, 80, 80); };
+let hole = @{ circle(0, 0, 10); };
 let d1 = plate.project(0, 0).difference(hole.project(25, 25));
-let drilled = d1.project(0, 0).difference(hole.project(55, 55));
-drilled.drawTo(0, 0)
+let drilled = d1.difference(hole.project(55, 55));
+drilled.draw();
 ```
 
 The demo below shows two practical examples: a plate with four drilled holes (chained `.difference()` calls), and a badge shape created by unioning a star with a circle.
@@ -137,16 +139,16 @@ The demo below shows two practical examples: a plate with four drilled holes (ch
 
 ## Putting It All Together
 
-This series covered four layers of PathBlock capability — and since every operation returns a PathBlock, they compose freely. Here's the full pipeline in one expression: define shapes, combine them with a boolean operation, round the result with a fillet, then sample points along the filleted outline:
+This series covered four layers of PathBlock capability — and since every operation returns a path, they compose freely. Here's the full pipeline in one expression: define shapes, combine them with a boolean operation, round the result with a fillet, then sample points along the filleted outline:
 
 ```pathogen
 let sq = @{ h 60 v 60 h -60 z };
-let combined = sq.project(0, 0).union(sq.project(30, 30));
+let combined = sq.project(10, 10).union(sq.project(40, 40));
 let rounded = combined.fillet(8);
 let pts = rounded.partition(24);
-rounded.drawTo(10, 10)
+rounded.draw();
 for (p in pts) {
-  @{ circle(0, 0, 2) }.drawTo(calc(10 + p.point.x), calc(10 + p.point.y))
+  @{ circle(0, 0, 2); }.drawTo(p.point.x, p.point.y);
 }
 ```
 

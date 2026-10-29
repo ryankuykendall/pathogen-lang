@@ -62,7 +62,7 @@ This is flexible — you control the cursor — but it's two statements for one 
 The `drawTo()` method combines positioning and drawing in a single call:
 
 ```pathogen
-arrow.drawTo(60, 70)
+arrow.drawTo(60, 70);
 ```
 
 It emits `M 60 70` followed by the PathBlock's commands, and returns a `ProjectedPath` value you can use for further operations (sampling, transforms, boolean ops). This is the preferred approach for most use cases.
@@ -80,7 +80,7 @@ let dot = @{ a 3 3 0 1 1 6 0  a 3 3 0 1 1 -6 0 };
 
 for (i in 0..5) {
   for (j in 0..5) {
-    dot.drawTo(calc(20 + i * 15), calc(20 + j * 15))
+    dot.drawTo(calc(20 + i * 15), calc(20 + j * 15));
   }
 }
 ```
@@ -127,9 +127,9 @@ Think of it as "place the shape here, but don't draw it yet." ProjectedPaths sup
 Pathogen's [standard library](/docs#stdlib-path-functions) provides ready-made PathBlocks for common shapes:
 
 ```pathogen
-let c = @{ circle(0, 0, 30) };
-let r = @{ rect(0, 0, 60, 40) };
-let s = @{ star(0, 0, 25, 12, 5) };
+let c = @{ circle(0, 0, 30); };
+let r = @{ rect(0, 0, 60, 40); };
+let s = @{ star(0, 0, 25, 12, 5); };
 ```
 
 These return PathBlocks, so all the same methods — `.draw()`, `.drawTo()`, `.project()`, transforms — work on them.

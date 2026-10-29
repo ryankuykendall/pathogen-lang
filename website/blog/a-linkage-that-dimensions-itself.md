@@ -104,7 +104,7 @@ it. The post writes one function for it, and the function takes a
 fn dimension(link, offset) {
   let bar = link.commands[0];
   let barNormal = link.block.normal(0.5);
-  ...
+  // …
 }
 ```
 

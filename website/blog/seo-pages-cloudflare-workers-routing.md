@@ -25,7 +25,7 @@ We already had `_worker.js` handling SPA routing. Extending it to serve SEO page
 
 The routing hierarchy we needed was simple:
 
-```
+```text
 /pathogen/api/*         → API handlers (existing)
 /pathogen/docs          → static HTML file
 /pathogen/explore       → worker-rendered HTML
@@ -71,7 +71,7 @@ This is now a pattern. Every time we make significant changes to `_worker.js`, w
 
 Our build pipeline runs in stages:
 
-```
+```text
 npm run build           → compile the library
 npm run build:docs      → generate static docs HTML
 npm run build:blog      → generate blog content module

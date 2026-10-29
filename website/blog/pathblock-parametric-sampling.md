@@ -65,11 +65,11 @@ You can sample any number of points by calling `.get(t)` at specific values. Her
 
 ```pathogen
 let curve = @{ c 0 -80 200 -80 200 0 };
-curve.drawTo(20, 60)
+curve.drawTo(20, 60);
 let proj = curve.project(20, 60);
 for (t in [0.25, 0.5, 0.75]) {
   let p = proj.get(t);
-  @{ a 3 3 0 1 1 6 0  a 3 3 0 1 1 -6 0 }.drawTo(p.x - 3, p.y)
+  @{ a 3 3 0 1 1 6 0  a 3 3 0 1 1 -6 0 }.drawTo(p.x - 3, p.y);
 }
 ```
 

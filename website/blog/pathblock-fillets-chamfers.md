@@ -31,7 +31,7 @@ The simplest form trims equal amounts from both edges at every corner:
 ```pathogen
 let box = @{ h 70 v 70 h -70 z };
 let beveled = box.chamfer(10);
-beveled.drawTo(20, 20)
+beveled.drawTo(20, 20);
 ```
 
 ### Asymmetric Chamfer
@@ -40,7 +40,7 @@ Pass two distances to trim different amounts on the incoming and outgoing edges 
 
 ```pathogen
 let asym = box.chamfer(5, 25);
-asym.drawTo(20, 20)
+asym.drawTo(20, 20);
 ```
 
 ### Per-Vertex Chamfer
@@ -67,7 +67,7 @@ The dashed outlines show the original 70×70 box. Each chamfered version demonst
 
 A [fillet](/docs#path-blocks-fillets) replaces a corner with a circular arc tangent to both edges. The trim distance is calculated from the radius and the half-angle between the edges:
 
-```
+```text
 trimDistance = radius / tan(halfAngle)
 ```
 
@@ -82,7 +82,7 @@ This ensures the arc is tangent to both edges at the trim points. The sweep dire
 ```pathogen
 let box = @{ h 70 v 70 h -70 z };
 let rounded = box.fillet(10);
-rounded.drawTo(20, 20)
+rounded.drawTo(20, 20);
 ```
 
 ### Per-Vertex
@@ -91,7 +91,7 @@ rounded.drawTo(20, 20)
 
 ```pathogen
 let oneRound = box.filletAtVertex(1, 20);
-oneRound.drawTo(20, 20)
+oneRound.drawTo(20, 20);
 ```
 
 The fillet anatomy diagram shows how a circular arc is constructed at a 90° corner. The arc center (at distance `r` from both edges) and the trim formula `trim = r / tan(halfAngle)` are labeled. For a right angle, `trim = r`.
@@ -109,16 +109,16 @@ The fillet anatomy diagram shows how a circular arc is constructed at a 90° cor
 ```pathogen
 let box = @{ h 70 v 70 h -70 z };
 let eFilleted = box.ellipticalFillet(15, 8);
-eFilleted.drawTo(20, 20)
+eFilleted.drawTo(20, 20);
 ```
 
 ### With Rotation
 
-[`ellipticalFillet(rx, ry, rotation)`](/docs#path-blocks-ellipticalfilletrx-ry-rotation-pathblock-projectedpath) adds an ellipse rotation in radians:
+[`ellipticalFillet(rx, ry, rotation)`](/docs#path-blocks-ellipticalfilletrx-ry-rotation-pathblock-projectedpath) adds an ellipse rotation. It's an angle, so a literal needs a unit (`0.3rad`, `17deg`):
 
 ```pathogen
-let rotated = box.ellipticalFillet(15, 8, 0.3);
-rotated.drawTo(20, 20)
+let rotated = box.ellipticalFillet(15, 8, 0.3rad);
+rotated.drawTo(20, 20);
 ```
 
 ### Per-Vertex Variants

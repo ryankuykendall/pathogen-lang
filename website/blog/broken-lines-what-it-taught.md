@@ -130,7 +130,7 @@ parse-killing error, with a "Missing ';'" pointing nowhere near the
 cause. The workaround was a backtick template — and a list built from
 variables needed one backtick fragment per token:
 
-```pathogen
+```pathogen invalid
 stroke-linecap: ${capName};      // parse error, before the fix
 stroke-linecap: `${capName}`;    // the old workaround
 ```
@@ -159,9 +159,11 @@ form. So today, the bare form just works — whole values, list
 tokens, even fused to a unit inside a function argument:
 
 ```pathogen
-stroke-linecap: ${capName};
-stroke-dasharray: ${cell} ${cell};
-filter: blur(${softness}px);
+let stitch = #{
+  stroke-linecap: ${capName};
+  stroke-dasharray: ${cell} ${cell};
+  filter: blur(${softness}px);
+};
 ```
 
 The backtick form remains equivalent; every sample in this series
@@ -177,7 +179,7 @@ the same line — and would mislead even if it could, because stdlib
 shapes position themselves through their arguments and ignore the
 current position:
 
-```pathogen
+```pathogen invalid
 M 85 52 roundRect(0, 0, 320, 220, 14)     // parse error today
 roundRect(85, 52, 320, 220, 14);          // the working idiom: fold the anchor in
 ```
@@ -185,6 +187,12 @@ roundRect(85, 52, 320, 220, 14);          // the working idiom: fold the anchor 
 Method-call draws (`M x y piece.path.draw()`) work inline, which makes
 the inconsistency feel arbitrary. The planned fix is a contextual
 diagnostic that says the true rule out loud.
+
+> **Editor's note, October 2026:** The parse error is gone. With a `;`
+> at the end, `M 85 52 roundRect(0, 0, 320, 220, 14);` now parses, and
+> draws just as warned: the rectangle lands at its own coordinates, the
+> move has no effect, and nothing says so yet. The block above is left
+> as it was first written.
 
 **Dashing an inset line by the edge it came from.** The leather
 post's deepest want. Stitch lines run *inside* the edge, but

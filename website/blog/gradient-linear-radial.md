@@ -26,7 +26,7 @@ The constructor takes an ID string and four coordinates: `x1, y1, x2, y2`. Color
 
 ```pathogen
 let sky_layer = PathLayer('sky-fill') #{ fill: sky; stroke: none; };
-sky_layer.apply { rect(0, 0, 400, 300) }
+sky_layer.apply { rect(0, 0, 400, 300); }
 ```
 
 The landscape below uses four linear gradients — a vertical sky, a diagonal mountain range, a horizontal sun streak, and a vertical ground fill — layered with Pathogen's `GroupLayer` to compose the scene.

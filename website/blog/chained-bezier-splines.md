@@ -24,7 +24,7 @@ cubicSpline([
   { x: 180, y: 50,  angle: 15deg,  entry: 60, exit: 55 },
   { x: 320, y: 140, angle: -30deg, entry: 65, exit: 55 },
   { x: 455, y: 65,  angle: 10deg,  entry: 60 }
-])
+]);
 ```
 
 Four waypoints, guaranteed smooth, and the intent is readable. The compiler handles all control point placement — you describe where the curve should go and how it should enter and leave each waypoint.
@@ -88,7 +88,7 @@ quadSpline(
     { x: 420, y: 45,  exit: 50 }
   ],
   { x: 500, y: 120 }                              // end: no angle needed
-)
+);
 ```
 
 <mini-workspace src="samples/post13/quad-spline-anatomy.pathogen" caption="quadSpline anatomy — cyan arrows show derived direction, orange shows tangent extension" code-open></mini-workspace>
@@ -116,7 +116,7 @@ clippedQuadSpline(
   { x: 50, y: 150, angle: -40deg, exit: 80, exitTime: 0.5 },
   [{ x: 180, y: 30, exit: 70, exitTime: 0.5, entryTime: 0.5 }],
   { x: 310, y: 150, entryTime: 0.5 }
-)
+);
 ```
 
 The time values range from 0 to 1:

@@ -157,7 +157,7 @@ The first two arguments are the center point (the thing you're labeling). The an
 
 The nine anchor positions form a grid over the bounding box:
 
-```
+```text
 BBoxAnchor.TopLeft      BBoxAnchor.Top      BBoxAnchor.TopRight
 BBoxAnchor.Left         BBoxAnchor.Center   BBoxAnchor.Right
 BBoxAnchor.BottomLeft   BBoxAnchor.Bottom   BBoxAnchor.BottomRight
@@ -266,10 +266,10 @@ Every position is a magic number derived from the text content, the font metrics
 The right panel uses `polarProject()`:
 
 ```pathogen
-top_label.polarProject(450, 210, -PI/2, 75, BBoxAnchor.Bottom)
-right_label.polarProject(450, 210, 0, 75, BBoxAnchor.Left)
-bottom_label.polarProject(450, 210, PI/2, 75, BBoxAnchor.Top)
-left_label.polarProject(450, 210, PI, 75, BBoxAnchor.Right)
+top_label.polarProject(450, 210, -0.5pi, 75, BBoxAnchor.Bottom);
+right_label.polarProject(450, 210, 0, 75, BBoxAnchor.Left);
+bottom_label.polarProject(450, 210, 0.5pi, 75, BBoxAnchor.Top);
+left_label.polarProject(450, 210, 1pi, 75, BBoxAnchor.Right);
 ```
 
 Four calls, four directions, one radius. The text content doesn't appear in the positioning logic at all — it's fully decoupled. The demo below makes the contrast visual: red annotations on the left expose the fragile arithmetic; green annotations on the right show the semantic anchor names.

@@ -72,7 +72,7 @@ Rather than manually maintaining lists of stdlib functions and their signatures,
 
 Completions work through variable assignments, callback parameters, and loop destructuring:
 
-```pathogen
+```pathogen invalid
 let data = [{ x: 60, y: 160, name: "alpha" }];
 for ([d, i] in data) {
   d.  // completions: x, y, name

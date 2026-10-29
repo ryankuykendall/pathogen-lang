@@ -62,7 +62,7 @@ All of this operates in OKLCH, so a `.lighten(0.18)` on a deeply saturated red d
 
 What makes this reactive? The SVG above was compiled *once*. There is no JavaScript updating colors. The fill values use CSS relative color syntax:
 
-```
+```xml
 fill="oklch(from var(--demo-color, #e63946) calc(l + 0.18) c h)"
 ```
 
@@ -104,13 +104,13 @@ The lightness ramp spreads evenly from dark (L=0.15) to light (L=0.95). The inte
 
 Notice the palette rows. The lightness ramp uses CSS relative color syntax to override the `l` component at fixed steps:
 
-```
+```xml
 fill="oklch(from var(--harmony-color) 0.35 c h)"
 ```
 
 The interpolation row uses `color-mix()`:
 
-```
+```xml
 fill="color-mix(in oklch, var(--harmony-color), #457b9d 50%)"
 ```
 
@@ -190,7 +190,7 @@ let accent  = Color.lightDark(accent, darkAccent);
 
 In the compiled SVG, the fill becomes:
 
-```
+```xml
 fill="light-dark(#333333, #eeeeee)"
 ```
 
