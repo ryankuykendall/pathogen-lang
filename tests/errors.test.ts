@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { compile, parse } from '../src';
+import { compile, compileWithContext } from '../src';
 import { compilePath } from './helpers';
 
 describe('Parse errors', () => {
@@ -1023,5 +1023,32 @@ describe('legacy style-block opener', () => {
   it('a style block right after a path command line still parses', () => {
     const result = compile('M 0 0 L 10 10\nlet s = #{ fill: red; };\nlet c = #ff0000;\nL 20 20');
     expect(result.layers[0].data).toBe('M 0 0 L 10 10 L 20 20');
+  });
+});
+
+describe('a return outside a fn, lambda or {|…| } block', () => {
+  // It used to escape compile() as a bare { value } object, which hosts showed
+  // as "[object Object]" (or "undefined") with no line.
+  const STRAY_RETURNS: [string, string, number][] = [
+    ['at the top level', 'M 0 0\nreturn 5;', 2],
+    ['in a layer apply block', "define PathLayer('a') #{ stroke: red; };\nlayer('a').apply {\n  return 1;\n}", 3],
+    ['in a path block', 'let b = @{\n  h 10;\n  return 1;\n};', 3],
+    ['in an if at the top level', 'if (true) {\n  return 1;\n}', 2],
+  ];
+  const message = (line: number) => `Line ${line}: 'return' is only valid inside a fn, a lambda or a {|…| } block`;
+
+  it.each(STRAY_RETURNS)('%s is an Error naming its line', (_where, source, line) => {
+    let caught: unknown;
+    try {
+      compile(source);
+    } catch (e) {
+      caught = e;
+    }
+    expect(caught).toBeInstanceOf(Error);
+    expect((caught as Error).message).toBe(message(line));
+  });
+
+  it('compileWithContext reports it the same way', () => {
+    expect(() => compileWithContext('M 0 0\nreturn 5;')).toThrow(message(2));
   });
 });

@@ -70,6 +70,7 @@ import type {
   SourceLocation,
   TextBodyItem,
 } from './ast';
+import { statementForExpression } from './expression-statement';
 import { pathArgCommentRanges } from './path-args-tokenizer';
 import { RANGE_IN_PATH_ARGS } from './range-value-errors';
 
@@ -635,30 +636,19 @@ function buildExpressionStatement(cursor: TreeCursor, source: string): Statement
     (expression as any).loc = nodeLoc;
   }
 
-  // Compatibility: Parsimmon wraps standalone function calls as PathCommand
-  // with empty command, which the evaluator uses to accumulate path data.
-  // e.g., circle(50, 50, 25) → PathCommand("", [FunctionCall("circle", ...)])
-  if (expression.type === 'FunctionCall' || expression.type === 'MethodCallExpression') {
-    return {
-      type: 'PathCommand',
-      command: '',
-      args: [expression as PathArg],
-      ...(annotations ? { annotations } : {}),
-      loc: nodeLoc,
-    } as PathCommand;
-  }
-
-  if (annotations) {
+  // A standalone call is a PathCommand with an empty command (the evaluator
+  // accumulates its path data there), e.g. circle(50, 50, 25) →
+  // PathCommand("", [FunctionCall("circle", ...)]); anything else is an
+  // ExpressionStatement. statementForExpression is the one place that rule
+  // lives — the evaluator reuses it for builder blocks.
+  const isCall = expression.type === 'FunctionCall' || expression.type === 'MethodCallExpression';
+  if (annotations && !isCall) {
     throw new Error(
       `Parse error at line ${nodeLoc.line}: with/as clauses are only allowed on path commands and path-emitting function calls`,
     );
   }
 
-  return {
-    type: 'ExpressionStatement',
-    expression,
-    loc: nodeLoc,
-  } as ExpressionStatement;
+  return statementForExpression(expression, nodeLoc, annotations);
 }
 
 function buildForLoop(cursor: TreeCursor, source: string): ForLoop {

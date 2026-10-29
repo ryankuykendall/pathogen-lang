@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] - 2026-10-28 (builder blocks and a stray `return`)
+
+### Fixed
+
+#### Core
+
+- **A builder block's last line may leave off the `;`.** `LinearGradient(…) {|g| g.stop(1, Color('#2a9d8f')) }` — and the same in the other gradients, `Pattern`, `Marker`, `Grid` and the seven filters — stopped the program with "[object Object]" or "undefined": a block body's last line without `;` counts as its result, and nothing caught it. Builder blocks don't use a result, so that line now runs as the statement it would be with the `;`, and an explicit `return` ends the block early, as it does in a subscription callback.
+- **A `return` outside a fn, a lambda or a `{|…| }` block is a positioned error** — "Line N: 'return' is only valid inside a fn, a lambda or a {|…| } block" — at the top level, in a layer's `apply` block or in a path block, where it also used to come out as "[object Object]".
+
 ## [Unreleased] - 2026-10-28 (every published docs example parses)
 
 ### Fixed

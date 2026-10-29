@@ -1,3 +1,4 @@
+import { statementForExpression } from '../parser/expression-statement';
 import { parseExpression as expressionParserFn } from '../parser/lezer-expression';
 const expressionParser = { parse: (input: string) => { const v = expressionParserFn(input); return { status: v !== null, value: v }; } };
 import { contextAwareFunctions, stdlib } from '../stdlib';
@@ -915,7 +916,21 @@ function makeDefaultMotionBlurFilter(id: string): MotionBlurFilterValue {
  * Thrown by return statements and caught by function call evaluation.
  */
 class ReturnSignal {
-  constructor(public value: Value) {}
+  constructor(
+    public value: Value,
+    /** The `return` statement's line, for the error when nothing catches it. */
+    public line?: number,
+  ) {}
+}
+
+/**
+ * A `return` that no fn, lambda or block caught — at the top level, in a
+ * layer's apply block, in a path block — reaches compile() as a ReturnSignal.
+ * Never let that bare object out: it would reach the user as "[object Object]".
+ */
+function strayReturnError(err: unknown): unknown {
+  if (!(err instanceof ReturnSignal)) return err;
+  return new Error(formatError(`'return' is only valid inside a fn, a lambda or a {|…| } block`, err.line));
 }
 
 /**
@@ -7698,13 +7713,7 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope): Value {
     if (call.block) {
       const blockScope = createScope(scope);
       setVariable(blockScope, call.block.params[0], gradient);
-      for (const stmt of call.block.body) {
-        // Callback bodies are break/continue boundaries (builder-enforced; defensive)
-        {
-          const flow = evaluateStatementToAccum(stmt, blockScope, createPathStore());
-          if (flow) throw loopFlowBoundaryError(flow);
-        }
-      }
+      runBuilderBlock(call.block.body, blockScope);
     }
     return gradient;
   }
@@ -7768,13 +7777,7 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope): Value {
     if (call.block) {
       const blockScope = createScope(scope);
       setVariable(blockScope, call.block.params[0], gradient);
-      for (const stmt of call.block.body) {
-        // Callback bodies are break/continue boundaries (builder-enforced; defensive)
-        {
-          const flow = evaluateStatementToAccum(stmt, blockScope, createPathStore());
-          if (flow) throw loopFlowBoundaryError(flow);
-        }
-      }
+      runBuilderBlock(call.block.body, blockScope);
     }
     return gradient;
   }
@@ -7826,13 +7829,7 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope): Value {
     if (call.block) {
       const blockScope = createScope(scope);
       setVariable(blockScope, call.block.params[0], pattern);
-      for (const stmt of call.block.body) {
-        // Callback bodies are break/continue boundaries (builder-enforced; defensive)
-        {
-          const flow = evaluateStatementToAccum(stmt, blockScope, createPathStore());
-          if (flow) throw loopFlowBoundaryError(flow);
-        }
-      }
+      runBuilderBlock(call.block.body, blockScope);
     }
     return pattern;
   }
@@ -7888,13 +7885,7 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope): Value {
     if (call.block) {
       const blockScope = createScope(scope);
       setVariable(blockScope, call.block.params[0], marker);
-      for (const stmt of call.block.body) {
-        // Callback bodies are break/continue boundaries (builder-enforced; defensive)
-        {
-          const flow = evaluateStatementToAccum(stmt, blockScope, createPathStore());
-          if (flow) throw loopFlowBoundaryError(flow);
-        }
-      }
+      runBuilderBlock(call.block.body, blockScope);
     }
     return marker;
   }
@@ -7991,13 +7982,7 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope): Value {
       }
       const blockScope = createScope(scope);
       setVariable(blockScope, call.block.params[0], grid);
-      for (const stmt of call.block.body) {
-        // Callback bodies are break/continue boundaries (builder-enforced; defensive)
-        {
-          const flow = evaluateStatementToAccum(stmt, blockScope, createPathStore());
-          if (flow) throw loopFlowBoundaryError(flow);
-        }
-      }
+      runBuilderBlock(call.block.body, blockScope);
     }
     return grid;
   }
@@ -8020,13 +8005,7 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope): Value {
     if (call.block) {
       const blockScope = createScope(scope);
       setVariable(blockScope, call.block.params[0], filter);
-      for (const stmt of call.block.body) {
-        // Callback bodies are break/continue boundaries (builder-enforced; defensive)
-        {
-          const flow = evaluateStatementToAccum(stmt, blockScope, createPathStore());
-          if (flow) throw loopFlowBoundaryError(flow);
-        }
-      }
+      runBuilderBlock(call.block.body, blockScope);
     }
     return filter;
   }
@@ -8049,13 +8028,7 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope): Value {
     if (call.block) {
       const blockScope = createScope(scope);
       setVariable(blockScope, call.block.params[0], filter);
-      for (const stmt of call.block.body) {
-        // Callback bodies are break/continue boundaries (builder-enforced; defensive)
-        {
-          const flow = evaluateStatementToAccum(stmt, blockScope, createPathStore());
-          if (flow) throw loopFlowBoundaryError(flow);
-        }
-      }
+      runBuilderBlock(call.block.body, blockScope);
     }
     return filter;
   }
@@ -8078,13 +8051,7 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope): Value {
     if (call.block) {
       const blockScope = createScope(scope);
       setVariable(blockScope, call.block.params[0], filter);
-      for (const stmt of call.block.body) {
-        // Callback bodies are break/continue boundaries (builder-enforced; defensive)
-        {
-          const flow = evaluateStatementToAccum(stmt, blockScope, createPathStore());
-          if (flow) throw loopFlowBoundaryError(flow);
-        }
-      }
+      runBuilderBlock(call.block.body, blockScope);
     }
     return filter;
   }
@@ -8107,13 +8074,7 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope): Value {
     if (call.block) {
       const blockScope = createScope(scope);
       setVariable(blockScope, call.block.params[0], filter);
-      for (const stmt of call.block.body) {
-        // Callback bodies are break/continue boundaries (builder-enforced; defensive)
-        {
-          const flow = evaluateStatementToAccum(stmt, blockScope, createPathStore());
-          if (flow) throw loopFlowBoundaryError(flow);
-        }
-      }
+      runBuilderBlock(call.block.body, blockScope);
     }
     return filter;
   }
@@ -8136,13 +8097,7 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope): Value {
     if (call.block) {
       const blockScope = createScope(scope);
       setVariable(blockScope, call.block.params[0], filter);
-      for (const stmt of call.block.body) {
-        // Callback bodies are break/continue boundaries (builder-enforced; defensive)
-        {
-          const flow = evaluateStatementToAccum(stmt, blockScope, createPathStore());
-          if (flow) throw loopFlowBoundaryError(flow);
-        }
-      }
+      runBuilderBlock(call.block.body, blockScope);
     }
     return filter;
   }
@@ -8193,13 +8148,7 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope): Value {
     if (call.block) {
       const blockScope = createScope(scope);
       setVariable(blockScope, call.block.params[0], filter);
-      for (const stmt of call.block.body) {
-        // Callback bodies are break/continue boundaries (builder-enforced; defensive)
-        {
-          const flow = evaluateStatementToAccum(stmt, blockScope, createPathStore());
-          if (flow) throw loopFlowBoundaryError(flow);
-        }
-      }
+      runBuilderBlock(call.block.body, blockScope);
     }
     return filter;
   }
@@ -8223,13 +8172,7 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope): Value {
     if (call.block) {
       const blockScope = createScope(scope);
       setVariable(blockScope, call.block.params[0], filter);
-      for (const stmt of call.block.body) {
-        // Callback bodies are break/continue boundaries (builder-enforced; defensive)
-        {
-          const flow = evaluateStatementToAccum(stmt, blockScope, createPathStore());
-          if (flow) throw loopFlowBoundaryError(flow);
-        }
-      }
+      runBuilderBlock(call.block.body, blockScope);
     }
     return filter;
   }
@@ -8283,13 +8226,7 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope): Value {
     if (call.block) {
       const blockScope = createScope(scope);
       setVariable(blockScope, call.block.params[0], gradient);
-      for (const stmt of call.block.body) {
-        // Callback bodies are break/continue boundaries (builder-enforced; defensive)
-        {
-          const flow = evaluateStatementToAccum(stmt, blockScope, createPathStore());
-          if (flow) throw loopFlowBoundaryError(flow);
-        }
-      }
+      runBuilderBlock(call.block.body, blockScope);
     }
     return gradient;
   }
@@ -8373,13 +8310,7 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope): Value {
     if (call.block) {
       const blockScope = createScope(scope);
       setVariable(blockScope, call.block.params[0], gradient);
-      for (const stmt of call.block.body) {
-        // Callback bodies are break/continue boundaries (builder-enforced; defensive)
-        {
-          const flow = evaluateStatementToAccum(stmt, blockScope, createPathStore());
-          if (flow) throw loopFlowBoundaryError(flow);
-        }
-      }
+      runBuilderBlock(call.block.body, blockScope);
     }
     return gradient;
   }
@@ -8431,13 +8362,7 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope): Value {
     if (call.block) {
       const blockScope = createScope(scope);
       setVariable(blockScope, call.block.params[0], gradient);
-      for (const stmt of call.block.body) {
-        // Callback bodies are break/continue boundaries (builder-enforced; defensive)
-        {
-          const flow = evaluateStatementToAccum(stmt, blockScope, createPathStore());
-          if (flow) throw loopFlowBoundaryError(flow);
-        }
-      }
+      runBuilderBlock(call.block.body, blockScope);
     }
     return gradient;
   }
@@ -8492,13 +8417,7 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope): Value {
     if (call.block) {
       const blockScope = createScope(scope);
       setVariable(blockScope, call.block.params[0], gradient);
-      for (const stmt of call.block.body) {
-        // Callback bodies are break/continue boundaries (builder-enforced; defensive)
-        {
-          const flow = evaluateStatementToAccum(stmt, blockScope, createPathStore());
-          if (flow) throw loopFlowBoundaryError(flow);
-        }
-      }
+      runBuilderBlock(call.block.body, blockScope);
     }
     return gradient;
   }
@@ -9809,6 +9728,31 @@ function runCallbackBody(body: Statement[], scope: Scope, sink: PathStore): Valu
   }
 }
 
+/**
+ * Run a constructor's builder block: `LinearGradient(...) {|g| ... }`, the
+ * other gradients, Pattern, Marker, Grid and the filters. The block's value
+ * isn't used, so a last line written without `;` — which the parser makes an
+ * implicit return, the `{|v| v * 2}` sugar — runs as the statement it would
+ * be with the `;`, and an explicit `return` ends the block, as in a
+ * subscription callback. Kept small for the reason given on runCallbackBody.
+ */
+function runBuilderBlock(body: Statement[], scope: Scope): void {
+  try {
+    for (const stmt of body) {
+      const run =
+        stmt.type === 'ReturnStatement' && stmt.implicit
+          ? statementForExpression(stmt.value, (stmt.value as { loc?: SourceLocation }).loc)
+          : stmt;
+      // Builder blocks are break/continue boundaries (builder-enforced; defensive)
+      const flow = evaluateStatementToAccum(run, scope, createPathStore());
+      if (flow) throw loopFlowBoundaryError(flow);
+    }
+  } catch (e) {
+    if (e instanceof ReturnSignal) return;
+    throw e;
+  }
+}
+
 /** Wrap a callback failure with the method and element index it happened at. */
 function callbackError(method: string, index: number, e: unknown, line: number | undefined): Error {
   const msg = e instanceof Error ? e.message : String(e);
@@ -10820,7 +10764,7 @@ function evaluateStatementToAccum(stmt: Statement, scope: Scope, accum: PathStor
 
     case 'ReturnStatement': {
       const value = evaluateExpression(stmt.value, scope);
-      throw new ReturnSignal(value);
+      throw new ReturnSignal(value, getLine(stmt));
     }
 
     case 'BreakStatement':
@@ -11673,7 +11617,8 @@ export function evaluate(
     runSubscriptionDispatch(scope, evalState);
 
     return buildCompileResult(accum, evalState);
-  } catch (err) {
+  } catch (caught) {
+    const err = strayReturnError(caught);
     // A program that fails after a Font call on a sliced family (e.g. it
     // indexes a selection that's empty until the slices arrive) still tells
     // the playground host which slices to fetch before it retries.
@@ -11815,7 +11760,8 @@ export function evaluateWithContext(
       ...(compileResult.missingGlyphs ? { missingGlyphs: compileResult.missingGlyphs } : {}),
       ...(compileResult.fontCoverageRequests ? { fontCoverageRequests: compileResult.fontCoverageRequests } : {}),
     };
-  } catch (err) {
+  } catch (caught) {
+    const err = strayReturnError(caught);
     // A program that fails after a Font call on a sliced family (e.g. it
     // indexes a selection that's empty until the slices arrive) still tells
     // the playground host which slices to fetch before it retries.
