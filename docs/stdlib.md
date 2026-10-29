@@ -525,6 +525,15 @@ let mirrored = pv.mirror();  // angle is now 1.25π, distance still 20
 
 These functions generate complete path segments.
 
+Where a function starts drawing depends on the function:
+
+| Starts | Functions |
+|---|---|
+| At the coordinates in its arguments: a new subpath, with an absolute `M` | `circle()`, `rect()`, `roundRect()`, `polygon()`, `star()`, `line()`, `quadratic()`, `cubic()`, `moveTo()`, and the [grid functions](#stdlib-grid-functions) |
+| From the pen | `arc()`, `lineTo()` and `closePath()` continue the current subpath; `radialWedge()`, `polarCubicBezier()` and the splines begin with a relative `m`, so their first point is measured from the pen |
+
+A move right before a function of the first kind has no effect, so the shape doesn't land where the pen is, and the compiler warns ([`ignored-move`](#debug-a-move-a-shape-ignores)). Put the position in the function's arguments instead.
+
 ### circle(cx, cy, r)
 
 Draws a circle centered at (cx, cy) with radius r.

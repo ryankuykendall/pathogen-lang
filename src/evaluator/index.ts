@@ -89,6 +89,7 @@ import {
   isPathEmittingStdlib,
 } from './path-emit-guard';
 import { describeFunctionArgument, describeFunctionAsNumber, formatStdlibFunction, isStdlibFunctionValue } from './function-values';
+import { describeIgnoredMove } from './ignored-move';
 import { pathCut, pathDifference, pathIntersection, pathUnion, pathXor } from './boolean-ops';
 import {
   dashCommands,
@@ -1157,6 +1158,16 @@ function lookupVariable(scope: Scope, name: string, line?: number, column?: numb
     return stdlib[name as keyof typeof stdlib] as unknown as Value;
   }
   throw new Error(formatError(`Undefined variable: ${name}`, line, column));
+}
+
+/**
+ * Whether a call to `name` reaches a plain standard-library function: not a
+ * user fn or variable that shadows it, and not a context-aware function
+ * (polarLine, tangentArc, …), which draws from the pen.
+ */
+function isPlainStdlibFunction(name: string, scope: Scope): boolean {
+  if (!(name in stdlib) || contextAwareFunctions.has(name)) return false;
+  return typeof lookupVariable(scope, name) === 'function';
 }
 
 function setVariable(scope: Scope, name: string, value: Value): void {
@@ -10083,6 +10094,13 @@ function evaluateStatementToAccum(stmt: Statement, scope: Scope, accum: PathStor
       }
       const result = evaluatePathCommand(stmt, scope);
       if (result.text) {
+        // `M 85 52 roundRect(0, 0, …)`: a stdlib shape starts its own subpath, so the
+        // move before it does nothing — say so (ignored-move.ts). Read before recording.
+        const call = stmt.command === '' ? stmt.args[0] : undefined;
+        if (call?.type === 'FunctionCall' && isPlainStdlibFunction(call.name, scope)) {
+          const ignored = describeIgnoredMove(call.name, result.commands, accum, call.loc);
+          if (ignored) warn(scope.evalState, 'ignored-move', ignored.message, ignored.loc);
+        }
         // `accum` is the default layer's accumulator at top level (the default layer
         // adopts the top-level accum) and the active layer's accumulator inside an
         // apply block — a single push routes correctly in all cases.

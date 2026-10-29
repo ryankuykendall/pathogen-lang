@@ -195,7 +195,7 @@ l 20 20
 z
 
 // --- calc() ---
-M calc(x + 10) calc(y * 2)
+L calc(x + 10) calc(y * 2)
 
 // --- Stdlib calls ---
 circle(100, 100, 50);

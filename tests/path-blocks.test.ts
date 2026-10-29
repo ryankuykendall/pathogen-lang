@@ -3802,6 +3802,9 @@ describe('truthful startPoint survives the transform-method family (review-criti
   }
 
   it('layer segment queries report the inked start, not the pre-call cursor', () => {
+    // The M 10 10 is deliberate — the pre-call cursor the query must NOT
+    // report — and circle() ignores it, which the compiler now says
+    // (ignored-move). Read the program's own logs, not that warning's mirror.
     const result = compile(`
       define default PathLayer('main') #{}
       M 10 10
@@ -3811,7 +3814,10 @@ describe('truthful startPoint survives the transform-method family (review-criti
       let g0 = seg.get(0);
       log(calc(abs(seg.startPoint.x - g0.x) < 0.001 && abs(seg.startPoint.y - g0.y) < 0.001));
     `);
-    const vals = result.logs.map((e) => e.parts.map((p) => String(p.value)).join(''));
+    expect(result.warnings.map((w) => w.code)).toEqual(['ignored-move']);
+    const vals = result.logs
+      .filter((e) => e.severity !== 'warn')
+      .map((e) => e.parts.map((p) => String(p.value)).join(''));
     expect(vals[0]).toBe('Point(30, 50)');
     expect(vals[1]).toBe('true');
   });

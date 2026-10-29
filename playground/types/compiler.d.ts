@@ -43,6 +43,7 @@ export type WarningCode =
   | 'non-finite'
   | 'layer-transform'
   | 'marker-space'
+  | 'ignored-move'
   | 'font-weight'
   | 'font-load';
 

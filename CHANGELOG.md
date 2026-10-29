@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] - 2026-10-29 (a move a shape ignores is a warning)
+
+### Added
+
+#### Core
+
+- **The `ignored-move` warning.** The shape functions — `circle()`, `rect()`, `roundRect()`, `polygon()`, `star()`, `line()`, `quadratic()`, `cubic()` — `moveTo()` and the grid functions start a new subpath at the coordinates in their own arguments, so a move right before one has no effect: `M 85 52 roundRect(0, 0, 320, 220, 14);` draws the rectangle at (0, 0). That used to happen without a word. The compiler now warns at the call — "roundRect() draws at the coordinates in its own arguments, so the move to (85, 52) before it has no effect — put the position in its arguments instead" — naming the move's line when it is on an earlier one, and inside path blocks too. The output is unchanged, and in a loop the instances show as one ×N entry, like other repeated warnings. Functions that draw from the pen (`arc()`, `lineTo()`, `radialWedge()`, the splines, the context-aware functions) never warn, and neither does a move with extra coordinate pairs, which draws lines. `--strict=ignored-move` makes it an error. Across the blog samples, the project-docs programs and every docs and blog example (1,389 programs), it fires only on the docs example written to show it.
+
+#### Documentation
+
+- Debug & Console has a section on the warning ("A move a shape ignores") and lists its code, and the stdlib Path Functions introduction has a table of which functions start their own subpath and which draw from the pen. The NaN example on that page moved with `M radius 0` right before a `circle()`, a move the new warning flags; it is an `L` now, and the Strict mode section names that example instead of "the program above". The broken-lines retrospective's editor's note says the planned diagnostic has shipped.
+
+#### Development
+
+- The VS Code all-syntax fixture moved to a point and then called `circle()`; that move is an `L` now, so the fixture still compiles with no diagnostics.
+
 ## [Unreleased] - 2026-10-29 (a function named without its parentheses says so)
 
 ### Fixed

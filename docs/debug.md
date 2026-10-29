@@ -78,7 +78,7 @@ Warnings never stop compilation unless you ask them to. They appear:
 - in the playground console, marked with a **warn** chip, and as a yellow squiggle on the line in the editor;
 - in VS Code, as a warning diagnostic on the line;
 - on the CLI's stderr as `file:line:col: warning: message` (exit code stays 0 unless [strict mode](#debug-strict-mode) is on);
-- in the structured result under `warnings`, one entry per instance, each with a `code`: `corner-op`, `cut`, `annotation-transfer`, `font-glyph`, `gradient`, `non-finite`, `layer-transform`, or `marker-space` — and, from the CLI and VS Code font loader, `font-weight` (the nearest weight was used) or `font-load` (a font was skipped because downloads are off; see [Font Loading by Environment](#path-blocks-font-loading-by-environment)).
+- in the structured result under `warnings`, one entry per instance, each with a `code`: `corner-op`, `cut`, `annotation-transfer`, `font-glyph`, `gradient`, `non-finite`, `layer-transform`, `marker-space`, or `ignored-move` — and, from the CLI and VS Code font loader, `font-weight` (the nearest weight was used) or `font-load` (a font was skipped because downloads are off; see [Font Loading by Environment](#path-blocks-font-loading-by-environment)).
 
 A warning is also mirrored into the log stream as a `[warn] …` entry, so `--log-file` output keeps everything in one place.
 
@@ -88,7 +88,7 @@ A warning is also mirrored into the log stream as a `[warn] …` entry, so `--lo
 
 ```
 let radius = sqrt(-1);
-M radius 0
+L radius 0
 circle(50, 50, radius);
 ```
 
@@ -103,11 +103,32 @@ The rest of the program still compiles and other layers are unaffected, but noth
 
 A `NaN` buried inside a structured argument — a point handed to `cubicSpline()` — warns the same way, naming what the call produced rather than which argument: `cubicSpline() produced a non-numeric coordinate (NaN) — check its arguments`.
 
+### A move a shape ignores
+
+Shape functions such as `circle()` and `rect()` draw at the coordinates in their own arguments: each starts a new subpath, lifting the pen and putting it down at its own `M`. ([Path Functions](#stdlib-path-functions) lists which functions do this and which draw from the pen.) A move right before one has no effect, so the shape doesn't land where the pen is:
+
+```
+M 85 52 roundRect(0, 0, 320, 220, 14);
+```
+
+```text
+Line 1, col 9: roundRect() draws at the coordinates in its own arguments, so the move to (85, 52) before it has no effect — put the position in its arguments instead
+```
+
+The rectangle is drawn at (0, 0). To draw it at (85, 52), pass the position: `roundRect(85, 52, 320, 220, 14);`. To draw a shape from the pen instead, make it a path block, whose [`draw()`](#path-blocks-drawing-a-path-block) starts where the pen is:
+
+```
+let tile = @{ roundRect(0, 0, 320, 220, 14); };
+M 85 52 tile.draw();
+```
+
+When the move is on an earlier line, the warning names that line: `the move to (85, 52) on line 1 has no effect`. Functions that draw from the pen, such as `arc()`, the splines and the [context-aware functions](#stdlib-context-aware-functions) like `polarLine()`, never warn. The check covers a direct call to a shape function; a path block's `draw()` or `drawTo()` isn't checked. The warning's code is `ignored-move`; `--strict=ignored-move` makes it an error.
+
 ### Strict mode
 
 Strict mode turns warnings into errors: the first one stops compilation, carrying the warning's own position when it has one. Use it where a warning means the output is wrong — a build script, a published sample — and leave it off while sketching.
 
-Saved as `poster.pathogen`, the program above stops at its first warning:
+Saved as `poster.pathogen`, the `NaN` program from [Numbers SVG cannot draw](#debug-numbers-svg-cannot-draw) stops at its first warning:
 
 ```bash
 pathogen-lang poster.pathogen --strict               # any warning is an error
