@@ -30,6 +30,8 @@ import ts from 'typescript';
 import { pathArgsTokenizer } from '../../src/parser/path-args-tokenizer';
 import { PathArgs } from '../../src/parser/pathogen.generated.terms';
 
+import { fenceAt, isPathogenFence } from './markdown-fences';
+
 import type { LRParser } from '@lezer/lr';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -236,8 +238,6 @@ export function rewritePathogenFile(source: string, parser?: LRParser): { text: 
 
 // ─── Markdown ──────────────────────────────────────────────────────────
 
-const FENCE_OPEN = /^(\s*)(`{3,}|~{3,})\s*([^\s`~]*)/;
-
 /**
  * Rewrite Pathogen inside fenced code blocks. A fence is a unit when its
  * info string is empty or `pathogen`. The block-content check in
@@ -252,20 +252,13 @@ export function rewriteMarkdown(
   let i = 0;
   let changed = false;
   while (i < lines.length) {
-    const open = FENCE_OPEN.exec(lines[i]);
-    if (!open) {
+    const fence = fenceAt(lines, i);
+    if (!fence) {
       i++;
       continue;
     }
-    const fenceChar = open[2][0];
-    const fenceLen = open[2].length;
-    const info = open[3].toLowerCase();
-    const closeRe = new RegExp(`^\\s*${fenceChar === '`' ? '`' : '~'}{${fenceLen},}\\s*$`);
-    let j = i + 1;
-    while (j < lines.length && !closeRe.test(lines[j])) j++;
-    const bodyStart = i + 1;
-    const bodyEnd = j; // exclusive
-    if (info === '' || info === 'pathogen') {
+    const { bodyStart, bodyEnd } = fence; // bodyEnd is exclusive
+    if (isPathogenFence(fence.info)) {
       const body = lines.slice(bodyStart, bodyEnd).join('\n');
       if (body.includes(OLD_OPENER)) {
         report.units++;
