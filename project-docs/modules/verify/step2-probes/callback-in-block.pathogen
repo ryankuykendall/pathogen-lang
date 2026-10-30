@@ -1,0 +1,7 @@
+// Phase 0a step 2 probe: a callback's trailing block, run inside a path
+// block, reads the block's cursor.
+// Before the fix: [0]. After: [5].
+let b = @{
+  m 5 0;
+  log([1].map() {|v| return ctx.position.x; });
+};

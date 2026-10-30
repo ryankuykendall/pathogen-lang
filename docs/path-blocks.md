@@ -219,7 +219,7 @@ let zigzag = @{
 };
 ```
 
-Context-aware functions like `arcFromPolarOffset`, `tangentLine`, and `tangentArc` work against the block's temporary path context.
+Context-aware functions like `arcFromPolarOffset`, `tangentLine`, and `tangentArc` work against the block's temporary path context. So does everything else that runs inside the block: `ctx` reads the block's cursor, and a function or lambda called there draws into the block (see [ctx Object](#debug-ctx-object)).
 
 ## Accessing Outer Variables
 
@@ -269,6 +269,8 @@ Path blocks enforce these rules at runtime:
 4. **No text statements** — `text()` / `tspan()` are not allowed
 5. **No nesting** — Path blocks cannot contain other `@{ }` expressions
 6. **No draw/project inside blocks** — Calling `.draw()` or `.project()` inside a path block throws an error
+
+The rules also hold for a function or lambda called inside the block: what is written in its body is checked as if it were written in the block. Stdlib shapes such as `circle()` still work there. For example, `fn edge() { L 10 10 }` draws normally at the top level, but called inside a block it fails with *Absolute path command 'L' is not allowed inside path blocks*; write it as `l 10 10` to use it in both places.
 
 ## Parametric Sampling
 

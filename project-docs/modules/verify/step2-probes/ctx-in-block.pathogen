@@ -1,0 +1,7 @@
+// Phase 0a step 2 probe (bug B3): inside a path block, ctx is the block's
+// cursor and moves as the block draws.
+// Before the fix: 0 (ctx was bound once, at the start of the block). After: 5.
+let b = @{
+  m 5 0;
+  log(ctx.position.x);
+};

@@ -1,0 +1,11 @@
+// Phase 0a step 2 probe: a lambda written inside a path block and called
+// later, outside it, reads the pen of the place it is called from.
+// Before the fix: 0 (the block's ctx at the block's start). After: 70.
+let f = null;
+let b = @{
+  let g = {|| return ctx.position.x; };
+  f = g;
+  m 5 0;
+};
+M 70 0
+log(f());

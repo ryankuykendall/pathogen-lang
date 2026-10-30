@@ -277,7 +277,34 @@ L 150 75
 log(ctx.position);  // {x: 150, y: 75}
 ```
 
-Inside a `@{ }` path block, `ctx.position` is the block's own cursor, which starts at `(0, 0)`; it does not report where the block will eventually be drawn.
+`ctx` describes the pen that is drawing right now. Inside a `@{ }` path block, that is the block's own pen, its cursor: it starts at `(0, 0)`, moves as the block draws, and doesn't report where the block will eventually be drawn. When the block ends, `ctx` is the surrounding pen again:
+
+```
+M 10 10
+let block = @{
+  m 5 0
+  log(ctx.position.x);   // 5, the block's cursor
+};
+log(ctx.position.x);     // 10, the program's pen again
+```
+
+The same holds for a function, a lambda, or a callback such as `.map {|v| … }`: inside it, `ctx` is the pen of the place it is called from.
+
+- Inside a path block: the block's cursor.
+- Inside `layer(…).apply { }`: that layer's pen.
+- Anywhere else: the program's pen.
+
+A [subscription](#subscriptions-where-the-drawing-goes) callback runs after the program finishes, so its `ctx` is the program's final pen.
+
+`let saved = ctx;` is a snapshot: `saved.position` keeps that moment's values. Read `ctx` again for the current ones:
+
+```
+M 0 0
+let saved = ctx;
+L 10 0
+log(saved.position.x);   // 0
+log(ctx.position.x);     // 10
+```
 
 ### ctx.start
 

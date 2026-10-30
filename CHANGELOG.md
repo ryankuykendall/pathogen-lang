@@ -5,6 +5,35 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] - 2026-10-30 (the drawing context follows the call)
+
+### Fixed
+
+#### Core
+
+- **`ctx` and the pen belong to whatever is drawing right now.** Inside a `@{ }` path block, `ctx` was fixed at the block's start, so `@{ m 5 0; log(ctx.position.x); }` read 0. And every command, the block's included, rewrote the program's `ctx`, so after a block it still reported the block's cursor. A lambda drew with the pen of the place it was *written*: called inside a block after `M 50 50`, `polarLine(0deg, 10)` drew on the program's pen and the block got nothing, and `g.forEach() << worker` inside a block lost what it drew. Now `ctx`, and the pen a call draws with, is:
+  - a path block's cursor, moving as the block draws;
+  - a layer's pen inside `layer().apply`;
+  - otherwise the program's pen.
+
+  That holds for code written there and for any fn, lambda or callback called there. A lambda still takes its *names* from where it is written. `ctx.heading` and `ctx.start` follow too: inside a block, `ctx.heading` read `null` even after a line. Unchanged: a subscription callback's `ctx` is the program's final pen, `let saved = ctx;` is a snapshot, and `ctx.transform` inside a block is still an error.
+- **Traced compiles are fast.** `ctx` was rebuilt after every command, copying the whole command history in trace mode; now it is computed only when read. A 100,000-command program compiled with trace on, as `--json` does, took 539 s and now takes 0.3 s. 5,000 commands inside one path block went from 308 ms to 35 ms.
+
+### Changed
+
+#### Core
+
+- **A path block's rules hold for code called inside it.** In a fn or lambda called inside `@{ }`, an absolute command, `define PathLayer`/`TextLayer` or `layer().apply` is now an error, with the block's own message (e.g. "Absolute path command 'L' is not allowed inside path blocks. Use lowercase 'l' for relative commands"). Before, an absolute command there was quietly made relative, `define PathLayer` was accepted, and `layer().apply` failed with "Undefined layer". Stdlib shapes such as `circle()` still work there. `.draw()`, `.project()`, `text()` and nested blocks were already errors in a named fn, and now are in a lambda too. The relative-commands rule was only checked on the block's own lines, so an uppercase command inside an `if` or `for` body in a block was accepted. Inside a builder block such as `Pattern(…) {|p| … }` written in a block, it even leaked into the block's path. Both are errors now. Write functions meant for use inside blocks with lowercase commands.
+
+#### Documentation
+
+- docs/debug.md "ctx Object" says `ctx` is the pen drawing right now, in blocks, layers, fns, lambdas, callbacks and subscriptions, and that a saved `ctx` is a snapshot. docs/syntax.md "Lambdas" says a lambda takes its names from where it is written and draws where it is called (`ctx` is never captured). docs/path-blocks.md "Restrictions" says the rules hold for a function called inside a block.
+
+#### Development
+
+- tests/ctx-follows-call.test.ts pins every case, with the docs examples verbatim. The semantics audit gains step 2 tags. `project-docs/modules/verify/step2-probes/` and `verify-step2-surfaces.ts` check the cases on the engine, the CLI, the playground bundle and the VS Code bundle.
+- Semantics audit against the step 1 commit: 1,410 programs. 1,394 are unchanged. 2 differ as expected: they are this change's own new docs examples. No program in the repository changes unexpectedly, and none hits the new block-rule errors. The boolean-operations failure matrices, re-run with a 20-minute limit, are unchanged except `failure-matrix.pathogen` (133,648 commands), which gave no result in that time and is the one program the audit couldn't check.
+
 ## [Unreleased] - 2026-10-29 (a move a shape ignores is a warning)
 
 ### Added

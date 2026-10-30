@@ -1,0 +1,7 @@
+// Phase 0a step 2 probe (bug B3): after a path block, ctx is the program's
+// pen again; the block's cursor doesn't leak out.
+// Before the fix: 5 (every command, including the block's, rewrote the
+// program's ctx). After: 10.
+M 10 10
+let b = @{ m 5 0 };
+log(ctx.position.x);

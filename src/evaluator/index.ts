@@ -1024,6 +1024,53 @@ function createScope(parent: Scope | null = null): Scope {
   };
 }
 
+/**
+ * The scope a function, lambda or callback body runs in (phase 0a step 2;
+ * docs/syntax.md "Lambdas"). Names resolve from `lexical` — a lambda's
+ * closure — or else from the caller's scope, but the DRAWING state (the pen,
+ * the active layer, the path-block rules) is always the caller's: a lambda
+ * called inside a path block draws into the block, one called inside
+ * layer().apply draws on that layer.
+ */
+function callScope(lexical: Scope | undefined, caller: Scope): Scope {
+  const scope = createScope(lexical ?? caller);
+  scope.evalState = caller.evalState;
+  return scope;
+}
+
+type DrawingState = EvaluationState & { _insidePathBlock?: boolean; _ctxSource?: EvaluationState };
+
+/** Whether `scope` is building a path block — its own statements or code called from them. */
+function isInsidePathBlock(scope: Scope): boolean {
+  return !!(scope.evalState as DrawingState | undefined)?._insidePathBlock;
+}
+
+/**
+ * `ctx`: the pen drawing in `state` right now (docs/debug.md "ctx Object").
+ * - In a path block, the block's own cursor, with no transform (ctx.transform
+ *   stays an error there).
+ * - In a text block, the state that created it: the same pen, and its
+ *   transform.
+ * - Otherwise the active PathLayer's pen and transform, else the program's.
+ * Computed when read, not rebound after every command: contextToObject builds
+ * a new object only after the pen has moved, so `let saved = ctx;` keeps that
+ * moment's values.
+ */
+function ctxValueFor(state: EvaluationState | undefined): Value | undefined {
+  let drawing = state as DrawingState | undefined;
+  while (drawing?._ctxSource) drawing = drawing._ctxSource as DrawingState;
+  if (!drawing) return undefined;
+  if (drawing._insidePathBlock) {
+    return { type: 'ContextObject' as const, value: contextToObject(drawing.pathContext) } as Value;
+  }
+  let { transformState } = drawing;
+  if (drawing.activeLayerName) {
+    const layer = drawing.layers.get(drawing.activeLayerName);
+    if (layer?.layerType === 'PathLayer') transformState = layer.transformState;
+  }
+  return { type: 'ContextObject' as const, value: contextToObject(drawing.pathContext, transformState) } as Value;
+}
+
 function formatError(message: string, line?: number, column?: number): string {
   if (line !== undefined && line > 0) {
     if (column !== undefined && column > 0) {
@@ -1093,12 +1140,19 @@ function getLineDeep(node: unknown): number | undefined {
   return undefined;
 }
 
-function lookupVariable(scope: Scope, name: string, line?: number, column?: number): Value {
+function lookupVariable(scope: Scope, name: string, line?: number, column?: number, origin: Scope = scope): Value {
   if (scope.variables.has(name)) {
     return scope.variables.get(name)!;
   }
   if (scope.parent) {
-    return lookupVariable(scope.parent, name, line, column);
+    return lookupVariable(scope.parent, name, line, column, origin);
+  }
+  // `ctx` is computed, never bound: the pen drawing where the lookup STARTED
+  // (`origin` — by now `scope` is the root, whose state is the program's).
+  // A user binding named ctx was found above and still wins (until step 5).
+  if (name === 'ctx') {
+    const ctx = ctxValueFor(origin.evalState);
+    if (ctx) return ctx;
   }
   // Object namespace
   if (name === 'Object') {
@@ -1533,7 +1587,7 @@ function collectVariableOffsetStops(
     compound,
     stops: [],
   };
-  const blockScope = createScope(cb.closure ?? scope);
+  const blockScope = callScope(cb.closure, scope);
   const params = cb.params;
   if (params.length > 0) setVariable(blockScope, params[0], builder);
   // pb = the spine itself (exposes get/tangent/normal/length/vertices).
@@ -2564,12 +2618,8 @@ function evaluatePathBlockExpression(expr: PathBlockExpression, scope: Scope): P
     _insidePathBlock: true,
   };
   blockScope.evalState = blockEvalState;
-
-  // Set ctx variable for the block's context
-  blockScope.variables.set('ctx', {
-    type: 'ContextObject' as const,
-    value: contextToObject(blockContext),
-  });
+  // `ctx` in here is the block's cursor: lookupVariable computes it from
+  // blockEvalState (ctxValueFor), so it moves as the block draws.
 
   // Evaluate body, accumulating path command strings
   const accum = createPathStore();
@@ -2638,17 +2688,8 @@ function evaluatePathBlockExpression(expr: PathBlockExpression, scope: Scope): P
  * Evaluate a statement inside a path block, enforcing relative-only constraint
  */
 function evaluatePathBlockStatement(stmt: Statement, scope: Scope, accum: PathStore): void {
-  if (stmt.type === 'PathCommand' && stmt.command !== '') {
-    // Enforce relative-only (lowercase) commands
-    if (stmt.command !== stmt.command.toLowerCase()) {
-      throw new Error(
-        formatError(
-          `Absolute path command '${stmt.command}' is not allowed inside path blocks. Use lowercase '${stmt.command.toLowerCase()}' for relative commands`,
-          getLine(stmt),
-        ),
-      );
-    }
-  }
+  // Relative-only commands are enforced in evaluateStatementToAccum's
+  // PathCommand case, so they hold for code called from the block too.
   // Path-block top level is a break/continue boundary (builder-enforced; defensive)
   const flow = evaluateStatementToAccum(stmt, scope, accum);
   if (flow) throw loopFlowBoundaryError(flow);
@@ -2667,7 +2708,7 @@ function evaluateTextBlockExpression(expr: TextBlockExpression, scope: Scope): T
   const blockScope = createScope(scope);
 
   // Create an isolated evaluation state for the block
-  const blockEvalState: EvaluationState & { _insideTextBlock: boolean } = {
+  const blockEvalState: EvaluationState & { _insideTextBlock: boolean; _ctxSource?: EvaluationState } = {
     ...sharedProgramState(scope.evalState),
     pathContext: scope.evalState?.pathContext ?? createPathContext({}),
     layers: new Map(), // Empty — layer definitions not allowed
@@ -2676,6 +2717,9 @@ function evaluateTextBlockExpression(expr: TextBlockExpression, scope: Scope): T
     defaultLayerName: null,
     transformState: createTransformState(),
     _insideTextBlock: true,
+    // `ctx` here is the creating state's: the same pen, and ITS transform
+    // (this state's transformState is a fresh, empty one).
+    _ctxSource: scope.evalState,
   };
   blockScope.evalState = blockEvalState;
 
@@ -3213,7 +3257,6 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
           scope.evalState.pathContext,
           { bridgeOriginGap: true },
         );
-        updateCtxVariable(scope);
 
         // Build the ProjectedPathValue with absolute coordinates for programmatic use
         const projectedCommands = projectCommands(obj.commands, originX, originY);
@@ -3247,7 +3290,6 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
           scope.evalState.pathContext,
           { bridgeOriginGap: true, moveTo: { x: dtX, y: dtY } },
         );
-        updateCtxVariable(scope);
 
         // Build ProjectedPathValue with absolute coordinates
         const projectedCommands = projectCommands(obj.commands, dtX, dtY);
@@ -3890,7 +3932,6 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
           // pieces) compute correct deltas.
           { moveTo: { x: anchor.x, y: anchor.y }, startCursor: { x: anchor.x, y: anchor.y } },
         );
-        updateCtxVariable(scope);
         return {
           type: 'PathWithResult' as const,
           path: emittedPath,
@@ -3924,7 +3965,6 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
           // startCursor: reprojected commands are world-space — see draw().
           { moveTo: { x: dtX, y: dtY }, startCursor: { x: dtX, y: dtY } },
         );
-        updateCtxVariable(scope);
 
         // Build ProjectedPathValue with absolute coordinates
         const projected: ProjectedPathValue = {
@@ -5509,7 +5549,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
         const fillSink = createPathStore();
         for (let r = 0; r < obj.rows; r++) {
           for (let c = 0; c < obj.cols; c++) {
-            const blockScope = createScope(cb.closure ?? scope);
+            const blockScope = callScope(cb.closure, scope);
             if (params.length > 0) setVariable(blockScope, params[0], r);
             if (params.length > 1) setVariable(blockScope, params[1], c);
             if (params.length > 2) {
@@ -5552,7 +5592,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
         }
         for (let r = 0; r < obj.rows; r++) {
           for (let c = 0; c < obj.cols; c++) {
-            const blockScope = createScope(cb.closure ?? scope);
+            const blockScope = callScope(cb.closure, scope);
             if (params.length > 0) setVariable(blockScope, params[0], obj.cells[r][c]);
             if (params.length > 1) setVariable(blockScope, params[1], r);
             if (params.length > 2) setVariable(blockScope, params[2], c);
@@ -5591,7 +5631,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
         for (let r = 0; r < obj.rows; r++) {
           const row: Value[] = [];
           for (let c = 0; c < obj.cols; c++) {
-            const blockScope = createScope(cb.closure ?? scope);
+            const blockScope = callScope(cb.closure, scope);
             if (params.length > 0) setVariable(blockScope, params[0], obj.cells[r][c]);
             if (params.length > 1) setVariable(blockScope, params[1], r);
             if (params.length > 2) setVariable(blockScope, params[2], c);
@@ -6415,7 +6455,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
       lockArray(obj);
       try {
         for (let i = 0; i < obj.elements.length; i++) {
-          const blockScope = createScope(cb.closure ?? scope);
+          const blockScope = callScope(cb.closure, scope);
           setVariable(blockScope, mapParams[0], obj.elements[i]);
           if (mapParams.length > 1) setVariable(blockScope, mapParams[1], i);
           if (mapParams.length > 2) setVariable(blockScope, mapParams[2], obj);
@@ -6443,7 +6483,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
       lockArray(obj);
       try {
         for (let i = 0; i < obj.elements.length; i++) {
-          const blockScope = createScope(cb.closure ?? scope);
+          const blockScope = callScope(cb.closure, scope);
           setVariable(blockScope, filterParams[0], obj.elements[i]);
           if (filterParams.length > 1) setVariable(blockScope, filterParams[1], i);
           if (filterParams.length > 2) setVariable(blockScope, filterParams[2], obj);
@@ -6474,7 +6514,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
       lockArray(obj);
       try {
         for (let i = 0; i < obj.elements.length; i++) {
-          const blockScope = createScope(cb.closure ?? scope);
+          const blockScope = callScope(cb.closure, scope);
           setVariable(blockScope, reduceParams[0], accumulator);
           if (reduceParams.length > 1) setVariable(blockScope, reduceParams[1], obj.elements[i]);
           if (reduceParams.length > 2) setVariable(blockScope, reduceParams[2], i);
@@ -6641,7 +6681,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
       lockArray(obj);
       try {
         sorted.sort((a, b) => {
-          const blockScope = createScope(cb.closure ?? scope);
+          const blockScope = callScope(cb.closure, scope);
           if (sortParams.length > 0) setVariable(blockScope, sortParams[0], a);
           if (sortParams.length > 1) setVariable(blockScope, sortParams[1], b);
           let cmp: Value = null;
@@ -8673,7 +8713,8 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope): Value {
 
     // Lambdas resolve free names against their captured definition scope
     // (lexical); named fns resolve against the caller's scope (dynamic).
-    const fnScope = createScope(userFn.closure ?? scope);
+    // Either way the body draws with the caller's pen (callScope).
+    const fnScope = callScope(userFn.closure, scope);
     userFn.params.forEach((param, i) => {
       setVariable(fnScope, param, args[i]);
     });
@@ -8974,33 +9015,6 @@ function evaluatePathArg(arg: PathArg, scope: Scope, degreesSlot = false): PathA
 
 
 /**
- * Update the ctx variable in scope with current context state
- */
-function updateCtxVariable(scope: Scope): void {
-  if (scope.evalState) {
-    // Find the root scope to update ctx
-    let rootScope = scope;
-    while (rootScope.parent) {
-      rootScope = rootScope.parent;
-    }
-
-    // Determine active transform state
-    let { transformState } = scope.evalState;
-    if (scope.evalState.activeLayerName) {
-      const layer = scope.evalState.layers.get(scope.evalState.activeLayerName);
-      if (layer?.layerType === 'PathLayer') {
-        transformState = layer.transformState;
-      }
-    }
-
-    rootScope.variables.set('ctx', {
-      type: 'ContextObject' as const,
-      value: contextToObject(scope.evalState.pathContext, transformState),
-    });
-  }
-}
-
-/**
  * Resolve a BBoxAnchor string to a point within the given bounding box.
  */
 function resolveAnchorPoint(
@@ -9085,7 +9099,6 @@ function evaluateContextAwareFunction(
 
       updateContextForCommand(ctx, command, [x, y]);
       setLastTangent(ctx, angle); // Set tangent to movement direction
-      updateCtxVariable(scope);
 
       if (inPathBlock) {
         return { type: 'PathSegment' as const, value: `${command.toLowerCase()} ${formatNum(dx)} ${formatNum(dy)}` };
@@ -9103,7 +9116,6 @@ function evaluateContextAwareFunction(
 
       updateContextForCommand(ctx, 'L', [x, y]);
       setLastTangent(ctx, angle);
-      updateCtxVariable(scope);
 
       if (inPathBlock) {
         return { type: 'PathSegment' as const, value: `l ${formatNum(dx)} ${formatNum(dy)}` };
@@ -9172,7 +9184,6 @@ function evaluateContextAwareFunction(
 
       // Store tangent for tangentLine/tangentArc
       setLastTangent(ctx, tangentAngle);
-      updateCtxVariable(scope);
 
       // Return both path and result info
       return {
@@ -9236,7 +9247,6 @@ function evaluateContextAwareFunction(
 
       // Store tangent for tangentLine/tangentArc
       setLastTangent(ctx, tangentAngle);
-      updateCtxVariable(scope);
 
       // Return both path and result info
       return {
@@ -9275,7 +9285,6 @@ function evaluateContextAwareFunction(
 
       updateContextForCommand(ctx, 'L', [x, y]);
       setLastTangent(ctx, savedTangent);
-      updateCtxVariable(scope);
 
       if (inPathBlock) {
         return { type: 'PathSegment' as const, value: `l ${formatNum(dx)} ${formatNum(dy)}` };
@@ -9329,7 +9338,6 @@ function evaluateContextAwareFunction(
       const emittedCommands = parseAndTrackPathString(pathStr, scope);
 
       setLastTangent(ctx, newTangent);
-      updateCtxVariable(scope);
 
       // Return both path and result info
       return {
@@ -9350,7 +9358,6 @@ function evaluateContextAwareFunction(
       // heading(angle) → set tangent direction without emitting commands or moving cursor
       const [angle] = args as [number];
       setLastTangent(ctx, angle);
-      updateCtxVariable(scope);
       return { type: 'PathSegment' as const, value: '' };
     }
 
@@ -9363,7 +9370,6 @@ function evaluateContextAwareFunction(
         );
       }
       setLastTangent(ctx, ctx.lastTangent + delta);
-      updateCtxVariable(scope);
       return { type: 'PathSegment' as const, value: '' };
     }
 
@@ -9421,7 +9427,6 @@ function evaluatePathCommand(cmd: PathCommand, scope: Scope): { text: string; co
       updateContextForCommand(ctx, cmd.command, numericArgs);
       commands = [{ command: cmd.command, args: numericArgs, start, end: { x: ctx.position.x, y: ctx.position.y } }];
     }
-    updateCtxVariable(scope);
   }
 
   return { text: result, commands };
@@ -9478,7 +9483,6 @@ function mergeTrackedMeta(parsed: PathBlockCommand[], tracked: PathBlockCommand[
 function parseAndTrackPathString(pathStr: string, scope: Scope): PathBlockCommand[] {
   if (!scope.evalState) return [];
   const commands = parsePathStringToCommands(pathStr, scope.evalState.pathContext);
-  updateCtxVariable(scope);
   return commands;
 }
 
@@ -10004,6 +10008,16 @@ function evaluateStatementToAccum(stmt: Statement, scope: Scope, accum: PathStor
         evaluateStatementBuiltin(builtinCall, scope);
         return;
       }
+      // Path-block rule: relative commands only — for the block's own lines and
+      // for any fn or lambda body called from them (docs/path-blocks.md "Restrictions").
+      if (stmt.command !== '' && stmt.command !== stmt.command.toLowerCase() && isInsidePathBlock(scope)) {
+        throw new Error(
+          formatError(
+            `Absolute path command '${stmt.command}' is not allowed inside path blocks. Use lowercase '${stmt.command.toLowerCase()}' for relative commands`,
+            getLine(stmt),
+          ),
+        );
+      }
       // Method call statements: evaluate for side effects, emit path if PathWithResult
       if (stmt.command === '' && stmt.args.length === 1 && stmt.args[0].type === 'MethodCallExpression') {
         const methodResult = evaluateMethodCall(stmt.args[0], scope);
@@ -10130,6 +10144,10 @@ function evaluateStatementToAccum(stmt: Statement, scope: Scope, accum: PathStor
       if (!scope.evalState) {
         throw new Error(formatError('Layer definitions require evaluation context', getLine(stmt)));
       }
+      // Path-block rule, also for a fn or lambda called inside a block.
+      if (isInsidePathBlock(scope)) {
+        throw new Error(formatError('Layer definitions are not allowed inside path blocks', getLine(stmt)));
+      }
       const nameValue = evaluateExpression(stmt.name, scope);
       if (typeof nameValue !== 'string') {
         throw new Error(formatError('Layer name must be a string', getLine(stmt)));
@@ -10221,6 +10239,10 @@ function evaluateStatementToAccum(stmt: Statement, scope: Scope, accum: PathStor
       if (!scope.evalState) {
         throw new Error(formatError('Layer apply blocks require evaluation context', getLine(stmt)));
       }
+      // Path-block rule, also for a fn or lambda called inside a block.
+      if (isInsidePathBlock(scope)) {
+        throw new Error(formatError('Layer apply blocks are not allowed inside path blocks', getLine(stmt)));
+      }
       const target = evaluateExpression(stmt.layerName, scope);
       let layer: LayerState;
       let nameValue: string;
@@ -10274,13 +10296,11 @@ function evaluateStatementToAccum(stmt: Statement, scope: Scope, accum: PathStor
       const prevActiveLayerName = scope.evalState.activeLayerName;
       scope.evalState.pathContext = (layer as PathLayerState).pathContext;
       scope.evalState.activeLayerName = nameValue;
-      updateCtxVariable(scope);
       // Apply blocks are break/continue boundaries (builder-enforced; defensive)
       const applyFlow = evaluateStatementsToAccum(stmt.body, createScope(scope), (layer as PathLayerState).accum);
       if (applyFlow) throw loopFlowBoundaryError(applyFlow);
       scope.evalState.pathContext = prevPathContext;
       scope.evalState.activeLayerName = prevActiveLayerName;
-      updateCtxVariable(scope);
       return;
     }
 
@@ -11599,12 +11619,7 @@ export function evaluate(
 
     const scope = createScope();
     scope.evalState = evalState;
-
-    // Initialize ctx variable
-    scope.variables.set('ctx', {
-      type: 'ContextObject' as const,
-      value: contextToObject(pathContext, transformState),
-    });
+    // `ctx` isn't bound: lookupVariable computes it from the drawing state (ctxValueFor).
 
     const accum = createPathStore();
     evalState.rootAccum = accum;
@@ -11710,12 +11725,7 @@ export function evaluateWithContext(
 
     const scope = createScope();
     scope.evalState = evalState;
-
-    // Initialize ctx variable
-    scope.variables.set('ctx', {
-      type: 'ContextObject' as const,
-      value: contextToObject(pathContext, transformState),
-    });
+    // `ctx` isn't bound: lookupVariable computes it from the drawing state (ctxValueFor).
 
     // Note: log() is handled specially in evaluateFunctionCall, not registered here
 

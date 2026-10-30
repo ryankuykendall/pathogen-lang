@@ -1,0 +1,10 @@
+// Phase 0a step 2 probe (bug B2): a lambda called inside a path block draws
+// with the block's pen, as a named fn does.
+// Before the fix: the lambda drew on the program's pen at (50, 50), so the
+// block recorded nothing it could track (an annotation-transfer warning) and
+// b.d was empty. After: b.d is "l 10 0".
+let tick = {|| polarLine(0deg, 10); };
+M 50 50
+let b = @{ tick(); };
+log(b.d);
+M 0 0 b.draw()

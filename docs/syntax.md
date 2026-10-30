@@ -2047,6 +2047,28 @@ let last = fns[2];
 Lambda bodies have the same dual mode as named functions: `return` a value, or
 fall through after path commands to produce a path segment.
 
+A lambda takes its *names* from where it is written, but it *draws* where it
+is called, just as in a named function: its path commands and its
+[`ctx`](#syntax-path-context-ctx) use the pen of the place that calls it.
+`ctx` is the one name a lambda doesn't capture; it always means the pen that
+is drawing now. Called inside a path block, a lambda draws into the block:
+
+```
+let tick = {|| polarLine(0deg, 10); };
+M 50 50
+let ticks = @{ tick(); };
+log(ticks.d);          // "l 10 0" — drawn from the block's cursor
+log(ctx.position.x);   // 50 — the program's pen didn't move
+```
+
+The same goes for a lambda applied to a callback builtin (see
+[Applying workers](#syntax-applying-workers) under the `<<` operator) and for a
+trailing block such as `.map {|v| … }`. Because it runs inside the block, the
+block's [restrictions](#path-blocks-restrictions) apply to what is written in
+it, as they do in a named function called there. For example, an uppercase
+command, `define PathLayer`, `.draw()` or a nested `@{ }` in its body is an
+error; a stdlib shape such as `circle()` still works.
+
 **Applying workers with `<<`.** Anywhere a **callback builtin** accepts a
 trailing block, a lambda (or a named function) can do the same job —
 applied with the `<<` operator, never passed inside the parentheses.
@@ -2186,6 +2208,8 @@ L calc(ctx.position.x + 10) ctx.position.y  // L 40 40
 ```
 
 `ctx` is an ambient global — so is `viewbox`, which exposes the dimensions set by `define ViewBox(…)`; see [Reading the viewbox](#viewbox-reading-the-viewbox).
+
+`ctx` is always the pen drawing right now: inside a path block, the block's cursor; inside `layer(…).apply { }`, that layer's pen; elsewhere, the program's pen. In a function, lambda or callback, it is the pen of the place that calls it. See [ctx Object](#debug-ctx-object).
 
 ### ctx Properties
 

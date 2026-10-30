@@ -1,0 +1,9 @@
+// Phase 0a step 2 probe: a named fn called inside a path block reads the
+// block's cursor through ctx.
+// Before the fix: 0 (the block's ctx was bound once, at its start). After: 5.
+M 50 50
+fn px() { return ctx.position.x; }
+let b = @{
+  m 5 0;
+  log(px());
+};

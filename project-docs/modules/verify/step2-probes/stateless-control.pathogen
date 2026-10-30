@@ -1,0 +1,17 @@
+// Phase 0a step 2 control: ctx read at the top level, in a layer's apply
+// block and by a subscription callback — none of it changes in step 2.
+// Expected before and after: 30 (top level), 70 (the layer's pen), then 33:
+// the subscription callback runs once the program has finished, and its ctx
+// is the program's final pen (after the last line draws b from (30, 0)).
+define PathLayer('a') #{ stroke: red; };
+fn px() { return ctx.position.x; }
+let lx = {|| return ctx.position.x; };
+M 30 0
+log(px());
+layer('a').subscribe('command') {|m| log(ctx.position.x); };
+layer('a').apply {
+  M 70 0
+  log(lx());
+}
+let b = @{ m 1 1 l 2 2 };
+M 30 0 b.draw()
