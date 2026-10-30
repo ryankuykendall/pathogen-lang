@@ -596,6 +596,8 @@ function mapSymbolKind(kind: SymbolKind): LSPSymbolKind {
       return LSPSymbolKind.Function;
     case SymbolKind.Variable:
       return LSPSymbolKind.Variable;
+    case SymbolKind.Constant:
+      return LSPSymbolKind.Constant;
     case SymbolKind.Enum:
       return LSPSymbolKind.Enum;
     case SymbolKind.EnumMember:

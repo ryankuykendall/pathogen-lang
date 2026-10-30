@@ -1304,4 +1304,7 @@ export interface Scope {
   // parent, and the fn. Read only when a lookup misses, to explain the error.
   dynamicParent?: Scope;
   calledFn?: CalledFn;
+  // Names declared with `const` in this scope (phase 0a step 4). Created on
+  // the first const; most scopes never have one.
+  consts?: Set<string>;
 }

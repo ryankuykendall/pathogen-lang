@@ -1,0 +1,12 @@
+// Step 4 probe: a const reassigned in a function that is never called.
+// Reported before the program runs, at the assignment (line 8, column 3).
+define ViewBox(0, 0, 100, 40);
+
+const LIMIT = 5;
+
+fn reset() {
+  LIMIT = 0;
+}
+
+M 0 20
+L 100 20

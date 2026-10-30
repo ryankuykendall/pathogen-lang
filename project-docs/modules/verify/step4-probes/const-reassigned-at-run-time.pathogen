@@ -1,0 +1,11 @@
+// Step 4 probe: the run-time backstop. The function is written above the
+// const, so the static check (which only looks at statements after a const)
+// leaves it to the evaluator: the call stops at the assignment (line 7).
+define ViewBox(0, 0, 100, 40);
+
+fn reset() {
+  LIMIT = 0;
+}
+
+const LIMIT = 5;
+reset();

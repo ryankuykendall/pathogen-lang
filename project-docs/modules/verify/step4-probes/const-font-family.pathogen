@@ -1,0 +1,10 @@
+// Step 4 probe: @font reads a top-level const. Compiled offline, so the
+// family may not load; the check is that the directive resolves (no
+// "not a top-level string variable" error) on every surface.
+define ViewBox(0, 0, 100, 40);
+
+const family = "Inter";
+@font family;
+
+M 0 20
+L 100 20

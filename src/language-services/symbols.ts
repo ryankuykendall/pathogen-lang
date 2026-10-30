@@ -21,6 +21,7 @@ import type {
 export enum SymbolKind {
   Function = 12,
   Variable = 13,
+  Constant = 14,
   Enum = 10,
   EnumMember = 22,
   Struct = 23,    // Used for layers
@@ -45,7 +46,9 @@ export function getDocumentSymbols(document: TextDocument): DocumentSymbol[] {
 
   let ast: Program;
   try {
-    ast = parse(source);
+    // Naming mistakes (a reassigned const, `let rad`) don't change the
+    // outline; diagnostics reports them.
+    ast = parse(source, { namingChecks: false });
   } catch {
     // If the source doesn't parse, return no symbols
     return [];
@@ -87,7 +90,7 @@ function letSymbol(node: LetDeclaration, document: TextDocument): DocumentSymbol
   const range = locToRange(node.loc, document);
   return {
     name: node.pattern ? formatPattern(node) : node.name,
-    kind: SymbolKind.Variable,
+    kind: node.kind === 'const' ? SymbolKind.Constant : SymbolKind.Variable,
     range,
     selectionRange: range,
   };

@@ -285,7 +285,7 @@ log(a.nested.val);  // 99 — same inner object
 
 ## Destructuring
 
-Extract object properties into individual variables with destructuring in `let` declarations:
+Extract object properties into individual variables with destructuring in `let` and `const` declarations:
 
 ```
 let point = { x: 50, y: 80 };

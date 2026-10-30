@@ -8,6 +8,7 @@ import { parseExpression as lezerParseExpression, findExpressionErrorOffset } fr
 import { describeBareRange } from './range-value-errors';
 import { reservedBindingAt } from './reserved-bindings';
 import type { ReservedBinding } from './reserved-bindings';
+import { findConstViolation } from './const-check';
 
 setExpressionParser({
   parse: (input: string) => {
@@ -45,8 +46,9 @@ export function detectMissingSemicolon(
   const statementText = before.slice(lastBoundary + 1).trim();
 
   let message: string;
-  if (statementText.startsWith('let ')) {
-    message = "Missing ';' after let declaration";
+  const declKeyword = /^(let|const) /.exec(statementText)?.[1];
+  if (declKeyword) {
+    message = `Missing ';' after ${declKeyword} declaration`;
   } else if (statementText.startsWith('return ') || statementText === 'return') {
     message = "Missing ';' after return statement";
   } else if (/^[a-zA-Z_]\w*\s*(?:\.\w+|\[[\s\S]*?\])*\s*=(?!=)/.test(statementText)) {
@@ -161,7 +163,20 @@ export { lezerParser };
 
 export { describeBareRange, RANGE_IN_PATH_ARGS, RANGE_NEEDS_BOTH_BOUNDS } from './range-value-errors';
 
-export function parse(input: string): Program {
+export interface ParseOptions {
+  /**
+   * Report the naming errors that need a finished tree — a reserved name used
+   * as a binding (reserved-bindings.ts) and a reassigned or redeclared const
+   * (const-check.ts). On by default (compiling, diagnostics). Editor features
+   * that only need the program's structure (outline, inlay hints, formatter)
+   * pass false, so a naming mistake mid-edit doesn't blank them; diagnostics
+   * still reports it.
+   */
+  namingChecks?: boolean;
+}
+
+export function parse(input: string, options: ParseOptions = {}): Program {
+  const namingChecks = options.namingChecks ?? true;
   const tree = lezerParser.parse(input);
 
   // One pass over the tree: stop at the first Lezer error node, and along the
@@ -176,7 +191,7 @@ export function parse(input: string): Program {
       hasErrors = true;
       break;
     }
-    reservedBinding ??= reservedBindingAt(errCur, input);
+    if (namingChecks) reservedBinding ??= reservedBindingAt(errCur, input);
   } while (errCur.next());
 
   if (hasErrors) {
@@ -233,7 +248,17 @@ export function parse(input: string): Program {
     }
     throw builderError;
   }
-  if (reservedBinding) throw reservedBindingError(reservedBinding, input);
+  // A reassigned or redeclared const, reported before the program runs
+  // (const-check.ts; the evaluator checks the same rules as a backstop).
+  // With a reserved-name error too, the one written first is reported.
+  const constViolation = namingChecks ? findConstViolation(ast) : null;
+  if (reservedBinding && (!constViolation || reservedBinding.offset < constViolation.loc.offset)) {
+    throw reservedBindingError(reservedBinding, input);
+  }
+  if (constViolation) {
+    const { line, column } = constViolation.loc;
+    throw new Error(`Parse error at line ${line}, column ${column}: ${constViolation.message}`);
+  }
   return ast;
 }
 

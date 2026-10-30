@@ -88,7 +88,14 @@ export function getSemanticTokens(document: TextDocument): SemanticToken[] {
         addTokenForName(source, decl.name, decl.range.start.line, typeIndex('parameter'), mod, tokens);
         break;
       case 'variable':
-        addTokenForName(source, decl.name, decl.range.start.line, typeIndex('variable'), mod, tokens);
+        addTokenForName(
+          source,
+          decl.name,
+          decl.range.start.line,
+          typeIndex('variable'),
+          decl.isConst ? mod | modBit('readonly') : mod,
+          tokens,
+        );
         break;
       case 'loopVar':
         addTokenForName(source, decl.name, decl.range.start.line, typeIndex('variable'), mod | modBit('readonly'), tokens);
@@ -141,7 +148,7 @@ export function getSemanticTokens(document: TextDocument): SemanticToken[] {
           emit(typeIndex('type'), 0);
           break;
         default:
-          emit(typeIndex('variable'), 0);
+          emit(typeIndex('variable'), ref.declaration.isConst ? modBit('readonly') : 0);
           break;
       }
     } else if (ref.isBuiltin) {

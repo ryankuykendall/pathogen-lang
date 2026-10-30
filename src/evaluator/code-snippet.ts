@@ -32,7 +32,7 @@ const TOKEN_COLORS: Record<CodeToken['type'], string> = {
 // ---------------------------------------------------------------------------
 
 export const KEYWORDS = new Set([
-  'let', 'for', 'forEach', 'if', 'else', 'define', 'in', 'fn', 'return',
+  'let', 'const', 'for', 'forEach', 'if', 'else', 'define', 'in', 'fn', 'return',
   'switch', 'case', 'where', 'default', 'break', 'continue',
   'enum', 'layer', 'apply', 'text', 'tspan', 'calc', 'ViewBox',
 ]);

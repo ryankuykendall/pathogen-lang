@@ -100,7 +100,7 @@ const REGISTRIES: Registry[] = [
 describe('keyword registry drift guard', () => {
   it('collects the expected keyword set from the grammar', () => {
     expect([...GRAMMAR_KEYWORDS].sort()).toEqual([
-      'ViewBox', 'apply', 'break', 'calc', 'case', 'continue', 'default', 'define',
+      'ViewBox', 'apply', 'break', 'calc', 'case', 'const', 'continue', 'default', 'define',
       'else', 'enum', 'fn', 'for', 'if', 'in', 'layer', 'let', 'return', 'switch',
       'text', 'tspan', 'where',
     ].sort());

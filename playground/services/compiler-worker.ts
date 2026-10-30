@@ -492,7 +492,7 @@ export async function resolveFontsForSource(
       weight: u.weight ?? 0,
       reason:
         `@font references variable '${u.family}', which is not a top-level string variable. ` +
-        `Declare it at the top level: let ${u.family} = "Family Name";`,
+        `Declare it at the top level: const ${u.family} = "Family Name";`,
     }));
 
   // Resolved-but-uncurated families are probed via the normal fetch path

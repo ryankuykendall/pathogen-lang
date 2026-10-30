@@ -350,6 +350,7 @@ import {
 import { commandValues, endpointValue, parsePathQuery, runPathQuery, wrapCommands } from './path-query';
 import { tryResolveCSSFunctionArgs as sharedTryResolveCSSFunctionArgs } from './css-function-resolve';
 import { LEXICAL_RULE, isLexicalScopeMiss } from './lexical-scope';
+import { constOverExistingError, constReassignError, constRedeclareError } from './const-bindings';
 import { spliceTemplateFragments } from '../css-value-utils';
 
 /** CSS properties that reference defs elements via url(#id) */
@@ -1031,6 +1032,7 @@ function createScope(parent: Scope | null = null): Scope {
     // them) has the same shape as the rest: lookups walk mixed chains.
     dynamicParent: undefined,
     calledFn: undefined,
+    consts: undefined,
   };
 }
 
@@ -1348,10 +1350,26 @@ function setVariable(scope: Scope, name: string, value: Value): void {
   scope.variables.set(name, value);
 }
 
+/**
+ * Declare a name in `scope` with `let`, `const` or `fn` — every declaration
+ * statement and destructured name goes through here (phase 0a step 4). Two
+ * `let`s (or a fn and a let) of one name in one scope stay legal: the second
+ * replaces the first, as before. A const makes a second declaration an error
+ * either way round. parse() reports the same rule statically when the source
+ * decides it (parser/const-check.ts); this is the run-time backstop.
+ */
+function declareBinding(scope: Scope, name: string, value: Value, kind: 'let' | 'const' | 'fn', line?: number): void {
+  if (scope.consts?.has(name)) throw new Error(formatError(constRedeclareError(name), line));
+  if (kind === 'const' && scope.variables.has(name)) throw new Error(formatError(constOverExistingError(name), line));
+  setVariable(scope, name, value);
+  if (kind === 'const') (scope.consts ??= new Set()).add(name);
+}
+
 function updateVariable(scope: Scope, name: string, value: Value, line?: number): void {
   let current: Scope | null = scope;
   while (current) {
     if (current.variables.has(name)) {
+      if (current.consts?.has(name)) throw new Error(formatError(constReassignError(name), line));
       if (scopeAudit !== null && current !== scope) auditBinding(scope, name, current, false);
       current.variables.set(name, value);
       return;
@@ -9732,9 +9750,9 @@ function evaluateTextBody(items: TextBodyItem[], scope: Scope, children: TextChi
     } else if (item.type === 'LetDeclaration') {
       const value = evaluateExpression(item.value, scope);
       if (item.pattern) {
-        bindDestructuringPattern(item.pattern, value, scope, getLine(item));
+        bindDestructuringPattern(item.pattern, value, scope, getLine(item), item.kind);
       } else {
-        setVariable(scope, item.name, value);
+        declareBinding(scope, item.name, value, item.kind, getLine(item));
       }
     }
   }
@@ -9749,16 +9767,18 @@ function bindDestructuringPattern(
   value: Value,
   scope: Scope,
   line?: number,
+  kind: 'let' | 'const' = 'let',
 ): void {
+  const bind = (name: string, bound: Value): void => declareBinding(scope, name, bound, kind, line);
   if (pattern.type === 'ArrayDestructuringPattern') {
     if (!isArrayValue(value)) {
       throw new Error(formatError('Cannot destructure non-array value with array pattern', line));
     }
     for (let i = 0; i < pattern.elements.length; i++) {
-      setVariable(scope, pattern.elements[i], value.elements[i] ?? null);
+      bind(pattern.elements[i], value.elements[i] ?? null);
     }
     if (pattern.rest) {
-      setVariable(scope, pattern.rest, {
+      bind(pattern.rest, {
         type: 'ArrayValue' as const,
         elements: value.elements.slice(pattern.elements.length),
       });
@@ -9768,14 +9788,14 @@ function bindDestructuringPattern(
       const usedKeys = new Set<string>();
       for (const { key, alias } of pattern.properties) {
         usedKeys.add(key);
-        setVariable(scope, alias ?? key, value.properties.get(key) ?? null);
+        bind(alias ?? key, value.properties.get(key) ?? null);
       }
       if (pattern.rest) {
         const remaining = new Map<string, Value>();
         for (const [k, v] of value.properties) {
           if (!usedKeys.has(k)) remaining.set(k, v);
         }
-        setVariable(scope, pattern.rest, { type: 'ObjectValue' as const, properties: remaining });
+        bind(pattern.rest, { type: 'ObjectValue' as const, properties: remaining });
       }
       return;
     }
@@ -9794,14 +9814,14 @@ function bindDestructuringPattern(
         throw new Error(formatError(`Property '${key}' does not exist on ${struct.name}`, line));
       }
       usedKeys.add(key);
-      setVariable(scope, alias ?? key, struct.get(value, key));
+      bind(alias ?? key, struct.get(value, key));
     }
     if (pattern.rest) {
       const remaining = new Map<string, Value>();
       for (const key of struct.keys(value)) {
         if (!usedKeys.has(key)) remaining.set(key, struct.get(value, key));
       }
-      setVariable(scope, pattern.rest, { type: 'ObjectValue' as const, properties: remaining });
+      bind(pattern.rest, { type: 'ObjectValue' as const, properties: remaining });
     }
   }
 }
@@ -10004,7 +10024,7 @@ function evaluateStatementToAccum(stmt: Statement, scope: Scope, accum: PathStor
       // Handle destructuring patterns
       if (stmt.pattern) {
         const bindValue = (typeof value === 'object' && value !== null && 'type' in value && value.type === 'PathWithResult') ? value.result : value;
-        bindDestructuringPattern(stmt.pattern, bindValue, scope, getLine(stmt));
+        bindDestructuringPattern(stmt.pattern, bindValue, scope, getLine(stmt), stmt.kind);
         if (typeof value === 'object' && value !== null && 'type' in value && value.type === 'PathWithResult' && value.path) {
           recordPath(accum, value.path, value.commands ?? [], { loc: stmt.loc, fn: calleeName(stmt.value) });
         }
@@ -10013,11 +10033,11 @@ function evaluateStatementToAccum(stmt: Statement, scope: Scope, accum: PathStor
       // Handle PathWithResult: assign the result to variable, emit the path
       if (typeof value === 'object' && value !== null && 'type' in value && value.type === 'PathWithResult') {
         const pwr = value;
-        setVariable(scope, stmt.name, pwr.result);
+        declareBinding(scope, stmt.name, pwr.result, stmt.kind, getLine(stmt));
         if (pwr.path) recordPath(accum, pwr.path, pwr.commands ?? [], { loc: stmt.loc, fn: calleeName(stmt.value) });
         return;
       }
-      setVariable(scope, stmt.name, value);
+      declareBinding(scope, stmt.name, value, stmt.kind, getLine(stmt));
       return;
     }
 
@@ -10147,7 +10167,7 @@ function evaluateStatementToAccum(stmt: Statement, scope: Scope, accum: PathStor
         closure: scope,
         name: stmt.name,
       };
-      setVariable(scope, stmt.name, fn);
+      declareBinding(scope, stmt.name, fn, 'fn', getLine(stmt));
       return;
     }
 

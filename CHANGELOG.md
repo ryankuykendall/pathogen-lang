@@ -5,6 +5,40 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] - 2026-10-30 (`const`)
+
+### Added
+
+#### Core
+
+- **`const`** declares a variable that is never given a new value: `const margin = 10;`. It works as in JavaScript: the name can't be assigned again, but a const array or object can still change (`steps.push(10)`, `steps[0] = 20`, `box['w'] = 5`).
+  - Assigning to a const is an error: `Cannot assign to margin — it is a const. Declare it with let if it needs to change`.
+  - Declaring a const's name again in the same scope (with `let`, `const` or `fn`), or declaring a const with a name the scope already has, is an error that says to use another name. Two `let`s of the same name are still fine; the second replaces the first.
+  - A function, loop or block can declare its own variable with a const's name. A const in a loop body or a function is a new const on each pass or call. Destructuring works: `const [a, b] = pair;`, `const { x, y } = point;`.
+  - Most of these mistakes are reported before the program runs, at the line, even in a function that is never called. The rest are reported when the line runs: a function written above the const that assigns to it, or a const that shares its name with a parameter.
+  - `@font family;` accepts a top-level `const family = "Inter";` as well as a `let`, and its error now suggests a const.
+  - Editors: completion, hover, a `const` snippet, semantic highlighting marks consts readonly, the outline lists them as constants, and the formatter keeps `const` (it printed every declaration as `let`).
+
+### Fixed
+
+#### Core
+
+- **A naming mistake no longer blanks the outline, inlay hints or formatting while you type.** A reserved name used as a variable (`let rad = 3;`) made the editor's outline and inlay hints return nothing for the whole file until it was fixed. The same would have happened for a reassigned const. They now ignore naming mistakes, which the error list still reports (`parse()` takes `{ namingChecks: false }`).
+
+### Changed
+
+#### Core
+
+- **`const` is a keyword**, so it can't be a variable, parameter or bare object key any more, the same as `let` or `text` (a quoted key, `{ 'const': 1 }`, works). No program in the repository used it as a name, and none of the 215 programs saved on pathogen.studio contains the word at all.
+
+#### Documentation
+
+- docs/syntax.md "Variables": when to choose `const`, a "Three naming rules" list that now names every keyword (with the quoted-key workaround), and a `const` section with each error next to the program that causes it, shadowing, mutable contents, loops and destructuring. "let or const" where the docs listed only `let` (syntax.md, objects.md). docs/path-blocks.md `@font`: a const as the source, and why: reassigning a `let` doesn't change which font loads.
+
+#### Development
+
+- tests/const.test.ts pins the docs examples, both rules at compile time and at run time, eight shadowing forms, the editor features and `@font`. The keyword-registry test now expects `const` in every registry; the all-syntax fixture uses it. `project-docs/modules/verify/step4-probes/` and `verify-step4-surfaces.ts` check the CLI, the playground bundle and the VS Code bundle, including the editor features.
+
 ## [Unreleased] - 2026-10-30 (named functions are lexical)
 
 ### Changed

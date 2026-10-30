@@ -73,6 +73,8 @@ export interface Declaration {
   scope: Scope;
   /** AST context for type inference; absent when the value is uninferable (fn params, enums, rest bindings) */
   typeContext?: DeclTypeContext;
+  /** Declared with `const`: never assigned again (semantic tokens add `readonly`) */
+  isConst?: boolean;
 }
 
 export interface Reference {
@@ -191,25 +193,25 @@ function walkStatement(stmt: Statement, scope: Scope, col: Collector): void {
     case 'LetDeclaration': {
       // Walk value first (before name is in scope)
       walkExpr(stmt.value, scope, col);
-      // Bind names
+      // Bind names; a `const` marks each one (semantic tokens show it readonly).
+      const bind = (name: string, typeContext?: DeclTypeContext): void => {
+        const decl = addDecl(scope, name, 'variable', stmt.loc, col, typeContext);
+        if (stmt.kind === 'const') decl.isConst = true;
+      };
       if (stmt.pattern) {
         if (stmt.pattern.type === 'ArrayDestructuringPattern') {
           stmt.pattern.elements.forEach((elem, index) =>
-            addDecl(scope, elem, 'variable', stmt.loc, col, { kind: 'arrayElement', expr: stmt.value, index }),
+            bind(elem, { kind: 'arrayElement', expr: stmt.value, index }),
           );
-          if (stmt.pattern.rest) addDecl(scope, stmt.pattern.rest, 'variable', stmt.loc, col);
+          if (stmt.pattern.rest) bind(stmt.pattern.rest);
         } else if (stmt.pattern.type === 'ObjectDestructuringPattern') {
           for (const prop of stmt.pattern.properties) {
-            addDecl(scope, prop.alias || prop.key, 'variable', stmt.loc, col, {
-              kind: 'objectProp',
-              expr: stmt.value,
-              key: prop.key,
-            });
+            bind(prop.alias || prop.key, { kind: 'objectProp', expr: stmt.value, key: prop.key });
           }
-          if (stmt.pattern.rest) addDecl(scope, stmt.pattern.rest, 'variable', stmt.loc, col);
+          if (stmt.pattern.rest) bind(stmt.pattern.rest);
         }
       } else {
-        addDecl(scope, stmt.name, 'variable', stmt.loc, col, { kind: 'init', expr: stmt.value });
+        bind(stmt.name, { kind: 'init', expr: stmt.value });
       }
       break;
     }

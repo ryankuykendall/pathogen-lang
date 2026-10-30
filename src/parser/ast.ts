@@ -95,6 +95,10 @@ export type Statement =
 // let x = 10; or let [a, b] = expr; or let { x, y } = expr;
 export interface LetDeclaration {
   type: 'LetDeclaration';
+  // `const` fixes the binding (phase 0a step 4; docs/syntax.md "const"): it
+  // can't be assigned or declared again in the same scope. The contents of
+  // a const array or object stay mutable, as in JavaScript.
+  kind: 'let' | 'const';
   name: string;
   pattern?: ArrayDestructuringPattern | ObjectDestructuringPattern;
   value: Expression;

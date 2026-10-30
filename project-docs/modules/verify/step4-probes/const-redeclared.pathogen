@@ -1,0 +1,9 @@
+// Step 4 probe: a const's name declared again in the same scope.
+// Reported before the program runs, at the second declaration (line 6, column 1).
+define ViewBox(0, 0, 100, 40);
+
+const margin = 10;
+let margin = 12;
+
+M 0 20
+L 100 20

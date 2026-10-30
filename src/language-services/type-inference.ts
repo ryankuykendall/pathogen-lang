@@ -134,15 +134,15 @@ export function inferType(name: string, source: string, seen?: Set<string>): str
   // Layer constructors — support both `let x = PathLayer(...)` and
   // `define x PathLayer(...)`. These return a layer union in pathogen-api.ts,
   // so they stay hand-written rather than generated.
-  if (new RegExp(`(?:let\\s+${esc}\\s*=|define)\\s*PathLayer\\s*\\(`).test(source)) return 'PathLayer';
-  if (new RegExp(`(?:let\\s+${esc}\\s*=|define)\\s*TextLayer\\s*\\(`).test(source)) return 'TextLayer';
-  if (new RegExp(`(?:let\\s+${esc}\\s*=|define)\\s*GroupLayer\\s*\\(`).test(source)) return 'GroupLayer';
+  if (new RegExp(`(?:(?:let|const)\\s+${esc}\\s*=|define)\\s*PathLayer\\s*\\(`).test(source)) return 'PathLayer';
+  if (new RegExp(`(?:(?:let|const)\\s+${esc}\\s*=|define)\\s*TextLayer\\s*\\(`).test(source)) return 'TextLayer';
+  if (new RegExp(`(?:(?:let|const)\\s+${esc}\\s*=|define)\\s*GroupLayer\\s*\\(`).test(source)) return 'GroupLayer';
 
   // let name = layer('...').segment/point/vertex(...) — a query RESULT, not
   // the layer itself. Must be checked before the bare layer() rule below,
   // which would otherwise greedily match on the `layer(` prefix.
   const layerQuery = new RegExp(
-    `let\\s+${esc}\\s*=\\s*layer\\s*\\([^)]*\\)\\s*\\.\\s*(segmentAll|pointAll|vertexAll|queryAll|subscribe|segment|point|vertex|query)\\s*\\(`,
+    `(?:let|const)\\s+${esc}\\s*=\\s*layer\\s*\\([^)]*\\)\\s*\\.\\s*(segmentAll|pointAll|vertexAll|queryAll|subscribe|segment|point|vertex|query)\\s*\\(`,
   ).exec(source);
   if (layerQuery) {
     // query() results are typed by the AST path (selector noun); here we only
@@ -154,39 +154,39 @@ export function inferType(name: string, source: string, seen?: Set<string>): str
   }
 
   // let name = layer('...')  — returns a layer reference (same as PathLayer)
-  if (new RegExp(`let\\s+${esc}\\s*=\\s*layer\\s*\\(`).test(source)) return 'PathLayer';
+  if (new RegExp(`(?:let|const)\\s+${esc}\\s*=\\s*layer\\s*\\(`).test(source)) return 'PathLayer';
 
   // Constructor-derived types — generated from pathogen-api.ts return types
   // (Point, PolarVector, Cycler, CSSVar, Grid, filters, gradients, Mask,
   // ClipPath, Pattern, Marker, SVGDocumentFragment, ...). Adding a declared
   // constructor to pathogen-api.ts propagates here with no code change.
   for (const [ctor, info] of Object.entries(CONSTRUCTOR_RETURN_TYPES)) {
-    if (new RegExp(`let\\s+${esc}\\s*=\\s*${ctor}\\s*\\(`).test(source)) return info.type;
+    if (new RegExp(`(?:let|const)\\s+${esc}\\s*=\\s*${ctor}\\s*\\(`).test(source)) return info.type;
   }
 
   // let name = Color(...) or let name = #hex or let name = rgb(...) or let name = oklch(...)
   if (
     new RegExp(
-      `let\\s+${esc}\\s*=\\s*(?:Color\\s*\\(|#[0-9a-fA-F]|rgb\\(|hsl\\(|oklch\\(|hwb\\(|lab\\(|lch\\(|oklab\\()`,
+      `(?:let|const)\\s+${esc}\\s*=\\s*(?:Color\\s*\\(|#[0-9a-fA-F]|rgb\\(|hsl\\(|oklch\\(|hwb\\(|lab\\(|lch\\(|oklab\\()`,
     ).test(source)
   )
     return 'ColorInstance';
 
   // let name = @{ ... }
-  if (new RegExp(`let\\s+${esc}\\s*=\\s*@\\s*\\{`).test(source)) return 'PathBlock';
+  if (new RegExp(`(?:let|const)\\s+${esc}\\s*=\\s*@\\s*\\{`).test(source)) return 'PathBlock';
 
   // let name = &{ ... }
-  if (new RegExp(`let\\s+${esc}\\s*=\\s*&\\s*\\{`).test(source)) return 'ProjectedText';
+  if (new RegExp(`(?:let|const)\\s+${esc}\\s*=\\s*&\\s*\\{`).test(source)) return 'ProjectedText';
 
   // let name = [...]  or method returning array
-  if (new RegExp(`let\\s+${esc}\\s*=\\s*\\[`).test(source)) return 'array';
+  if (new RegExp(`(?:let|const)\\s+${esc}\\s*=\\s*\\[`).test(source)) return 'array';
 
   // let name = "..." or let name = '...' or let name = `...`
-  if (new RegExp(`let\\s+${esc}\\s*=\\s*["'\`]`).test(source)) return 'string';
+  if (new RegExp(`(?:let|const)\\s+${esc}\\s*=\\s*["'\`]`).test(source)) return 'string';
 
   // let name = receiver.method() — infer from method return type, preferring
   // the receiver's per-type return map over the global fallback.
-  const methodAssignMatch = new RegExp(`let\\s+${esc}\\s*=\\s*(\\w+)\\.([a-zA-Z]+)\\s*\\(`).exec(source);
+  const methodAssignMatch = new RegExp(`(?:let|const)\\s+${esc}\\s*=\\s*(\\w+)\\.([a-zA-Z]+)\\s*\\(`).exec(source);
   if (methodAssignMatch) {
     const [, receiver, method] = methodAssignMatch;
     const receiverType = receiver !== name ? inferType(receiver, source, visited) : null;
@@ -200,7 +200,7 @@ export function inferType(name: string, source: string, seen?: Set<string>): str
   // method-return rule above). First match anywhere in the file wins — the
   // same whole-source, position-unaware limitation every rule here shares.
   // The (^|[^\w$]) prefix keeps identifiers ending in "let" from matching.
-  const destructureRe = /(^|[^\w$])let\s*\{([^}]{0,300})\}\s*=\s*([^;]{1,200});/g;
+  const destructureRe = /(^|[^\w$])(?:let|const)\s*\{([^}]{0,300})\}\s*=\s*([^;]{1,200});/g;
   for (const m of source.matchAll(destructureRe)) {
     const [, , patternText, rhs] = m;
     for (const entry of patternText.split(',')) {
@@ -220,14 +220,14 @@ export function inferType(name: string, source: string, seen?: Set<string>): str
   // Stdlib path functions return PathBlock-like path segments
   if (
     new RegExp(
-      `let\\s+${esc}\\s*=\\s*(?:circle|rect|roundRect|polygon|star|line|arc|quadratic|cubic|cubicSpline|quadSpline)\\s*\\(`,
+      `(?:let|const)\\s+${esc}\\s*=\\s*(?:circle|rect|roundRect|polygon|star|line|arc|quadratic|cubic|cubicSpline|quadSpline)\\s*\\(`,
     ).test(source)
   ) {
     return 'PathBlock';
   }
 
   // Assignment from another variable: let x = y; — propagate y's type to x
-  const assignMatch = new RegExp(`let\\s+${esc}\\s*=\\s*([a-zA-Z_]\\w*)\\s*;`).exec(source);
+  const assignMatch = new RegExp(`(?:let|const)\\s+${esc}\\s*=\\s*([a-zA-Z_]\\w*)\\s*;`).exec(source);
   if (assignMatch) {
     const sourceVar = assignMatch[1];
     // Avoid infinite recursion by not re-inferring the same name
@@ -307,7 +307,7 @@ export function inferArrayElementType(arrayName: string, source: string): string
   const esc = escapeRegex(arrayName);
 
   // Look for array initializer: let arrayName = [ ... ]
-  const arrMatch = new RegExp(`let\\s+${esc}\\s*=\\s*\\[\\s*([^\\]]{1,200})`).exec(source);
+  const arrMatch = new RegExp(`(?:let|const)\\s+${esc}\\s*=\\s*\\[\\s*([^\\]]{1,200})`).exec(source);
   if (!arrMatch) return null;
 
   const firstContent = arrMatch[1].trim();

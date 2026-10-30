@@ -273,7 +273,9 @@ export function formatDocument(document: TextDocument, options?: FormatOptions):
 
   let ast: Program;
   try {
-    ast = parse(source);
+    // Naming mistakes (a reassigned const, `let rad`) don't change the
+    // formatting; diagnostics reports them.
+    ast = parse(source, { namingChecks: false });
   } catch {
     // parse() is strict — it rejects code with missing semicolons.
     // Fall back to Lezer's error-recovery parse so the formatter can still
@@ -385,11 +387,12 @@ function formatStatement(stmt: Statement, depth: number, indent: string, prefix:
   if (verbatim !== null) return verbatim;
   switch (stmt.type) {
     case 'LetDeclaration': {
+      // kind is `let` or `const`; printing a literal `let` would turn every const into a let.
       const value = formatExpression(stmt.value, depth, indent, source);
       if (stmt.pattern) {
-        return `${prefix}let ${formatDestructuringPattern(stmt.pattern)} = ${value};`;
+        return `${prefix}${stmt.kind} ${formatDestructuringPattern(stmt.pattern)} = ${value};`;
       }
-      return `${prefix}let ${stmt.name} = ${value};`;
+      return `${prefix}${stmt.kind} ${stmt.name} = ${value};`;
     }
     case 'AssignmentStatement':
       return `${prefix}${stmt.name} = ${formatExpression(stmt.value, depth, indent, source)};`;

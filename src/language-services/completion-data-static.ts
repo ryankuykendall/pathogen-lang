@@ -23,6 +23,7 @@ export interface CompletionEntry {
 
 export const KEYWORD_COMPLETIONS: CompletionEntry[] = [
   { label: 'let', kind: 'keyword', detail: 'Variable declaration', boost: 10, insertText: 'let ${1:name} = ${0};', isSnippet: true },
+  { label: 'const', kind: 'keyword', detail: 'Constant declaration — never assigned again', boost: 10, insertText: 'const ${1:name} = ${0};', isSnippet: true },
   { label: 'for', kind: 'keyword', detail: 'For loop — iterate over a range', boost: 10, insertText: 'for (${1:i} in ${2:0}..${3:10}) {\n\t$0\n}', isSnippet: true },
   { label: 'if', kind: 'keyword', detail: 'If statement — conditional', boost: 10, insertText: 'if (${1:condition}) {\n\t$0\n}', isSnippet: true },
   { label: 'fn', kind: 'keyword', detail: 'Function definition', boost: 10, insertText: 'fn ${1:name}(${2:params}) {\n\t$0\n}', isSnippet: true },
@@ -289,6 +290,14 @@ export const DECLARATION_SNIPPETS: CompletionEntry[] = [
     detail: 'Variable declaration',
     boost: 12,
     insertText: 'let ${1:name} = $0;',
+    isSnippet: true,
+  },
+  {
+    label: 'const',
+    kind: 'snippet',
+    detail: 'Constant declaration — never assigned again',
+    boost: 12,
+    insertText: 'const ${1:name} = $0;',
     isSnippet: true,
   },
   {

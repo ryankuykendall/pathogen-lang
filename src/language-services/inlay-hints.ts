@@ -57,7 +57,8 @@ export function getInlayHints(document: TextDocument, range: Range): InlayHint[]
 
   let ast: Program;
   try {
-    ast = parse(source);
+    // Naming mistakes don't change the hints; diagnostics reports them.
+    ast = parse(source, { namingChecks: false });
   } catch {
     return [];
   }

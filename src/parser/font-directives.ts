@@ -19,7 +19,7 @@ export interface FontDirectiveError {
  *
  * Font loading is a host-environment step that runs *before* evaluation,
  * so identifier sources cannot use runtime scope — they resolve against
- * top-level `let name = "string literal";` declarations only (in either
+ * top-level `const` or `let name = "string literal";` declarations only (in either
  * order relative to the directive). Anything else is reported as an error
  * so hosts can fail with a clear message instead of silently skipping the
  * font.
@@ -46,7 +46,7 @@ export function resolveFontDirectives(program: Program): {
         errors.push({
           message:
             `@font directive references '${directive.source}', which is not a top-level string variable. ` +
-            `Declare it at the top level: let ${directive.source} = "Family Name";`,
+            `Declare it at the top level: const ${directive.source} = "Family Name";`,
           identifier: directive.source,
           loc: directive.loc,
         });

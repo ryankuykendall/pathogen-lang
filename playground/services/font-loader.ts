@@ -612,7 +612,7 @@ export function formatFontSubstitutions(subs: FontWeightSubstitution[]): string[
 }
 
 /**
- * Extract top-level `let name = "string literal";` bindings from source.
+ * Extract top-level `const`/`let name = "string literal";` bindings from source.
  *
  * Regex fallback used to statically resolve identifier-valued `@font`
  * directives and style-block `font-family:` values before compilation when
@@ -624,7 +624,7 @@ export function formatFontSubstitutions(subs: FontWeightSubstitution[]): string[
  */
 export function extractTopLevelStringLets(source: string): Map<string, string> {
   const map = new Map<string, string>();
-  const letRe = /^[ \t]*let\s+([A-Za-z_]\w*)\s*=\s*(["'])((?:\\.|(?!\2).)*)\2\s*;/gm;
+  const letRe = /^[ \t]*(?:let|const)\s+([A-Za-z_]\w*)\s*=\s*(["'])((?:\\.|(?!\2).)*)\2\s*;/gm;
   let match;
   while ((match = letRe.exec(source)) !== null) {
     map.set(match[1], match[3]);

@@ -45,8 +45,10 @@ statement {
 // within ExpressionStatement. The AST builder distinguishes them by
 // checking if the expression ends with "= expr ;".
 
+// `const` (phase 0a step 4) is the same declaration with a fixed binding: the
+// AST records which keyword began it (LetDeclaration.kind).
 LetDeclaration {
-  kw<"let"> (ArrayDestructure | ObjectDestructure | VariableName) "=" expression ";"
+  (kw<"let"> | kw<"const">) (ArrayDestructure | ObjectDestructure | VariableName) "=" expression ";"
 }
 
 ForLoop {

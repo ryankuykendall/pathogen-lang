@@ -230,7 +230,7 @@ function isExtractableExpression(text: string): boolean {
   // Must not contain newlines, semicolons, or block braces (those are statements)
   if (text.includes('\n') || text.includes(';') || text.includes('{')) return false;
   // Must not be a bare keyword
-  if (/^(let|for|if|fn|return|define|enum)\b/.test(text)) return false;
+  if (/^(let|const|for|if|fn|return|define|enum)\b/.test(text)) return false;
   // Must have some substance (not just a single identifier — extracting 'x' to 'let y = x' isn't useful)
   if (/^\w+$/.test(text)) return false;
   // Should look like an expression: function call, calc, member access, binary op, etc.
@@ -270,6 +270,7 @@ function suggestVariableName(expr: string): string {
  */
 export const RESERVED_IDENTIFIERS: ReadonlySet<string> = new Set([
   'let',
+  'const',
   'for',
   'if',
   'else',
@@ -320,7 +321,7 @@ function findFreeVariables(selectedText: string, fullSource: string, range: Rang
   const freeVars: string[] = [];
   for (const id of identifiers) {
     if (
-      new RegExp(`\\blet\\s+${escapeRegex(id)}\\b`).test(beforeSelection) ||
+      new RegExp(`\\b(?:let|const)\\s+${escapeRegex(id)}\\b`).test(beforeSelection) ||
       new RegExp(`\\bfn\\s+${escapeRegex(id)}\\b`).test(beforeSelection) ||
       new RegExp(`\\bfor\\s*\\(\\s*${escapeRegex(id)}\\b`).test(beforeSelection)
     ) {
@@ -337,8 +338,8 @@ function inlineVariableAction(document: TextDocument, varName: string, _range: R
   const source = document.getText();
   const esc = escapeRegex(varName);
 
-  // Find the let declaration
-  const declMatch = new RegExp(`(^|\\n)([ \\t]*)let\\s+${esc}\\s*=\\s*([^;]+);`, 'm').exec(source);
+  // Find the let or const declaration
+  const declMatch = new RegExp(`(^|\\n)([ \\t]*)(?:let|const)\\s+${esc}\\s*=\\s*([^;]+);`, 'm').exec(source);
   if (!declMatch) return null;
 
   const value = declMatch[3].trim();
@@ -364,7 +365,7 @@ function inlineVariableAction(document: TextDocument, varName: string, _range: R
     let refMatch;
     while ((refMatch = refPattern.exec(lines[i])) !== null) {
       // Don't replace inside let declarations of other variables
-      if (lines[i].trimStart().startsWith('let ') && refMatch.index < lines[i].indexOf('=')) continue;
+      if (/^(let|const) /.test(lines[i].trimStart()) && refMatch.index < lines[i].indexOf('=')) continue;
       changes.push({
         range: {
           start: { line: i, character: refMatch.index },

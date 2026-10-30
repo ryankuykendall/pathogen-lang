@@ -4,7 +4,7 @@ import { styleTags, tags as t } from '@lezer/highlight';
 /// `with`/`as` @extend keywords). Exported so the keyword drift guard can
 /// compare it against the grammar.
 export const KEYWORD_NODE_NAMES =
-  'define default ViewBox calc layer apply text tspan for in if else let enum fn return break continue switch case where with as';
+  'define default ViewBox calc layer apply text tspan for in if else let const enum fn return break continue switch case where with as';
 
 /// Syntax highlighting tags for the Pathogen language grammar.
 /// Maps Lezer parse tree node types to CodeMirror highlight tags.

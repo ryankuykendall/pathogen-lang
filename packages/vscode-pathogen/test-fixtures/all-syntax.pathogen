@@ -17,6 +17,8 @@ let greeting = 'world';
 let msg = `value is ${x + y}`;
 let flag = true;
 let nothing = null;
+const margin = 8;
+const [left, right] = [margin, 92];
 
 // --- Numbers with units ---
 let angle = 45deg;

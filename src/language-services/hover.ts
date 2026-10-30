@@ -18,6 +18,7 @@ export interface HoverInfo {
 
 export const KEYWORD_HOVER: Record<string, string> = {
   let: '**let** — Declare a variable\n```\nlet name = expression;\n```',
+  const: '**const** — Declare a variable that is never assigned again\n```\nconst name = expression;\n```\nAssigning to it, or declaring the name again in the same scope, is an error. The contents of a const array or object can still change.',
   for: '**for** — Loop over a range or collection\n```\nfor (i in 0..10) { ... }     // inclusive\nfor (i in 0..<10) { ... }    // half-open: stops before 10\nfor (item in array) { ... }\n```',
   if: '**if** — Conditional execution\n```\nif (condition) { ... } else { ... }\n```',
   else: '**else** — Alternate branch of an if statement',

@@ -1516,14 +1516,16 @@ The `@font` directive declares a font for use in the program. It must appear at 
 @font "./fonts/CustomFont.ttf";
 ```
 
-The source can also be a variable, as long as it is a top-level `let` bound to a plain string literal:
+The source can also be a variable, as long as it is a top-level `const` or `let` bound to a plain string literal:
 
 ```
-let family = "Inter";
+const family = "Inter";
 
 @font family;
 @font family 700;
 ```
+
+The font is chosen from that declaration before the program runs, so giving the variable a new value later doesn't change which font loads. A `const` can't be given a new value, so the variable and the loaded font always agree. The declaration can come before or after the directive.
 
 **Syntax:**
 
@@ -1534,14 +1536,14 @@ let family = "Inter";
 
 | Part | Required | Description |
 |------|----------|-------------|
-| Source | Yes | Font family name (e.g., `"Inter"`), file path (e.g., `"./fonts/Custom.ttf"` — see [Font Loading by Environment](#path-blocks-font-loading-by-environment)), or a top-level `let` variable bound to a string literal |
+| Source | Yes | Font family name (e.g., `"Inter"`), file path (e.g., `"./fonts/Custom.ttf"` — see [Font Loading by Environment](#path-blocks-font-loading-by-environment)), or a top-level `const` or `let` variable bound to a string literal |
 | Weight | No | Numeric weight 100–900 (default: 400) |
 
-Because fonts are loaded by the host environment *before* the program runs, a variable source must be resolvable statically: a top-level `let` whose value is a plain string literal. Referencing anything else fails with:
+Because fonts are loaded by the host environment *before* the program runs, a variable source must be resolvable statically: a top-level `const` or `let` whose value is a plain string literal. Referencing anything else fails with:
 
 ```text
 @font directive references 'x', which is not a top-level string variable.
-Declare it at the top level: let x = "Family Name";
+Declare it at the top level: const x = "Family Name";
 ```
 
 #### Font Loading by Environment

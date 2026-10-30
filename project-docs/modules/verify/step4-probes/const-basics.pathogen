@@ -1,0 +1,22 @@
+// Step 4 probe: const declarations, shadowing, and mutable contents.
+// Draws three rungs whose y comes from a fresh const on each pass, a
+// destructured const pair, and an array held by a const that is still pushed to.
+define ViewBox(0, 0, 100, 80);
+
+const margin = 10;
+const [left, right] = [margin, 90];
+const rungs = [];
+
+for (i in 0..<3) {
+  const rowY = calc(margin + i * 20);
+  rungs.push(rowY);
+  M left rowY
+  L right rowY
+}
+
+fn inset() {
+  let margin = 20; // this function's own margin
+  return margin;
+}
+
+log(margin, inset(), rungs);

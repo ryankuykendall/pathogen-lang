@@ -27,13 +27,17 @@ M 0 0 L 100 100 Z
 
 ## Variables
 
-Declare variables with `let`:
+Declare variables with `let`, or with `const` for one that is never given a new
+value:
 
 ```
 let width = 200;
 let height = 100;
-let centerX = 100;
+const margin = 10;
 ```
+
+`let` is always fine. `const` says a value stays put (a size, a color, a step
+count, a font name) and catches an accidental reassignment early.
 
 Use variables directly in path commands:
 
@@ -43,10 +47,94 @@ let y = 75;
 M x y L 100 100
 ```
 
-**Two naming rules:**
+**Three naming rules:**
 
+- **Keywords can't be names.** `let const fn for in if else return switch case
+  default where break continue enum define layer apply text tspan ViewBox`
+  can't be used for a variable or a parameter, or as a bare object key or
+  property: `let o = { text: 1 };` doesn't parse. Quote the key instead:
+  `{ 'text': 1 }`, read back with `o['text']`.
 - **`pi`, `deg`, and `rad` are reserved.** They are [angle unit suffixes](#syntax-angle-units), and only that: `let pi = …`, `fn deg(…) { }`, or using one as a loop or function parameter is a compile error, and referencing one standalone (`calc(pi)`) errors with a pointer at the forms that do exist — the suffix (`0.5pi`, `90deg`, `1.5rad`) and the standard-library calls (`PI()`, [`deg(x)` / `rad(x)`](#stdlib-angle-conversion)), which remain untouched. The error lands on the name itself — even inside a function you never call — so `let rad = 50;` for a radius is flagged on the line you wrote it; call it `radius`. Only variables, parameters, and function names are affected: an enum member (`AngleUnit.deg`) and an object key (`{ rad: 1 }`, read back as `units.rad`) are fine.
 - **Single letters that are path commands** (`m l h v c s q t a z`, either case) *can* be declared, but cannot be referenced bare in path-argument position — there they always read as commands. `let m = 25; L m 40` is a compile error naming this rule; `L calc(m) 40` works. Prefer longer names.
+
+### const
+
+A `const` can't be given a new value. Assigning to it is an error:
+
+```pathogen invalid
+const margin = 10;
+margin = 12;
+```
+
+```text
+Cannot assign to margin — it is a const. Declare it with let if it needs to change
+```
+
+A const's name can't be declared again in the same scope, with `let`, `const`
+or `fn`:
+
+```pathogen invalid
+const margin = 10;
+let margin = 12;
+```
+
+```text
+Cannot declare margin again in this scope — it is a const. Use another name
+```
+
+And a const can't take a name that scope already has:
+
+```pathogen invalid
+let margin = 10;
+const margin = 12;
+```
+
+```text
+Cannot declare margin as a const — it is already declared in this scope. Use another name
+```
+
+These mistakes are reported before the program runs, on the line you wrote,
+even in a function that is never called. A few are reported only when the line
+runs, so not at all in a function that is never called: a function written
+above the const that assigns to it; a const whose name is also used for a
+parameter or loop variable elsewhere; and a const in a function or loop body
+that takes the name of that function's parameter or that loop's variable
+(`for (i in 0..<3) { const i = 5; }` — the same error as declaring `i` twice).
+
+Two `let`s of the same name are fine: the second replaces the first. A
+function, loop or block can declare its own variable with a const's name;
+inside it, the name means its own variable:
+
+```
+const size = 10;
+fn ownSize() {
+  let size = 20;   // this function's own size
+  return size;
+}
+let both = [size, ownSize()];   // [10, 20]
+```
+
+`const` locks which value the name points to, not what's inside it. A const
+array stays the same array, and you can still change it, as in JavaScript:
+
+```
+const steps = [];
+steps.push(10);
+steps[0] = 20;   // steps is [20]
+```
+
+A `const` written in a loop body or a function is a new const each time that
+code runs, so it can hold a different value on each pass:
+
+```
+for (i in 0..<3) {
+  const rowY = i * 20;
+  M 0 rowY h 40
+}
+```
+
+Destructuring works the same way: `const [first, second] = pair;` and
+`const { x, y } = point;` (see [Destructuring](#syntax-destructuring)).
 
 ## Strings and Template Literals
 
@@ -196,7 +284,7 @@ M calc(100 - r) 100
 L calc(100 + r) 100
 ```
 
-Everywhere else an expression is expected — a `let` value, a `return`, the arguments of a function or method call — arithmetic is written directly (`let half = width / 2;`). `calc()` is accepted there too, but not required.
+Everywhere else an expression is expected — a `let` or `const` value, a `return`, the arguments of a function or method call — arithmetic is written directly (`let half = width / 2;`). `calc()` is accepted there too, but not required.
 
 `calc()` computes on **values**. Percent suffixes are converted at the literal (`20%` → 0.2), so they always produce plain numbers. Angle suffixes (`deg`, `rad`, `pi`) are different: an angle-suffixed literal produces an **Angle value**, and `calc()` arithmetic keeps angle-ness where it makes sense — scaling an angle by a plain number is still an angle, a ratio of two angles is a plain number. **An angle is an angle wherever it flows**: it survives being stored in a variable, put in an array, or passed through a function. See [Angle Units](#syntax-angle-units).
 
@@ -1333,7 +1421,7 @@ Iterating over an empty array produces no output.
 
 ### Destructuring
 
-Extract array elements into individual variables with destructuring in `let` declarations:
+Extract array elements into individual variables with destructuring in `let` and `const` declarations:
 
 ```
 let [a, b, c] = [1, 2, 3];
@@ -1831,7 +1919,7 @@ A false guard skips the whole case and matching continues with the next case, wh
 
 ### Scope and Loop Control
 
-Each case body is a block with its own scope, like an `if` branch: a `let` inside a case stays inside it. `continue` and `break` inside a case act on the enclosing loop, exactly as they do inside `if`, and are a compile error when there is no loop:
+Each case body is a block with its own scope, like an `if` branch: a `let` or `const` inside a case stays inside it. `continue` and `break` inside a case act on the enclosing loop, exactly as they do inside `if`, and are a compile error when there is no loop:
 
 ```
 for (i in 0..9) {
@@ -1975,8 +2063,8 @@ square(10, 10, 50);          // emits the rect's path commands
 ### Scoping: where a function finds its names
 
 A function sees the variables **where it is written**, not where it is called
-(lexical scope). A name in the body that isn't a parameter or a local `let`
-resolves against the scope around the definition, the same for named functions
+(lexical scope). A name in the body that isn't a parameter or a local `let` or
+`const` resolves against the scope around the definition, the same for named functions
 and lambdas:
 
 ```
@@ -2062,7 +2150,7 @@ Undefined variable: k — a function sees the variables where it is written, not
 ```
 
 That is, write the worker inside `run`, where `k` is, either as a trailing
-block or as a lambda in a `let` (a lambda written directly after `<<` is not
+block or as a lambda in a `let` or `const` (a lambda written directly after `<<` is not
 allowed):
 
 ```
@@ -2199,7 +2287,7 @@ production use; it now errors with a pointer to `<<`.
 
 - A lambda must be called through a plain name (`f(1, 2)`). Calling the result
   of an expression — `fns[0](5)`, `obj.f(1)`, or an immediately-invoked
-  literal — is not yet supported: assign to a `let` first.
+  literal — is not yet supported: bind it with `let` or `const` first.
 - A lambda *literal* cannot appear inside a call in path-argument position
   (`M use({|x| ...}) 0`) — path arguments stop at `|`. Bind the lambda to a
   variable and pass the name instead.

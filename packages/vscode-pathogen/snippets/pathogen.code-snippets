@@ -91,6 +91,11 @@
     "body": "let ${1:name} = ${0};",
     "description": "variable declaration"
   },
+  "Const Declaration": {
+    "prefix": "const",
+    "body": "const ${1:name} = ${0};",
+    "description": "constant declaration — never assigned again"
+  },
   "Radial Loop": {
     "prefix": "forangle",
     "body": [

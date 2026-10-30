@@ -35,6 +35,7 @@ export const NODE_CLASS: Record<string, string> = {
   // Keywords — match the `kw<…>` macro names from pathogen.grammar.
   // tests/keyword-registry.test.ts fails if a grammar keyword is missing.
   let: 'kw',
+  const: 'kw',
   fn: 'kw',
   for: 'kw',
   in: 'kw',

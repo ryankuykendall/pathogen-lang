@@ -480,6 +480,7 @@ function buildComment(cursor: TreeCursor, source: string): Comment {
 
 function buildLetDeclaration(cursor: TreeCursor, source: string): LetDeclaration {
   const nodeLoc = loc(cursor, source);
+  const kind = cursor.node.firstChild?.name === 'const' ? 'const' : 'let';
   const children = namedChildren(cursor, source);
 
   let name = '';
@@ -512,6 +513,7 @@ function buildLetDeclaration(cursor: TreeCursor, source: string): LetDeclaration
 
   return {
     type: 'LetDeclaration',
+    kind,
     name,
     pattern,
     value: valueExpr || { type: 'NullLiteral' },

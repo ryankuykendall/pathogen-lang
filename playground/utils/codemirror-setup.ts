@@ -894,8 +894,8 @@ export function svgPathCompletions(context: CompletionContext): CompletionResult
     });
   }
 
-  // 3. User-defined variables (let name = ...)
-  const varRegex = /let\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*=/g;
+  // 3. User-defined variables (let/const name = ...)
+  const varRegex = /\b(?:let|const)\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*=/g;
   const seenVars = new Set<string>();
   let match: RegExpExecArray | null;
   while ((match = varRegex.exec(doc)) !== null) {

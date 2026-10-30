@@ -7,7 +7,7 @@ import { PathArgs } from './pathogen.generated.terms';
 // argument. tests/keyword-registry.test.ts checks this list against the
 // grammar's kw<> terms.
 export const KEYWORDS = new Set([
-  'let', 'for', 'if', 'else', 'fn', 'return', 'define', 'default',
+  'let', 'const', 'for', 'if', 'else', 'fn', 'return', 'define', 'default',
   'layer', 'apply', 'text', 'tspan', 'enum', 'log',
   'break', 'continue', 'switch', 'case', 'where',
 ]);
@@ -44,7 +44,7 @@ const CLAUSE_KEYWORDS = new Set(['with', 'as']);
 // arm's `{` was never closed, so the token ends there and the error lands next
 // to the mistake instead of pages later.
 const STATEMENT_ONLY_KEYWORDS = new Set([
-  'let', 'for', 'if', 'else', 'fn', 'return', 'define', 'apply', 'text', 'tspan', 'enum', 'log', 'break', 'continue',
+  'let', 'const', 'for', 'if', 'else', 'fn', 'return', 'define', 'apply', 'text', 'tspan', 'enum', 'log', 'break', 'continue',
 ]);
 
 /**

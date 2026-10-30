@@ -95,7 +95,7 @@ export function getCompletions(document: TextDocument, position: Position): Comp
   // sits AFTER the cursor, so it is read with a forward scan of the source.
   // The (^|[^\w$]) prefix keeps identifiers that merely END in "let"
   // (outlet, violet, …) from triggering the pattern context.
-  const patternMatch = /(^|[^\w$])let\s*\{([^}=;()]{0,300})$/.exec(textBefore);
+  const patternMatch = /(^|[^\w$])(?:let|const)\s*\{([^}=;()]{0,300})$/.exec(textBefore);
   if (patternMatch) {
     const ahead = /^([^}=;()]{0,300})\}\s*=\s*([^;\n]{1,200})/.exec(source.slice(offset));
     if (!ahead) return [];
