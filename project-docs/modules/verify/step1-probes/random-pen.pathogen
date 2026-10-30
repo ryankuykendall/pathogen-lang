@@ -1,0 +1,6 @@
+// Phase 0a step 1 probe (bug B1): random() in a path argument is drawn once.
+// Before the fix the text used one draw and the pen another, so the circle
+// after the line landed where the line never went.
+M 0 0
+L calc(random() * 100) 0
+circle(ctx.position.x, 0, 2);

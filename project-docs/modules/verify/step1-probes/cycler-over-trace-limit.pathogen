@@ -1,0 +1,12 @@
+// Phase 0a step 1 probe (bug B1), and the positive control for the audit's
+// trace-off path: 25,000 commands, over the default --trace-limit of 20,000,
+// so the audit compares it with trace off.
+// The old evaluator evaluates `picks.pick()` twice per command, so the path
+// data must differ, and the step 1 tag must explain it.
+let picks = Cycler([1, 2, 3]);
+M 0 0
+for (rowIndex in 1..25) {
+  for (colIndex in 1..1000) {
+    l picks.pick() 0
+  }
+}

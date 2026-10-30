@@ -1,0 +1,8 @@
+// Phase 0a step 1 probe (bug B1): a fn called on the line after a path
+// command is taken as that command's argument, and used to run twice.
+// Before the fix: logs 2. After: logs 1.
+let n = 0;
+fn inc() { n = n + 1; }
+M 0 0
+inc();
+log(n);

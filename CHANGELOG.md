@@ -98,6 +98,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - The boolean-operations failure matrices (`project-docs/path-block-boolean-operations-audit/failure-matrix*.pathogen`) draw each union over its glyphs again. They drew it with `drawTo()`, which on a ProjectedPath moves the path's first point to the target, so every overlay sat off its glyphs by the word's first point. They now also declare their canvas with `define ViewBox` instead of a comment, and the original matrix's difference column, which called `project()` on a ProjectedPath (it has none) and stopped the program, compiles.
 
+## [Unreleased] - 2026-10-26 (a path argument is evaluated once)
+
+### Fixed
+
+#### Core
+
+- **A path command's arguments are evaluated once.** Each argument used to be evaluated a second time to move the pen, so anything with state ran twice. `L c.pick() 0` skipped every other element of a `Cycler` (`L 10 0 L 30 0` instead of `L 10 0 L 20 0`). A fn with side effects called on the line after a path command ran twice. `L calc(random() * 100) 0` wrote one number and moved the pen by another, so `ctx`, `polarLine` and the other pen-dependent calls after it started from a point the drawing never reached. Programs without state in their path arguments produce the same bytes as before (all 1,386 programs in the repository that the audit below could run give the same result), and each expression argument is now computed once instead of twice.
+
+#### Development
+
+- `scripts/audit-semantics.ts` compiles every Pathogen program in the repository (blog samples, docs and blog fences, project-docs programs, the playground's templates, the VS Code fixture) with the evaluator at a baseline commit and with the working tree, and sorts what changed. Both runs get the same seeded `Math.random` and fonts; the comparison covers the error message, the whole compile result and `generateSvg()`. Trace is on unless the program draws more than `--trace-limit` path commands (20,000 by default): trace mode copies a pen's whole history after every command, so a traced compile of a very long program never finishes. Programs run in small batches in separate processes. A program that runs out of memory or gives no result within `--timeout` seconds (240 by default) is listed as too-large, and the rest of its batch runs in a fresh process. `--probe` adds files that aren't in git yet, such as a step's positive controls. `--after-dir` compares against a snapshot folder holding a `src/` instead of the working tree, so edits made elsewhere during a run can't leak in. `scripts/lib/markdown-fences.ts` is the fence reader it shares with the style-opener codemod.
+- `project-docs/modules/verify/step1-probes/` holds one program per case of the bug plus a control, and `verify-step1-surfaces.ts` runs them through the engine, the CLI binary, the playground's browser bundle and the VS Code extension's bundled compiler.
+- `project-docs/modules/05-phase-0a-audit.md` and `06-phase-0a-plan.md`: what the audit for the language change (lexical fns, the drawing context following the call, `const`, built-in names) found, the decisions taken, and the plan.
+
 ## [Unreleased] - 2026-10-23 (one font loader for every tool; fonts in the VS Code preview)
 
 ### Added

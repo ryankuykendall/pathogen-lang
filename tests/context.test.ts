@@ -1,6 +1,8 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import { compile, compileWithContext } from '../src';
+
+import { expectCommandSequence } from './helpers';
 
 // Helper to check if two numbers are approximately equal
 function approxEqual(a: number, b: number, epsilon = 0.0001): boolean {
@@ -330,6 +332,64 @@ describe('Path Context Tracking', () => {
       `);
       expect(result.path).toBe('M 0 0 l 10 20 L 10 20');
       expect(result.context.position).toEqual({ x: 10, y: 20 });
+    });
+  });
+
+  // A path command's arguments used to be evaluated twice: once for the text,
+  // once more to move the pen. Anything with state (a Cycler, random(), a fn
+  // that counts) then wrote one value and moved the pen by another.
+  describe('path arguments are evaluated once', () => {
+    it('a Cycler in a path argument advances once per command, and the pen follows the text', () => {
+      const src = 'let c = Cycler([10, 20, 30, 40]);\nM 0 0\nL c.pick() 0\nL c.pick() 0';
+      const result = compileWithContext(src);
+      expect(result.path).toBe('M 0 0 L 10 0 L 20 0');
+      expect(result.context.position).toEqual({ x: 20, y: 0 });
+      expectCommandSequence(compile(src, { trace: true }).layers[0], [
+        ['M', 0, 0],
+        ['L', 10, 0],
+        ['L', 20, 0],
+      ]);
+    });
+
+    it('random() in a calc() argument is drawn once, and the pen goes where the text says', () => {
+      const spy = vi.spyOn(Math, 'random').mockReturnValueOnce(0.25).mockReturnValueOnce(0.75);
+      try {
+        const result = compileWithContext('M 0 0\nL calc(random() * 100) 0');
+        expect(result.path).toBe('M 0 0 L 25 0');
+        expect(result.context.position).toEqual({ x: 25, y: 0 });
+        expect(spy).toHaveBeenCalledTimes(1);
+      } finally {
+        spy.mockRestore();
+      }
+    });
+
+    it('an arc rotation from a counting fn is computed once', () => {
+      const src = [
+        'let calls = 0;',
+        'fn rot() { calls = calls + 1; return 30deg; }',
+        'M 0 0',
+        'A 10 10 rot() 0 1 20 0',
+        'log(calls);',
+      ].join('\n');
+      const result = compileWithContext(src);
+      expect(result.path).toBe('M 0 0 A 10 10 30 0 1 20 0');
+      expect(result.logs.map((l) => l.parts[0].value)).toEqual(['1']);
+      expectCommandSequence(compile(src, { trace: true }).layers[0], [
+        ['M', 0, 0],
+        ['A', 10, 10, 30, 0, 1, 20, 0],
+      ]);
+    });
+
+    it('an index expression with a side effect is evaluated once', () => {
+      const src = 'let xs = [5, 6, 7];\nlet c = Cycler([0, 1, 2]);\nM 0 0\nL xs[c.pick()] 0\nL xs[c.pick()] 0';
+      const result = compileWithContext(src);
+      expect(result.path).toBe('M 0 0 L 5 0 L 6 0');
+      expect(result.context.position).toEqual({ x: 6, y: 0 });
+    });
+
+    it('a fn that draws nothing, called on the line after a path command, runs once', () => {
+      const result = compileWithContext('let n = 0;\nfn inc() { n = n + 1; }\nM 0 0\ninc();\nlog(n);');
+      expect(result.logs.map((l) => l.parts[0].value)).toEqual(['1']);
     });
   });
 

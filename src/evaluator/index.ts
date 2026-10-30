@@ -8836,21 +8836,37 @@ function isArcRotationSlot(command: string, index: number): boolean {
   return (command === 'A' || command === 'a') && index % 7 === 2;
 }
 
-function pathArgNumber(n: number, arg: PathArg, scope: Scope): string {
-  const message = describeNonFiniteRawArg(n, arg.type === 'Identifier' ? arg.name : undefined);
-  if (message) warn(scope.evalState, 'non-finite', message, { line: getLine(arg), column: getCol(arg) });
-  return formatNum(n);
+/**
+ * One evaluated path argument: the text it emits and, when it is a number, the
+ * unrounded value the pen moves by. An argument that emits path data (a
+ * PathSegment, a drawn block) or nothing (a fn that only has side effects)
+ * has no `num`.
+ */
+interface PathArgValue {
+  text: string;
+  num?: number;
 }
 
-function evaluatePathArg(arg: PathArg, scope: Scope, degreesSlot = false): string {
+function pathArgNumber(n: number, arg: PathArg, scope: Scope): PathArgValue {
+  const message = describeNonFiniteRawArg(n, arg.type === 'Identifier' ? arg.name : undefined);
+  if (message) warn(scope.evalState, 'non-finite', message, { line: getLine(arg), column: getCol(arg) });
+  return { text: formatNum(n), num: n };
+}
+
+/**
+ * Evaluate a path argument ONCE. The text goes to the output and `num` moves
+ * the pen, so both come from the same evaluation: a Cycler, random() or a fn
+ * with side effects in an argument runs once per command.
+ */
+function evaluatePathArg(arg: PathArg, scope: Scope, degreesSlot = false): PathArgValue {
   switch (arg.type) {
-    case 'NumberLiteral':
-      return formatNum(
-        degreesSlot ? convertUnitSuffixToDegrees(arg.value, arg.unit) : convertUnitSuffix(arg.value, arg.unit),
-      );
+    case 'NumberLiteral': {
+      const n = degreesSlot ? convertUnitSuffixToDegrees(arg.value, arg.unit) : convertUnitSuffix(arg.value, arg.unit);
+      return { text: formatNum(n), num: n };
+    }
 
     case 'BooleanLiteral':
-      return arg.value ? '1' : '0';
+      return arg.value ? { text: '1', num: 1 } : { text: '0', num: 0 };
 
     case 'Identifier': {
       if (RESERVED_UNIT_NAMES.has(arg.name)) {
@@ -8865,7 +8881,7 @@ function evaluatePathArg(arg: PathArg, scope: Scope, degreesSlot = false): strin
         return pathArgNumber(n, arg, scope);
       }
       if (typeof value === 'object' && value !== null && 'type' in value && value.type === 'PathSegment') {
-        return value.value;
+        return { text: value.value };
       }
       throw new Error(`Variable ${arg.name} cannot be used as path argument`);
     }
@@ -8886,7 +8902,7 @@ function evaluatePathArg(arg: PathArg, scope: Scope, degreesSlot = false): strin
       const value = evaluateFunctionCall(arg, scope);
       // Void functions (side-effect only) return undefined/null/'' — treat as empty path
       if (value === undefined || value === null || value === '') {
-        return '';
+        return { text: '' };
       }
       const n = pathArgToNumber(value, degreesSlot);
       if (n !== undefined) {
@@ -8894,12 +8910,12 @@ function evaluatePathArg(arg: PathArg, scope: Scope, degreesSlot = false): strin
       }
       if (typeof value === 'object' && value !== null && 'type' in value) {
         if (value.type === 'PathSegment') {
-          return value.value;
+          return { text: value.value };
         }
         if (value.type === 'PathWithResult') {
           // Extract path from compound result (result is stored but path is emitted)
           noteTrackedArg(scope, value);
-          return value.path;
+          return { text: value.path };
         }
       }
       throw new Error(`Function ${arg.name} did not return a valid path value`);
@@ -8933,7 +8949,7 @@ function evaluatePathArg(arg: PathArg, scope: Scope, degreesSlot = false): strin
       const value = evaluateMethodCall(arg, scope);
       // Void method calls (side-effect only) return undefined/null/'' — treat as empty path
       if (value === undefined || value === null || value === '') {
-        return '';
+        return { text: '' };
       }
       const n = pathArgToNumber(value, degreesSlot);
       if (n !== undefined) {
@@ -8941,11 +8957,11 @@ function evaluatePathArg(arg: PathArg, scope: Scope, degreesSlot = false): strin
       }
       if (typeof value === 'object' && value !== null && 'type' in value) {
         if (value.type === 'PathSegment') {
-          return value.value;
+          return { text: value.value };
         }
         if (value.type === 'PathWithResult') {
           noteTrackedArg(scope, value);
-          return value.path;
+          return { text: value.path };
         }
       }
       throw new Error(`Method call did not return a valid path value`);
@@ -8956,66 +8972,6 @@ function evaluatePathArg(arg: PathArg, scope: Scope, degreesSlot = false): strin
   }
 }
 
-/**
- * Get numeric arguments from path args for context tracking
- */
-function getNumericArgs(args: PathArg[], scope: Scope, command = ''): number[] {
-  const numericArgs: number[] = [];
-  // Indexed off the SOURCE position, never numericArgs.length: a branch that
-  // yields no number pushes nothing, which would drift the 7-slot arc cadence.
-  for (let i = 0; i < args.length; i++) {
-    const arg = args[i];
-    const degreesSlot = isArcRotationSlot(command, i);
-    if (arg.type === 'NumberLiteral') {
-      numericArgs.push(
-        degreesSlot ? convertUnitSuffixToDegrees(arg.value, arg.unit) : convertUnitSuffix(arg.value, arg.unit),
-      );
-    } else if (arg.type === 'BooleanLiteral') {
-      numericArgs.push(arg.value ? 1 : 0);
-    } else if (arg.type === 'Identifier') {
-      if (RESERVED_UNIT_NAMES.has(arg.name)) {
-        throw new Error(formatError(reservedNameReferenceError(arg.name), getLine(arg), getCol(arg)));
-      }
-      const value = lookupVariable(scope, arg.name);
-      const n = pathArgToNumber(value, degreesSlot);
-      if (n !== undefined) {
-        numericArgs.push(n);
-      }
-    } else if (arg.type === 'CalcExpression') {
-      const value = evaluateExpression(arg.expression, scope);
-      const n = pathArgToNumber(value, degreesSlot);
-      if (n !== undefined) {
-        numericArgs.push(n);
-      }
-    } else if (arg.type === 'MemberExpression') {
-      const value = evaluateMemberExpression(arg, scope);
-      const n = pathArgToNumber(value, degreesSlot);
-      if (n !== undefined) {
-        numericArgs.push(n);
-      }
-    } else if (arg.type === 'FunctionCall') {
-      const value = evaluateFunctionCall(arg, scope);
-      const n = pathArgToNumber(value, degreesSlot);
-      if (n !== undefined) {
-        numericArgs.push(n);
-      }
-      // PathSegments don't contribute to numeric args for context tracking
-    } else if (arg.type === 'IndexExpression') {
-      const value = evaluateIndexExpression(arg, scope);
-      const n = pathArgToNumber(value, degreesSlot);
-      if (n !== undefined) {
-        numericArgs.push(n);
-      }
-    } else if (arg.type === 'MethodCallExpression') {
-      const value = evaluateMethodCall(arg, scope);
-      const n = pathArgToNumber(value, degreesSlot);
-      if (n !== undefined) {
-        numericArgs.push(n);
-      }
-    }
-  }
-  return numericArgs;
-}
 
 /**
  * Update the ctx variable in scope with current context state
@@ -9427,7 +9383,7 @@ function evaluatePathCommand(cmd: PathCommand, scope: Scope): { text: string; co
     const subpathStart = ctx ? { x: ctx.start.x, y: ctx.start.y } : undefined;
     // cmd.command is '' here (statement form), so no argument can be an arc slot.
     const { value: args, tracked } = withTrackedArgs(scope, () => cmd.args.map((arg) => evaluatePathArg(arg, scope)));
-    const text = args.join(' ');
+    const text = args.map((a) => a.text).join(' ');
     const commands = text ? parsePathStringAt(text, startPos, subpathStart) : [];
     mergeTrackedMeta(commands, tracked);
     return { text, commands };
@@ -9437,10 +9393,11 @@ function evaluatePathCommand(cmd: PathCommand, scope: Scope): { text: string; co
   // tracks its own commands against the live context WHILE the args evaluate —
   // i.e. from the pen position before this command moves it — so snapshot first.
   const before = scope.evalState ? snapshotContext(scope.evalState.pathContext) : null;
-  const { value: stringArgs, tracked } = withTrackedArgs(scope, () =>
+  // Each argument is evaluated exactly once (arc rotation slots keyed by source index).
+  const { value: argValues, tracked } = withTrackedArgs(scope, () =>
     cmd.args.map((arg, i) => evaluatePathArg(arg, scope, isArcRotationSlot(cmd.command, i))),
   );
-  const result = cmd.command + (stringArgs.length > 0 ? ` ${stringArgs.join(' ')}` : '');
+  const result = cmd.command + (argValues.length > 0 ? ` ${argValues.map((a) => a.text).join(' ')}` : '');
 
   // Update path context if tracking is enabled
   let commands: PathBlockCommand[] = [];
@@ -9456,9 +9413,10 @@ function evaluatePathCommand(cmd: PathCommand, scope: Scope): { text: string; co
       commands = parsePathStringToCommands(result, ctx);
       mergeTrackedMeta(commands, tracked);
     } else {
-      // getNumericArgs re-evaluates call-shaped args; any tracked commands
-      // they produce must not land in the enclosing statement's sink.
-      const numericArgs = withTrackedArgs(scope, () => getNumericArgs(cmd.args, scope, cmd.command)).value;
+      // The pen moves by the same unrounded numbers the text was formatted
+      // from. An argument with no number (path data that carried no command
+      // letter, or a call that drew nothing) contributes none, as before.
+      const numericArgs = argValues.flatMap((a) => (a.num === undefined ? [] : [a.num]));
       const start = { x: ctx.position.x, y: ctx.position.y };
       updateContextForCommand(ctx, cmd.command, numericArgs);
       commands = [{ command: cmd.command, args: numericArgs, start, end: { x: ctx.position.x, y: ctx.position.y } }];

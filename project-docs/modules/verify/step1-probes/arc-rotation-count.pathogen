@@ -1,0 +1,7 @@
+// Phase 0a step 1 probe (bug B1): an arc rotation from a counting fn is computed once.
+// Before the fix: logs 2. After: logs 1.
+let calls = 0;
+fn rot() { calls = calls + 1; return 30deg; }
+M 0 0
+A 10 10 rot() 0 1 20 0
+log(calls);

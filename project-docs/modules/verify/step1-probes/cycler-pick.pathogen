@@ -1,0 +1,6 @@
+// Phase 0a step 1 probe (bug B1): a Cycler in a path argument advances once per command.
+// Before the fix: M 0 0 L 10 0 L 30 0, with the pen at 20 and then 40.
+let c = Cycler([10, 20, 30, 40]);
+M 0 0
+L c.pick() 0
+L c.pick() 0
