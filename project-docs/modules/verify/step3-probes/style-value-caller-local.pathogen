@@ -1,0 +1,20 @@
+// Step 3 probe: a style value in a fn that names a variable only its caller has.
+// Before: stroke resolved to g's col (#f00).
+// After: an error at the value with the hint. A failed style lookup normally
+// keeps the raw text, which would have written stroke="col" with no error.
+define ViewBox(0, 0, 100, 40);
+
+fn mk() {
+  let l = PathLayer('a') #{ stroke: col; stroke-width: 2; };
+  l.apply {
+    M 0 20
+    L 100 20
+  }
+}
+
+fn g() {
+  let col = '#f00';
+  mk();
+}
+
+g();

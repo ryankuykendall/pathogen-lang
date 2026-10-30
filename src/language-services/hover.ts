@@ -28,7 +28,7 @@ export const KEYWORD_HOVER: Record<string, string> = {
   // completion-snippet prefix. A KEYWORD_HOVER entry would shadow the hover of
   // any user variable literally named `lambda` (KEYWORD_HOVER is checked
   // before scope resolution). Discoverability rides the fn entry + snippet.
-  fn: '**fn** — Define a function\n```\nfn name(params) { ... }\n```\nNamed functions resolve free names in the *caller\'s* scope (dynamic scoping). For lexical capture, use a lambda: `let f = {|x| ... };`',
+  fn: '**fn** — Define a function\n```\nfn name(params) { ... }\n```\nA function sees the variables where it is written, not where it is called (lexical scope). Pass anything else in as a parameter (a `<<` worker can\'t take extra ones: write it where the name is visible). It draws with the caller\'s pen. A lambda is a function written as a value: `let f = {|x| ... };`',
   return: '**return** — Return a value from a function\n```\nreturn expression;\n```',
   continue:
     '**continue** — Skip the rest of the current loop iteration\n```\nfor (i in 0..10) {\n  if (i == 3) { continue; }\n  ...\n}\n```\nValid only inside a for loop body (or `if` branches and `switch` cases nested in it); controls the innermost enclosing loop. A switch never catches it — inside a `case` body it still targets the loop.',

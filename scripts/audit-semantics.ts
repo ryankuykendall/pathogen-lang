@@ -29,18 +29,18 @@
  * message alone, so trace changes nothing there.
  */
 import { spawn } from 'node:child_process';
-import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync, appendFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync, appendFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 
 import { Command } from 'commander';
 
-import { AUDIT_DIR, loadBaseline, loadFromDir, resolveCommit } from './lib/semantics-audit/baseline';
+import { AUDIT_DIR, loadBaseline, loadFromDir, loadScopeAudit, resolveCommit } from './lib/semantics-audit/baseline';
 import { canonical, outcomeDifference } from './lib/semantics-audit/compare';
 import { collectCorpus, ORIGINS, probes } from './lib/semantics-audit/corpus';
 import { withSeededRandom } from './lib/semantics-audit/random';
 import { tagsFor } from './lib/semantics-audit/tags';
 
-import type { PathogenModule } from './lib/semantics-audit/baseline';
+import type { PathogenModule, ScopeAuditHook } from './lib/semantics-audit/baseline';
 import type { Outcome } from './lib/semantics-audit/compare';
 import type { Origin, Program } from './lib/semantics-audit/corpus';
 import type { ResolvedFont } from '../src/host/load-fonts';
@@ -61,6 +61,13 @@ interface Entry {
   traced?: boolean;
   /** Commands the baseline draws, from the trace-off size check. */
   commands?: number;
+  /**
+   * Step 3: names in a named fn that the new (lexical) rule resolves
+   * differently from the old (caller-scope) rule, as "kind fn.name" — from
+   * the evaluator's scope recorder, so silent cases show up even when the
+   * output didn't change.
+   */
+  scope?: string[];
 }
 
 /**
@@ -145,6 +152,24 @@ interface Libraries {
   before: PathogenModule;
   after: PathogenModule;
   node: typeof NodeApi;
+  /** Step 3: the scope recorder of `after`. */
+  scopeAudit?: ScopeAuditHook;
+}
+
+/** Compile with `after`, collecting the scope recorder's events when it is loaded. */
+function compileAfter(
+  libs: Libraries,
+  p: Program,
+  fonts: readonly ResolvedFont[],
+  traced: boolean,
+): { outcome: Outcome; scope: string[] } {
+  const seen = new Set<string>();
+  libs.scopeAudit?.((e) => seen.add(`${e.kind} ${e.fn}.${e.name}`));
+  try {
+    return { outcome: compileWith(libs.after, p, fonts, traced), scope: [...seen].sort() };
+  } finally {
+    libs.scopeAudit?.(null);
+  }
 }
 
 async function auditProgram(
@@ -174,13 +199,16 @@ async function auditProgram(
   const mode = { traced, ...(commands !== undefined ? { commands } : {}) };
   const unstable = outcomeDifference(first, second);
   if (unstable !== null) return { ...base, ...mode, bucket: 'flaky', difference: unstable };
-  const now = compileWith(libs.after, p, fonts, traced);
+  const { outcome: now, scope } = compileAfter(libs, p, fonts, traced);
   const tags = step ? tagsFor(step, p.source, libs.after) : [];
+  // Step 3's tags come from the recorder: what each name actually resolved to.
+  for (const kind of new Set(scope.map((e) => e.split(' ')[0]))) tags.push(`scope:${kind}`);
   const bucket = classify(first, now, tags);
   return {
     ...base,
     ...mode,
     tags,
+    ...(scope.length ? { scope } : {}),
     bucket,
     ...(bucket !== 'unchanged' ? { difference: outcomeDifference(first, now) ?? undefined } : {}),
     randomCalls: [first.randomCalls, now.randomCalls],
@@ -208,6 +236,7 @@ async function runBatch(
     before: await loadBaseline(baseline),
     after: afterDir ? await loadFromDir(afterDir) : await import('../src'),
     node: await import('../src/node'),
+    ...(step === 3 ? { scopeAudit: await loadScopeAudit(afterDir) } : {}),
   };
   await libs.before.ensureOpentype();
   await libs.after.ensureOpentype();
@@ -360,6 +389,20 @@ function markdown(
     for (const e of untraced) lines.push(`- \`${e.id}\` (${e.commands} commands; ${e.bucket})`);
     lines.push('');
   }
+  const rebound = entries.filter((e) => e.scope?.length);
+  if (rebound.length) {
+    lines.push(
+      '## names the two scope rules resolve differently',
+      '',
+      "From the evaluator's scope recorder (step 3): every program where a name used in a named fn resolves " +
+        'differently under the lexical rule than under the old caller-scope rule, as `kind fn.name`, whether ' +
+        'or not its output changed. `bound-elsewhere` is the silent case (another binding, or a built-in, is ' +
+        'used now); `only-where-written` was an error before; `only-where-called` is the new hinted error.',
+      '',
+    );
+    for (const e of rebound) lines.push(`- \`${e.id}\` (${e.bucket}): ${e.scope!.join('; ')}`);
+    lines.push('');
+  }
   for (const bucket of BUCKET_ORDER) {
     if (bucket === 'unchanged') continue;
     const list = entries.filter((e) => e.bucket === bucket);
@@ -390,6 +433,10 @@ program
   .option('--origin <list>', `comma-separated subset of ${ORIGINS.join(',')}`, ORIGINS.join(','))
   .option('--only <text>', 'only programs whose id contains this text')
   .option('--probe <files>', 'comma-separated extra .pathogen files to audit too (origin "probes"), tracked or not')
+  .option(
+    '--probe-dir <dir>',
+    'every .pathogen file in this folder is a probe too (e.g. stored workspaces from export-workspace-sources.ts)',
+  )
   .option('--jobs <n>', 'batches to run at once', '4')
   .option('--batch-size <n>', 'programs per process', '25')
   .option('--heap <mb>', 'heap limit per batch process', '6144')
@@ -416,6 +463,7 @@ program
       origin: string;
       only?: string;
       probe?: string;
+      probeDir?: string;
       jobs: string;
       batchSize: string;
       heap: string;
@@ -451,8 +499,13 @@ program
       let programs = await collectCorpus(origins);
       if (opts.only) programs = programs.filter((p) => p.id.includes(opts.only!));
       const known = new Set(programs.map((p) => p.id));
-      const extra = (opts.probe ?? '')
-        .split(',')
+      const fromDir = opts.probeDir
+        ? readdirSync(opts.probeDir)
+            .filter((f) => f.endsWith('.pathogen'))
+            .sort()
+            .map((f) => join(opts.probeDir!, f))
+        : [];
+      const extra = [...(opts.probe ?? '').split(','), ...fromDir]
         .map((f) => f.trim())
         .filter((f) => f && !known.has(f));
       programs.push(...probes(extra));

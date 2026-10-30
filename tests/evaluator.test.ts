@@ -1539,15 +1539,15 @@ describe('Evaluator', () => {
     });
   });
 
-  describe('scoping: named fns are dynamic, lambdas are lexical', () => {
-    it('PINS: named fn resolves free names in the CALLER scope (dynamic)', () => {
+  describe('scoping: named fns and lambdas are both lexical', () => {
+    it('named fn resolves free names in the DEFINITION scope (phase 0a step 3; was the caller scope)', () => {
       const result = compilePath(`
         fn f() { return amt; }
         fn g() { let amt = 7; return f(); }
         let amt = 1;
         M f() g()
       `);
-      expect(result).toBe('M 1 7');
+      expect(result).toBe('M 1 1');
     });
 
     it('lambda resolves free names in the DEFINITION scope (lexical)', () => {

@@ -1,5 +1,6 @@
 import { matchFunctionNotation, splitTopLevel } from '../css-value-utils';
 import type { Expression } from '../parser/ast';
+import { isLexicalScopeMiss } from './lexical-scope';
 
 /**
  * Evaluator hooks for {@link tryResolveCSSFunctionArgs}. The resolver is
@@ -14,7 +15,8 @@ export interface CSSFunctionArgHooks {
    * typed value with a CSS representation (Color, CSSVar) or a number bound
    * to a variable/expression (never a literal token like `2px`, which must
    * stay verbatim); null otherwise. May throw (e.g. unresolved identifier) —
-   * the caller treats a throw as "leave the token untouched".
+   * the caller treats a throw as "leave the token untouched", except a
+   * lexical-scope miss (lexical-scope.ts), which propagates.
    */
   resolveToCSS(expr: Expression): string | null;
 }
@@ -88,7 +90,10 @@ export function tryResolveCSSFunctionArgs(
 
       // Don't substitute other types — they're CSS values
       return token;
-    } catch {
+    } catch (e) {
+      // A name a named fn's caller has (phase 0a step 3) used to resolve
+      // here; keeping the raw token would change the output silently.
+      if (isLexicalScopeMiss(e)) throw e;
       return token;
     }
   });

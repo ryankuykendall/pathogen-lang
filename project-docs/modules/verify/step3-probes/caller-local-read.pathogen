@@ -1,0 +1,17 @@
+// Step 3 probe: a fn that reads a name only its caller has.
+// Before: f found g's spacing (12) and drew to x = 36.
+// After: an error at `spacing` with the hint and the fix:
+//   add spacing to f's parameters, fn f(n, spacing), and pass it where f is called.
+define ViewBox(0, 0, 100, 40);
+
+fn f(n) {
+  return calc(n * spacing);
+}
+
+fn g() {
+  let spacing = 12;
+  return f(3);
+}
+
+M 0 20
+L g() 20

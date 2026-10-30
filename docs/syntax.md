@@ -1970,24 +1970,117 @@ fn square(x, y, size) {
 square(10, 10, 50);          // emits the rect's path commands
 ```
 
-### Scoping: functions vs lambdas
+<a id="syntax-scoping-functions-vs-lambdas"></a>
 
-Named functions are **dynamically scoped**: a free name inside the body (one
-that isn't a parameter or a local `let`) resolves against the *caller's* scope
-at call time. Because top-level `let`s are visible from almost every call site,
-this usually behaves the way you'd expect — but a caller-local variable of the
-same name will take precedence:
+### Scoping: where a function finds its names
+
+A function sees the variables **where it is written**, not where it is called
+(lexical scope). A name in the body that isn't a parameter or a local `let`
+resolves against the scope around the definition, the same for named functions
+and lambdas:
 
 ```
 fn f() { return amt; }
 fn g() { let amt = 7; return f(); }
 let amt = 1;
-let a = f();   // 1  — resolves from the top level
-let b = g();   // 7  — resolves from g's scope, the call site
+let a = f();   // 1 — the top-level amt
+let b = g();   // 1 — g's own amt is not visible inside f
 ```
 
-If you need a function that remembers the variables where it was *written*,
-use a lambda.
+Look at `g()`: its own `amt` never reaches `f`, and because a top-level `amt`
+exists where `f` is written, `f` uses that one, with no error. (Until October
+2026 a named function looked names up where it was called, and `g()` gave 7.)
+
+A top-level name only has to exist by the time the function runs, so `amt` can
+be declared after `f`, and two functions can call each other in either order.
+A function written inside another function, or inside a loop, keeps the
+variables of that call or that pass:
+
+```
+fn make(k) {
+  fn times(x) { return calc(x * k); }
+  return times;
+}
+let triple = make(3);
+let fifteen = triple(5);   // 15
+```
+
+A function that uses a name that exists only where it is called stops with an
+error that says so and shows the fix. Without `let amt = 1;`, the first
+example's `g()` stops with:
+
+```text
+Undefined variable: amt — a function sees the variables where it is written, not where it is called. Pass it in: add amt to f's parameters, fn f(amt), and pass it where f is called
+```
+
+That is, give `f` a parameter for it and pass the value in:
+
+```
+fn scaled(x, amt) { return calc(x * amt); }
+fn g() { let amt = 7; return scaled(2, amt); }
+let b = g();   // 14
+```
+
+If the variable is several calls away, the error also names the functions in
+between, which have to take it and pass it along.
+
+Assigning works the same way. A function can't assign to a caller's variable:
+
+```pathogen invalid
+fn reset() { count = 0; }
+fn run() { let count = 5; reset(); return count; }
+let n = run();
+```
+
+```text
+Cannot assign to count here — a function sees the variables where it is written, not where it is called. Return the new value instead: count = reset();
+```
+
+That is, return the value and let the caller assign it:
+
+```
+fn reset() { return 0; }
+fn run() { let count = 5; count = reset(); return count; }
+let n = run();   // 0
+```
+
+A function applied as a [worker](#syntax-applying-workers) gets the arguments the
+builtin chooses (`map` passes each item, its index and the array), so a
+parameter can't carry the value in:
+
+```pathogen invalid
+fn scale(v) { return calc(v * k); }
+fn run() {
+  let k = 3;
+  return [1, 2].map() << scale;
+}
+let xs = run();
+```
+
+```text
+Undefined variable: k — a function sees the variables where it is written, not where it is called. scale is applied with <<, so it can't take k as a parameter: write it where k is visible, as a trailing block or a let-bound lambda
+```
+
+That is, write the worker inside `run`, where `k` is, either as a trailing
+block or as a lambda in a `let` (a lambda written directly after `<<` is not
+allowed):
+
+```
+fn run() {
+  let k = 3;
+  let scale = {|v| return calc(v * k); };
+  return [1, 2].map() << scale;   // or: [1, 2].map {|v| return calc(v * k); }
+}
+let xs = run();   // [3, 6]
+```
+
+A `subscribe(…) << onMatch` callback written as a named function gets the same
+error and fix.
+
+The one name a function doesn't take from where it is written is `ctx`: a
+function draws with the pen of the place that calls it, so its path commands
+and `ctx` follow the caller (see [Path Context](#syntax-path-context-ctx) and
+[Lambdas](#syntax-lambdas)).
 
 ### Lambdas
 
@@ -2016,8 +2109,8 @@ The two forms are equivalent; the expression body is sugar for a single
 `return`. A body with statements (a `let`, a loop, path commands) still
 uses the full statement form.
 
-Unlike named functions, lambdas are **lexically scoped**: the body captures
-the scope where the lambda was written (a closure), not the caller's scope.
+Like named functions, lambdas are **lexically scoped**: the body captures the
+scope where the lambda was written (a closure), not the caller's scope.
 
 ```
 let scale = 3;

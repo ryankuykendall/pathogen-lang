@@ -120,6 +120,7 @@ import type {
   AngleValue,
   ArrayValue,
   BooleanValue,
+  CalledFn,
   CallValue,
   CapNamespace,
   CapValue,
@@ -348,6 +349,7 @@ import {
 } from './path-data';
 import { commandValues, endpointValue, parsePathQuery, runPathQuery, wrapCommands } from './path-query';
 import { tryResolveCSSFunctionArgs as sharedTryResolveCSSFunctionArgs } from './css-function-resolve';
+import { LEXICAL_RULE, isLexicalScopeMiss } from './lexical-scope';
 import { spliceTemplateFragments } from '../css-value-utils';
 
 /** CSS properties that reference defs elements via url(#id) */
@@ -985,6 +987,10 @@ function runSubscriptionDispatch(scope: Scope, evalState: EvaluationState): void
     warn: (message, loc) => warn(evalState, 'layer-transform', message, loc),
     invoke: (sub, match, ordinal, trigger) => {
       const blockScope = createScope(sub.callback.closure ?? scope);
+      if (sub.callback.calledFn && sub.callback.subscribedIn) {
+        blockScope.dynamicParent = sub.callback.subscribedIn;
+        blockScope.calledFn = sub.callback.calledFn;
+      }
       const params = sub.callback.params;
       if (params.length > 0) setVariable(blockScope, params[0], match);
       if (params.length > 1) setVariable(blockScope, params[1], ordinal);
@@ -1021,21 +1027,114 @@ function createScope(parent: Scope | null = null): Scope {
     variables: new Map(),
     parent,
     evalState: parent?.evalState, // Inherit evaluation state from parent
+    // Declared on every scope so a named fn's call scope (callScope sets
+    // them) has the same shape as the rest: lookups walk mixed chains.
+    dynamicParent: undefined,
+    calledFn: undefined,
   };
 }
 
 /**
- * The scope a function, lambda or callback body runs in (phase 0a step 2;
- * docs/syntax.md "Lambdas"). Names resolve from `lexical` — a lambda's
- * closure — or else from the caller's scope, but the DRAWING state (the pen,
- * the active layer, the path-block rules) is always the caller's: a lambda
+ * The scope a function, lambda or callback body runs in (phase 0a steps 2–3;
+ * docs/syntax.md "Scoping" and "Lambdas"). Names resolve from `lexical` — the
+ * scope the fn or lambda was written in — or, for a literal trailing block,
+ * from the caller's scope, where the block is written. The DRAWING state (the
+ * pen, the active layer, the path-block rules) is always the caller's: a fn
  * called inside a path block draws into the block, one called inside
- * layer().apply draws on that layer.
+ * layer().apply draws on that layer. `calledFn` marks a named fn's call, so a
+ * lookup miss can say what the old caller-scope rule would have found.
  */
-function callScope(lexical: Scope | undefined, caller: Scope): Scope {
+function callScope(lexical: Scope | undefined, caller: Scope, calledFn?: CalledFn): Scope {
   const scope = createScope(lexical ?? caller);
   scope.evalState = caller.evalState;
+  if (calledFn) {
+    scope.dynamicParent = caller;
+    scope.calledFn = calledFn;
+  }
   return scope;
+}
+
+/** A named fn's call record for callScope; lambdas changed nothing in step 3. */
+function calledFnFor(fn: UserFunction, viaWorker: boolean): CalledFn | undefined {
+  return fn.isLambda || !fn.name ? undefined : { name: fn.name, params: fn.params, viaWorker };
+}
+
+
+/**
+ * Where the pre-step-3 rule would have bound `name`, looked up from `origin`:
+ * the old chain swaps each named fn's call scope's parent for its caller.
+ * `crossed` lists the named fns whose callers the walk went through,
+ * innermost first; `fn` is the first of them.
+ */
+function oldRuleBinding(
+  origin: Scope,
+  name: string,
+): { scope: Scope | null; fn: CalledFn | undefined; crossed: CalledFn[] } {
+  const crossed: CalledFn[] = [];
+  for (let s: Scope | null = origin; s; ) {
+    if (s.variables.has(name)) return { scope: s, fn: crossed[0], crossed };
+    if (s.dynamicParent) {
+      if (s.calledFn) crossed.push(s.calledFn);
+      s = s.dynamicParent;
+    } else {
+      s = s.parent;
+    }
+  }
+  return { scope: null, fn: crossed[0], crossed };
+}
+
+/**
+ * The step 3 audit hook (scripts/audit-semantics.ts --step 3). Told whenever
+ * a name used inside a named fn resolves differently from the old rule:
+ * - `bound-elsewhere`: both rules find a binding, but not the same one (or
+ *   the new rule finds a built-in where the old found a caller's variable) —
+ *   the silent case;
+ * - `only-where-written`: only the new rule finds it (an error before);
+ * - `only-where-called`: only the old rule finds it (the hinted error now).
+ * Off by default; when off, a lookup pays one null check.
+ */
+export interface ScopeAuditEvent {
+  kind: 'bound-elsewhere' | 'only-where-written' | 'only-where-called';
+  name: string;
+  fn: string;
+}
+let scopeAudit: ((event: ScopeAuditEvent) => void) | null = null;
+export function __setScopeAudit(recorder: ((event: ScopeAuditEvent) => void) | null): void {
+  scopeAudit = recorder;
+}
+
+/** Report to the audit hook when `found` (null: a built-in or a miss) differs from the old rule's binding. */
+function auditBinding(origin: Scope, name: string, found: Scope | null, missed: boolean): void {
+  const old = oldRuleBinding(origin, name);
+  if (old.scope === found || !old.fn) return;
+  const kind = missed ? 'only-where-called' : old.scope === null ? 'only-where-written' : 'bound-elsewhere';
+  scopeAudit?.({ kind, name, fn: old.fn.name });
+}
+
+/**
+ * Text appended to a lookup or assignment miss when the pre-step-3 rule — a
+ * named fn's free names resolve where it is CALLED — would have found the
+ * name. The hint names the innermost such fn and shows the fix (docs/syntax.md
+ * "Scoping"). Runs only on a miss, so lookups pay nothing.
+ */
+function lexicalMissHint(origin: Scope, name: string, use: 'read' | 'assign'): string {
+  const { scope: found, fn, crossed } = oldRuleBinding(origin, name);
+  if (!found || !fn) return '';
+  if (fn.viaWorker) {
+    const verb = use === 'read' ? `take ${name} as a parameter` : `assign to ${name}`;
+    // Not "an inline lambda": a lambda literal after << is its own error.
+    return ` — ${LEXICAL_RULE}. ${fn.name} is applied with <<, so it can't ${verb}: write it where ${name} is visible, as a trailing block or a let-bound lambda`;
+  }
+  if (use === 'read') {
+    const params = [...fn.params, name].join(', ');
+    // The name is more than one call away: each fn on the way has to pass it along.
+    const between = [...new Set(crossed.slice(1).map((c) => c.name))].filter((n) => n !== fn.name);
+    const along = between.length
+      ? `. ${between.join(', ')} ${between.length === 1 ? 'needs' : 'need'} it as a parameter too, to pass it along`
+      : '';
+    return ` — ${LEXICAL_RULE}. Pass it in: add ${name} to ${fn.name}'s parameters, fn ${fn.name}(${params}), and pass it where ${fn.name} is called${along}`;
+  }
+  return ` — ${LEXICAL_RULE}. Return the new value instead: ${name} = ${fn.name}(${fn.params.join(', ')});`;
 }
 
 type DrawingState = EvaluationState & { _insidePathBlock?: boolean; _ctxSource?: EvaluationState };
@@ -1142,11 +1241,24 @@ function getLineDeep(node: unknown): number | undefined {
 
 function lookupVariable(scope: Scope, name: string, line?: number, column?: number, origin: Scope = scope): Value {
   if (scope.variables.has(name)) {
+    if (scopeAudit !== null && scope !== origin) auditBinding(origin, name, scope, false);
     return scope.variables.get(name)!;
   }
   if (scope.parent) {
     return lookupVariable(scope.parent, name, line, column, origin);
   }
+  const builtin = builtinValue(scope, name, line, column, origin);
+  if (scopeAudit !== null) auditBinding(origin, name, null, builtin === undefined);
+  if (builtin !== undefined) return builtin;
+  throw new Error(formatError(`Undefined variable: ${name}${lexicalMissHint(origin, name, 'read')}`, line, column));
+}
+
+/**
+ * A name no scope binds: `ctx`, a namespace, `viewbox`, a built-in enum or a
+ * stdlib function, or undefined. `scope` is the root; `origin` is where the
+ * lookup started.
+ */
+function builtinValue(scope: Scope, name: string, line?: number, column?: number, origin: Scope = scope): Value | undefined {
   // `ctx` is computed, never bound: the pen drawing where the lookup STARTED
   // (`origin` — by now `scope` is the root, whose state is the program's).
   // A user binding named ctx was found above and still wins (until step 5).
@@ -1211,7 +1323,7 @@ function lookupVariable(scope: Scope, name: string, line?: number, column?: numb
   if (name in stdlib) {
     return stdlib[name as keyof typeof stdlib] as unknown as Value;
   }
-  throw new Error(formatError(`Undefined variable: ${name}`, line, column));
+  return undefined;
 }
 
 /**
@@ -1240,12 +1352,17 @@ function updateVariable(scope: Scope, name: string, value: Value, line?: number)
   let current: Scope | null = scope;
   while (current) {
     if (current.variables.has(name)) {
+      if (scopeAudit !== null && current !== scope) auditBinding(scope, name, current, false);
       current.variables.set(name, value);
       return;
     }
     current = current.parent;
   }
-  throw new Error(formatError(`Cannot assign to undeclared variable: ${name}`, line));
+  if (scopeAudit !== null) auditBinding(scope, name, null, true);
+  const hint = lexicalMissHint(scope, name, 'assign');
+  throw new Error(
+    formatError(hint ? `Cannot assign to ${name} here${hint}` : `Cannot assign to undeclared variable: ${name}`, line),
+  );
 }
 
 function isStyleBlock(value: Value): value is StyleBlockValue {
@@ -1587,7 +1704,7 @@ function collectVariableOffsetStops(
     compound,
     stops: [],
   };
-  const blockScope = callScope(cb.closure, scope);
+  const blockScope = callScope(cb.closure, scope, cb.calledFn);
   const params = cb.params;
   if (params.length > 0) setVariable(blockScope, params[0], builder);
   // pb = the spine itself (exposes get/tangent/normal/length/vertices).
@@ -1806,6 +1923,22 @@ function defsPathData(commands: PathBlockCommand[]): string {
   return `M ${formatNum(at.x)} ${formatNum(at.y)}${d ? ` ${d}` : ''}`;
 }
 
+/**
+ * A lexical-scope miss inside a style value, positioned at the value. The
+ * value is parsed on its own, so the inner "Line 1, col N:" counts from the
+ * start of the value and is dropped.
+ */
+function styleScopeMissError(
+  prop: StyleBlockLiteral['properties'][number],
+  expr: StyleBlockLiteral,
+  miss: Error,
+): Error {
+  const line = prop.valueLoc?.line ?? prop.loc?.line ?? getLine(expr);
+  const col = prop.valueLoc?.column ?? prop.loc?.column ?? getCol(expr);
+  const message = miss.message.replace(/^Line \d+(?:, col \d+)?: /, '');
+  return new Error(formatError(`Style value for "${prop.name}": ${message}`, line, col));
+}
+
 function evaluateStyleBlockLiteral(expr: StyleBlockLiteral, scope: Scope): StyleBlockValue {
   // A malformed declaration (e.g. a missing trailing `;`) is recorded leniently
   // during AST-building so the language service stays resilient; enforce it
@@ -1828,6 +1961,7 @@ function evaluateStyleBlockLiteral(expr: StyleBlockLiteral, scope: Scope): Style
     // objects for THIS value — the validator allows exactly these tokens.
     const emittedVars: string[] = [];
     let angleUnitError: string | null = null;
+    let scopeMiss: Error | null = null;
     try {
       const parseResult = expressionParser.parse(prop.value);
       if (parseResult.status && parseResult.value) {
@@ -1904,9 +2038,14 @@ function evaluateStyleBlockLiteral(expr: StyleBlockLiteral, scope: Scope): Style
         }
         // For other non-struct types, keep raw string (untrusted)
       }
-    } catch {
+    } catch (e) {
       // Parse or eval failed — keep raw string (handles rgb(...), #hex, multi-value strings, etc.)
+      // Except a name a named fn's caller has (phase 0a step 3): it resolved
+      // under the old rule, so keeping the raw name would change the output
+      // silently. Thrown below, outside the try.
+      if (isLexicalScopeMiss(e)) scopeMiss = e;
     }
+    if (scopeMiss) throw styleScopeMissError(prop, expr, scopeMiss);
     if (angleUnitError) {
       throw new Error(
         formatError(angleUnitError, prop.valueLoc?.line ?? prop.loc?.line ?? getLine(expr), prop.valueLoc?.column),
@@ -1955,6 +2094,7 @@ function evaluateStyleBlockLiteral(expr: StyleBlockLiteral, scope: Scope): Style
           didSplice = true;
         }
       } catch (e) {
+        if (isLexicalScopeMiss(e)) throw styleScopeMissError(prop, expr, e);
         const eLine = prop.valueLoc?.line ?? prop.loc?.line ?? getLine(expr);
         const eCol = prop.valueLoc?.column ?? prop.loc?.column ?? getCol(expr);
         throw new Error(formatError(`Style value for "${prop.name}": ${(e as Error).message}`, eLine, eCol));
@@ -1966,7 +2106,14 @@ function evaluateStyleBlockLiteral(expr: StyleBlockLiteral, scope: Scope): Style
     // values and whole-value template results so remaining idents substitute
     // identically in every interpolation form.
     if (resolvedValue === prop.value || didSplice || wasWholeValueTemplate) {
-      const cssResolved = tryResolveCSSFunctionArgs(resolvedValue, scope, emittedVars);
+      let cssResolved: string | null;
+      try {
+        cssResolved = tryResolveCSSFunctionArgs(resolvedValue, scope, emittedVars);
+      } catch (e) {
+        // Only a lexical-scope miss gets out of the resolver (css-function-resolve.ts).
+        if (isLexicalScopeMiss(e)) throw styleScopeMissError(prop, expr, e);
+        throw e;
+      }
       if (cssResolved !== null) {
         resolvedValue = cssResolved;
       }
@@ -3111,7 +3258,12 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
         selector,
         // A trailing block closes over the scope where subscribe() was called (a loop
         // iteration's own scope included); a << worker brings its own closure.
-        callback: { params: cb.params, body: cb.body, closure: cb.closure ?? scope },
+        callback: {
+          params: cb.params,
+          body: cb.body,
+          closure: cb.closure ?? scope,
+          ...(cb.calledFn ? { calledFn: cb.calledFn, subscribedIn: scope } : {}),
+        },
         windowStart: peekRecordSeq(),
         windowEnd: null,
         cancelled: false,
@@ -5549,7 +5701,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
         const fillSink = createPathStore();
         for (let r = 0; r < obj.rows; r++) {
           for (let c = 0; c < obj.cols; c++) {
-            const blockScope = callScope(cb.closure, scope);
+            const blockScope = callScope(cb.closure, scope, cb.calledFn);
             if (params.length > 0) setVariable(blockScope, params[0], r);
             if (params.length > 1) setVariable(blockScope, params[1], c);
             if (params.length > 2) {
@@ -5592,7 +5744,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
         }
         for (let r = 0; r < obj.rows; r++) {
           for (let c = 0; c < obj.cols; c++) {
-            const blockScope = callScope(cb.closure, scope);
+            const blockScope = callScope(cb.closure, scope, cb.calledFn);
             if (params.length > 0) setVariable(blockScope, params[0], obj.cells[r][c]);
             if (params.length > 1) setVariable(blockScope, params[1], r);
             if (params.length > 2) setVariable(blockScope, params[2], c);
@@ -5631,7 +5783,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
         for (let r = 0; r < obj.rows; r++) {
           const row: Value[] = [];
           for (let c = 0; c < obj.cols; c++) {
-            const blockScope = callScope(cb.closure, scope);
+            const blockScope = callScope(cb.closure, scope, cb.calledFn);
             if (params.length > 0) setVariable(blockScope, params[0], obj.cells[r][c]);
             if (params.length > 1) setVariable(blockScope, params[1], r);
             if (params.length > 2) setVariable(blockScope, params[2], c);
@@ -6455,7 +6607,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
       lockArray(obj);
       try {
         for (let i = 0; i < obj.elements.length; i++) {
-          const blockScope = callScope(cb.closure, scope);
+          const blockScope = callScope(cb.closure, scope, cb.calledFn);
           setVariable(blockScope, mapParams[0], obj.elements[i]);
           if (mapParams.length > 1) setVariable(blockScope, mapParams[1], i);
           if (mapParams.length > 2) setVariable(blockScope, mapParams[2], obj);
@@ -6483,7 +6635,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
       lockArray(obj);
       try {
         for (let i = 0; i < obj.elements.length; i++) {
-          const blockScope = callScope(cb.closure, scope);
+          const blockScope = callScope(cb.closure, scope, cb.calledFn);
           setVariable(blockScope, filterParams[0], obj.elements[i]);
           if (filterParams.length > 1) setVariable(blockScope, filterParams[1], i);
           if (filterParams.length > 2) setVariable(blockScope, filterParams[2], obj);
@@ -6514,7 +6666,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
       lockArray(obj);
       try {
         for (let i = 0; i < obj.elements.length; i++) {
-          const blockScope = callScope(cb.closure, scope);
+          const blockScope = callScope(cb.closure, scope, cb.calledFn);
           setVariable(blockScope, reduceParams[0], accumulator);
           if (reduceParams.length > 1) setVariable(blockScope, reduceParams[1], obj.elements[i]);
           if (reduceParams.length > 2) setVariable(blockScope, reduceParams[2], i);
@@ -6681,7 +6833,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
       lockArray(obj);
       try {
         sorted.sort((a, b) => {
-          const blockScope = callScope(cb.closure, scope);
+          const blockScope = callScope(cb.closure, scope, cb.calledFn);
           if (sortParams.length > 0) setVariable(blockScope, sortParams[0], a);
           if (sortParams.length > 1) setVariable(blockScope, sortParams[1], b);
           let cmp: Value = null;
@@ -8711,10 +8863,9 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope): Value {
       );
     }
 
-    // Lambdas resolve free names against their captured definition scope
-    // (lexical); named fns resolve against the caller's scope (dynamic).
-    // Either way the body draws with the caller's pen (callScope).
-    const fnScope = callScope(userFn.closure, scope);
+    // Free names resolve where the fn or lambda was written (lexical); the
+    // body draws with the caller's pen (callScope).
+    const fnScope = callScope(userFn.closure, scope, calledFnFor(userFn, false));
     userFn.params.forEach((param, i) => {
       setVariable(fnScope, param, args[i]);
     });
@@ -8778,9 +8929,10 @@ function isCallableValue(v: Value): v is UserFunction {
 
 // The callback for a block-consuming builtin: the literal trailing block, or a
 // UserFunction value (lambda or named fn) applied with `<<` (the workerExpr,
-// passed unevaluated from the BinaryExpression pre-dispatch). A lambda's
-// `closure` makes the callback body resolve free names lexically; blocks and
-// named fns leave it undefined and keep today's caller-scope resolution.
+// passed unevaluated from the BinaryExpression pre-dispatch). A worker's
+// `closure` makes the callback body resolve free names where it was written;
+// a literal block has none and resolves in the caller's scope, which is where
+// it is written. `calledFn` marks a named-fn worker for the miss hint.
 // Parenthesized args are evaluated here ONCE, left-to-right, BEFORE the worker
 // expression (reduce's init runs before the worker); `leadingArgs` holds the
 // evaluated values for the builtin, which must consume them from here rather
@@ -8791,7 +8943,14 @@ function resolveCallbackBlock(
   expr: { block?: { params: string[]; body: Statement[] }; args: Expression[]; method: string },
   scope: Scope,
   workerExpr?: Expression,
-): { params: string[]; body: Statement[]; closure?: Scope; leadingArgs: Value[]; extraArgs: number } | null {
+): {
+  params: string[];
+  body: Statement[];
+  closure?: Scope;
+  calledFn?: CalledFn;
+  leadingArgs: Value[];
+  extraArgs: number;
+} | null {
   if (expr.block) {
     // Pre-dispatch never routes a worker to a block-bearing call.
     const leadingArgs = expr.args.map((a) => evaluateExpression(a, scope));
@@ -8812,6 +8971,7 @@ function resolveCallbackBlock(
       params: worker.params,
       body: worker.body,
       closure: worker.closure,
+      calledFn: calledFnFor(worker, true),
       leadingArgs,
       extraArgs: leadingArgs.length,
     };
@@ -9977,10 +10137,15 @@ function evaluateStatementToAccum(stmt: Statement, scope: Scope, accum: PathStor
     }
 
     case 'FunctionDefinition': {
+      // Lexical, like a lambda (phase 0a step 3): the body's free names
+      // resolve in the scope the fn is written in. The scope is captured by
+      // reference, so a later top-level let or fn is visible by call time.
       const fn: UserFunction = {
         type: 'UserFunction',
         params: stmt.params,
         body: stmt.body,
+        closure: scope,
+        name: stmt.name,
       };
       setVariable(scope, stmt.name, fn);
       return;

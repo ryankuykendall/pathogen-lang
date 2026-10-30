@@ -1,0 +1,17 @@
+// Step 3 probe: a fn that assigns to a variable only its caller has.
+// Before: bump() raised run's count to 6 and the line ended at x = 60.
+// After: an error at the assignment, with the fix `count = bump();`.
+define ViewBox(0, 0, 100, 40);
+
+fn bump() {
+  count = 6;
+}
+
+fn run() {
+  let count = 5;
+  bump();
+  return count;
+}
+
+M 0 20
+L calc(run() * 10) 20

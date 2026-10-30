@@ -80,8 +80,9 @@ envelope you invent next. But look at the envelopes themselves. Every one is a
 **named, top-level function with its constants baked in**. `bulged1`
 hard-codes its center and peak, because until now there was no way to write "a
 bulge envelope *for these particular* parameters" as a value. Pathogen's named
-functions are dynamically scoped — free names resolve in the *caller's* scope
-at call time — so a function couldn't carry values from where it was written.
+functions were dynamically scoped (see the note below) — free names resolved in
+the *caller's* scope at call time — so a function couldn't carry values from
+where it was written.
 The workarounds are all familiar and all unsatisfying: top-level `let`s you
 hope nobody shadows, spec-object arrays interpreted by a helper, or parameter
 lists that grow a slot for every knob.
@@ -105,8 +106,9 @@ let six = caller();   // 6 — lexical capture, not the caller's scale
 
 Three design decisions worth spelling out:
 
-- **Lambdas are lexical; named `fn`s stay dynamic.** Changing `fn` scoping
-  would silently alter existing programs, so it doesn't. Both behaviors are
+- **Lambdas are lexical; named `fn`s stay dynamic** (since changed; see the
+  note below). Changing `fn` scoping would silently alter existing programs,
+  so it doesn't. Both behaviors are
   now [documented](/docs#syntax-scoping-functions-vs-lambdas) — and if you've
   ever been surprised by a named function picking up a caller's variable,
   that section is worth two minutes.
@@ -115,6 +117,14 @@ Three design decisions worth spelling out:
   classic capture trap from other languages resolves the friendly way here.
 - **Zero parameters is `{|| ... }`** — one grammar wrinkle, since two bare
   pipes otherwise lex as logical-or.
+
+> **Editor's note, October 2026:** named `fn`s are lexical now too. A function
+> of either kind sees the variables where it is written, which the planned
+> module system needs: an imported function must find its own file's names.
+> A program that relied on a caller's variable now stops with an error that
+> names the variable and shows the fix, unless a variable with the same name
+> also exists where the function is written: then the function quietly uses
+> that one instead. See [Scoping](/docs#syntax-scoping-functions-vs-lambdas).
 
 And the part that makes the feature feel native: **a builtin can take a
 lambda you already built, applied with the `<<` operator** — the operator
@@ -189,7 +199,7 @@ the parameters that make each instance *this* instance.
 Every sample on this page is live — open the code pane, change a captured
 `center` or `peak`, and watch the closure carry it into the stroke. The full
 reference is in the [Lambdas docs](/docs#syntax-lambdas), the scoping rules in
-[Functions vs lambdas](/docs#syntax-scoping-functions-vs-lambdas), and the
+[Scoping](/docs#syntax-scoping-functions-vs-lambdas), and the
 stroke machinery in the [Variable Offset docs](/docs#variable-offset-variable-offset).
 
 The stroke was always a function. Now the language lets you treat it like one.

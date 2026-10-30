@@ -48,3 +48,19 @@ export async function loadFromDir(dir: string): Promise<PathogenModule> {
   if (!existsSync(entry)) throw new Error(`--after-dir: ${entry} does not exist`);
   return (await import(pathToFileURL(resolve(entry)).href)) as PathogenModule;
 }
+
+type EvaluatorModule = typeof import('../../../src/evaluator/index');
+export type ScopeAuditHook = EvaluatorModule['__setScopeAudit'];
+
+/**
+ * The step 3 scope recorder of the evaluator under audit (the working tree,
+ * or the snapshot in `dir`). Imported by the same file URL the library entry
+ * resolves to, so it is the same module instance the compiles run in.
+ */
+export async function loadScopeAudit(dir?: string): Promise<ScopeAuditHook> {
+  const mod = dir
+    ? ((await import(pathToFileURL(resolve(join(dir, 'src', 'evaluator', 'index.ts'))).href)) as EvaluatorModule)
+    : await import('../../../src/evaluator/index');
+  if (typeof mod.__setScopeAudit !== 'function') throw new Error('the evaluator under audit has no __setScopeAudit');
+  return mod.__setScopeAudit;
+}

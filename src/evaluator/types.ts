@@ -635,7 +635,15 @@ export interface SubscriptionValue {
   type: 'SubscriptionValue';
   layerName: string;
   selector: string;
-  callback: { params: string[]; body: Statement[]; closure?: Scope };
+  callback: {
+    params: string[];
+    body: Statement[];
+    closure?: Scope;
+    // A named fn applied with `<<`: the scope subscribe() was called in, which
+    // the pre-step-3 rule read its free names from. Only the miss hint reads it.
+    calledFn?: CalledFn;
+    subscribedIn?: Scope;
+  };
   windowStart: number; // global record sequence when subscribed
   windowEnd: number | null; // set by a top-level unsubscribe()
   cancelled: boolean; // set by unsubscribe() during delivery
@@ -1231,11 +1239,22 @@ export interface UserFunction {
   type: 'UserFunction';
   params: string[];
   body: Statement[];
-  // Lambdas capture their definition scope (lexical/closure semantics).
-  // Named fns leave this undefined and resolve free names in the caller's
-  // scope (dynamic scoping) — the historical behavior, kept deliberately.
-  closure?: Scope;
+  // The scope the function was written in. Named fns and lambdas both resolve
+  // free names here (lexical scope, phase 0a step 3; docs/syntax.md
+  // "Scoping"); where the body DRAWS is the caller's (callScope).
+  closure: Scope;
   isLambda?: true;
+  name?: string; // a named fn's own name, for error hints
+}
+
+/**
+ * A named fn's call, kept on its call scope so a lookup miss can say what the
+ * pre-step-3 rule (free names resolve where the fn is called) would have found.
+ */
+export interface CalledFn {
+  name: string;
+  params: string[];
+  viaWorker: boolean; // applied with << (gets the builtin's arguments)
 }
 
 /**
@@ -1281,4 +1300,8 @@ export interface Scope {
   variables: Map<string, Value>;
   parent: Scope | null;
   evalState?: EvaluationState; // Shared across all scopes during evaluation
+  // A named fn's call scope: the caller, which the pre-step-3 rule used as the
+  // parent, and the fn. Read only when a lookup misses, to explain the error.
+  dynamicParent?: Scope;
+  calledFn?: CalledFn;
 }

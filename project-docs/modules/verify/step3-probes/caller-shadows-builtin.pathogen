@@ -1,0 +1,16 @@
+// Step 3 probe: a caller's variable named like a built-in.
+// Before: inside f, `round` was g's local 9, so the call failed ("round is not a function").
+// After: f sees the built-in round() where it is written, and the line ends at x = 20.
+define ViewBox(0, 0, 100, 40);
+
+fn f() {
+  return round(2.4);
+}
+
+fn g() {
+  let round = 9;
+  return f();
+}
+
+M 0 20
+L calc(g() * 10) 20

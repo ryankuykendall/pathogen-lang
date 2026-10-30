@@ -1,0 +1,15 @@
+// Step 3 probe: a named fn returned from a factory.
+// Before: times(5) at the top level couldn't see make's k ("Undefined variable: k").
+// After: times keeps the k of the make() call it was written in; the line ends at x = 15.
+define ViewBox(0, 0, 100, 40);
+
+fn make(k) {
+  fn times(x) {
+    return calc(x * k);
+  }
+  return times;
+}
+
+let triple = make(3);
+M 0 20
+L triple(5) 20

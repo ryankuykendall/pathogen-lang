@@ -78,8 +78,9 @@ export function getCodeActions(document: TextDocument, _range: Range, diagnostic
       if (fix) actions.push(fix);
     }
 
-    // Undefined variable — suggest closest match
-    const undefMatch = diag.message.match(/^Undefined variable: (\w+)$/);
+    // Undefined variable — suggest closest match. The message may continue
+    // with a hint (" — a function sees the variables where it is written…").
+    const undefMatch = diag.message.match(/^Undefined variable: (\w+)\b/);
     if (undefMatch) {
       const fixes = undefinedVariableFixes(document, diag, undefMatch[1]);
       actions.push(...fixes);

@@ -1,0 +1,19 @@
+// Step 3 control: fns that read only their parameters, top-level names and
+// other fns, the usual shape. Unchanged by step 3, with no recorder events.
+define ViewBox(0, 0, 100, 60);
+
+let gap = 10;
+
+fn rung(i, width) {
+  M 10 calc(10 + i * gap)
+  h width
+}
+
+fn ladder(n) {
+  for (i in 0..<n) {
+    rung(i, calc(20 + i * gap));
+  }
+}
+
+let twice = {|x| return calc(x * 2); };
+ladder(twice(2));

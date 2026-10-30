@@ -1,0 +1,19 @@
+// Step 3 probe: a named fn applied with << that reads a local of the code applying it.
+// Before: scale found run's k (4) and the line ended at x = 12 (the last of 4, 8, 12).
+// After: an error with the worker hint (write it where k is visible, as a
+// trailing block or a let-bound lambda),
+// not the parameter fix, since map passes (item, index, array).
+define ViewBox(0, 0, 100, 40);
+
+fn scale(v) {
+  return calc(v * k);
+}
+
+fn run() {
+  let k = 4;
+  return [1, 2, 3].map() << scale;
+}
+
+let xs = run();
+M 0 20
+L xs.last 20

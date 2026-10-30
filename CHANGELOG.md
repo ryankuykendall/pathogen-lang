@@ -5,6 +5,30 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] - 2026-10-30 (named functions are lexical)
+
+### Changed
+
+#### Core
+
+- **Breaking: a named `fn` sees the variables where it is written, not where it is called** (lexical scope, as lambdas already did). A name in the body that isn't a parameter or a local `let` used to resolve in the *caller's* scope, so `fn f() { return amt; }` called from `fn g() { let amt = 7; return f(); }` returned g's 7, even with a top-level `let amt = 1;`. Now it returns that top-level 1, the `amt` around `f`'s definition, and if there is none, it stops with an error. The planned module system needs this: an imported function has to find its own file's names. What changes for a program:
+  - **Most programs:** nothing. A function that reads only its parameters, top-level names and other functions behaves the same, unless a function that calls it declares its own variable with one of those names (the silent case, below). A top-level name can still be declared after the function, and two functions can still call each other in either order.
+  - **A name only the caller has:** an error that names the variable and shows the fix: `Undefined variable: amt — a function sees the variables where it is written, not where it is called. Pass it in: add amt to f's parameters, fn f(amt), and pass it where f is called`. When the name is several calls away, the error also names the functions in between, which have to pass it along. The same holds inside a style value (`#{ stroke: col; }`, a `${…}` interpolation, a CSS function argument such as `brightness(level)`, `translate-x: dx`): there a failed lookup normally keeps the raw text, which would have written `stroke="col"` without a word, so this case stops with the error instead. Assigning to such a name says `Cannot assign to count here — … Return the new value instead: count = reset();`. A named fn applied with `<<` (a worker, or a `subscribe()` callback) gets the builtin's arguments, so its error says instead to write it where the name is visible, as a trailing block or a `let`-bound lambda (a lambda written directly after `<<` is not allowed).
+  - **The silent case:** if the same name also exists where the function is written, the function now uses that one, with no error. In the example above, `g()` goes from 7 to 1. To spot it in an older program, look for a function that reads a name one of its callers also declares.
+  - **Programs that work now:** a named fn written inside another function keeps that call's variables, so one returned from a factory works (it used to stop with "Undefined variable"). A caller's variable named like a built-in (`let round = 9;`) no longer hides the built-in from the functions it calls.
+
+  Where a function *draws* is unchanged: always with the caller's pen. The editor's "Did you mean" fix still works on the new error.
+
+#### Documentation
+
+- docs/syntax.md "Scoping: where a function finds its names" (renamed; the old link still works) teaches the new rule: the `amt` example with its new results, the silent case, factories, passing values in as parameters, each error message next to the program that causes it, and the worker case with its lambda fix. The Lambdas section says lambdas are lexical "like named functions", and the editor's `fn` hover says the same. Added dated editor's notes to the blog posts "Lambdas come to Pathogen" and "Easing with lambdas", which said named `fn`s would stay dynamic, and corrected a comment in a post37 sample that said the same.
+
+#### Development
+
+- Semantics audit against the step 2 commit: 1,424 programs. 1,407 are unchanged. The only ones that change, and the only ones the recorder flags, are this change's own new docs examples: the factory now works, and the two examples written to show the new errors stop with them. No blog sample, existing docs example or project-docs program in the repository relied on the old rule.
+- `scripts/export-workspace-sources.ts` copies every stored workspace, approval and review-queue source out of the `WORKSPACES` KV namespace into `tmp/kv-sources/<env>/`, read-only (it has no write path; prod needs `--confirm`), and `audit-semantics.ts --probe-dir` audits a folder of such files. Run on production before this change shipped: of 215 stored programs, the 205 that compile today are all unchanged with no name resolved differently, and the 10 that don't (a missing `;`) are unchanged too once the semicolons are added, or define no named function. No stored program needed migrating.
+- tests/lexical-fns.test.ts (41 tests) pins the docs examples, every hint (including the functions-in-between note, recursion, path blocks, style values, and Grid and subscription workers), the hover, the code action, and the audit hook. The evaluator gains `__setScopeAudit`, a recorder that reports every name a named fn resolves differently under the two rules (one null check per lookup when off), and `scripts/audit-semantics.ts --step 3` tags programs from it and lists them, including the silent cases whose output didn't change. `project-docs/modules/verify/step3-probes/` and `verify-step3-surfaces.ts` check every kind of change on the engine, the CLI, the playground bundle and the VS Code bundle.
+
 ## [Unreleased] - 2026-10-30 (the drawing context follows the call)
 
 ### Fixed

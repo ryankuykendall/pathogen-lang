@@ -18,7 +18,7 @@ axis.apply {
 }
 
 fn hill(name, center, spread, hue) {
-  //-- fns are dynamically scoped, so `scene` resolves at the call site.
+  //-- `scene` is the top-level layer group declared above; a fn sees it there.
   let mark = PathLayer(`${name}-mark`) #{ stroke: oklch(0.5 0.02 260); stroke-width: 0.75; stroke-dasharray: 3 3; fill: none; };
   scene.append(mark);
   mark.apply {

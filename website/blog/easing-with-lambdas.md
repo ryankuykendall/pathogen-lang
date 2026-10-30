@@ -159,6 +159,12 @@ lets `amplitude` and `halfCycles` travel inside the returned value. The
 [lambdas post](/blog/lambdas-come-to-pathogen) covers that difference in
 detail.
 
+> **Editor's note, October 2026:** named `fn`s now look up names where they
+> are written too, so a named `fn` written inside the factory and returned
+> from it would carry `amplitude` and `halfCycles` as well. A lambda is still
+> the shorter way to write one. See
+> [Scoping](/docs#syntax-scoping-functions-vs-lambdas).
+
 ## Example 6 — A plume
 
 Everything at once. Twelve strands fan out from one point. The fan's

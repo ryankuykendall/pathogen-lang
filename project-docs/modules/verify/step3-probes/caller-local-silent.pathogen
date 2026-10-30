@@ -1,0 +1,20 @@
+// Step 3 probe: the silent case (docs/syntax.md "Scoping").
+// Before: g() found g's own amt (7), so the second line ended at x = 70.
+// After: f sees the top-level amt (1) where it is written, so both lines end at x = 10.
+define ViewBox(0, 0, 100, 40);
+
+fn f() {
+  return amt;
+}
+
+fn g() {
+  let amt = 7;
+  return f();
+}
+
+let amt = 1;
+M 0 10
+L calc(f() * 10) 10
+M 0 30
+L calc(g() * 10) 30
+log(f(), g());
