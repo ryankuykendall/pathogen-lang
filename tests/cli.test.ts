@@ -1247,6 +1247,104 @@ g[0].draw()
   });
 });
 
+describe('imports (docs/modules.md)', () => {
+  const project = join(TMP_DIR, 'modules-project');
+  const main = join(project, 'main.pathogen');
+  const GEARS =
+    "// parts/gears.pathogen\nexport fn gear(center, radius, teeth) {\n  assert(teeth >= 3, 'a gear needs at least 3 teeth');\n  star(center.x, center.y, radius, radius - 6, teeth);\n}\nlog(\"gears loaded\");\n";
+
+  beforeAll(() => {
+    mkdirSync(join(project, 'parts'), { recursive: true });
+    writeFileSync(join(project, 'pathogen.json'), '{}\n');
+    writeFileSync(join(project, 'parts', 'gears.pathogen'), GEARS);
+    writeFileSync(join(project, 'parts', 'warn.pathogen'), '// parts/warn.pathogen\nexport fn bad() {\n  L calc(0 / 0) 0\n}\n');
+  });
+
+  afterAll(() => {
+    rmSync(project, { recursive: true, force: true });
+  });
+
+  it('compiles a program that imports a file, drawing what one file would', () => {
+    writeFileSync(main, '// main.pathogen\nimport { gear } from "./parts/gears.pathogen";\n\ngear(Point(55, 50), 40, 12);\n');
+    const result = runCli([main]);
+    const oneFile = runCli([
+      '-e',
+      'fn gear(center, radius, teeth) { star(center.x, center.y, radius, radius - 6, teeth); }\ngear(Point(55, 50), 40, 12);',
+    ]);
+    expect(result.status).toBe(0);
+    expect(result.stdout).toBe(oneFile.stdout);
+  });
+
+  it('an error in an imported fn names its file and the call (docs/modules.md "Errors in other files")', () => {
+    writeFileSync(main, '// main.pathogen\nimport { gear } from "./parts/gears.pathogen";\n\ngear(Point(55, 50), 40, 2);\n');
+    const result = runCli([main]);
+    expect(result.status).toBe(1);
+    expect(result.stderr).toBe(
+      'Error: parts/gears.pathogen line 3, col 3: assertion failed: a gear needs at least 3 teeth\n  called from main.pathogen line 4\n',
+    );
+  });
+
+  it("an import of a missing file is an error at the import, like an @font path", () => {
+    writeFileSync(main, '// main.pathogen\nimport { gear } from "./parts/gera.pathogen";\n');
+    const result = runCli([main]);
+    expect(result.status).toBe(1);
+    expect(result.stderr).toBe(
+      `${main}:2:22: error: import file "./parts/gera.pathogen" was not found (looked for ${join(project, 'parts', 'gera.pathogen')}).\n`,
+    );
+  });
+
+  it('a missing file imported by an imported file names the chain', () => {
+    writeFileSync(join(project, 'parts', 'a.pathogen'), 'import { x } from "./missing.pathogen";\n');
+    writeFileSync(main, 'import { y } from "./parts/a.pathogen";\n');
+    const result = runCli([main]);
+    expect(result.status).toBe(1);
+    expect(result.stderr).toBe(
+      `Error: parts/a.pathogen line 1, col 19: import file "./missing.pathogen" was not found (looked for ${join(project, 'parts', 'missing.pathogen')}).\n  imported from main.pathogen line 1\n`,
+    );
+  });
+
+  it('--print-logs labels a log from an imported file', () => {
+    writeFileSync(main, 'import { gear } from "./parts/gears.pathogen";\nlog("main");\n');
+    const result = runCli([main, '--print-logs']);
+    expect(result.status).toBe(0);
+    expect(result.stderr).toBe('[parts/gears.pathogen line 6] gears loaded\n[line 2] main\n');
+  });
+
+  it('a warning from an imported file names it, on stderr and in --json', () => {
+    writeFileSync(main, 'import { bad } from "./parts/warn.pathogen";\nM 0 0\nbad();\n');
+    const result = runCli([main]);
+    expect(result.status).toBe(0);
+    expect(result.stderr).toMatch(/^parts\/warn\.pathogen:3:\d+: warning: /);
+    const json = JSON.parse(runCli([main, '--json']).stdout) as { warnings: { file?: string; line?: number }[] };
+    expect(json.warnings.map((w) => [w.file, w.line])).toEqual([['parts/warn.pathogen', 3]]);
+  });
+
+  it('code from -e imports from the --root folder when the current folder is outside it', () => {
+    const result = runCli([
+      `--root=${project}`,
+      '-e',
+      'import { gear } from "./parts/gears.pathogen";\ngear(Point(55, 50), 40, 12);',
+    ]);
+    expect(result.status).toBe(0);
+    expect(result.stdout).toMatch(/^M 55 10 /);
+  });
+
+  it('a file outside the --root folder cannot follow its import paths', () => {
+    const outsideRoot = join(TMP_DIR, 'modules-other-root');
+    mkdirSync(outsideRoot, { recursive: true });
+    try {
+      writeFileSync(main, 'import { gear } from "./parts/gears.pathogen";\n');
+      const result = runCli([`--root=${outsideRoot}`, main]);
+      expect(result.status).toBe(1);
+      expect(result.stderr).toBe(
+        `Error: ${main} is outside the project folder ${outsideRoot} given by --root, so its import paths can't be followed.\n`,
+      );
+    } finally {
+      rmSync(outsideRoot, { recursive: true, force: true });
+    }
+  });
+});
+
 describe('unknown options', () => {
   it('rejects an unrecognized flag instead of silently ignoring it', () => {
     const result = runCli(['-e', 'M 0 0', '--annotated']);

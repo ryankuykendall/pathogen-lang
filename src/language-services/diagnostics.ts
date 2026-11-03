@@ -1,4 +1,5 @@
 import { evaluate } from '../evaluator';
+import { ModuleTraceError } from '../evaluator/module-runtime';
 import { groupWarnings } from '../evaluator/warning-groups';
 import {
   parse,
@@ -15,6 +16,7 @@ import { findReservedBindings } from '../parser/reserved-bindings';
 import type { TextDocument } from './document';
 import type { Diagnostic } from './types';
 import type { FontRegistry } from '../evaluator/types';
+import type { ModuleGraph } from '../host/load-modules';
 import { DiagnosticSeverity } from './types';
 
 /**
@@ -35,6 +37,12 @@ export interface DiagnosticsOptions {
     registry?: FontRegistry;
     messages: readonly { severity: 'error' | 'warning'; message: string; line?: number; column?: number }[];
   };
+  /**
+   * Every file the document imports, read by the host (resolveModules;
+   * docs/modules.md). Without it, an import is the no-project-folder error —
+   * what the playground shows.
+   */
+  modules?: ModuleGraph;
 }
 
 // Parser error: "Parse error at line {line}, column {column}: {message}"
@@ -168,7 +176,10 @@ export function getDiagnostics(document: TextDocument, options: DiagnosticsOptio
   // so they are skipped (below) rather than masking the host's result.
   try {
     const registry = options.fonts?.registry;
-    const result = evaluate(ast, registry ? { fonts: registry } : undefined);
+    const result = evaluate(ast, {
+      ...(registry ? { fonts: registry } : {}),
+      ...(options.modules ? { modules: options.modules } : {}),
+    });
     // Non-fatal compiler warnings become Warning diagnostics on their line —
     // one per family (code + position + message with its numbers removed),
     // carrying the count, so a fillet over every glyph contour is one entry in
@@ -191,6 +202,17 @@ export function getDiagnostics(document: TextDocument, options: DiagnosticsOptio
     if (!options.fonts && isFontAvailabilityError(message)) {
       // No fonts from the host: its compile is the source of truth for
       // font-related errors. Skip — surfacing this here would override it.
+      return diagnostics;
+    }
+    // An error in another file: shown where it reaches this one — the call or
+    // the import — with the whole trace as its message (docs/modules.md).
+    if (err instanceof ModuleTraceError && err.site) {
+      diagnostics.push({
+        range: makeRange(err.site.line - 1, Math.max(0, (err.site.column ?? 1) - 1), document),
+        severity: DiagnosticSeverity.Error,
+        message,
+        source: 'pathogen-evaluator',
+      });
       return diagnostics;
     }
     const diag = parseEvaluatorError(message, document);

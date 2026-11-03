@@ -2,6 +2,7 @@ import { evaluate, evaluateWithContext } from './evaluator';
 import { parse } from './parser';
 
 import type { CompileResult, StrictOption } from './evaluator';
+import type { ModuleGraph } from './host/load-modules';
 
 export { LEGACY_STYLE_OPENER_MESSAGE, lezerParser, parse, parseLezer, parseWithComments } from './parser';
 export { editorParser, styleParser } from './parser/editor-parser';
@@ -53,6 +54,8 @@ export type {
   ResolveFontsResult,
 } from './host/load-fonts';
 export type { FontCache, FontHost, HostReadResult, LocalFontMatch, ProjectFileHost } from './host/types';
+// An error raised in an imported file: names that file, then each call or import back to the compiled one.
+export { ModuleTraceError } from './evaluator/module-runtime';
 // Imports (docs/modules.md): read every imported file before the compile, as for fonts.
 export {
   formatModuleLoadError,
@@ -291,6 +294,12 @@ export interface CompileOptions {
    * `[]` also mean off. See docs/debug.md "Strict mode".
    */
   strict?: StrictOption;
+  /**
+   * Every file the program imports, read before the compile by
+   * `resolveModules` through a host (docs/modules.md). Without it, an
+   * `import` is an error saying the program has no project folder.
+   */
+  modules?: ModuleGraph;
 }
 
 /**
@@ -331,6 +340,8 @@ export interface CompileWithContextOptions {
   fonts?: import('./evaluator/types').FontRegistry;
   /** Strict mode: warnings stop compilation as errors — see CompileOptions.strict. */
   strict?: StrictOption;
+  /** Every file the program imports — see CompileOptions.modules. */
+  modules?: ModuleGraph;
 }
 
 /**

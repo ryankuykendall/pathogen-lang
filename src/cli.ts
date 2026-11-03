@@ -7,16 +7,20 @@ import {
   buildFontRegistry,
   compile,
   ensureOpentype,
+  formatModuleLoadError,
   generateSvg,
   planFontDirectives,
+  planImports,
   PROJECT_FILE_NAME,
   resolveFonts,
+  resolveModules,
   toJsonDocument,
   WARNING_CODES,
 } from '.';
 import { groupWarnings } from './evaluator/warning-groups';
 import {
   createNodeFontHost,
+  createNodeProjectHost,
   defaultCacheDir,
   findProjectRoot,
   fontDirsFromEnv,
@@ -25,7 +29,15 @@ import {
   projectEntry,
 } from './node';
 
-import type { CompileOptions, CompileResult, CompileWarning, FontRegistry, LogEntry, WarningCode } from '.';
+import type {
+  CompileOptions,
+  CompileResult,
+  CompileWarning,
+  FontRegistry,
+  LogEntry,
+  ModuleGraph,
+  WarningCode,
+} from '.';
 import type { SvgGeneratorOptions } from './svg-generator';
 
 interface CliOptions {
@@ -814,25 +826,20 @@ async function renderGpuSvg(result: CompileResult, options: CliOptions): Promise
 }
 
 /**
- * Load the fonts a program's @font directives name, through the shared loader
- * (src/host/load-fonts.ts) and the Node host (src/node) — the same code the
- * VS Code extension and language server use. Errors stop the CLI (exit 1) in
- * the `file:line:col: error:` form warnings use; warnings are returned to be
- * listed (and counted by --json and --strict) with the compile's own.
- *
- * A program without `@font` skips all of it, as in the editors: it reads no
- * files, so a pathogen.json it doesn't need can't stop it.
+ * The project folder and the program's place in it (docs/projects.md "In
+ * each tool"), shared by `@font` paths and imports. `entry` is the program's
+ * project path; code from -e or stdin sits in the current folder (or the
+ * --root folder, when the current folder isn't in it). `outside` is a file
+ * outside the --root folder, which compiles but has nowhere for its paths to
+ * start. A broken pathogen.json stops the CLI here, so it is read only when
+ * a program needs it (it has `@font` or an import).
  */
-async function loadFontsForCli(
-  source: string,
+function projectForCli(
   sourceFile: string | undefined,
   options: CliOptions,
   projectRoot: string | undefined,
-): Promise<{ registry?: FontRegistry; warnings: CompileWarning[] }> {
-  if (!source.includes('@font')) return { warnings: [] };
-  const where = sourceFile ?? '<inline>';
+): { root: string; entry: string; outside: boolean; fontSearchDir: string } {
   const programDir = sourceFile ? dirname(resolve(sourceFile)) : process.cwd();
-
   let root: string;
   if (options.root) root = resolve(options.root);
   else if (projectRoot) root = projectRoot;
@@ -852,13 +859,57 @@ async function loadFontsForCli(
   // Spelled as on disk, so `--root=Poster` for `poster/` is the same folder.
   const inProject = projectEntry(root, programFile);
   const outside = inProject === null;
-  let entry = inProject ?? '/<outside>';
   // Where installed-font search looks for a fonts/ folder first.
-  let fontSearchDir = programDir;
-  if (outside && !sourceFile) {
-    entry = '/<inline>';
-    fontSearchDir = root;
-  } else if (outside && planFontDirectives(source)?.directives.some((d) => d.kind === 'file')) {
+  if (outside && !sourceFile) return { root, entry: '/<inline>', outside: false, fontSearchDir: root };
+  return { root, entry: inProject ?? '/<outside>', outside, fontSearchDir: programDir };
+}
+
+/**
+ * Read every file the program imports (docs/modules.md), through the shared
+ * loader (src/host/load-modules.ts) and the Node host — before the compile,
+ * as for fonts. A mistake stops the CLI (exit 1): in the compiled file in the
+ * `file:line:col: error:` form, elsewhere with its `imported from` lines.
+ * A program without imports reads nothing.
+ */
+async function loadModulesForCli(
+  source: string,
+  sourceFile: string | undefined,
+  options: CliOptions,
+  projectRoot: string | undefined,
+): Promise<ModuleGraph | undefined> {
+  if (planImports(source).length === 0) return undefined;
+  const { root, entry, outside } = projectForCli(sourceFile, options, projectRoot);
+  if (outside && sourceFile) {
+    fail(`${sourceFile} is outside the project folder ${root} given by --root, so its import paths can't be followed.`);
+  }
+  const { graph, errors } = await resolveModules(source, { host: createNodeProjectHost(root), entry });
+  if (errors.length > 0) {
+    for (const error of errors) process.stderr.write(`${formatModuleLoadError(error, sourceFile ?? '<inline>')}\n`);
+    process.exit(1);
+  }
+  return graph;
+}
+
+/**
+ * Load the fonts a program's @font directives name, through the shared loader
+ * (src/host/load-fonts.ts) and the Node host (src/node) — the same code the
+ * VS Code extension and language server use. Errors stop the CLI (exit 1) in
+ * the `file:line:col: error:` form warnings use; warnings are returned to be
+ * listed (and counted by --json and --strict) with the compile's own.
+ *
+ * A program without `@font` skips all of it, as in the editors: it reads no
+ * files, so a pathogen.json it doesn't need can't stop it.
+ */
+async function loadFontsForCli(
+  source: string,
+  sourceFile: string | undefined,
+  options: CliOptions,
+  projectRoot: string | undefined,
+): Promise<{ registry?: FontRegistry; warnings: CompileWarning[] }> {
+  if (!source.includes('@font')) return { warnings: [] };
+  const where = sourceFile ?? '<inline>';
+  const { root, entry, outside, fontSearchDir } = projectForCli(sourceFile, options, projectRoot);
+  if (outside && sourceFile && planFontDirectives(source)?.directives.some((d) => d.kind === 'file')) {
     // A file outside the project folder still compiles; only @font paths
     // would have nowhere to start from.
     fail(`${sourceFile} is outside the project folder ${root} given by --root, so its @font paths can't be followed.`);
@@ -906,6 +957,8 @@ function formatLogEntry(entry: LogEntry): string {
     return p.value;
   });
   const msg = parts.join(' ');
+  // A log from an imported file names it (docs/cli.md "Print to stderr").
+  if (entry.file) return `[${entry.file}${entry.line != null ? ` line ${entry.line}` : ''}] ${msg}`;
   return entry.line != null ? `[line ${entry.line}] ${msg}` : msg;
 }
 
@@ -973,7 +1026,8 @@ function outputWarnings(warnings: CompileWarning[], sourceFile: string | undefin
   for (const group of groupWarnings(warnings)) {
     const w = group.first;
     const pos = w.line != null ? `:${w.line}${w.column != null ? `:${w.column}` : ''}` : '';
-    process.stderr.write(`${where}${pos}: warning: ${w.message}\n`);
+    // A warning from an imported file names it by its path from the project folder (docs/cli.md).
+    process.stderr.write(`${w.file ?? where}${pos}: warning: ${w.message}\n`);
     if (group.count > 1) {
       process.stderr.write(`  … ${(group.count - 1).toLocaleString('en-US')} more like this\n`);
     }
@@ -995,6 +1049,7 @@ async function main() {
       console.error('Error: --json cannot be combined with --output-svg-file, --render-gpu, or --png');
       process.exit(1);
     }
+    const modules = await loadModulesForCli(source, sourceFile, options, projectRoot);
     const fontLoad = await loadFontsForCli(source, sourceFile, options, projectRoot);
     // Printed before compiling: a call that needs a font that didn't load
     // stops the compile, and its error says to look for this message above.
@@ -1004,6 +1059,7 @@ async function main() {
       ...(fontLoad.registry ? { fonts: fontLoad.registry } : {}),
       ...(options.json ? { trace: true } : {}),
       ...(options.strict ? { strict: options.strict } : {}),
+      ...(modules ? { modules } : {}),
     };
     const result = compile(source, Object.keys(compileOptions).length > 0 ? compileOptions : undefined);
     outputLogs(result.logs, options);

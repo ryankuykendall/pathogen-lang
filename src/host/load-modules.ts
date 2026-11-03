@@ -296,16 +296,13 @@ export function withOpenDocuments(
 /**
  * A load error as the CLI prints it (docs/modules.md "Errors in other
  * files"): the file and position, then one `imported from` line per import
- * that led there. In the compiled file itself, `file:line:col: error:` as for
- * `@font`.
+ * that led there, every file named by its path from the project folder, as
+ * run-time errors name them. In the compiled file itself it reads like an
+ * `@font` error, `<typed>:line:col: error: …`, with the path as typed.
  */
-export function formatModuleLoadError(error: ModuleLoadError, entryLabel: string): string {
-  if (error.importedFrom.length === 0) return `${entryLabel}:${error.line}:${error.column}: error: ${error.message}`;
+export function formatModuleLoadError(error: ModuleLoadError, typedEntry: string): string {
+  if (error.importedFrom.length === 0) return `${typedEntry}:${error.line}:${error.column}: error: ${error.message}`;
   const where = `${fileLabel(error.file)} line ${error.line}, col ${error.column}: ${error.message}`;
-  const trail = error.importedFrom.map((site) => {
-    const label =
-      site.file === error.importedFrom[error.importedFrom.length - 1].file ? entryLabel : fileLabel(site.file);
-    return `  imported from ${label} line ${site.line}`;
-  });
+  const trail = error.importedFrom.map((site) => `  imported from ${fileLabel(site.file)} line ${site.line}`);
   return [`Error: ${where}`, ...trail].join('\n');
 }

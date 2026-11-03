@@ -5,7 +5,26 @@ import { contextAwareFunctions, stdlib } from '../stdlib';
 import { STATEMENT_BUILTINS } from './constructor-registry';
 import { RESERVED_UNIT_NAMES, reservedNameBindingError, reservedNameReferenceError } from './reserved-names';
 import { BUILTIN_NAMES, builtinNameError, builtinNamespaceType } from '../builtin-names';
-import { noProjectFolderError } from '../module-messages';
+import {
+  assignImportedError,
+  declaredNotExportedError,
+  declareImportedAgainError,
+  fileLabel,
+  moduleNotLoadedError,
+  namespaceNoExportError,
+  noExportError,
+  noProjectFolderError,
+} from '../module-messages';
+import { parse } from '../parser';
+import { resolveProjectPath } from '../host/paths';
+import type { ImportSite, ModuleGraph } from '../host/load-modules';
+import {
+  exportsOf,
+  importedFromSteps,
+  ModuleTraceError,
+  moduleOf,
+  splitPosition,
+} from './module-runtime';
 import { splitSubpaths } from './subpaths';
 import { dispatchSubscriptions } from './subscriptions';
 import { CALLBACK_METHODS } from '../callback-methods';
@@ -167,6 +186,9 @@ import type {
   MaskOutput,
   MaskValue,
   MeshPointValue,
+  ModuleIdentity,
+  ModuleNamespaceValue,
+  ModuleRecord,
   MotionBlurFilterValue,
   MotionBlurTypeName,
   NoiseFilterStyleName,
@@ -277,6 +299,9 @@ export type {
   MaskPathEntry,
   MaskValue,
   MeshPointValue,
+  ModuleIdentity,
+  ModuleNamespaceValue,
+  ModuleRecord,
   NoiseFilterStyleName,
   NoiseFilterValue,
   ObjectNamespace,
@@ -999,10 +1024,12 @@ function runSubscriptionDispatch(scope: Scope, evalState: EvaluationState): void
       if (params.length > 1) setVariable(blockScope, params[1], ordinal);
       if (params.length > 2) setVariable(blockScope, params[2], sub);
       try {
-        for (const stmt of sub.callback.body) {
-          const flow = evaluateStatementToAccum(stmt, blockScope, evalState.rootAccum ?? createPathStore());
-          if (flow) throw loopFlowBoundaryError(flow);
-        }
+        acrossFiles(sub.callback.closure, scope, sub.loc, () => {
+          for (const stmt of sub.callback.body) {
+            const flow = evaluateStatementToAccum(stmt, blockScope, evalState.rootAccum ?? createPathStore());
+            if (flow) throw loopFlowBoundaryError(flow);
+          }
+        });
       } catch (e) {
         if (e instanceof ReturnSignal) return;
         // Keep the failing statement's own line as the location; name the
@@ -1056,6 +1083,75 @@ function callScope(lexical: Scope | undefined, caller: Scope, calledFn?: CalledF
     scope.calledFn = calledFn;
   }
   return scope;
+}
+
+/**
+ * Run code written in `callee`'s file on behalf of code in `caller`'s file
+ * (docs/modules.md "Errors in other files"). When the files differ, an error
+ * on the way out names the file it happened in and gains `called from
+ * <caller> line <n>`; inside one file nothing changes, and a compile with no
+ * files pays one check.
+ */
+function acrossFiles<T>(
+  callee: Scope | undefined,
+  caller: Scope,
+  loc: { line?: number; column?: number } | undefined,
+  run: () => T,
+): T {
+  if (!caller.evalState?.modules || !callee) return run();
+  const from = moduleOf(callee);
+  const to = moduleOf(caller);
+  if (!from || !to || from.path === to.path) return run();
+  const savedFile = runningFile;
+  const savedLine = lastStatementLine;
+  runningFile = from;
+  try {
+    return run();
+  } catch (e) {
+    // lastStatementLine is still the callee's here: the catch runs before the finally.
+    throw traceAcrossFiles(e, from, to, loc);
+  } finally {
+    runningFile = savedFile;
+    lastStatementLine = savedLine;
+  }
+}
+
+/**
+ * Whether code from `callee`'s scope is in another file than `caller`'s.
+ * The callback loops (map, sort, Grid cells) ask once, before the loop, and
+ * only then go through acrossFiles: a one-file program makes no closure per
+ * element.
+ */
+function crossesFiles(callee: Scope | undefined, caller: Scope): boolean {
+  if (!caller.evalState?.modules || !callee) return false;
+  const from = moduleOf(callee);
+  const to = moduleOf(caller);
+  return !!from && !!to && from.path !== to.path;
+}
+
+function traceAcrossFiles(
+  error: unknown,
+  callee: ModuleIdentity,
+  caller: ModuleIdentity,
+  loc: { line?: number; column?: number } | undefined,
+): unknown {
+  // Only the evaluator's own errors are traced: a ReturnSignal, a non-Error,
+  // or an error of another kind (a RangeError, a cancellation) passes through
+  // as it is, so whatever checks its class still sees it.
+  if (error instanceof ReturnSignal || !(error instanceof Error)) return error;
+  if (!(error instanceof ModuleTraceError) && error.name !== 'Error') return error;
+  const step = `called from ${caller.label} line ${loc?.line ?? '?'}`;
+  const site = caller.entry && loc?.line !== undefined ? { line: loc.line, column: loc.column } : undefined;
+  if (error instanceof ModuleTraceError) {
+    error.addStep(step, site);
+    return error;
+  }
+  const { line, column, detail } = splitPosition(error.message);
+  // An error with no position of its own gets the line of the statement that
+  // raised it (12-phase-1-plan.md amendments; only for other files).
+  const traced = new ModuleTraceError(callee.label, line ?? lastStatementLine, line === undefined ? undefined : column, detail);
+  traced.addStep(step, site);
+  return traced;
 }
 
 /** A named fn's call record for callScope; lambdas changed nothing in step 3. */
@@ -1217,17 +1313,31 @@ function warn(
   if (strict === true || strict?.has(code)) {
     throw new Error(formatError(`${message} (strict: ${code})`, line, column));
   }
+  const file = runningFileTag();
   evalState.warnings.push({
     code,
     message,
     ...(line != null ? { line } : {}),
     ...(column != null ? { column } : {}),
+    ...file,
   });
   evalState.logs.push({
     line: line ?? null,
     severity: 'warn',
     parts: [{ type: 'string', value: `[warn] ${message}` }],
+    ...file,
   });
+}
+
+/**
+ * The file whose code is running, while it isn't the compiled file: set by
+ * acrossFiles and loadModules, so a warning or log raised in an imported
+ * file names it (docs/modules.md) even when it lands in the caller's list.
+ */
+let runningFile: ModuleIdentity | undefined;
+
+function runningFileTag(): { file?: string } {
+  return runningFile && !runningFile.entry ? { file: runningFile.label } : {};
 }
 
 function getCol(node: unknown): number | undefined {
@@ -1280,14 +1390,15 @@ function builtinValue(scope: Scope, name: string, line?: number, column?: number
   }
   // Ambient viewbox global — fresh copy per read so the struct is read-only
   // and evalState's `loc` never leaks into user code.
-  // NOTE: fallbacks run only at the ROOT scope (recursion above returns
-  // through scope.parent first), whose evalState is the real one. Path/text
-  // blocks put a synthetic evalState on the BLOCK scope, so reads inside
-  // @{ } / &{ } correctly see the program's viewBox. Do not add `viewBox`
-  // to the synthetic block-state field lists or short-circuit this lookup
-  // at a non-root scope — either would silently break in-block reads.
+  // It follows the call, like `ctx` (docs/modules.md, decision 28): the
+  // viewBox of the drawing the code is drawing into — the program state of
+  // `origin`, where the lookup started. A fn imported from another file
+  // therefore reads its caller's viewBox, not its own file's. Path and text
+  // blocks have no viewBox of their own (BlockLocalField); programStateOf
+  // follows their `_programState` link, so reads inside @{ } / &{ } see the
+  // program's. In one file this is the same box as the root scope's.
   if (name === 'viewbox') {
-    const vb = scope.evalState?.viewBox;
+    const vb = (programStateOf(origin.evalState) ?? scope.evalState)?.viewBox;
     if (!vb) {
       throw new Error(
         formatError('viewbox is not available until define ViewBox(...) has run', line, column),
@@ -1349,16 +1460,42 @@ function setVariable(scope: Scope, name: string, value: Value): void {
  * decides it (parser/const-check.ts); this is the run-time backstop.
  */
 function declareBinding(scope: Scope, name: string, value: Value, kind: 'let' | 'const' | 'fn', line?: number): void {
+  const imported = scope.imports?.get(name);
+  if (imported) {
+    // Two imports of one name are the import's own message (module-check.ts); a
+    // declaration after an import is this one. Both are reported statically first.
+    throw new Error(formatError(declareImportedAgainError(name, imported.line ?? 0), line));
+  }
   if (scope.consts?.has(name)) throw new Error(formatError(constRedeclareError(name), line));
   if (kind === 'const' && scope.variables.has(name)) throw new Error(formatError(constOverExistingError(name), line));
   setVariable(scope, name, value);
   if (kind === 'const') (scope.consts ??= new Set()).add(name);
 }
 
+/**
+ * Bind an imported name (docs/modules.md): fixed like a const, and remembered
+ * as imported so assigning to it or declaring it again names its file. The
+ * static checks (const-check.ts, module-check.ts) report the same rules at
+ * the source; this is the run-time backstop, which also covers a name the
+ * static check leaves to run time (one used elsewhere as a parameter).
+ */
+function bindImport(
+  scope: Scope,
+  name: string,
+  value: Value,
+  written: string,
+  loc: { line?: number; column?: number } | undefined,
+): void {
+  declareBinding(scope, name, value, 'const', loc?.line);
+  (scope.imports ??= new Map()).set(name, { written, line: loc?.line });
+}
+
 function updateVariable(scope: Scope, name: string, value: Value, line?: number): void {
   let current: Scope | null = scope;
   while (current) {
     if (current.variables.has(name)) {
+      const imported = current.imports?.get(name);
+      if (imported) throw new Error(formatError(assignImportedError(name, imported.written), line));
       if (current.consts?.has(name)) throw new Error(formatError(constReassignError(name), line));
       if (scopeAudit !== null && current !== scope) auditBinding(scope, name, current, false);
       current.variables.set(name, value);
@@ -1717,7 +1854,7 @@ function collectVariableOffsetStops(
   if (params.length > 0) setVariable(blockScope, params[0], builder);
   // pb = the spine itself (exposes get/tangent/normal/length/vertices).
   if (params.length > 1) setVariable(blockScope, params[1], spine);
-  evaluateStatementsToAccum(cb.body, blockScope, createPathStore());
+  acrossFiles(cb.closure, scope, expr.loc, () => evaluateStatementsToAccum(cb.body, blockScope, createPathStore()));
   if (builder.stops.length < 2)
     throw mError(
       compound
@@ -2743,7 +2880,19 @@ function sharedProgramState(parent: EvaluationState | undefined) {
     // `sub.unsubscribe()` inside a block in a subscription callback must see
     // the callback's subscription, as it does outside the block.
     dispatching: parent?.dispatching,
+    // An import inside a fn called from a block still finds its file.
+    modules: parent?.modules,
   } satisfies Partial<EvaluationState> & Record<Exclude<keyof EvaluationState, BlockLocalField>, unknown>;
+}
+
+/**
+ * The program state a block's synthetic state belongs to: what `viewbox`
+ * reads, since a block's own state has no viewBox (BlockLocalField). Blocks
+ * record it as `_programState` when they are created.
+ */
+type ProgramLinked = EvaluationState & { _programState?: EvaluationState };
+function programStateOf(state: EvaluationState | undefined): EvaluationState | undefined {
+  return (state as ProgramLinked | undefined)?._programState ?? state;
 }
 
 /**
@@ -2762,7 +2911,7 @@ function evaluatePathBlockExpression(expr: PathBlockExpression, scope: Scope): P
   const blockScope = createScope(scope);
 
   // Create an isolated evaluation state for the block
-  const blockEvalState: EvaluationState & { _insidePathBlock: boolean } = {
+  const blockEvalState: EvaluationState & { _insidePathBlock: boolean; _programState?: EvaluationState } = {
     ...sharedProgramState(scope.evalState),
     pathContext: blockContext,
     layers: new Map(), // Empty — layer definitions not allowed
@@ -2771,6 +2920,7 @@ function evaluatePathBlockExpression(expr: PathBlockExpression, scope: Scope): P
     defaultLayerName: null,
     transformState: createTransformState(),
     _insidePathBlock: true,
+    _programState: programStateOf(scope.evalState),
   };
   blockScope.evalState = blockEvalState;
   // `ctx` in here is the block's cursor: lookupVariable computes it from
@@ -2863,7 +3013,11 @@ function evaluateTextBlockExpression(expr: TextBlockExpression, scope: Scope): T
   const blockScope = createScope(scope);
 
   // Create an isolated evaluation state for the block
-  const blockEvalState: EvaluationState & { _insideTextBlock: boolean; _ctxSource?: EvaluationState } = {
+  const blockEvalState: EvaluationState & {
+    _insideTextBlock: boolean;
+    _ctxSource?: EvaluationState;
+    _programState?: EvaluationState;
+  } = {
     ...sharedProgramState(scope.evalState),
     pathContext: scope.evalState?.pathContext ?? createPathContext({}),
     layers: new Map(), // Empty — layer definitions not allowed
@@ -2875,6 +3029,7 @@ function evaluateTextBlockExpression(expr: TextBlockExpression, scope: Scope): T
     // `ctx` here is the creating state's: the same pen, and ITS transform
     // (this state's transformState is a fresh, empty one).
     _ctxSource: scope.evalState,
+    _programState: programStateOf(scope.evalState),
   };
   blockScope.evalState = blockEvalState;
 
@@ -3071,6 +3226,17 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
   const mCol = getCol(expr);
   function mError(message: string): Error {
     return new Error(formatError(message, mLine, mCol));
+  }
+
+  // `gears.gear(…)` through a namespace import (docs/modules.md): call the
+  // export, exactly as `gear(…)` would be called after a named import.
+  if (isModuleNamespace(obj)) {
+    const target = namespaceMember(obj, expr.method, expr.object, mLine, mCol);
+    const label = `${namespaceName(expr.object, obj)}.${expr.method}`;
+    if (!isCallableValue(target)) throw mError(`${label} is not a function`);
+    if (expr.block || workerExpr) throw mError(`${label}() takes no trailing block or << worker`);
+    const args = expr.args.map((arg) => evaluateExpression(arg, scope));
+    return invokeUserFunction(target, label, args, scope, expr.loc);
   }
 
   // One angle-unit check for every receiver method: the per-case bodies each
@@ -5707,6 +5873,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
         // Commands emitted inside a fill body are discarded (fill computes cell
         // values). Reuse one throwaway accum rather than allocating per cell.
         const fillSink = createPathStore();
+        const crossing = crossesFiles(cb.closure, scope);
         for (let r = 0; r < obj.rows; r++) {
           for (let c = 0; c < obj.cols; c++) {
             const blockScope = callScope(cb.closure, scope, cb.calledFn);
@@ -5721,12 +5888,15 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
               setVariable(blockScope, params[2], center);
             }
             try {
-              const res = evaluateGridCellBody(body, blockScope, fillSink);
+              const res = crossing
+                ? acrossFiles(cb.closure, scope, expr.loc, () => evaluateGridCellBody(body, blockScope, fillSink))
+                : evaluateGridCellBody(body, blockScope, fillSink);
               obj.cells[r][c] = res.returned ? res.value : null;
             } catch (e) {
               if (e instanceof ReturnSignal) {
                 obj.cells[r][c] = e.value;
               } else {
+                if (e instanceof ModuleTraceError) throw e;
                 const msg = e instanceof Error ? e.message : String(e);
                 throw new Error(formatError(`Error in Grid.fill() callback at (${r}, ${c}): ${msg}`, callLine));
               }
@@ -5750,6 +5920,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
             blockAccum = (activeLayer as PathLayerState).accum;
           }
         }
+        const crossing = crossesFiles(cb.closure, scope);
         for (let r = 0; r < obj.rows; r++) {
           for (let c = 0; c < obj.cols; c++) {
             const blockScope = callScope(cb.closure, scope, cb.calledFn);
@@ -5765,11 +5936,13 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
               setVariable(blockScope, params[3], center);
             }
             try {
-              evaluateGridCellBody(cb.body, blockScope, blockAccum);
+              if (crossing) acrossFiles(cb.closure, scope, expr.loc, () => evaluateGridCellBody(cb.body, blockScope, blockAccum));
+              else evaluateGridCellBody(cb.body, blockScope, blockAccum);
             } catch (e) {
               if (e instanceof ReturnSignal) {
                 // forEach ignores returns
               } else {
+                if (e instanceof ModuleTraceError) throw e;
                 const msg = e instanceof Error ? e.message : String(e);
                 throw new Error(formatError(`Error in Grid.forEach() callback at (${r}, ${c}): ${msg}`, callLine));
               }
@@ -5788,6 +5961,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
         // Commands emitted inside a map body are discarded (map computes cell
         // values). Reuse one throwaway accum rather than allocating per cell.
         const mapSink = createPathStore();
+        const crossing = crossesFiles(cb.closure, scope);
         for (let r = 0; r < obj.rows; r++) {
           const row: Value[] = [];
           for (let c = 0; c < obj.cols; c++) {
@@ -5805,12 +5979,15 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
             }
             let cellResult: Value = null;
             try {
-              const res = evaluateGridCellBody(cb.body, blockScope, mapSink);
+              const res = crossing
+                ? acrossFiles(cb.closure, scope, expr.loc, () => evaluateGridCellBody(cb.body, blockScope, mapSink))
+                : evaluateGridCellBody(cb.body, blockScope, mapSink);
               if (res.returned) cellResult = res.value;
             } catch (e) {
               if (e instanceof ReturnSignal) {
                 cellResult = e.value;
               } else {
+                if (e instanceof ModuleTraceError) throw e;
                 const msg = e instanceof Error ? e.message : String(e);
                 throw new Error(formatError(`Error in Grid.map() callback at (${r}, ${c}): ${msg}`, callLine));
               }
@@ -6612,6 +6789,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
       const result: Value[] = [];
       const mapParams = cb.params;
       const mapLine = getLine(expr);
+      const crossing = crossesFiles(cb.closure, scope);
       lockArray(obj);
       try {
         for (let i = 0; i < obj.elements.length; i++) {
@@ -6623,7 +6801,11 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
           // element, shared by its statements — as in sort and Grid.map).
           // no return → null
           try {
-            result.push(runCallbackBody(cb.body, blockScope, createPathStore()));
+            result.push(
+              crossing
+                ? acrossFiles(cb.closure, scope, expr.loc, () => runCallbackBody(cb.body, blockScope, createPathStore()))
+                : runCallbackBody(cb.body, blockScope, createPathStore()),
+            );
           } catch (e) {
             throw callbackError('map', i, e, mapLine);
           }
@@ -6640,6 +6822,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
       const kept: Value[] = [];
       const filterParams = cb.params;
       const filterLine = getLine(expr);
+      const crossing = crossesFiles(cb.closure, scope);
       lockArray(obj);
       try {
         for (let i = 0; i < obj.elements.length; i++) {
@@ -6650,7 +6833,9 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
           // no return → null → falsy → dropped
           let verdict: Value;
           try {
-            verdict = runCallbackBody(cb.body, blockScope, createPathStore());
+            verdict = crossing
+              ? acrossFiles(cb.closure, scope, expr.loc, () => runCallbackBody(cb.body, blockScope, createPathStore()))
+              : runCallbackBody(cb.body, blockScope, createPathStore());
           } catch (e) {
             throw callbackError('filter', i, e, filterLine);
           }
@@ -6671,6 +6856,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
       let accumulator: Value = cb.leadingArgs[0];
       const reduceParams = cb.params;
       const reduceLine = getLine(expr);
+      const crossing = crossesFiles(cb.closure, scope);
       lockArray(obj);
       try {
         for (let i = 0; i < obj.elements.length; i++) {
@@ -6681,7 +6867,9 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
           if (reduceParams.length > 3) setVariable(blockScope, reduceParams[3], obj);
           // no return → null
           try {
-            accumulator = runCallbackBody(cb.body, blockScope, createPathStore());
+            accumulator = crossing
+              ? acrossFiles(cb.closure, scope, expr.loc, () => runCallbackBody(cb.body, blockScope, createPathStore()))
+              : runCallbackBody(cb.body, blockScope, createPathStore());
           } catch (e) {
             throw callbackError('reduce', i, e, reduceLine);
           }
@@ -6836,6 +7024,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
       // avoids the per-invocation throw/catch deopt; the comparator runs
       // O(n log n) times.
       const sortSink = createPathStore();
+      const crossing = crossesFiles(cb.closure, scope);
       // sort iterates a copy, but the receiver stays locked while comparators
       // run — mutating the array being sorted is still an iteration hazard.
       lockArray(obj);
@@ -6846,12 +7035,15 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
           if (sortParams.length > 1) setVariable(blockScope, sortParams[1], b);
           let cmp: Value = null;
           try {
-            const res = evaluateGridCellBody(sortBody, blockScope, sortSink);
+            const res = crossing
+              ? acrossFiles(cb.closure, scope, expr.loc, () => evaluateGridCellBody(sortBody, blockScope, sortSink))
+              : evaluateGridCellBody(sortBody, blockScope, sortSink);
             cmp = res.returned ? res.value : null;
           } catch (e) {
             if (e instanceof ReturnSignal) {
               cmp = e.value;
             } else {
+              if (e instanceof ModuleTraceError) throw e;
               const msg = e instanceof Error ? e.message : String(e);
               throw new Error(formatError(`Error in .sort() comparator: ${msg}`, sortLine));
             }
@@ -6888,6 +7080,8 @@ function formatValueForDisplay(val: Value): string {
   if (typeof val === 'object' && 'type' in val && val.type === 'ViewBoxStructValue') {
     return `ViewBox(${formatNum(val.originX)}, ${formatNum(val.originY)}, ${formatNum(val.width)}, ${formatNum(val.height)})`;
   }
+  // `import * as kit …`: shown as the file it stands for (docs/modules.md).
+  if (isModuleNamespace(val)) return `module ${val.label}`;
   if (isPathBlockValue(val)) {
     // Show the first few commands so a logged block is recognizable.
     const preview = commandsToRelativeD(val.commands.slice(0, 6), { bridgeOriginGap: true });
@@ -7002,8 +7196,58 @@ function commandRecordsValue(source: QuerySource): Value {
   return commandValues(source);
 }
 
+function isModuleNamespace(value: Value | undefined): value is ModuleNamespaceValue {
+  return typeof value === 'object' && value !== null && 'type' in value && value.type === 'ModuleNamespaceValue';
+}
+
+/** How a message names a namespace: the name it was imported as, else its file. */
+function namespaceName(objectExpr: Expression, namespace: ModuleNamespaceValue): string {
+  return objectExpr.type === 'Identifier' ? objectExpr.name : namespace.label;
+}
+
+/** One export of a namespace import, or the documented error naming what the file does export. */
+function namespaceMember(
+  namespace: ModuleNamespaceValue,
+  name: string,
+  objectExpr: Expression,
+  line: number | undefined,
+  column: number | undefined,
+): Value {
+  const value = namespace.exports.get(name);
+  if (value !== undefined) return value;
+  throw new Error(
+    formatError(
+      namespaceNoExportError(namespaceName(objectExpr, namespace), namespace.label, name, namespace.exports.keys()),
+      line,
+      column,
+    ),
+  );
+}
+
+/**
+ * What `expr` names without evaluating anything: a variable, or an export
+ * read through a namespace (`kit.parts`). Undefined for anything else. Used
+ * to see that a call statement's receiver is a namespace before running it.
+ */
+function peekValue(expr: Expression, scope: Scope): Value | undefined {
+  if (expr.type === 'Identifier') {
+    for (let s: Scope | null = scope; s; s = s.parent) {
+      if (s.variables.has(expr.name)) return s.variables.get(expr.name);
+    }
+    return undefined;
+  }
+  if (expr.type === 'MemberExpression') {
+    const base = peekValue(expr.object, scope);
+    return isModuleNamespace(base) ? base.exports.get(expr.property) : undefined;
+  }
+  return undefined;
+}
+
 function evaluateMemberExpression(expr: MemberExpression, scope: Scope): Value {
   const obj = evaluateExpression(expr.object, scope);
+
+  // `gears.toothDepth`, `gears.Teeth` through a namespace import (docs/modules.md)
+  if (isModuleNamespace(obj)) return namespaceMember(obj, expr.property, expr.object, getLine(expr), getCol(expr));
 
   // Context .transform is synthesized from _transformState, not a data property
   if (
@@ -7719,6 +7963,8 @@ function evaluateStatementBuiltin(call: FunctionCall, scope: Scope): void {
           stringValue = (typed as PathSegment).value;
         } else if (typed.type === 'UserFunction') {
           stringValue = formatValueForDisplay(value);
+        } else if (typed.type === 'ModuleNamespaceValue') {
+          stringValue = `module ${(value as ModuleNamespaceValue).label}`;
         } else {
           stringValue = String(value);
         }
@@ -7741,7 +7987,7 @@ function evaluateStatementBuiltin(call: FunctionCall, scope: Scope): void {
     }
   }
 
-  scope.evalState.logs.push({ line: lineNumber, parts });
+  scope.evalState.logs.push({ line: lineNumber, parts, ...runningFileTag() });
 }
 
 function evaluateFunctionCall(call: FunctionCall, scope: Scope): Value {
@@ -8858,43 +9104,58 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope): Value {
 
   // Check if it's a user-defined function
   if (isCallableValue(fn)) {
-    const userFn = fn;
     const args = call.args.map((arg) => evaluateExpression(arg, scope));
-
-    if (args.length !== userFn.params.length) {
-      throw new Error(
-        formatError(
-          `${userFn.isLambda ? 'Lambda' : 'Function'} ${call.name} expects ${userFn.params.length} arguments, got ${args.length}`,
-          getLine(call),
-          getCol(call),
-        ),
-      );
-    }
-
-    // Free names resolve where the fn or lambda was written (lexical); the
-    // body draws with the caller's pen (callScope).
-    const fnScope = callScope(userFn.closure, scope, calledFnFor(userFn, false));
-    userFn.params.forEach((param, i) => {
-      setVariable(fnScope, param, args[i]);
-    });
-
-    try {
-      const result = evaluateStatements(userFn.body, fnScope);
-      // Return as PathSegment if it looks like a path (contains path-like content)
-      if (result) {
-        return { type: 'PathSegment' as const, value: result };
-      }
-      return result;
-    } catch (e) {
-      // Catch ReturnSignal and return its value
-      if (e instanceof ReturnSignal) {
-        return e.value;
-      }
-      throw e;
-    }
+    return invokeUserFunction(fn, call.name, args, scope, call.loc);
   }
 
   throw new Error(formatError(`${call.name} is not a function`, getLine(call), getCol(call)));
+}
+
+/**
+ * Call a fn or lambda value — `gear(…)`, or `gears.gear(…)` through a
+ * namespace import. Free names resolve where it was written (lexical); the
+ * body draws with the caller's pen (callScope). A fn from another file
+ * reports its errors with that file (acrossFiles).
+ */
+function invokeUserFunction(
+  userFn: UserFunction,
+  name: string,
+  args: Value[],
+  scope: Scope,
+  loc: SourceLocation | undefined,
+): Value {
+  if (args.length !== userFn.params.length) {
+    throw new Error(
+      formatError(
+        `${userFn.isLambda ? 'Lambda' : 'Function'} ${name} expects ${userFn.params.length} arguments, got ${args.length}`,
+        loc?.line,
+        loc?.column,
+      ),
+    );
+  }
+  const fnScope = callScope(userFn.closure, scope, calledFnFor(userFn, false));
+  userFn.params.forEach((param, i) => {
+    setVariable(fnScope, param, args[i]);
+  });
+  if (!crossesFiles(userFn.closure, scope)) return runUserFunctionBody(userFn, fnScope);
+  return acrossFiles(userFn.closure, scope, loc, () => runUserFunctionBody(userFn, fnScope));
+}
+
+function runUserFunctionBody(userFn: UserFunction, fnScope: Scope): Value {
+  try {
+    const result = evaluateStatements(userFn.body, fnScope);
+    // Return as PathSegment if it looks like a path (contains path-like content)
+    if (result) {
+      return { type: 'PathSegment' as const, value: result };
+    }
+    return result;
+  } catch (e) {
+    // Catch ReturnSignal and return its value
+    if (e instanceof ReturnSignal) {
+      return e.value;
+    }
+    throw e;
+  }
 }
 
 /**
@@ -9926,6 +10187,9 @@ function runBuilderBlock(body: Statement[], scope: Scope): void {
 
 /** Wrap a callback failure with the method and element index it happened at. */
 function callbackError(method: string, index: number, e: unknown, line: number | undefined): Error {
+  // A callback from another file already names its file and the call back to
+  // this one (acrossFiles); rewrapping it would bury that and lose its site.
+  if (e instanceof ModuleTraceError) return e;
   const msg = e instanceof Error ? e.message : String(e);
   return new Error(formatError(`Error in .${method}() callback at index ${index}: ${msg}`, line));
 }
@@ -10014,7 +10278,16 @@ function loopFlowBoundaryError(flow: NonNullable<LoopFlow>): Error {
   );
 }
 
+/**
+ * The line of the statement that started most recently. An error raised in
+ * an imported file without a position of its own is placed here when it
+ * crosses back into the file that called it (docs/modules.md; errors in the
+ * compiled file keep their text exactly). One assignment per statement.
+ */
+let lastStatementLine: number | undefined;
+
 function evaluateStatementToAccum(stmt: Statement, scope: Scope, accum: PathStore): LoopFlow {
+  if (stmt.loc) lastStatementLine = stmt.loc.line;
   switch (stmt.type) {
     case 'LetDeclaration': {
       const value = evaluateExpression(stmt.value, scope);
@@ -10200,8 +10473,15 @@ function evaluateStatementToAccum(stmt: Statement, scope: Scope, accum: PathStor
           ),
         );
       }
-      // Method call statements: evaluate for side effects, emit path if PathWithResult
-      if (stmt.command === '' && stmt.args.length === 1 && stmt.args[0].type === 'MethodCallExpression') {
+      // Method call statements: evaluate for side effects, emit path if PathWithResult.
+      // A call through a namespace import (`gears.gear(…);`) is a fn call, not a
+      // method: it takes the plain-call route below, which draws what it returns.
+      if (
+        stmt.command === '' &&
+        stmt.args.length === 1 &&
+        stmt.args[0].type === 'MethodCallExpression' &&
+        !isModuleNamespace(peekValue(stmt.args[0].object, scope))
+      ) {
         const methodResult = evaluateMethodCall(stmt.args[0], scope);
         // If the method returns a PathWithResult (e.g., draw()), emit its path
         if (
@@ -10976,10 +11256,37 @@ function evaluateStatementToAccum(stmt: Statement, scope: Scope, accum: PathStor
       // Declarative metadata — font loading handled by host environment before compilation
       return;
 
-    case 'ImportDeclaration':
-      // Phase 1a, step 1: no host passes modules yet, so every import is the
-      // no-project-folder error (what the playground keeps showing; docs/modules.md).
-      throw new Error(formatError(noProjectFolderError(stmt.source), stmt.loc?.line, stmt.loc?.column));
+    case 'ImportDeclaration': {
+      // docs/modules.md. Every imported file has already run (loadModules);
+      // this binds its exports here. With no files given — the playground, an
+      // API caller with no `modules` — there is nothing to import from.
+      const modules = scope.evalState?.modules;
+      if (!modules) {
+        throw new Error(formatError(noProjectFolderError(stmt.source), stmt.loc?.line, stmt.loc?.column));
+      }
+      const from = moduleOf(scope);
+      const resolved = resolveProjectPath(stmt.source, from?.path ?? '/');
+      const record = resolved.ok ? modules.get(resolved.path) : undefined;
+      if (!record) {
+        throw new Error(formatError(moduleNotLoadedError(stmt.source), stmt.loc?.line, stmt.loc?.column));
+      }
+      if (stmt.namespace) {
+        const namespace: ModuleNamespaceValue = { type: 'ModuleNamespaceValue', label: record.label, exports: record.exports };
+        bindImport(scope, stmt.namespace.local, namespace, stmt.source, stmt.namespace.loc ?? stmt.loc);
+        return;
+      }
+      for (const spec of stmt.specifiers) {
+        const value = record.exports.get(spec.imported);
+        if (value === undefined) {
+          const message = record.declared.has(spec.imported)
+            ? declaredNotExportedError(record.label, spec.imported)
+            : noExportError(record.label, spec.imported, record.exports.keys());
+          throw new Error(formatError(message, spec.loc?.line, spec.loc?.column));
+        }
+        bindImport(scope, spec.local, value, stmt.source, spec.localLoc ?? stmt.loc);
+      }
+      return;
+    }
 
     case 'Comment':
       // Comments are no-ops at runtime
@@ -11767,46 +12074,137 @@ function annotateFontCoverage(err: unknown, evalState: EvaluationState | undefin
   );
 }
 
+/** A fresh program state: the compiled file's, or one imported file's (loadModules). */
+function newEvaluationState(options: {
+  fonts?: FontRegistry;
+  trace?: boolean;
+  trackHistory?: boolean;
+  strictWarnings?: true | ReadonlySet<WarningCode>;
+}): EvaluationState {
+  return {
+    pathContext: createPathContext({ trackHistory: !!options.trackHistory || !!options.trace }),
+    logs: [],
+    warnings: [],
+    strictWarnings: options.strictWarnings,
+    trace: !!options.trace,
+    calledStdlibFunctions: new Set(),
+    layers: new Map(),
+    layerOrder: [],
+    activeLayerName: null,
+    defaultLayerName: null,
+    transformState: createTransformState(),
+    masks: new Map(),
+    clipPaths: new Map(),
+    gradients: new Map(),
+    patterns: new Map(),
+    markers: new Map(),
+    filters: new Map(),
+    cssProperties: new Map(),
+    fontRegistry: options.fonts,
+    // Created up front (not lazily) so blocks share the same maps — see
+    // sharedProgramState. Reports are emitted only when non-empty.
+    missingGlyphs: new Map(),
+    fontCoverageRequests: new Map(),
+  };
+}
+
+/**
+ * The compiled file's root scope. With files, it carries the compiled file's
+ * identity and every imported file has run (loadModules) before its first
+ * statement: imports come first, so they find their files ready.
+ */
+function programRootScope(evalState: EvaluationState, modules: ModuleGraph | undefined): Scope {
+  const scope = createScope();
+  scope.evalState = evalState;
+  // `ctx` isn't bound: lookupVariable computes it from the drawing state (ctxValueFor).
+  // A compile starts in its own file; the caller's values are restored when
+  // it ends (evaluate's finally), so a compile nested in another keeps both.
+  runningFile = undefined;
+  lastStatementLine = undefined;
+  if (modules) {
+    scope.module = { path: modules.entry, label: fileLabel(modules.entry), entry: true };
+    loadModules(modules, evalState);
+  }
+  return scope;
+}
+
+/**
+ * Run every imported file, dependencies first (graph.order), each in a state
+ * of its own (docs/modules.md "An imported file runs on its own"): its
+ * drawing, layers and ViewBox stay in it, and only its exports reach the
+ * files that import it. Its logs and warnings join the compiled file's,
+ * labelled with its file. An error while it loads names the file and the
+ * imports that led to it.
+ */
+function loadModules(graph: ModuleGraph, main: EvaluationState): void {
+  const records = new Map<string, ModuleRecord>();
+  main.modules = records;
+  for (const path of graph.order) {
+    const file = graph.files.get(path);
+    if (!file) continue;
+    const identity: ModuleIdentity = { path, label: fileLabel(path), entry: false };
+    const state = newEvaluationState({ fonts: main.fontRegistry, strictWarnings: main.strictWarnings });
+    state.modules = records;
+    const scope = createScope();
+    scope.evalState = state;
+    scope.module = identity;
+    const accum = createPathStore();
+    state.rootAccum = accum;
+    let program: Program;
+    const saved = runningFile;
+    runningFile = identity;
+    try {
+      program = parse(file.source);
+      const flow = evaluateStatementsToAccum(program.body, scope, accum);
+      if (flow) throw loopFlowBoundaryError(flow);
+      runSubscriptionDispatch(scope, state);
+    } catch (caught) {
+      throw traceModuleLoad(strayReturnError(caught), identity, file.importedFrom);
+    } finally {
+      runningFile = saved;
+    }
+    const { exported, declared } = exportsOf(program);
+    const exports = new Map<string, Value>();
+    for (const name of exported) {
+      const value = scope.variables.get(name);
+      if (value !== undefined) exports.set(name, value);
+    }
+    records.set(path, { ...identity, exports, declared });
+    for (const w of state.warnings) main.warnings.push(w.file ? w : { ...w, file: identity.label });
+    for (const entry of state.logs) main.logs.push(entry.file ? entry : { ...entry, file: identity.label });
+  }
+}
+
+/** An error while a file loads: in that file, then `imported from …` back to the compiled file. */
+function traceModuleLoad(error: unknown, file: ModuleIdentity, chain: readonly ImportSite[]): unknown {
+  if (!(error instanceof Error)) return error;
+  let traced: ModuleTraceError;
+  if (error instanceof ModuleTraceError) {
+    traced = error;
+  } else {
+    const { line, column, detail } = splitPosition(error.message);
+    traced = new ModuleTraceError(file.label, line ?? lastStatementLine, line === undefined ? undefined : column, detail);
+  }
+  const { steps, site } = importedFromSteps(chain);
+  steps.forEach((step, i) => traced.addStep(step, i === steps.length - 1 ? site : undefined));
+  return traced;
+}
+
 export function evaluate(
   program: Program,
-  options?: { toFixed?: number; fonts?: FontRegistry; trace?: boolean; strict?: StrictOption },
+  options?: { toFixed?: number; fonts?: FontRegistry; trace?: boolean; strict?: StrictOption; modules?: ModuleGraph },
 ): CompileResult {
   setNumberFormat(options?.toFixed);
   let annotateState: EvaluationState | undefined;
+  const outer = { file: runningFile, line: lastStatementLine };
   try {
-    const pathContext = createPathContext({ trackHistory: !!options?.trace });
-    const logs: LogEntry[] = [];
-    const transformState = createTransformState();
-    const evalState: EvaluationState = {
-      pathContext,
-      logs,
-      warnings: [],
+    const evalState = newEvaluationState({
+      fonts: options?.fonts,
+      trace: options?.trace,
       strictWarnings: resolveStrict(options?.strict),
-      trace: !!options?.trace,
-      calledStdlibFunctions: new Set(),
-      layers: new Map(),
-      layerOrder: [],
-      activeLayerName: null,
-      defaultLayerName: null,
-      transformState,
-      masks: new Map(),
-      clipPaths: new Map(),
-      gradients: new Map(),
-      patterns: new Map(),
-      markers: new Map(),
-      filters: new Map(),
-      cssProperties: new Map(),
-      fontRegistry: options?.fonts,
-      // Created up front (not lazily) so blocks share the same maps — see
-      // sharedProgramState. Reports are emitted only when non-empty.
-      missingGlyphs: new Map(),
-      fontCoverageRequests: new Map(),
-    };
+    });
     annotateState = evalState;
-
-    const scope = createScope();
-    scope.evalState = evalState;
-    // `ctx` isn't bound: lookupVariable computes it from the drawing state (ctxValueFor).
+    const scope = programRootScope(evalState, options?.modules);
 
     const accum = createPathStore();
     evalState.rootAccum = accum;
@@ -11825,6 +12223,8 @@ export function evaluate(
     throw err;
   } finally {
     resetNumberFormat();
+    runningFile = outer.file;
+    lastStatementLine = outer.line;
   }
 }
 
@@ -11866,6 +12266,8 @@ export interface EvaluateWithContextOptions {
   fonts?: import('./types').FontRegistry;
   /** Strict mode: warnings become errors — all (`true`) or the listed codes. */
   strict?: StrictOption;
+  /** Every file the program imports, read by the host first (resolveModules; docs/modules.md). */
+  modules?: ModuleGraph;
 }
 
 /**
@@ -11878,41 +12280,17 @@ export function evaluateWithContext(
 ): EvaluateWithContextResult {
   setNumberFormat(options.toFixed);
   let annotateState: EvaluationState | undefined;
+  const outer = { file: runningFile, line: lastStatementLine };
   try {
-    const pathContext = createPathContext({ trackHistory: (options.trackHistory ?? false) || !!options.trace });
-    const logs: LogEntry[] = [];
-    const calledStdlibFunctions = new Set<string>();
-    const transformState = createTransformState();
-    const evalState: EvaluationState = {
-      pathContext,
-      logs,
-      warnings: [],
+    const evalState = newEvaluationState({
+      fonts: options.fonts,
+      trace: options.trace,
+      trackHistory: options.trackHistory,
       strictWarnings: resolveStrict(options.strict),
-      trace: !!options.trace,
-      calledStdlibFunctions,
-      layers: new Map(),
-      layerOrder: [],
-      activeLayerName: null,
-      defaultLayerName: null,
-      transformState,
-      masks: new Map(),
-      clipPaths: new Map(),
-      gradients: new Map(),
-      patterns: new Map(),
-      markers: new Map(),
-      filters: new Map(),
-      cssProperties: new Map(),
-      fontRegistry: options.fonts,
-      // Created up front (not lazily) so blocks share the same maps — see
-      // sharedProgramState. Reports are emitted only when non-empty.
-      missingGlyphs: new Map(),
-      fontCoverageRequests: new Map(),
-    };
+    });
+    const { pathContext, logs, calledStdlibFunctions } = evalState;
     annotateState = evalState;
-
-    const scope = createScope();
-    scope.evalState = evalState;
-    // `ctx` isn't bound: lookupVariable computes it from the drawing state (ctxValueFor).
+    const scope = programRootScope(evalState, options.modules);
 
     // Note: log() is handled specially in evaluateFunctionCall, not registered here
 
@@ -11963,6 +12341,8 @@ export function evaluateWithContext(
     throw err;
   } finally {
     resetNumberFormat();
+    runningFile = outer.file;
+    lastStatementLine = outer.line;
   }
 }
 

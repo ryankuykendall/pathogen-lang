@@ -66,7 +66,8 @@ export type Value =
   | CSSVarValue
   | TextBlockValue
   | ProjectedTextValue
-  | ViewBoxStructValue;
+  | ViewBoxStructValue
+  | ModuleNamespaceValue;
 
 // ---------------------------------------------------------------------------
 // Core value interfaces
@@ -795,6 +796,8 @@ export interface LogEntry {
   parts: LogPart[];
   /** Set on the log mirror of a compiler warning (see CompileWarning). */
   severity?: 'warn';
+  /** The imported file it came from, as a path from the project folder (docs/modules.md); absent for the compiled file. */
+  file?: string;
 }
 
 /** What kind of situation a compiler warning reports. */
@@ -837,6 +840,8 @@ export interface CompileWarning {
   line?: number;
   /** 1-based source column. */
   column?: number;
+  /** The imported file it came from, as a path from the project folder (docs/modules.md); absent for the compiled file. */
+  file?: string;
 }
 
 /**
@@ -1294,6 +1299,38 @@ export interface EvaluationState {
   // Only evaluate such arguments inside withTrackedArgs; a re-evaluation
   // outside it would push into whatever statement is being recorded.
   argTracked?: PathBlockCommand[] | null;
+  /**
+   * The compile's imported files, run and ready, by project path
+   * (docs/modules.md). Shared by every file's state, so an import anywhere
+   * finds its file. Absent when the compile was given no files.
+   */
+  modules?: Map<string, ModuleRecord>;
+}
+
+/** The project path and label of the file a root scope runs (docs/modules.md). */
+export interface ModuleIdentity {
+  /** Project path: `/parts/gears.pathogen`. */
+  path: string;
+  /** For messages: `parts/gears.pathogen`. */
+  label: string;
+  /** The compiled file, as opposed to one it imports. */
+  entry: boolean;
+}
+
+/** An imported file after it has run. */
+export interface ModuleRecord extends ModuleIdentity {
+  /** Its exported names and their values. */
+  exports: Map<string, Value>;
+  /** Every name its top level declares, exported or not, for "declares hub but doesn't export it". */
+  declared: Set<string>;
+}
+
+/** `import * as gears from …`: every export of a file under one name. */
+export interface ModuleNamespaceValue {
+  type: 'ModuleNamespaceValue';
+  /** The file, for messages: `parts/gears.pathogen`. */
+  label: string;
+  exports: ReadonlyMap<string, Value>;
 }
 
 export interface Scope {
@@ -1307,4 +1344,11 @@ export interface Scope {
   // Names declared with `const` in this scope (phase 0a step 4). Created on
   // the first const; most scopes never have one.
   consts?: Set<string>;
+  // Names an import bound here (always a root scope), with the path as
+  // written and the import's line, so assigning or declaring one again names
+  // the file (docs/modules.md). Imported names are also in `consts`.
+  imports?: Map<string, { written: string; line?: number }>;
+  // On a file's root scope when the compile has files: which file this scope
+  // runs. Code finds its own file by walking `parent` to the root.
+  module?: ModuleIdentity;
 }

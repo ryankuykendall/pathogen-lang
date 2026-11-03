@@ -109,6 +109,36 @@ export function importCycleError(cycle: readonly string[]): string {
   return `Import cycle: ${cycle.map(fileLabel).join(' → ')}. Move what both files need into a third file that both import.`;
 }
 
+// --- Binding imports at run time (src/evaluator; docs/modules.md "Errors") ---
+
+/** Export names for a message: alphabetical, ignoring case (`gear, Teeth, toothDepth`). */
+function exportList(names: Iterable<string>): string {
+  const sorted = [...names].sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()) || a.localeCompare(b));
+  return sorted.length > 0 ? sorted.join(', ') : 'nothing';
+}
+
+export function noExportError(fileLabelText: string, name: string, exports: Iterable<string>): string {
+  return `${fileLabelText} has no export named ${name}. It exports: ${exportList(exports)}.`;
+}
+
+export function declaredNotExportedError(fileLabelText: string, name: string): string {
+  return `${fileLabelText} declares ${name} but doesn't export it. Put export in front of its declaration in ${fileLabelText}.`;
+}
+
+export function namespaceNoExportError(
+  namespace: string,
+  fileLabelText: string,
+  name: string,
+  exports: Iterable<string>,
+): string {
+  return `${namespace} has no export named ${name}. ${fileLabelText} exports: ${exportList(exports)}.`;
+}
+
+/** An import whose file the host didn't load (its own error is reported by the loader). */
+export function moduleNotLoadedError(path: string): string {
+  return `Cannot import "${path}": the file was not loaded.`;
+}
+
 /**
  * An import in a program that has no files around it: the playground, an API
  * caller that passed no modules. Phase 1a; docs/modules.md "In each tool".
