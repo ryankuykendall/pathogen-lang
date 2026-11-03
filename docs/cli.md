@@ -54,13 +54,13 @@ cat myfile.pathogen | pathogen-lang -
 
 ## Fonts and Files
 
-The CLI reads the files a program names — today, fonts in `@font` — from inside the program's [project folder](#projects-the-project-folder): the nearest folder with a `pathogen.json`, from the file's own folder upward, stopping before your home folder. If none has one, it's the file's own folder. Paths in `@font` start with `./`, `../` or `/`, and a leading `/` now means the project folder rather than your computer's root — see [What changed](#projects-projects-and-files).
+The CLI reads the files a program names — fonts in `@font` and other `.pathogen` files in [`import`](#modules-importing) — from inside the program's [project folder](#projects-the-project-folder): the nearest folder with a `pathogen.json`, from the file's own folder upward, stopping before your home folder. If none has one, it's the file's own folder. Paths in `@font` and `import` start with `./`, `../` or `/`, and a leading `/` now means the project folder rather than your computer's root — see [What changed](#projects-projects-and-files).
 
 ```bash
 pathogen-lang --root=. poster/main.pathogen   # use the current folder as the project folder
 ```
 
-Code passed with `-e` or on standard input uses the current folder as its project folder, and its `./` paths start there too. With `--root` naming a folder the current folder isn't in, they start at that folder instead, and so does the search for a family's `fonts/` folder:
+Code passed with `-e` or on standard input uses the current folder as its project folder, and its `./` paths, in `@font` and `import` alike, start there too. With `--root` naming a folder the current folder isn't in, they start at that folder instead, and so does the search for a family's `fonts/` folder:
 
 ```bash
 cat poster/main.pathogen | pathogen-lang --root=poster -   # ./fonts/… means poster/fonts/…, and families look in poster/fonts/
@@ -138,6 +138,8 @@ Output on stderr:
 [line 1] x = 42
 ```
 
+A log from an [imported file](#modules-an-imported-file-runs-on-its-own) names that file: `[parts/gears.pathogen line 12] toothDepth = 6`.
+
 The path data still goes to stdout, so logs don't interfere with piping:
 
 ```bash
@@ -159,9 +161,18 @@ This writes the full `LogEntry[]` array with line numbers and typed parts:
     "parts": [
       { "type": "value", "label": "x", "value": "42" }
     ]
+  },
+  {
+    "line": 12,
+    "file": "parts/gears.pathogen",
+    "parts": [
+      { "type": "value", "label": "toothDepth", "value": "6" }
+    ]
   }
 ]
 ```
+
+An entry from an [imported file](#modules-an-imported-file-runs-on-its-own) has a `file` field naming it, as its path from the project folder. A warning from an imported file has the same field in `--json` output.
 
 Both flags can be combined:
 
@@ -244,7 +255,7 @@ pathogen-lang -v
 | 0 | Success |
 | 1 | Error (parse error, failed assertion, file not found, a font that can't be loaded — unless downloads are off, which makes it a warning — a path outside the project folder, unknown option, `--png` without puppeteer, a warning under `--strict`, etc.) |
 
-Warnings (see [Debug & Console](#debug-warnings)) are printed to stderr as `file:line:col: warning: message`; when the same warning repeats from one site with only its numbers changing, the first instance is followed by `  … N more like this`. Warnings do not change the exit code unless [`--strict`](#cli-warnings-and-strict-mode) is set, and `--json` lists every instance.
+Warnings (see [Debug & Console](#debug-warnings)) are printed to stderr as `file:line:col: warning: message`, where `file` is the compiled file's path as you typed it, or, for a warning from an [imported file](#modules-an-imported-file-runs-on-its-own), that file's path from the project folder (`parts/gears.pathogen:12:5: warning: …`); when the same warning repeats from one site with only its numbers changing, the first instance is followed by `  … N more like this`. Warnings do not change the exit code unless [`--strict`](#cli-warnings-and-strict-mode) is set, and `--json` lists every instance.
 
 ## File Extensions
 

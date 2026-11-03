@@ -67,9 +67,13 @@ import type {
   NumberLiteral,
   StringLiteral,
   FontDirective,
+  ImportDeclaration,
+  ImportSpecifier,
   SourceLocation,
   TextBodyItem,
 } from './ast';
+import { defaultImportError, EXPORT_LET_MESSAGE, EXPORT_PLACEMENT_MESSAGE, notTopLevelError } from '../module-messages';
+
 import { statementForExpression } from './expression-statement';
 import { pathArgCommentRanges } from './path-args-tokenizer';
 import { RANGE_IN_PATH_ARGS } from './range-value-errors';
@@ -221,7 +225,7 @@ export function buildAST(tree: Tree, source: string): Program {
   do {
     // Statement-list comments stay in the AST (buildStatement builds them)
     // so the formatter can round-trip them.
-    const stmt = buildStatement(cursor, source);
+    const stmt = buildTopLevelStatement(cursor, source);
     if (stmt) body.push(stmt);
   } while (nextSiblingRaw(cursor));
 
@@ -263,7 +267,7 @@ export function buildASTWithComments(tree: Tree, source: string): { program: Pro
         const comment = buildComment(cursor, source);
         comments.push(comment);
       } else {
-        const stmt = buildStatement(cursor, source);
+        const stmt = buildTopLevelStatement(cursor, source);
         if (stmt) body.push(stmt);
       }
     } while (nextSiblingRaw(cursor));
@@ -466,8 +470,94 @@ function buildStatement(cursor: TreeCursor, source: string): Statement | null {
     case 'LayerApplyBlock': return buildLayerApplyBlock(cursor, source);
     case 'TextStatement': return buildTextStatement(cursor, source);
     case 'FontDirective': return buildFontDirective(cursor, source);
+    // The top-level loops build these (buildTopLevelStatement); reaching them
+    // here means they sit inside a function, loop or block.
+    case 'ImportDeclaration':
+    case 'ExportDeclaration':
+      throw parseErrorAt(
+        loc(cursor, source),
+        notTopLevelError(cursor.name === 'ImportDeclaration' ? 'import' : 'export'),
+      );
     default: return null;
   }
+}
+
+// --- Modules (docs/modules.md) ---
+
+/**
+ * A statement in the program's own list. Only here may `import` and `export`
+ * appear; buildStatement, which every nested list uses, rejects them.
+ */
+function buildTopLevelStatement(cursor: TreeCursor, source: string): Statement | null {
+  if (cursor.name === 'ImportDeclaration') return buildImportDeclaration(cursor, source);
+  if (cursor.name === 'ExportDeclaration') return buildExportDeclaration(cursor, source);
+  return buildStatement(cursor, source);
+}
+
+function buildImportDeclaration(cursor: TreeCursor, source: string): ImportDeclaration {
+  const nodeLoc = loc(cursor, source);
+  const node = cursor.node;
+  const pathNode = node.getChild('String');
+  const path = pathNode ? parseStringContent(source.slice(pathNode.from, pathNode.to)) : '';
+  const sourceLoc = pathNode ? { ...lineColumnAt(source, pathNode.from), offset: pathNode.from } : undefined;
+
+  const defaultImport = node.getChild('DefaultImport');
+  if (defaultImport) {
+    throw parseErrorAt(nodeLoc, defaultImportError(source.slice(defaultImport.from, defaultImport.to), path));
+  }
+
+  const at = (from: number): SourceLocation => ({ ...lineColumnAt(source, from), offset: from });
+  const namespaceNode = node.getChild('NamespaceImport');
+  if (namespaceNode) {
+    const nameNode = namespaceNode.getChild('VariableName');
+    return {
+      type: 'ImportDeclaration',
+      source: path,
+      sourceLoc,
+      specifiers: [],
+      namespace: nameNode
+        ? { local: source.slice(nameNode.from, nameNode.to), loc: at(nameNode.from) }
+        : undefined,
+      loc: nodeLoc,
+    };
+  }
+
+  const specifiers: ImportSpecifier[] = [];
+  for (const spec of node.getChild('ImportSpecifiers')?.getChildren('ImportSpecifier') ?? []) {
+    const importedNode = spec.getChild('Identifier');
+    if (!importedNode) continue;
+    const imported = source.slice(importedNode.from, importedNode.to);
+    const aliasNode = spec.getChild('VariableName');
+    specifiers.push({
+      imported,
+      local: aliasNode ? source.slice(aliasNode.from, aliasNode.to) : imported,
+      loc: at(importedNode.from),
+      localLoc: at((aliasNode ?? importedNode).from),
+    });
+  }
+  return { type: 'ImportDeclaration', source: path, sourceLoc, specifiers, loc: nodeLoc };
+}
+
+function buildExportDeclaration(cursor: TreeCursor, source: string): Statement {
+  const exportLoc = loc(cursor, source);
+  if (!cursor.firstChild()) throw parseErrorAt(exportLoc, EXPORT_PLACEMENT_MESSAGE);
+  let declaration: LetDeclaration | FunctionDefinition | EnumDefinition | null = null;
+  try {
+    do {
+      if (cursor.name === 'LetDeclaration') declaration = buildLetDeclaration(cursor, source);
+      else if (cursor.name === 'FunctionDefinition') declaration = buildFunctionDefinition(cursor, source);
+      else if (cursor.name === 'EnumDefinition') declaration = buildEnumDefinition(cursor, source);
+    } while (!declaration && cursor.nextSibling());
+  } finally {
+    cursor.parent();
+  }
+  if (!declaration) throw parseErrorAt(exportLoc, EXPORT_PLACEMENT_MESSAGE);
+  if (declaration.type === 'LetDeclaration' && declaration.kind === 'let') {
+    throw parseErrorAt(exportLoc, EXPORT_LET_MESSAGE);
+  }
+  declaration.exported = true;
+  declaration.exportLoc = exportLoc;
+  return declaration;
 }
 
 function buildComment(cursor: TreeCursor, source: string): Comment {

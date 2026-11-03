@@ -5,6 +5,8 @@
 // with no error diagnostics (so the preview command can render it), and every
 // keyword in the Lezer grammar must appear in it (so "all syntax" stays true).
 // Adding a keyword to the grammar fails that test until it is shown here.
+// Imports live in modules/main.pathogen next to this file, since an import
+// needs another file to point at; `export` is shown here.
 
 // --- ViewBox ---
 define ViewBox(0, 0, 400, 300);
@@ -17,7 +19,7 @@ let greeting = 'world';
 let msg = `value is ${x + y}`;
 let flag = true;
 let nothing = null;
-const margin = 8;
+export const margin = 8;
 const [left, right] = [margin, 92];
 
 // --- Numbers with units ---
@@ -151,8 +153,8 @@ for ([value, index] in (10..12)) {
   L value index
 }
 
-// --- Functions ---
-fn drawStar(cx, cy, radius) {
+// --- Functions (export offers one to files that import this one) ---
+export fn drawStar(cx, cy, radius) {
   star(cx, cy, radius, calc(radius * 0.4), 5);
   return radius;
 }
@@ -171,7 +173,7 @@ let total = numbers.reduce(0) {|acc, value|
 };
 
 // --- Enum ---
-enum Compass {
+export enum Compass {
   UP,
   DOWN,
   LEFT,

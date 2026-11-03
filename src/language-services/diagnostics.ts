@@ -8,6 +8,7 @@ import {
   isLegacyStyleOpenerError,
   LEGACY_STYLE_OPENER_MESSAGE,
 } from '../parser';
+import { describeExportPlacement, describeIncompleteImport, findModuleViolations } from '../parser/module-check';
 import { parser as lezerParser } from '../parser/pathogen.generated';
 import { findReservedBindings } from '../parser/reserved-bindings';
 
@@ -81,8 +82,13 @@ export function getDiagnostics(document: TextDocument, options: DiagnosticsOptio
   // `rad`) stops the compile at the first one; the editor lists EVERY one, at
   // its name, so each gets its squiggle and its rename quick fix. Anything
   // else parse() would report (a malformed pattern, a const mistake) is added
-  // after them; evaluation waits until the names are fixed.
-  const reserved = findReservedBindings(lezerParser.parse(source), source);
+  // after them; evaluation waits until the names are fixed. The import rules
+  // (module-check.ts: imports first, a name imported or declared twice) are
+  // listed the same way.
+  const tree = lezerParser.parse(source);
+  const reserved = [...findReservedBindings(tree, source), ...findModuleViolations(tree, source)].sort(
+    (a, b) => a.offset - b.offset,
+  );
   if (reserved.length > 0) {
     for (const r of reserved) {
       diagnostics.push({
@@ -320,6 +326,13 @@ function describeErrorWithPosition(
   source: string,
   document: TextDocument,
 ): { message: string; line: number; character: number } {
+  // `export M 0 0`, or an import with no path yet: the same message parse()
+  // gives, on the keyword.
+  const moduleShape = describeExportPlacement(errorNode) ?? describeIncompleteImport(errorNode);
+  if (moduleShape) {
+    const at = document.positionAt(moduleShape.offset);
+    return { message: moduleShape.message, line: at.line, character: at.character };
+  }
   const defaultPos = document.positionAt(errorNode.from);
   const message = describeError(errorNode, source);
 

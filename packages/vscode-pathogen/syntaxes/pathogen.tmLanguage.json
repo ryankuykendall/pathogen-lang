@@ -10,6 +10,9 @@
       "include": "#font-directive"
     },
     {
+      "include": "#import-header"
+    },
+    {
       "include": "#template-literal"
     },
     {
@@ -89,8 +92,42 @@
         }
       }
     },
+    "import-header": {
+      "comment": "From `import` to the end of its statement, so a list over several lines works. Inside, `from` is a keyword only right before the quoted path (`import { from } from \"x\"` colours the second); elsewhere `from` is an ordinary name (a gradient's .from, let from = …). A missing `;` ends the rule at the next line that starts a statement.",
+      "begin": "\\b(import)\\b",
+      "beginCaptures": {
+        "1": {
+          "name": "keyword.control.import.pathogen"
+        }
+      },
+      "end": ";|(?=^\\s*(?:import|export|let|const|fn|enum|define|layer|text|for|if|switch|@font)\\b)",
+      "patterns": [
+        {
+          "include": "#comment"
+        },
+        {
+          "match": "\\b(from)\\b(?=\\s*[\"'])",
+          "name": "keyword.control.import.pathogen"
+        },
+        {
+          "include": "#string-double"
+        },
+        {
+          "include": "#string-single"
+        },
+        {
+          "include": "#keyword"
+        },
+        {
+          "include": "#identifier"
+        },
+        {
+          "include": "#punctuation"
+        }
+      ]
+    },
     "keyword": {
-      "match": "\\b(let|const|for|in|if|else|fn|return|break|continue|switch|case|where|define|default|layer|apply|text|tspan|enum|log|assert|ViewBox|with|as)\\b",
+      "match": "\\b(let|const|for|in|if|else|fn|return|break|continue|switch|case|where|define|default|layer|apply|text|tspan|enum|log|assert|ViewBox|with|as|import|export)\\b",
       "name": "keyword.control.pathogen"
     },
     "boolean-null": {

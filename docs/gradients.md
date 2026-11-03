@@ -479,7 +479,7 @@ const result = compile(`
 
 | Error | Cause |
 |-------|-------|
-| `Duplicate defs ID 'x'` | ID conflicts with another gradient, mask, clipPath, or pattern |
+| `Duplicate defs ID 'x'` | ID conflicts with another gradient, mask, clipPath, or pattern made in the same file. A gradient made in a file you [import](#modules-ids-from-other-files) gets that file's path in front of its id (`parts-shades--sky`), so two files can both use `sky` |
 | `LinearGradient() expects 5 arguments` | Wrong argument count |
 | `RadialGradient() expects 4-6 arguments` | Wrong argument count |
 | `ConicGradient() expects 3 arguments` | Wrong argument count |

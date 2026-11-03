@@ -212,8 +212,10 @@ let activeVerbatim: { source: string; spans: Map<number, VerbatimSpan> } | null 
  * line that is the inside of a multi-line template is never touched.
  */
 function verbatimText(node: object, prefix: string): string | null {
-  // Not every statement / text-body item type declares a `loc`
-  const offset = (node as { loc?: { offset?: number } }).loc?.offset;
+  // Not every statement / text-body item type declares a `loc`. An exported
+  // declaration's tree node (ExportDeclaration) starts at `export`, not at its `loc`.
+  const located = node as { loc?: { offset?: number }; exportLoc?: { offset?: number } };
+  const offset = located.exportLoc?.offset ?? located.loc?.offset;
   if (!activeVerbatim || typeof offset !== 'number') return null;
   const span = activeVerbatim.spans.get(offset);
   if (!span) return null;
@@ -385,28 +387,37 @@ function formatStatements(stmts: Statement[], depth: number, indent: string, sou
 function formatStatement(stmt: Statement, depth: number, indent: string, prefix: string, source?: string): string {
   const verbatim = verbatimText(stmt, prefix);
   if (verbatim !== null) return verbatim;
+  // `export` is a flag on the declaration (ast.ts Exportable), printed before its keyword.
+  const exported = 'exported' in stmt && stmt.exported ? 'export ' : '';
   switch (stmt.type) {
+    case 'ImportDeclaration': {
+      const path = doubleQuoted(stmt.source);
+      if (stmt.namespace) return `${prefix}import * as ${stmt.namespace.local} from ${path};`;
+      const names = stmt.specifiers.map((s) => (s.local === s.imported ? s.imported : `${s.imported} as ${s.local}`));
+      const list = names.length > 0 ? `{ ${names.join(', ')} }` : '{}';
+      return `${prefix}import ${list} from ${path};`;
+    }
     case 'LetDeclaration': {
       // kind is `let` or `const`; printing a literal `let` would turn every const into a let.
       const value = formatExpression(stmt.value, depth, indent, source);
       if (stmt.pattern) {
-        return `${prefix}${stmt.kind} ${formatDestructuringPattern(stmt.pattern)} = ${value};`;
+        return `${prefix}${exported}${stmt.kind} ${formatDestructuringPattern(stmt.pattern)} = ${value};`;
       }
-      return `${prefix}${stmt.kind} ${stmt.name} = ${value};`;
+      return `${prefix}${exported}${stmt.kind} ${stmt.name} = ${value};`;
     }
     case 'AssignmentStatement':
       return `${prefix}${stmt.name} = ${formatExpression(stmt.value, depth, indent, source)};`;
     case 'FunctionDefinition': {
       const paramStr = formatParamList(stmt.params, depth, indent);
       const body = formatStatements(stmt.body, depth + 1, indent, source);
-      return `${prefix}fn ${stmt.name}(${paramStr}) {\n${body}\n${prefix}}`;
+      return `${prefix}${exported}fn ${stmt.name}(${paramStr}) {\n${body}\n${prefix}}`;
     }
     case 'EnumDefinition': {
       const members = stmt.members.map((m) => {
         const val = m.value ? ` = ${formatExpression(m.value, depth + 1, indent, source)}` : '';
         return `${indent.repeat(depth + 1)}${m.name}${val},`;
       }).join('\n');
-      return `${prefix}enum ${stmt.name} {\n${members}\n${prefix}}`;
+      return `${prefix}${exported}enum ${stmt.name} {\n${members}\n${prefix}}`;
     }
     case 'ForLoop': {
       const start = formatExpression(stmt.start, depth, indent, source);
@@ -511,7 +522,7 @@ function formatStatement(stmt: Statement, depth: number, indent: string, prefix:
     case 'MemberAssignmentStatement':
       return `${prefix}${formatExpression(stmt.object, depth, indent, source)}.${stmt.property} = ${formatExpression(stmt.value, depth, indent, source)};`;
     case 'FontDirective': {
-      const src = stmt.sourceKind === 'identifier' ? stmt.source : `"${stmt.source}"`;
+      const src = stmt.sourceKind === 'identifier' ? stmt.source : doubleQuoted(stmt.source);
       return `${prefix}@font ${src}${stmt.weight ? ` ${stmt.weight}` : ''};`;
     }
     case 'SwitchStatement': {
@@ -932,6 +943,21 @@ function formatBinaryOperand(
  * re-escaping what parseStringContent unescapes. Naive `'${value}'` corrupts
  * any value containing a single quote.
  */
+/**
+ * A path in double quotes, as `@font` and `import` are printed. The AST holds
+ * the unescaped value, so a `"` or `\` in it must be escaped again, or
+ * formatting would change the path or stop the file from parsing.
+ */
+function doubleQuoted(value: string): string {
+  const escaped = value
+    .replace(/\\/g, '\\\\')
+    .replace(/"/g, '\\"')
+    .replace(/\n/g, '\\n')
+    .replace(/\t/g, '\\t')
+    .replace(/\r/g, '\\r');
+  return `"${escaped}"`;
+}
+
 function formatStringValue(value: string): string {
   const escapeCommon = (s: string) =>
     s.replace(/\\/g, '\\\\').replace(/\n/g, '\\n').replace(/\t/g, '\\t').replace(/\r/g, '\\r');

@@ -1,6 +1,6 @@
 # Projects and Files
 
-A Pathogen program can read files from your computer: today that means font files named by [`@font`](#path-blocks-font-directive). This page covers where those files may live and how you write their paths. The rules are the same in the CLI and the VS Code preview. The playground can't read files yet — see [In each tool](#projects-in-each-tool).
+A Pathogen program can read two kinds of files from your computer: font files named by [`@font`](#path-blocks-font-directive), and other `.pathogen` files named by [`import`](#modules-importing). This page covers where those files may live and how you write their paths. The rules are the same in the CLI and the VS Code preview. The playground can't read files yet — see [In each tool](#projects-in-each-tool).
 
 > **What changed (October 2026):**
 > - A path that starts with `/` used to mean your computer's root folder in the CLI (`@font "/System/Library/Fonts/Supplemental/Georgia.ttf"`). It now means the project folder. For a font installed on your computer, write its family name instead — `@font "Georgia";` — and the CLI looks for it in the system font folders.
@@ -24,7 +24,7 @@ my-gears/
     rack.pathogen      ← project folder: my-gears/ (found by going up)
 ```
 
-The fence is there for safety as much as tidiness. A `.pathogen` file you download can't reach outside its project: `@font "../../.ssh/id_rsa";` is an error before anything is read.
+The fence is there for safety as much as tidiness. A `.pathogen` file you download can't reach outside its project: `@font "../../.ssh/id_rsa";` is an error before anything is read, and so is an `import` of a file outside it.
 
 ## pathogen.json
 
@@ -55,11 +55,11 @@ A path in a program starts with `./`, `../` or `/`:
 
 | Path | Relative to | Example |
 |------|-------------|---------|
-| `./…` | the folder of the file the path is written in | `@font "./fonts/Baumans-Regular.ttf";` |
-| `../…` | one folder up from there | `@font "../fonts/Baumans-Regular.ttf";` |
+| `./…` | the folder of the file the path is written in | `import { rack } from "./parts/rack.pathogen";` (in `main.pathogen`) |
+| `../…` | one folder up from there | `@font "../fonts/Baumans-Regular.ttf";` (in `parts/rack.pathogen`) |
 | `/…` | the project folder | `@font "/fonts/Baumans-Regular.ttf";` |
 
-Anything else is a name, not a path — for `@font`, a font family such as `"Inter"`.
+Anything else is a name, not a path — for `@font`, a font family such as `"Inter"`. An `import` takes only paths; see [Importing](#modules-importing).
 
 Four rules hold on every operating system:
 
@@ -72,7 +72,7 @@ Four rules hold on every operating system:
 
 - **CLI.** The project folder depends on what you compile; see the table below.
 - **VS Code.** The preview and the editor's error checking find the project folder from the file you're editing, as above.
-- **Playground.** A workspace is one program for now, with no files beside it, so there is nothing to read. A file path in `@font` produces a warning that suggests a Google Fonts family instead.
+- **Playground.** A workspace is one program for now, with no files beside it, so there is nothing to read. A file path in `@font` produces a warning that suggests a Google Fonts family instead, and an `import` is an error.
 
 In the CLI:
 
@@ -84,9 +84,11 @@ In the CLI:
 | Code from `-e` or standard input | The current folder; there's no `pathogen.json` search | The current folder |
 | Code from `-e` or standard input, with `--root=<folder>` | The folder you name | The current folder if it's inside the project folder, otherwise the project folder |
 
-A file outside the `--root` folder still compiles, but a file path in its `@font` is an error, because it has no place in the project to start from. A family name's [`fonts/` folder](#path-blocks-font-loading-by-environment) is looked for starting where `./` paths start. The CLI reads `pathogen.json` only when it needs it, for a folder's `main` or to find the project folder of a program with `@font`, so a broken one doesn't stop a program without `@font`. See also [the CLI reference](#cli-fonts-and-files).
+A file outside the `--root` folder still compiles, but a file path in its `@font` or `import` is an error, because it has no place in the project to start from. A family name's [`fonts/` folder](#path-blocks-font-loading-by-environment) is looked for starting where `./` paths start. The CLI reads `pathogen.json` only when it needs it, for a folder's `main` or to find the project folder of a program with `@font` or `import`, so a broken one doesn't stop a program with neither. See also [the CLI reference](#cli-fonts-and-files).
 
 ## Errors
+
+These are the messages for `@font`. A path in an `import` gets matching messages for the path rules, starting with `import path` or `import file`; [Modules](#modules-errors) lists them all.
 
 | Situation | Message |
 |-----------|---------|
@@ -104,7 +106,7 @@ A file outside the `--root` folder still compiles, but a file path in its `@font
 | The file is cut short or damaged | `@font file "./fonts/a.ttf" is damaged or incomplete: its tables run past the end of the file.` |
 | A WOFF2 file that won't decode | `@font file "./fonts/a.woff2" is a damaged WOFF2 file: …` followed by the decoder's reason |
 | `@font` inside a function or block | `@font must be at the top level of the program, not inside a function or block.` |
-| A file outside the `--root` folder has a font path (CLI) | `poster.pathogen is outside the project folder /Users/you/my-gears given by --root, so its @font paths can't be followed.` |
+| A file outside the `--root` folder has a font path (CLI) | `poster.pathogen is outside the project folder /Users/you/my-gears given by --root, so its @font paths can't be followed.` An `import` gets the same message ending `so its import paths can't be followed.` |
 | `pathogen.json` is a folder | `pathogen.json (/Users/you/my-gears) is a folder, not a file.` |
 | `pathogen.json` can't be read | `pathogen.json (/Users/you/my-gears) could not be read: …` followed by your system's reason |
 | `pathogen.json` isn't valid JSON | `pathogen.json (/Users/you/my-gears) is not valid JSON: …` followed by the JSON parser's own explanation, whose wording depends on your Node.js version |

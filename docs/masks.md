@@ -12,7 +12,7 @@ A mask uses luminance to control visibility — white areas are fully visible, b
 let m = Mask('my-mask');
 ```
 
-The argument is the mask's ID string. IDs must be unique across all masks and clip paths.
+The argument is the mask's ID string. IDs must be unique across the masks and clip paths a file makes. A mask made in a file you [import](#modules-ids-from-other-files) gets that file's path in front of its id, such as `parts-stencils--my-mask`, so two files can both use `my-mask`.
 
 ### Appending Paths
 

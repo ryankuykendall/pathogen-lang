@@ -209,7 +209,7 @@ The CLI and the VS Code preview read complete font files, so they never need thi
 | No `font-family` in the style block | `Font.glyphs() requires font-family in the style block` |
 | A whole family was loaded (playground, warning banner — expected, nothing to fix) | `Loaded all 101 slices of "Noto Sans SC" from Google Fonts (4.4 MB) for a Font call that needs the whole font.` |
 | A slice of the font couldn't be downloaded (playground, warning banner) | `2 of 18 slices of "Noto Sans SC" could not be loaded; Font results may be incomplete.` |
-| The family wasn't loaded — no `@font` names it, or downloads were off (other fonts were loaded) | `Font.info(): font 'Raleway' is not loaded. Add @font "Raleway";` |
+| The family wasn't loaded — no `@font` in any file of the compile names it (an [imported file's](#modules-fonts-in-imported-files) counts), or downloads were off (other fonts were loaded) | `Font.info(): font 'Raleway' is not loaded. Add @font "Raleway";` |
 | No font was loaded at all (no `@font`, or downloads were off and the font isn't on your computer) | `Font.info(): no fonts were loaded. Add @font "Raleway"; — if you already have, look for a font-loading message above.` |
 | Unknown selection name | `Font.glyphs(): no script, block or category named 'Cyrilic'. Did you mean 'Cyrillic'?` |
 | A selection that's not a name, array or object (e.g. a number) | `Font.glyphs(): selection must be a name, an array of code points, or an object such as { script: "Cyrillic" }` |

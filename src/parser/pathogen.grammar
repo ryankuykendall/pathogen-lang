@@ -22,6 +22,8 @@
 // ─── Statements ────────────────────────────────────────────────
 
 statement {
+  ImportDeclaration |
+  ExportDeclaration |
   FontDirective |
   ViewBoxDefinition |
   LayerDefinition |
@@ -204,6 +206,40 @@ FontDirective {
   fontDirectiveKw (String | Identifier) ~fontWeight Number ";"? |
   fontDirectiveKw (String | Identifier) ~fontWeight ";"?
 }
+
+// ─── Modules (phase 1a; docs/modules.md) ───────────────────────
+// `import` and `export` are hard keywords. `from` is contextual, like `as`
+// and `with`, so a gradient's `.from` and `let from = …` keep working. The
+// placement rules (top level only, imports first), `export let` and the
+// default import are checked by the AST builder and parser/module-check.ts,
+// which can say what's wrong instead of reporting a bare parse error.
+ImportDeclaration {
+  kw<"import"> (ImportSpecifiers | NamespaceImport | DefaultImport) fromKw String ";"
+}
+
+ImportSpecifiers {
+  "{" (ImportSpecifier ("," ImportSpecifier)* ","?)? "}"
+}
+
+// `gear` or `gear as cog`. Without `as`, the Identifier is both the exported
+// name and the local binding, like an ObjectDestructureProp shorthand.
+ImportSpecifier {
+  Identifier (asKw VariableName)?
+}
+
+NamespaceImport {
+  "*" asKw VariableName
+}
+
+// `import gears from …` parses so the builder can explain that Pathogen has
+// no default export; it is never evaluated.
+DefaultImport { VariableName }
+
+ExportDeclaration {
+  kw<"export"> (LetDeclaration | FunctionDefinition | EnumDefinition)
+}
+
+fromKw[@name=from] { @extend[@name=from]<Identifier, "from"> }
 
 // Path commands: always greedy when args are available.
 // Z/z take no args; all others take at least one.

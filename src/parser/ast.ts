@@ -62,7 +62,8 @@ export type Node =
   | StyleBlockLiteral
   | PathBlockExpression
   | TextBlockExpression
-  | FontDirective;
+  | FontDirective
+  | ImportDeclaration;
 
 export interface Program {
   type: 'Program';
@@ -90,10 +91,50 @@ export type Statement =
   | LayerDefinition
   | LayerApplyBlock
   | TextStatement
-  | FontDirective;
+  | FontDirective
+  | ImportDeclaration;
+
+/**
+ * `export` in front of a top-level declaration (docs/modules.md). It is a flag
+ * on the declaration rather than a wrapper node, so every walker that handles
+ * the declaration keeps working. Only `const`, `fn` and `enum` carry it; the
+ * AST builder rejects `export let` and anything not at the top level.
+ */
+export interface Exportable {
+  exported?: boolean;
+  /** Where the `export` keyword is; `loc` stays the declaration keyword's. */
+  exportLoc?: SourceLocation;
+}
+
+// import { gear, Teeth as Kind } from "./parts/gears.pathogen";
+// import * as gears from "./parts/gears.pathogen";
+export interface ImportDeclaration {
+  type: 'ImportDeclaration';
+  /** The path exactly as written between the quotes. */
+  source: string;
+  /** Where the path string starts (its opening quote). */
+  sourceLoc?: SourceLocation;
+  /** Named imports, in order. Empty for a namespace import. */
+  specifiers: ImportSpecifier[];
+  /** `* as gears`: every export under one name. */
+  namespace?: { local: string; loc?: SourceLocation };
+  loc?: SourceLocation;
+}
+
+// `gear` (imported and local are the same name) or `gear as cog`.
+export interface ImportSpecifier {
+  /** The name the other file exports. */
+  imported: string;
+  /** The name it has in this file. */
+  local: string;
+  /** Where the imported name is written. */
+  loc?: SourceLocation;
+  /** Where the local name is written: the alias after `as`, else the same as loc. */
+  localLoc?: SourceLocation;
+}
 
 // let x = 10; or let [a, b] = expr; or let { x, y } = expr;
-export interface LetDeclaration {
+export interface LetDeclaration extends Exportable {
   type: 'LetDeclaration';
   // `const` fixes the binding (phase 0a step 4; docs/syntax.md "const"): it
   // can't be assigned or declared again in the same scope. The contents of
@@ -224,7 +265,7 @@ export interface SwitchArm {
 }
 
 // fn name(a, b) { ... }
-export interface FunctionDefinition {
+export interface FunctionDefinition extends Exportable {
   type: 'FunctionDefinition';
   name: string;
   params: string[];
@@ -408,7 +449,7 @@ export interface BooleanLiteral {
 }
 
 // enum definition
-export interface EnumDefinition {
+export interface EnumDefinition extends Exportable {
   type: 'EnumDefinition';
   name: string;
   members: { name: string; value?: Expression }[];

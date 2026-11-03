@@ -56,6 +56,13 @@ export const NODE_CLASS: Record<string, string> = {
   case: 'kw',
   where: 'kw',
   ViewBox: 'kw',
+  import: 'kw',
+  export: 'kw',
+  // Contextual (@extend) keywords: these node names exist only where the word
+  // acts as a keyword; `from` used as a name stays an Identifier.
+  with: 'kw',
+  as: 'kw',
+  from: 'kw',
   // Block-opener keywords inside the path/style/text grammars.
   styleBlockOpen: 'kw',
   pathBlockOpen: 'kw',

@@ -1527,6 +1527,8 @@ const family = "Inter";
 
 The font is chosen from that declaration before the program runs, so giving the variable a new value later doesn't change which font loads. A `const` can't be given a new value, so the variable and the loaded font always agree. The declaration can come before or after the directive.
 
+An `@font` in a file you [import](#modules-fonts-in-imported-files) loads too, before anything runs, and fonts are shared across files by family and weight.
+
 **Syntax:**
 
 ```text

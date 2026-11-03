@@ -29,7 +29,7 @@ import type {
 
 // --- Types ---
 
-export type DeclarationKind = 'variable' | 'function' | 'parameter' | 'loopVar' | 'enum' | 'blockParam';
+export type DeclarationKind = 'variable' | 'function' | 'parameter' | 'loopVar' | 'enum' | 'blockParam' | 'import';
 
 /**
  * How a declared name gets its value — the AST context type inference needs.
@@ -395,6 +395,16 @@ function walkStatement(stmt: Statement, scope: Scope, col: Collector): void {
       walkExpr(stmt.object, scope, col);
       walkExpr(stmt.value, scope, col);
       break;
+    case 'ImportDeclaration': {
+      // Each imported name is declared here, fixed like a const (docs/modules.md).
+      // What it holds lives in the other file; nothing here reads that file.
+      const bindImport = (name: string, loc: SourceLocation | undefined): void => {
+        addDecl(scope, name, 'import', loc ?? stmt.loc, col).isConst = true;
+      };
+      if (stmt.namespace) bindImport(stmt.namespace.local, stmt.namespace.loc);
+      for (const spec of stmt.specifiers) bindImport(spec.local, spec.localLoc);
+      break;
+    }
     case 'Comment':
     case 'FontDirective':
       break;

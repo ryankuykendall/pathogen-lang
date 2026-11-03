@@ -1,0 +1,10 @@
+// Modules showcase: open it in VS Code to check how imports are highlighted.
+// Its parse tree counts toward "all syntax" in tests/all-syntax-fixture.test.ts,
+// with parts/gears.pathogen beside it (and its own pathogen.json above both).
+import { gear, Teeth as Kind } from "./parts/gears.pathogen";
+import * as gears from "./parts/gears.pathogen";
+
+define ViewBox(0, 0, 200, 100);
+
+gear(Point(55, 50), 40, Kind.Standard);
+gears.gear(Point(150, 50), 28, gears.Teeth.Few);

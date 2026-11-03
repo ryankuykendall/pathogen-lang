@@ -9,6 +9,7 @@ import { describeBareRange } from './range-value-errors';
 import { reservedBindingAt } from './reserved-bindings';
 import type { ReservedBinding } from './reserved-bindings';
 import { findConstViolation } from './const-check';
+import { describeExportPlacement, describeIncompleteImport, findModuleViolations } from './module-check';
 
 setExpressionParser({
   parse: (input: string) => {
@@ -197,6 +198,8 @@ export function parse(input: string, options: ParseOptions = {}): Program {
   if (hasErrors) {
     // Lezer-native error messages
     const errOffset = errCur.from;
+    const moduleShape = describeExportPlacement(errCur.node) ?? describeIncompleteImport(errCur.node);
+    if (moduleShape) throw parseErrorAtOffset(input, moduleShape.offset, moduleShape.message);
     const shadow = describeCommandShadowing(input, errCur.node);
     if (shadow) {
       const shadowLines = input.slice(0, shadow.offset).split('\n');
@@ -248,25 +251,44 @@ export function parse(input: string, options: ParseOptions = {}): Program {
     }
     throw builderError;
   }
-  // A reassigned or redeclared const, reported before the program runs
-  // (const-check.ts; the evaluator checks the same rules as a backstop).
-  // With a reserved-name error too, the one written first is reported.
-  const constViolation = namingChecks ? findConstViolation(ast) : null;
-  if (reservedBinding && (!constViolation || reservedBinding.offset < constViolation.loc.offset)) {
-    throw reservedBindingError(reservedBinding, input);
-  }
+  // A reassigned or redeclared const (const-check.ts; the evaluator checks the
+  // same rules as a backstop) and the import rules (module-check.ts), reported
+  // before the program runs. With more than one, the one written first wins.
+  if (!namingChecks) return ast;
+  // On a tie the earlier entry wins, so the const violation keeps its old
+  // precedence over a reserved name at the same offset.
+  const candidates: { offset: number; error: () => Error }[] = [];
+  const constViolation = findConstViolation(ast);
   if (constViolation) {
-    const { line, column } = constViolation.loc;
-    throw new Error(`Parse error at line ${line}, column ${column}: ${constViolation.message}`);
+    const { line, column, offset } = constViolation.loc;
+    candidates.push({
+      offset,
+      error: () => new Error(`Parse error at line ${line}, column ${column}: ${constViolation.message}`),
+    });
   }
-  return ast;
+  if (reservedBinding) {
+    const binding = reservedBinding;
+    candidates.push({ offset: binding.offset, error: () => reservedBindingError(binding, input) });
+  }
+  const moduleViolation = findModuleViolations(tree, input)[0];
+  if (moduleViolation) {
+    candidates.push({
+      offset: moduleViolation.offset,
+      error: () => parseErrorAtOffset(input, moduleViolation.offset, moduleViolation.message),
+    });
+  }
+  if (candidates.length === 0) return ast;
+  throw candidates.reduce((first, c) => (c.offset < first.offset ? c : first)).error();
 }
 
 function reservedBindingError(binding: ReservedBinding, input: string): Error {
-  const lines = input.slice(0, binding.offset).split('\n');
-  return new Error(
-    `Parse error at line ${lines.length}, column ${lines[lines.length - 1].length + 1}: ${binding.message}`,
-  );
+  return parseErrorAtOffset(input, binding.offset, binding.message);
+}
+
+/** `Parse error at line L, column C: message` for a document offset. */
+function parseErrorAtOffset(input: string, offset: number, message: string): Error {
+  const lines = input.slice(0, offset).split('\n');
+  return new Error(`Parse error at line ${lines.length}, column ${lines[lines.length - 1].length + 1}: ${message}`);
 }
 
 /**

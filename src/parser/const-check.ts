@@ -19,8 +19,15 @@
  *   anything nested in a later statement of it, assigns that const.
  */
 import { constOverExistingError, constReassignError, constRedeclareError } from '../evaluator/const-bindings';
+import { assignImportedError } from '../module-messages';
 
-import type { ArrayDestructuringPattern, ObjectDestructuringPattern, Program, SourceLocation } from './ast';
+import type {
+  ArrayDestructuringPattern,
+  ImportDeclaration,
+  ObjectDestructuringPattern,
+  Program,
+  SourceLocation,
+} from './ast';
 
 export interface ConstViolation {
   message: string;
@@ -33,9 +40,17 @@ function isNode(value: unknown): value is Node {
   return typeof value === 'object' && value !== null && typeof (value as { type?: unknown }).type === 'string';
 }
 
+type DeclKind = 'let' | 'const' | 'fn' | 'import';
+
 /** Names a declaration statement binds, with its kind; empty for anything else. */
-function declaredNames(node: Node): { kind: 'let' | 'const' | 'fn'; names: string[] } | null {
+function declaredNames(node: Node): { kind: DeclKind; names: string[]; source?: string } | null {
   if (node.type === 'FunctionDefinition') return { kind: 'fn', names: [node.name as string] };
+  if (node.type === 'ImportDeclaration') {
+    // An imported name is fixed like a const (docs/modules.md); its file names the error.
+    const decl = node as unknown as ImportDeclaration;
+    const names = decl.namespace ? [decl.namespace.local] : decl.specifiers.map((s) => s.local);
+    return { kind: 'import', names, source: decl.source };
+  }
   if (node.type !== 'LetDeclaration') return null;
   const kind = node.kind === 'const' ? 'const' : 'let';
   const pattern = node.pattern as ArrayDestructuringPattern | ObjectDestructuringPattern | undefined;
@@ -57,6 +72,8 @@ const SKIPPED_FIELDS = new Set(['type', 'kind', 'loc']);
 function namesUsedOtherwise(program: Program): Set<string> {
   const other = new Set<string>();
   const visit = (node: Node, inConstPattern: boolean): void => {
+    // An import's names are declarations (like a const's), its path is not a name.
+    if (node.type === 'ImportDeclaration') return;
     for (const [field, value] of Object.entries(node)) {
       if (SKIPPED_FIELDS.has(field)) continue;
       const allowed =
@@ -89,10 +106,11 @@ export function findConstViolation(program: Program): ConstViolation | null {
   const usedOtherwise = namesUsedOtherwise(program);
   const found: ConstViolation[] = [];
 
-  // `visible`: consts declared earlier in this list or an enclosing one.
-  const walkList = (items: unknown[], visible: ReadonlySet<string>): void => {
-    const inScope = new Set(visible);
-    const declaredHere = new Map<string, 'let' | 'const' | 'fn'>();
+  // `visible`: fixed names declared earlier in this list or an enclosing one —
+  // a const (null) or an import (the path it was imported from).
+  const walkList = (items: unknown[], visible: ReadonlyMap<string, string | null>): void => {
+    const inScope = new Map(visible);
+    const declaredHere = new Map<string, DeclKind>();
     for (const item of items) {
       if (!isNode(item)) continue;
       walkNode(item, inScope);
@@ -100,23 +118,33 @@ export function findConstViolation(program: Program): ConstViolation | null {
       if (!decl || !item.loc) continue;
       for (const name of decl.names) {
         const prior = declaredHere.get(name);
-        if (prior === 'const') found.push({ message: constRedeclareError(name), loc: item.loc });
-        else if (prior && decl.kind === 'const') found.push({ message: constOverExistingError(name), loc: item.loc });
+        // Declaring an imported name again is module-check.ts's message, at the name.
+        if (prior === 'const' && decl.kind !== 'import') {
+          found.push({ message: constRedeclareError(name), loc: item.loc });
+        } else if (prior && prior !== 'import' && decl.kind === 'const') {
+          found.push({ message: constOverExistingError(name), loc: item.loc });
+        }
         declaredHere.set(name, decl.kind);
-        if (decl.kind === 'const') inScope.add(name);
+        if (decl.kind === 'const') inScope.set(name, null);
+        else if (decl.kind === 'import') inScope.set(name, decl.source ?? '');
         else inScope.delete(name);
       }
     }
   };
 
-  const walkNode = (node: Node, visible: ReadonlySet<string>): void => {
+  const walkNode = (node: Node, visible: ReadonlyMap<string, string | null>): void => {
     if (
       node.type === 'AssignmentStatement' &&
       node.loc &&
       visible.has(node.name as string) &&
       !usedOtherwise.has(node.name as string)
     ) {
-      found.push({ message: constReassignError(node.name as string), loc: node.loc });
+      const name = node.name as string;
+      const importedFrom = visible.get(name);
+      found.push({
+        message: importedFrom == null ? constReassignError(name) : assignImportedError(name, importedFrom),
+        loc: node.loc,
+      });
     }
     for (const [field, value] of Object.entries(node)) {
       if (SKIPPED_FIELDS.has(field)) continue;
@@ -125,7 +153,7 @@ export function findConstViolation(program: Program): ConstViolation | null {
     }
   };
 
-  walkList(program.body, new Set());
+  walkList(program.body, new Map());
   if (found.length === 0) return null;
   return found.reduce((first, v) => (v.loc.offset < first.loc.offset ? v : first));
 }

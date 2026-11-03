@@ -53,8 +53,8 @@ M x y L 100 100
   error, because `line` is a standard-library function. See
   [Built-in names](#syntax-built-in-names).
 - **Keywords can't be names.** `let const fn for in if else return switch case
-  default where break continue enum define layer apply text tspan ViewBox`
-  can't be used for a variable or a parameter, or as a bare object key or
+  default where break continue enum define layer apply text tspan ViewBox
+  import export` can't be used for a variable or a parameter, or as a bare object key or
   property: `let o = { text: 1 };` doesn't parse. Quote the key instead:
   `{ 'text': 1 }`, read back with `o['text']`.
 - **`pi`, `deg`, and `rad` are reserved.** They are [angle unit suffixes](#syntax-angle-units), and only that: `let pi = …`, `fn deg(…) { }`, or using one as a loop or function parameter is a compile error, and referencing one standalone (`calc(pi)`) errors with a pointer at the forms that do exist — the suffix (`0.5pi`, `90deg`, `1.5rad`) and the standard-library calls (`PI()`, [`deg(x)` / `rad(x)`](#stdlib-angle-conversion)), which remain untouched. The error lands on the name itself — even inside a function you never call — so `let rad = 50;` for a radius is flagged on the line you wrote it; call it `radius`. The rule covers every declared name, as for [built-in names](#syntax-built-in-names) (`deg` and `rad` are also standard-library functions; as names they get this unit message). An enum member (`AngleUnit.deg`) and an object key (`{ rad: 1 }`, read back as `units.rad`) are fine.
@@ -92,10 +92,13 @@ Names are case-sensitive: `let point = Point(20, 20);` is fine.
 Every way of declaring a name follows the rule: `let` and `const`, a `fn`'s
 name and its parameters, lambda and block parameters (`{|line| … }`), loop
 variables (`for (arc in arcs)`), destructured names,
-[`case` bindings](#syntax-destructuring-patterns) and an `enum`'s name. The error is reported before the program runs, at the name,
+[`case` bindings](#syntax-destructuring-patterns), an `enum`'s name and a name you
+[import](#modules-importing) (`import * as Color …`). The error is reported before the program runs, at the name,
 even inside a function that is never called. In the playground and VS Code
 each such name is underlined, and F2 renames it everywhere it's used. VS Code
-also offers a quick fix that picks a free name, such as `lineValue`.
+also offers a quick fix that picks a free name, such as `lineValue`. For an
+import, the quick fix changes the name after `as` instead (`import * as colorKit …`),
+and F2 can't rename it yet; see [In each tool](#modules-in-each-tool).
 
 A destructured property with a built-in's name needs a new name for its
 variable. Write the property, a colon, then the new name:
@@ -2231,10 +2234,12 @@ let xs = run();   // [3, 6]
 A `subscribe(…) << onMatch` callback written as a named function gets the same
 error and fix.
 
-The one name a function doesn't take from where it is written is `ctx`: a
-function draws with the pen of the place that calls it, so its path commands
-and `ctx` follow the caller (see [Path Context](#syntax-path-context-ctx) and
-[Lambdas](#syntax-lambdas)).
+The names a function doesn't take from where it is written are `ctx` and
+`viewbox`: a function draws with the pen of the place that calls it, so its path
+commands, `ctx` and `viewbox` follow the caller (see [Path Context](#syntax-path-context-ctx) and
+[Lambdas](#syntax-lambdas)). Within one file, `viewbox` is the same either way.
+It matters for a function [imported from another file](#modules-imported-fns-draw-with-your-pen),
+which finds its names in its own file and draws into yours.
 
 ### Lambdas
 

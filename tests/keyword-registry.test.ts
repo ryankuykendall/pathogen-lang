@@ -24,6 +24,13 @@ import { KEYWORDS as PATH_ARG_KEYWORDS } from '../src/parser/path-args-tokenizer
 
 const GRAMMAR_SOURCE = readFileSync(new URL('../src/parser/pathogen.grammar', import.meta.url), 'utf8');
 const GRAMMAR_KEYWORDS = new Set([...GRAMMAR_SOURCE.matchAll(/kw<"(\w+)">/g)].map((m) => m[1]));
+// Contextual keywords: `@extend[@name=with]<Identifier, "with">`. The same macro
+// defines the path-command letters, whose node name differs from the word.
+const CONTEXTUAL_KEYWORDS = new Set(
+  [...GRAMMAR_SOURCE.matchAll(/@extend\[@name=(\w+)\]<Identifier, "(\w+)">/g)]
+    .filter((m) => m[1] === m[2])
+    .map((m) => m[2]),
+);
 
 const TEXTMATE = JSON.parse(
   readFileSync(new URL('../packages/vscode-pathogen/syntaxes/pathogen.tmLanguage.json', import.meta.url), 'utf8'),
@@ -101,9 +108,51 @@ describe('keyword registry drift guard', () => {
   it('collects the expected keyword set from the grammar', () => {
     expect([...GRAMMAR_KEYWORDS].sort()).toEqual([
       'ViewBox', 'apply', 'break', 'calc', 'case', 'const', 'continue', 'default', 'define',
-      'else', 'enum', 'fn', 'for', 'if', 'in', 'layer', 'let', 'return', 'switch',
+      'else', 'enum', 'export', 'fn', 'for', 'if', 'import', 'in', 'layer', 'let', 'return', 'switch',
       'text', 'tspan', 'where',
     ].sort());
+  });
+
+  it('collects the contextual keywords from the grammar', () => {
+    expect([...CONTEXTUAL_KEYWORDS].sort()).toEqual(['as', 'from', 'with']);
+  });
+
+  // A contextual keyword is a keyword only where the grammar expects it, so
+  // both highlighters must class it there (they key on the node name, which
+  // exists only in keyword position).
+  it.each([
+    ['parser/highlight.ts KEYWORD_NODE_NAMES', new Set(KEYWORD_NODE_NAMES.split(/\s+/))],
+    ["highlight.ts NODE_CLASS 'kw' entries", new Set(Object.keys(NODE_CLASS).filter((k) => NODE_CLASS[k] === 'kw'))],
+  ])('%s covers every contextual keyword', (_name, has) => {
+    expect([...CONTEXTUAL_KEYWORDS].filter((k) => !has.has(k))).toEqual([]);
+  });
+
+  // `from` (modules, docs/modules.md) is also an ordinary name: a gradient's
+  // `.from`, `let from = bar.start;`. A registry that treats it as reserved
+  // would break those programs or the editor features on them.
+  it('`from` stays usable as a name everywhere', () => {
+    expect(() => parse('let from = 3; let g = { from: 1 }; L from 0')).not.toThrow();
+    const reserving: [string, ReadonlySet<string>][] = [
+      ['path-args-tokenizer KEYWORDS', PATH_ARG_KEYWORDS],
+      ['hover KEYWORD_HOVER keys', new Set(Object.keys(KEYWORD_HOVER))],
+      ['rename NON_RENAMEABLE', NON_RENAMEABLE],
+      ['code-actions RESERVED_IDENTIFIERS', RESERVED_IDENTIFIERS],
+      ['code-snippet KEYWORDS', SNIPPET_KEYWORDS],
+      ['TextMate repository.keyword.match', TEXTMATE_KEYWORDS],
+    ];
+    expect(reserving.filter(([, has]) => has.has('from')).map(([name]) => name)).toEqual([]);
+  });
+
+  it('the TextMate grammar scopes `from` only inside an import, right before the path', () => {
+    type Rule = { begin?: string; patterns?: { match?: string; name?: string }[] };
+    const header = (TEXTMATE.repository as unknown as Record<string, Rule>)['import-header'];
+    expect(header?.begin).toBe('\\b(import)\\b');
+    const fromRule = header?.patterns?.find((p) => p.match?.includes('(from)'));
+    expect(fromRule?.name).toMatch(/^keyword\./);
+    // `from` must be followed by a quote: `import { from } from "x"` colours only the second
+    const fromRe = new RegExp(fromRule?.match ?? '$^');
+    expect('import { from } from "x"'.match(new RegExp(fromRe.source, 'g'))?.length).toBe(1);
+    expect(fromRe.test('let from = 3;')).toBe(false);
   });
 
   for (const registry of REGISTRIES) {

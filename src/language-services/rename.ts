@@ -23,7 +23,7 @@ export interface PrepareRenameResult {
 export const NON_RENAMEABLE = new Set([
   'let', 'const', 'for', 'in', 'if', 'else', 'fn', 'return', 'define', 'default',
   'layer', 'apply', 'text', 'tspan', 'null', 'true', 'false', 'enum',
-  'break', 'continue', 'switch', 'case', 'where', 'with', 'as', 'ViewBox',
+  'break', 'continue', 'switch', 'case', 'where', 'with', 'as', 'ViewBox', 'import', 'export',
   'calc', 'log', 'ctx', 'Object', 'Color', 'PathBlock',
   'PathLayer', 'TextLayer', 'GroupLayer',
   // stdlib

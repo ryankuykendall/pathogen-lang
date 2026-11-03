@@ -33,6 +33,8 @@ Constructor signature: `Marker(id, markerWidth, markerHeight)` — `id` is a str
 
 The trailing block `{|m| ... }` binds the newly-created marker to `m`. Use `m.append(...)` inside the block to add the marker's path content.
 
+A marker made in a file you [import](#modules-ids-from-other-files) gets that file's path in front of its id, such as `parts-arrows--arrowhead`, so two files can both make an `arrowhead`.
+
 ## Appending Paths
 
 Use `.append(pathBlock, styles?)` to add path geometry to the marker:

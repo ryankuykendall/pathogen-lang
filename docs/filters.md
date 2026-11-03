@@ -115,6 +115,8 @@ For values outside these three buckets, assign a finite positive number directly
 
 `seed` defaults to a deterministic hash of the filter's auto-generated `id`. The id follows the pattern `pathogen-noise-N`, where `N` is the 1-based index of the `NoiseFilter()` call in evaluation order. As long as your source file doesn't reorder, add, or remove `NoiseFilter()` declarations, the seed (and the noise pattern) is stable across compiles.
 
+In a file you [import](#modules-ids-from-other-files), `N` counts that file's own `NoiseFilter()` calls. In the SVG the id gets the file's path as a prefix (`parts-paper--pathogen-noise-1`), but the seed comes from the id before the prefix. A filter whose `NoiseFilter()` call is at its file's top level, not inside a fn, therefore gets the same seed whether the file is compiled or imported.
+
 The footgun: adding a new `NoiseFilter()` above an existing one shifts every subsequent filter's auto-id, which shifts every derived seed, which visibly changes every existing grain pattern. Set `seed` explicitly on any filter whose noise pattern you want to lock down across future edits:
 
 ```

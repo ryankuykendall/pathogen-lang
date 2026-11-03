@@ -292,6 +292,8 @@ export const RESERVED_IDENTIFIERS: ReadonlySet<string> = new Set([
   'with',
   'as',
   'ViewBox',
+  'import',
+  'export',
   'true',
   'false',
   'null',

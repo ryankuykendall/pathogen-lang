@@ -22,6 +22,8 @@
  *   - `ObjectDestructureProp` with no alias: `let { rad } = o` binds its
  *     Identifier (with an alias, the Identifier is only a key and the
  *     VariableName is the binding)
+ *   - `ImportSpecifier` with no alias: `import { gear } from …` binds its
+ *     Identifier, the same way (an alias and `* as name` are VariableNames)
  *   - a `CasePattern` that is nothing but an array/object literal — the cover
  *     grammar for `case [a, ...rest]` / `case { x, y: alias, ...rest }`. A
  *     literal followed by anything (`case [a, b].length`) is a value pattern
@@ -83,7 +85,7 @@ function inCaseLiteral(literal: SyntaxNode): BindingNode[] {
 /**
  * The names declared AT the cursor's node. Called for every node of a tree
  * walk, so the node-kind test comes first and a SyntaxNode is only
- * materialized for the three kinds that can hold a binding.
+ * materialized for the four kinds that can hold a binding.
  */
 export function bindingNodesAt(cursor: TreeCursor): BindingNode[] {
   switch (cursor.name) {
@@ -96,6 +98,17 @@ export function bindingNodesAt(cursor: TreeCursor): BindingNode[] {
       if (node.getChild('VariableName')) return []; // aliased: the VariableName case handles it
       const id = node.getChild('Identifier');
       return id ? [{ node: id, shorthand: true }] : [];
+    }
+    case 'ImportSpecifier': {
+      // `import { gear }` binds gear; with `as`, the VariableName case handles the alias.
+      // Not `shorthand`: that flag picks destructuring's "{ min: minValue }" hint, which
+      // is the wrong syntax here. The plain message is deliberate — no file can export
+      // a built-in's name (it can't declare one), so `import { circle }` has no `as`
+      // fix that would work; the right fix is not to import it.
+      const node = cursor.node;
+      if (node.getChild('VariableName')) return [];
+      const id = node.getChild('Identifier');
+      return id ? [{ node: id, shorthand: false }] : [];
     }
     case 'CasePattern': {
       const node = cursor.node;

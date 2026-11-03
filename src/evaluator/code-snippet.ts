@@ -35,6 +35,7 @@ export const KEYWORDS = new Set([
   'let', 'const', 'for', 'forEach', 'if', 'else', 'define', 'in', 'fn', 'return',
   'switch', 'case', 'where', 'default', 'break', 'continue',
   'enum', 'layer', 'apply', 'text', 'tspan', 'calc', 'ViewBox',
+  'import', 'export',
 ]);
 
 const BUILTINS = new Set([

@@ -106,6 +106,10 @@ export function getSemanticTokens(document: TextDocument): SemanticToken[] {
       case 'blockParam':
         addTokenForName(source, decl.name, decl.range.start.line, typeIndex('parameter'), mod, tokens);
         break;
+      case 'import':
+        // Fixed like a const; what it holds (fn, enum, value) is in the other file.
+        addTokenForName(source, decl.name, decl.range.start.line, typeIndex('variable'), mod | modBit('readonly'), tokens);
+        break;
     }
   }
 

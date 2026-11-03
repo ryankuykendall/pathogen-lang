@@ -5,6 +5,7 @@ import { contextAwareFunctions, stdlib } from '../stdlib';
 import { STATEMENT_BUILTINS } from './constructor-registry';
 import { RESERVED_UNIT_NAMES, reservedNameBindingError, reservedNameReferenceError } from './reserved-names';
 import { BUILTIN_NAMES, builtinNameError, builtinNamespaceType } from '../builtin-names';
+import { noProjectFolderError } from '../module-messages';
 import { splitSubpaths } from './subpaths';
 import { dispatchSubscriptions } from './subscriptions';
 import { CALLBACK_METHODS } from '../callback-methods';
@@ -10974,6 +10975,11 @@ function evaluateStatementToAccum(stmt: Statement, scope: Scope, accum: PathStor
     case 'FontDirective':
       // Declarative metadata — font loading handled by host environment before compilation
       return;
+
+    case 'ImportDeclaration':
+      // Phase 1a, step 1: no host passes modules yet, so every import is the
+      // no-project-folder error (what the playground keeps showing; docs/modules.md).
+      throw new Error(formatError(noProjectFolderError(stmt.source), stmt.loc?.line, stmt.loc?.column));
 
     case 'Comment':
       // Comments are no-ops at runtime

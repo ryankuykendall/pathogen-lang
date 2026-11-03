@@ -53,6 +53,12 @@ export const KEYWORD_HOVER: Record<string, string> = {
   text: '**text** — Create a text element\n```\ntext(x, y)`content`\n```',
   tspan: '**tspan** — Text span inside a text block\n```\ntspan(dx, dy)`content`\n```',
   enum: '**enum** — Define an enumeration\n```\nenum Name { MEMBER1, MEMBER2 }\n```',
+  // No `from` entry: it's contextual, and KEYWORD_HOVER is checked before scope
+  // resolution, so it would shadow the hover of a variable named `from`.
+  import:
+    '**import** — Use names another .pathogen file exports\n```\nimport { gear, Teeth as Kind } from "./parts/gears.pathogen";\nimport * as gears from "./parts/gears.pathogen";\n```\nImports come first in the file. The imported file runs on its own; only its exports reach you, and they can\'t be changed. Works in the CLI and VS Code.',
+  export:
+    '**export** — Offer a top-level `const`, `fn` or `enum` to files that import this one\n```\nexport const toothDepth = 6;\nexport fn gear(center, radius, teeth) { ... }\n```\nIn the file being compiled, `export` does nothing.',
   calc: '**calc()** — Wrap arithmetic expressions for path arguments\n```\nM calc(x + 10) calc(y * 2)\n```',
   true: '**true** — Boolean literal (evaluates to 1)',
   false: '**false** — Boolean literal (evaluates to 0)',
@@ -243,6 +249,7 @@ const KIND_LABELS: Record<Declaration['kind'], string> = {
   enum: 'enum',
   blockParam: 'block parameter',
   variable: 'variable',
+  import: 'imported name',
 };
 
 /** Internal inference type names → user-facing display names. */

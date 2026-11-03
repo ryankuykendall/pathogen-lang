@@ -1,16 +1,16 @@
 import { styleTags, tags as t } from '@lezer/highlight';
 
 /// Space-separated keyword node names (the `kw<…>` specializations plus the
-/// `with`/`as` @extend keywords). Exported so the keyword drift guard can
+/// `with`/`as`/`from` @extend keywords). Exported so the keyword drift guard can
 /// compare it against the grammar.
 export const KEYWORD_NODE_NAMES =
-  'define default ViewBox calc layer apply text tspan for in if else let const enum fn return break continue switch case where with as';
+  'define default ViewBox calc layer apply text tspan for in if else let const enum fn return break continue switch case where import export with as from';
 
 /// Syntax highlighting tags for the Pathogen language grammar.
 /// Maps Lezer parse tree node types to CodeMirror highlight tags.
 export const pathogenHighlighting = styleTags({
   // Keywords — every kw<> term in pathogen.grammar plus the @extend
-  // contextual keywords (with, as). Checked by tests/keyword-registry.test.ts.
+  // contextual keywords (with, as, from). Checked by tests/keyword-registry.test.ts.
   [KEYWORD_NODE_NAMES]: t.keyword,
 
   // Path-command suffix clauses: corner-op and label kinds read as functions

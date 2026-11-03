@@ -42,6 +42,8 @@ export const KEYWORD_COMPLETIONS: CompletionEntry[] = [
   { label: 'default', kind: 'keyword', detail: 'Default clause of a switch (must be last)', boost: 4, insertText: 'default {\n\t$0\n}', isSnippet: true },
   { label: 'where', kind: 'keyword', detail: 'Guard condition on a case clause', boost: 4, insertText: 'where ${1:condition} ', isSnippet: true },
   { label: 'else', kind: 'keyword', detail: 'Else branch', boost: 4 },
+  { label: 'import', kind: 'keyword', detail: 'Import names from another .pathogen file (at the top of the file)', boost: 6, insertText: 'import { ${1:name} } from "${2:./file.pathogen}";$0', isSnippet: true },
+  { label: 'export', kind: 'keyword', detail: 'Offer a top-level const, fn or enum to files that import this one', boost: 6 },
   { label: 'true', kind: 'constant', detail: 'Boolean true', boost: 2 },
   { label: 'false', kind: 'constant', detail: 'Boolean false', boost: 2 },
   { label: 'null', kind: 'constant', detail: 'Null value', boost: 2 },

@@ -96,6 +96,11 @@
     "body": "const ${1:name} = ${0};",
     "description": "constant declaration — never assigned again"
   },
+  "Import": {
+    "prefix": "import",
+    "body": "import { ${1:name} } from \"${2:./file.pathogen}\";$0",
+    "description": "import names from another .pathogen file (at the top of the file)"
+  },
   "Radial Loop": {
     "prefix": "forangle",
     "body": [

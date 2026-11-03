@@ -10,6 +10,9 @@ export const KEYWORDS = new Set([
   'let', 'const', 'for', 'if', 'else', 'fn', 'return', 'define', 'default',
   'layer', 'apply', 'text', 'tspan', 'enum', 'log',
   'break', 'continue', 'switch', 'case', 'where',
+  // Modules (docs/modules.md). `from` is NOT here: it is contextual and stays
+  // an ordinary name everywhere else, including path arguments (`L from.x 0`).
+  'import', 'export',
 ]);
 
 // Functions that should start a new statement, not be consumed as path args.
@@ -45,6 +48,7 @@ const CLAUSE_KEYWORDS = new Set(['with', 'as']);
 // to the mistake instead of pages later.
 const STATEMENT_ONLY_KEYWORDS = new Set([
   'let', 'const', 'for', 'if', 'else', 'fn', 'return', 'define', 'apply', 'text', 'tspan', 'enum', 'log', 'break', 'continue',
+  'import', 'export',
 ]);
 
 /**

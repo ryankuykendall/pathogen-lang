@@ -1,0 +1,14 @@
+// A library: what it exports, and a demo of every size when compiled on its own.
+const toothDepth = 6;
+
+export enum Teeth { Few = 8, Standard = 12, Fine = 20 }
+
+export fn gear(center, radius, teeth) {
+  star(center.x, center.y, radius, radius - toothDepth, teeth);
+  circle(center.x, center.y, radius * 0.3);
+}
+
+define ViewBox(0, 0, 300, 100);
+gear(Point(50, 50), 30, Teeth.Few);
+gear(Point(150, 50), 30, Teeth.Standard);
+gear(Point(250, 50), 30, Teeth.Fine);

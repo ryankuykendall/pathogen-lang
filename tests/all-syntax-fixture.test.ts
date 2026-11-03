@@ -24,6 +24,11 @@ import { lezerParser } from '../src/parser';
  */
 const FIXTURE_URL = new URL('../packages/vscode-pathogen/test-fixtures/all-syntax.pathogen', import.meta.url);
 const FIXTURE = readFileSync(FIXTURE_URL, 'utf8');
+// Imports need another file to point at, so they live in a small project next
+// to the fixture (docs/modules.md). Its node types count toward "all syntax".
+const MODULE_FIXTURES = ['modules/main.pathogen', 'modules/parts/gears.pathogen'].map((path) =>
+  readFileSync(new URL(`../packages/vscode-pathogen/test-fixtures/${path}`, import.meta.url), 'utf8'),
+);
 
 const GRAMMAR = readFileSync(new URL('../src/parser/pathogen.grammar', import.meta.url), 'utf8');
 // Keywords come from two macros: `kw<"for">`, and `@extend[@name=with]<Identifier, "with">`
@@ -37,21 +42,27 @@ const GRAMMAR_KEYWORDS = [
 ].sort();
 
 /**
- * Node types the fixture is allowed to omit, each with the reason. Empty today.
+ * Node types the fixtures are allowed to omit, each with the reason.
  * (`LineComment` lived here while a comment inside an expression was a parse
  * error; when that was fixed, the "still needed" test below failed until the
  * entry was removed — which is the point of it.)
  */
-const NODE_TYPE_EXCEPTIONS: Record<string, string> = {};
+const NODE_TYPE_EXCEPTIONS: Record<string, string> = {
+  DefaultImport:
+    '`import gears from …` is always an error (Pathogen has no default export), so no fixture that compiles can show it; tests/modules-syntax.test.ts pins its message',
+};
 
 const seenNodeTypes = new Set<string>();
-let errorNodes = 0;
-lezerParser.parse(FIXTURE).iterate({
-  enter(node) {
-    if (node.type.isError) errorNodes++;
-    seenNodeTypes.add(node.name);
-  },
-});
+const errorNodes = [FIXTURE, ...MODULE_FIXTURES].reduce((errors, source) => {
+  let found = 0;
+  lezerParser.parse(source).iterate({
+    enter(node) {
+      if (node.type.isError) found++;
+      seenNodeTypes.add(node.name);
+    },
+  });
+  return errors + found;
+}, 0);
 
 const grammarNodeTypes = [
   ...new Set(lezerParser.nodeSet.types.filter((t) => !t.isError && !t.isAnonymous && t.name !== '').map((t) => t.name)),
