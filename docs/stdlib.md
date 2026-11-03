@@ -2,6 +2,10 @@
 
 pathogen-lang includes built-in functions for math operations and common SVG shapes.
 
+These names belong to the language: a program can't use one as the name of a
+variable, parameter or function, including in destructuring
+(`let { min, max } = range;`). See [Built-in names](#syntax-built-in-names).
+
 ## Math Functions
 
 ### Trigonometry

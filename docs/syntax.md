@@ -47,15 +47,81 @@ let y = 75;
 M x y L 100 100
 ```
 
-**Three naming rules:**
+**Four naming rules:**
 
+- **Built-in names can't be declared.** `let line = @{ h 100 };` is a compile
+  error, because `line` is a standard-library function. See
+  [Built-in names](#syntax-built-in-names).
 - **Keywords can't be names.** `let const fn for in if else return switch case
   default where break continue enum define layer apply text tspan ViewBox`
   can't be used for a variable or a parameter, or as a bare object key or
   property: `let o = { text: 1 };` doesn't parse. Quote the key instead:
   `{ 'text': 1 }`, read back with `o['text']`.
-- **`pi`, `deg`, and `rad` are reserved.** They are [angle unit suffixes](#syntax-angle-units), and only that: `let pi = …`, `fn deg(…) { }`, or using one as a loop or function parameter is a compile error, and referencing one standalone (`calc(pi)`) errors with a pointer at the forms that do exist — the suffix (`0.5pi`, `90deg`, `1.5rad`) and the standard-library calls (`PI()`, [`deg(x)` / `rad(x)`](#stdlib-angle-conversion)), which remain untouched. The error lands on the name itself — even inside a function you never call — so `let rad = 50;` for a radius is flagged on the line you wrote it; call it `radius`. Only variables, parameters, and function names are affected: an enum member (`AngleUnit.deg`) and an object key (`{ rad: 1 }`, read back as `units.rad`) are fine.
+- **`pi`, `deg`, and `rad` are reserved.** They are [angle unit suffixes](#syntax-angle-units), and only that: `let pi = …`, `fn deg(…) { }`, or using one as a loop or function parameter is a compile error, and referencing one standalone (`calc(pi)`) errors with a pointer at the forms that do exist — the suffix (`0.5pi`, `90deg`, `1.5rad`) and the standard-library calls (`PI()`, [`deg(x)` / `rad(x)`](#stdlib-angle-conversion)), which remain untouched. The error lands on the name itself — even inside a function you never call — so `let rad = 50;` for a radius is flagged on the line you wrote it; call it `radius`. The rule covers every declared name, as for [built-in names](#syntax-built-in-names) (`deg` and `rad` are also standard-library functions; as names they get this unit message). An enum member (`AngleUnit.deg`) and an object key (`{ rad: 1 }`, read back as `units.rad`) are fine.
 - **Single letters that are path commands** (`m l h v c s q t a z`, either case) *can* be declared, but cannot be referenced bare in path-argument position — there they always read as commands. `let m = 25; L m 40` is a compile error naming this rule; `L calc(m) 40` works. Prefer longer names.
+
+### Built-in names
+
+A name the language already defines can't be declared again, so it always
+means the built-in. That covers:
+
+- every [standard-library function](#stdlib-standard-library-reference), such as `min`,
+  `max`, `sign`, `round`, `line`, `arc`, `circle`, `heading` and `hash01`, plus
+  `log` and `assert`;
+- the constructors, such as `Point`, `Color`, `Grid`, `Marker`,
+  `LinearGradient` and `PathLayer`;
+- the [built-in enums](#syntax-built-in-enums) and namespaces, such as
+  `Direction`, `Easing`, `Object`, `PathBlock` and `Font`;
+- `ctx` (the [drawing context](#debug-ctx-object)) and
+  [`viewbox`](#viewbox-reading-the-viewbox).
+
+```pathogen invalid
+let line = @{ h 100 };
+```
+
+```text
+Cannot use line as a name — it is a built-in function. Use another name
+```
+
+```
+let edge = @{ h 100 };
+```
+
+Names are case-sensitive: `let point = Point(20, 20);` is fine.
+
+Every way of declaring a name follows the rule: `let` and `const`, a `fn`'s
+name and its parameters, lambda and block parameters (`{|line| … }`), loop
+variables (`for (arc in arcs)`), destructured names,
+[`case` bindings](#syntax-destructuring-patterns) and an `enum`'s name. The error is reported before the program runs, at the name,
+even inside a function that is never called. In the playground and VS Code
+each such name is underlined, and F2 renames it everywhere it's used. VS Code
+also offers a quick fix that picks a free name, such as `lineValue`.
+
+A destructured property with a built-in's name needs a new name for its
+variable. Write the property, a colon, then the new name:
+
+```pathogen invalid
+let range = { min: 2, max: 8 };
+let { min, max } = range;
+```
+
+```text
+Cannot use min as a name — it is a built-in function. Take the property under another name: { min: minValue }
+```
+
+(`max` gets the same error.)
+
+```
+let range = { min: 2, max: 8 };
+let { min: low, max: high } = range;
+```
+
+Only names you declare are checked. Elsewhere a built-in's name is free: an
+object key (`{ min: 2 }`), a property (`range.min`), an enum member, a string
+and a style property.
+
+When a release adds a built-in, its changelog entry names it, since a program
+that declares that name stops compiling.
 
 ### const
 
@@ -1630,7 +1696,7 @@ Unit mismatch checking rejects nonsense at compile time, reading the expression 
 
 Interpolating an Angle into a [template literal](#syntax-strings-and-template-literals) or `log()` shows it in its written unit — `90deg`, `0.5pi`, `1.5708rad` — not the raw radians number. Use `.rad` or `.deg` when you need a bare number in text.
 
-**Degree-based color methods**: `hueShift`, `analogous`, and `splitComplementary` read a **bare number** argument in degrees. An Angle value — however it arrives: literal, variable, array element, or the return value of a function you defined — is converted exactly, so `hueShift(90deg)`, `hueShift(90)`, and `let turn = 0.5pi; hueShift(turn)` all shift by 90°. Everywhere else in the language, a bare number is radians.
+**Degree-based color methods**: `hueShift`, `analogous`, and `splitComplementary` read a **bare number** argument in degrees. An Angle value — however it arrives: literal, variable, array element, or the return value of a function you defined — is converted exactly, so `hueShift(90deg)`, `hueShift(90)`, and `let quarter = 0.5pi; hueShift(quarter)` all shift by 90°. Everywhere else in the language, a bare number is radians.
 
 `Color(L, C, H)` follows the same rule: a bare `H` is degrees, and an Angle `H` auto-converts — `Color(0.6, 0.15, 90deg)` stores a hue of 90. The `.hue` property returns a plain number in degrees. See [Color § Hue](#color-hue).
 
@@ -1845,9 +1911,9 @@ switch(t) {
 Leave off a bound to make a range open-ended: `..<0` matches everything below zero and `100..` matches everything from 100 up. Ranges work over [angles](#syntax-angle-units) too, using the same comparison as `<` and `<=`:
 
 ```
-let heading = 135deg;
+let bearing = 135deg;
 
-switch(heading) {
+switch(bearing) {
   case 0deg..<90deg {
     M 50 50 L 100 0
   }
@@ -2260,9 +2326,9 @@ what the trailing block form is for. A worker earns its keep when it's
 reused:
 
 ```
-let ease = {|t| return calc(t * t * (3 - 2 * t)); };
-let rows = [0.2, 0.5, 0.9].map() << ease;
-let cols = [0.1, 0.6].map() << ease;
+let sCurve = {|t| return calc(t * t * (3 - 2 * t)); };
+let rows = [0.2, 0.5, 0.9].map() << sCurve;
+let cols = [0.1, 0.6].map() << sCurve;
 ```
 
 ```

@@ -257,7 +257,6 @@ describe('unchanged by step 2', () => {
     ['ctx.heading is null after M', 'M 0 0 L 10 0\nM 5 5\nlog(ctx.heading);', ['null']],
     ['ctx.heading is null after m inside a block', 'M 0 0 L 10 0\n@{ m 5 0; log(ctx.heading); };', ['null']],
     ['a saved ctx keeps the values of that moment', 'M 0 0\nlet c = ctx;\nL 10 0\nlog(c.position.x);', ['0']],
-    ['a user binding named ctx still wins (until step 5)', 'let ctx = 5;\nlog(ctx);', ['5']],
     [
       "a subscription callback reads the program's final pen",
       "define PathLayer('a') #{ stroke: red; };\nlayer('a').subscribe('command') {|m| log(ctx.position.x); };\nlayer('a').apply { M 70 0 }\nM 33 3",
@@ -265,6 +264,12 @@ describe('unchanged by step 2', () => {
     ],
   ])('%s', (_, source, expected) => {
     expect(logs(source)).toEqual(expected);
+  });
+
+  it('a program can no longer declare its own ctx (step 5: a built-in name)', () => {
+    expect(() => compile('let ctx = 5;\nlog(ctx);')).toThrow(
+      'Parse error at line 1, column 5: Cannot use ctx as a name — it is the drawing context. Use another name',
+    );
   });
 
   it('ctx.transform inside @{ } is still an error', () => {

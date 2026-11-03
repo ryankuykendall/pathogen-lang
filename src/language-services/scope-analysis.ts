@@ -1,11 +1,11 @@
+import { BUILTIN_NAMES } from '../builtin-names';
 import { parseLezer } from '../parser';
 import { parser as styleParser } from '../parser/style.generated';
 import { parseExpressionAtOffset } from '../parser/lezer-expression';
-import { stdlib, contextAwareFunctions } from '../stdlib';
+import { bindingNodesAt } from '../parser/reserved-bindings';
 import { CALLBACK_METHODS } from '../callback-methods';
-import { EVALUATOR_CONSTRUCTORS, STATEMENT_BUILTINS } from '../evaluator/constructor-registry';
-import { BUILTIN_ENUMS as RUNTIME_ENUMS } from '../evaluator/builtin-enums';
 
+import type { Tree } from '@lezer/common';
 import type { TextDocument } from './document';
 import type { Range } from './types';
 import type {
@@ -22,21 +22,10 @@ import type {
 } from '../parser/ast';
 
 // --- Built-in names that are always in scope ---
-// Derived from the runtime's own registries (constructor-registry,
-// builtin-enums, stdlib + contextAwareFunctions) so a new constructor,
-// enum, or context-aware function is a builtin here the moment it exists.
-// Only the namespaces and globals are resolved specially by the evaluator's
-// lookupVariable and have no registry to derive from.
-
-const BUILTIN_NAMESPACES = new Set(['Object', 'Color', 'PathBlock', 'Cap']);
-
-const BUILTIN_ENUMS = new Set(Object.keys(RUNTIME_ENUMS));
-
-const BUILTIN_CONSTRUCTORS = new Set<string>(EVALUATOR_CONSTRUCTORS);
-
-const STDLIB_NAMES = new Set([...Object.keys(stdlib), ...contextAwareFunctions, ...STATEMENT_BUILTINS]);
-
-const BUILTIN_GLOBALS = new Set(['ctx', 'viewbox', 'PI', 'E', 'TAU', 'Infinity', 'NaN']);
+// The one table the parser, the evaluator and the language services share
+// (builtin-names.ts), derived from the runtime's registries — a new
+// constructor, enum or stdlib function is a builtin here the moment it
+// exists.
 
 // --- Types ---
 
@@ -109,6 +98,8 @@ export interface ScopeInfo {
   root: Scope;
   declarations: Declaration[];
   references: Reference[];
+  /** The Lezer tree the analysis came from (exact name positions are read from it on demand). */
+  tree?: Tree;
 }
 
 /** Collector passed through the walk to accumulate declarations and references. */
@@ -118,6 +109,18 @@ interface Collector {
   /** Full source + document — style-block value sub-parsing needs exact offsets. */
   source: string;
   document: TextDocument;
+  /**
+   * Bodies that run when called — fn and lambda bodies — walked at the end of
+   * the statement list they appear in, so a name declared later in that list
+   * resolves (names are lexical: the body runs after those declarations).
+   * Null outside a statement list: walk at once.
+   */
+  deferred: (() => void)[] | null;
+}
+
+function defer(col: Collector, walk: () => void): void {
+  if (col.deferred) col.deferred.push(walk);
+  else walk();
 }
 
 // --- Analysis ---
@@ -130,18 +133,77 @@ export function analyzeScopes(document: TextDocument): ScopeInfo {
   // must not blank out completions/hover for the whole document). Strict
   // errors stay the diagnostics engine's job.
   let ast: Program;
+  let tree: Tree;
   try {
-    ast = parseLezer(source).ast;
+    ({ ast, tree } = parseLezer(source));
   } catch {
     return { root: mkScope(null), declarations: [], references: [] };
   }
 
-  const col: Collector = { decls: [], refs: [], source, document };
+  const col: Collector = { decls: [], refs: [], source, document, deferred: null };
   const rootScope = mkScope(null);
 
   walkStatements(ast.body, rootScope, col);
 
-  return { root: rootScope, declarations: col.decls, references: col.refs };
+  return { root: rootScope, declarations: col.decls, references: col.refs, tree };
+}
+
+// --- Exact name positions ---
+
+/** Where a declaration's name is written; `shorthand` for `{ min }`, whose key is the same text. */
+export interface DeclarationName {
+  range: Range;
+  shorthand: boolean;
+}
+
+const declarationNames = new WeakMap<ScopeInfo, Map<Declaration, DeclarationName>>();
+
+/**
+ * The exact position of each declaration's name. Declarations carry the
+ * position of the statement that makes them (`let`, `fn`, the lambda, the
+ * call with the trailing block); the name is the first binding of that name
+ * the parse tree has at or after it that no earlier declaration took.
+ * Computed once per analysis, on demand (rename and its quick fix).
+ */
+export function declarationName(info: ScopeInfo, decl: Declaration, document: TextDocument): DeclarationName | null {
+  let names = declarationNames.get(info);
+  if (!names) {
+    names = computeDeclarationNames(info, document);
+    declarationNames.set(info, names);
+  }
+  return names.get(decl) ?? null;
+}
+
+function computeDeclarationNames(info: ScopeInfo, document: TextDocument): Map<Declaration, DeclarationName> {
+  const out = new Map<Declaration, DeclarationName>();
+  if (!info.tree) return out;
+  const source = document.getText();
+  const byName = new Map<string, Array<{ from: number; to: number; shorthand: boolean; taken: boolean }>>();
+  const cursor = info.tree.cursor();
+  do {
+    for (const b of bindingNodesAt(cursor)) {
+      const name = source.slice(b.node.from, b.node.to);
+      let list = byName.get(name);
+      if (!list) byName.set(name, (list = []));
+      list.push({ from: b.node.from, to: b.node.to, shorthand: b.shorthand, taken: false });
+    }
+  } while (cursor.next());
+  for (const list of byName.values()) list.sort((a, b) => a.from - b.from);
+
+  const ordered = info.declarations
+    .map((decl, index) => ({ decl, index, anchor: document.offsetAt(decl.range.start) }))
+    .sort((a, b) => a.anchor - b.anchor || a.index - b.index);
+  for (const { decl, anchor } of ordered) {
+    const list = byName.get(decl.name);
+    const hit = list?.find((n) => !n.taken && n.from >= anchor);
+    if (!hit) continue;
+    hit.taken = true;
+    out.set(decl, {
+      range: { start: document.positionAt(hit.from), end: document.positionAt(hit.to) },
+      shorthand: hit.shorthand,
+    });
+  }
+  return out;
 }
 
 // --- Scope helpers ---
@@ -177,15 +239,19 @@ function resolveId(name: string, loc: SourceLocation | undefined, scope: Scope, 
     }
     current = current.parent;
   }
-  const isBuiltin = BUILTIN_NAMESPACES.has(name) || BUILTIN_ENUMS.has(name) ||
-    BUILTIN_CONSTRUCTORS.has(name) || STDLIB_NAMES.has(name) || BUILTIN_GLOBALS.has(name);
-  col.refs.push({ name, range, declaration: null, isBuiltin });
+  col.refs.push({ name, range, declaration: null, isBuiltin: BUILTIN_NAMES.has(name) });
 }
 
 // --- Statement walking ---
 
 function walkStatements(stmts: Statement[], scope: Scope, col: Collector): void {
+  const outer = col.deferred;
+  const queue: (() => void)[] = [];
+  col.deferred = queue;
   for (const stmt of stmts) walkStatement(stmt, scope, col);
+  // fn and lambda bodies, now that every name this list declares exists
+  for (const walk of queue) walk();
+  col.deferred = outer;
 }
 
 function walkStatement(stmt: Statement, scope: Scope, col: Collector): void {
@@ -223,7 +289,7 @@ function walkStatement(stmt: Statement, scope: Scope, col: Collector): void {
       addDecl(scope, stmt.name, 'function', stmt.loc, col);
       const fnScope = mkScope(scope);
       for (const p of stmt.params) addDecl(fnScope, p, 'parameter', stmt.loc, col);
-      walkStatements(stmt.body, fnScope, col);
+      defer(col, () => walkStatements(stmt.body, fnScope, col));
       break;
     }
     case 'EnumDefinition':
@@ -428,7 +494,7 @@ function walkExpr(expr: Expression, scope: Scope, col: Collector): void {
       expr.params.forEach((p, index) =>
         addDecl(lambdaScope, p, 'blockParam', expr.loc, col, { kind: 'lambdaParam', lambda: expr, index }),
       );
-      walkStatements(expr.body, lambdaScope, col);
+      defer(col, () => walkStatements(expr.body, lambdaScope, col));
       break;
     }
     case 'MemberExpression':
@@ -627,7 +693,7 @@ function collectTemplateInterpRefs(templateText: string, templateDocFrom: number
     const parsed = parseExpressionAtOffset(exprText, exprDocFrom, col.source);
     if (!parsed) continue;
 
-    const temp: Collector = { decls: [], refs: [], source: col.source, document: col.document };
+    const temp: Collector = { decls: [], refs: [], source: col.source, document: col.document, deferred: null };
     walkExpr(parsed, scope, temp);
     for (const ref of temp.refs) {
       if (!ref.declaration && !ref.isBuiltin) continue;
@@ -657,8 +723,10 @@ function walkFnCall(expr: FunctionCall, scope: Scope, col: Collector): void {
   for (const arg of expr.args) walkExpr(arg, scope, col);
   if (expr.block) {
     const blockScope = mkScope(scope);
+    // Anchored at the block, so a same-named parameter of a lambda in the
+    // arguments isn't taken for it (declarationName).
     expr.block.params.forEach((p, index) =>
-      addDecl(blockScope, p, 'blockParam', expr.loc, col, { kind: 'blockParam', call: expr, index }),
+      addDecl(blockScope, p, 'blockParam', expr.block!.loc ?? expr.loc, col, { kind: 'blockParam', call: expr, index }),
     );
     walkStatements(expr.block.body, blockScope, col);
   }
@@ -670,7 +738,7 @@ function walkMethodCall(expr: MethodCallExpression, scope: Scope, col: Collector
   if (expr.block) {
     const blockScope = mkScope(scope);
     expr.block.params.forEach((p, index) =>
-      addDecl(blockScope, p, 'blockParam', expr.loc, col, { kind: 'blockParam', call: expr, index }),
+      addDecl(blockScope, p, 'blockParam', expr.block!.loc ?? expr.loc, col, { kind: 'blockParam', call: expr, index }),
     );
     walkStatements(expr.block.body, blockScope, col);
   }

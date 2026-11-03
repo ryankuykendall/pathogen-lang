@@ -155,8 +155,8 @@ Context-aware functions receive the current path context and can read pen positi
 | Add runtime behavior         | `evaluator/index.ts`                                               |
 | Add context tracking         | `evaluator/context.ts`                                             |
 | Add layer features           | `evaluator/index.ts`, `parser/ast.ts`, `parser/pathogen.grammar`   |
-| Add stdlib function          | `stdlib/math.ts` or `stdlib/path.ts`, `stdlib/index.ts`            |
-| Add context-aware stdlib fn  | `stdlib/path.ts`, `stdlib/index.ts` (add to contextAwareFunctions) |
+| Add stdlib function          | Collision check first: `npx tsx scripts/check-builtin-collisions.ts --names <name>` (plus `--kv-dir` over a KV export; see `.claude/CLAUDE.md`). Then `stdlib/math.ts` or `stdlib/path.ts`, `stdlib/index.ts`; name it in the CHANGELOG |
+| Add context-aware stdlib fn  | Same collision check, then `stdlib/path.ts`, `stdlib/index.ts` (add to contextAwareFunctions) |
 | Add CLI option               | `cli.ts`                                                           |
 | Add library export           | `index.ts`                                                         |
 | Add language service feature | `language-services/*.ts`, `language-services/index.ts`              |

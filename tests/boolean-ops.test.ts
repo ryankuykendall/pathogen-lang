@@ -414,8 +414,8 @@ describe('Boolean Operations', () => {
     it('difference of circle from rectangle produces clean cutout', () => {
       const result = compilePath(`
         let plate = @{ h 80 v 60 h -80 z };
-        let circle = @{ a 15 15 0 1 1 30 0 a 15 15 0 1 1 -30 0 z };
-        let d = plate.project(0, 0).difference(circle.project(25, 15));
+        let disc = @{ a 15 15 0 1 1 30 0 a 15 15 0 1 1 -30 0 z };
+        let d = plate.project(0, 0).difference(disc.project(25, 15));
         d.drawTo(0, 0);
       `);
       expect(result).toClosePath();
@@ -480,8 +480,8 @@ describe('Boolean Operations', () => {
       // exercises tangent disambiguation at arc-line intersection points
       const result = compilePath(`
         let plate = @{ h 60 v 40 h -60 z };
-        let circle = @{ a 25 25 0 1 1 50 0 a 25 25 0 1 1 -50 0 z };
-        let d = plate.project(0, 0).difference(circle.project(35, -15));
+        let disc = @{ a 25 25 0 1 1 50 0 a 25 25 0 1 1 -50 0 z };
+        let d = plate.project(0, 0).difference(disc.project(35, -15));
         d.drawTo(0, 0);
       `);
       expect(result).toClosePath();
@@ -1387,14 +1387,14 @@ describe('curve pairs the intersection search cannot separate (AUDIT.md §2.17)'
 
   it('union() with a near-zero-length curve touching the other shape', () => {
     const withSpeck = compilePath(`
-      let arc = @{ c 10 20 30 20 40 0 z };
+      let dome = @{ c 10 20 30 20 40 0 z };
       let speck = @{ c 0.00000001 0 0.00000002 0 0.00000003 0 l 10 10 l -10 0 z };
-      arc.project(0, 0).union(speck.project(40, 0)).drawTo(0, 0);
+      dome.project(0, 0).union(speck.project(40, 0)).drawTo(0, 0);
     `);
     const withoutSpeck = compilePath(`
-      let arc = @{ c 10 20 30 20 40 0 z };
+      let dome = @{ c 10 20 30 20 40 0 z };
       let triangle = @{ l 10 10 l -10 0 z };
-      arc.project(0, 0).union(triangle.project(40, 0)).drawTo(0, 0);
+      dome.project(0, 0).union(triangle.project(40, 0)).drawTo(0, 0);
     `);
     // The two shapes touch at one point, so the union keeps both outlines.
     // The speck stays as the triangle's first, near-zero segment.
@@ -1415,17 +1415,17 @@ describe('curve pairs the intersection search cannot separate (AUDIT.md §2.17)'
   });
 
   it('union() of two shapes sharing a stretch of the same curve fills the right region', () => {
-    // `half` starts with exactly the first half of `arc`'s curve (de
-    // Casteljau at t = 0.5). The union is the arc's region plus the part of
+    // `half` starts with exactly the first half of `dome`'s curve (de
+    // Casteljau at t = 0.5). The union is the dome's region plus the part of
     // `half` below y = 0: the whole curve, then (40, 0) → (20, 0) → (20, -10)
     // → (0, 0). The shared half-curve is not yet recognised as a shared edge
     // (§2.13), so the output also repeats it with a closing chord. That extra
     // loop turns the same way as the outline and lies inside it, so under
     // the nonzero rule it stays filled; (10, 9.5) is inside it.
     const d = compilePath(`
-      let arc = @{ c 10 20 30 20 40 0 z };
+      let dome = @{ c 10 20 30 20 40 0 z };
       let half = @{ c 5 10 12.5 15 20 15 l 0 -25 z };
-      arc.project(0, 0).union(half.project(0, 0)).drawTo(0, 0);
+      dome.project(0, 0).union(half.project(0, 0)).drawTo(0, 0);
     `);
     expectFill(
       flattenToRings(d),

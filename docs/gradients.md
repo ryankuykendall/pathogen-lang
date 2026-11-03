@@ -164,9 +164,9 @@ Use `.append(pathBlock, styles?)` inside the trailing block to add path elements
 - **styles** — optional style block for the path element
 
 ```
-let line = @{ m 0 0 l 20 20 };
+let stripe = @{ m 0 0 l 20 20 };
 let hatch = Pattern('hatch', 0, 0, 20, 20) {|p|
-  p.append(line, #{ stroke: Color('#999'); stroke-width: 1; });
+  p.append(stripe, #{ stroke: Color('#999'); stroke-width: 1; });
 };
 ```
 

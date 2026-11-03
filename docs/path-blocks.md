@@ -303,9 +303,9 @@ Returns the point and tangent angle at fraction `t`. The angle is the direction 
 
 ```
 let p = @{ v 50 h 100 };
-let tan = p.tangent(0.0);
-log(tan.point);              // Point(0, 0)
-log(tan.angle);              // ~1.5708 (π/2, pointing down)
+let tangent = p.tangent(0.0);
+log(tangent.point);          // Point(0, 0)
+log(tangent.angle);          // ~1.5708 (π/2, pointing down)
 ```
 
 Because nothing is ever reported above `pi`, a comparison or `switch` range such as `case 1.2pi..<1.8pi` can never match a tangent or normal angle. Write the upper half of the circle with negative values (`case -0.8pi..<-0.2pi` for up-facing), or pass the angle through [`normalizeAngle()`](#stdlib-angle-conversion) when you want a `0 … 2pi` view.
@@ -478,8 +478,8 @@ log(bb.width, bb.height);    // full extent of the curve
 For a straight-line path the bounding box matches the endpoint coordinates:
 
 ```
-let line = @{ h 100 };
-let bb = line.boundingBox();
+let straight = @{ h 100 };
+let bb = straight.boundingBox();
 // bb = { x: 0, y: 0, width: 100, height: 0 }
 ```
 
@@ -641,12 +641,12 @@ Returns the intersection points between this path's bounding box edges and the g
 
 ```
 let box = @{ h 100 v 100 h -100 z };
-let line = @{ m -10 50 h 120 };
+let crossbar = @{ m -10 50 h 120 };
 
 let projBox = box.project(0, 0);
-let projLine = line.project(0, 0);
-let pts = projBox.intersectionPoints(projLine);
-// pts contains the points where the line crosses the box's bounding box edges
+let projCrossbar = crossbar.project(0, 0);
+let pts = projBox.intersectionPoints(projCrossbar);
+// pts contains the points where the crossbar crosses the box's bounding box edges
 ```
 
 Non-overlapping paths return an empty array:
@@ -807,9 +807,9 @@ let flipped = p.scale(-1, 1);     // mirror across y-axis
 Uniform scaling (`sx == sy`) preserves shape and scales arc radii proportionally. Non-uniform scaling (`sx != sy`) performs full ellipse eigendecomposition to compute new arc radii and rotation. Negative scale values flip the arc sweep flag (reflection reverses chirality).
 
 ```
-let arc = @{ a 25 25 0 0 1 50 0 };
-let wide = arc.scale(2, 1);       // stretched elliptical arc
-let big = arc.scale(3, 3);        // uniform: radii tripled
+let semicircle = @{ a 25 25 0 0 1 50 0 };
+let wide = semicircle.scale(2, 1);   // stretched elliptical arc
+let big = semicircle.scale(3, 3);    // uniform: radii tripled
 ```
 
 ### `subPath(startT, endT)` → PathBlock
@@ -1482,10 +1482,10 @@ This matters wherever the start point is load-bearing: where a dash pattern begi
 On an **open** path the geometry cannot be re-joined, so the result has two runs: the path from `t` to the original end, then a jump back to the original start covering the remainder — every piece stays in its original placement:
 
 ```
-let arc = @{
+let curve = @{
   c 0 -60 100 -60 100 0;
 };
-let shifted = arc.startAt(0.25);
+let shifted = curve.startAt(0.25);
 // draws t=0.25..1 first, then jumps back and draws t=0..0.25
 ```
 

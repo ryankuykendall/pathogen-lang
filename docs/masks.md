@@ -47,12 +47,12 @@ The `mask` property automatically wraps the ID with `url(#...)`, so `m.id` (whic
 ```
 // Define mask geometry
 let fullRect = @{ m 0 0 l 200 0 l 0 200 l -200 0 z };
-let circle = @{ m 100 50 a 50 50 0 1 1 0 100 a 50 50 0 1 1 0 -100 };
+let disc = @{ m 100 50 a 50 50 0 1 1 0 100 a 50 50 0 1 1 0 -100 };
 
 // Create mask: white = visible, black = hidden
 let m = Mask('circle-reveal');
 m.append(fullRect, #{ fill: black; });
-m.append(circle, #{ fill: white; });
+m.append(disc, #{ fill: white; });
 
 // Apply mask to layer
 define PathLayer('drawing') #{ mask: m.id; stroke: #333; stroke-width: 2; }

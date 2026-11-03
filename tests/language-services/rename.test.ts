@@ -244,9 +244,11 @@ describe('rename switch keywords and case bindings', () => {
   });
 
   it('renames a destructured case binding in the pattern, the guard, and the body', () => {
+    // The pattern's `{ x }` is shorthand: the key stays (`x: px`), or the
+    // pattern would read a property named px that a Point doesn't have.
     const edits = rename(src, 3, 6, 'px'); // `x` in `M x y`
     expect(edits.map((e) => [e.range.start.line, e.range.start.character, e.newText])).toEqual([
-      [2, 9, 'px'],
+      [2, 9, 'x: px'],
       [2, 22, 'px'],
       [3, 6, 'px'],
     ]);

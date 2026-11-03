@@ -37,7 +37,7 @@ log(ctx.heading);`),
 
   it('destructures like any other member', () => {
     expect(
-      logs('let { heading } = ctx;\nlog(heading);\nM 0 0 L 10 0\nlet { heading: after } = ctx;\nlog(after);'),
+      logs('let { heading: before } = ctx;\nlog(before);\nM 0 0 L 10 0\nlet { heading: after } = ctx;\nlog(after);'),
     ).toEqual(['null', '0']);
   });
 

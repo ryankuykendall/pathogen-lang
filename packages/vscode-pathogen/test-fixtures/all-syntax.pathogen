@@ -171,7 +171,7 @@ let total = numbers.reduce(0) {|acc, value|
 };
 
 // --- Enum ---
-enum Direction {
+enum Compass {
   UP,
   DOWN,
   LEFT,
@@ -179,7 +179,7 @@ enum Direction {
 }
 
 // --- Enum member access ---
-let dir = Direction.UP;
+let dir = Compass.UP;
 
 // --- SVG Path commands ---
 M 0 0
@@ -293,7 +293,7 @@ let startX = ctx.start.x;
 let anchor = Point(100, 200);
 let primary = CSSVar('--primary', #ff0000);
 let brand = Color('#3b82f6');
-let heading = PolarVector(45deg, 100);
+let bearing = PolarVector(45deg, 100);
 let cycle = Cycler([1, 2, 3]);
 let mask = Mask('m1');
 let clip = ClipPath('c1');

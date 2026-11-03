@@ -3632,8 +3632,8 @@ M 0 0`);
         // Should cross left edge at (0,50) and right edge at (100,50)
         const result = compile(`
           let box = @{ h 100 v 100 h -100 z };
-          let line = @{ h 120 };
-          let pLine = line.project(-10, 50);
+          let crossbar = @{ h 120 };
+          let pLine = crossbar.project(-10, 50);
           let pts = box.intersectionPoints(pLine);
           log(pts.length);
           for (p in pts) {
@@ -3658,9 +3658,9 @@ M 0 0`);
         // Crosses left edge at x=10 and right edge at x=110, both at y=60
         const result = compile(`
           let box = @{ h 100 v 100 h -100 z };
-          let line = @{ h 130 };
+          let crossbar = @{ h 130 };
           let pBox = box.project(10, 10);
-          let pLine = line.project(-10, 60);
+          let pLine = crossbar.project(-10, 60);
           let pts = pBox.intersectionPoints(pLine);
           log(pts.length);
           for (p in pts) {

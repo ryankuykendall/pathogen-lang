@@ -5,6 +5,51 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] - 2026-11-02 (built-in names can't be declared)
+
+### Changed
+
+#### Core
+
+- **Breaking: a program can't declare a name the language already defines.** `let line = @{ h 100 };` is now a compile error: `Cannot use line as a name — it is a built-in function. Use another name`. It is reported before the program runs, at the name, even inside a function that is never called.
+  - **Why:** a built-in name now always means the built-in. Before, a declaration hid it for the rest of its scope, and only some of the time. A user `fn circle` replaced the stdlib one, a user `fn Point` was ignored in call position, and `let viewbox = 5;` hid the program's viewBox. Imported modules (phase 1) need the rule to be the same in every file.
+  - **Which names:** every standard-library function, plus `log` and `assert`; every constructor; every built-in enum and namespace; `ctx` (the drawing context) and `viewbox`. The list is derived from the runtime's own registries, so a new built-in is covered as soon as it exists.
+  - **Every way of declaring a name:** `let` and `const`, a `fn`'s name and parameters, lambda and block parameters, loop variables, destructured names, `case` bindings, and an `enum`'s name (post50's `enum Marker` was one).
+  - **Destructuring:** a property taken under its own name says how to rename it: `let { min } = range;` → `… Take the property under another name: { min: minValue }`.
+  - **What stays allowed:** object keys (`{ min: 2 }`), properties (`range.min`), enum members, strings and style properties. Names are case-sensitive, so `let point = Point(20, 20);` is fine. `pi`, `deg` and `rad` keep their unit-suffix message.
+  - **Newly reserved names (143)**, for the record (decision 21: from now on, a release that adds a built-in names it here):
+    - Functions: `abs`, `acos`, `arc`, `arcFromCenter`, `arcFromPolarOffset`, `asin`, `assert`, `atan`, `atan2`, `bump`, `cbrt`, `ceil`, `circle`, `circleCircle`, `clamp`, `clippedQuadSpline`, `closePath`, `cos`, `cosh`, `cubic`, `cubicBezier`, `cubicSpline`, `deg`, `E`, `ease`, `easeIn`, `easeInOut`, `easeOut`, `exp`, `floor`, `hash01`, `hash11`, `hashRange`, `heading`, `hexagonGrid`, `lerp`, `line`, `lineCircle`, `lineLine`, `lineTo`, `ln`, `log`, `log10`, `log2`, `map`, `max`, `min`, `moveTo`, `mpi`, `noise`, `noise2`, `normalizeAngle`, `PI`, `polarCubicBezier`, `polarLine`, `polarMove`, `polarOffset`, `polarPoint`, `polarX`, `polarY`, `polygon`, `pow`, `quadratic`, `quadSpline`, `rad`, `radialWedge`, `random`, `randomRange`, `rect`, `round`, `roundRect`, `sign`, `sin`, `sinh`, `smoothstep`, `sqrt`, `squareGrid`, `star`, `tan`, `tangentArc`, `tangentLine`, `tanh`, `TAU`, `toFixed`, `triangleGrid`, `trunc`, `turn`.
+    - Constructors: `ClipPath`, `Color`, `ConicGradient`, `CSSVar`, `Cycler`, `ElevationShadowFilter`, `EmbossFilter`, `FreeformGradient`, `GlowFilter`, `Grid`, `GroupLayer`, `InnerShadowFilter`, `LinearGradient`, `Marker`, `Mask`, `MeshGradient`, `MotionBlurFilter`, `NoiseFilter`, `PathLayer`, `Pattern`, `PixelateFilter`, `Point`, `PolarVector`, `RadialGradient`, `SVGDocumentFragment`, `TextLayer`, `TopoGradient`.
+    - Enums: `BBoxAnchor`, `BlendMode`, `ConicSpread`, `CurveContinuity`, `Direction`, `Easing`, `GlowMode`, `GradientUnits`, `GridPatternType`, `HexagonOrientation`, `InnerFill`, `Interpolation`, `MarkerOrient`, `MarkerPreserveAspectRatio`, `MarkerRefX`, `MarkerRefY`, `MarkerUnits`, `MotionBlurType`, `NoiseFilterScale`, `NoiseFilterStyle`, `SpreadMethod`, `TopoMethod`, `VerticalAnchor`.
+    - Namespaces: `Cap`, `Font`, `Object`, `PathBlock`. Values: `ctx`, `viewbox`.
+- **Saved workspaces were renamed before this shipped**, so they keep compiling. 34 of the 216 programs saved on pathogen.studio declared a built-in name: 22 copies of a font specimen with `let min` / `let max`, 10 programs with their own `fn mpi` (one of them approved for the gallery, and its pending re-review), one `let map` and one `enum GridPatternType`. Each was renamed the way the editor's quick fix does it: `minValue`, `maxValue`, `myMpi`, `mapValue`. A rename was kept only when the renamed program compiles to the same drawing, logged values and warnings as the original under the previous release. 30 do. 3 already failed for other reasons and fail with the same error after. The `enum GridPatternType` program already doesn't parse (a missing `;`), so it was left alone and keeps showing that error. The migration ran on 2026-11-02: 33 records rewritten (31 workspaces, the approval and its re-review queue entry), each backed up first, none skipped, and a second dry run found nothing left. Workspace snapshots also keep code; production had none.
+
+#### Language services
+
+- Every declared built-in name is underlined, not just the first. F2 renames it everywhere it's used, in the playground and VS Code. In VS Code a quick fix also renames it to a free name it picks (`minValue`, or `myMpi` for a function). Style values, `${…}` interpolations and `calc()` arguments follow the rename; object keys, properties, strings and a built-in call in another scope don't change. `{ min }` becomes `{ min: minValue }`, so the property name stays.
+
+### Fixed
+
+#### Language services
+
+- **Rename changes the occurrence you asked about.** It used to edit the first matching word on the line, so renaming `size` in `log('size', size);` changed the string. Declarations and references now use their exact positions.
+- **Renaming a destructured shorthand binding keeps the property name.** Renaming `x` in `case { x, y }` or `let { x } = p` used to rename the key too, so the pattern read a property that doesn't exist. It now writes `{ x: newName, y }`.
+- **A function body sees names declared later in its scope.** Hover, go-to-definition, find references and rename now resolve a top-level `let` written below the function that uses it, as the language does since named functions became lexical.
+
+#### Documentation
+
+- docs/syntax.md: a "Built-in names" section, with each error next to its program, what stays allowed and the destructuring fix. The naming rules list now has four rules, and the `pi`/`deg`/`rad` rule covers every declaration form. docs/viewbox.md no longer says `let viewbox = 5;` is legal. docs/stdlib.md and docs/objects.md point to the new section.
+- Examples that declared a built-in were renamed: 15 in docs and the blog (`heading` → `bearing`, `ease` → `sCurve`, `line` → `stripe`, `circle` → `disc`, `tan` → `tangent`, `arc` → `semicircle` / `curve` / `arcCommand`, `turn` → `quarter`, `round` → `rounded`, and the inline `{ deg, rad, pi, turns }`), and 28 blog samples (`sign` → `signText`, `heading` → `travelAngle` / `bearing` / `headingLayer`, `line` → `lineLayer` / `metric`, `enum Marker` → `MarkerShape`, `arc` → `arcCommand`, `tan` → `tangent`, `fn hash01` → `sinFract`). All 28 samples compile to byte-identical SVGs.
+- "The Reliable Line" said a user `fn hash01` "shadows the built-in, by design". It now has a dated editor's note, and its folklore-hash example is `sinFract`, the name the post already used.
+
+#### Development
+
+- `src/builtin-names.ts` holds the one table, derived from the registries. The parser check, the evaluator's backstop, the namespace lookup, scope analysis, code actions and the audit all read it. The hand-kept lists in scope analysis and code actions are gone (scope analysis missed `Font` and listed `Infinity`/`NaN`, which the runtime doesn't resolve).
+- `scripts/check-builtin-collisions.ts --names <name> [--kv-dir …]` lists the programs that declare a name: the repository corpus, and stored workspaces from a read-only export. `.claude/CLAUDE.md` and `src/CLAUDE.md` make it a step before adding any built-in.
+- `scripts/migrate-builtin-names-kv.ts` (logic in `scripts/lib/builtin-name-codemod.ts`) migrates stored workspaces, approvals and review queues. It dry-runs by default; a write needs `--write` and `--backup-dir`, and prod needs `--confirm`. It recomputes hashes and bumps `rev`, and re-reads each record before writing it.
+- Semantics audit against the step 4 commit (`--step 5`): 1,447 programs. 1,397 are unchanged and 31 change; every one of the 31 declares a built-in. 2 are the docs examples written to show the error. 29 are project-docs records kept as they were: pre-stdlib spline prototypes, the step 3 probe that pinned the old behaviour, primer and demo copies. The rest are 15 skipped (the baseline parser rejects them) and 4 too large, as always.
+- Tests: `tests/builtin-names.test.ts` (67) pins the documented messages word for word, every declaration form, each kind of name, what stays allowed, the run-time backstop and the editor features. `tests/migrate-builtin-names.test.ts` (15) covers the codemod and its gate. About 45 older tests that declared built-in names were renamed, and the pins that asserted shadowing now assert the error. `project-docs/modules/verify/verify-step5-surfaces.ts` (32 checks) covers the CLI, the playground and VS Code bundles, and the editor features from both. `verify-step5-playground.mjs` drives the real playground: the error panel, then F2.
+
 ## [Unreleased] - 2026-10-30 (`const`)
 
 ### Added

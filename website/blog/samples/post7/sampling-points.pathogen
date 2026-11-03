@@ -45,9 +45,9 @@ dots.apply {
 tangents.apply {
   for (i in 0..8) {
     let t = calc(i / 8);
-    let tan = proj.tangent(t);
+    let tangent = proj.tangent(t);
     let len = 20;
-    M calc(tan.point.x - cos(tan.angle) * len / 2) calc(tan.point.y - sin(tan.angle) * len / 2)
-    l calc(cos(tan.angle) * len) calc(sin(tan.angle) * len)
+    M calc(tangent.point.x - cos(tangent.angle) * len / 2) calc(tangent.point.y - sin(tangent.angle) * len / 2)
+    l calc(cos(tangent.angle) * len) calc(sin(tangent.angle) * len)
   }
 }

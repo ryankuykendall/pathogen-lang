@@ -186,7 +186,7 @@ let allow = placed.offset(7);      // body panel only, by guard
 
 // after: every piece gets its cutting line, curves and all
 let allow = placed.offset(7);      // any piece — or
-let round = placed.offset(7, { join: 'round' });
+let rounded = placed.offset(7, { join: 'round' });
 ```
 
 A lesson worth keeping from the diagnosis: the bug we *logged* — "the

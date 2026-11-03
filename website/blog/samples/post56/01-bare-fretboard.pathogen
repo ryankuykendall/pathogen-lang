@@ -62,9 +62,9 @@ fn drawBoard(outline, slots, scale) {
 
 // Two decimals, sign kept, always shown — there is no toFixed yet.
 fn mm(value) {
-  let sign = '';
+  let signText = '';
   if (value < 0) {
-    sign = '-';
+    signText = '-';
   }
   let hundredths = round(abs(value) * 100);
   let whole = floor(hundredths / 100);
@@ -73,7 +73,7 @@ fn mm(value) {
   if (frac < 10) {
     pad = '0';
   }
-  return `${sign}${whole}.${pad}${frac}`;
+  return `${signText}${whole}.${pad}${frac}`;
 }
 
 // ─── Top board: page position and scale, children in millimetres ──

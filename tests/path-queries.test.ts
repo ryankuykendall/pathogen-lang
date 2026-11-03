@@ -145,7 +145,7 @@ describe('path queries: command', () => {
 
   it('cubic and quadratic commands expose control points', () => {
     const src =
-      "let p = @{\n  c 10 0 20 10 30 10;\n  q 10 10 20 0;\n};\nlet cubic = p.query('command(cubic)');\nlet quad = p.query('command(quadratic)');\nlog(cubic.cp1, cubic.cp2);\nlog(quad.cp);";
+      "let p = @{\n  c 10 0 20 10 30 10;\n  q 10 10 20 0;\n};\nlet curve = p.query('command(cubic)');\nlet quad = p.query('command(quadratic)');\nlog(curve.cp1, curve.cp2);\nlog(quad.cp);";
     expect(logLines(src)).toEqual(['Point(10, 0) Point(20, 10)', 'Point(40, 20)']);
   });
 
@@ -450,7 +450,7 @@ describe('headings on Command and Endpoint', () => {
   });
 
   it('startHeading and endHeading differ on an arc and agree on a line', () => {
-    const src = "define PathLayer('p') #{ fill: none; }\nlayer('p').apply {\n  M 0 0\n  a 20 20 0 0 1 20 20\n  l 10 0\n}\nlet arc = layer('p').query('command(a)');\nlet line = layer('p').query('command(l)');\nlog(round(arc.startHeading.deg), round(arc.endHeading.deg), round(line.startHeading.deg), round(line.endHeading.deg));";
+    const src = "define PathLayer('p') #{ fill: none; }\nlayer('p').apply {\n  M 0 0\n  a 20 20 0 0 1 20 20\n  l 10 0\n}\nlet bend = layer('p').query('command(a)');\nlet straight = layer('p').query('command(l)');\nlog(round(bend.startHeading.deg), round(bend.endHeading.deg), round(straight.startHeading.deg), round(straight.endHeading.deg));";
     expect(logLines(src)).toEqual(['0 90 0 0']);
   });
 

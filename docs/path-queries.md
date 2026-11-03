@@ -67,12 +67,12 @@ let tab = @{
 
 let placed = tab.drawTo(30, 25);
 
-for (arc in placed.queryAll('command(a)')) {
-  circle(arc.center.x, arc.center.y, 2);
+for (arcCommand in placed.queryAll('command(a)')) {
+  circle(arcCommand.center.x, arcCommand.center.y, 2);
 }
 ```
 
-The query runs on `placed`, the `ProjectedPath` that `drawTo` returned, so `arc.center` is already in page coordinates. Arc commands expose `rx`, `ry`, `rotation`, `largeArc`, `sweep`, and the computed `center`.
+The query runs on `placed`, the `ProjectedPath` that `drawTo` returned, so `arcCommand.center` is already in page coordinates. Arc commands expose `rx`, `ry`, `rotation`, `largeArc`, `sweep`, and the computed `center`.
 
 ### Labels through `query`
 

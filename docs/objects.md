@@ -301,7 +301,8 @@ let { x, z } = { x: 1, y: 2 };
 // x is 1, z is null
 ```
 
-Rename properties with `key: localName` syntax:
+Rename properties with `key: localName` syntax. A property named after a
+built-in, such as `min`, needs this form (see [Built-in names](#syntax-built-in-names)):
 
 ```
 let point3d = { x: 1, y: 2, z: 3 };
@@ -324,7 +325,7 @@ The rest pattern must be the last binding in the destructuring pattern.
 Destructuring is not limited to object literals — it also works on Pathogen's
 fixed-shape struct values, the built-ins with a known, fixed set of
 properties: `Point`, `PolarVector`, `Grid`, `MeshPoint` (from mesh
-gradients), `Color`, `Angle` (`let { deg, rad, pi, turns } = 90deg;` — see
+gradients), `Color`, `Angle` (`let { deg: degrees, rad: radians, turns } = 90deg;` — see
 [Angle Units](#syntax-angle-units)), and context objects like
 `ctx.position`. It does not
 work on open-ended built-ins like `TextBlock` or `ProjectedPath`, even

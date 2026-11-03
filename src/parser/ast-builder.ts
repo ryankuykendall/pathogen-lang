@@ -2273,9 +2273,15 @@ function buildExpressionWithPostfix(cursor: TreeCursor, source: string): Express
   return expr;
 }
 
-function buildTrailingBlock(cursor: TreeCursor, source: string): { params: string[]; body: Statement[] } {
+function buildTrailingBlock(
+  cursor: TreeCursor,
+  source: string,
+): { params: string[]; body: Statement[]; loc: SourceLocation } {
   const params: string[] = [];
   const body: Statement[] = [];
+  // Where the block itself starts (its `{`), so tools can tell its parameters
+  // from same-named ones in the call's arguments.
+  const blockLoc = loc(cursor, source);
 
   // Lambda / callback bodies are break/continue boundaries
   const savedLoopDepth = loopDepth;
@@ -2324,7 +2330,7 @@ function buildTrailingBlock(cursor: TreeCursor, source: string): { params: strin
     }
   }
 
-  return { params, body };
+  return { params, body, loc: blockLoc };
 }
 
 function buildPostfixExpression(cursor: TreeCursor, source: string): Expression {

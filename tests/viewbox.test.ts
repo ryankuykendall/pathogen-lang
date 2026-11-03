@@ -192,16 +192,17 @@ describe('viewbox global — reading', () => {
     expect(result.logs[0].parts[0].value).toBe('Point(60, 0)');
   });
 
-  it('is shadowed by a user variable named viewbox', () => {
-    const result = compilePath('let viewbox = 5;\nM viewbox 0');
-    expect(result).toBe('M 5 0');
+  it('a program can no longer declare its own viewbox (phase 0a step 5: a built-in name)', () => {
+    // It used to shadow the global; docs/viewbox.md "Read-only semantics".
+    expect(() => compilePath('let viewbox = 5;\nM viewbox 0')).toThrow(
+      "Parse error at line 1, column 5: Cannot use viewbox as a name — it is the program's viewBox. Use another name",
+    );
   });
 
-  it('shadowing is scope-local — global visible again outside the block', () => {
-    const result = compile(
-      'define ViewBox(0, 0, 100, 50);\nif (true) { let viewbox = 5; log(viewbox); }\nlog(viewbox.width);',
-    );
-    expect(result.logs.map((l) => l.parts[0].value)).toEqual(['5', '100']);
+  it('not even inside a block', () => {
+    expect(() =>
+      compile('define ViewBox(0, 0, 100, 50);\nif (true) { let viewbox = 5; log(viewbox); }\nlog(viewbox.width);'),
+    ).toThrow("Parse error at line 2, column 17: Cannot use viewbox as a name — it is the program's viewBox");
   });
 
   it('follows execution order, not source order — fn declared above define reads it when called after', () => {

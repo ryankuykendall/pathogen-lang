@@ -303,6 +303,8 @@ export interface CalcExpression {
 export interface BlockFunction {
   params: string[];
   body: Statement[];
+  /** Where a trailing block starts (its `{`); a lambda's own `loc` is on LambdaExpression. */
+  loc?: SourceLocation;
 }
 
 // Lambda literal: {|a, b| return a + b; } in expression position

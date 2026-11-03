@@ -9,6 +9,7 @@ import {
   LEGACY_STYLE_OPENER_MESSAGE,
 } from '../parser';
 import { parser as lezerParser } from '../parser/pathogen.generated';
+import { findReservedBindings } from '../parser/reserved-bindings';
 
 import type { TextDocument } from './document';
 import type { Diagnostic } from './types';
@@ -75,6 +76,34 @@ export function getDiagnostics(document: TextDocument, options: DiagnosticsOptio
   }
 
   // Phase 2: Lezer found no errors — try parse + evaluate.
+  //
+  // A declared reserved name (a built-in like `line`, or a unit suffix like
+  // `rad`) stops the compile at the first one; the editor lists EVERY one, at
+  // its name, so each gets its squiggle and its rename quick fix. Anything
+  // else parse() would report (a malformed pattern, a const mistake) is added
+  // after them; evaluation waits until the names are fixed.
+  const reserved = findReservedBindings(lezerParser.parse(source), source);
+  if (reserved.length > 0) {
+    for (const r of reserved) {
+      diagnostics.push({
+        range: { start: document.positionAt(r.offset), end: document.positionAt(r.end) },
+        severity: DiagnosticSeverity.Error,
+        message: r.message,
+        source: 'pathogen-parser',
+      });
+    }
+    try {
+      parse(source);
+    } catch (err) {
+      const message = (err as Error).message;
+      if (!reserved.some((r) => message.endsWith(r.message))) {
+        const diag = parseParserError(message, document);
+        if (diag) diagnostics.push(diag);
+      }
+    }
+    return diagnostics;
+  }
+
   let ast;
   try {
     ast = parse(source);

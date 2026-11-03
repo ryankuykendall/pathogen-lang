@@ -82,11 +82,11 @@ define ViewBox(0, 0, 200, 200);
 
 The implicit `0 0 200 200` default ([Default ViewBox](#viewbox-default-viewbox)) applies to rendering only; the `viewbox` global never falls back to it. To read the viewbox, declare it.
 
-### Shadowing and read-only semantics
+### Read-only semantics
 
 - The struct is read-only: assigning to a member (`viewbox.width = 5;`) is a compile error — `Cannot assign to property 'width'`.
 - Each read returns a fresh copy, so `let a = viewbox;` gives you an independent snapshot.
-- A user variable named `viewbox` shadows the global — `let viewbox = 5;` is legal and existing programs keep their meaning. The shadow follows normal scope rules: a `let viewbox` inside a block shadows only within that block, and the global is visible again outside it. Within a scope that shadows it, there is no way to reach the ambient global.
+- `viewbox` is a [built-in name](#syntax-built-in-names), so it always means the program's viewBox: `let viewbox = 5;` is a compile error.
 - Capitalized `ViewBox` remains a keyword and is only valid in `define ViewBox(…)`.
 
 ## Default ViewBox
@@ -119,7 +119,8 @@ The compiler rejects:
 - **`default` modifier** — `define default ViewBox(…)` is not allowed; only `PathLayer` and `TextLayer` accept `default`.
 - **Non-numeric arguments** — every argument must evaluate to a finite number.
 - **Reading `viewbox` before `define ViewBox` has run** — see [Reading before defining is an error](#viewbox-reading-before-defining-is-an-error).
-- **Assigning to a `viewbox` member** — the struct is read-only; see [Shadowing and read-only semantics](#viewbox-shadowing-and-read-only-semantics).
+- **Assigning to a `viewbox` member** — the struct is read-only; see [Read-only semantics](#viewbox-read-only-semantics).
+- **Declaring `viewbox`** (`let viewbox = 5;`) — it's a [built-in name](#syntax-built-in-names).
 
 ## Precedence with the CLI
 

@@ -3,6 +3,11 @@
  * (project-docs/modules/06-phase-0a-plan.md). A program whose output changes
  * without one of its step's tags is an unexplained difference.
  */
+import { BUILTIN_NAMES } from '../../../src/builtin-names';
+import { RESERVED_UNIT_NAMES } from '../../../src/evaluator/reserved-names';
+import { lezerParser } from '../../../src/parser';
+import { findReservedBindings } from '../../../src/parser/reserved-bindings';
+
 import type { PathogenModule } from './baseline';
 
 type Node = Record<string, unknown>;
@@ -82,7 +87,19 @@ function step2Tags(ast: unknown, tags: Set<string>): void {
   });
 }
 
+/**
+ * Step 5 (built-in names are a compile error): `builtin-binding` — the
+ * program declares a built-in name, so it now stops at that name. Read from
+ * the parse tree, since the strict parse refuses the program.
+ */
+function step5Tags(source: string): string[] {
+  // pi/deg/rad were already errors (their own message); only the new rule counts.
+  const declared = findReservedBindings(lezerParser.parse(source), source);
+  return declared.some((b) => BUILTIN_NAMES.has(b.name) && !RESERVED_UNIT_NAMES.has(b.name)) ? ['builtin-binding'] : [];
+}
+
 export function tagsFor(step: number, source: string, lib: PathogenModule): string[] {
+  if (step === 5) return step5Tags(source);
   let ast: unknown;
   try {
     ast = lib.parse(source);

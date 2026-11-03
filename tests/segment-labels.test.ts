@@ -572,9 +572,9 @@ describe('query pseudo-selectors (:atomic, :first, :last, :nth)', () => {
       let run = wheel.segment('rim');
       let arcs = wheel.segmentAll('rim:atomic');
       let lenSum = 0;
-      for (arc in arcs) {
-        lenSum = calc(lenSum + arc.length);
-        log(arc.segmentAll('rim').length);
+      for (piece in arcs) {
+        lenSum = calc(lenSum + piece.length);
+        log(piece.segmentAll('rim').length);
       }
       log(calc(abs(lenSum - run.length) < 0.001));
     `);

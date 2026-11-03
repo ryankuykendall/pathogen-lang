@@ -4,6 +4,7 @@ const expressionParser = { parse: (input: string) => { const v = expressionParse
 import { contextAwareFunctions, stdlib } from '../stdlib';
 import { STATEMENT_BUILTINS } from './constructor-registry';
 import { RESERVED_UNIT_NAMES, reservedNameBindingError, reservedNameReferenceError } from './reserved-names';
+import { BUILTIN_NAMES, builtinNameError, builtinNamespaceType } from '../builtin-names';
 import { splitSubpaths } from './subpaths';
 import { dispatchSubscriptions } from './subscriptions';
 import { CALLBACK_METHODS } from '../callback-methods';
@@ -1268,29 +1269,13 @@ function builtinValue(scope: Scope, name: string, line?: number, column?: number
     const ctx = ctxValueFor(origin.evalState);
     if (ctx) return ctx;
   }
-  // Object namespace
-  if (name === 'Object') {
-    return { type: 'ObjectNamespace' } as ObjectNamespace;
-  }
-  // Color namespace
-  if (name === 'Color') {
-    return { type: 'ColorNamespace' } as ColorNamespace;
-  }
-  // PathBlock namespace
-  if (name === 'PathBlock') {
-    return { type: 'PathBlockNamespace' } as PathBlockNamespace;
-  }
-  // Font namespace (Font.info / Font.characters / Font.glyphs — docs/fonts.md)
-  if (name === 'Font') {
-    return { type: 'FontNamespace' } as FontNamespace;
-  }
-  // Cap namespace (end caps for compoundVariableOffset)
-  if (name === 'Cap') {
-    return { type: 'CapNamespace' } as CapNamespace;
-  }
-  // Marker namespace (Marker.fromPathBlock); Marker(...) itself is a constructor call
-  if (name === 'Marker') {
-    return { type: 'MarkerNamespace' } as MarkerNamespace;
+  // Namespaces — Object, Color, PathBlock, Font (docs/fonts.md), Cap (end caps
+  // for compoundVariableOffset), Marker (Marker.fromPathBlock; Marker(...)
+  // itself is a constructor call). One table, shared with the name rule
+  // (builtin-names.ts).
+  const namespaceType = builtinNamespaceType(name);
+  if (namespaceType) {
+    return { type: namespaceType } as ObjectNamespace | ColorNamespace | PathBlockNamespace | FontNamespace | CapNamespace | MarkerNamespace;
   }
   // Ambient viewbox global — fresh copy per read so the struct is read-only
   // and evalState's `loc` never leaks into user code.
@@ -1346,6 +1331,10 @@ function setVariable(scope: Scope, name: string, value: Value): void {
   // reports the same rule statically, at the name (parser/reserved-bindings.ts).
   if (RESERVED_UNIT_NAMES.has(name)) {
     throw new Error(reservedNameBindingError(name));
+  }
+  // A built-in name can't be declared (phase 0a step 5, builtin-names.ts).
+  if (BUILTIN_NAMES.has(name)) {
+    throw new Error(builtinNameError(name));
   }
   scope.variables.set(name, value);
 }
@@ -9784,6 +9773,13 @@ function bindDestructuringPattern(
       });
     }
   } else {
+    // A property taken under its own built-in name (`{ min }`) gets the
+    // message that names the fix, before anything binds.
+    for (const { key, alias } of pattern.properties) {
+      if (!alias && !RESERVED_UNIT_NAMES.has(key) && BUILTIN_NAMES.has(key)) {
+        throw new Error(formatError(builtinNameError(key, true), line));
+      }
+    }
     if (isObjectValue(value)) {
       const usedKeys = new Set<string>();
       for (const { key, alias } of pattern.properties) {

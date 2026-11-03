@@ -41,7 +41,7 @@ path.apply {
 
 let proj = curve.project(80, 240);
 let pt = proj.get(0.4);
-let tan = proj.tangent(0.4);
+let tangent = proj.tangent(0.4);
 let norm = proj.normal(0.4);
 
 // --- Sample point dot ---
@@ -57,14 +57,14 @@ sample_dot.apply {
 
 // --- Tangent line ---
 
-let tangent = PathLayer('tangent') #{
+let tangentLayer = PathLayer('tangent') #{
   stroke: Color('#22c55e');
   stroke-width: 1.5;
   fill: none;
 };
-tangent.apply {
-  M calc(pt.x - cos(tan.angle) * 55) calc(pt.y - sin(tan.angle) * 55)
-  L calc(pt.x + cos(tan.angle) * 55) calc(pt.y + sin(tan.angle) * 55)
+tangentLayer.apply {
+  M calc(pt.x - cos(tangent.angle) * 55) calc(pt.y - sin(tangent.angle) * 55)
+  L calc(pt.x + cos(tangent.angle) * 55) calc(pt.y + sin(tangent.angle) * 55)
 }
 
 // Tangent direction arrow
@@ -73,13 +73,13 @@ let tan_arrow = PathLayer('tan-arrow') #{
   stroke: none;
 };
 // Arrow at the positive end of tangent
-let tan_end_x = calc(pt.x + cos(tan.angle) * 55);
-let tan_end_y = calc(pt.y + sin(tan.angle) * 55);
-let tan_perp_x = calc(-sin(tan.angle));
-let tan_perp_y = calc(cos(tan.angle));
+let tan_end_x = calc(pt.x + cos(tangent.angle) * 55);
+let tan_end_y = calc(pt.y + sin(tangent.angle) * 55);
+let tan_perp_x = calc(-sin(tangent.angle));
+let tan_perp_y = calc(cos(tangent.angle));
 tan_arrow.apply {
   M tan_end_x tan_end_y
-  l calc(-cos(tan.angle) * 10 + tan_perp_x * 4) calc(-sin(tan.angle) * 10 + tan_perp_y * 4)
+  l calc(-cos(tangent.angle) * 10 + tan_perp_x * 4) calc(-sin(tangent.angle) * 10 + tan_perp_y * 4)
   l calc(-tan_perp_x * 8) calc(-tan_perp_y * 8)
   z
 }
@@ -130,7 +130,7 @@ let leaders = PathLayer('leaders') #{
 };
 leaders.apply {
   // Tangent label leader
-  M calc(pt.x + cos(tan.angle) * 48) calc(pt.y + sin(tan.angle) * 48)
+  M calc(pt.x + cos(tangent.angle) * 48) calc(pt.y + sin(tangent.angle) * 48)
   L 310 80
   // Normal label leader
   M calc(pt.x + cos(norm.angle) * 44) calc(pt.y + sin(norm.angle) * 44)

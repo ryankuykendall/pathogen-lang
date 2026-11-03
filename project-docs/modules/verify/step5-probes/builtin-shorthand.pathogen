@@ -1,0 +1,4 @@
+// Phase 0a step 5: a destructured property with a built-in's name names the fix.
+let range = { min: 2, max: 8 };
+let { min, max } = range;
+log(min, max);

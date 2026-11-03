@@ -39,7 +39,7 @@ let eyebrow = TextLayer('eyebrow') #{
   letter-spacing: 3;
   fill: fg_muted;
 };
-let heading = TextLayer('heading') #{
+let headingLayer = TextLayer('heading') #{
   font-family: font;
   font-size: 22;
   font-weight: 200;
@@ -70,7 +70,7 @@ chart.append(track, bars, names, counts);
 let glyphSamples = GroupLayer('glyph-samples');
 glyphSamples.append(samples, glyphNames);
 let captions = GroupLayer('captions');
-captions.append(eyebrow, heading);
+captions.append(eyebrow, headingLayer);
 
 // ─── Ask the font ──────────────────────────────────────────────
 let styles = #{
@@ -83,7 +83,7 @@ let info = Font.info(styles);
 eyebrow.apply {
   text(15, 30)`FONT.INFO(STYLES).SCRIPTS`;
 }
-heading.apply {
+headingLayer.apply {
   text(15, 58)`${info.fullName}: ${info.characterCount} characters`;
 }
 

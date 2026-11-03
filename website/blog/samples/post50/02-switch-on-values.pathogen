@@ -8,7 +8,7 @@ define default PathLayer('marks') #{
 
 // After: say the value once. Enum members and string literals both work,
 // and Dot, Spark share one body. No fallthrough, so no break.
-enum Marker {
+enum MarkerShape {
   Dot,
   Ring,
   Box,
@@ -17,18 +17,18 @@ enum Marker {
 
 let rows = [
   [
-    Marker.Dot,
-    Marker.Ring,
-    Marker.Box,
-    Marker.Spark,
-    Marker.Ring,
+    MarkerShape.Dot,
+    MarkerShape.Ring,
+    MarkerShape.Box,
+    MarkerShape.Spark,
+    MarkerShape.Ring,
   ],
   [
-    Marker.Ring,
-    Marker.Box,
-    Marker.Dot,
-    Marker.Dot,
-    Marker.Spark,
+    MarkerShape.Ring,
+    MarkerShape.Box,
+    MarkerShape.Dot,
+    MarkerShape.Dot,
+    MarkerShape.Spark,
   ],
 ];
 
@@ -37,14 +37,14 @@ for ([kinds, row] in rows) {
   for ([kind, index] in kinds) {
     let cx = 40 + index * 60;
     switch(kind) {
-      case Marker.Dot {
+      case MarkerShape.Dot {
         circle(cx, cy, 10);
       }
-      case Marker.Ring {
+      case MarkerShape.Ring {
         circle(cx, cy, 16);
         circle(cx, cy, 8);
       }
-      case Marker.Box {
+      case MarkerShape.Box {
         rect(cx - 12, cy - 12, 24, 24);
       }
       default {

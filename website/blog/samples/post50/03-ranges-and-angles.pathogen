@@ -10,9 +10,9 @@ define default PathLayer('marks') #{
 // adjacent bands never both claim a boundary; open-ended ranges (..<6,
 // 18..) catch everything below or above.
 for (i in 0..<24) {
-  let heading = i * 15deg;
+  let bearing = i * 15deg;
   let len = 0;
-  switch(heading) {
+  switch(bearing) {
     case 0deg..<90deg {
       len = 70;
     }
@@ -26,8 +26,8 @@ for (i in 0..<24) {
       len = 25;
     }
   }
-  M calc(100 + cos(heading) * 8) calc(100 + sin(heading) * 8)
-  L calc(100 + cos(heading) * len) calc(100 + sin(heading) * len)
+  M calc(100 + cos(bearing) * 8) calc(100 + sin(bearing) * 8)
+  L calc(100 + cos(bearing) * len) calc(100 + sin(bearing) * len)
 
   let dotRadius = 0;
   switch(i) {
@@ -44,5 +44,5 @@ for (i in 0..<24) {
       dotRadius = 2;
     }
   }
-  circle(100 + cos(heading) * (len + 8), 100 + sin(heading) * (len + 8), dotRadius);
+  circle(100 + cos(bearing) * (len + 8), 100 + sin(bearing) * (len + 8), dotRadius);
 }

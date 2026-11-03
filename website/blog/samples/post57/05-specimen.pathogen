@@ -168,8 +168,8 @@ let metricLines = [
   },
 ];
 let previousLabelY = -100;
-for (line in metricLines) {
-  let y = calc(baseline - line.height);
+for (metric in metricLines) {
+  let y = calc(baseline - metric.height);
   guides.apply {
     M left y
     H right
@@ -179,7 +179,7 @@ for (line in metricLines) {
     labelY = max(calc(y + 10), calc(previousLabelY + 10));
   }
   guideLabels.apply {
-    text(right, labelY)`${line.label} ${round(line.height)}`;
+    text(right, labelY)`${metric.label} ${round(metric.height)}`;
   }
   previousLabelY = labelY;
 }

@@ -1,9 +1,9 @@
 // Every defs type in one file: mask, clipPath, linear gradient, pattern, marker.
 // Tests defs emission order and cross-cutting interactions.
 
-let rect = @{ m 0 0 l 200 0 l 0 200 l -200 0 z };
+let square = @{ m 0 0 l 200 0 l 0 200 l -200 0 z };
 let mask = Mask('m1');
-mask.append(rect, #{ fill: Color('#ffffff'); });
+mask.append(square, #{ fill: Color('#ffffff'); });
 
 let frame = @{ m 10 10 l 180 0 l 0 180 l -180 0 z };
 let clip = ClipPath('c1');

@@ -23,7 +23,7 @@ This post does three things: explains why the built-in hash is deliberately **no
 Part 2's hash is a classic for a reason — one line, no dependencies, instantly random-looking:
 
 ```
-fn hash01(i) {
+fn sinFract(i) {
   let s = sin(i * 12.9898) * 43758.5453;
   return s - floor(s);
 }
@@ -42,6 +42,13 @@ Two contracts worth knowing before you use it:
 
 (One naming note: the sample above calls its folklore hash `sinFract`, not `hash01`, for a load-bearing reason — a user-defined `fn hash01` would *shadow* the built-in, which is exactly the mechanism that keeps part 2's published samples byte-stable. More on that below.)
 
+> **Editor's note, November 2026:** a program can no longer declare a
+> built-in's name, so a user-defined `fn hash01` is now a compile error
+> instead of quietly replacing the built-in. Part 2's sample and the folklore hash above were
+> renamed to `sinFract`, and their output didn't change. If your own program
+> defines `fn hash01`, give it another name. See
+> [Built-in names](/docs#syntax-built-in-names).
+
 And `randomRange` users get a drop-in — same call shape, an index in front:
 
 ```
@@ -55,7 +62,7 @@ Here is part 2's finale rebuilt on the stdlib. Both helper `fn`s are gone. `bump
 
 <mini-workspace src="samples/post32/02-halo-builtins.pathogen" caption="Sixteen compound-offset layers, zero helper fns. bump() replaces bulge, hash11(i, haloIndex) replaces the hash-plus-remap, and the per-layer salt became the seed argument. The lambdas still capture haloIndex — that part 'The Shape of a Stroke' got right the first time. The builder mk is a named lambda, so it's applied with << (see the worker rules in the docs); samples 3 and 4 below pass their builders as literal blocks instead." code-open></mini-workspace>
 
-The character of the glow is unchanged; the individual sparkle differs, because integer mixing lands on different values than sin-fract. That's the trade made consciously: the published samples in "The Shape of a Stroke" keep their exact pixels — user-defined `fn hash01` shadows the built-in, so old programs are untouched — while new programs get the portable hash.
+The character of the glow is unchanged; the individual sparkle differs, because integer mixing lands on different values than sin-fract. That's the trade made consciously: the published samples in "The Shape of a Stroke" keep their exact pixels — user-defined `fn hash01` shadows the built-in, so old programs are untouched (the mechanism has since changed, not the pixels; see the editor's note above) — while new programs get the portable hash.
 
 One honest caveat: in this glow, the *jitter* is the bit-pinned part. The envelope isn't — `bump` uses cosine and the layer widths flow through `pow`, both implementation-approximated, so the shape is reproducible on any one engine rather than byte-identical across all of them. The randomness is the part that used to drift, and that's the part that's now pinned.
 
@@ -99,6 +106,6 @@ What's guaranteed, precisely — the dividing line is whether the standard speci
 
 The full reference lives in the [Hash & Noise](/docs#stdlib-hash-noise), [Interpolation & Clamping](/docs#stdlib-interpolation-clamping), and [Easing](/docs#stdlib-easing) sections of the stdlib docs.
 
-If you have a generative sketch driven by `randomRange`, the one-line substitution — `hashRange(i, min, max)` with your loop index — makes it reproducible; everything else stays the same. And if your program defines its own `fn hash01`, nothing changes at all: your function shadows the built-in, by design.
+If you have a generative sketch driven by `randomRange`, the one-line substitution — `hashRange(i, min, max)` with your loop index — makes it reproducible; everything else stays the same. And if your program defines its own `fn hash01`, nothing changes at all: your function shadows the built-in, by design (since changed; a function can no longer take a built-in's name — see the editor's note under "Why not the folklore hash?").
 
 The hand-rolled versions of these functions served three blog posts faithfully. They've earned the promotion.

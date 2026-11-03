@@ -187,20 +187,20 @@ markPivots(rightBars);
 
 // The crank angle beside each ghost's A, read from the crank that arrives there.
 rightGhosts.subscribe('endpoint(A)') {|pivot|
-  let heading = pivot.command.block.tangent(1).angle;
+  let travelAngle = pivot.command.block.tangent(1).angle;
   // Above A when the crank points up, below it when the crank points down:
   // always on the empty side of the ghost.
   let side = -1;
-  if (sin(heading) > 0) {
+  if (sin(travelAngle) > 0) {
     side = 1;
   }
   // Screen headings wrap at ±180°; a crank angle counts 0..360 the other way.
-  let angle = -deg(heading);
+  let angle = -deg(travelAngle);
   if (angle < 0) {
     angle = angle + 360;
   }
   rightAngles.apply {
-    text(pivot.x + cos(heading) * 4, pivot.y + side * 10 + 2.5)`${round(angle)}°`;
+    text(pivot.x + cos(travelAngle) * 4, pivot.y + side * 10 + 2.5)`${round(angle)}°`;
   }
 };
 

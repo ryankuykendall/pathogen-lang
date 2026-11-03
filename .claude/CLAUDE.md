@@ -100,13 +100,15 @@ For changes spanning multiple systems, see the [cross-system feature lifecycle](
 | Change type | Systems to update (in order) |
 |-------------|------------------------------|
 | New keyword | **`docs/` (relevant page)**, Grammar (+ regenerate), `path-args-tokenizer.ts` `KEYWORDS`, evaluator, `completion-data-static.ts` (`KEYWORD_COMPLETIONS`), `hover.ts` (`KEYWORD_HOVER`), formatter, TextMate grammar, snippets, verify all three surfaces |
-| New stdlib function | **`docs/stdlib.md`**, `stdlib/*.ts`, declare in `src/pathogen-api.ts` → `npm run generate:completions` (completion, hover and signature help are generated), verify all three surfaces |
+| New stdlib function | **Collision check first** (below), **`docs/stdlib.md`**, `stdlib/*.ts`, declare in `src/pathogen-api.ts` → `npm run generate:completions` (completion, hover and signature help are generated), verify all three surfaces |
 | New enum | **`docs/` (relevant section)**, `evaluator/builtin-enums.ts` (`BUILTIN_ENUMS`), `ENUM_METADATA` in `src/api-surface.ts`, `npm run generate:completions`, verify all three surfaces |
 | New type with members | **`docs/<feature>.md` (new file + `DOC_FILES` entry)**, evaluator, `@type`-tagged interface in `src/pathogen-api.ts` → `npm run generate:completions` (member completions, chain returns and hover are generated), verify all three surfaces |
 | New constructor / defs producer (`Marker()`, `Mask()`, `Gradient()`, `Pattern()`, `ClipPath()`, …) | **`docs/<feature>.md` (new file + `DOC_FILES` entry)**, `evaluator/types.ts`, `evaluator/index.ts`, `evaluator/constructor-registry.ts`, **shared render tree: `src/render/build-defs.ts`** (carries CLI + VS Code), **Playground: `types/compiler.d.ts` + `types/store.d.ts` + `state/store.ts` + `workspace-view.ts` + `svg-preview-pane.ts`**, **VS Code: rebuild the `.vsix`**, `src/pathogen-api.ts` → `generate:completions`, language-services, tests |
 | New syntax construct | **`docs/syntax.md`**, Lezer grammar (+ regenerate), AST, ast-builder, **path-args shadow grammar**, evaluator, formatter (a missing case deletes source), TextMate grammar, language-services walkers, verify all three surfaces |
 
 A new `.md` file in `docs/` has no effect until it is registered in `scripts/build-docs.ts` `DOC_FILES`. An unregistered doc is not published — treat the registration line as part of the doc itself.
+
+**Collision check for every new built-in name** (stdlib function, constructor, enum, namespace). A program can't declare a built-in's name (docs/syntax.md "Built-in names"), so a new built-in breaks every program that already declares it. Before adding one, run `npx tsx scripts/check-builtin-collisions.ts --names <name>` over the repository, and over stored workspaces with `--kv-dir tmp/kv-sources/prod` after a read-only export (`scripts/export-workspace-sources.ts`; production needs the user's go-ahead). A name many programs declare is renamed, or its programs are migrated before the push. The CHANGELOG entry names every new built-in name.
 
 **Build order:** docs (`npm run build:docs`) → compiler → language-services → `npm run build` → playground → VS Code packages → surface-parity verification
 

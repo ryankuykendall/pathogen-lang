@@ -7,9 +7,9 @@ import { buildDefs } from '../../src/render/build-defs';
 describe('buildDefs', () => {
   it('emits defs in order: masks → clipPaths → gradients → patterns → markers', () => {
     const result = compile(`
-      let rect = @{ m 0 0 l 10 0 l 0 10 l -10 0 z };
+      let square = @{ m 0 0 l 10 0 l 0 10 l -10 0 z };
       let mask = Mask('m1');
-      mask.append(rect, #{ fill: Color('#ffffff'); });
+      mask.append(square, #{ fill: Color('#ffffff'); });
 
       let shape = @{ m 0 0 l 10 0 l 0 10 l -10 0 z };
       let clip = ClipPath('c1');

@@ -1,6 +1,7 @@
-import { analyzeScopes } from './scope-analysis';
+import { analyzeScopes, declarationName } from './scope-analysis';
 
 import type { TextDocument } from './document';
+import type { Declaration, Reference, ScopeInfo } from './scope-analysis';
 import type { Position, Range } from './types';
 
 export interface TextEdit {
@@ -13,7 +14,12 @@ export interface PrepareRenameResult {
   placeholder: string;
 }
 
-// Keywords and builtins that cannot be renamed
+/**
+ * Keywords and builtins. Rename never starts from a reference to one of these
+ * (it resolves to no declaration); a DECLARATION that uses a built-in's name —
+ * an error since phase 0a step 5 — can still be renamed, which is how the
+ * quick fix repairs it.
+ */
 export const NON_RENAMEABLE = new Set([
   'let', 'const', 'for', 'in', 'if', 'else', 'fn', 'return', 'define', 'default',
   'layer', 'apply', 'text', 'tspan', 'null', 'true', 'false', 'enum',
@@ -38,25 +44,10 @@ export const NON_RENAMEABLE = new Set([
  */
 export function prepareRename(document: TextDocument, position: Position): PrepareRenameResult | null {
   const source = document.getText();
-  const offset = document.offsetAt(position);
-  const word = getWordAt(source, offset);
+  const word = getWordAt(source, document.offsetAt(position));
   if (!word) return null;
-  if (NON_RENAMEABLE.has(word.text)) return null;
-
-  // Must resolve to a user declaration
-  const scopeInfo = analyzeScopes(document);
-  for (const ref of scopeInfo.references) {
-    if (ref.name === word.text && ref.declaration && matchesPosition(position, ref.range)) {
-      return { range: word.range, placeholder: word.text };
-    }
-  }
-  for (const decl of scopeInfo.declarations) {
-    if (decl.name === word.text && isOnLine(position, decl.range)) {
-      return { range: word.range, placeholder: word.text };
-    }
-  }
-
-  return null;
+  const info = analyzeScopes(document);
+  return declarationAt(document, info, position, word.text) ? { range: word.range, placeholder: word.text } : null;
 }
 
 /**
@@ -65,65 +56,89 @@ export function prepareRename(document: TextDocument, position: Position): Prepa
  */
 export function getRenameEdits(document: TextDocument, position: Position, newName: string): TextEdit[] {
   const source = document.getText();
-  const offset = document.offsetAt(position);
-  const word = getWordAt(source, offset);
+  const word = getWordAt(source, document.offsetAt(position));
   if (!word) return [];
-  if (NON_RENAMEABLE.has(word.text)) return [];
+  const info = analyzeScopes(document);
+  const target = declarationAt(document, info, position, word.text);
+  return target ? renameDeclarationEdits(document, info, target, newName) : [];
+}
 
-  const scopeInfo = analyzeScopes(document);
-
-  // Find the target declaration
-  let targetDecl = null;
-  for (const ref of scopeInfo.references) {
-    if (ref.name === word.text && ref.declaration && matchesPosition(position, ref.range)) {
-      targetDecl = ref.declaration;
-      break;
-    }
-  }
-  if (!targetDecl) {
-    for (const decl of scopeInfo.declarations) {
-      if (decl.name === word.text && isOnLine(position, decl.range)) {
-        targetDecl = decl;
-        break;
-      }
-    }
-  }
-  if (!targetDecl) return [];
-
+/**
+ * The edits that rename one declaration and every reference to it. Used by
+ * rename, the built-in-name quick fix (code-actions.ts) and the stored-
+ * workspace migration (scripts/migrate-builtin-names-kv.ts).
+ *
+ * Positions are exact wherever the parse tree gives them: the declaration's
+ * name (scope-analysis.ts `declarationName`), a reference whose position
+ * holds its name, and style-value references (full-width ranges). Only a
+ * reference without one falls back to a scan of its line. A shorthand
+ * property — `{ x }` as a value or `let { x } = o` — becomes `x: newName`, so
+ * the key keeps its name.
+ */
+export function renameDeclarationEdits(
+  document: TextDocument,
+  info: ScopeInfo,
+  decl: Declaration,
+  newName: string,
+): TextEdit[] {
+  const source = document.getText();
   const edits: TextEdit[] = [];
-
-  // Rename the declaration
-  const declWordRange = findWordRangeOnLine(source, document, targetDecl.range.start.line, targetDecl.name);
-  if (declWordRange) {
-    edits.push({ range: declWordRange, newText: newName });
+  const name = declarationName(info, decl, document);
+  if (name) {
+    edits.push({ range: name.range, newText: name.shorthand ? `${decl.name}: ${newName}` : newName });
+  } else {
+    const range = findWordRangeOnLine(source, document, decl.range.start.line, decl.name);
+    if (range) edits.push({ range, newText: newName });
   }
-
-  // Rename all references to this declaration. Full-width references
-  // (style-block values — see Reference.inStyleValue) carry exact extents and
-  // are used directly; zero-width references fall back to the line scan,
-  // skipping occurrences already claimed by earlier edits so multiple
-  // references on one line each land on their own occurrence.
-  for (const ref of scopeInfo.references) {
-    if (ref.declaration === targetDecl) {
-      const refWordRange = isFullWidth(ref.range)
-        ? ref.range
-        : findWordRangeOnLine(source, document, ref.range.start.line, ref.name, edits);
-      if (refWordRange) {
-        // Shorthand object property ({ x }): expand to `x: newName` so the
-        // property key keeps its name and only the value reference renames.
-        const newText = ref.inShorthandProperty ? `${ref.name}: ${newName}` : newName;
-        // Avoid duplicates (same range as declaration)
-        if (!edits.some((e) => e.range.start.line === refWordRange.start.line && e.range.start.character === refWordRange.start.character)) {
-          edits.push({ range: refWordRange, newText });
-        }
-      }
-    }
+  for (const ref of info.references) {
+    if (ref.declaration !== decl) continue;
+    const range =
+      exactReferenceRange(ref, source, document) ??
+      findWordRangeOnLine(source, document, ref.range.start.line, ref.name, edits);
+    if (!range || edits.some((e) => samePosition(e.range.start, range.start))) continue;
+    edits.push({ range, newText: ref.inShorthandProperty ? `${ref.name}: ${newName}` : newName });
   }
-
   return edits;
 }
 
 // --- Helpers ---
+
+/** The declaration the name at `position` declares or refers to. */
+function declarationAt(document: TextDocument, info: ScopeInfo, position: Position, name: string): Declaration | null {
+  const source = document.getText();
+  for (const ref of info.references) {
+    if (ref.name !== name || !ref.declaration) continue;
+    const range = exactReferenceRange(ref, source, document);
+    if (range && contains(range, position)) return ref.declaration;
+  }
+  for (const decl of info.declarations) {
+    if (decl.name !== name) continue;
+    const declName = declarationName(info, decl, document);
+    if (declName && contains(declName.range, position)) return decl;
+  }
+  // A position the tree couldn't place: the first match on the line, as before.
+  for (const ref of info.references) {
+    if (ref.name === name && ref.declaration && isOnLine(position, ref.range)) return ref.declaration;
+  }
+  for (const decl of info.declarations) {
+    if (decl.name === name && isOnLine(position, decl.range)) return decl;
+  }
+  return null;
+}
+
+/**
+ * A reference's exact extent: style-value references carry it; others start
+ * at their name when the parser gave them their own position (the text there
+ * is the name, as a whole word). Null when the position belongs to an
+ * enclosing statement.
+ */
+function exactReferenceRange(ref: Reference, source: string, document: TextDocument): Range | null {
+  if (isFullWidth(ref.range)) return ref.range;
+  const offset = document.offsetAt(ref.range.start);
+  const end = offset + ref.name.length;
+  if (source.slice(offset, end) !== ref.name || isWordChar(source[offset - 1]) || isWordChar(source[end])) return null;
+  return { start: ref.range.start, end: document.positionAt(end) };
+}
 
 interface WordAtPosition {
   text: string;
@@ -152,6 +167,10 @@ function getWordAt(source: string, offset: number): WordAtPosition | null {
   };
 }
 
+function isWordChar(ch: string | undefined): boolean {
+  return ch !== undefined && /[a-zA-Z0-9_]/.test(ch);
+}
+
 function isOnLine(position: Position, range: Range): boolean {
   return position.line === range.start.line;
 }
@@ -160,13 +179,11 @@ function isFullWidth(range: Range): boolean {
   return range.end.line > range.start.line || range.end.character > range.start.character;
 }
 
-/**
- * Position matching that handles both range conventions (mirrors
- * navigation.ts isPositionInRange): zero-width statement-anchored ranges
- * match by line; full-width ranges (style-value references) by containment.
- */
-function matchesPosition(position: Position, range: Range): boolean {
-  if (!isFullWidth(range)) return isOnLine(position, range);
+function samePosition(a: Position, b: Position): boolean {
+  return a.line === b.line && a.character === b.character;
+}
+
+function contains(range: Range, position: Position): boolean {
   if (position.line < range.start.line || position.line > range.end.line) return false;
   if (position.line === range.start.line && position.character < range.start.character) return false;
   if (position.line === range.end.line && position.character > range.end.character) return false;
@@ -174,12 +191,11 @@ function matchesPosition(position: Position, range: Range): boolean {
 }
 
 /**
- * Find the exact word range for a name on a given line.
- * Since scope analysis only gives the statement start location,
- * we need to search the actual line for the identifier.
- * When `claimed` is given, occurrences whose start position already has an
- * edit are skipped, so successive same-line references each get the next
- * unclaimed occurrence instead of piling onto the first.
+ * Find the exact word range for a name on a given line — the fallback for a
+ * position the tree couldn't place. When `claimed` is given, occurrences
+ * whose start position already has an edit are skipped, so successive
+ * same-line references each get the next unclaimed occurrence instead of
+ * piling onto the first.
  */
 function findWordRangeOnLine(source: string, document: TextDocument, line: number, name: string, claimed?: TextEdit[]): Range | null {
   const lineStart = document.offsetAt({ line, character: 0 });

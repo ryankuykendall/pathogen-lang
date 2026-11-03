@@ -42,9 +42,9 @@ This works on both PathBlocks (relative coordinates from origin) and ProjectedPa
 
 ```pathogen
 let curve = @{ c 0 -100 200 -100 200 0 };
-let tan = curve.tangent(0.0);
-log(tan.point);   // Point(0, 0) — start of curve
-log(tan.angle);   // angle in radians — direction of travel
+let tangent = curve.tangent(0.0);
+log(tangent.point);   // Point(0, 0) — start of curve
+log(tangent.angle);   // angle in radians — direction of travel
 ```
 
 [`.normal(t)`](/docs#path-blocks-normalt-point-angle) returns the left-hand perpendicular — the tangent angle minus π/2, wrapped into the same (−π, π] range the tangent uses. This is useful for placing elements that should point "outward" from the curve:

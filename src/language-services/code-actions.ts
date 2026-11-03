@@ -1,8 +1,9 @@
-import { STATEMENT_BUILTINS } from '../evaluator/constructor-registry';
+import { BUILTIN_NAMES, BUILTIN_NAME_ERROR_RE, suggestName } from '../builtin-names';
 import { LEGACY_STYLE_OPENER_MESSAGE } from '../parser';
 import { stdlib, contextAwareFunctions } from '../stdlib';
 import { findLegacyStyleOpeners } from './diagnostics';
-import { analyzeScopes } from './scope-analysis';
+import { renameDeclarationEdits } from './rename';
+import { analyzeScopes, declarationName } from './scope-analysis';
 
 import type { TextDocument } from './document';
 import type { Range, Diagnostic } from './types';
@@ -23,36 +24,9 @@ export interface TextEdit {
   newText: string;
 }
 
-// All known identifiers for fuzzy matching
-const ALL_KNOWN_NAMES = new Set([
-  ...Object.keys(stdlib),
-  ...contextAwareFunctions,
-  ...STATEMENT_BUILTINS,
-  'ctx',
-  'Object',
-  'Color',
-  'PathBlock',
-  'Point',
-  'PolarVector',
-  'Cycler',
-  'CSSVar',
-  'PathLayer',
-  'TextLayer',
-  'GroupLayer',
-  'Easing',
-  'Interpolation',
-  'SpreadMethod',
-  'GradientUnits',
-  'Direction',
-  'ConicSpread',
-  'InnerFill',
-  'TopoMethod',
-  'BBoxAnchor',
-  'GridPatternType',
-  'true',
-  'false',
-  'null',
-]);
+// All known identifiers for fuzzy matching: every built-in name
+// (builtin-names.ts, derived from the registries) and the literal keywords.
+const ALL_KNOWN_NAMES = new Set([...BUILTIN_NAMES.keys(), 'true', 'false', 'null']);
 
 /**
  * Get code actions (quick fixes) for the given diagnostics.
@@ -92,9 +66,39 @@ export function getCodeActions(document: TextDocument, _range: Range, diagnostic
       const fix = wrapInCalcFix(document, diag, shadowMatch[1]);
       if (fix) actions.push(fix);
     }
+
+    // A declared built-in name — rename it everywhere it's used
+    const builtinMatch = diag.message.match(BUILTIN_NAME_ERROR_RE);
+    if (builtinMatch) {
+      const fix = renameBuiltinNameFix(document, diag, builtinMatch[1]);
+      if (fix) actions.push(fix);
+    }
   }
 
   return actions;
+}
+
+/**
+ * The diagnostic sits exactly on the declared name (findReservedBindings), so
+ * the declaration is the one whose name starts there. The new name is free:
+ * not declared or referenced anywhere in the document, and not a built-in.
+ */
+function renameBuiltinNameFix(document: TextDocument, diag: Diagnostic, name: string): CodeAction | null {
+  const info = analyzeScopes(document);
+  const decl = info.declarations.find((d) => {
+    if (d.name !== name) return false;
+    const start = declarationName(info, d, document)?.range.start;
+    return start?.line === diag.range.start.line && start.character === diag.range.start.character;
+  });
+  if (!decl) return null;
+  const used = new Set([...info.declarations.map((d) => d.name), ...info.references.map((r) => r.name)]);
+  const newName = suggestName(name, (candidate) => used.has(candidate), decl.kind === 'function');
+  return {
+    title: `Rename ${name} to ${newName}`,
+    kind: 'quickfix',
+    diagnostics: [diag],
+    edit: { changes: renameDeclarationEdits(document, info, decl, newName) },
+  };
 }
 
 /**

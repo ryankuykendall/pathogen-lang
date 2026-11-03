@@ -625,12 +625,12 @@ describe('Color type', () => {
       expect(hues[8]).toBeCloseTo(30, 1); // full turn wraps home
     });
 
-    it('angle survives a variable: hueShift(turn) and hueShift(deg(turn)) agree', () => {
+    it('angle survives a variable: hueShift(quarter) and hueShift(deg(quarter)) agree', () => {
       const result = compile(`
         let c = Color(0.5, 0.15, 30);
-        let turn = 0.5pi;
-        log(c.hueShift(deg(turn)).hue);
-        log(c.hueShift(turn).hue);
+        let quarter = 0.5pi;
+        log(c.hueShift(deg(quarter)).hue);
+        log(c.hueShift(quarter).hue);
       `);
       // deg() returns a plain number of degrees; the Angle variable converts
       // exactly — both shift 90°.

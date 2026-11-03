@@ -1,0 +1,3 @@
+// Phase 0a step 5: an enum's name is a declaration too (post50's enum Marker).
+enum Marker { Dot, Ring }
+log(Marker.Dot);

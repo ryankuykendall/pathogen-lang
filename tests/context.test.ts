@@ -670,8 +670,8 @@ describe('Path Context Tracking', () => {
 
     it('returns correct tangent angle', () => {
       const result = compileWithContext(`
-        let arc = arcFromCenter(100, 100, 50, 0, 90deg, 1);
-        log(arc.angle);
+        let swept = arcFromCenter(100, 100, 50, 0, 90deg, 1);
+        log(swept.angle);
       `);
       expect(result.logs).toHaveLength(1);
       const angle = parseFloat(result.logs[0].parts[0].value);
@@ -781,8 +781,8 @@ describe('Path Context Tracking', () => {
 
     it('returns correct tangent angle for clockwise arc', () => {
       const result = compileWithContext(`
-        let arc = arcFromPolarOffset(0, 50, 90deg);
-        log(arc.angle);
+        let swept = arcFromPolarOffset(0, 50, 90deg);
+        log(swept.angle);
       `);
       expect(result.logs).toHaveLength(1);
       const angle = parseFloat(result.logs[0].parts[0].value);

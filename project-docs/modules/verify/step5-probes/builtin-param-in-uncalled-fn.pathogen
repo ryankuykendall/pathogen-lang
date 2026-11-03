@@ -1,0 +1,7 @@
+// Phase 0a step 5: the error is reported before the program runs, even in a
+// fn that is never called.
+M 0 0 L 10 0
+
+fn spoke(heading, length) {
+  return polarLine(heading, length);
+}

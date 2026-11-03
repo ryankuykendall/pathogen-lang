@@ -50,7 +50,7 @@ describe('subscriptions: basics', () => {
   });
 
   it('accepts a << worker defined elsewhere and hands structs by noun', () => {
-    const src = `${HEAD}\nlet mark = {|arc| layer('dots').apply { circle(arc.center.x, arc.center.y, 1); } };\nlayer('shape').subscribe('command(a)') << mark;\nlayer('shape').apply {\n  M 0 0;\n  a 10 10 0 0 1 10 10;\n  a 10 10 0 0 1 10 10;\n}`;
+    const src = `${HEAD}\nlet mark = {|bend| layer('dots').apply { circle(bend.center.x, bend.center.y, 1); } };\nlayer('shape').subscribe('command(a)') << mark;\nlayer('shape').apply {\n  M 0 0;\n  a 10 10 0 0 1 10 10;\n  a 10 10 0 0 1 10 10;\n}`;
     expect(moves(layerData(src, 'dots'))).toBe(2);
   });
 
@@ -61,7 +61,7 @@ describe('subscriptions: basics', () => {
   });
 
   it('delivers the arcs that corner operations insert', () => {
-    const src = `${HEAD}\nlayer('shape').subscribe('command(a)') {|arc| log(arc.center); };\nlayer('shape').apply {\n  M 20 20;\n  h 80;\n  v 60 with fillet(10);\n  h -80;\n  z;\n}`;
+    const src = `${HEAD}\nlayer('shape').subscribe('command(a)') {|bend| log(bend.center); };\nlayer('shape').apply {\n  M 20 20;\n  h 80;\n  v 60 with fillet(10);\n  h -80;\n  z;\n}`;
     expect(logLines(src)).toEqual(['Point(90, 30)']);
   });
 

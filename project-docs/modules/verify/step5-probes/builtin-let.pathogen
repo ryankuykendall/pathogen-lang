@@ -1,0 +1,6 @@
+// Phase 0a step 5: declaring a built-in name is an error at the name.
+define ViewBox(0, 0, 120, 40);
+
+let line = @{ h 100 };
+M 10 20
+line.draw();

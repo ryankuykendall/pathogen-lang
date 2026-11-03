@@ -1,0 +1,14 @@
+// Phase 0a step 5: the fixed spellings — another name, a renamed destructured
+// property, a capitalised user name that differs only in case — and built-in
+// names where they aren't declarations (keys, members, enum members, calls).
+define ViewBox(0, 0, 120, 40);
+
+let edge = @{ h 100 };
+M 10 20
+edge.draw();
+
+let range = { min: 2, max: 8 };
+let { min: low, max: high } = range;
+let point = Point(20, 20);
+enum Edge { line, arc }
+log(low, high, range.min, point.x, Edge.line == Edge.line, min(low, high));

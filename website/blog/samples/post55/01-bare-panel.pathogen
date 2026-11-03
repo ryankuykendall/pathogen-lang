@@ -73,13 +73,13 @@ fn drawOutline(outline) {
 
 // One decimal, sign kept, always shown — there is no toFixed yet.
 fn mm(value) {
-  let sign = '';
+  let signText = '';
   if (value < 0) {
-    sign = '-';
+    signText = '-';
   }
   let tenths = round(abs(value) * 10);
   let whole = floor(tenths / 10);
-  return `${sign}${whole}.${tenths - whole * 10}`;
+  return `${signText}${whole}.${tenths - whole * 10}`;
 }
 
 // ─── Left panel: page position and scale, children in millimetres ──

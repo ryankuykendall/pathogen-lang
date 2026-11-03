@@ -16,7 +16,7 @@ fn bulge(t, center, spread) {
   return 0.5 * (1 + cos(mpi(d)));
 }
 
-fn hash01(i) {
+fn sinFract(i) {
   let s = sin(i * 12.9898) * 43758.5453;
   return s - floor(s);
 }
@@ -30,7 +30,7 @@ let base = oklch(0.72 0.14 20);
 
 for (haloIndex in 16..1) {
   //-- Everything below closes over THIS iteration's haloIndex.
-  let jitter = {|i| return 1 + (hash01(i * 7 + haloIndex * 1013) * 2 - 1) * 0.2; };
+  let jitter = {|i| return 1 + (sinFract(i * 7 + haloIndex * 1013) * 2 - 1) * 0.2; };
   let width1 = {|t|
     return 0.15 * haloIndex
          + 0.6 * haloIndex * bulge(t, 0.35, 0.3)

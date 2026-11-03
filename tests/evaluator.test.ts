@@ -788,11 +788,13 @@ describe('Evaluator', () => {
         expect(mean).toBeLessThan(0.55);
       });
 
-      it('user-defined fn hash01 shadows the stdlib function', () => {
-        // Protects published blog samples that define their own hash01: user
-        // scope must win over stdlib so their output never drifts.
+      it('a program can no longer define its own fn hash01 (phase 0a step 5)', () => {
+        // It used to shadow the stdlib function; the published samples that
+        // did were renamed (sinFract), with byte-identical output.
         const program = 'fn hash01(i) { return 0.5; } M calc(hash01(3)) 0';
-        expect(compilePath(program)).toBe('M 0.5 0');
+        expect(() => compilePath(program)).toThrow(
+          'Parse error at line 1, column 4: Cannot use hash01 as a name — it is a built-in function. Use another name',
+        );
       });
     });
 
@@ -1604,10 +1606,10 @@ describe('Evaluator', () => {
 
     it('returns a value usable in expressions', () => {
       const result = compilePath(`
-        fn mpi(radians) {
+        fn timesPi(radians) {
           return calc(PI() * radians);
         }
-        M mpi(0.5) 0
+        M timesPi(0.5) 0
       `);
       // PI() * 0.5 ≈ 1.5707963...
       expect(result).toMatch(/^M 1\.570796\d* 0$/);
@@ -2519,7 +2521,7 @@ describe('Evaluator', () => {
       });
 
       it('block has access to enclosing scope', () => {
-        const result = compile('let min = 2; let r = [1, 2, 3].filter {|n| return n >= min; }; log(r);');
+        const result = compile('let lowest = 2; let r = [1, 2, 3].filter {|n| return n >= lowest; }; log(r);');
         expect(result.logs[0].parts[0].value).toBe('[2, 3]');
       });
 
@@ -4030,7 +4032,7 @@ log(p.color.hex);`);
 
   describe('chained bezier splines', () => {
     const cubicSplineFn = `
-      fn cubicSpline(points) {
+      fn userCubicSpline(points) {
         M points[0].x points[0].y
         let n = calc(points.length - 1);
         if (n > 0) {
@@ -4048,7 +4050,7 @@ log(p.color.hex);`);
     `;
 
     const quadSplineFn = `
-      fn quadSpline(start, points, end) {
+      fn userQuadSpline(start, points, end) {
         M start.x start.y
         let cpx = calc(start.x + start.exit * cos(start.angle));
         let cpy = calc(start.y + start.exit * sin(start.angle));
@@ -4076,7 +4078,7 @@ log(p.color.hex);`);
     `;
 
     const clippedQuadSplineFn = `
-      fn clippedQuadSpline(start, points, end) {
+      fn userClippedQuadSpline(start, points, end) {
         M start.x start.y
         let cpx = calc(start.x + start.exit * cos(start.angle));
         let cpy = calc(start.y + start.exit * sin(start.angle));
@@ -4121,7 +4123,7 @@ log(p.color.hex);`);
       it('3-point chain: M + 2 C commands with computed CPs', () => {
         const result = compilePath(`
           ${cubicSplineFn}
-          cubicSpline([
+          userCubicSpline([
             { x: 0, y: 100, angle: 0, exit: 30 },
             { x: 50, y: 0, angle: 0, entry: 20, exit: 25 },
             { x: 100, y: 100, angle: 0, entry: 30 }
@@ -4136,7 +4138,7 @@ log(p.color.hex);`);
       it('2-point chain: single cubic segment', () => {
         const result = compilePath(`
           ${cubicSplineFn}
-          cubicSpline([
+          userCubicSpline([
             { x: 0, y: 0, angle: 0, exit: 40 },
             { x: 100, y: 50, angle: 0, entry: 30 }
           ]);
@@ -4148,7 +4150,7 @@ log(p.color.hex);`);
       it('G1 continuity: CPs at shared point are collinear', () => {
         const result = compilePath(`
           ${cubicSplineFn}
-          cubicSpline([
+          userCubicSpline([
             { x: 0, y: 100, angle: 0, exit: 30 },
             { x: 50, y: 0, angle: 0, entry: 20, exit: 25 },
             { x: 100, y: 100, angle: 0, entry: 30 }
@@ -4168,7 +4170,7 @@ log(p.color.hex);`);
       it('single-point array: emits only M', () => {
         const result = compilePath(`
           ${cubicSplineFn}
-          cubicSpline([{ x: 50, y: 50, angle: 0 }]);
+          userCubicSpline([{ x: 50, y: 50, angle: 0 }]);
         `);
         expect(result).toBe('M 50 50');
       });
@@ -4176,7 +4178,7 @@ log(p.color.hex);`);
       it('no error when last point lacks exit and first point lacks entry', () => {
         const result = compilePath(`
           ${cubicSplineFn}
-          cubicSpline([
+          userCubicSpline([
             { x: 0, y: 0, angle: 0, exit: 20 },
             { x: 100, y: 0, angle: 0, entry: 20 }
           ]);
@@ -4190,7 +4192,7 @@ log(p.color.hex);`);
       it('start + end only (no intermediates): single Q segment', () => {
         const result = compilePath(`
           ${quadSplineFn}
-          quadSpline(
+          userQuadSpline(
             { x: 0, y: 0, angle: 0, exit: 40 },
             [],
             { x: 100, y: 50 }
@@ -4203,7 +4205,7 @@ log(p.color.hex);`);
       it('one intermediate: verifies angle inference via atan2', () => {
         const result = compilePath(`
           ${quadSplineFn}
-          quadSpline(
+          userQuadSpline(
             { x: 0, y: 0, angle: 0, exit: 30 },
             [{ x: 60, y: 0, exit: 30 }],
             { x: 120, y: 0 }
@@ -4218,7 +4220,7 @@ log(p.color.hex);`);
       it('angle inference with non-trivial geometry', () => {
         const result = compilePath(`
           ${quadSplineFn}
-          quadSpline(
+          userQuadSpline(
             { x: 0, y: 0, angle: 0, exit: 40 },
             [{ x: 50, y: 30, exit: 30 }],
             { x: 100, y: 50 }
@@ -4240,7 +4242,7 @@ log(p.color.hex);`);
       it('symmetric collinear layout', () => {
         const result = compilePath(`
           ${quadSplineFn}
-          quadSpline(
+          userQuadSpline(
             { x: 0, y: 0, angle: 0, exit: 50 },
             [{ x: 100, y: 0, exit: 50 }],
             { x: 200, y: 0 }
@@ -4256,7 +4258,7 @@ log(p.color.hex);`);
       it('exitTime=1, entryTime=1: CPs at shared position (degenerate cubic)', () => {
         const result = compilePath(`
           ${clippedQuadSplineFn}
-          clippedQuadSpline(
+          userClippedQuadSpline(
             { x: 0, y: 0, angle: 0, exit: 50, exitTime: 1 },
             [],
             { x: 100, y: 0, entryTime: 1 }
@@ -4270,7 +4272,7 @@ log(p.color.hex);`);
       it('exitTime=0.5: CPs at half arm length', () => {
         const result = compilePath(`
           ${clippedQuadSplineFn}
-          clippedQuadSpline(
+          userClippedQuadSpline(
             { x: 0, y: 0, angle: 0, exit: 100, exitTime: 0.5 },
             [],
             { x: 200, y: 0, entryTime: 0.5 }
@@ -4284,7 +4286,7 @@ log(p.color.hex);`);
       it('emits C commands (not Q)', () => {
         const result = compilePath(`
           ${clippedQuadSplineFn}
-          clippedQuadSpline(
+          userClippedQuadSpline(
             { x: 0, y: 0, angle: 0, exit: 40, exitTime: 0.8 },
             [],
             { x: 100, y: 0, entryTime: 0.8 }
@@ -4301,7 +4303,7 @@ log(p.color.hex);`);
           ${cubicSplineFn}
           for (i in 0..1) {
             let ox = calc(i * 100);
-            cubicSpline([
+            userCubicSpline([
               { x: ox, y: 0, angle: 0, exit: 20 },
               { x: calc(ox + 50), y: 50, angle: 0, entry: 20 }
             ]);
@@ -4317,7 +4319,7 @@ log(p.color.hex);`);
           ${cubicSplineFn}
           let bx = 10;
           let by = 20;
-          cubicSpline([
+          userCubicSpline([
             { x: bx, y: by, angle: 0, exit: 15 },
             { x: calc(bx + 50), y: calc(by + 30), angle: 0, entry: 15 }
           ]);
@@ -4330,11 +4332,11 @@ log(p.color.hex);`);
         const result = compilePath(`
           ${cubicSplineFn}
           ${quadSplineFn}
-          cubicSpline([
+          userCubicSpline([
             { x: 0, y: 0, angle: 0, exit: 20 },
             { x: 50, y: 0, angle: 0, entry: 20 }
           ]);
-          quadSpline(
+          userQuadSpline(
             { x: 60, y: 0, angle: 0, exit: 20 },
             [],
             { x: 100, y: 0 }
@@ -4501,9 +4503,10 @@ log(p.color.hex);`);
       });
     });
 
-    describe('user fn shadows stdlib', () => {
-      it('user-defined cubicSpline takes precedence over stdlib', () => {
-        const result = compilePath(`
+    describe('a user fn can no longer take the stdlib name (phase 0a step 5)', () => {
+      it('fn cubicSpline is a compile error at the name', () => {
+        expect(() =>
+          compilePath(`
           fn cubicSpline(points) {
             M points[0].x points[0].y
             let n = calc(points.length - 1);
@@ -4523,9 +4526,10 @@ log(p.color.hex);`);
             { x: 0, y: 0, angle: 0, exit: 20 },
             { x: 100, y: 0, angle: 0, entry: 20 }
           ]);
-        `);
-        // User fn emits absolute commands (M, C) — different from stdlib's relative (m, c)
-        expect(result).toBe('M 0 0 C 20 0 80 0 100 0');
+        `),
+        ).toThrow(
+          'Parse error at line 2, column 14: Cannot use cubicSpline as a name — it is a built-in function. Use another name',
+        );
       });
     });
 

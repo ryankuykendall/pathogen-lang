@@ -280,8 +280,8 @@ rightBars.subscribe('endpoint') {|pivot|
   rightDots.apply {
     circle(pivot.x, pivot.y, 2.5);
   }
-  let heading = pivot.command.block.tangent(1).angle;
-  let away = heading + pivot.turn.rad / 2 - PI() / 2;
+  let travelAngle = pivot.command.block.tangent(1).angle;
+  let away = travelAngle + pivot.turn.rad / 2 - PI() / 2;
   rightNames.apply {
     text(pivot.x + cos(away) * 11, pivot.y + sin(away) * 11 + 3)`${pivot.label}`;
   }

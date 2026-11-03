@@ -119,17 +119,17 @@ drawForm(rightForm);
 // the circle stay countable even though they share one centre.
 let arcs = rightForm.queryAll('command(a)');
 spokes.apply {
-  for (arc in arcs) {
-    let mid = arc.block.get(0.5);
-    let hub = arc.center;
+  for (arcCommand in arcs) {
+    let mid = arcCommand.block.get(0.5);
+    let hub = arcCommand.center;
     M mid.x mid.y
     L hub.x hub.y
   }
 }
 centres.apply {
-  for (arc in arcs) {
-    let mid = arc.block.get(0.5);
-    let hub = arc.center;
+  for (arcCommand in arcs) {
+    let mid = arcCommand.block.get(0.5);
+    let hub = arcCommand.center;
     circle(mid.x, mid.y, 1.6);
     circle(hub.x, hub.y, 2.2);
   }

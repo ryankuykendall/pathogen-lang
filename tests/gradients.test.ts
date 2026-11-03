@@ -719,9 +719,9 @@ describe('Gradients', () => {
   describe('Pattern output', () => {
     it('output structure matches PatternOutput interface', () => {
       const result = compile(`
-        let line = @{ m 0 0 l 50 50 };
+        let stripe = @{ m 0 0 l 50 50 };
         let p = Pattern('grid', 0, 0, 50, 50) {|p|
-          p.append(line, #{ fill: none; stroke: Color('#ccc'); });
+          p.append(stripe, #{ fill: none; stroke: Color('#ccc'); });
         };
       `);
       const pat = result.patterns[0];

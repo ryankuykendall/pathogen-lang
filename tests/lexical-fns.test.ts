@@ -311,9 +311,11 @@ describe('the audit hook (__setScopeAudit, for scripts/audit-semantics.ts --step
     expect(events(source)).toEqual({ events: ['bound-elsewhere f.amt'], threw: false });
   });
 
-  it("bound-elsewhere: a caller's variable named like a built-in, now the built-in", () => {
+  it("a caller's variable named like a built-in can no longer exist (step 5: the declaration is an error)", () => {
+    // Step 3 recorded this as bound-elsewhere (f.round read g's variable
+    // before, the built-in after); since step 5 `let round` doesn't compile.
     const source = 'fn f() { return round(2.4); }\nfn g() { let round = 9; return f(); }\nlet b = g();';
-    expect(events(source)).toEqual({ events: ['bound-elsewhere f.round'], threw: false });
+    expect(events(source)).toEqual({ events: [], threw: true });
   });
 
   it('only-where-written: a fn returned from a factory used to lose its variables', () => {

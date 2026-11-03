@@ -9,7 +9,7 @@ define default PathLayer('marks') #{
 // The expression form: one expression per arm, default required. The
 // size and the lift are switch expressions that drop straight into a
 // let; the underline's right end is one inside a path argument.
-enum Marker {
+enum MarkerShape {
   Dot,
   Ring,
   Box,
@@ -17,18 +17,18 @@ enum Marker {
 }
 
 let kinds = [
-  Marker.Dot,
-  Marker.Ring,
-  Marker.Box,
-  Marker.Spark,
-  Marker.Ring,
+  MarkerShape.Dot,
+  MarkerShape.Ring,
+  MarkerShape.Box,
+  MarkerShape.Spark,
+  MarkerShape.Ring,
 ];
 
 for ([kind, index] in kinds) {
   let cx = 40 + index * 60;
   let size = switch(kind) {
-    case Marker.Dot { 10 }
-    case Marker.Ring { 16 }
+    case MarkerShape.Dot { 10 }
+    case MarkerShape.Ring { 16 }
     default { 12 }
   };
   let lift = switch(index) {
@@ -38,14 +38,14 @@ for ([kind, index] in kinds) {
   };
   let cy = 52 + lift;
   switch(kind) {
-    case Marker.Dot {
+    case MarkerShape.Dot {
       circle(cx, cy, size);
     }
-    case Marker.Ring {
+    case MarkerShape.Ring {
       circle(cx, cy, size);
       circle(cx, cy, size - 8);
     }
-    case Marker.Box {
+    case MarkerShape.Box {
       rect(cx - size, cy - size, size * 2, size * 2);
     }
     default {
@@ -58,7 +58,7 @@ for ([kind, index] in kinds) {
   }
   M calc(cx - size) calc(78 + lift)
   L calc(cx + switch(kind) {
-    case Marker.Box { size * 2 }
+    case MarkerShape.Box { size * 2 }
     default { size }
   }) calc(78 + lift)
 }
