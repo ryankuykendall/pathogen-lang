@@ -498,7 +498,9 @@ function buildImportDeclaration(cursor: TreeCursor, source: string): ImportDecla
   const nodeLoc = loc(cursor, source);
   const node = cursor.node;
   const pathNode = node.getChild('String');
-  const path = pathNode ? parseStringContent(source.slice(pathNode.from, pathNode.to)) : '';
+  // Raw text between the quotes: an import path processes no escapes (ast.ts).
+  const pathToken = pathNode ? source.slice(pathNode.from, pathNode.to) : '';
+  const path = pathToken.slice(1, -1);
   const sourceLoc = pathNode ? { ...lineColumnAt(source, pathNode.from), offset: pathNode.from } : undefined;
 
   const defaultImport = node.getChild('DefaultImport');
@@ -513,6 +515,7 @@ function buildImportDeclaration(cursor: TreeCursor, source: string): ImportDecla
     return {
       type: 'ImportDeclaration',
       source: path,
+      sourceToken: pathToken,
       sourceLoc,
       specifiers: [],
       namespace: nameNode
@@ -535,7 +538,7 @@ function buildImportDeclaration(cursor: TreeCursor, source: string): ImportDecla
       localLoc: at((aliasNode ?? importedNode).from),
     });
   }
-  return { type: 'ImportDeclaration', source: path, sourceLoc, specifiers, loc: nodeLoc };
+  return { type: 'ImportDeclaration', source: path, sourceToken: pathToken, sourceLoc, specifiers, loc: nodeLoc };
 }
 
 function buildExportDeclaration(cursor: TreeCursor, source: string): Statement {

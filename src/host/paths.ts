@@ -105,6 +105,28 @@ export function resolveProjectPath(written: string, fromFile: string): ResolvedP
   return { ok: true, path: `/${segments.join('/')}` };
 }
 
+/**
+ * Re-spell a written path with the on-disk case of its resolved project path,
+ * for "differs only in letter case" messages (`@font` and `import` alike).
+ */
+export function respell(written: string, actualProjectPath: string): string {
+  const writtenParts = written.split('/');
+  const actualParts = actualProjectPath.split('/').filter(Boolean);
+  // Only the written segments that survive `..` name real folders and the
+  // file (`tests/..` names nothing); they are the end of the actual path.
+  const surviving: number[] = [];
+  writtenParts.forEach((part, i) => {
+    if (part === '..') surviving.pop();
+    else if (part && part !== '.') surviving.push(i);
+  });
+  const tail = actualParts.slice(actualParts.length - surviving.length);
+  const out = [...writtenParts];
+  surviving.forEach((index, k) => {
+    out[index] = tail[k] ?? out[index];
+  });
+  return out.join('/');
+}
+
 /** The file name without its extension: `/fonts/Baumans-Regular.ttf` → `Baumans-Regular`. */
 export function projectPathStem(projectPath: string): string {
   const name = projectPath.slice(projectPath.lastIndexOf('/') + 1);

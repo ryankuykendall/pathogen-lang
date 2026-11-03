@@ -17,7 +17,7 @@ import { parseProjectFile, PROJECT_FILE_NAME } from '../host/project';
 
 import type { HostFetch, HostFetchResponse } from '../host/google-fonts';
 import type { ParsedProjectFile } from '../host/project';
-import type { FontCache, FontHost, HostReadResult, LocalFontMatch } from '../host/types';
+import type { FontCache, FontHost, HostReadResult, LocalFontMatch, ProjectFileHost } from '../host/types';
 
 export interface NodeFontHostOptions {
   /** Absolute OS path of the project folder. */
@@ -75,6 +75,16 @@ export function createNodeFontHost(options: NodeFontHostOptions): FontHost {
 // ---------------------------------------------------------------------------
 // Project files
 // ---------------------------------------------------------------------------
+
+/**
+ * A host that only reads project files, for loading imports
+ * (`resolveModules` in pathogen-lang). A FontHost from createNodeFontHost
+ * reads the same way, so a tool that loads both may pass that one instead.
+ */
+export function createNodeProjectHost(root: string): ProjectFileHost {
+  const resolvedRoot = resolve(root);
+  return { projectLabel: resolvedRoot, readFile: async (path) => readProjectFile(resolvedRoot, path) };
+}
 
 /**
  * Read a project path from disk. Letter case must match each folder entry

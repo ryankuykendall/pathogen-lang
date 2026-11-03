@@ -15,7 +15,7 @@ import {
   sfntLooksComplete,
   woffLooksComplete,
 } from './google-fonts';
-import { classifyFontSource, projectPathStem, resolveProjectPath } from './paths';
+import { classifyFontSource, projectPathStem, resolveProjectPath, respell } from './paths';
 import { resolveFontDirectives } from '../parser/font-directives';
 
 import type { FontFileKind, WeightSubstitution } from './google-fonts';
@@ -494,25 +494,6 @@ function editDistance(a: string, b: string): number {
     }
   }
   return row[b.length];
-}
-
-/** Re-spell a written path with the on-disk case of its resolved project path. */
-function respell(written: string, actualProjectPath: string): string {
-  const writtenParts = written.split('/');
-  const actualParts = actualProjectPath.split('/').filter(Boolean);
-  // Only the written segments that survive `..` name real folders and the
-  // file (`tests/..` names nothing); they are the end of the actual path.
-  const surviving: number[] = [];
-  writtenParts.forEach((part, i) => {
-    if (part === '..') surviving.pop();
-    else if (part && part !== '.') surviving.push(i);
-  });
-  const tail = actualParts.slice(actualParts.length - surviving.length);
-  const out = [...writtenParts];
-  surviving.forEach((index, k) => {
-    out[index] = tail[k] ?? out[index];
-  });
-  return out.join('/');
 }
 
 /** Where a message points: a directive's line and column. */

@@ -52,7 +52,24 @@ export type {
   ResolveFontsOptions,
   ResolveFontsResult,
 } from './host/load-fonts';
-export type { FontCache, FontHost, HostReadResult, LocalFontMatch } from './host/types';
+export type { FontCache, FontHost, HostReadResult, LocalFontMatch, ProjectFileHost } from './host/types';
+// Imports (docs/modules.md): read every imported file before the compile, as for fonts.
+export {
+  formatModuleLoadError,
+  importPathMistake,
+  planImports,
+  resolveModules,
+  withOpenDocuments,
+} from './host/load-modules';
+export type {
+  ImportSite,
+  ModuleFile,
+  ModuleGraph,
+  ModuleLoadError,
+  PlannedImport,
+  ResolveModulesOptions,
+  ResolveModulesResult,
+} from './host/load-modules';
 export {
   classifyFontSource,
   GENERIC_FONT_FAMILIES,

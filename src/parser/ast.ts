@@ -110,8 +110,14 @@ export interface Exportable {
 // import * as gears from "./parts/gears.pathogen";
 export interface ImportDeclaration {
   type: 'ImportDeclaration';
-  /** The path exactly as written between the quotes. */
+  /**
+   * The path exactly as written between the quotes. No escapes are processed:
+   * a path has no use for `\n`, and `".\reports\x.pathogen"` must reach the
+   * backslash rule as typed (src/host/load-modules.ts importPathMistake).
+   */
   source: string;
+  /** The path token with its quotes, so the formatter can keep it as written. */
+  sourceToken?: string;
   /** Where the path string starts (its opening quote). */
   sourceLoc?: SourceLocation;
   /** Named imports, in order. Empty for a namespace import. */

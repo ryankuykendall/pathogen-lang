@@ -52,6 +52,63 @@ export function assignImportedError(name: string, written: string): string {
   return `Cannot assign to ${name} — it is imported from ${importedFromLabel(written)}. Declare your own with let if it needs to change`;
 }
 
+// --- Loading files (src/host/load-modules.ts; docs/modules.md "Errors") ---
+
+/** A path as a file label in messages: the project path without its leading `/`. */
+export function fileLabel(projectPath: string): string {
+  return projectPath.replace(/^\//, '');
+}
+
+export function importNotAPathError(written: string): string {
+  return `import "${written}" isn't a path. Paths start with ./, ../ or / — did you mean "./${written}"?`;
+}
+
+export function importNotAFileError(written: string): string {
+  return `import "${written}": only files in the project folder can be imported. Paths start with ./, ../ or /.`;
+}
+
+export function importComputerPathError(written: string): string {
+  return `import path "${written}" is a path on your computer. Write paths relative to the file (./ or ../) or the project folder (/).`;
+}
+
+export function importBackslashError(written: string, fixed: string): string {
+  return `import path "${written}" uses a backslash. Write paths with forward slashes on every system: "${fixed}".`;
+}
+
+export function importNoExtensionError(written: string): string {
+  return `import path "${written}" has no .pathogen extension. Write the file's full name: "${written}.pathogen".`;
+}
+
+export function importOtherExtensionError(written: string): string {
+  return `import path "${written}" isn't a .pathogen file. Only .pathogen files can be imported.`;
+}
+
+export function importLeavesProjectError(written: string, projectLabel: string): string {
+  return `import path "${written}" leaves the project folder (${projectLabel}). Move the file into the project folder, or move the project's pathogen.json (or add one) to a folder that contains both files, other than your home folder itself.`;
+}
+
+export function importCaseMismatchError(written: string, respelled: string): string {
+  return `import file "${written}" differs from the file on disk only in letter case: "${respelled}". Paths are case-sensitive on every system.`;
+}
+
+export function importNotFoundError(written: string, osPath: string): string {
+  const rootHint = written.startsWith('/') ? " A leading / means the project folder, not your computer's root." : '';
+  return `import file "${written}" was not found (looked for ${osPath}).${rootHint}`;
+}
+
+export function importFolderError(written: string): string {
+  return `import path "${written}" is a folder, not a file.`;
+}
+
+export function importUnreadableError(written: string, reason: string): string {
+  return `import file "${written}" could not be read: ${reason}`;
+}
+
+/** `cycle` is project paths in import order, ending where it started. */
+export function importCycleError(cycle: readonly string[]): string {
+  return `Import cycle: ${cycle.map(fileLabel).join(' → ')}. Move what both files need into a third file that both import.`;
+}
+
 /**
  * An import in a program that has no files around it: the playground, an API
  * caller that passed no modules. Phase 1a; docs/modules.md "In each tool".

@@ -391,7 +391,9 @@ function formatStatement(stmt: Statement, depth: number, indent: string, prefix:
   const exported = 'exported' in stmt && stmt.exported ? 'export ' : '';
   switch (stmt.type) {
     case 'ImportDeclaration': {
-      const path = doubleQuoted(stmt.source);
+      // A path is raw text between its quotes (no escapes; ast.ts), so one
+      // holding `"` or `\` keeps the quotes it was written with.
+      const path = /["\\]/.test(stmt.source) && stmt.sourceToken ? stmt.sourceToken : `"${stmt.source}"`;
       if (stmt.namespace) return `${prefix}import * as ${stmt.namespace.local} from ${path};`;
       const names = stmt.specifiers.map((s) => (s.local === s.imported ? s.imported : `${s.imported} as ${s.local}`));
       const list = names.length > 0 ? `{ ${names.join(', ')} }` : '{}';

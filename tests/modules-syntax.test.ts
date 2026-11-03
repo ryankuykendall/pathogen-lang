@@ -232,14 +232,19 @@ describe('static rules: each message word for word, at its position', () => {
   // shape, at `import`, until the path is there — then a missing `;` is real.
   const INCOMPLETE =
     'Incomplete import — write it as import { name } from "./file.pathogen"; or import * as name from "./file.pathogen";';
-  it.each(['import', 'import {', 'import { gear', 'import { gear }', 'import { gear } from', 'import * as', 'import {} from 5;'])(
-    'a half-typed import (%s) names the shape, from the compiler and the editor alike',
-    (typed) => {
-      const source = `${typed}\nM 0 0`;
-      expect(() => parse(source)).toThrow(`Parse error at line 1, column 1: ${INCOMPLETE}`);
-      expect(diagnosticsOf(source)).toEqual([`1:1 ${INCOMPLETE}`]);
-    },
-  );
+  it.each([
+    'import',
+    'import {',
+    'import { gear',
+    'import { gear }',
+    'import { gear } from',
+    'import * as',
+    'import {} from 5;',
+  ])('a half-typed import (%s) names the shape, from the compiler and the editor alike', (typed) => {
+    const source = `${typed}\nM 0 0`;
+    expect(() => parse(source)).toThrow(`Parse error at line 1, column 1: ${INCOMPLETE}`);
+    expect(diagnosticsOf(source)).toEqual([`1:1 ${INCOMPLETE}`]);
+  });
 
   it('once the path is written, a missing ; is the message', () => {
     expect(diagnosticsOf('import { gear } from "./parts/gears.pathogen"\nM 0 0')).toEqual(["1:46 Missing ';'"]);
@@ -366,9 +371,9 @@ describe('several errors at once: parse() reports the one written first', () => 
   });
 
   it('a built-in name before an import-order mistake', () => {
-    expect(() => parse('import { circle } from "./a.pathogen";\nlet a = 1;\nimport { b } from "./b.pathogen";')).toThrow(
-      'Parse error at line 1, column 10: Cannot use circle as a name',
-    );
+    expect(() =>
+      parse('import { circle } from "./a.pathogen";\nlet a = 1;\nimport { b } from "./b.pathogen";'),
+    ).toThrow('Parse error at line 1, column 10: Cannot use circle as a name');
   });
 
   it('redeclaring with an exported const lands on its `const` keyword, as for a plain const (not on `export`)', () => {
@@ -388,7 +393,9 @@ describe('namingChecks: false (outline, inlay hints, formatter) is unaffected by
   });
 
   it('the formatter still formats the file', () => {
-    expect(formatted('let a=1;\nimport {b} from "./b.pathogen";')).toBe('let a = 1;\nimport { b } from "./b.pathogen";');
+    expect(formatted('let a=1;\nimport {b} from "./b.pathogen";')).toBe(
+      'let a = 1;\nimport { b } from "./b.pathogen";',
+    );
   });
 });
 
@@ -416,11 +423,20 @@ describe('half-typed imports with a path already written', () => {
   });
 });
 
-describe('the formatter keeps an import path exactly', () => {
+describe('an import path is the raw text between its quotes', () => {
+  it('no escapes are processed, so a Windows-style path reaches the path rules as typed', () => {
+    // The file text is ".\reports\new.pathogen": `\r` and `\n` stay a backslash and a letter.
+    const decl = parse('import { a } from ".\\reports\\new.pathogen";').body[0] as ImportDeclaration;
+    expect(decl.source).toBe('.\\reports\\new.pathogen');
+  });
+
   it.each([
-    ["import { a } from './a\"b.pathogen';", 'import { a } from "./a\\"b.pathogen";'],
-    ['import { a } from "./a\\\\b.pathogen";', 'import { a } from "./a\\\\b.pathogen";'],
-  ])('%s', (source, expected) => {
+    // a plain path is printed in double quotes, whatever it was written with
+    ["import { a } from './plain.pathogen';", 'import { a } from "./plain.pathogen";'],
+    // one holding a quote or a backslash keeps the token as written
+    ["import { a } from './a\"b.pathogen';", "import { a } from './a\"b.pathogen';"],
+    ['import { a } from ".\\\\b.pathogen";', 'import { a } from ".\\\\b.pathogen";'],
+  ])('the formatter keeps %s', (source, expected) => {
     expect(formatted(source)).toBe(expected);
     const before = (parse(source).body[0] as ImportDeclaration).source;
     const after = (parse(expected).body[0] as ImportDeclaration).source;

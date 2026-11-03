@@ -31,6 +31,18 @@ export interface FontCache {
   put: (key: string, bytes: Uint8Array) => Promise<void>;
 }
 
+/**
+ * What loading imported files needs (src/host/load-modules.ts): the project
+ * folder's label and a way to read a project path. Every FontHost is one, so
+ * a tool can pass the same host for fonts and imports.
+ */
+export interface ProjectFileHost {
+  /** The project folder as the user knows it (an OS path), for messages. */
+  readonly projectLabel: string;
+  /** Read a project file. `path` is a project path from resolveProjectPath (`/parts/gears.pathogen`). */
+  readFile: (path: string) => Promise<HostReadResult>;
+}
+
 export interface FontHost {
   /** The project folder as the user knows it (an OS path), for messages. */
   readonly projectLabel: string;
