@@ -6,6 +6,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 import { WARNING_CODES } from '../src';
 import { extractSVGElements } from './helpers';
+import { ttfToWoff } from './host/font-bytes';
 
 const CLI_PATH = join(__dirname, '..', 'src', 'cli.ts');
 const TMP_DIR = join(__dirname, 'tmp');
@@ -1317,6 +1318,43 @@ describe('imports (docs/modules.md)', () => {
     expect(result.stderr).toMatch(/^parts\/warn\.pathogen:3:\d+: warning: /);
     const json = JSON.parse(runCli([main, '--json']).stdout) as { warnings: { file?: string; line?: number }[] };
     expect(json.warnings.map((w) => [w.file, w.line])).toEqual([['parts/warn.pathogen', 3]]);
+  });
+
+  it("an imported file's @font loads, its ./ path from its own folder (docs/modules.md \"Fonts in imported files\")", () => {
+    mkdirSync(join(project, 'parts', 'fonts'), { recursive: true });
+    copyFileSync(join(__dirname, 'fixtures', 'fonts', 'Inter-Regular.ttf'), join(project, 'parts', 'fonts', 'Inter-Regular.ttf'));
+    writeFileSync(join(project, 'parts', 'labels.pathogen'), '@font "./fonts/Inter-Regular.ttf";\nexport const ready = 1;\n');
+    writeFileSync(main, glyphProgram('import { ready } from "./parts/labels.pathogen";', 'Inter-Regular'));
+    const imported = drawnGlyph(runCli([main]));
+    // The same glyph as when the compiled file loads the font itself.
+    writeFileSync(main, glyphProgram('@font "./parts/fonts/Inter-Regular.ttf";', 'Inter-Regular'));
+    expect(imported).toBe(drawnGlyph(runCli([main])));
+  });
+
+  it("a font warning from an imported file's @font line names it, on stderr and in --json", () => {
+    writeFileSync(join(project, 'parts', 'family.pathogen'), '@font "Gravitas One";\nexport const ready = 1;\n');
+    writeFileSync(main, 'import { ready } from "./parts/family.pathogen";\nM 0 0\n');
+    const result = runCli([main, '--offline']);
+    expect(result.status).toBe(0);
+    expect(result.stderr).toMatch(/^parts\/family\.pathogen:1:1: warning: /);
+    const json = JSON.parse(runCli([main, '--offline', '--json']).stdout) as { warnings: { code: string; file?: string }[] };
+    expect(json.warnings.map((w) => [w.code, w.file])).toEqual([['font-load', 'parts/family.pathogen']]);
+  });
+
+  it('two files loading different fonts as one family and weight stop the CLI, naming both', () => {
+    mkdirSync(join(project, 'a'), { recursive: true });
+    mkdirSync(join(project, 'parts', 'b'), { recursive: true });
+    const inter = readFileSync(join(__dirname, 'fixtures', 'fonts', 'Inter-Regular.ttf'));
+    writeFileSync(join(project, 'a', 'Inter.ttf'), inter);
+    // The same font as WOFF: other bytes under the same family name.
+    writeFileSync(join(project, 'parts', 'b', 'Inter.ttf'), ttfToWoff(new Uint8Array(inter)));
+    writeFileSync(join(project, 'parts', 'clash.pathogen'), '@font "./b/Inter.ttf";\nexport const ready = 1;\n');
+    writeFileSync(main, 'import { ready } from "./parts/clash.pathogen";\n@font "./a/Inter.ttf";\nM 0 0\n');
+    const result = runCli([main]);
+    expect(result.status).toBe(1);
+    expect(result.stderr).toBe(
+      'parts/clash.pathogen:1:1: error: Two files load different fonts as "Inter" 400: ./a/Inter.ttf (main.pathogen) and ./b/Inter.ttf (parts/clash.pathogen). Use the same font in both files.\n',
+    );
   });
 
   it('code from -e imports from the --root folder when the current folder is outside it', () => {

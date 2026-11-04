@@ -44,10 +44,17 @@ export {
 // Shared loader (docs/projects.md, docs/path-blocks.md § Font Loading by
 // Environment). Pure: no Node or DOM APIs — hosts supply I/O; the Node hosts
 // are in the `pathogen-lang/node` entry (src/node).
-export { buildFontRegistry, FONT_CACHE_TTL_MS, planFontDirectives, resolveFonts } from './host/load-fonts';
+export {
+  buildFontRegistry,
+  FONT_CACHE_TTL_MS,
+  planFontDirectives,
+  resolveFonts,
+  resolveFontsInFiles,
+} from './host/load-fonts';
 export type {
   FontDirectivePlan,
   FontLoadMessage,
+  FontSourceFile,
   PlannedFontDirective,
   ResolvedFont,
   ResolveFontsOptions,

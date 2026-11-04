@@ -6,6 +6,7 @@
  * host builds a FontRegistry from the result and passes it to compile().
  */
 import { addFont, addFontData, createFontRegistry } from '../evaluator/font-provider';
+import { fontClashError } from '../module-messages';
 import { parse } from '../parser';
 import {
   CURATED_GOOGLE_FONTS,
@@ -41,6 +42,19 @@ export interface FontLoadMessage {
   message: string;
   line?: number;
   column?: number;
+  /** The imported file whose `@font` line it is, as a path from the project folder; absent for the compiled file. */
+  file?: string;
+}
+
+/** One file of a compile, for loading the fonts of every file (docs/modules.md "Fonts in imported files"). */
+export interface FontSourceFile {
+  /** Project path, e.g. `/parts/labels.pathogen`: `./` paths in its `@font` lines start from its folder. */
+  path: string;
+  source: string;
+  /** For messages, e.g. `parts/labels.pathogen`. */
+  label: string;
+  /** An imported file: its messages carry its label as `file`. */
+  imported?: boolean;
 }
 
 export interface ResolveFontsOptions {
@@ -139,33 +153,75 @@ export interface ResolveFontsResult {
 }
 
 export async function resolveFonts(source: string, options: ResolveFontsOptions): Promise<ResolveFontsResult> {
+  return resolveFontsInFiles([{ path: options.entry, source, label: options.entry.replace(/^\//, '') }], options);
+}
+
+/**
+ * Load the fonts of every file in a compile: the compiled file first, then
+ * the files it imports (docs/modules.md "Fonts in imported files"). Each
+ * file's `./` paths start from its own folder. Fonts are shared by family and
+ * weight: file paths load before family names across all the files, so a
+ * family one file loads from a font file serves another file's `@font
+ * "Family"` too, and two files naming one family load it once. Two files
+ * loading *different* font files as one family and weight is an error naming
+ * both. With one file this is resolveFonts, unchanged.
+ *
+ * `files` is in order, the compiled file first: the first font file loaded
+ * for a family and weight is the one used, and a later file's different one
+ * is the error, reported against that first.
+ */
+export async function resolveFontsInFiles(
+  files: readonly FontSourceFile[],
+  options: Omit<ResolveFontsOptions, 'entry'>,
+): Promise<ResolveFontsResult> {
   const fonts: ResolvedFont[] = [];
   const outcome = { downloadsSkipped: false, retryable: false };
-  const plan = planFontDirectives(source);
-  // A source that doesn't parse has nothing to load yet; the compile reports it.
-  if (!plan) return { fonts, messages: [], downloadsSkipped: false, retryable: false };
-  const messages: FontLoadMessage[] = [...plan.errors];
+  const messages: FontLoadMessage[] = [];
+  const planned: { directive: PlannedFontDirective; file: FontSourceFile }[] = [];
+  for (const file of files) {
+    // A source that doesn't parse has nothing to load yet; the compile reports it.
+    const plan = planFontDirectives(file.source);
+    if (!plan) continue;
+    messages.push(...plan.errors.map((m) => inFile(m, file)));
+    for (const directive of plan.directives) planned.push({ directive, file });
+  }
 
   const { host } = options;
   const now = options.now ?? (() => Date.now());
   const fileFamilies = new Set<string>();
   const seen = new Set<string>();
+  /** The first font file each family and weight came from, for the clash between two files. */
+  const fromFile = new Map<string, { font: ResolvedFont; written: string; file: FontSourceFile }>();
 
   // File paths first, so a family a file already provides isn't looked up again.
-  const ordered = [...plan.directives].sort((a, b) => rank(a) - rank(b));
-  for (const directive of ordered) {
+  const ordered = [...planned].sort((a, b) => rank(a.directive) - rank(b.directive));
+  for (const { directive, file } of ordered) {
     const weight = directive.weight ?? 400;
     const loc = directive.line !== undefined ? { line: directive.line, column: directive.column } : undefined;
+    const own: FontLoadMessage[] = [];
 
     if (directive.kind === 'file') {
-      const font = await loadFile(directive.source, weight, options.entry, host, loc, messages);
+      const font = await loadFile(directive.source, weight, file.path, host, loc, own);
       if (font) {
-        fileFamilies.add(`${font.family}:${weight}`);
-        if (!seen.has(`${font.family}:${weight}`)) {
-          seen.add(`${font.family}:${weight}`);
+        const key = `${font.family}:${weight}`;
+        fileFamilies.add(key);
+        const first = fromFile.get(key);
+        if (!first) fromFile.set(key, { font, written: directive.source, file });
+        else if (first.font.id !== font.id && first.file.path !== file.path) {
+          own.push(
+            at(
+              loc,
+              'error',
+              fontClashError(font.family, weight, first.written, first.file.label, directive.source, file.label),
+            ),
+          );
+        }
+        if (!seen.has(key)) {
+          seen.add(key);
           fonts.push(font);
         }
       }
+      messages.push(...own.map((m) => inFile(m, file)));
       continue;
     }
 
@@ -173,10 +229,16 @@ export async function resolveFonts(source: string, options: ResolveFontsOptions)
     const key = `${family}:${weight}`;
     if (seen.has(key) || fileFamilies.has(key)) continue;
     seen.add(key);
-    const font = await loadFamily(family, weight, host, now, loc, messages, outcome);
+    const font = await loadFamily(family, weight, host, now, loc, own, outcome);
     if (font) fonts.push(font);
+    messages.push(...own.map((m) => inFile(m, file)));
   }
   return { fonts, messages, downloadsSkipped: outcome.downloadsSkipped, retryable: outcome.retryable };
+}
+
+/** A message about an imported file's `@font` line names that file. */
+function inFile(message: FontLoadMessage, file: FontSourceFile): FontLoadMessage {
+  return file.imported ? { ...message, file: file.label } : message;
 }
 
 /** File directives sort before family names. */

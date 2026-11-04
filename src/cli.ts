@@ -12,7 +12,7 @@ import {
   planFontDirectives,
   planImports,
   PROJECT_FILE_NAME,
-  resolveFonts,
+  resolveFontsInFiles,
   resolveModules,
   toJsonDocument,
   WARNING_CODES,
@@ -34,6 +34,7 @@ import type {
   CompileResult,
   CompileWarning,
   FontRegistry,
+  FontSourceFile,
   LogEntry,
   ModuleGraph,
   WarningCode,
@@ -899,14 +900,25 @@ async function loadModulesForCli(
  *
  * A program without `@font` skips all of it, as in the editors: it reads no
  * files, so a pathogen.json it doesn't need can't stop it.
+ *
+ * With imports, the `@font` lines of every imported file load too, each
+ * file's `./` paths from its own folder (docs/modules.md "Fonts in imported
+ * files"). A message about an imported file's line names that file.
  */
 async function loadFontsForCli(
   source: string,
   sourceFile: string | undefined,
   options: CliOptions,
   projectRoot: string | undefined,
+  modules: ModuleGraph | undefined,
 ): Promise<{ registry?: FontRegistry; warnings: CompileWarning[] }> {
-  if (!source.includes('@font')) return { warnings: [] };
+  // The imported files, in load order; the compiled file comes first below.
+  const imported: FontSourceFile[] = [];
+  for (const path of modules?.order ?? []) {
+    const file = modules?.files.get(path);
+    if (file) imported.push({ path, source: file.source, label: path.replace(/^\//, ''), imported: true });
+  }
+  if (!source.includes('@font') && !imported.some((file) => file.source.includes('@font'))) return { warnings: [] };
   const where = sourceFile ?? '<inline>';
   const { root, entry, outside, fontSearchDir } = projectForCli(sourceFile, options, projectRoot);
   if (outside && sourceFile && planFontDirectives(source)?.directives.some((d) => d.kind === 'file')) {
@@ -922,16 +934,18 @@ async function loadFontsForCli(
     cacheDir: defaultCacheDir(),
     fontDirs: fontDirsFromEnv(process.env.PATHOGEN_FONT_DIRS),
   });
-  const { fonts, messages } = await resolveFonts(source, { host, entry });
+  const files: FontSourceFile[] = [{ path: entry, source, label: entry.replace(/^\//, '') }, ...imported];
+  const { fonts, messages } = await resolveFontsInFiles(files, { host });
 
   const warnings: CompileWarning[] = [];
   let failed = false;
   for (const m of messages) {
     const pos = m.line != null ? `:${m.line}${m.column != null ? `:${m.column}` : ''}` : '';
+    const file = m.file ?? where;
     const strict =
       m.severity === 'warning' && m.code !== undefined && (options.strict === true || options.strict?.includes(m.code));
     if (m.severity === 'error' || strict) {
-      process.stderr.write(`${where}${pos}: error: ${m.message}${strict ? ` (strict: ${m.code})` : ''}\n`);
+      process.stderr.write(`${file}${pos}: error: ${m.message}${strict ? ` (strict: ${m.code})` : ''}\n`);
       failed = true;
     } else if (m.code) {
       warnings.push({
@@ -939,10 +953,11 @@ async function loadFontsForCli(
         message: m.message,
         ...(m.line != null ? { line: m.line } : {}),
         ...(m.column != null ? { column: m.column } : {}),
+        ...(m.file ? { file: m.file } : {}),
       });
     } else {
       // A warning without a code can't join --json or --strict, but is never dropped.
-      process.stderr.write(`${where}${pos}: warning: ${m.message}\n`);
+      process.stderr.write(`${file}${pos}: warning: ${m.message}\n`);
     }
   }
   if (failed) process.exit(1);
@@ -1050,7 +1065,7 @@ async function main() {
       process.exit(1);
     }
     const modules = await loadModulesForCli(source, sourceFile, options, projectRoot);
-    const fontLoad = await loadFontsForCli(source, sourceFile, options, projectRoot);
+    const fontLoad = await loadFontsForCli(source, sourceFile, options, projectRoot, modules);
     // Printed before compiling: a call that needs a font that didn't load
     // stops the compile, and its error says to look for this message above.
     outputWarnings(fontLoad.warnings, sourceFile);

@@ -182,6 +182,20 @@ export function importedRawRefWarning(written: string, fileLabelText: string, fu
   return `url(#${written}) matches no id in this file. The ${written} made in ${fileLabelText} is ${fullId} in your SVG; use the imported value instead.`;
 }
 
+// --- Fonts in imported files (docs/modules.md "Fonts in imported files") ---
+
+/** Two files loading different font files as one family and weight. */
+export function fontClashError(
+  family: string,
+  weight: number,
+  firstWritten: string,
+  firstLabel: string,
+  secondWritten: string,
+  secondLabel: string,
+): string {
+  return `Two files load different fonts as "${family}" ${weight}: ${firstWritten} (${firstLabel}) and ${secondWritten} (${secondLabel}). Use the same font in both files.`;
+}
+
 // --- Loading files (src/host/load-modules.ts; docs/modules.md "Errors") ---
 
 /** A path as a file label in messages: the project path without its leading `/`. */
