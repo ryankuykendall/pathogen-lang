@@ -104,18 +104,44 @@ export function fixedNamespaceError(name: string, file: string): string {
   return `Cannot change ${name} — it is imported from ${file}, and imported values are fixed. Declare a variable of your own with let, under another name`;
 }
 
-/** The clause every message above carries after the file's name. */
-const FIXED_CLAUSE = /, (?:whose (?:values|variables) are fixed once it has loaded|and imported values are fixed)\. /;
+// --- Values tied to a file's drawing (docs/modules.md "What you import is fixed", decision 35) ---
+
+/** Which part of a file's drawing a value is tied to. */
+export type DrawingValueKind = 'layer' | 'transform' | 'subscription';
+
+const DRAWING_PART: Record<DrawingValueKind, string> = {
+  layer: 'a layer of',
+  transform: 'a transform of',
+  subscription: 'a subscription to',
+};
+
+/** `export const ink = layer('ink');`: the file's own layer, transform or subscription. */
+export function exportDrawingValueError(name: string, kind: DrawingValueKind): string {
+  return `Cannot export ${name} — it is ${DRAWING_PART[kind]} this file's drawing, which stays in this file. Export a fn that draws instead`;
+}
+
+/** Using a layer, transform or subscription of a drawing that finished when its file loaded. */
+export function useDrawingValueError(name: string, kind: DrawingValueKind, fileLabelText: string): string {
+  return (
+    `Cannot use ${name} — it is ${DRAWING_PART[kind]} ${fileLabelText}'s drawing, which stays in that file. ` +
+    'Export a fn that draws, and call it inside your own layer'
+  );
+}
+
+/** The clause every fixed-value or drawing-value message above carries after the file's name. */
+const IMPORTED_VALUE_CLAUSE =
+  /(?:, whose (?:values|variables) are fixed once it has loaded|, and imported values are fixed|'s drawing, which stays in that file| this file's drawing, which stays in this file)\. /;
 
 /**
- * Whether `e` is one of the errors above. A style value keeps its raw text
- * when evaluating it fails, so it lets these through, as it does a
- * lexical-scope miss: otherwise the raw text is rejected with a message about
- * a disallowed token. The test reads the words, so it still holds once the
- * error has been traced through other files.
+ * Whether `e` is one of the errors above: a change to a fixed value, or the
+ * use of another file's layer, transform or subscription. A style value keeps
+ * its raw text when evaluating it fails, so it lets these through, as it does
+ * a lexical-scope miss: otherwise the raw text is rejected with a message
+ * about a disallowed token. The test reads the words, so it still holds once
+ * the error has been traced through other files.
  */
-export function isFixedValueError(e: unknown): e is Error {
-  return e instanceof Error && FIXED_CLAUSE.test(e.message);
+export function isImportedValueError(e: unknown): e is Error {
+  return e instanceof Error && IMPORTED_VALUE_CLAUSE.test(e.message);
 }
 
 // --- Ids from other files (docs/modules.md "Ids from other files") ---

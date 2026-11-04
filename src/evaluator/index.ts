@@ -10,6 +10,7 @@ import {
   crossFileIdClashError,
   declaredNotExportedError,
   declareImportedAgainError,
+  exportDrawingValueError,
   fileLabel,
   fixedNamespaceError,
   fixedValueError,
@@ -17,11 +18,12 @@ import {
   idPrefixClashError,
   importedIdClashError,
   importedRawRefWarning,
-  isFixedValueError,
+  isImportedValueError,
   moduleNotLoadedError,
   namespaceNoExportError,
   noExportError,
   noProjectFolderError,
+  useDrawingValueError,
 } from '../module-messages';
 import type { FixedValueKind } from '../module-messages';
 import { parse } from '../parser';
@@ -37,7 +39,7 @@ import {
   moduleOf,
   splitPosition,
 } from './module-runtime';
-import type { FixedValues } from './module-runtime';
+import type { DrawingValues, FixedValues } from './module-runtime';
 import { splitSubpaths } from './subpaths';
 import { dispatchSubscriptions } from './subscriptions';
 import { CALLBACK_METHODS } from '../callback-methods';
@@ -1414,13 +1416,30 @@ let runningFile: ModuleIdentity | undefined;
  */
 let fixedValues: FixedValues | undefined;
 
-/** How the code names the value it changes: `sizes`, `kit.sizes`; else undefined. */
+/**
+ * The layers, transforms and subscriptions imported files held when they
+ * finished loading (fixFile), whose drawings have ended (decision 35). Using
+ * one is an error naming its file. Undefined in a compile without files.
+ */
+let drawingValues: DrawingValues | undefined;
+
+/** The error for using `value`, when it belongs to an imported file's ended drawing; undefined otherwise. */
+function drawingValueUse(value: unknown, target: Expression | undefined): string | undefined {
+  if (drawingValues === undefined || typeof value !== 'object' || value === null) return undefined;
+  const owner = drawingValues.get(value);
+  return owner && useDrawingValueError(writtenName(target) ?? owner.name, owner.kind, owner.file.label);
+}
+
+/**
+ * How the code names the value it uses or changes: `sizes`, `kit.sizes`, and
+ * `ink` for `getKit().ink`, whose head has no name; else undefined.
+ */
 function writtenName(expr: Expression | undefined): string | undefined {
   if (!expr) return undefined;
   if (expr.type === 'Identifier') return expr.name;
   if (expr.type === 'MemberExpression') {
     const object = writtenName(expr.object);
-    return object === undefined ? undefined : `${object}.${expr.property}`;
+    return object === undefined ? expr.property : `${object}.${expr.property}`;
   }
   return undefined;
 }
@@ -2189,10 +2208,11 @@ function defsPathData(commands: PathBlockCommand[]): string {
  */
 /**
  * Whether a style value lets an error through instead of keeping its raw
- * text: a lexical-scope miss, or a change to a value an imported file fixed.
+ * text: a lexical-scope miss, a change to a value an imported file fixed, or
+ * the use of another file's layer, transform or subscription.
  */
 function styleValueMustThrow(e: unknown): e is Error {
-  return isLexicalScopeMiss(e) || isFixedValueError(e);
+  return isLexicalScopeMiss(e) || isImportedValueError(e);
 }
 
 /**
@@ -2717,6 +2737,8 @@ function evaluateExpression(expr: Expression, scope: Scope): Value {
           return { type: 'StyleBlockValue', properties: { ...left.properties, ...right.properties } };
         }
         if (isLayerReference(left) && isStyleBlock(right)) {
+          const ended = drawingValueUse(left, expr.left);
+          if (ended) throw new Error(formatError(ended, getLine(expr) ?? getLine(expr.left), getCol(expr) ?? getCol(expr.left)));
           // Merge styles into layer in place, return same ref for chaining
           Object.assign(left.layer.styles, right.properties);
           return left;
@@ -3438,6 +3460,11 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
     const message = fixedValueChange(obj, expr.object, expr.method === 'pick' ? 'pick from' : 'change');
     if (message) throw mError(message);
   }
+  // Any method of a layer, transform or subscription whose drawing has ended.
+  if (drawingValues !== undefined) {
+    const message = drawingValueUse(obj, expr.object);
+    if (message) throw mError(message);
+  }
 
   // One angle-unit check for every receiver method: the per-case bodies each
   // read their own arguments, so this is the only place that sees them all.
@@ -3662,6 +3689,8 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
         if (!isLayerReference(childValue)) {
           throw mError('.append() arguments must be layer references');
         }
+        const ended = drawingValueUse(childValue, arg);
+        if (ended) throw mError(ended);
         const childName = childValue.layer.name;
 
         // Self-reference check
@@ -7438,6 +7467,12 @@ function evaluateMemberExpression(expr: MemberExpression, scope: Scope): Value {
   // `gears.toothDepth`, `gears.Teeth` through a namespace import (docs/modules.md)
   if (isModuleNamespace(obj)) return namespaceMember(obj, expr.property, expr.object, getLine(expr), getCol(expr));
 
+  // Any property of a layer, transform or subscription whose drawing has ended.
+  if (drawingValues !== undefined) {
+    const message = drawingValueUse(obj, expr.object);
+    if (message) throw new Error(formatError(message, getLine(expr), getCol(expr)));
+  }
+
   // Context .transform is synthesized from _transformState, not a data property
   if (
     typeof obj === 'object' && obj !== null && 'type' in obj && obj.type === 'ContextObject' &&
@@ -10851,6 +10886,8 @@ function evaluateStatementToAccum(stmt: Statement, scope: Scope, accum: PathStor
         layer = found;
         nameValue = target;
       } else if (isLayerReference(target)) {
+        const ended = drawingValueUse(target, stmt.layerName);
+        if (ended) throw new Error(formatError(ended, getLine(stmt), getCol(stmt)));
         // New path: use reference directly
         layer = target.layer;
         nameValue = layer.name;
@@ -10941,7 +10978,7 @@ function evaluateStatementToAccum(stmt: Statement, scope: Scope, accum: PathStor
       const obj = evaluateExpression(stmt.object, scope);
       // Every property write on every type passes here: one check covers them all.
       if (fixedValues !== undefined) {
-        const fixedChange = fixedValueChange(obj, stmt.object);
+        const fixedChange = fixedValueChange(obj, stmt.object) ?? drawingValueUse(obj, stmt.object);
         if (fixedChange) throw new Error(formatError(fixedChange, getLine(stmt), getCol(stmt)));
       }
       // The one place every angle-valued property assignment passes through —
@@ -12343,12 +12380,15 @@ function programRootScope(evalState: EvaluationState, modules: ModuleGraph | und
   runningFile = undefined;
   lastStatementLine = undefined;
   fixedValues = undefined;
+  drawingValues = undefined;
   if (modules) {
     scope.module = { path: modules.entry, label: fileLabel(modules.entry), entry: true };
     evalState.moduleDefs = { entryLabel: scope.module.label, imported: new Map(), ownOrigins: new Map(), rawRefs: new Map() };
     const fixed: FixedValues = new WeakMap();
+    const drawing: DrawingValues = new WeakMap();
     fixedValues = fixed;
-    loadModules(modules, evalState, fixed);
+    drawingValues = drawing;
+    loadModules(modules, evalState, fixed, drawing);
   }
   return scope;
 }
@@ -12362,7 +12402,7 @@ function programRootScope(evalState: EvaluationState, modules: ModuleGraph | und
  * imports that led to it. Once a file has loaded, what it holds is fixed
  * (fixFile; docs/modules.md "What you import is fixed").
  */
-function loadModules(graph: ModuleGraph, main: EvaluationState, fixed: FixedValues): void {
+function loadModules(graph: ModuleGraph, main: EvaluationState, fixed: FixedValues, drawing: DrawingValues): void {
   const records = new Map<string, ModuleRecord>();
   main.modules = records;
   // Ids stay stable only if no two files share a prefix (docs/modules.md "Clashes are errors").
@@ -12399,12 +12439,23 @@ function loadModules(graph: ModuleGraph, main: EvaluationState, fixed: FixedValu
       runningFile = saved;
     }
     // After its subscriptions ran, so they could still draw on its own values.
-    fixFile(scope, identity, fixed);
-    const { exported, declared } = exportsOf(program);
+    fixFile(scope, identity, fixed, drawing);
+    const { exported, declared, exportedAt } = exportsOf(program);
     const exports = new Map<string, Value>();
     for (const name of exported) {
       const value = scope.variables.get(name);
-      if (value !== undefined) exports.set(name, value);
+      if (value === undefined) continue;
+      // A layer, transform or subscription can't be exported: its drawing has ended (decision 35).
+      const owner = typeof value === 'object' && value !== null ? drawing.get(value) : undefined;
+      if (owner) {
+        const message =
+          owner.file.path === identity.path
+            ? exportDrawingValueError(name, owner.kind)
+            : useDrawingValueError(name, owner.kind, owner.file.label);
+        const at = exportedAt.get(name);
+        throw traceModuleLoad(new Error(formatError(message, at?.line, at?.column)), identity, file.importedFrom);
+      }
+      exports.set(name, value);
     }
     records.set(path, { ...identity, exports, declared });
     for (const w of state.warnings) main.warnings.push(w.file ? w : { ...w, file: identity.label });
@@ -12433,7 +12484,7 @@ export function evaluate(
 ): CompileResult {
   setNumberFormat(options?.toFixed);
   let annotateState: EvaluationState | undefined;
-  const outer = { file: runningFile, line: lastStatementLine, fixed: fixedValues };
+  const outer = { file: runningFile, line: lastStatementLine, fixed: fixedValues, drawing: drawingValues };
   try {
     const evalState = newEvaluationState({
       fonts: options?.fonts,
@@ -12463,6 +12514,7 @@ export function evaluate(
     runningFile = outer.file;
     lastStatementLine = outer.line;
     fixedValues = outer.fixed;
+    drawingValues = outer.drawing;
   }
 }
 
@@ -12518,7 +12570,7 @@ export function evaluateWithContext(
 ): EvaluateWithContextResult {
   setNumberFormat(options.toFixed);
   let annotateState: EvaluationState | undefined;
-  const outer = { file: runningFile, line: lastStatementLine, fixed: fixedValues };
+  const outer = { file: runningFile, line: lastStatementLine, fixed: fixedValues, drawing: drawingValues };
   try {
     const evalState = newEvaluationState({
       fonts: options.fonts,
@@ -12582,6 +12634,7 @@ export function evaluateWithContext(
     runningFile = outer.file;
     lastStatementLine = outer.line;
     fixedValues = outer.fixed;
+    drawingValues = outer.drawing;
   }
 }
 

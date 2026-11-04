@@ -442,7 +442,7 @@ describe('every method the API declares is classified', () => {
     Gradient: 'inherit getPoint getRow getCol',
   };
 
-  // Values tied to a file's drawing: step 5 makes using another file's an error.
+  // Values tied to a file's drawing: using another file's is an error (tests/modules-drawing.test.ts).
   const DRAWING: Record<string, string> = {
     Subscription: 'unsubscribe',
     TextLayer: 'apply',

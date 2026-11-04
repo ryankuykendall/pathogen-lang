@@ -1,5 +1,5 @@
 import { matchFunctionNotation, splitTopLevel } from '../css-value-utils';
-import { isFixedValueError } from '../module-messages';
+import { isImportedValueError } from '../module-messages';
 import { isLexicalScopeMiss } from './lexical-scope';
 
 import type { Expression } from '../parser/ast';
@@ -18,8 +18,8 @@ export interface CSSFunctionArgHooks {
    * to a variable/expression (never a literal token like `2px`, which must
    * stay verbatim); null otherwise. May throw (e.g. unresolved identifier) —
    * the caller treats a throw as "leave the token untouched", except a
-   * lexical-scope miss (lexical-scope.ts) or a change to an imported file's
-   * value (module-messages.ts), which propagate.
+   * lexical-scope miss (lexical-scope.ts) or an imported value's error
+   * (isImportedValueError, module-messages.ts), which propagate.
    */
   resolveToCSS(expr: Expression): string | null;
 }
@@ -96,8 +96,9 @@ export function tryResolveCSSFunctionArgs(
     } catch (e) {
       // A name a named fn's caller has (phase 0a step 3) used to resolve
       // here; keeping the raw token would change the output silently. A
-      // change to an imported file's value has its own message.
-      if (isLexicalScopeMiss(e) || isFixedValueError(e)) throw e;
+      // change to an imported file's value, or the use of its layer, has its
+      // own message.
+      if (isLexicalScopeMiss(e) || isImportedValueError(e)) throw e;
       return token;
     }
   });
