@@ -10,7 +10,6 @@ import {
   crossFileIdClashError,
   declaredNotExportedError,
   declareImportedAgainError,
-  exportDrawingValueError,
   fileLabel,
   fixedNamespaceError,
   fixedValueError,
@@ -19,11 +18,13 @@ import {
   importedIdClashError,
   importedRawRefWarning,
   isImportedValueError,
+  MODULE_DRAWS_MESSAGE,
+  MODULE_VIEWBOX_MESSAGE,
+  moduleDrawingReadError,
   moduleNotLoadedError,
   namespaceNoExportError,
   noExportError,
   noProjectFolderError,
-  useDrawingValueError,
 } from '../module-messages';
 import type { FixedValueKind } from '../module-messages';
 import { parse } from '../parser';
@@ -32,7 +33,6 @@ import type { ImportSite, ModuleGraph } from '../host/load-modules';
 import {
   CHANGES_RECEIVER,
   CHANGES_RECEIVER_TYPES,
-  DRAWING_KINDS,
   exportsOf,
   fixFile,
   idPrefixOf,
@@ -41,7 +41,7 @@ import {
   moduleOf,
   splitPosition,
 } from './module-runtime';
-import type { DrawingValues, FixedValues } from './module-runtime';
+import type { FixedValues } from './module-runtime';
 import { splitSubpaths } from './subpaths';
 import { dispatchSubscriptions } from './subscriptions';
 import { CALLBACK_METHODS } from '../callback-methods';
@@ -269,6 +269,7 @@ import type {
   TextBlockExpression,
   TextBodyItem,
 } from '../parser/ast';
+import { isModuleProgram } from '../parser/ast';
 
 // Re-export all types from the dedicated types module
 export type {
@@ -1328,14 +1329,20 @@ function isInsidePathBlock(scope: Scope): boolean {
  * Computed when read, not rebound after every command: contextToObject builds
  * a new object only after the pen has moved, so `let saved = ctx;` keeps that
  * moment's values.
+ *
+ * A module has no drawing while it loads (docs/modules.md "Exporting"), so
+ * reading its pen is an error; a path block's own pen is still fine there. A
+ * text block shares the pen of the state that made it, so in a module it
+ * reaches the sealed state and gets the same error.
  */
-function ctxValueFor(state: EvaluationState | undefined): Value | undefined {
+function ctxValueFor(state: EvaluationState | undefined, line?: number, column?: number): Value | undefined {
   let drawing = state as DrawingState | undefined;
   while (drawing?._ctxSource) drawing = drawing._ctxSource as DrawingState;
   if (!drawing) return undefined;
   if (drawing._insidePathBlock) {
     return { type: 'ContextObject' as const, value: contextToObject(drawing.pathContext) } as Value;
   }
+  if (drawing.drawingSealed) throw new Error(formatError(moduleDrawingReadError('ctx'), line, column));
   let { transformState } = drawing;
   if (drawing.activeLayerName) {
     const layer = drawing.layers.get(drawing.activeLayerName);
@@ -1419,19 +1426,14 @@ let runningFile: ModuleIdentity | undefined;
 let fixedValues: FixedValues | undefined;
 
 /**
- * The layers, transforms and subscriptions imported files held when they
- * finished loading (fixFile), whose drawings have ended (decision 35). Using
- * one is an error naming its file. Undefined in a compile without files.
+ * Stop a module drawing while it loads (docs/modules.md "Exporting"): a layer,
+ * `apply`, text, a subscription or `define ViewBox` on a module's own sealed
+ * state. Path output is stopped in recordPath, which every path statement and
+ * drawing call goes through. A block's state and the state of a file that
+ * calls a module's fn are never sealed.
  */
-let drawingValues: DrawingValues | undefined;
-
-/** The error for using `value`, when it belongs to an imported file's ended drawing; undefined otherwise. */
-function drawingValueUse(value: unknown, target: Expression | undefined): string | undefined {
-  if (drawingValues === undefined || typeof value !== 'object' || value === null) return undefined;
-  // Only the four drawing types are ever recorded: skip the lookup for the rest.
-  if (!DRAWING_KINDS.has((value as { type?: string }).type ?? '')) return undefined;
-  const owner = drawingValues.get(value);
-  return owner && useDrawingValueError(writtenName(target) ?? owner.name, owner.kind, owner.file.label);
+function assertCanDraw(state: EvaluationState | undefined, at: unknown, message = MODULE_DRAWS_MESSAGE): void {
+  if (state?.drawingSealed) throw new Error(formatError(message, getLine(at), getCol(at)));
 }
 
 /**
@@ -1509,7 +1511,7 @@ function builtinValue(scope: Scope, name: string, line?: number, column?: number
   // (`origin` — by now `scope` is the root, whose state is the program's).
   // A user binding named ctx was found above and still wins (until step 5).
   if (name === 'ctx') {
-    const ctx = ctxValueFor(origin.evalState);
+    const ctx = ctxValueFor(origin.evalState, line, column);
     if (ctx) return ctx;
   }
   // Namespaces — Object, Color, PathBlock, Font (docs/fonts.md), Cap (end caps
@@ -1530,7 +1532,10 @@ function builtinValue(scope: Scope, name: string, line?: number, column?: number
   // follows their `_programState` link, so reads inside @{ } / &{ } see the
   // program's. In one file this is the same box as the root scope's.
   if (name === 'viewbox') {
-    const vb = (programStateOf(origin.evalState) ?? scope.evalState)?.viewBox;
+    const program = programStateOf(origin.evalState) ?? scope.evalState;
+    // A module has no drawing, so no box (docs/modules.md "Exporting"); blocks follow their program.
+    if (program?.drawingSealed) throw new Error(formatError(moduleDrawingReadError('viewbox'), line, column));
+    const vb = program?.viewBox;
     if (!vb) {
       throw new Error(
         formatError('viewbox is not available until define ViewBox(...) has run', line, column),
@@ -2741,8 +2746,6 @@ function evaluateExpression(expr: Expression, scope: Scope): Value {
           return { type: 'StyleBlockValue', properties: { ...left.properties, ...right.properties } };
         }
         if (isLayerReference(left) && isStyleBlock(right)) {
-          const ended = drawingValueUse(left, expr.left);
-          if (ended) throw new Error(formatError(ended, getLine(expr) ?? getLine(expr.left), getCol(expr) ?? getCol(expr.left)));
           // Merge styles into layer in place, return same ref for chaining
           Object.assign(left.layer.styles, right.properties);
           return left;
@@ -2977,6 +2980,7 @@ function evaluateLayerConstructor(expr: LayerConstructorExpression, scope: Scope
   if (!scope.evalState) {
     throw new Error(formatError('Layer constructors require evaluation context', getLine(expr)));
   }
+  assertCanDraw(scope.evalState, expr);
   const nameValue = evaluateExpression(expr.name, scope);
   if (typeof nameValue !== 'string') {
     throw new Error(formatError('Layer name must be a string', getLine(expr)));
@@ -3051,7 +3055,10 @@ function evaluateLayerConstructor(expr: LayerConstructorExpression, scope: Scope
  *    method), because a callback made there would run against the block's
  *    empty layer table after the block is gone;
  *  - argTracked: a per-statement sink, saved and restored on one state;
- *    sharing it would feed an inner block's commands to the outer statement.
+ *    sharing it would feed an inner block's commands to the outer statement;
+ *  - drawingSealed: a module's own drawing is sealed while it loads, but a
+ *    block it builds has a pen and drawing of its own (docs/modules.md
+ *    "Exporting": a path block is a value).
  */
 type BlockLocalField =
   | 'pathContext'
@@ -3063,7 +3070,8 @@ type BlockLocalField =
   | 'viewBox'
   | 'rootAccum'
   | 'subscriptions'
-  | 'argTracked';
+  | 'argTracked'
+  | 'drawingSealed';
 
 /**
  * The program-wide part of an evaluation state, shared by reference with every
@@ -3469,11 +3477,6 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
     const message = fixedValueChange(obj, expr.object, expr.method === 'pick' ? 'pick from' : 'change');
     if (message) throw mError(message);
   }
-  // Any method of a layer, transform or subscription whose drawing has ended.
-  if (drawingValues !== undefined) {
-    const message = drawingValueUse(obj, expr.object);
-    if (message) throw mError(message);
-  }
 
   // One angle-unit check for every receiver method: the per-case bodies each
   // read their own arguments, so this is the only place that sees them all.
@@ -3633,6 +3636,9 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
       return buildLayerHandle(targets[0], 0);
     }
     if (expr.method === 'subscribe') {
+      // Unreachable through a module's own layers (it can't make one); kept so
+      // the rule holds wherever the layer came from.
+      assertCanDraw(scope.evalState, expr);
       if (obj.layer.layerType !== 'PathLayer') {
         throw mError(`.subscribe() is only available on PathLayer references`);
       }
@@ -3698,8 +3704,6 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
         if (!isLayerReference(childValue)) {
           throw mError('.append() arguments must be layer references');
         }
-        const ended = drawingValueUse(childValue, arg);
-        if (ended) throw mError(ended);
         const childName = childValue.layer.name;
 
         // Self-reference check
@@ -5442,6 +5446,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
       case 'toCodeSnippetBlock': {
         if (expr.args.length < 1 || expr.args.length > 3) throw mError('toCodeSnippetBlock() expects 1-3 arguments (name [, fontSize, padding])');
         if (!scope.evalState) throw mError('toCodeSnippetBlock() requires evaluation context');
+        assertCanDraw(scope.evalState, expr);
         const snippetName = evaluateExpression(expr.args[0], scope);
         if (typeof snippetName !== 'string') throw mError('toCodeSnippetBlock() name must be a string');
 
@@ -5894,6 +5899,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
       case 'insert': {
         if (expr.args.length !== 0) throw mError('insert() expects 0 arguments');
         if (!scope.evalState) throw mError('insert() requires evaluation context');
+        assertCanDraw(scope.evalState, expr);
         // Generate unique fragment layer name
         let counter = 1;
         let name = `__fragment_${counter}`;
@@ -7476,12 +7482,6 @@ function evaluateMemberExpression(expr: MemberExpression, scope: Scope): Value {
   // `gears.toothDepth`, `gears.Teeth` through a namespace import (docs/modules.md)
   if (isModuleNamespace(obj)) return namespaceMember(obj, expr.property, expr.object, getLine(expr), getCol(expr));
 
-  // Any property of a layer, transform or subscription whose drawing has ended.
-  if (drawingValues !== undefined) {
-    const message = drawingValueUse(obj, expr.object);
-    if (message) throw new Error(formatError(message, getLine(expr), getCol(expr)));
-  }
-
   // Context .transform is synthesized from _transformState, not a data property
   if (
     typeof obj === 'object' && obj !== null && 'type' in obj && obj.type === 'ContextObject' &&
@@ -8234,6 +8234,9 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope): Value {
 
   // Handle layer() function — returns a LayerReference
   if (call.name === 'layer' && scope.evalState) {
+    // A module has no layers while it loads, so `layer('ink').subscribe(…)`
+    // and the like get the module's message rather than "Undefined layer".
+    assertCanDraw(scope.evalState, call);
     if (call.args.length !== 1) {
       throw new Error(`layer() expects 1 argument, got ${call.args.length}`);
     }
@@ -10752,6 +10755,7 @@ function evaluateStatementToAccum(stmt: Statement, scope: Scope, accum: PathStor
       if (!scope.evalState) {
         throw new Error(formatError('ViewBox definitions require evaluation context', getLine(stmt)));
       }
+      assertCanDraw(scope.evalState, stmt, MODULE_VIEWBOX_MESSAGE);
       // Guard at the case, not only in the block-body loops: a definition
       // nested in if/for inside a block reaches here with the block's
       // synthetic evalState (activeLayerName reset to null), so the flags
@@ -10795,6 +10799,7 @@ function evaluateStatementToAccum(stmt: Statement, scope: Scope, accum: PathStor
       if (!scope.evalState) {
         throw new Error(formatError('Layer definitions require evaluation context', getLine(stmt)));
       }
+      assertCanDraw(scope.evalState, stmt);
       // Path-block rule, also for a fn or lambda called inside a block.
       if (isInsidePathBlock(scope)) {
         throw new Error(formatError('Layer definitions are not allowed inside path blocks', getLine(stmt)));
@@ -10890,6 +10895,7 @@ function evaluateStatementToAccum(stmt: Statement, scope: Scope, accum: PathStor
       if (!scope.evalState) {
         throw new Error(formatError('Layer apply blocks require evaluation context', getLine(stmt)));
       }
+      assertCanDraw(scope.evalState, stmt);
       // Path-block rule, also for a fn or lambda called inside a block.
       if (isInsidePathBlock(scope)) {
         throw new Error(formatError('Layer apply blocks are not allowed inside path blocks', getLine(stmt)));
@@ -10907,8 +10913,6 @@ function evaluateStatementToAccum(stmt: Statement, scope: Scope, accum: PathStor
         layer = found;
         nameValue = target;
       } else if (isLayerReference(target)) {
-        const ended = drawingValueUse(target, stmt.layerName);
-        if (ended) throw new Error(formatError(ended, getLine(stmt), getCol(stmt)));
         // New path: use reference directly
         layer = target.layer;
         nameValue = layer.name;
@@ -10959,6 +10963,7 @@ function evaluateStatementToAccum(stmt: Statement, scope: Scope, accum: PathStor
 
     case 'TextStatement': {
       if (!scope.evalState) throw new Error(formatError('text() requires evaluation context', getLine(stmt)));
+      assertCanDraw(scope.evalState, stmt);
       const activeTextLayer = getActiveTextLayer(scope);
       if (!activeTextLayer) {
         throw new Error(formatError('text() can only be used inside a TextLayer apply block', getLine(stmt)));
@@ -10999,7 +11004,7 @@ function evaluateStatementToAccum(stmt: Statement, scope: Scope, accum: PathStor
       const obj = evaluateExpression(stmt.object, scope);
       // Every property write on every type passes here: one check covers them all.
       if (fixedValues !== undefined) {
-        const fixedChange = fixedValueChange(obj, stmt.object) ?? drawingValueUse(obj, stmt.object);
+        const fixedChange = fixedValueChange(obj, stmt.object);
         if (fixedChange) throw new Error(formatError(fixedChange, getLine(stmt), getCol(stmt)));
       }
       // The one place every angle-valued property assignment passes through —
@@ -11450,6 +11455,11 @@ function evaluateStatementToAccum(stmt: Statement, scope: Scope, accum: PathStor
 
     case 'FontDirective':
       // Declarative metadata — font loading handled by host environment before compilation
+      return;
+
+    case 'ModuleHeader':
+      // Read before the program runs: the loader (only modules import) and the
+      // seal on a module's drawing (sealModuleDrawing).
       return;
 
     case 'ImportDeclaration': {
@@ -12419,7 +12429,6 @@ function programRootScope(evalState: EvaluationState, modules: ModuleGraph | und
   runningFile = undefined;
   lastStatementLine = undefined;
   fixedValues = undefined;
-  drawingValues = undefined;
   if (modules) {
     scope.module = { path: modules.entry, label: fileLabel(modules.entry), entry: true };
     evalState.moduleDefs = {
@@ -12431,24 +12440,33 @@ function programRootScope(evalState: EvaluationState, modules: ModuleGraph | und
       ownVarNames: new Set(),
     };
     const fixed: FixedValues = new WeakMap();
-    const drawing: DrawingValues = new WeakMap();
     fixedValues = fixed;
-    drawingValues = drawing;
-    loadModules(modules, evalState, fixed, drawing);
+    loadModules(modules, evalState, fixed);
   }
   return scope;
 }
 
 /**
- * Run every imported file, dependencies first (graph.order), each in a state
- * of its own (docs/modules.md "An imported file runs on its own"): its
- * drawing, layers and ViewBox stay in it, and only its exports reach the
- * files that import it. Its logs and warnings join the compiled file's,
- * labelled with its file. An error while it loads names the file and the
- * imports that led to it. Once a file has loaded, what it holds is fixed
+ * Seal a module's own drawing while its top level runs (docs/modules.md
+ * "Exporting"): drawing, layers, `define ViewBox`, subscriptions and reading
+ * `ctx` or `viewbox` are errors there. Its blocks, and the fns another file
+ * calls, draw in states of their own and are never sealed.
+ */
+function sealModuleDrawing(state: EvaluationState, accum: PathStore): void {
+  state.drawingSealed = true;
+  accum.sealed = true;
+}
+
+/**
+ * Run every imported module, dependencies first (graph.order), each in a
+ * state of its own (docs/modules.md "An imported file runs on its own"). A
+ * module can't draw while it loads (sealModuleDrawing), so only its exports
+ * reach the files that import it. Its logs and warnings join the compiled
+ * file's, labelled with its file. An error while it loads names the file and
+ * the imports that led to it. Once a file has loaded, what it holds is fixed
  * (fixFile; docs/modules.md "What you import is fixed").
  */
-function loadModules(graph: ModuleGraph, main: EvaluationState, fixed: FixedValues, drawing: DrawingValues): void {
+function loadModules(graph: ModuleGraph, main: EvaluationState, fixed: FixedValues): void {
   const records = new Map<string, ModuleRecord>();
   main.modules = records;
   // Ids stay stable only if no two files share a prefix (docs/modules.md "Clashes are errors").
@@ -12471,6 +12489,7 @@ function loadModules(graph: ModuleGraph, main: EvaluationState, fixed: FixedValu
     scope.module = identity;
     const accum = createPathStore();
     state.rootAccum = accum;
+    sealModuleDrawing(state, accum);
     let program: Program;
     const saved = runningFile;
     runningFile = identity;
@@ -12478,30 +12497,17 @@ function loadModules(graph: ModuleGraph, main: EvaluationState, fixed: FixedValu
       program = parse(file.source);
       const flow = evaluateStatementsToAccum(program.body, scope, accum);
       if (flow) throw loopFlowBoundaryError(flow);
-      runSubscriptionDispatch(scope, state);
+      fixFile(scope, identity, fixed);
     } catch (caught) {
       throw traceModuleLoad(strayReturnError(caught), identity, file.importedFrom);
     } finally {
       runningFile = saved;
     }
-    // After its subscriptions ran, so they could still draw on its own values.
-    fixFile(scope, identity, fixed, drawing);
-    const { exported, declared, exportedAt } = exportsOf(program);
+    const { exported, declared } = exportsOf(program);
     const exports = new Map<string, Value>();
     for (const name of exported) {
       const value = scope.variables.get(name);
-      if (value === undefined) continue;
-      // A layer, transform or subscription can't be exported: its drawing has ended (decision 35).
-      const owner = typeof value === 'object' && value !== null ? drawing.get(value) : undefined;
-      if (owner) {
-        const message =
-          owner.file.path === identity.path
-            ? exportDrawingValueError(name, owner.kind)
-            : useDrawingValueError(name, owner.kind, owner.file.label);
-        const at = exportedAt.get(name);
-        throw traceModuleLoad(new Error(formatError(message, at?.line, at?.column)), identity, file.importedFrom);
-      }
-      exports.set(name, value);
+      if (value !== undefined) exports.set(name, value);
     }
     records.set(path, { ...identity, exports, declared });
     for (const w of state.warnings) main.warnings.push(w.file ? w : { ...w, file: identity.label });
@@ -12530,7 +12536,7 @@ export function evaluate(
 ): CompileResult {
   setNumberFormat(options?.toFixed);
   let annotateState: EvaluationState | undefined;
-  const outer = { file: runningFile, line: lastStatementLine, fixed: fixedValues, drawing: drawingValues };
+  const outer = { file: runningFile, line: lastStatementLine, fixed: fixedValues };
   try {
     const evalState = newEvaluationState({
       fonts: options?.fonts,
@@ -12542,6 +12548,8 @@ export function evaluate(
 
     const accum = createPathStore();
     evalState.rootAccum = accum;
+    // A module compiled by itself draws nothing (docs/modules.md "Exporting").
+    if (isModuleProgram(program)) sealModuleDrawing(evalState, accum);
     // Top level is a break/continue boundary (builder-enforced; defensive)
     const topFlow = evaluateStatementsToAccum(program.body, scope, accum);
     if (topFlow) throw loopFlowBoundaryError(topFlow);
@@ -12560,7 +12568,6 @@ export function evaluate(
     runningFile = outer.file;
     lastStatementLine = outer.line;
     fixedValues = outer.fixed;
-    drawingValues = outer.drawing;
   }
 }
 
@@ -12616,7 +12623,7 @@ export function evaluateWithContext(
 ): EvaluateWithContextResult {
   setNumberFormat(options.toFixed);
   let annotateState: EvaluationState | undefined;
-  const outer = { file: runningFile, line: lastStatementLine, fixed: fixedValues, drawing: drawingValues };
+  const outer = { file: runningFile, line: lastStatementLine, fixed: fixedValues };
   try {
     const evalState = newEvaluationState({
       fonts: options.fonts,
@@ -12632,6 +12639,8 @@ export function evaluateWithContext(
 
     const accum = createPathStore();
     evalState.rootAccum = accum;
+    // A module compiled by itself draws nothing (docs/modules.md "Exporting").
+    if (isModuleProgram(program)) sealModuleDrawing(evalState, accum);
     // Top level is a break/continue boundary (builder-enforced; defensive)
     const topFlow = evaluateStatementsToAccum(program.body, scope, accum);
     if (topFlow) throw loopFlowBoundaryError(topFlow);
@@ -12680,7 +12689,6 @@ export function evaluateWithContext(
     runningFile = outer.file;
     lastStatementLine = outer.line;
     fixedValues = outer.fixed;
-    drawingValues = outer.drawing;
   }
 }
 

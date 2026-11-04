@@ -89,3 +89,5 @@ Fonts are shared by family and weight. Two files loading *different* font files 
 - **5b:** pull an imported `@property` only when the compiled file doesn't register that name itself.
 
 **From 5a's code review:** written text is always the file's own name. A value keeps its id when a def has that id, and is otherwise the file's own name too. See `18-phase-1a-step5a.md`.
+
+**Step 5e (2026-11-04), after the strictness discussion:** modules are libraries that can't draw while they load (`23-modules-are-libraries-plan.md`, `24-phase-1a-step5e.md`). 5c's checks became unreachable and were removed, leaving a `fixFile` backstop. 5a and 5b stand: a module still builds defs and CSSVar colors as values, and its exported fns still use them in your drawing.

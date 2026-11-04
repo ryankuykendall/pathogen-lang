@@ -7,6 +7,7 @@
  * output (byte parity by construction); the records are the queryable source
  * of truth for labels and geometry.
  */
+import { MODULE_DRAWS_MESSAGE } from '../module-messages';
 import { derivedMeta, normalizeMeta } from './path-data';
 
 import type { PathBlockCommand, PathRecord, PathStore, RecordedCornerOp } from './types';
@@ -110,6 +111,13 @@ export function recordPath(
   commands: PathBlockCommand[],
   extras?: { label?: string; loc?: SourceLocation; fn?: string },
 ): void {
+  // A module's own drawing while it loads (docs/modules.md "Exporting").
+  if (store.sealed) {
+    // The evaluator's formatError shape, which the cross-file trace parses.
+    const at = extras?.loc;
+    const where = !at || !(at.line > 0) ? '' : at.column > 0 ? `Line ${at.line}, col ${at.column}: ` : `Line ${at.line}: `;
+    throw new Error(`${where}${MODULE_DRAWS_MESSAGE}`);
+  }
   const record: PathRecord = { raw, commands };
   if (extras?.label !== undefined) record.label = extras.label;
   if (extras?.loc !== undefined) record.loc = extras.loc;

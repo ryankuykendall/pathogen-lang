@@ -390,6 +390,8 @@ function formatStatement(stmt: Statement, depth: number, indent: string, prefix:
   // `export` is a flag on the declaration (ast.ts Exportable), printed before its keyword.
   const exported = 'exported' in stmt && stmt.exported ? 'export ' : '';
   switch (stmt.type) {
+    case 'ModuleHeader':
+      return `${prefix}module;`;
     case 'ImportDeclaration': {
       // A path is raw text between its quotes (no escapes; ast.ts), so one
       // holding `"` or `\` keeps the quotes it was written with.

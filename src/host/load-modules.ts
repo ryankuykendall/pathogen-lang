@@ -25,6 +25,7 @@ import {
   importNotFoundError,
   importOtherExtensionError,
   importUnreadableError,
+  notAModuleError,
 } from '../module-messages';
 import { parser as lezerParser } from '../parser/pathogen.generated';
 
@@ -65,6 +66,19 @@ export function planImports(source: string): PlannedImport[] {
     });
   }
   return imports;
+}
+
+/**
+ * Whether a file says it is a module: a `module;` line at its top level
+ * (docs/modules.md "Exporting"). One placed after other statements still
+ * counts here; the compile then reports where it belongs.
+ */
+export function isModuleSource(source: string): boolean {
+  const tree = lezerParser.parse(source);
+  for (let node = tree.topNode.firstChild; node; node = node.nextSibling) {
+    if (node.name === 'ModuleHeader') return true;
+  }
+  return false;
 }
 
 const WEB_ADDRESS = /^[a-z][a-z0-9+.-]*:/i;
@@ -180,13 +194,17 @@ export async function resolveModules(
   const errors: ModuleLoadError[] = [];
   // Why a path couldn't be read, kept so every import of it gets its own
   // message (worded as that import writes the path) without reading it again.
-  const failed = new Map<string, Exclude<HostReadResult, { ok: true }> | 'not-text'>();
+  const failed = new Map<string, Exclude<HostReadResult, { ok: true }> | 'not-text' | 'not-module'>();
   // Each cycle once. Keyed by the files in it, so two cycles through the same
   // files in different orders count as one: fixing either breaks both.
   const reportedCycles = new Set<string>();
 
-  const readFailure = (written: string, why: Exclude<HostReadResult, { ok: true }> | 'not-text'): string => {
+  const readFailure = (
+    written: string,
+    why: Exclude<HostReadResult, { ok: true }> | 'not-text' | 'not-module',
+  ): string => {
     if (why === 'not-text') return importUnreadableError(written, 'it is not UTF-8 text');
+    if (why === 'not-module') return notAModuleError(written);
     if (why.code === 'escapes-root') return importLeavesProjectError(written, host.projectLabel);
     if (why.code === 'case-mismatch') return importCaseMismatchError(written, respell(written, why.actual));
     if (why.code === 'not-found') return importNotFoundError(written, why.osPath);
@@ -252,6 +270,12 @@ export async function resolveModules(
     if (source === null) {
       failed.set(path, 'not-text');
       errorAt(readFailure(planned.written, 'not-text'), from, planned, chain);
+      return null;
+    }
+    // Only a module can be imported: a program's drawing has nowhere to go.
+    if (!isModuleSource(source)) {
+      failed.set(path, 'not-module');
+      errorAt(readFailure(planned.written, 'not-module'), from, planned, chain);
       return null;
     }
 

@@ -610,6 +610,11 @@ export interface PathRecord {
  */
 export interface PathStore {
   records: PathRecord[];
+  /**
+   * The root drawing of a module while it loads (docs/modules.md "Exporting"):
+   * recordPath refuses to add to it. A block's own store is never sealed.
+   */
+  sealed?: boolean;
 }
 
 /**
@@ -1308,6 +1313,14 @@ export interface EvaluationState {
   modules?: Map<string, ModuleRecord>;
   /** Ids across files (docs/modules.md "Ids from other files"). Shared like `modules`; absent without files. */
   moduleDefs?: ModuleDefs;
+  /**
+   * A module's own drawing (docs/modules.md "Exporting"): a module can't draw
+   * while it loads, so layers, `apply`, text, `define ViewBox`, subscriptions
+   * and reading `ctx` or `viewbox` are errors on this state. Block states
+   * don't inherit it (BlockLocalField), and a fn called from another file runs
+   * in that file's state, so neither is ever sealed.
+   */
+  drawingSealed?: boolean;
 }
 
 /** The six maps of defs on an EvaluationState, by name. */

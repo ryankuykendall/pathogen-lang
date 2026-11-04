@@ -99,7 +99,15 @@
   "Import": {
     "prefix": "import",
     "body": "import { ${1:name} } from \"${2:./file.pathogen}\";$0",
-    "description": "import names from another .pathogen file (at the top of the file)"
+    "description": "import names from a module (at the top of the file)"
+  },
+  "Module Header": {
+    "prefix": "module",
+    "body": [
+      "module;",
+      "$0"
+    ],
+    "description": "module; — make this file a module other files can import (first line; a module doesn't draw)"
   },
   "Radial Loop": {
     "prefix": "forangle",

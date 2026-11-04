@@ -10,6 +10,9 @@
       "include": "#font-directive"
     },
     {
+      "include": "#module-header"
+    },
+    {
       "include": "#import-header"
     },
     {
@@ -89,6 +92,15 @@
       "captures": {
         "1": {
           "name": "keyword.other.directive.pathogen"
+        }
+      }
+    },
+    "module-header": {
+      "comment": "The `module;` line that makes a file a module. `module` is a keyword only there; elsewhere it is an ordinary name (let module = 3;).",
+      "match": "^\\s*(module)\\s*(?=;)",
+      "captures": {
+        "1": {
+          "name": "keyword.control.import.pathogen"
         }
       }
     },

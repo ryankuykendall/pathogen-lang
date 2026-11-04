@@ -2,12 +2,14 @@
 
 > **Prerequisites:** This page assumes you know how to write [functions](#syntax-functions), [`const`](#syntax-const) and [enums](#syntax-user-defined-enums), and how a program finds its [project folder](#projects-the-project-folder).
 
-As a program grows, it helps to split it into files. Modules let you keep the code you reach for again and again in a library file of its own, then use it from every program in your project. That code might be a fn that draws a gear, a table of standard sizes, or an enum of tooth counts. You write the library once and can test it on its own, and a fix or an improvement to it reaches every drawing that uses it.
+As a program grows, it helps to split it into files. Modules let you keep the code you reach for again and again in a library file of its own, then use it from every program in your project. That code might be a fn that draws a gear, a table of standard sizes, or an enum of tooth counts. You write the library once, and a fix or an improvement to it reaches every drawing that uses it.
 
-A library offers its functions, constants and enums with `export`. A program brings in what it needs with `import`:
+A library starts with `module;` and offers its functions, constants and enums with `export`. A program brings in what it needs with `import`:
 
 ```pathogen
 // parts/gears.pathogen
+module;
+
 const toothDepth = 6;
 
 export fn gear(center, radius, teeth) {
@@ -28,27 +30,30 @@ gear(Point(150, 50), 28, 8);
 
 Compiling `main.pathogen` draws two gears: a 12-tooth gear on the left and an 8-tooth gear on the right, each with a round hole in the middle.
 
-Think of each file as a workshop with a counter. `export` puts something on the counter for other files to take; whatever the workshop builds at its own bench stays inside.
+Think of a module as a workshop that makes tools. `export` puts a tool on the counter for other files to take. The workshop never draws anything itself: its tools draw at your bench, with your pen.
 
 Imports work in the CLI and in VS Code, where files sit side by side on disk. A playground workspace is one program for now, so `import` is an error there; see [In each tool](#modules-in-each-tool).
 
 **Know these before you start:**
 
-- **An imported file runs on its own.** Whatever it draws, and its layers and ViewBox, stay in that file. Only the names it exports reach yours.
+- **A library starts with `module;`.** That line makes the file a module, and only a module can be imported. A file without it is a program, the kind that draws.
+- **A module makes things; it doesn't draw.** Its top level declares fns, constants and enums, and builds values such as styles, path blocks and gradients. Whatever draws goes in an exported fn, which draws into your drawing when you call it.
 - **What you import is fixed.**
   - You can't give an imported name a new value.
   - You can't change an imported array, object or [Cycler](#stdlib-cycler). Copy it first (`[...sizes]`), or ask the file for a fn that makes a fresh one.
   - An exported fn can't change its own file's variables, or what's in them, once that file has loaded.
 - **A library is shared within its project.** An import can't reach outside the [project folder](#projects-the-project-folder), so a library serves the programs in one project. To use it in another project, copy its file into that project.
-- **Imports go first**, before any other statement in the file, `@font` and `define ViewBox` included.
+- **Imports go first**, before any other statement, `@font` and `define` lines included. In a module, only the `module;` line comes before them.
 - **Ids from other files get a prefix.** A mask, gradient, marker or filter made in `parts/arrows.pathogen` with the id `arrowhead` has the id `parts-arrows--arrowhead` in your SVG (its path from the project folder, then the id), so two files can both use `arrowhead`.
 
 ## Exporting
 
-Put `export` in front of a top-level `const`, `fn` or `enum`:
+Start the file with `module;`, then put `export` in front of a top-level `const`, `fn` or `enum`:
 
 ```pathogen
 // parts/gears.pathogen
+module;
+
 export const toothDepth = 6;
 
 export enum Teeth { Few = 8, Standard = 12, Fine = 20 }
@@ -64,24 +69,23 @@ fn hub(center, radius) {
 }
 ```
 
+- **`module;` comes first.** Only comments may come before it. It makes the file importable, and it turns on the rules below for the whole file.
 - **Only `const`, `fn` and `enum`.** `export let` is an error. Imported values are fixed, so an exported variable could never change anyway.
-- **Only at the top level.** `export` inside a function or block is an error.
-- **A file with exports is still a program.** Compile it on its own and it draws what its top level draws. That makes it a good place for a demo of its parts:
+- **Only at the top level of a module.** `export` inside a function or block is an error, and so is `export` in a file without `module;`.
+- **A module doesn't draw at its top level.** These are errors there:
+  - path commands such as `M 0 0`, and drawing calls such as `circle(…);` or `shape.draw();`. That includes calling a fn that draws, even this file's own: `gear(…);` at the top level is an error;
+  - layers: `define PathLayer(…)`, `PathLayer('ink') …` and `apply` blocks;
+  - text lines such as ``text(10, 20)`Hi` ``;
+  - `define ViewBox`, `.subscribe(…)`, and reading `ctx` or `viewbox`: a module has no drawing of its own to describe.
 
-  ```pathogen
-  // parts/gears.pathogen, continued: a demo of every size
-  define ViewBox(0, 0, 300, 100);
-  gear(Point(50, 50), 30, Teeth.Few);
-  gear(Point(150, 50), 30, Teeth.Standard);
-  gear(Point(250, 50), 30, Teeth.Fine);
-  ```
-
-  When another file imports `parts/gears.pathogen`, this demo runs but isn't drawn into the importing file. Keep demos light. One runs every time a file that imports it compiles, its `log()` output and warnings show up there, and an error in it stops that compile.
-- **`export` in the file you compile does nothing.** So you can write library-style code in the playground today, and move it into its own file later.
+  These are fine: anything that makes a value, such as styles (`#{ … }`), path blocks (`@{ … }`), text blocks (`&{ … }`), colors, gradients, masks, markers and tables of numbers; and `@font`, `log()` and `assert()`. A path block keeps its commands as a value, so only `.draw()` on it counts as drawing. To draw, export a fn: it draws when your file calls it.
+- **Compiled by itself, a module draws nothing.** Its `log()` and `assert()` lines still run, so you can check its values. To see its shapes, import it into a small program that draws them.
 - **To pass on a name from another file**, import it under another name, or import its file with `* as`, and export it as a `const`:
 
   ```pathogen
   // parts/kit.pathogen
+  module;
+
   import * as gears from "./gears.pathogen";
 
   export const gear = gears.gear;
@@ -119,7 +123,8 @@ log(gears.toothDepth);
 
 The rules:
 
-- **Imports come first.** They go before any other statement in the file, `@font` and `define` included; only comments may come before them.
+- **Imports come first.** They go before any other statement in the file, `@font` and `define` included. Only comments, and a module's `module;` line, may come before them.
+- **Only modules can be imported.** Importing a file without `module;` is an error. Adding the line makes the file a module, so any drawing at its top level must first move into an exported fn, or into the program that imports it.
 - **The path is written in full**, `.pathogen` included, and follows the rules in [Writing paths](#projects-writing-paths):
   - `./` and `../` start at the file the import is written in, and `/` at the project folder;
   - forward slashes only, and the letter case must match the file on disk;
@@ -129,15 +134,14 @@ The rules:
 - **Two files can't import each other**, directly or through other files. That's an import cycle, and the error names every file in it. Move what both files need into a third file that both import.
 - **Braces or `* as` are required.** Pathogen has no default export, so `import gears from "./parts/gears.pathogen";` is an error. Import names with braces, or all of them with `* as`.
 
-`from` means something only inside an import. Everywhere else it's an ordinary name: a gradient's `.from` property and `let from = bar.start;` keep working. `import` and `export` are [keywords](#syntax-variables), so they can't be names or object keys.
+`from` means something only inside an import, and `module` only as the `module;` line at the top of a file. Everywhere else they're ordinary names: a gradient's `.from` property, `let from = bar.start;` and `let module = 3;` keep working. `import` and `export` are [keywords](#syntax-variables), so they can't be names or object keys.
 
 ## An imported file runs on its own
 
-When you compile `main.pathogen`, each file it imports runs first, in a space of its own: the workshop works at its own bench.
+When you compile `main.pathogen`, each module it imports runs first, in a space of its own.
 
-- **Everything at its top level runs.** That includes working out tables, defining fns and drawing its demo.
-- **What it draws stays there.** The same goes for its layers and its ViewBox: none of them appear in your SVG.
-- **Into your drawing come only its exports**, and what the exported values you use rely on: masks, gradients, markers and other defs, and the `@property` rule of a [CSSVar](#css-var-cssvar-type).
+- **Everything at its top level runs.** It works out tables, defines fns, and builds styles, gradients and other values. It never draws: see [Exporting](#modules-exporting).
+- **Only its exports reach your file.** Your SVG gets the masks, gradients, markers and other defs those exports rely on, and the `@property` rule of a [CSSVar](#css-var-cssvar-type), when your drawing uses them.
 - **Its `log()` output and warnings reach you, labeled with its path from the project folder.** In the CLI, a log reads `[parts/gears.pathogen line 12] toothDepth = 6`, and a warning `parts/gears.pathogen:12:5: warning: …`.
 - **Each file runs once per compile**, however many files import it.
 
@@ -175,6 +179,8 @@ Both gears land in your `teeth` layer, with its stroke.
 
 ```pathogen
 // parts/marks.pathogen
+module;
+
 export fn centerMark(size) {
   let middleX = calc(viewbox.originX + viewbox.width / 2);
   let middleY = calc(viewbox.originY + viewbox.height / 2);
@@ -185,7 +191,33 @@ export fn centerMark(size) {
 }
 ```
 
-In `main.pathogen`, with its 200 × 100 ViewBox, `centerMark(10);` draws a cross at (100, 50), the middle of main's box. It doesn't use the box of a demo in `marks.pathogen`.
+In `main.pathogen`, with its 200 × 100 ViewBox, `centerMark(10);` draws a cross at (100, 50), the middle of main's box. A module has no box of its own, so an exported fn reads the box of whichever drawing calls it.
+
+**A module has no layers to give you.** It can't make a layer at its top level, so share the look and the drawing instead. Export a style, and define the layer in your file. Export a fn that draws, which can even pick a layer by name when it runs:
+
+```pathogen
+// inks.pathogen
+module;
+
+export const inkStyle = #{ stroke: Color('#333'); stroke-width: 1.5; fill: none; };
+
+export fn inkLine(start, end) {
+  layer('ink').apply {
+    M start.x start.y
+    L end.x end.y
+  }
+}
+```
+
+```pathogen
+// main.pathogen
+import { inkStyle, inkLine } from "./inks.pathogen";
+
+define PathLayer('ink') inkStyle;
+inkLine(Point(10, 10), Point(90, 40));
+```
+
+`inkLine` draws into *your* `ink` layer, because the drawing follows the call. Define that layer before calling it, and call it outside your own `apply` blocks: `inkLine` opens its own, and they can't nest.
 
 ## What you import is fixed
 
@@ -203,6 +235,8 @@ Once a file has finished running, its exports can't change. This means a file be
 
 ```pathogen
 // ids.pathogen
+module;
+
 let lastId = 0;
 
 export fn nextId() {
@@ -219,7 +253,7 @@ log(nextId());
 ```
 
 ```text
-Error: ids.pathogen line 5, col 3: Cannot assign to lastId — it belongs to ids.pathogen, whose variables are fixed once it has loaded. Return the new value instead, or pass it in as a parameter
+Error: ids.pathogen line 7, col 3: Cannot assign to lastId — it belongs to ids.pathogen, whose variables are fixed once it has loaded. Return the new value instead, or pass it in as a parameter
   called from main.pathogen line 4
 ```
 
@@ -227,30 +261,14 @@ Give the fn what it needs, and have it hand back the result:
 
 ```pathogen
 // ids.pathogen
+module;
+
 export fn nextId(lastId) {
   return lastId + 1;
 }
 ```
 
 Inside `ids.pathogen` itself, while the file is running, `nextId()` can still change `lastId` as usual.
-
-**Values that belong to the imported file's drawing stay in that file.** These are a layer it defined, a transform, and a subscription.
-- Exporting one is an error.
-- So is using one that reaches you some other way, such as from an exported fn that returns it.
-
-Export a fn that draws instead. It can even pick a layer by name when it runs:
-
-```pathogen
-// inks.pathogen
-export fn inkLine(start, end) {
-  layer('ink').apply {
-    M start.x start.y
-    L end.x end.y
-  }
-}
-```
-
-Called from your file, `inkLine` draws into *your* `ink` layer, because the drawing follows the call. What's an error is a layer value made while `inks.pathogen` loaded. [Path query](#path-queries-what-comes-back) results are copies of what was drawn, so you can read them.
 
 ## Ids from other files
 
@@ -287,6 +305,8 @@ An error that happens in another file names that file and its line. It then list
 
 ```pathogen
 // parts/gears.pathogen
+module;
+
 export fn gear(center, radius, teeth) {
   assert(teeth >= 3, 'a gear needs at least 3 teeth');
   star(center.x, center.y, radius, radius - 6, teeth);
@@ -301,28 +321,28 @@ gear(Point(55, 50), 40, 2);
 ```
 
 ```text
-Error: parts/gears.pathogen line 3, col 3: assertion failed: a gear needs at least 3 teeth
+Error: parts/gears.pathogen line 5, col 3: assertion failed: a gear needs at least 3 teeth
   called from main.pathogen line 4
 ```
 
 If `gear` had handed the check to a fn in a third file, each file on the way would be listed:
 
 ```text
-Error: parts/teeth.pathogen line 3, col 3: assertion failed: a gear needs at least 3 teeth
-  called from parts/gears.pathogen line 3
+Error: parts/teeth.pathogen line 5, col 3: assertion failed: a gear needs at least 3 teeth
+  called from parts/gears.pathogen line 7
   called from main.pathogen line 4
 ```
 
 Calls within one file aren't listed.
 
-A mistake in an imported file's own code, such as a missing `;`, names your import instead:
+A mistake in an imported file's own code, such as leaving the `;` off `const toothDepth = 6` in the gears file at the top of this page, names your import instead:
 
 ```text
-Error: parts/gears.pathogen line 2, col 21: Missing ';'
+Error: parts/gears.pathogen line 4, col 21: Missing ';' after const declaration
   imported from main.pathogen line 2
 ```
 
-Two imports deep, each import is listed in the same way: `imported from parts/gears.pathogen line 2`, then `imported from main.pathogen line 2`.
+Two imports deep, each import is listed in the same way: `imported from parts/gears.pathogen line 4`, then `imported from main.pathogen line 2`.
 
 In VS Code, the error is shown on the call (or the import) in the file you're editing. The message there names the line in the other file, and if that file is open, the error shows at its own line too. Errors in the file you compile read exactly as before.
 
@@ -334,10 +354,10 @@ In VS Code, the error is shown on the call (or the import) in the file you're ed
 - **VS Code.**
   - **Features across files:** errors, hover, go-to-definition, completion and parameter hints all work across files. Completion offers the exported names inside `import { }`, file paths inside the quotes, and a namespace's names after `gears.`.
   - **Rechecking:** editing or saving an imported file rechecks the open files that import it, and the preview redraws.
-  - **The preview:** it shows the file you're editing, so opening `parts/gears.pathogen` shows its demo.
+  - **The preview:** it shows the file you're editing. A module doesn't draw, so its preview is empty; to see its fns draw, open a program that imports it.
   - **Unsaved files:** an unsaved file can't import, because its paths have no folder to start from.
   - **Renaming and finding references:** F2 on an imported or exported name says it can't rename across files yet, instead of changing only some of its uses; rename it in each file. Find All References lists the uses in the current file only.
-- **Playground.** A workspace is one program with no files beside it, so `import` is an error at the import line. `export` is allowed and does nothing.
+- **Playground.** A workspace is one program with no files beside it, so `import` is an error at the import line. The other module rules hold as in any file: `export` without `module;` is an error, and a workspace that starts with `module;` draws nothing.
 
 ## Errors
 
@@ -358,16 +378,22 @@ In VS Code, the error is shown on the call (or the import) in the file you're ed
 | The file can't be read | `import file "./parts/gears.pathogen" could not be read: …` followed by your system's reason |
 | A file outside the `--root` folder has an import (CLI) | `poster.pathogen is outside the project folder /Users/you/my-gears given by --root, so its import paths can't be followed.` |
 | An import cycle | `Import cycle: main.pathogen → parts/a.pathogen → main.pathogen. Move what both files need into a third file that both import.` |
-| The imported file has an error | that file's error, as in [Errors in other files](#modules-errors-in-other-files): `parts/gears.pathogen line 2, col 21: Missing ';'`, then `imported from main.pathogen line 2` on the next line |
+| The imported file isn't a module | `Cannot import "./parts/scene.pathogen": it isn't a module. To make it one, add module; at the top of that file and move its drawing into exported fns.` |
+| The imported file has an error | that file's error, as in [Errors in other files](#modules-errors-in-other-files): `parts/gears.pathogen line 4, col 21: Missing ';' after const declaration`, then `imported from main.pathogen line 2` on the next line |
 | A name the file doesn't export | `parts/gears.pathogen has no export named gera. It exports: gear, Teeth, toothDepth.` |
 | A name the file declares but doesn't export | `parts/gears.pathogen declares hub but doesn't export it. Put export in front of its declaration in parts/gears.pathogen.` |
 | A namespace has no such name | `gears has no export named gera. parts/gears.pathogen exports: gear, Teeth, toothDepth.` |
-| An import after other statements | `import must come before the file's other statements, @font and define included. Only comments may come first.` |
+| An import after other statements | `import must come before the file's other statements, @font and define included. Only comments and the module; line may come before it.` |
+| `module;` after other statements | `module; must be the file's first statement. Only comments may come before it.` |
 | `import` or `export` inside a function or block | `import must be at the top level of the file, not inside a function or block.` (`export` reads the same way) |
+| `export` in a file without `module;` | `export only works in a module. Remove export, or add module; at the top of the file to make it a module, which can't draw at its top level.` |
 | `export let` | `export let isn't allowed: an imported file's variables are fixed once it has loaded. Use export const.` |
 | `export` before anything else | `export goes in front of a const, fn or enum declaration.` |
+| A module drawing while it loads: a path command, a drawing call (also through a fn it calls), a layer, `apply`, text or `.subscribe(…)` | `A module can't draw while it loads. Draw in an exported fn, and call it from the file that imports this one.` |
+| `define ViewBox` in a module | `A module has no drawing, so it can't define a ViewBox. The program that imports it sets the ViewBox.` |
+| Reading `ctx` or `viewbox` while a module loads (a path block's own `ctx` is fine) | `A module has no drawing while it loads, so ctx can't be read. Read it in an exported fn that the importing file calls; there it describes that file's drawing.` (`viewbox` reads the same way) |
 | An import with no path yet, such as `import { gear` while you type | `Incomplete import — write it as import { name } from "./file.pathogen"; or import * as name from "./file.pathogen";` |
-| An import without braces or `* as` | `import gears from "./parts/gears.pathogen" would import the file's drawing, which isn't supported. Import its names: import { … } from "./parts/gears.pathogen"; or import * as gears from "./parts/gears.pathogen";` |
+| An import without braces or `* as` | `import gears from "./parts/gears.pathogen" isn't supported: Pathogen has no default export. Import its names: import { … } from "./parts/gears.pathogen"; or import * as gears from "./parts/gears.pathogen";` |
 | A built-in's name | `Cannot use Color as a name — it is a built-in constructor. Use another name` (see [Built-in names](#syntax-built-in-names)) |
 | A name imported twice | `Cannot import gear again — it is already imported on line 1. Import one of them under another name: { gear as … }` (for `* as gears`, the end reads `* as …`) |
 | A later declaration of an imported name | `Cannot declare gear again — it is imported on line 1. Use another name` |
@@ -381,9 +407,7 @@ In VS Code, the error is shown on the call (or the import) in the file you're ed
 | Changing an imported gradient, grid, mask or other value | `Cannot change sky — it comes from parts/shades.pathogen, and imported values are fixed. Make your own, or export a fn that makes one` |
 | An exported fn changing a gradient, grid, mask or other value its file holds | `Cannot change sky — it belongs to parts/shades.pathogen, whose values are fixed once it has loaded. Make a new one inside the fn, or pass one in as a parameter` |
 | Adding to or changing a namespace, such as `kit.extra = 1` | `Cannot change kit — it is imported from kit.pathogen, and imported values are fixed. Declare a variable of your own with let, under another name` |
-| Exporting a layer, transform or subscription | `Cannot export ink — it is a layer of this file's drawing, which stays in this file. Export a fn that draws instead`. For a transform, the middle reads `it is a transform of this file's drawing`; for a subscription, `it is a subscription to this file's drawing` |
-| Using another file's layer, transform or subscription | `Cannot use ink — it is a layer of inks.pathogen's drawing, which stays in that file. Export a fn that draws, and call it inside your own layer`. For a transform, the middle reads `it is a transform of inks.pathogen's drawing`; for a subscription, `it is a subscription to inks.pathogen's drawing` |
 | Two files with the same id prefix | `parts-gears.pathogen and parts/gears.pathogen would both give their ids the prefix parts-gears--. Rename one of the files.` |
-| One of your ids matches an imported one your drawing refers to | `Duplicate defs ID 'arrows--tip': made in main.pathogen line 4, and as 'tip' in arrows.pathogen line 2. Rename one of them.` |
+| One of your ids matches an imported one your drawing refers to | `Duplicate defs ID 'arrows--tip': made in main.pathogen line 4, and as 'tip' in arrows.pathogen line 4. Rename one of them.` |
 | A raw `url(#…)` that only matches another file's id (a warning, code `imported-id`) | `url(#arrowhead) matches no id in this file. The arrowhead made in parts/arrows.pathogen is parts-arrows--arrowhead in your SVG; use the imported value instead.` |
 | Two files load different fonts as one family and weight | `Two files load different fonts as "Inter" 400: ./a/Inter.ttf (main.pathogen) and ./b/Inter.ttf (parts/labels.pathogen). Use the same font in both files.` |

@@ -3,11 +3,10 @@
  * evaluator's internals: the error that names another file, reading a
  * file's exports from its AST, and finding which file a scope runs.
  */
-import { fileLabel } from '../module-messages';
+import { fileLabel, MODULE_DRAWS_MESSAGE } from '../module-messages';
 
 import type { ModuleIdentity, Scope } from './types';
 import type { ImportSite } from '../host/load-modules';
-import type { DrawingValueKind } from '../module-messages';
 import type { Program, Statement } from '../parser/ast';
 
 /**
@@ -139,28 +138,16 @@ function declaredBy(stmt: Statement): string[] {
   return names;
 }
 
-/**
- * A file's exported names, in source order, with where each export
- * statement is, and every name its top level declares.
- */
-export function exportsOf(program: Program): {
-  exported: string[];
-  declared: Set<string>;
-  exportedAt: Map<string, { line?: number; column?: number }>;
-} {
+/** A file's exported names, in source order, and every name its top level declares. */
+export function exportsOf(program: Program): { exported: string[]; declared: Set<string> } {
   const exported: string[] = [];
   const declared = new Set<string>();
-  const exportedAt = new Map<string, { line?: number; column?: number }>();
   for (const stmt of program.body) {
     const names = declaredBy(stmt);
     for (const name of names) declared.add(name);
-    if ('exported' in stmt && stmt.exported) {
-      exported.push(...names);
-      const loc = 'loc' in stmt ? stmt.loc : undefined;
-      for (const name of names) exportedAt.set(name, { line: loc?.line, column: loc?.column });
-    }
+    if ('exported' in stmt && stmt.exported) exported.push(...names);
   }
-  return { exported, declared, exportedAt };
+  return { exported, declared };
 }
 
 /**
@@ -237,24 +224,15 @@ export interface FixedOwner {
 /** Everything fixed in one compile (docs/modules.md "What you import is fixed"). */
 export type FixedValues = WeakMap<object, FixedOwner>;
 
-/** A layer, transform or subscription of a file's drawing, which ended when the file loaded. */
-export interface DrawingOwner {
-  /** The file whose drawing it belongs to. */
-  file: ModuleIdentity;
-  /** The binding it was reached from in that file. */
-  name: string;
-  kind: DrawingValueKind;
-}
-
-/** Every value tied to an imported file's drawing in one compile (decision 35). */
-export type DrawingValues = WeakMap<object, DrawingOwner>;
-
-/** The types tied to a drawing: fixFile records them instead of fixing them. */
-export const DRAWING_KINDS: ReadonlyMap<string, DrawingValueKind> = new Map<string, DrawingValueKind>([
-  ['LayerReference', 'layer'],
-  ['TransformReference', 'transform'],
-  ['TransformPropertyReference', 'transform'],
-  ['SubscriptionValue', 'subscription'],
+/**
+ * The types tied to a drawing. A module can't make one (its drawing is sealed
+ * while it loads), so fixFile meeting one means that guard has a gap.
+ */
+const DRAWING_TYPES: ReadonlySet<string> = new Set([
+  'LayerReference',
+  'TransformReference',
+  'TransformPropertyReference',
+  'SubscriptionValue',
 ]);
 
 /**
@@ -313,11 +291,11 @@ function heldValues(value: object, tag: string): Iterable<unknown> {
  * everything they hold are done, so a value the file reaches through its own
  * data stays the file's even when the other file's scope holds it too.
  *
- * A layer, transform or subscription the walk reaches isn't fixed but goes
- * into `drawing`: it belongs to the drawing of `file`, whose code was running
- * when it was made (the drawing follows the call), and that drawing has ended.
+ * A layer, transform or subscription can't be made while a module loads
+ * (docs/modules.md "Exporting"). Reaching one here is an error rather than a
+ * value that would draw into a drawing that doesn't exist.
  */
-export function fixFile(root: Scope, file: ModuleIdentity, fixed: FixedValues, drawing: DrawingValues): void {
+export function fixFile(root: Scope, file: ModuleIdentity, fixed: FixedValues): void {
   const ownScopes: Scope[] = [root];
   const otherScopes: { scope: Scope; writtenIn: ModuleIdentity }[] = [];
   // Only values that hold others wait their turn; the rest are marked as
@@ -334,15 +312,7 @@ export function fixFile(root: Scope, file: ModuleIdentity, fixed: FixedValues, d
     return typeof tag === 'string' && !NOT_FIXED.has(tag) && !fixed.has(value) ? tag : undefined;
   };
   const mark = (value: object, tag: string, owner: FixedOwner): void => {
-    const kind = DRAWING_KINDS.get(tag);
-    if (kind) {
-      // A value an earlier file recorded keeps that file's drawing. The name
-      // is the binding it was reached from, which for a value held in another
-      // file's closure is that file's; it is used only when the code that
-      // uses the value doesn't name it.
-      if (!drawing.has(value)) drawing.set(value, { file, name: owner.name, kind });
-      return;
-    }
+    if (DRAWING_TYPES.has(tag)) throw new Error(`${MODULE_DRAWS_MESSAGE} (${owner.name} holds a part of a drawing.)`);
     fixed.set(value, owner);
     if (tag === 'UserFunction' && 'closure' in value) {
       const closure = value.closure as Scope;

@@ -1252,13 +1252,18 @@ describe('imports (docs/modules.md)', () => {
   const project = join(TMP_DIR, 'modules-project');
   const main = join(project, 'main.pathogen');
   const GEARS =
-    "// parts/gears.pathogen\nexport fn gear(center, radius, teeth) {\n  assert(teeth >= 3, 'a gear needs at least 3 teeth');\n  star(center.x, center.y, radius, radius - 6, teeth);\n}\nlog(\"gears loaded\");\n";
+    '// parts/gears.pathogen\nmodule;\nexport fn gear(center, radius, teeth) {\n  assert(teeth >= 3, \'a gear needs at least 3 teeth\');\n  star(center.x, center.y, radius, radius - 6, teeth);\n}\nlog("gears loaded");\n';
+  const MODULE_DRAWS =
+    "A module can't draw while it loads. Draw in an exported fn, and call it from the file that imports this one.";
 
   beforeAll(() => {
     mkdirSync(join(project, 'parts'), { recursive: true });
     writeFileSync(join(project, 'pathogen.json'), '{}\n');
     writeFileSync(join(project, 'parts', 'gears.pathogen'), GEARS);
-    writeFileSync(join(project, 'parts', 'warn.pathogen'), '// parts/warn.pathogen\nexport fn bad() {\n  L calc(0 / 0) 0\n}\n');
+    writeFileSync(
+      join(project, 'parts', 'warn.pathogen'),
+      '// parts/warn.pathogen\nmodule;\nexport fn bad() {\n  L calc(0 / 0) 0\n}\n',
+    );
   });
 
   afterAll(() => {
@@ -1281,8 +1286,63 @@ describe('imports (docs/modules.md)', () => {
     const result = runCli([main]);
     expect(result.status).toBe(1);
     expect(result.stderr).toBe(
-      'Error: parts/gears.pathogen line 3, col 3: assertion failed: a gear needs at least 3 teeth\n  called from main.pathogen line 4\n',
+      'Error: parts/gears.pathogen line 4, col 3: assertion failed: a gear needs at least 3 teeth\n  called from main.pathogen line 4\n',
     );
+  });
+
+  it('a module\'s fn draws into the file that calls it (docs/modules.md "Imported fns draw with your pen")', () => {
+    writeFileSync(
+      join(project, 'parts', 'dots.pathogen'),
+      'module;\nconst size = 5;\nexport fn dot(x) {\n  circle(x, 0, size);\n}\n',
+    );
+    writeFileSync(main, 'import { dot } from "./parts/dots.pathogen";\nM 0 0\ndot(10);\n');
+    // circle(10, 0, 5) from a fn: start at cx − r = 5, then two half arcs of 2r = 10.
+    expect(runCli([main])).toEqual({
+      stdout: 'M 0 0 M 5 0 a 5 5 0 1 1 10 0 a 5 5 0 1 1 -10 0\n',
+      stderr: '',
+      status: 0,
+    });
+  });
+
+  it('importing a file without module; is an error at the import (docs/modules.md "Importing")', () => {
+    writeFileSync(join(project, 'parts', 'scene.pathogen'), 'export const size = 4;\nM 0 0 L 10 10\n');
+    writeFileSync(main, '// main.pathogen\nimport * as scene from "./parts/scene.pathogen";\n');
+    expect(runCli([main])).toEqual({
+      stdout: '',
+      stderr: `${main}:2:24: error: Cannot import "./parts/scene.pathogen": it isn't a module. To make it one, add module; at the top of that file and move its drawing into exported fns.\n`,
+      status: 1,
+    });
+  });
+
+  it("a path command at a module's top level is an error at that line, naming the module", () => {
+    writeFileSync(join(project, 'parts', 'drawer.pathogen'), '// parts/drawer.pathogen\nmodule;\nM 0 0 h 10\n');
+    writeFileSync(main, 'import * as drawer from "./parts/drawer.pathogen";\nM 0 0\n');
+    expect(runCli([main])).toEqual({
+      stdout: '',
+      stderr: `Error: parts/drawer.pathogen line 3, col 1: ${MODULE_DRAWS}\n  imported from main.pathogen line 1\n`,
+      status: 1,
+    });
+  });
+
+  it("a call that draws at a module's top level is an error at that call, while the module loads", () => {
+    writeFileSync(
+      join(project, 'parts', 'eager.pathogen'),
+      'module;\nexport fn gear(center, radius, teeth) {\n  star(center.x, center.y, radius, radius - 6, teeth);\n}\ngear(Point(10, 10), 8, 5);\n',
+    );
+    writeFileSync(
+      main,
+      '// main.pathogen\nimport { gear } from "./parts/eager.pathogen";\ngear(Point(55, 50), 40, 12);\n',
+    );
+    expect(runCli([main])).toEqual({
+      stdout: '',
+      stderr: `Error: parts/eager.pathogen line 5, col 1: ${MODULE_DRAWS}\n  imported from main.pathogen line 2\n`,
+      status: 1,
+    });
+  });
+
+  it('a module compiled by itself draws nothing, and its log() still prints (docs/modules.md "Exporting")', () => {
+    const result = runCli([join(project, 'parts', 'gears.pathogen'), '--print-logs']);
+    expect(result).toEqual({ stdout: '\n', stderr: '[line 7] gears loaded\n', status: 0 });
   });
 
   it("an import of a missing file is an error at the import, like an @font path", () => {
@@ -1295,12 +1355,12 @@ describe('imports (docs/modules.md)', () => {
   });
 
   it('a missing file imported by an imported file names the chain', () => {
-    writeFileSync(join(project, 'parts', 'a.pathogen'), 'import { x } from "./missing.pathogen";\n');
+    writeFileSync(join(project, 'parts', 'a.pathogen'), 'module;\nimport { x } from "./missing.pathogen";\n');
     writeFileSync(main, 'import { y } from "./parts/a.pathogen";\n');
     const result = runCli([main]);
     expect(result.status).toBe(1);
     expect(result.stderr).toBe(
-      `Error: parts/a.pathogen line 1, col 19: import file "./missing.pathogen" was not found (looked for ${join(project, 'parts', 'missing.pathogen')}).\n  imported from main.pathogen line 1\n`,
+      `Error: parts/a.pathogen line 2, col 19: import file "./missing.pathogen" was not found (looked for ${join(project, 'parts', 'missing.pathogen')}).\n  imported from main.pathogen line 1\n`,
     );
   });
 
@@ -1308,22 +1368,25 @@ describe('imports (docs/modules.md)', () => {
     writeFileSync(main, 'import { gear } from "./parts/gears.pathogen";\nlog("main");\n');
     const result = runCli([main, '--print-logs']);
     expect(result.status).toBe(0);
-    expect(result.stderr).toBe('[parts/gears.pathogen line 6] gears loaded\n[line 2] main\n');
+    expect(result.stderr).toBe('[parts/gears.pathogen line 7] gears loaded\n[line 2] main\n');
   });
 
   it('a warning from an imported file names it, on stderr and in --json', () => {
     writeFileSync(main, 'import { bad } from "./parts/warn.pathogen";\nM 0 0\nbad();\n');
     const result = runCli([main]);
     expect(result.status).toBe(0);
-    expect(result.stderr).toMatch(/^parts\/warn\.pathogen:3:\d+: warning: /);
+    expect(result.stderr).toMatch(/^parts\/warn\.pathogen:4:\d+: warning: /);
     const json = JSON.parse(runCli([main, '--json']).stdout) as { warnings: { file?: string; line?: number }[] };
-    expect(json.warnings.map((w) => [w.file, w.line])).toEqual([['parts/warn.pathogen', 3]]);
+    expect(json.warnings.map((w) => [w.file, w.line])).toEqual([['parts/warn.pathogen', 4]]);
   });
 
   it("an imported file's @font loads, its ./ path from its own folder (docs/modules.md \"Fonts in imported files\")", () => {
     mkdirSync(join(project, 'parts', 'fonts'), { recursive: true });
     copyFileSync(join(__dirname, 'fixtures', 'fonts', 'Inter-Regular.ttf'), join(project, 'parts', 'fonts', 'Inter-Regular.ttf'));
-    writeFileSync(join(project, 'parts', 'labels.pathogen'), '@font "./fonts/Inter-Regular.ttf";\nexport const ready = 1;\n');
+    writeFileSync(
+      join(project, 'parts', 'labels.pathogen'),
+      'module;\n@font "./fonts/Inter-Regular.ttf";\nexport const ready = 1;\n',
+    );
     writeFileSync(main, glyphProgram('import { ready } from "./parts/labels.pathogen";', 'Inter-Regular'));
     const imported = drawnGlyph(runCli([main]));
     // The same glyph as when the compiled file loads the font itself.
@@ -1332,11 +1395,14 @@ describe('imports (docs/modules.md)', () => {
   });
 
   it("a font warning from an imported file's @font line names it, on stderr and in --json", () => {
-    writeFileSync(join(project, 'parts', 'family.pathogen'), '@font "Gravitas One";\nexport const ready = 1;\n');
+    writeFileSync(
+      join(project, 'parts', 'family.pathogen'),
+      'module;\n@font "Gravitas One";\nexport const ready = 1;\n',
+    );
     writeFileSync(main, 'import { ready } from "./parts/family.pathogen";\nM 0 0\n');
     const result = runCli([main, '--offline']);
     expect(result.status).toBe(0);
-    expect(result.stderr).toMatch(/^parts\/family\.pathogen:1:1: warning: /);
+    expect(result.stderr).toMatch(/^parts\/family\.pathogen:2:1: warning: /);
     const json = JSON.parse(runCli([main, '--offline', '--json']).stdout) as { warnings: { code: string; file?: string }[] };
     expect(json.warnings.map((w) => [w.code, w.file])).toEqual([['font-load', 'parts/family.pathogen']]);
   });
@@ -1348,12 +1414,15 @@ describe('imports (docs/modules.md)', () => {
     writeFileSync(join(project, 'a', 'Inter.ttf'), inter);
     // The same font as WOFF: other bytes under the same family name.
     writeFileSync(join(project, 'parts', 'b', 'Inter.ttf'), ttfToWoff(new Uint8Array(inter)));
-    writeFileSync(join(project, 'parts', 'clash.pathogen'), '@font "./b/Inter.ttf";\nexport const ready = 1;\n');
+    writeFileSync(
+      join(project, 'parts', 'clash.pathogen'),
+      'module;\n@font "./b/Inter.ttf";\nexport const ready = 1;\n',
+    );
     writeFileSync(main, 'import { ready } from "./parts/clash.pathogen";\n@font "./a/Inter.ttf";\nM 0 0\n');
     const result = runCli([main]);
     expect(result.status).toBe(1);
     expect(result.stderr).toBe(
-      'parts/clash.pathogen:1:1: error: Two files load different fonts as "Inter" 400: ./a/Inter.ttf (main.pathogen) and ./b/Inter.ttf (parts/clash.pathogen). Use the same font in both files.\n',
+      'parts/clash.pathogen:2:1: error: Two files load different fonts as "Inter" 400: ./a/Inter.ttf (main.pathogen) and ./b/Inter.ttf (parts/clash.pathogen). Use the same font in both files.\n',
     );
   });
 

@@ -22,6 +22,7 @@
 // ─── Statements ────────────────────────────────────────────────
 
 statement {
+  ModuleHeader |
   ImportDeclaration |
   ExportDeclaration |
   FontDirective |
@@ -240,6 +241,15 @@ ExportDeclaration {
 }
 
 fromKw[@name=from] { @extend[@name=from]<Identifier, "from"> }
+
+// `module;` (docs/modules.md "Exporting"): makes the file a module. Like a
+// path command letter, `module` is a keyword only here, so `let module = 3;`
+// and `module.x` keep working; the dynamic precedence picks the header over
+// the expression statement `module;`. That it comes first, and only once at
+// the top level, is checked by parser/module-check.ts.
+ModuleHeader[@dynamicPrecedence=1] { moduleKw ";" }
+
+moduleKw[@name=module] { @extend[@name=module]<Identifier, "module"> }
 
 // Path commands: always greedy when args are available.
 // Z/z take no args; all others take at least one.

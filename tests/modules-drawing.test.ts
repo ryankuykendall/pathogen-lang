@@ -1,20 +1,24 @@
 /**
- * Phase 1a, step 5c: values tied to another file's drawing (docs/modules.md
- * "What you import is fixed", the paragraph on layers, transforms and
- * subscriptions; decision 35).
+ * Phase 1a, step 5e: modules are libraries that don't draw (docs/modules.md
+ * "Exporting", "Imported fns draw with your pen"; plan in
+ * project-docs/modules/23-modules-are-libraries-plan.md).
  *
- * A layer, transform or subscription an imported file holds once it has
- * loaded belongs to a drawing that's gone: exporting one is an error at the
- * export, and using one that reaches you another way is an error at the use.
- * Every method and property the API declares for those types is checked, so
- * a new one can't slip past. Query results are copies and cross freely.
+ * A module's top level makes values but never draws. Every way to draw is
+ * stopped, statically where the source shows it and at run time where only a
+ * call does. The allowed side is tested as hard: an over-broad seal would
+ * break real library code without anyone noticing. A module's exported fns
+ * still draw, into the drawing that calls them.
+ *
+ * (Before step 5e this file held step 5c's tests for a module's own layers,
+ * transforms and subscriptions; a module can no longer make any of them.)
  */
 import { describe, expect, it } from 'vitest';
 
-import { compile, resolveModules } from '../src';
-import { TYPE_MEMBERS } from '../src/language-services/completion-data.generated';
+import { compile, parse, resolveModules } from '../src';
+import { fixFile } from '../src/evaluator/module-runtime';
 
 import type { CompileResult, ModuleGraph, ProjectFileHost } from '../src';
+import type { Scope } from '../src/evaluator/types';
 
 function memoryHost(files: Record<string, string>): ProjectFileHost {
   return {
@@ -46,265 +50,344 @@ async function errorOf(main: string, files: Record<string, string>): Promise<str
   throw new Error('expected the compile to fail');
 }
 
-const mainLogs = (result: CompileResult): string[] =>
-  result.logs.filter((l) => !l.file).map((l) => l.parts.map((p) => p.value).join(' '));
+const logsOf = (result: CompileResult): string[] => result.logs.map((l) => l.parts.map((p) => p.value).join(' '));
 
-/** A file whose drawing has a path layer, a text layer, a group, transforms and a subscription. */
-const INKS = {
-  '/inks.pathogen': [
-    "let inkLayer = PathLayer('ink') #{ stroke: Color('#333'); };",
-    "let labels = TextLayer('labels') #{ font-size: 14; };",
-    "let group = GroupLayer('group') #{};",
-    'let moved = ctx.transform;',
-    'let shift = ctx.transform.translate;',
-    "let sub = inkLayer.subscribe('endpoint') {|e|\n  log(e.point.x);\n};",
-    'inkLayer.apply { M 0 0 L 10 0 L 20 5 }',
-    'export fn getInk() {\n  return inkLayer;\n}',
-    'export fn getLabels() {\n  return labels;\n}',
-    'export fn getGroup() {\n  return group;\n}',
-    'export fn getTransform() {\n  return moved;\n}',
-    'export fn getShift() {\n  return shift;\n}',
-    'export fn getSub() {\n  return sub;\n}',
-    'export fn redraw() {\n  inkLayer.apply { M 0 0 L 1 1 }\n}',
-    "export const corners = inkLayer.queryAll('endpoint');",
-    '',
-  ].join('\n'),
-};
+// The messages, word for word from docs/modules.md "Errors".
+const DRAWS =
+  "A module can't draw while it loads. Draw in an exported fn, and call it from the file that imports this one.";
+const VIEWBOX = "A module has no drawing, so it can't define a ViewBox. The program that imports it sets the ViewBox.";
+const READS = (name: 'ctx' | 'viewbox'): string =>
+  `A module has no drawing while it loads, so ${name} can't be read. Read it in an exported fn that the importing file calls; there it describes that file's drawing.`;
 
-const USE = (name: string, what: string): RegExp =>
-  new RegExp(
-    `^Line \\d+, col \\d+: Cannot use ${name} — it is ${what} inks\\.pathogen's drawing, which stays in that file\\. Export a fn that draws, and call it inside your own layer$`,
-  );
+/** A main file that imports `lib.pathogen` and draws one line of its own. */
+const MAIN = 'import * as lib from "./lib.pathogen";\n\nM 0 0 L 1 1\n';
+/** `lib.pathogen`: the header, then `body` from line 3. */
+const lib = (body: string): Record<string, string> => ({
+  '/lib.pathogen': `module;\n\n${body}\nexport const ok = 1;\n`,
+});
+/** The error a body gives, at `line` and `col` of lib.pathogen (body line 1 is file line 3). */
+const libError = (line: number, col: number | undefined, message: string): string =>
+  `lib.pathogen line ${line}${col === undefined ? '' : `, col ${col}`}: ${message}\n  imported from main.pathogen line 1`;
 
-// --- the docs ---------------------------------------------------------------------
+// --- docs: "A module doesn't draw at its top level" -----------------------------------
 
-describe("docs: values that belong to the imported file's drawing", () => {
-  it.each([
-    ["export const ink = PathLayer('ink') #{};", 'ink', 'a layer of'],
-    ['export const moved = ctx.transform;', 'moved', 'a transform of'],
+describe("docs: a module doesn't draw at its top level", () => {
+  // [what, body, line, col, message]. Static errors come from the parse tree
+  // (module-check.ts); the rest are stopped as they run.
+  const FORBIDDEN: [string, string, number, number | undefined, string][] = [
+    ['a path command (static)', 'M 0 0 L 10 10', 3, 1, DRAWS],
+    ['a drawing call', 'circle(5, 5, 3);', 3, 1, DRAWS],
+    ['.draw() on a path block', 'const notch = @{ m 0 0 l 10 0 };\nnotch.draw();', 4, 1, DRAWS],
+    ["calling this file's own fn that draws", 'fn gear(size) {\n  circle(0, 0, size);\n}\ngear(4);', 6, 1, DRAWS],
+    ['drawing in a for body', 'for (i in 0..3) {\n  circle(i, i, 1);\n}', 4, 3, DRAWS],
+    ['drawing in an if body', 'if (true) {\n  circle(1, 1, 1);\n}', 4, 3, DRAWS],
+    ['drawing in a switch case', 'switch (1) {\n  case 1 {\n    circle(1, 1, 1);\n  }\n}', 5, 5, DRAWS],
+    ['define PathLayer (static)', "define PathLayer('ink') #{ stroke: red; }", 3, 1, DRAWS],
+    ['define TextLayer (static)', "define TextLayer('labels') #{}", 3, 1, DRAWS],
+    ['a layer as a value', "const ink = PathLayer('ink') #{};", 3, 13, DRAWS],
+    ['a layer made in a fn it calls', "fn makeInk() {\n  define PathLayer('ink') #{}\n}\nmakeInk();", 4, 3, DRAWS],
+    ['an apply block (static)', "layer('ink').apply { M 0 0 }", 3, 1, DRAWS],
+    ['a layer looked up by name', "const ink = layer('ink');", 3, 13, DRAWS],
+    ['.subscribe(…)', "layer('ink').subscribe('endpoint') {|e| log(1); };", 3, 1, DRAWS],
+    ['a text line in a fn it calls', 'fn caption() {\n  text(0, 0)`hi`;\n}\ncaption();', 4, 3, DRAWS],
     [
-      "define PathLayer('ink') #{}\nexport const sub = layer('ink').subscribe('endpoint') {|e|\n  log(1);\n};",
-      'sub',
-      'a subscription to',
+      'toCodeSnippetBlock (it makes layers)',
+      "const code = &{ text(0, 0)`x` };\nconst snippet = code.toCodeSnippetBlock('snip');",
+      4,
+      17,
+      DRAWS,
     ],
-  ])('exporting one is an error at the export: %s', async (source, name, what) => {
-    const message = await errorOf('import * as inks from "./inks.pathogen";\nlog(1);', {
-      '/inks.pathogen': `${source}\n`,
+    [
+      'inserting an SVG fragment',
+      'const frag = SVGDocumentFragment(\'<rect width="1" height="1"/>\');\nfrag.insert();',
+      4,
+      1,
+      DRAWS,
+    ],
+    ['define ViewBox (static)', 'define ViewBox(0, 0, 10, 10);', 3, 1, VIEWBOX],
+    ['define ViewBox in a fn it calls', 'fn setBox() {\n  define ViewBox(0, 0, 10, 10);\n}\nsetBox();', 4, 3, VIEWBOX],
+    ['reading ctx', 'const here = ctx.position;', 3, 14, READS('ctx')],
+    ['reading viewbox', 'const width = viewbox.width;', 3, 15, READS('viewbox')],
+    // A style value's error is placed at its `${`, as any style value's is.
+    [
+      'reading viewbox in a style value',
+      'const thin = #{ stroke-width: ${viewbox.width / 100}; };',
+      3,
+      31,
+      `Style value for "stroke-width": ${READS('viewbox')}`,
+    ],
+    [
+      'reading viewbox in a path block (it has no box of its own)',
+      'const bar = @{ m 0 0 h calc(viewbox.width) };',
+      3,
+      29,
+      READS('viewbox'),
+    ],
+    [
+      'reading ctx in a text block (it shares the pen of the code that makes it)',
+      'const label = &{ text(0, 0)`${ctx.position.x}` };',
+      3,
+      31,
+      READS('ctx'),
+    ],
+  ];
+
+  it.each(FORBIDDEN)('%s is an error at its line', async (_what, body, line, col, message) => {
+    expect(await errorOf(MAIN, lib(body))).toBe(libError(line, col, message));
+  });
+
+  it('a fn imported from another module that draws is an error where this module calls it', async () => {
+    const message = await errorOf(MAIN, {
+      '/lib.pathogen': 'module;\n\nimport { gear } from "./gears.pathogen";\n\ngear(4);\nexport const ok = 1;\n',
+      '/gears.pathogen': 'module;\n\nexport fn gear(size) {\n  circle(0, 0, size);\n}\n',
     });
-    const exportLine = source.split('\n').findIndex((line) => line.startsWith('export')) + 1;
-    // The position is the declaration the export marks: `const`, after `export `.
-    expect(message).toBe(
-      `inks.pathogen line ${exportLine}, col 8: Cannot export ${name} — it is ${what} this file's drawing, which stays in this file. Export a fn that draws instead\n` +
-        '  imported from main.pathogen line 1',
-    );
+    expect(message).toBe(libError(5, 1, DRAWS));
   });
 
-  it('using one that reaches you another way, such as from an exported fn, is an error at the use', async () => {
-    expect(
-      await errorOf('import { getInk } from "./inks.pathogen";\nlet ink = getInk();\nink.apply { M 0 0 L 5 5 }', INKS),
-    ).toBe(
-      "Line 3, col 1: Cannot use ink — it is a layer of inks.pathogen's drawing, which stays in that file. Export a fn that draws, and call it inside your own layer",
-    );
+  it('nothing the module drew reaches the SVG: the compile stops', async () => {
+    // Before step 5e an imported file's drawing ran and was thrown away.
+    await expect(errorOf(MAIN, lib('circle(5, 5, 3);'))).resolves.toContain(DRAWS);
+  });
+});
+
+// --- docs: "These are fine" -------------------------------------------------------------
+
+describe('docs: what a module may make at its top level', () => {
+  const ALLOWED: [string, string][] = [
+    ['a style', "const thin = #{ stroke: Color('#333'); stroke-width: 1; };"],
+    ['a path block', 'const notch = @{ m 0 0 l 10 0 l 0 10 z };\nlog(notch.length);'],
+    [
+      'a path block that reads its own ctx',
+      'const notch = @{\n  m 5 5\n  l 10 0\n  let here = ctx.position;\n  l 0 calc(here.x)\n};\nlog(notch.endPoint.y);',
+    ],
+    ['a text block', 'const label = &{ text(0, 0)`hi` };'],
+    [
+      'a boolean op',
+      'const both = @{ m 0 0 h 10 v 10 h -10 z }.union(@{ m 5 5 h 10 v 10 h -10 z });\nlog(both.commands.length);',
+    ],
+    ['a color', 'const ink = oklch(0.4 0.1 250);'],
+    [
+      'a gradient',
+      "const fade = LinearGradient('fade', 0, 0, 1, 0) {|g| g.stop(0, oklch(0.6 0.2 30)); g.stop(1, oklch(0.5 0.2 250)); };",
+    ],
+    ['a mask', "const hole = Mask('hole');\nhole.append(@{ m 0 0 h 10 v 10 h -10 z });"],
+    ['a clip path', "const window = ClipPath('window');\nwindow.append(@{ m 0 0 h 10 v 10 h -10 z });"],
+    [
+      'a marker with a trailing block',
+      "const tip = Marker('tip', 10, 10) {|m| m.append(@{ m 0 0 l 10 5 l -10 5 z }); };",
+    ],
+    [
+      'a pattern with a trailing block',
+      "const dots = Pattern('dots', 0, 0, 10, 10) {|p| p.append(@{ m 0 0 h 2 v 2 h -2 z }); };",
+    ],
+    [
+      'a table of numbers, a Cycler and a Grid',
+      'const sizes = [3, 5, 8];\nconst palette = Cycler([1, 2]);\nconst cells = Grid(2, 2) {|grid| log(grid.rows); };',
+    ],
+    [
+      'a value a helper builds from path blocks',
+      'fn notch(size) {\n  return @{ m 0 0 l size 0 };\n}\nconst small = notch(4);',
+    ],
+    ['an enum and a fn', 'enum Teeth { Few = 8, Fine = 20 }\nfn gear(size) {\n  circle(0, 0, size);\n}'],
+    ['log() and assert()', 'log("loading");\nassert(1 + 1 == 2, "math");'],
+    [
+      'a callback that draws into its own discarded sink, as in any program',
+      'const doubled = [1, 2].map() {|v| return v * 2; };',
+    ],
+  ];
+
+  it.each(ALLOWED)('%s', async (_what, body) => {
+    const result = await compileFiles(MAIN, lib(body));
+    expect(result.layers.map((l) => l.data)).toEqual(['M 0 0 L 1 1']);
   });
 
-  it('an exported fn that picks a layer by name draws into your layer, because the drawing follows the call', async () => {
+  it("@font is fine (its file loads before the compile; here there's none to load)", () => {
+    expect(() => parse('module;\n\n@font "Inter";\n\nexport const ok = 1;\n')).not.toThrow();
+  });
+
+  it("a module's log() reaches you, labeled with its file", async () => {
+    const result = await compileFiles(MAIN, lib('log("loading");'));
+    expect(result.logs.map((l) => [l.file, l.parts.map((p) => p.value).join(' ')])).toEqual([
+      ['lib.pathogen', 'loading'],
+    ]);
+  });
+
+  it("defs a module builds reach your SVG when your drawing uses them, with the module's prefix", async () => {
     const result = await compileFiles(
-      "import { inkLine } from \"./inks.pathogen\";\ndefine PathLayer('ink') #{ stroke: Color('#333'); }\ninkLine(Point(0, 0), Point(20, 10));",
+      "import { tip } from \"./arrows.pathogen\";\n\ndefine PathLayer('arrow') #{ stroke: red; marker-end: tip; }\nlayer('arrow').apply { M 0 0 L 20 0 }\n",
       {
-        '/inks.pathogen':
-          "export fn inkLine(start, end) {\n  layer('ink').apply {\n    M start.x start.y\n    L end.x end.y\n  }\n}\n",
+        '/arrows.pathogen':
+          "module;\n\nexport const tip = Marker('tip', 10, 10) {|m| m.append(@{ m 0 0 l 10 5 l -10 5 z }); };\n",
       },
     );
-    expect(result.layers.map((l) => [l.name, l.data])).toEqual([['ink', 'M 0 0 L 20 10']]);
+    expect(result.markers.map((m) => m.id)).toEqual(['arrows--tip']);
+  });
+});
+
+// --- docs: "Compiled by itself, a module draws nothing" ---------------------------------
+
+describe('docs: a module compiled by itself', () => {
+  const GEARS =
+    '// parts/gears.pathogen\nmodule;\n\nexport const toothDepth = 6;\n\nexport enum Teeth { Few = 8, Standard = 12, Fine = 20 }\n\nexport fn gear(center, radius, teeth) {\n  star(center.x, center.y, radius, radius - toothDepth, teeth);\n  hub(center, radius);\n}\n\n// Not exported: only this file can use it.\nfn hub(center, radius) {\n  circle(center.x, center.y, radius * 0.3);\n}\n';
+
+  it('draws nothing', () => {
+    const result = compile(GEARS);
+    expect(result.layers.map((l) => l.data)).toEqual(['']);
   });
 
-  it('query results are copies of what was drawn, so you can read them', async () => {
+  it('still runs its log() and assert() lines', () => {
+    expect(logsOf(compile('module;\n\nexport const toothDepth = 6;\nlog(toothDepth);\n'))).toEqual(['6']);
+    expect(() => compile('module;\n\nconst toothDepth = 6;\nassert(toothDepth == 7, "depth");\n')).toThrow(/depth/);
+  });
+
+  it('a drawing line is an error there too, statically or as it runs', () => {
+    expect(() => compile('module;\n\nM 0 0 L 5 5\n')).toThrow(`Parse error at line 3, column 1: ${DRAWS}`);
+    expect(() => compile('module;\n\nfn gear(size) {\n  circle(0, 0, size);\n}\ngear(4);\n')).toThrow(
+      `Line 6, col 1: ${DRAWS}`,
+    );
+    expect(() => compile('module;\n\nconst here = ctx.position;\n')).toThrow(`Line 3, col 14: ${READS('ctx')}`);
+  });
+
+  it('a program without the header is unchanged: it draws, and ctx and viewbox work', () => {
+    const result = compile('define ViewBox(0, 0, 40, 20);\nM 0 0 L 5 5\nlog(ctx.position.x);\nlog(viewbox.width);\n');
+    expect(result.layers.map((l) => l.data)).toEqual(['M 0 0 L 5 5']);
+    expect(logsOf(result)).toEqual(['5', '40']);
+  });
+});
+
+// --- docs: "Imported fns draw with your pen" ---------------------------------------------
+
+describe('docs: imported fns draw with your pen', () => {
+  const GEARS = {
+    '/parts/gears.pathogen':
+      '// parts/gears.pathogen\nmodule;\n\nexport const toothDepth = 6;\n\nexport enum Teeth { Few = 8, Standard = 12, Fine = 20 }\n\nexport fn gear(center, radius, teeth) {\n  star(center.x, center.y, radius, radius - toothDepth, teeth);\n  hub(center, radius);\n}\n\n// Not exported: only this file can use it.\nfn hub(center, radius) {\n  circle(center.x, center.y, radius * 0.3);\n}\n',
+  };
+
+  it('both gears land in your teeth layer, with its stroke', async () => {
+    const main =
+      "// main.pathogen\nimport { gear } from \"./parts/gears.pathogen\";\n\ndefine ViewBox(0, 0, 200, 100);\ndefine PathLayer('teeth') #{\n  stroke: Color('#333');\n  stroke-width: 1.5;\n  fill: none;\n}\n\nlayer('teeth').apply {\n  gear(Point(55, 50), 40, 12);\n  gear(Point(150, 50), 28, 8);\n}\n";
+    const result = await compileFiles(main, GEARS);
+    // The same two gears drawn by one file, with gear and hub written in it.
+    const oneFile = compile(
+      "define ViewBox(0, 0, 200, 100);\ndefine PathLayer('teeth') #{\n  stroke: Color('#333');\n  stroke-width: 1.5;\n  fill: none;\n}\nfn gear(center, radius, teeth) {\n  star(center.x, center.y, radius, radius - 6, teeth);\n  circle(center.x, center.y, radius * 0.3);\n}\nlayer('teeth').apply {\n  gear(Point(55, 50), 40, 12);\n  gear(Point(150, 50), 28, 8);\n}\n",
+    );
+    expect(result.layers.map((l) => [l.name, l.data, l.styles])).toEqual(
+      oneFile.layers.map((l) => [l.name, l.data, l.styles]),
+    );
+    expect(result.layers[0].name).toBe('teeth');
+  });
+
+  it("centerMark reads the box of the drawing that calls it: a cross at (100, 50) in main's 200 × 100 box", async () => {
+    const marks = {
+      '/parts/marks.pathogen':
+        '// parts/marks.pathogen\nmodule;\n\nexport fn centerMark(size) {\n  let middleX = calc(viewbox.originX + viewbox.width / 2);\n  let middleY = calc(viewbox.originY + viewbox.height / 2);\n  M calc(middleX - size) middleY\n  h calc(size * 2)\n  M middleX calc(middleY - size)\n  v calc(size * 2)\n}\n',
+    };
     const result = await compileFiles(
-      'import { corners } from "./inks.pathogen";\nlog(corners.length);\nlog(corners[1].point.x);',
+      'import { centerMark } from "./parts/marks.pathogen";\n\ndefine ViewBox(0, 0, 200, 100);\ncenterMark(10);\n',
+      marks,
+    );
+    expect(result.layers[0].data).toBe('M 90 50 h 20 M 100 40 v 20');
+  });
+
+  const INKS = {
+    '/inks.pathogen':
+      "// inks.pathogen\nmodule;\n\nexport const inkStyle = #{ stroke: Color('#333'); stroke-width: 1.5; fill: none; };\n\nexport fn inkLine(start, end) {\n  layer('ink').apply {\n    M start.x start.y\n    L end.x end.y\n  }\n}\n",
+  };
+
+  it('inkLine draws into your ink layer, styled with the exported inkStyle', async () => {
+    const result = await compileFiles(
+      '// main.pathogen\nimport { inkStyle, inkLine } from "./inks.pathogen";\n\ndefine PathLayer(\'ink\') inkStyle;\ninkLine(Point(10, 10), Point(90, 40));\n',
       INKS,
     );
-    expect(mainLogs(result)).toEqual(['2', '20']);
-  });
-});
-
-// --- every method and property of these types ---------------------------------------
-
-/** How to call each declared method on `held` (the API declares these in src/pathogen-api.ts). */
-const CALLS: Record<string, Record<string, string>> = {
-  PathLayer: {
-    apply: 'held.apply { M 0 0 L 1 1 }',
-    subscribe: "held.subscribe('endpoint') {|e|\n  log(1);\n};",
-    query: "log(held.query('endpoint'));",
-    queryAll: "log(held.queryAll('endpoint'));",
-    segment: "log(held.segment('x'));",
-    segmentAll: "log(held.segmentAll('x'));",
-    point: "log(held.point('x'));",
-    pointAll: "log(held.pointAll('x'));",
-    vertex: "log(held.vertex('x'));",
-    vertexAll: "log(held.vertexAll('x'));",
-  },
-  TextLayer: { apply: 'held.apply {\n  text(0, 0)`hi`\n}' },
-  GroupLayer: { append: "held.append(PathLayer('mine') #{});" },
-  Subscription: { unsubscribe: 'held.unsubscribe();' },
-};
-
-const GETTER: Record<string, { fn: string; what: string }> = {
-  PathLayer: { fn: 'getInk', what: 'a layer of' },
-  TextLayer: { fn: 'getLabels', what: 'a layer of' },
-  GroupLayer: { fn: 'getGroup', what: 'a layer of' },
-  Subscription: { fn: 'getSub', what: 'a subscription to' },
-};
-
-const declared = (type: string, kind: 'methods' | 'properties'): string[] =>
-  (TYPE_MEMBERS[type]?.[kind] ?? []).map((m) => m.label);
-
-describe('every declared method and property, on a value from another file', () => {
-  it('the tables cover exactly what the API declares', () => {
-    for (const type of Object.keys(CALLS))
-      expect(Object.keys(CALLS[type]).sort()).toEqual(declared(type, 'methods').sort());
+    expect(result.layers.map((l) => [l.name, l.data, l.styles])).toEqual([
+      ['ink', 'M 10 10 L 90 40', { stroke: '#333333', 'stroke-width': '1.5', fill: 'none' }],
+    ]);
   });
 
-  describe.each(Object.keys(GETTER))('%s', (type) => {
-    const { fn, what } = GETTER[type];
-    const main = (body: string): string => `import { ${fn} } from "./inks.pathogen";\nlet held = ${fn}();\n${body}`;
-
-    it.each(Object.entries(CALLS[type]))('.%s() is an error at the use', async (_method, call) => {
-      expect(await errorOf(main(call), INKS)).toMatch(USE('held', what));
-    });
-
-    it.each(declared(type, 'properties'))('.%s is an error at the use', async (property) => {
-      expect(await errorOf(main(`log(held.${property});`), INKS)).toMatch(USE('held', what));
-    });
-  });
-
-  it('writing a layer property, and merging styles into it with <<, are errors too', async () => {
-    const main = (body: string): string => `import { getInk } from "./inks.pathogen";\nlet held = getInk();\n${body}`;
-    expect(await errorOf(main("held.styles = #{ stroke: Color('#f00'); };"), INKS)).toMatch(USE('held', 'a layer of'));
-    expect(await errorOf(main("let more = held << #{ stroke: Color('#f00'); };"), INKS)).toMatch(
-      USE('held', 'a layer of'),
-    );
-  });
-
-  it('so is passing a layer where one is expected: your group appending it', async () => {
-    const main =
-      'import { getInk } from "./inks.pathogen";\nlet mine = GroupLayer(\'mine\') #{};\nmine.append(getInk());';
-    expect(await errorOf(main, INKS)).toMatch(USE('inkLayer', 'a layer of'));
-  });
-
-  // ctx.transform and its parts aren't declared as types in the API, so they're listed here.
-  it.each([
-    ['getTransform', 'held.reset();'],
-    ['getTransform', 'log(held.translate);'],
-    ['getShift', 'held.reset();'],
-    ['getShift', 'held.set(1, 2);'],
-  ])('a transform (%s): %s', async (fn, body) => {
-    expect(await errorOf(`import { ${fn} } from "./inks.pathogen";\nlet held = ${fn}();\n${body}`, INKS)).toMatch(
-      USE('held', 'a transform of'),
-    );
-  });
-});
-
-// --- how far it reaches -----------------------------------------------------------------
-
-describe('where the error comes from', () => {
-  it('named as the code writes it, else by its binding in its file', async () => {
+  it('the first trap: calling inkLine before your ink layer exists', async () => {
     expect(
-      await errorOf('import { getInk } from "./inks.pathogen";\nlog(getInk().queryAll(\'endpoint\'));', INKS),
-    ).toMatch(USE('inkLayer', 'a layer of'));
+      await errorOf('import { inkLine } from "./inks.pathogen";\n\ninkLine(Point(10, 10), Point(90, 40));\n', INKS),
+    ).toBe("inks.pathogen line 7: Undefined layer: 'ink'\n  called from main.pathogen line 3");
   });
 
-  it("the file's own fn, run after it loaded, can't use its file's layer either: that drawing is gone", async () => {
-    const message = await errorOf('import { redraw } from "./inks.pathogen";\nredraw();', INKS);
-    expect(message).toMatch(
-      /^inks\.pathogen line \d+, col \d+: Cannot use inkLayer — it is a layer of inks\.pathogen's drawing/,
+  it('the second trap: calling inkLine inside your own apply block', async () => {
+    expect(
+      await errorOf(
+        "import { inkStyle, inkLine } from \"./inks.pathogen\";\n\ndefine PathLayer('ink') inkStyle;\nlayer('ink').apply {\n  inkLine(Point(10, 10), Point(90, 40));\n}\n",
+        INKS,
+      ),
+    ).toBe(
+      "inks.pathogen line 7: Cannot nest layer apply blocks. Already inside layer 'ink'\n  called from main.pathogen line 5",
     );
-    expect(message).toMatch(/\n {2}called from main\.pathogen line 2$/);
+  });
+});
+
+// --- what is never sealed ---------------------------------------------------------------
+
+describe('what a module seals, and what it never does', () => {
+  it("an exported fn's ctx and viewbox are the calling drawing's", async () => {
+    const result = await compileFiles(
+      // `M 7 3;` ends the path statement: without the `;`, `report()` would be its argument.
+      'import { report } from "./lib.pathogen";\n\ndefine ViewBox(0, 0, 40, 20);\nM 7 3;\nreport();\n',
+      { '/lib.pathogen': 'module;\n\nexport fn report() {\n  log(ctx.position.x, viewbox.width);\n}\n' },
+    );
+    expect(logsOf(result)).toEqual(['7 40']);
   });
 
-  it("a second file exporting the first file's layer gets the use error at its export", async () => {
-    const message = await errorOf('import { ink } from "./b.pathogen";\nlog(1);', {
-      ...INKS,
-      '/b.pathogen': 'import { getInk } from "./inks.pathogen";\nexport const ink = getInk();\n',
+  it('an exported fn may define layers, apply and write text in the calling drawing', async () => {
+    const result = await compileFiles('import { scene } from "./lib.pathogen";\n\nscene();\n', {
+      '/lib.pathogen':
+        "module;\n\nexport fn scene() {\n  define PathLayer('ink') #{ stroke: red; }\n  define TextLayer('labels') #{}\n  layer('ink').apply { M 0 0 L 4 4 }\n  layer('labels').apply {\n    text(1, 2)`hi`;\n  }\n}\n",
     });
-    expect(message).toBe(
-      "b.pathogen line 2, col 8: Cannot use ink — it is a layer of inks.pathogen's drawing, which stays in that file. Export a fn that draws, and call it inside your own layer\n" +
-        '  imported from main.pathogen line 1',
-    );
+    expect(result.layers.map((l) => [l.name, l.type])).toEqual([
+      ['ink', 'path'],
+      ['labels', 'text'],
+    ]);
+    expect(result.layers[0].data).toBe('M 0 0 L 4 4');
   });
 
-  describe('a layer inside an exported array or object', () => {
-    // Exporting the holder is fine: its other values can be used. The layer
-    // in it "reaches you some other way", so using it is the error.
-    const KIT = {
+  it('a block a module builds inside an exported fn draws for the caller', async () => {
+    const result = await compileFiles('import { notch } from "./lib.pathogen";\n\nM 10 10\nnotch(4);\n', {
+      '/lib.pathogen': 'module;\n\nexport fn notch(size) {\n  @{ l size 0 l 0 size }.draw();\n}\n',
+    });
+    expect(result.layers[0].data).toBe('M 10 10 l 4 0 l 0 4');
+  });
+
+  it("a module's fn called while it loads, that only computes, is fine", async () => {
+    const result = await compileFiles(
+      MAIN,
+      lib('fn double(n) {\n  return n * 2;\n}\nconst four = double(2);\nlog(four);'),
+    );
+    expect(logsOf(result)).toEqual(['4']);
+  });
+
+  it('a fn that draws and returns a value drops its drawing, as in any program, so it is no error', async () => {
+    const body = 'fn mark() {\n  M 0 0 h 10\n  return 3;\n}\nconst three = mark();';
+    expect(compile(body).layers.map((l) => l.data)).toEqual(['']);
+    const result = await compileFiles(MAIN, lib(body));
+    expect(result.layers.map((l) => l.data)).toEqual(['M 0 0 L 1 1']);
+  });
+
+  it('each module is sealed only while it is the one loading: a module imported by another still draws for the program', async () => {
+    const result = await compileFiles('import { twoGears } from "./kit.pathogen";\n\ntwoGears(3);\n', {
       '/kit.pathogen':
-        "let inkLayer = PathLayer('ink') #{};\nexport const kit = { size: 3, ink: inkLayer };\nexport const layers = [inkLayer];\nexport fn getKit() {\n  return kit;\n}\n",
-    };
-
-    it('exports, and its other values work', async () => {
-      const result = await compileFiles(
-        'import { kit, layers } from "./kit.pathogen";\nlog(kit.size);\nlog(layers.length);',
-        KIT,
-      );
-      expect(mainLogs(result)).toEqual(['3', '1']);
+        'module;\n\nimport { gear } from "./gears.pathogen";\n\nexport fn twoGears(size) {\n  gear(size);\n  gear(size + 1);\n}\n',
+      '/gears.pathogen': 'module;\n\nexport fn gear(size) {\n  circle(0, 0, size);\n}\n',
     });
-
-    it('the layer is the use error, named as the code writes it', async () => {
-      const use = (name: string): RegExp =>
-        new RegExp(`^Line 2, col \\d+: Cannot use ${name} — it is a layer of kit\\.pathogen's drawing`);
-      expect(await errorOf('import { kit } from "./kit.pathogen";\nlog(kit.ink.queryAll(\'endpoint\'));', KIT)).toMatch(
-        use('kit\\.ink'),
-      );
-      expect(
-        await errorOf('import { getKit } from "./kit.pathogen";\nlog(getKit().ink.queryAll(\'endpoint\'));', KIT),
-      ).toMatch(use('ink'));
-      expect(
-        await errorOf('import { layers } from "./kit.pathogen";\nlog(layers[0].queryAll(\'endpoint\'));', KIT),
-      ).toMatch(use('inkLayer'));
-    });
+    expect(result.layers[0].data).toBe(compile('circle(0, 0, 3);\ncircle(0, 0, 4);').layers[0].data);
   });
+});
 
-  it("a callback that runs after the file loaded can't use the file's layer either", async () => {
-    // watch() subscribes on your layer; its callback runs at the end of your
-    // drawing, long after watched.pathogen's drawing ended.
-    const message = await errorOf(
-      'import { watch } from "./watched.pathogen";\nlet mine = PathLayer(\'mine\') #{};\nwatch(mine);\nmine.apply { M 0 0 L 10 0 }',
-      {
-        '/watched.pathogen':
-          "let tally = PathLayer('tally') #{};\nexport fn watch(target) {\n  target.subscribe('endpoint') {|e|\n    tally.apply { M e.point.x 0 L e.point.x 5 }\n  };\n}\n",
-      },
-    );
-    // The subscription's own wrapper names the match; inside it, the error names the file and line.
-    expect(message).toMatch(/^Line 3, col \d+: Error in subscription on 'mine', match 1 /);
-    expect(message).toContain(
-      "watched.pathogen line 4, col 5: Cannot use tally — it is a layer of watched.pathogen's drawing, which stays in that file.",
-    );
-  });
+// --- the backstop -----------------------------------------------------------------------
 
-  it('a message of your own that happens to read like these is not one of them', async () => {
-    // assert() text with the same words still fails the way any assert does.
-    expect(() => compile('assert(false, "it is a layer of x\'s drawing, which stays in that file. ");')).toThrow(
-      /assertion failed/,
-    );
-  });
-
-  it('logging one is fine: showing a value is not drawing with it', async () => {
-    const result = await compileFiles('import { getInk } from "./inks.pathogen";\nlog(getInk());', INKS);
-    expect(mainLogs(result)).toHaveLength(1);
-  });
-
-  it('while the file loads, its own layers, transforms and subscriptions work as before', async () => {
-    const result = await compileFiles('import { corners } from "./inks.pathogen";\nlog(corners.length);', INKS);
-    // The subscription ran at the end of inks.pathogen's load and logged each corner there.
-    expect(
-      result.logs.filter((l) => l.file === 'inks.pathogen').map((l) => l.parts.map((p) => p.value).join(' ')),
-    ).toEqual(['10', '20']);
-  });
-
-  it('one-file programs: layers, transforms and subscriptions as before', () => {
-    const result = compile(
-      "let ink = PathLayer('ink') #{};\nlet t = ctx.transform;\nt.reset();\nlet sub = ink.subscribe('endpoint') {|e|\n  log(e.point.x);\n};\nink.apply { M 0 0 L 10 0 }\nlog(ink.name);",
-    );
-    // log(ink.name) runs at once; the subscription delivers at the end.
-    expect(result.logs.map((l) => l.parts.map((p) => p.value).join(' '))).toEqual(['ink', '10']);
+describe("fixFile's backstop", () => {
+  it('a layer, transform or subscription held by a module is an error, not a value that draws nowhere', () => {
+    // Unreachable through the language (a module can't make one); fixFile still refuses.
+    for (const type of ['LayerReference', 'TransformReference', 'TransformPropertyReference', 'SubscriptionValue']) {
+      const scope = { variables: new Map([['held', { type }]]), parent: null } as unknown as Scope;
+      expect(() =>
+        fixFile(scope, { path: '/lib.pathogen', label: 'lib.pathogen', entry: false }, new WeakMap()),
+      ).toThrow(`${DRAWS} (held holds a part of a drawing.)`);
+    }
   });
 });

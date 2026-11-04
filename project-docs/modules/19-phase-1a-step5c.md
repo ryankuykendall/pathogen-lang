@@ -1,5 +1,7 @@
 # Phase 1a, step 5c: values tied to another file's drawing
 
+> **Superseded by step 5e (2026-11-04, `24-phase-1a-step5e.md`).** A module can't make a layer, transform or subscription while it loads, so none can reach another file. The use-site checks (`drawingValueUse` at six sites), the export check, `DrawingValues` and their messages were removed. `fixFile` keeps a backstop: reaching one of those types is an error. The tests in `tests/modules-drawing.test.ts` were replaced by step 5e's "a module can't draw" matrix. This note stays as the record of what was built and why.
+
 2026-11-04. Design: `17-phase-1a-step5-design.md`, section 5c, and its amendments. Contract: docs/modules.md, the paragraph "Values that belong to the imported file's drawing stay in that file", and the two Errors rows for exporting and using one (decision 35). No docs change was needed. Step 5a came before it.
 
 ## Before and after

@@ -1,5 +1,14 @@
 # Docs changes since your approval (awaiting it before the push)
 
+> **Update, 2026-11-04, step 5e (modules are libraries).** docs/modules.md was rewritten for strict modules. The full list is in `24-phase-1a-step5e.md`, section "Docs". It supersedes some rows below:
+> - the step 4 `ids.pathogen` fence now reads line 7, not line 5;
+> - the duplicate-id row now says `arrows.pathogen line 4`;
+> - the "layer inside an exported array or object" and "reading another file's layer" choices no longer apply, because a module can't hold a layer at all.
+>
+> The step 5a and 5b rows otherwise stand.
+>
+> **After your 5e approval:** the missing-`;` example (in "Errors in other files" and in the Errors table) now reads `Missing ';' after const declaration`. That is what the code reports now that `module;` comes before the `const`. The reason is in `24-phase-1a-step5e.md`.
+
 2026-11-04. You approved the phase 1a docs on 2026-11-03 ("Let's move on"). Steps 4 and 5 changed published docs since then. Each change went through the content review, but the per-step process asks for your approval too. All of them are in local commits, none pushed. The push waits on your approval (plan step 7).
 
 ## docs/modules.md

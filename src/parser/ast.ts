@@ -63,7 +63,8 @@ export type Node =
   | PathBlockExpression
   | TextBlockExpression
   | FontDirective
-  | ImportDeclaration;
+  | ImportDeclaration
+  | ModuleHeader;
 
 export interface Program {
   type: 'Program';
@@ -92,7 +93,27 @@ export type Statement =
   | LayerApplyBlock
   | TextStatement
   | FontDirective
-  | ImportDeclaration;
+  | ImportDeclaration
+  | ModuleHeader;
+
+/**
+ * `module;` (docs/modules.md "Exporting"): the file is a module. Only a module
+ * can be imported, and its top level can't draw. module-check.ts makes sure it
+ * is the first statement; the AST builder rejects it anywhere below the top level.
+ */
+export interface ModuleHeader {
+  type: 'ModuleHeader';
+  loc?: SourceLocation;
+}
+
+/** Whether a program starts with `module;` (after any comments). */
+export function isModuleProgram(program: Program): boolean {
+  for (const statement of program.body) {
+    if (statement.type === 'Comment') continue;
+    return statement.type === 'ModuleHeader';
+  }
+  return false;
+}
 
 /**
  * `export` in front of a top-level declaration (docs/modules.md). It is a flag

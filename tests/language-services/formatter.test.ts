@@ -877,6 +877,26 @@ describe('formatDocument never drops code', () => {
   });
 });
 
+// `module;` (docs/modules.md "Exporting"): a statement with no expression in
+// it, so a formatter without its case would print nothing for it and turn the
+// library into a program that can't export.
+describe('formatDocument: the module; header', () => {
+  it('keeps the header, its leading comment and the blank line after it', () => {
+    const src = '// c\nmodule;\n\nexport const a = 1;\n';
+    expect(format(src)).toBe(src);
+  });
+
+  it('normalizes the spacing inside it and keeps it first', () => {
+    const out = format('module ;\nexport   const a=1;\nexport fn f(x){\nreturn x;\n}\n');
+    expect(out).toBe('module;\nexport const a = 1;\nexport fn f(x) {\n  return x;\n}\n');
+    expect(parse(out).body[0].type).toBe('ModuleHeader');
+  });
+
+  it('a variable named module is still formatted as one', () => {
+    expect(format('let module=3;\nlog(module);\n')).toBe('let module = 3;\nlog(module);\n');
+  });
+});
+
 // Range values `(a..b)`: the parentheses are part of the literal, so the
 // range prints its own. Without a formatter case the node fell to the
 // `default: return ''` branch and `let items = (1..100).map …` formatted to

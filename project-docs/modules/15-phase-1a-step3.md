@@ -2,6 +2,8 @@
 
 2026-11-03. Plan: `12-phase-1-plan.md` "Step 3" plus its amendments. Steps 1 (`023dd75`) and 2 (`6e755dd`) came before; the CLI wiring planned for step 2 is here.
 
+> **Amended by step 5e (2026-11-04, `24-phase-1a-step5e.md`).** Only a file that starts with `module;` can be imported, and a module can't draw while it loads. So an imported file no longer has a drawing, layers or a ViewBox of its own ("Its drawing, layers and ViewBox stay in it" below no longer applies), and the subscription dispatch at the end of each module's load was removed: a module can't subscribe.
+
 ## What this step delivers
 
 | Piece | Where | What it does |

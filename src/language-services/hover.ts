@@ -5,6 +5,8 @@ import { inferBlockParamType, inferLoopVarType, inferType } from './type-inferen
 import { findDeclaration, inferDeclType, inferExprElementType } from './type-inference-ast';
 import { lezerParser } from '../parser';
 
+import type { SyntaxNode } from '@lezer/common';
+
 import type { TextDocument } from './document';
 import type { Declaration, ScopeInfo } from './scope-analysis';
 import type { Position, Range } from './types';
@@ -56,9 +58,9 @@ export const KEYWORD_HOVER: Record<string, string> = {
   // No `from` entry: it's contextual, and KEYWORD_HOVER is checked before scope
   // resolution, so it would shadow the hover of a variable named `from`.
   import:
-    '**import** — Use names another .pathogen file exports\n```\nimport { gear, Teeth as Kind } from "./parts/gears.pathogen";\nimport * as gears from "./parts/gears.pathogen";\n```\nImports come first in the file. The imported file runs on its own; only its exports reach you, and they can\'t be changed. Works in the CLI and VS Code.',
+    '**import** — Use names a module exports\n```\nimport { gear, Teeth as Kind } from "./parts/gears.pathogen";\nimport * as gears from "./parts/gears.pathogen";\n```\nImports come first in the file. Only a module (a file that starts with `module;`) can be imported; only its exports reach you, and they can\'t be changed. Works in the CLI and VS Code.',
   export:
-    '**export** — Offer a top-level `const`, `fn` or `enum` to files that import this one\n```\nexport const toothDepth = 6;\nexport fn gear(center, radius, teeth) { ... }\n```\nIn the file being compiled, `export` does nothing.',
+    '**export** — Offer a top-level `const`, `fn` or `enum` to files that import this one\n```\nmodule;\n\nexport const toothDepth = 6;\nexport fn gear(center, radius, teeth) { ... }\n```\nOnly works in a module: a file that starts with `module;`.',
   calc: '**calc()** — Wrap arithmetic expressions for path arguments\n```\nM calc(x + 10) calc(y * 2)\n```',
   true: '**true** — Boolean literal (evaluates to 1)',
   false: '**false** — Boolean literal (evaluates to 0)',
@@ -94,6 +96,18 @@ export const PATH_COMMAND_HOVER: Record<string, string> = {
 /** Set of all single-letter SVG path commands, derived from PATH_COMMAND_HOVER. */
 export const PATH_COMMAND_SET = new Set(Object.keys(PATH_COMMAND_HOVER));
 
+/** Hover for the `module;` line (docs/modules.md "Exporting"). Not in KEYWORD_HOVER: `module` is also a name. */
+const MODULE_HEADER_HOVER =
+  "**module;** — Makes this file a module: a library other files can import\n```\nmodule;\n\nexport const toothDepth = 6;\nexport fn gear(center, radius, teeth) { ... }\n```\nIt must be the file's first statement. A module makes things but doesn't draw: path commands, layers, `define ViewBox` and reading `ctx` or `viewbox` are errors at its top level. Its exported fns draw into the drawing that calls them.";
+
+/** Whether `offset` is in a `module;` line. The keyword is a token inside a rule node, so walk up. */
+function isInModuleHeader(source: string, offset: number): boolean {
+  for (let node: SyntaxNode | null = lezerParser.parse(source).resolveInner(offset, 1); node; node = node.parent) {
+    if (node.name === 'ModuleHeader') return true;
+  }
+  return false;
+}
+
 // Build stdlib hover map from completion data
 const STDLIB_HOVER = new Map<string, string>();
 for (const entry of STDLIB_COMPLETIONS) {
@@ -114,6 +128,10 @@ export function getHoverInfo(document: TextDocument, position: Position): HoverI
   // 1. Check if it's a keyword
   if (KEYWORD_HOVER[word.text]) {
     return { contents: KEYWORD_HOVER[word.text], range: word.range };
+  }
+  // `module` is a keyword only in the `module;` line; anywhere else it's a name.
+  if (word.text === 'module' && isInModuleHeader(source, word.startOffset)) {
+    return { contents: MODULE_HEADER_HOVER, range: word.range };
   }
 
   // 2. Check if it's a path command (single letter at statement level).

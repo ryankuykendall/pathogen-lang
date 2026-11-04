@@ -738,6 +738,26 @@ describe('switch expression type inference', () => {
   });
 });
 
+// `module` is a keyword only in the `module;` line (docs/syntax.md): the
+// header hovers as the header, any other `module` as the name it is.
+describe('getHoverInfo: module', () => {
+  it('the module of `module;` explains the header, after comments too', () => {
+    expect(hover('module;\nexport const a = 1;', 0, 2)?.contents).toMatch(/^\*\*module;\*\* — /);
+    expect(hover('// gears\nmodule;\nexport const a = 1;', 1, 0)?.contents).toMatch(/^\*\*module;\*\* — /);
+  });
+
+  it('a variable named module hovers as a variable, where it is declared and where it is used', () => {
+    const src = 'let module = 3;\nlog(module);';
+    expect(hover(src, 0, 5)?.contents).toContain('**module** — *variable');
+    expect(hover(src, 1, 5)?.contents).toContain('**module** — *variable');
+    expect(hover(src, 1, 5)?.contents).not.toContain('module;');
+  });
+
+  it('the export hover says export needs a module', () => {
+    expect(hover('module;\nexport const a = 1;', 1, 2)?.contents).toContain('Only works in a module');
+  });
+});
+
 describe('getHoverInfo: range values', () => {
   function at(source: string, needle: string) {
     const offset = source.indexOf(needle);

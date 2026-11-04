@@ -72,7 +72,13 @@ import type {
   SourceLocation,
   TextBodyItem,
 } from './ast';
-import { defaultImportError, EXPORT_LET_MESSAGE, EXPORT_PLACEMENT_MESSAGE, notTopLevelError } from '../module-messages';
+import {
+  defaultImportError,
+  EXPORT_LET_MESSAGE,
+  EXPORT_PLACEMENT_MESSAGE,
+  MODULE_FIRST_MESSAGE,
+  notTopLevelError,
+} from '../module-messages';
 
 import { statementForExpression } from './expression-statement';
 import { pathArgCommentRanges } from './path-args-tokenizer';
@@ -478,6 +484,8 @@ function buildStatement(cursor: TreeCursor, source: string): Statement | null {
         loc(cursor, source),
         notTopLevelError(cursor.name === 'ImportDeclaration' ? 'import' : 'export'),
       );
+    case 'ModuleHeader':
+      throw parseErrorAt(loc(cursor, source), MODULE_FIRST_MESSAGE);
     default: return null;
   }
 }
@@ -489,6 +497,7 @@ function buildStatement(cursor: TreeCursor, source: string): Statement | null {
  * appear; buildStatement, which every nested list uses, rejects them.
  */
 function buildTopLevelStatement(cursor: TreeCursor, source: string): Statement | null {
+  if (cursor.name === 'ModuleHeader') return { type: 'ModuleHeader', loc: loc(cursor, source) };
   if (cursor.name === 'ImportDeclaration') return buildImportDeclaration(cursor, source);
   if (cursor.name === 'ExportDeclaration') return buildExportDeclaration(cursor, source);
   return buildStatement(cursor, source);

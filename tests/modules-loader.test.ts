@@ -11,6 +11,7 @@ import { fileURLToPath } from 'node:url';
 
 import { describe, expect, it } from 'vitest';
 
+import { compile } from '../src';
 import {
   formatModuleLoadError,
   importPathMistake,
@@ -128,8 +129,8 @@ describe('importPathMistake: the path rules', () => {
 describe('resolveModules: reading the graph', () => {
   it('reads each file once, follows imports in imported files, and orders dependencies first', async () => {
     const { host, reads } = memoryHost({
-      '/parts/gears.pathogen': 'import { tooth } from "./teeth.pathogen";\nexport fn gear() { return tooth(); }',
-      '/parts/teeth.pathogen': 'export fn tooth() { return 1; }',
+      '/parts/gears.pathogen': 'module;\nimport { tooth } from "./teeth.pathogen";\nexport fn gear() { return tooth(); }',
+      '/parts/teeth.pathogen': 'module;\nexport fn tooth() { return 1; }',
     });
     const main = 'import { gear } from "./parts/gears.pathogen";\nimport { tooth } from "/parts/teeth.pathogen";';
     const { graph, errors } = await resolveModules(main, { host, entry });
@@ -146,7 +147,7 @@ describe('resolveModules: reading the graph', () => {
       { file: '/main.pathogen', line: 1, column: 22 },
     ]);
     expect(graph.files.get('/parts/teeth.pathogen')?.importedFrom).toEqual([
-      { file: '/parts/gears.pathogen', line: 1, column: 23 },
+      { file: '/parts/gears.pathogen', line: 2, column: 23 },
       { file: '/main.pathogen', line: 1, column: 22 },
     ]);
   });
@@ -159,14 +160,14 @@ describe('resolveModules: reading the graph', () => {
 
   it('strips a byte-order mark and refuses a file that is not UTF-8 text', async () => {
     const { host } = memoryHost({
-      '/bom.pathogen': '\uFEFFexport const a = 1;',
+      '/bom.pathogen': '\uFEFFmodule;\nexport const a = 1;',
       '/binary.pathogen': new Uint8Array([0xff, 0xfe, 0x00, 0xd8]),
     });
     const { graph, errors } = await resolveModules(
       'import { a } from "./bom.pathogen";\nimport { b } from "./binary.pathogen";',
       { host, entry },
     );
-    expect(graph.files.get('/bom.pathogen')?.source).toBe('export const a = 1;');
+    expect(graph.files.get('/bom.pathogen')?.source).toBe('module;\nexport const a = 1;');
     expect(errors.map((e) => e.message)).toEqual([
       'import file "./binary.pathogen" could not be read: it is not UTF-8 text',
     ]);
@@ -227,8 +228,8 @@ describe('resolveModules: each read mistake, at the import', () => {
 describe('resolveModules: mistakes in imported files carry the chain', () => {
   it('names the file and line, then each import that led there, nearest first', async () => {
     const { host } = memoryHost({
-      '/parts/gears.pathogen': '// gears\nimport { tooth } from "./teeth.pathogen";',
-      '/parts/teeth.pathogen': 'import { metal } from "./missing.pathogen";',
+      '/parts/gears.pathogen': '// gears\nmodule;\nimport { tooth } from "./teeth.pathogen";',
+      '/parts/teeth.pathogen': 'module;\nimport { metal } from "./missing.pathogen";',
     });
     const { errors } = await resolveModules('import { gear } from "./parts/gears.pathogen";', { host, entry });
     expect(errors).toEqual([
@@ -236,10 +237,10 @@ describe('resolveModules: mistakes in imported files carry the chain', () => {
         message:
           'import file "./missing.pathogen" was not found (looked for /Users/you/my-gears/parts/missing.pathogen).',
         file: '/parts/teeth.pathogen',
-        line: 1,
+        line: 2,
         column: 23,
         importedFrom: [
-          { file: '/parts/gears.pathogen', line: 2, column: 23 },
+          { file: '/parts/gears.pathogen', line: 3, column: 23 },
           { file: '/main.pathogen', line: 1, column: 22 },
         ],
       },
@@ -286,13 +287,13 @@ describe('resolveModules: cycles', () => {
   const cycleEnd = '. Move what both files need into a third file that both import.';
 
   it('two files that import each other: named at the import that closes the cycle', async () => {
-    const { host } = memoryHost({ '/parts/a.pathogen': 'import { main } from "../main.pathogen";' });
+    const { host } = memoryHost({ '/parts/a.pathogen': 'module;\nimport { main } from "../main.pathogen";' });
     const { errors } = await resolveModules('import { a } from "./parts/a.pathogen";', { host, entry });
     expect(errors).toEqual([
       {
         message: `Import cycle: main.pathogen → parts/a.pathogen → main.pathogen${cycleEnd}`,
         file: '/parts/a.pathogen',
-        line: 1,
+        line: 2,
         column: 22,
         importedFrom: [{ file: '/main.pathogen', line: 1, column: 19 }],
       },
@@ -308,18 +309,18 @@ describe('resolveModules: cycles', () => {
   it('a cycle not involving the compiled file, closed twice, is reported once', async () => {
     // b closes the cycle with two imports; without the de-duplication there would be two errors.
     const { host } = memoryHost({
-      '/a.pathogen': 'import { b } from "./b.pathogen";',
-      '/b.pathogen': 'import { a } from "./a.pathogen";\nimport { again } from "/a.pathogen";',
+      '/a.pathogen': 'module;\nimport { b } from "./b.pathogen";',
+      '/b.pathogen': 'module;\nimport { a } from "./a.pathogen";\nimport { again } from "/a.pathogen";',
     });
     const { errors } = await resolveModules('import { a } from "./a.pathogen";', { host, entry });
     expect(errors).toEqual([
       {
         message: `Import cycle: a.pathogen → b.pathogen → a.pathogen${cycleEnd}`,
         file: '/b.pathogen',
-        line: 1,
+        line: 2,
         column: 19,
         importedFrom: [
-          { file: '/a.pathogen', line: 1, column: 19 },
+          { file: '/a.pathogen', line: 2, column: 19 },
           { file: '/main.pathogen', line: 1, column: 19 },
         ],
       },
@@ -327,7 +328,7 @@ describe('resolveModules: cycles', () => {
   });
 
   it('a non-entry file that imports itself', async () => {
-    const { host } = memoryHost({ '/a.pathogen': 'import { a } from "./a.pathogen";' });
+    const { host } = memoryHost({ '/a.pathogen': 'module;\nimport { a } from "./a.pathogen";' });
     const { errors } = await resolveModules('import { a } from "./a.pathogen";', { host, entry });
     expect(errors.map((e) => [e.message, e.file])).toEqual([
       [`Import cycle: a.pathogen → a.pathogen${cycleEnd}`, '/a.pathogen'],
@@ -338,9 +339,9 @@ describe('resolveModules: cycles', () => {
 describe('resolveModules: more shapes', () => {
   it('a diamond: two files import a third, which is read once and runs first', async () => {
     const { host, reads } = memoryHost({
-      '/left.pathogen': 'import { base } from "./base.pathogen";',
-      '/right.pathogen': 'import { base } from "./base.pathogen";',
-      '/base.pathogen': 'export const base = 1;',
+      '/left.pathogen': 'module;\nimport { base } from "./base.pathogen";',
+      '/right.pathogen': 'module;\nimport { base } from "./base.pathogen";',
+      '/base.pathogen': 'module;\nexport const base = 1;',
     });
     const { graph, errors } = await resolveModules(
       'import { l } from "./left.pathogen";\nimport { r } from "./right.pathogen";',
@@ -353,7 +354,7 @@ describe('resolveModules: more shapes', () => {
   });
 
   it('a nested file climbing out of the project is an error in that file', async () => {
-    const { host } = memoryHost({ '/parts/a.pathogen': 'import { x } from "../../x.pathogen";' });
+    const { host } = memoryHost({ '/parts/a.pathogen': 'module;\nimport { x } from "../../x.pathogen";' });
     const { errors } = await resolveModules('import { a } from "./parts/a.pathogen";', { host, entry });
     expect(errors.map((e) => [e.file, e.message])).toEqual([
       [
@@ -365,8 +366,8 @@ describe('resolveModules: more shapes', () => {
 
   it("a file that can't be read is an error at every import of it, read once", async () => {
     const { host, reads } = memoryHost({
-      '/a.pathogen': 'import { m } from "./missing.pathogen";',
-      '/b.pathogen': '\nimport { m } from "/missing.pathogen";',
+      '/a.pathogen': 'module;\nimport { m } from "./missing.pathogen";',
+      '/b.pathogen': 'module;\n\nimport { m } from "/missing.pathogen";',
     });
     const { errors } = await resolveModules('import { a } from "./a.pathogen";\nimport { b } from "./b.pathogen";', {
       host,
@@ -375,12 +376,12 @@ describe('resolveModules: more shapes', () => {
     expect(errors.map((e) => [e.file, e.line, e.message])).toEqual([
       [
         '/a.pathogen',
-        1,
+        2,
         'import file "./missing.pathogen" was not found (looked for /Users/you/my-gears/missing.pathogen).',
       ],
       [
         '/b.pathogen',
-        2,
+        3,
         'import file "/missing.pathogen" was not found (looked for /Users/you/my-gears/missing.pathogen). A leading / means the project folder, not your computer\'s root.',
       ],
     ]);
@@ -388,7 +389,7 @@ describe('resolveModules: more shapes', () => {
   });
 
   it('the same import twice in one file reads it once', async () => {
-    const { host, reads } = memoryHost({ '/a.pathogen': '' });
+    const { host, reads } = memoryHost({ '/a.pathogen': 'module;' });
     await resolveModules('import { x } from "./a.pathogen";\nimport * as a from "/a.pathogen";', { host, entry });
     expect(reads).toEqual(['/a.pathogen']);
   });
@@ -408,17 +409,138 @@ describe('resolveModules: more shapes', () => {
   });
 });
 
+describe('resolveModules: only modules can be imported (docs/modules.md "Importing")', () => {
+  const notAModule = (written: string): string =>
+    `Cannot import "${written}": it isn't a module. To make it one, add module; at the top of that file and move its drawing into exported fns.`;
+
+  it.each([
+    ['a program that draws', 'define ViewBox(0, 0, 100, 100);\ncircle(50, 50, 20);\n'],
+    ['a file with exports but no module; line', 'export const toothDepth = 6;\nexport fn gear(r) { return r; }\n'],
+    ['an empty file', ''],
+    ['module used as a name', 'let module = 3;\nlog(module);\n'],
+  ])('%s is an error at the import, on its path', async (_label, source) => {
+    const { host } = memoryHost({ '/parts/scene.pathogen': source });
+    const { graph, errors } = await resolveModules('// main\nimport { gear } from "./parts/scene.pathogen";', {
+      host,
+      entry,
+    });
+    expect(errors).toEqual([
+      { message: notAModule('./parts/scene.pathogen'), file: '/main.pathogen', line: 2, column: 22, importedFrom: [] },
+    ]);
+    expect([...graph.files.keys(), ...graph.order]).toEqual([]);
+  });
+
+  it('each import of a non-module gets its own error, worded as it writes the path; the file is read once', async () => {
+    const { host, reads } = memoryHost({
+      '/a.pathogen': 'module;\nimport { s } from "/parts/scene.pathogen";',
+      '/parts/scene.pathogen': 'M 0 0 L 10 10',
+    });
+    const { errors } = await resolveModules(
+      'import { a } from "./a.pathogen";\nimport { s } from "./parts/scene.pathogen";',
+      { host, entry },
+    );
+    expect(errors).toEqual([
+      {
+        message: notAModule('/parts/scene.pathogen'),
+        file: '/a.pathogen',
+        line: 2,
+        column: 19,
+        importedFrom: [{ file: '/main.pathogen', line: 1, column: 19 }],
+      },
+      { message: notAModule('./parts/scene.pathogen'), file: '/main.pathogen', line: 2, column: 19, importedFrom: [] },
+    ]);
+    expect(reads.filter((p) => p === '/parts/scene.pathogen')).toHaveLength(1);
+  });
+
+  it('a non-module imported by an imported file carries the chain, and the CLI prints it', async () => {
+    const { host } = memoryHost({
+      '/parts/gears.pathogen': '// gears\nmodule;\nimport { draw } from "./scene.pathogen";',
+      '/parts/scene.pathogen': 'M 0 0 L 1 1',
+    });
+    const { errors } = await resolveModules('import { gear } from "./parts/gears.pathogen";', { host, entry });
+    expect(errors).toEqual([
+      {
+        message: notAModule('./scene.pathogen'),
+        file: '/parts/gears.pathogen',
+        line: 3,
+        column: 22,
+        importedFrom: [{ file: '/main.pathogen', line: 1, column: 22 }],
+      },
+    ]);
+    expect(formatModuleLoadError(errors[0], 'main.pathogen')).toBe(
+      `Error: parts/gears.pathogen line 3, col 22: ${notAModule('./scene.pathogen')}\n  imported from main.pathogen line 1`,
+    );
+  });
+
+  it("a non-module's own imports are not followed", async () => {
+    const { host, reads } = memoryHost({
+      '/scene.pathogen': 'import { x } from "./missing.pathogen";\nimport { y } from "../../outside.pathogen";\nM 0 0',
+    });
+    const { errors } = await resolveModules('import { s } from "./scene.pathogen";', { host, entry });
+    expect(errors.map((e) => [e.file, e.message])).toEqual([['/main.pathogen', notAModule('./scene.pathogen')]]);
+    expect(reads).toEqual(['/scene.pathogen']);
+  });
+
+  it('comments may come before `module;`: the file is a module', async () => {
+    const { host } = memoryHost({ '/lib.pathogen': '// a library\n// of gears\n\nmodule;\nexport const a = 1;' });
+    const main = 'import { a } from "./lib.pathogen";\nlog(a);';
+    const { graph, errors } = await resolveModules(main, { host, entry });
+    expect(errors).toEqual([]);
+    expect(graph.order).toEqual(['/lib.pathogen']);
+    expect(compile(main, { modules: graph }).logs.find((l) => !l.file)?.parts[0].value).toBe('1');
+  });
+
+  it('a header still being typed (`module` with no `;`) counts as a module, so the importer sees the missing `;`', async () => {
+    // Lezer's error recovery still builds a ModuleHeader there. The not-a-module
+    // message would tell the author to add a line they have already started.
+    const { host } = memoryHost({ '/lib.pathogen': '// lib\nmodule\n\nexport const a = 1;\n' });
+    const main = 'import { a } from "./lib.pathogen";\nlog(a);';
+    const { graph, errors } = await resolveModules(main, { host, entry });
+    expect(errors).toEqual([]);
+    expect(() => compile(main, { modules: graph })).toThrow(
+      "lib.pathogen line 2, col 7: Missing ';'\n  imported from main.pathogen line 1",
+    );
+  });
+
+  it('`Module;` (a capital M) is not the header: the not-a-module message says what to write', async () => {
+    const { host } = memoryHost({ '/lib.pathogen': 'Module;\nexport const a = 1;\n' });
+    const { errors } = await resolveModules('import { a } from "./lib.pathogen";', { host, entry });
+    expect(errors.map((e) => e.message)).toEqual([notAModule('./lib.pathogen')]);
+  });
+
+  it('a misplaced `module;` still makes it a module for the loader; the compile reports the placement in that file', async () => {
+    const { host } = memoryHost({ '/late.pathogen': 'const a = 1;\nmodule;\nexport const b = a;' });
+    const main = 'import { b } from "./late.pathogen";\nlog(b);';
+    const { graph, errors } = await resolveModules(main, { host, entry });
+    expect(errors).toEqual([]);
+    expect(graph.order).toEqual(['/late.pathogen']);
+    expect(() => compile(main, { modules: graph })).toThrow(
+      "late.pathogen line 2, col 1: module; must be the file's first statement. Only comments may come before it.\n" +
+        '  imported from main.pathogen line 1',
+    );
+  });
+});
+
 describe('withOpenDocuments: unsaved editor buffers', () => {
   it('a file open in the editor reads as its buffer', async () => {
-    const { host } = memoryHost({ '/parts/gears.pathogen': 'export const saved = 1;' });
+    const { host } = memoryHost({ '/parts/gears.pathogen': 'module;\nexport const saved = 1;' });
     const overlaid = withOpenDocuments(host, (path) =>
-      path === '/parts/gears.pathogen' ? 'export const unsaved = 2;' : undefined,
+      path === '/parts/gears.pathogen' ? 'module;\nexport const unsaved = 2;' : undefined,
     );
     const { graph } = await resolveModules('import { unsaved } from "./parts/gears.pathogen";', {
       host: overlaid,
       entry,
     });
-    expect(graph.files.get('/parts/gears.pathogen')?.source).toBe('export const unsaved = 2;');
+    expect(graph.files.get('/parts/gears.pathogen')?.source).toBe('module;\nexport const unsaved = 2;');
+  });
+
+  it('the buffer decides whether the file is a module: deleting `module;` there is the error at once', async () => {
+    const { host } = memoryHost({ '/parts/gears.pathogen': 'module;\nexport const saved = 1;' });
+    const overlaid = withOpenDocuments(host, () => 'export const unsaved = 2;');
+    const { errors } = await resolveModules('import { unsaved } from "./parts/gears.pathogen";', { host: overlaid, entry });
+    expect(errors.map((e) => e.message)).toEqual([
+      'Cannot import "./parts/gears.pathogen": it isn\'t a module. To make it one, add module; at the top of that file and move its drawing into exported fns.',
+    ]);
   });
 
   it.each([

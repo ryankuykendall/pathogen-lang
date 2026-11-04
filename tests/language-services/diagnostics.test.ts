@@ -706,3 +706,54 @@ describe('getDiagnostics: reserved unit-suffix names', () => {
     expect(info.declarations.map((d) => d.name)).toEqual(expect.arrayContaining(['width', 'rad', 'half']));
   });
 });
+
+// The module rules (docs/modules.md "Exporting"): one diagnostic per mistake,
+// as an error, on the word it is about, while the file is being typed.
+describe('getDiagnostics: modules', () => {
+  const MODULE_FIRST = "module; must be the file's first statement. Only comments may come before it.";
+  const EXPORT_NEEDS_MODULE =
+    "export only works in a module. Remove export, or add module; at the top of the file to make it a module, which can't draw at its top level.";
+  const MODULE_DRAWS =
+    "A module can't draw while it loads. Draw in an exported fn, and call it from the file that imports this one.";
+  const MODULE_VIEWBOX =
+    "A module has no drawing, so it can't define a ViewBox. The program that imports it sets the ViewBox.";
+  const spans = (source: string) =>
+    diagnose(source).map((d) => ({
+      start: d.range.start,
+      end: d.range.end,
+      message: d.message,
+      error: d.severity === DiagnosticSeverity.Error,
+    }));
+
+  it('a header after another statement covers `module;`', () => {
+    expect(spans('let a = 1;\nmodule;')).toEqual([
+      { start: { line: 1, character: 0 }, end: { line: 1, character: 7 }, message: MODULE_FIRST, error: true },
+    ]);
+  });
+
+  it('export without a header covers the word `export`, once per export', () => {
+    expect(spans('export const a = 1;\nconst b = 2;\nexport fn f() { return b; }')).toEqual([
+      { start: { line: 0, character: 0 }, end: { line: 0, character: 6 }, message: EXPORT_NEEDS_MODULE, error: true },
+      { start: { line: 2, character: 0 }, end: { line: 2, character: 6 }, message: EXPORT_NEEDS_MODULE, error: true },
+    ]);
+  });
+
+  it('each drawing statement in a module covers its first word', () => {
+    const source =
+      "module;\ndefine ViewBox(0, 0, 10, 10);\ndefine PathLayer('ink') #{ stroke: red; }\nM 0 0\ntext(1, 2)`hi`;";
+    expect(spans(source)).toEqual([
+      { start: { line: 1, character: 0 }, end: { line: 1, character: 6 }, message: MODULE_VIEWBOX, error: true },
+      { start: { line: 2, character: 0 }, end: { line: 2, character: 6 }, message: MODULE_DRAWS, error: true },
+      { start: { line: 3, character: 0 }, end: { line: 3, character: 1 }, message: MODULE_DRAWS, error: true },
+      { start: { line: 4, character: 0 }, end: { line: 4, character: 4 }, message: MODULE_DRAWS, error: true },
+    ]);
+  });
+
+  it('a module of values and fns has no diagnostics', () => {
+    expect(
+      diagnose(
+        '// a library\nmodule;\nconst tooth = @{ m 0 0 l 4 0 };\nexport fn draw(at) {\n  M at.x at.y\n  tooth.draw();\n}\n',
+      ),
+    ).toEqual([]);
+  });
+});

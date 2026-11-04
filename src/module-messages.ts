@@ -19,9 +19,39 @@ export function notTopLevelError(keyword: 'import' | 'export'): string {
 }
 
 export const IMPORTS_FIRST_MESSAGE =
-  "import must come before the file's other statements, @font and define included. Only comments may come first.";
+  "import must come before the file's other statements, @font and define included. Only comments and the module; line may come before it.";
 
 export const EXPORT_PLACEMENT_MESSAGE = 'export goes in front of a const, fn or enum declaration.';
+
+// --- Modules are libraries (docs/modules.md "Exporting") ---
+
+/** `module;` after another statement, or below the top level. */
+export const MODULE_FIRST_MESSAGE = "module; must be the file's first statement. Only comments may come before it.";
+
+/** `export` in a file that doesn't start with `module;`. */
+export const EXPORT_NEEDS_MODULE_MESSAGE =
+  "export only works in a module. Remove export, or add module; at the top of the file to make it a module, which can't draw at its top level.";
+
+/**
+ * A module drawing while it loads: a path command, a drawing call (also
+ * through a fn it calls), a layer, `apply`, text or `.subscribe(…)`.
+ */
+export const MODULE_DRAWS_MESSAGE =
+  "A module can't draw while it loads. Draw in an exported fn, and call it from the file that imports this one.";
+
+/** `define ViewBox` in a module. */
+export const MODULE_VIEWBOX_MESSAGE =
+  "A module has no drawing, so it can't define a ViewBox. The program that imports it sets the ViewBox.";
+
+/** Reading `ctx` or `viewbox` while a module loads. */
+export function moduleDrawingReadError(name: 'ctx' | 'viewbox'): string {
+  return `A module has no drawing while it loads, so ${name} can't be read. Read it in an exported fn that the importing file calls; there it describes that file's drawing.`;
+}
+
+/** Importing a file that doesn't start with `module;`. */
+export function notAModuleError(written: string): string {
+  return `Cannot import "${written}": it isn't a module. To make it one, add module; at the top of that file and move its drawing into exported fns.`;
+}
 
 /** An import that doesn't have its path yet — what the editor sees while one is being typed. */
 export const INCOMPLETE_IMPORT_MESSAGE =
@@ -32,7 +62,7 @@ export const EXPORT_LET_MESSAGE =
 
 export function defaultImportError(name: string, path: string): string {
   return (
-    `import ${name} from "${path}" would import the file's drawing, which isn't supported. ` +
+    `import ${name} from "${path}" isn't supported: Pathogen has no default export. ` +
     `Import its names: import { … } from "${path}"; or import * as ${name} from "${path}";`
   );
 }
@@ -104,41 +134,21 @@ export function fixedNamespaceError(name: string, file: string): string {
   return `Cannot change ${name} — it is imported from ${file}, and imported values are fixed. Declare a variable of your own with let, under another name`;
 }
 
-// --- Values tied to a file's drawing (docs/modules.md "What you import is fixed", decision 35) ---
-
-/** Which part of a file's drawing a value is tied to. */
-export type DrawingValueKind = 'layer' | 'transform' | 'subscription';
-
-const DRAWING_PART: Record<DrawingValueKind, string> = {
-  layer: 'a layer of',
-  transform: 'a transform of',
-  subscription: 'a subscription to',
-};
-
-/** `export const ink = layer('ink');`: the file's own layer, transform or subscription. */
-export function exportDrawingValueError(name: string, kind: DrawingValueKind): string {
-  return `Cannot export ${name} — it is ${DRAWING_PART[kind]} this file's drawing, which stays in this file. Export a fn that draws instead`;
-}
-
-/** Using a layer, transform or subscription of a drawing that finished when its file loaded. */
-export function useDrawingValueError(name: string, kind: DrawingValueKind, fileLabelText: string): string {
-  return (
-    `Cannot use ${name} — it is ${DRAWING_PART[kind]} ${fileLabelText}'s drawing, which stays in that file. ` +
-    'Export a fn that draws, and call it inside your own layer'
-  );
-}
-
-/** The clause every fixed-value or drawing-value message above carries after the file's name. */
+/**
+ * The words every fixed-value message above carries after the file's name,
+ * and the start of the module drawing messages (MODULE_DRAWS_MESSAGE and the
+ * ones after it).
+ */
 const IMPORTED_VALUE_CLAUSE =
-  /(?:, whose (?:values|variables) are fixed once it has loaded|, and imported values are fixed|'s drawing, which stays in that file| this file's drawing, which stays in this file)\. /;
+  /(?:, whose (?:values|variables) are fixed once it has loaded\. |, and imported values are fixed\. |A module can't draw while it loads\.|A module has no drawing)/;
 
 /**
- * Whether `e` is one of the errors above: a change to a fixed value, or the
- * use of another file's layer, transform or subscription. A style value keeps
- * its raw text when evaluating it fails, so it lets these through, as it does
- * a lexical-scope miss: otherwise the raw text is rejected with a message
- * about a disallowed token. The test reads the words, so it still holds once
- * the error has been traced through other files.
+ * Whether `e` is one of the errors above: a change to a fixed value, or a
+ * module drawing while it loads. A style value keeps its raw text when
+ * evaluating it fails, so it lets these through, as it does a lexical-scope
+ * miss: otherwise the raw text is rejected with a message about a disallowed
+ * token. The test reads the words, so it still holds once the error has been
+ * traced through other files.
  */
 export function isImportedValueError(e: unknown): e is Error {
   return e instanceof Error && IMPORTED_VALUE_CLAUSE.test(e.message);

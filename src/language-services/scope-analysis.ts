@@ -407,6 +407,7 @@ function walkStatement(stmt: Statement, scope: Scope, col: Collector): void {
     }
     case 'Comment':
     case 'FontDirective':
+    case 'ModuleHeader':
       break;
   }
 }

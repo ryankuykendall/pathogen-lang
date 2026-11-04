@@ -1987,6 +1987,26 @@ describe('getCompletions switch keywords', () => {
   });
 });
 
+describe('getCompletions: module keywords (docs/modules.md)', () => {
+  it('offers the module; header as a snippet that ends the line', () => {
+    const item = completeAtEnd('mod').find((i) => i.label === 'module');
+    expect(item).toMatchObject({
+      kind: 'keyword',
+      insertText: 'module;\n$0',
+      isSnippet: true,
+      detail: "Make this file a module other files can import (first line; a module doesn't draw)",
+    });
+  });
+
+  it('import and export describe modules', () => {
+    const items = completeAtEnd('');
+    expect(items.find((i) => i.label === 'import')?.detail).toBe('Import names from a module (at the top of the file)');
+    expect(items.find((i) => i.label === 'export')?.detail).toBe(
+      'Offer a top-level const, fn or enum to files that import this module',
+    );
+  });
+});
+
 describe('statement builtins and ln()', () => {
   it('completes log, assert, and ln as functions with their snippets', () => {
     const items = completeAtEnd('l');

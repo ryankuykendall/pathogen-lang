@@ -114,7 +114,7 @@ describe('keyword registry drift guard', () => {
   });
 
   it('collects the contextual keywords from the grammar', () => {
-    expect([...CONTEXTUAL_KEYWORDS].sort()).toEqual(['as', 'from', 'with']);
+    expect([...CONTEXTUAL_KEYWORDS].sort()).toEqual(['as', 'from', 'module', 'with']);
   });
 
   // A contextual keyword is a keyword only where the grammar expects it, so
@@ -130,8 +130,9 @@ describe('keyword registry drift guard', () => {
   // `from` (modules, docs/modules.md) is also an ordinary name: a gradient's
   // `.from`, `let from = bar.start;`. A registry that treats it as reserved
   // would break those programs or the editor features on them.
-  it('`from` stays usable as a name everywhere', () => {
-    expect(() => parse('let from = 3; let g = { from: 1 }; L from 0')).not.toThrow();
+  // `module` likewise is a keyword only in the `module;` line (docs/syntax.md).
+  it.each(['from', 'module'])('`%s` stays usable as a name everywhere', (word) => {
+    expect(() => parse(`let ${word} = 3; let g = { ${word}: 1 }; L ${word} 0; log(g.${word});`)).not.toThrow();
     const reserving: [string, ReadonlySet<string>][] = [
       ['path-args-tokenizer KEYWORDS', PATH_ARG_KEYWORDS],
       ['hover KEYWORD_HOVER keys', new Set(Object.keys(KEYWORD_HOVER))],
@@ -140,7 +141,22 @@ describe('keyword registry drift guard', () => {
       ['code-snippet KEYWORDS', SNIPPET_KEYWORDS],
       ['TextMate repository.keyword.match', TEXTMATE_KEYWORDS],
     ];
-    expect(reserving.filter(([, has]) => has.has('from')).map(([name]) => name)).toEqual([]);
+    expect(reserving.filter(([, has]) => has.has(word)).map(([name]) => name)).toEqual([]);
+  });
+
+  it('the TextMate grammar scopes `module` only in the `module;` line', () => {
+    interface MatchRule {
+      match?: string;
+      captures?: Record<string, { name?: string }>;
+    }
+    const rule = (TEXTMATE.repository as unknown as Record<string, MatchRule>)['module-header'];
+    expect(rule?.captures?.['1']?.name).toMatch(/^keyword\./);
+    const re = new RegExp(rule?.match ?? '$^', 'm');
+    expect(re.test('module;')).toBe(true);
+    expect(re.test('// c\n  module ;')).toBe(true);
+    expect(re.test('let module = 3;')).toBe(false);
+    expect(re.test('log(module);')).toBe(false);
+    expect(re.test('module.x = 1;')).toBe(false);
   });
 
   it('the TextMate grammar scopes `from` only inside an import, right before the path', () => {

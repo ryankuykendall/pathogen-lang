@@ -75,7 +75,7 @@ const mainLogs = (result: CompileResult): string[] =>
 
 // An arrowhead marker, as in docs/markers.md.
 const HEAD = 'const head = @{ m 0 0 l 10 5 l -10 5 z };\n';
-const ARROWS = `${HEAD}export const tip = Marker('arrowhead', 10, 10) {|m|\n  m.append(head, #{ fill: Color('#333'); });\n};\n`;
+const ARROWS = `module;\n${HEAD}export const tip = Marker('arrowhead', 10, 10) {|m|\n  m.append(head, #{ fill: Color('#333'); });\n};\n`;
 const LINE = (markerEnd: string): string =>
   `define PathLayer('line') #{ stroke: Color('#333'); marker-end: ${markerEnd}; }\nlayer('line').apply { M 0 0 L 10 0 }\n`;
 
@@ -116,7 +116,7 @@ describe('docs: ids from other files', () => {
     const result = await compileFiles(
       `import { makeTip } from "./parts/arrows.pathogen";\nlet tip = makeTip();\n${LINE('tip')}`,
       {
-        '/parts/arrows.pathogen': `${HEAD}export fn makeTip() {\n  return Marker('arrowhead', 10, 10) {|m|\n    m.append(head);\n  };\n}\n`,
+        '/parts/arrows.pathogen': `module;\n${HEAD}export fn makeTip() {\n  return Marker('arrowhead', 10, 10) {|m|\n    m.append(head);\n  };\n}\n`,
       },
     );
     expect(defIds(result)).toEqual({ ...NONE, markers: ['parts-arrows--arrowhead'] });
@@ -135,7 +135,7 @@ describe('docs: ids from other files', () => {
     // has a mask with the same id: each reference must reach its own mask.
     const MASKS = {
       '/parts/masks.pathogen':
-        "export const shade = #{ mask: url(#cut); };\nexport fn shadeLater() {\n  return #{ mask: url(#cut); };\n}\nconst cut = Mask('cut');\ncut.append(@{ m 0 0 h 10 v 10 z }, #{ fill: Color('#fff'); });\n",
+        "module;\nexport const shade = #{ mask: url(#cut); };\nexport fn shadeLater() {\n  return #{ mask: url(#cut); };\n}\nconst cut = Mask('cut');\ncut.append(@{ m 0 0 h 10 v 10 z }, #{ fill: Color('#fff'); });\n",
     };
     const OWN_CUT = "let mine = Mask('cut');\nmine.append(@{ m 0 0 h 5 v 5 z }, #{ fill: Color('#fff'); });\n";
 
@@ -161,7 +161,7 @@ describe('docs: ids from other files', () => {
     it('a value passed in from your file keeps your id: m.id inside the imported fn', async () => {
       const result = await compileFiles(
         `import { maskedBy } from "./parts/masks.pathogen";\n${OWN_CUT}define PathLayer('ours') maskedBy(mine);\nlayer('ours').apply { M 0 0 L 10 0 }\n`,
-        { '/parts/masks.pathogen': 'export fn maskedBy(m) {\n  return #{ mask: m.id; };\n}\n' },
+        { '/parts/masks.pathogen': 'module;\nexport fn maskedBy(m) {\n  return #{ mask: m.id; };\n}\n' },
       );
       expect(defIds(result).masks).toEqual(['cut']);
       expect(styleOf(result, 'ours', 'mask')).toBe('url(#cut)');
@@ -172,7 +172,7 @@ describe('docs: ids from other files', () => {
         `import { look } from "./parts/masks.pathogen";\ndefine PathLayer('theirs') look;\nlayer('theirs').apply { M 0 0 L 10 0 }\n`,
         {
           '/parts/masks.pathogen':
-            "const name = 'cut';\nexport const look = #{ mask: name; };\nconst cut = Mask('cut');\ncut.append(@{ m 0 0 h 10 v 10 z }, #{ fill: Color('#fff'); });\n",
+            "module;\nconst name = 'cut';\nexport const look = #{ mask: name; };\nconst cut = Mask('cut');\ncut.append(@{ m 0 0 h 10 v 10 z }, #{ fill: Color('#fff'); });\n",
         },
       );
       expect(styleOf(result, 'theirs', 'mask')).toBe('url(#parts-masks--cut)');
@@ -184,7 +184,7 @@ describe('docs: ids from other files', () => {
         `import { look } from "./a.pathogen";\ndefine PathLayer('theirs') look;\nlayer('theirs').apply { M 0 0 L 10 0 }\n`,
         {
           '/a.pathogen':
-            "export const look = #{ mask: url(#a--cut); };\nconst cut = Mask('a--cut');\ncut.append(@{ m 0 0 h 10 v 10 z });\n",
+            "module;\nexport const look = #{ mask: url(#a--cut); };\nconst cut = Mask('a--cut');\ncut.append(@{ m 0 0 h 10 v 10 z });\n",
         },
       );
       expect(styleOf(result, 'theirs', 'mask')).toBe('url(#a--a--cut)');
@@ -244,7 +244,7 @@ describe('docs: ids from other files', () => {
 
     it('a def joins with the defs it refers to: a marker filled with a gradient', async () => {
       const result = await compileFiles(`import { tip } from "./parts/arrows.pathogen";\n${LINE('tip')}`, {
-        '/parts/arrows.pathogen': `${HEAD}const sky = LinearGradient('sky', 0, 0, 1, 0) {|g|\n  g.stop(0, Color('#fff'));\n  g.stop(1, Color('#00f'));\n};\nexport const tip = Marker('arrowhead', 10, 10) {|m|\n  m.append(head, #{ fill: sky; });\n};\n`,
+        '/parts/arrows.pathogen': `module;\n${HEAD}const sky = LinearGradient('sky', 0, 0, 1, 0) {|g|\n  g.stop(0, Color('#fff'));\n  g.stop(1, Color('#00f'));\n};\nexport const tip = Marker('arrowhead', 10, 10) {|m|\n  m.append(head, #{ fill: sky; });\n};\n`,
       });
       expect(defIds(result)).toEqual({
         ...NONE,
@@ -255,7 +255,7 @@ describe('docs: ids from other files', () => {
 
     const SHADES = {
       '/parts/shades.pathogen':
-        "export const sky = LinearGradient('sky', 0, 0, 1, 0) {|g|\n  g.stop(0, Color('#fff'));\n  g.stop(1, Color('#00f'));\n};\nexport const lighter = sky.inherit('sky-light');\n",
+        "module;\nexport const sky = LinearGradient('sky', 0, 0, 1, 0) {|g|\n  g.stop(0, Color('#fff'));\n  g.stop(1, Color('#00f'));\n};\nexport const lighter = sky.inherit('sky-light');\n",
     };
     const FILLED = (fill: string): string =>
       `define PathLayer('area') #{ fill: ${fill}; }\nlayer('area').apply { M 0 0 h 10 v 10 z }\n`;
@@ -306,8 +306,8 @@ describe('docs: ids from other files', () => {
         await errorOf(
           'import { a } from "./parts-gears.pathogen";\nimport { b } from "./parts/gears.pathogen";\nlog(a + b);',
           {
-            '/parts-gears.pathogen': 'export const a = 1;\n',
-            '/parts/gears.pathogen': 'export const b = 2;\n',
+            '/parts-gears.pathogen': 'module;\nexport const a = 1;\n',
+            '/parts/gears.pathogen': 'module;\nexport const b = 2;\n',
           },
         ),
       ).toBe(
@@ -316,7 +316,7 @@ describe('docs: ids from other files', () => {
     });
 
     const TIPS = {
-      '/arrows.pathogen': `${HEAD}export const tip = Marker('tip', 10, 10) {|m|\n  m.append(head);\n};\n`,
+      '/arrows.pathogen': `module;\n${HEAD}export const tip = Marker('tip', 10, 10) {|m|\n  m.append(head);\n};\n`,
     };
     const MINE = `import { tip } from "./arrows.pathogen";\n${HEAD}\nlet mine = Marker('arrows--tip', 10, 10) {|m|\n  m.append(head);\n};\n`;
 
@@ -327,7 +327,21 @@ describe('docs: ids from other files', () => {
           TIPS,
         ),
       ).toBe(
-        "Line 4, col 12: Duplicate defs ID 'arrows--tip': made in main.pathogen line 4, and as 'tip' in arrows.pathogen line 2. Rename one of them.",
+        "Line 4, col 12: Duplicate defs ID 'arrows--tip': made in main.pathogen line 4, and as 'tip' in arrows.pathogen line 3. Rename one of them.",
+      );
+    });
+
+    it("the docs' Errors row, word for word: arrows.pathogen written as the docs write a module (module; then a blank line)", async () => {
+      const docsArrows = {
+        '/arrows.pathogen': `module;\n\n${HEAD}export const tip = Marker('tip', 10, 10) {|m|\n  m.append(head);\n};\n`,
+      };
+      expect(
+        await errorOf(
+          `${MINE}${LINE('mine')}define PathLayer('other') #{ marker-end: tip; }\nlayer('other').apply { M 0 5 L 10 5 }\n`,
+          docsArrows,
+        ),
+      ).toBe(
+        "Line 4, col 12: Duplicate defs ID 'arrows--tip': made in main.pathogen line 4, and as 'tip' in arrows.pathogen line 4. Rename one of them.",
       );
     });
 
@@ -344,10 +358,10 @@ describe('docs: ids from other files', () => {
       const message = await errorOf(
         `import { makeTip } from "./parts/arrows.pathogen";\nlet a = makeTip();\nlet b = makeTip();`,
         {
-          '/parts/arrows.pathogen': `${HEAD}export fn makeTip() {\n  return Marker('arrowhead', 10, 10) {|m|\n    m.append(head);\n  };\n}\n`,
+          '/parts/arrows.pathogen': `module;\n${HEAD}export fn makeTip() {\n  return Marker('arrowhead', 10, 10) {|m|\n    m.append(head);\n  };\n}\n`,
         },
       );
-      expect(message).toMatch(/^parts\/arrows\.pathogen line 3\b.*Duplicate defs ID 'parts-arrows--arrowhead'/);
+      expect(message).toMatch(/^parts\/arrows\.pathogen line 4\b.*Duplicate defs ID 'parts-arrows--arrowhead'/);
       expect(message).toMatch(/\n {2}called from main\.pathogen line 3$/);
     });
 
@@ -355,12 +369,12 @@ describe('docs: ids from other files', () => {
       const message = await errorOf(
         'import { m } from "./a.pathogen";\nimport { n } from "./a--b.pathogen";\nlog(m.id);',
         {
-          '/a.pathogen': "export const m = Mask('b--x');\n",
-          '/a--b.pathogen': "export const n = Mask('x');\n",
+          '/a.pathogen': "module;\nexport const m = Mask('b--x');\n",
+          '/a--b.pathogen': "module;\nexport const n = Mask('x');\n",
         },
       );
       expect(message).toBe(
-        "a--b.pathogen line 1: Duplicate defs ID 'a--b--x': made as 'b--x' in a.pathogen line 1, and as 'x' in a--b.pathogen. Rename one of them.\n" +
+        "a--b.pathogen line 2: Duplicate defs ID 'a--b--x': made as 'b--x' in a.pathogen line 2, and as 'x' in a--b.pathogen. Rename one of them.\n" +
           '  imported from main.pathogen line 2',
       );
     });
@@ -373,7 +387,7 @@ describe('docs: ids from other files', () => {
       if (filter.kind !== 'noise') throw new Error('expected a noise filter');
       return filter.seed;
     };
-    const TEXTURES = { '/textures.pathogen': 'export const grain = NoiseFilter();\n' };
+    const TEXTURES = { '/textures.pathogen': 'module;\nexport const grain = NoiseFilter();\n' };
     const GRAINY = (filter: string): string =>
       `define PathLayer('a') #{ filter: ${filter}; }\nlayer('a').apply { M 0 0 h 10 v 10 z }\n`;
 
@@ -381,15 +395,14 @@ describe('docs: ids from other files', () => {
       const result = await compileFiles(`import { grain } from "./textures.pathogen";\n${GRAINY('grain')}`, TEXTURES);
       expect(defIds(result).filters).toEqual(['textures--pathogen-noise-1']);
       const filter = result.filters[0];
-      expect(filter.kind === 'noise' && filter.seed).toBe(
-        seedAlone(`${TEXTURES['/textures.pathogen']}${GRAINY('grain')}`),
-      );
+      // A module compiled alone draws nothing, but still has its filter.
+      expect(filter.kind === 'noise' && filter.seed).toBe(seedAlone(TEXTURES['/textures.pathogen']));
     });
 
     it('one made by an exported fn is numbered in the order your file calls it, beside your own', async () => {
       const result = await compileFiles(
         `import { freshGrain } from "./textures.pathogen";\nlet mine = NoiseFilter();\nlet first = freshGrain();\nlet second = freshGrain();\n${GRAINY('mine')}define PathLayer('b') #{ filter: first; }\ndefine PathLayer('c') #{ filter: second; }\nlayer('b').apply { M 0 0 h 5 }\nlayer('c').apply { M 0 0 h 5 }\n`,
-        { '/textures.pathogen': 'export fn freshGrain() {\n  return NoiseFilter();\n}\n' },
+        { '/textures.pathogen': 'module;\nexport fn freshGrain() {\n  return NoiseFilter();\n}\n' },
       );
       expect(defIds(result).filters).toEqual([
         'pathogen-noise-1',
@@ -464,7 +477,7 @@ const SHAPE_LAYER = (style: string): string => `define PathLayer('a') ${style}\n
 
 describe.each(Object.entries(KINDS))('%s from another file', (_name, kind) => {
   const full = `kit--${kind.written}`;
-  const kit = (extra = ''): Record<string, string> => ({ '/kit.pathogen': `export ${kind.make}\n${extra}` });
+  const kit = (extra = ''): Record<string, string> => ({ '/kit.pathogen': `module;\nexport ${kind.make}\n${extra}` });
   const emitted = (result: CompileResult): string[] => Object.values(defIds(result)).flat();
 
   it('as a value, or its .id', async () => {
@@ -510,32 +523,13 @@ describe.each(Object.entries(KINDS))('%s from another file', (_name, kind) => {
   });
 });
 
-// --- what step 3 already does, pinned here ----------------------------------------
-
-describe("an imported file's subscriptions", () => {
-  it('run on its own drawing at the end of its load, before its values are fixed', async () => {
-    const corners =
-      "define PathLayer('shape') #{ stroke: Color('#000'); }\nlet corners = [];\nlayer('shape').subscribe('endpoint') {|corner|\n  corners.push(corner);\n};\nlayer('shape').apply { M 0 0 L 10 0 L 10 10 }\nexport fn cornerCount() {\n  return corners.length;\n}\n";
-    // As many endpoints as a query over the same layer finds in the file compiled on its own.
-    const alone = compile(`${corners}log(layer('shape').queryAll('endpoint').length);`);
-    const expected = alone.logs.map((l) => l.parts.map((p) => p.value).join(' '));
-    expect(expected).toEqual(['2']);
-    const result = await compileFiles('import { cornerCount } from "./corners.pathogen";\nlog(cornerCount());', {
-      '/corners.pathogen': corners,
-    });
-    expect(mainLogs(result)).toEqual(expected);
-    // Its drawing stays in its file.
-    expect(result.layers.find((l) => l.name === 'shape')).toBeUndefined();
-  });
-});
-
 describe('trace: true', () => {
   // The search skips the trace-only fields (they're never drawn), so tracing
   // must not change which defs reach the SVG.
   it('gives the same defs as without trace', async () => {
     const main = `import { tip } from "./parts/arrows.pathogen";\n${LINE('tip')}`;
     const files = {
-      '/parts/arrows.pathogen': `${HEAD}const sky = LinearGradient('sky', 0, 0, 1, 0);\nexport const tip = Marker('arrowhead', 10, 10) {|m|\n  m.append(head, #{ fill: sky; });\n};\n`,
+      '/parts/arrows.pathogen': `module;\n${HEAD}const sky = LinearGradient('sky', 0, 0, 1, 0);\nexport const tip = Marker('arrowhead', 10, 10) {|m|\n  m.append(head, #{ fill: sky; });\n};\n`,
     };
     const modules = await graphOf(main, files);
     const traced = compile(main, { modules, trace: true });

@@ -52,6 +52,8 @@ const pathOf = (result: CompileResult): string => result.layers[0]?.data ?? '';
 // --- the docs' files -------------------------------------------------------
 
 const FIRST_GEARS = `// parts/gears.pathogen
+module;
+
 const toothDepth = 6;
 
 export fn gear(center, radius, teeth) {
@@ -81,6 +83,8 @@ gear(Point(150, 50), 28, 8);
 `;
 
 const EXPORTING_GEARS = `// parts/gears.pathogen
+module;
+
 export const toothDepth = 6;
 
 export enum Teeth { Few = 8, Standard = 12, Fine = 20 }
@@ -94,12 +98,6 @@ export fn gear(center, radius, teeth) {
 fn hub(center, radius) {
   circle(center.x, center.y, radius * 0.3);
 }
-
-// parts/gears.pathogen, continued: a demo of every size
-define ViewBox(0, 0, 300, 100);
-gear(Point(50, 50), 30, Teeth.Few);
-gear(Point(150, 50), 30, Teeth.Standard);
-gear(Point(250, 50), 30, Teeth.Fine);
 `;
 
 describe('the first example', () => {
@@ -157,7 +155,7 @@ describe('importing', () => {
       {
         ...files,
         '/parts/kit.pathogen':
-          '// parts/kit.pathogen\nimport * as gears from "./gears.pathogen";\n\nexport const gear = gears.gear;\nexport const Teeth = gears.Teeth;\n',
+          '// parts/kit.pathogen\nmodule;\n\nimport * as gears from "./gears.pathogen";\n\nexport const gear = gears.gear;\nexport const Teeth = gears.Teeth;\n',
       },
     );
     const direct = await compileFiles(
@@ -202,12 +200,11 @@ describe('importing', () => {
 });
 
 describe('an imported file runs on its own', () => {
-  it('its drawing, layers and ViewBox stay in it; its logs reach you with its file', async () => {
+  it('only its exports reach you: no layers, no ViewBox; its logs reach you with its file', async () => {
     const lib = `// lib.pathogen
-define ViewBox(0, 0, 999, 999);
-define PathLayer('demo') #{ stroke: red; }
-layer('demo').apply { M 0 0 L 9 9 }
-M 5 5 L 6 6
+module;
+
+const look = #{ stroke: red; };
 log("loading");
 export const size = 3;
 `;
@@ -216,16 +213,16 @@ export const size = 3;
     });
     expect(result.layers.map((l) => [l.name, l.data])).toEqual([['default', 'M 0 0 L 3 0']]);
     expect(result.viewBox).toBeUndefined();
-    expect(result.logs.map((l) => [l.file, l.line, l.parts[0].value])).toEqual([['lib.pathogen', 6, 'loading']]);
+    expect(result.logs.map((l) => [l.file, l.line, l.parts[0].value])).toEqual([['lib.pathogen', 5, 'loading']]);
   });
 
   it('each file runs once per compile, however many files import it', async () => {
     const result = await compileFiles(
       'import { a } from "./a.pathogen";\nimport { b } from "./b.pathogen";\nlog(a + b);',
       {
-        '/a.pathogen': 'import { base } from "./base.pathogen";\nexport const a = base;',
-        '/b.pathogen': 'import { base } from "./base.pathogen";\nexport const b = base;',
-        '/base.pathogen': 'log("base runs");\nexport const base = 1;',
+        '/a.pathogen': 'module;\nimport { base } from "./base.pathogen";\nexport const a = base;',
+        '/b.pathogen': 'module;\nimport { base } from "./base.pathogen";\nexport const b = base;',
+        '/base.pathogen': 'module;\nlog("base runs");\nexport const base = 1;',
       },
     );
     expect(result.logs.filter((l) => l.file === 'base.pathogen')).toHaveLength(1);
@@ -234,9 +231,9 @@ export const size = 3;
 
   it("a warning raised in an imported fn names that file, even though it lands in the caller's list", async () => {
     const result = await compileFiles('import { bad } from "./warn.pathogen";\nM 0 0\nbad();', {
-      '/warn.pathogen': '// warn.pathogen\nexport fn bad() {\n  L calc(0 / 0) 0\n}\n',
+      '/warn.pathogen': '// warn.pathogen\nmodule;\nexport fn bad() {\n  L calc(0 / 0) 0\n}\n',
     });
-    expect(result.warnings.map((w) => [w.code, w.file, w.line])).toEqual([['non-finite', 'warn.pathogen', 3]]);
+    expect(result.warnings.map((w) => [w.code, w.file, w.line])).toEqual([['non-finite', 'warn.pathogen', 4]]);
   });
 });
 
@@ -264,6 +261,8 @@ layer('teeth').apply {
 
   it('`viewbox` is the drawing that calls it (decision 28)', async () => {
     const marks = `// parts/marks.pathogen
+module;
+
 export fn centerMark(size) {
   let middleX = calc(viewbox.originX + viewbox.width / 2);
   let middleY = calc(viewbox.originY + viewbox.height / 2);
@@ -272,9 +271,6 @@ export fn centerMark(size) {
   M middleX calc(middleY - size)
   v calc(size * 2)
 }
-
-define ViewBox(0, 0, 1000, 1000);
-centerMark(1);
 `;
     const result = await compileFiles(
       'import { centerMark } from "./parts/marks.pathogen";\ndefine ViewBox(0, 0, 200, 100);\ncenterMark(10);',
@@ -284,19 +280,48 @@ centerMark(1);
   });
 
   it("`viewbox` inside a path block in an imported fn is still the caller's", async () => {
+    // The module has no box to read: only the caller's can make the block.
     const result = await compileFiles(
       'import { box } from "./box.pathogen";\ndefine ViewBox(0, 0, 40, 20);\nlet shape = box();\nM 0 0\nshape.draw();',
       {
-        '/box.pathogen':
-          'export fn box() {\n  return @{ h viewbox.width v viewbox.height };\n}\ndefine ViewBox(0, 0, 1, 1);\n',
+        '/box.pathogen': 'module;\nexport fn box() {\n  return @{ h viewbox.width v viewbox.height };\n}\n',
       },
     );
     expect(pathOf(result)).toBe('M 0 0 h 40 v 20');
+  });
+
+  it('a module has no layers to give you: export a style, and a fn that picks your layer by name (the docs inks)', async () => {
+    const inks = `// inks.pathogen
+module;
+
+export const inkStyle = #{ stroke: Color('#333'); stroke-width: 1.5; fill: none; };
+
+export fn inkLine(start, end) {
+  layer('ink').apply {
+    M start.x start.y
+    L end.x end.y
+  }
+}
+`;
+    const main = `// main.pathogen
+import { inkStyle, inkLine } from "./inks.pathogen";
+
+define PathLayer('ink') inkStyle;
+inkLine(Point(10, 10), Point(90, 40));
+`;
+    const result = await compileFiles(main, { '/inks.pathogen': inks });
+    const oneFile = compile(
+      "define PathLayer('ink') #{ stroke: Color('#333'); stroke-width: 1.5; fill: none; };\nlayer('ink').apply {\n  M 10 10\n  L 90 40\n}\n",
+    );
+    expect(result.layers).toEqual(oneFile.layers);
+    expect(result.layers.find((l) => l.name === 'ink')?.data).toBe('M 10 10 L 90 40');
   });
 });
 
 describe('errors in other files (docs/modules.md, word for word)', () => {
   const GEARS_WITH_ASSERT = `// parts/gears.pathogen
+module;
+
 export fn gear(center, radius, teeth) {
   assert(teeth >= 3, 'a gear needs at least 3 teeth');
   star(center.x, center.y, radius, radius - 6, teeth);
@@ -310,20 +335,21 @@ gear(Point(55, 50), 40, 2);
 
   it('an error in an imported fn names its file, then the call', async () => {
     expect(await errorOf(MAIN, { '/parts/gears.pathogen': GEARS_WITH_ASSERT })).toBe(
-      'parts/gears.pathogen line 3, col 3: assertion failed: a gear needs at least 3 teeth\n  called from main.pathogen line 4',
+      'parts/gears.pathogen line 5, col 3: assertion failed: a gear needs at least 3 teeth\n  called from main.pathogen line 4',
     );
   });
 
   it('through a third file, each file on the way is listed', async () => {
+    // Both files laid out like the docs' gears file: `// file`, `module;`, a blank line.
     const message = await errorOf(MAIN, {
       '/parts/gears.pathogen':
-        '// parts/gears.pathogen\nimport { check } from "./teeth.pathogen";\nexport fn gear(center, radius, teeth) {\n  check(teeth);\n}\n',
+        '// parts/gears.pathogen\nmodule;\n\nimport { check } from "./teeth.pathogen";\n\nexport fn gear(center, radius, teeth) {\n  check(teeth);\n}\n',
       '/parts/teeth.pathogen':
-        "// parts/teeth.pathogen\nexport fn check(teeth) {\n  assert(teeth >= 3, 'a gear needs at least 3 teeth');\n}\n",
+        "// parts/teeth.pathogen\nmodule;\n\nexport fn check(teeth) {\n  assert(teeth >= 3, 'a gear needs at least 3 teeth');\n}\n",
     });
     expect(message).toBe(
-      'parts/teeth.pathogen line 3, col 3: assertion failed: a gear needs at least 3 teeth\n' +
-        '  called from parts/gears.pathogen line 4\n' +
+      'parts/teeth.pathogen line 5, col 3: assertion failed: a gear needs at least 3 teeth\n' +
+        '  called from parts/gears.pathogen line 7\n' +
         '  called from main.pathogen line 4',
     );
   });
@@ -331,39 +357,41 @@ gear(Point(55, 50), 40, 2);
   it('calls within one file are not listed', async () => {
     const message = await errorOf(MAIN, {
       '/parts/gears.pathogen':
-        "// parts/gears.pathogen\nexport fn gear(center, radius, teeth) {\n  check(teeth);\n}\nfn check(teeth) {\n  assert(teeth >= 3, 'too few');\n}\n",
+        "// parts/gears.pathogen\nmodule;\nexport fn gear(center, radius, teeth) {\n  check(teeth);\n}\nfn check(teeth) {\n  assert(teeth >= 3, 'too few');\n}\n",
     });
     expect(message).toBe(
-      'parts/gears.pathogen line 6, col 3: assertion failed: too few\n  called from main.pathogen line 4',
+      'parts/gears.pathogen line 7, col 3: assertion failed: too few\n  called from main.pathogen line 4',
     );
   });
 
-  it("a mistake in an imported file's own code names your import", async () => {
+  it("a mistake in an imported file's own code names your import (the `;` left off the first gears file)", async () => {
     const message = await errorOf('// main.pathogen\nimport { gear } from "./parts/gears.pathogen";\n', {
-      '/parts/gears.pathogen': '// parts/gears.pathogen\nconst toothDepth = 6\nconst hubRatio = 0.3;\n',
+      '/parts/gears.pathogen': FIRST_GEARS.replace('const toothDepth = 6;', 'const toothDepth = 6'),
     });
-    expect(message).toBe("parts/gears.pathogen line 2, col 21: Missing ';'\n  imported from main.pathogen line 2");
+    expect(message).toBe(
+      "parts/gears.pathogen line 4, col 21: Missing ';' after const declaration\n  imported from main.pathogen line 2",
+    );
   });
 
   it('two imports deep, each import is listed', async () => {
     const message = await errorOf('// main.pathogen\nimport { gear } from "./parts/gears.pathogen";\n', {
       '/parts/gears.pathogen':
-        '// parts/gears.pathogen\nimport { tooth } from "./teeth.pathogen";\nexport const gear = 1;\n',
-      '/parts/teeth.pathogen': '// parts/teeth.pathogen\nconst tooth = 6\n',
+        '// parts/gears.pathogen\nmodule;\n\nimport { tooth } from "./teeth.pathogen";\nexport const gear = 1;\n',
+      '/parts/teeth.pathogen': '// parts/teeth.pathogen\nmodule;\nconst tooth = 6\n',
     });
     expect(message).toBe(
-      "parts/teeth.pathogen line 2, col 16: Missing ';'\n" +
-        '  imported from parts/gears.pathogen line 2\n' +
+      "parts/teeth.pathogen line 3, col 16: Missing ';' after const declaration\n" +
+        '  imported from parts/gears.pathogen line 4\n' +
         '  imported from main.pathogen line 2',
     );
   });
 
   it('an error with no position of its own, in another file, gets the line of its statement', async () => {
     const message = await errorOf('import { f } from "./f.pathogen";\nf(5);', {
-      '/f.pathogen': '// f.pathogen\nexport fn f(n) {\n  let x = 1;\n  return n.x;\n}\n',
+      '/f.pathogen': '// f.pathogen\nmodule;\nexport fn f(n) {\n  let x = 1;\n  return n.x;\n}\n',
     });
     expect(message).toBe(
-      "f.pathogen line 4: Cannot access property 'x' on non-object value\n  called from main.pathogen line 2",
+      "f.pathogen line 5: Cannot access property 'x' on non-object value\n  called from main.pathogen line 2",
     );
   });
 
@@ -402,19 +430,19 @@ gear(Point(55, 50), 40, 2);
       [
         4,
         1,
-        'parts/gears.pathogen line 3, col 3: assertion failed: a gear needs at least 3 teeth\n  called from main.pathogen line 4',
+        'parts/gears.pathogen line 5, col 3: assertion failed: a gear needs at least 3 teeth\n  called from main.pathogen line 4',
       ],
     ]);
   });
 
   it('and a failed load on the import', async () => {
     const main = '// main.pathogen\nimport { gear } from "./parts/gears.pathogen";\n';
-    const modules = await graphOf(main, { '/parts/gears.pathogen': 'const a = 1\nconst b = 2;' });
+    const modules = await graphOf(main, { '/parts/gears.pathogen': 'module;\nconst a = 1\nconst b = 2;' });
     const diagnostics = getDiagnostics(new StringTextDocument(main), { modules });
     expect(diagnostics.map((d) => [d.range.start.line + 1, d.message])).toEqual([
       [
         2,
-        "parts/gears.pathogen line 1, col 12: Missing ';' after const declaration\n  imported from main.pathogen line 2",
+        "parts/gears.pathogen line 2, col 12: Missing ';' after const declaration\n  imported from main.pathogen line 2",
       ],
     ]);
   });
@@ -436,6 +464,7 @@ describe('without files', () => {
 
 describe('callbacks across files (step 3 code review)', () => {
   const KIT = `// kit.pathogen
+module;
 export fn bad(v) {
   return v.nope();
 }
@@ -457,7 +486,7 @@ export fn each(xs, f) {
     } catch (e) {
       expect(e).toBeInstanceOf(ModuleTraceError);
       expect((e as Error).message).toBe(
-        "kit.pathogen line 3, col 10: Cannot call method 'nope' on non-array value\n  called from main.pathogen line 2",
+        "kit.pathogen line 4, col 10: Cannot call method 'nope' on non-array value\n  called from main.pathogen line 2",
       );
       expect((e as ModuleTraceError).site?.line).toBe(2);
     }
@@ -469,7 +498,7 @@ export fn each(xs, f) {
     });
     expect(message).toBe(
       "main.pathogen line 2, col 20: Cannot call method 'nope' on non-array value\n" +
-        '  called from kit.pathogen line 6\n' +
+        '  called from kit.pathogen line 7\n' +
         '  called from main.pathogen line 2',
     );
   });
@@ -480,7 +509,7 @@ export fn each(xs, f) {
   });
 
   it('a namespace passed to a fn, or held in another name, still calls and draws', async () => {
-    const files = { '/kit.pathogen': 'export fn dot(x) {\n  circle(x, 0, 1);\n}\n' };
+    const files = { '/kit.pathogen': 'module;\nexport fn dot(x) {\n  circle(x, 0, 1);\n}\n' };
     const viaParam = await compileFiles(
       'import * as kit from "./kit.pathogen";\nfn use(ns) {\n  ns.dot(7);\n}\nM 0 0;\nuse(kit);',
       files,

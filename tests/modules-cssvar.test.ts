@@ -42,7 +42,7 @@ const initialOf = (color: string): string => {
 
 const THEME = {
   '/theme.pathogen':
-    "export const accent = Color(CSSVar('--accent', '#e63946'));\nexport const unused = Color(CSSVar('--unused', '#000000'));\nexport const look = #{ stroke: accent; };\nexport fn tint() {\n  return Color(CSSVar('--tint', '#00ff00'));\n}\n",
+    "module;\nexport const accent = Color(CSSVar('--accent', '#e63946'));\nexport const unused = Color(CSSVar('--unused', '#000000'));\nexport const look = #{ stroke: accent; };\nexport fn tint() {\n  return Color(CSSVar('--tint', '#00ff00'));\n}\n",
 };
 const LAYER = (style: string): string => `define PathLayer('a') ${style}\nlayer('a').apply { M 0 0 L 10 0 }\n`;
 
@@ -69,7 +69,7 @@ describe("an imported file's CSSVar registrations", () => {
   it('through an imported def: a gradient stop with the color', async () => {
     const result = await compileFiles(`import { sky } from "./sky.pathogen";\n${LAYER('#{ fill: sky; }')}`, {
       '/sky.pathogen':
-        "const accent = Color(CSSVar('--accent', '#e63946'));\nexport const sky = LinearGradient('sky', 0, 0, 1, 0) {|g|\n  g.stop(0, accent);\n  g.stop(1, Color('#ffffff'));\n};\n",
+        "module;\nconst accent = Color(CSSVar('--accent', '#e63946'));\nexport const sky = LinearGradient('sky', 0, 0, 1, 0) {|g|\n  g.stop(0, accent);\n  g.stop(1, Color('#ffffff'));\n};\n",
     });
     expect(result.gradients.map((g) => g.id)).toEqual(['sky--sky']);
     expect(registered(result)).toEqual([['--accent', initialOf('#e63946')]]);
