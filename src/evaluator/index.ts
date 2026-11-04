@@ -9069,14 +9069,21 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope): Value {
         if (!arg.fallback)
           throw new Error(formatError('Color(CSSVar(...)) requires a CSSVar with a fallback color', cLine, cCol));
         const oklch = parseColor(arg.fallback);
-        // Collect @property declaration for CSS custom property registration (dedup: first wins)
-        if (scope.evalState && !scope.evalState.cssProperties.has(arg.varName)) {
-          scope.evalState.cssProperties.set(arg.varName, {
-            name: arg.varName,
-            syntax: '<color>',
-            inherits: true,
-            initialValue: oklchToCSS(oklch),
-          });
+        // Collect @property declaration for CSS custom property registration (dedup: first wins).
+        // An imported file's go to the compile's list, and reach the SVG only
+        // when something there uses the variable (defsForOutput).
+        if (scope.evalState) {
+          const registry = importedFileRunning(scope.evalState)
+            ? scope.evalState.moduleDefs!.cssProperties
+            : scope.evalState.cssProperties;
+          if (!registry.has(arg.varName)) {
+            registry.set(arg.varName, {
+              name: arg.varName,
+              syntax: '<color>',
+              inherits: true,
+              initialValue: oklchToCSS(oklch),
+            });
+          }
         }
         return { type: 'ColorValue' as const, oklch, cssVar: { varName: arg.varName, fallback: arg.fallback } };
       }
@@ -9124,6 +9131,11 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope): Value {
       validateCSSIdent(name, 'css-var');
     } catch (e) {
       throw new Error(formatError((e as Error).message, cvLine, cvCol));
+    }
+    // A variable the compiled file's own code uses keeps its own meaning:
+    // an imported file's @property for that name doesn't join (defsForOutput).
+    if (scope.evalState?.moduleDefs && !importedFileRunning(scope.evalState)) {
+      scope.evalState.moduleDefs.ownVarNames.add(name);
     }
     let fallback: string | null = null;
     if (call.args.length === 2) {
@@ -11673,11 +11685,28 @@ const TRACE_ONLY_FIELDS = new Set(['records', 'commands']);
  * is searched in turn, so the defs it refers to join too. The search reads
  * every string in the output rather than a list of fields, so a field added
  * later can't leave a reference dangling.
+ *
+ * An imported file's `@property` rule joins the same way, when `var(--name`
+ * appears in the output and the compiled file's own code doesn't use that
+ * name. A registered property takes its initial value instead of a var()
+ * fallback, so joining one for a name your file uses would change how your
+ * own color renders. Leaving it out costs the imported color nothing: its
+ * fallback is the same color as the rule's initial value.
  */
-function defsForOutput(evalState: EvaluationState, layers: LayerOutput[]): DefsMaps {
+function defsForOutput(
+  evalState: EvaluationState,
+  layers: LayerOutput[],
+): { defs: DefsMaps; cssProperties: CSSPropertyDeclaration[] } {
   const moduleDefs = evalState.moduleDefs;
-  // No imported defs: nothing to join, clash with or warn about.
-  if (!moduleDefs || moduleDefs.imported.size === 0) return evalState;
+  // Nothing imported to join, clash with or warn about.
+  if (!moduleDefs || (moduleDefs.imported.size === 0 && moduleDefs.cssProperties.size === 0)) {
+    return { defs: evalState, cssProperties: Array.from(evalState.cssProperties.values()) };
+  }
+  const cssProperties = new Map(evalState.cssProperties);
+  const joinVar = (name: string): void => {
+    const rule = moduleDefs.cssProperties.get(name);
+    if (rule && !cssProperties.has(name) && !moduleDefs.ownVarNames.has(name)) cssProperties.set(name, rule);
+  };
   const merged: DefsMaps = {
     masks: new Map(evalState.masks),
     clipPaths: new Map(evalState.clipPaths),
@@ -11706,6 +11735,7 @@ function defsForOutput(evalState: EvaluationState, layers: LayerOutput[]): DefsM
     const item = pending[i];
     if (typeof item === 'string') {
       if (item.includes('url(#')) for (const match of item.matchAll(RAW_URL_REF)) join(match[1]);
+      if (item.includes('var(--')) for (const match of item.matchAll(CSS_VAR_REF)) joinVar(match[1]);
       continue;
     }
     if (typeof item !== 'object' || item === null || seen.has(item)) continue;
@@ -11731,8 +11761,11 @@ function defsForOutput(evalState: EvaluationState, layers: LayerOutput[]): DefsM
       break;
     }
   }
-  return merged;
+  return { defs: merged, cssProperties: [...cssProperties.values()] };
 }
+
+/** A CSS custom property used in a value: `var(--accent` (names as CSSVar() validates them). */
+const CSS_VAR_REF = /var\((--[A-Za-z_][A-Za-z0-9_-]*)/g;
 
 function buildCompileResult(mainAccum: PathStore, evalState: EvaluationState): CompileResult {
   const layers: LayerOutput[] = [];
@@ -11954,8 +11987,8 @@ function buildCompileResult(mainAccum: PathStore, evalState: EvaluationState): C
     }
   }
 
-  // With files, the imported defs the output refers to join the compiled file's own.
-  const defs = defsForOutput(evalState, layers);
+  // With files, the imported defs and @property rules the output refers to join the compiled file's own.
+  const { defs, cssProperties } = defsForOutput(evalState, layers);
 
   // Build masks output
   const masks: MaskOutput[] = [];
@@ -12283,9 +12316,6 @@ function buildCompileResult(mainAccum: PathStore, evalState: EvaluationState): C
     }
   }
 
-  // Build cssProperties output
-  const cssProperties: CSSPropertyDeclaration[] = Array.from(evalState.cssProperties.values());
-
   const { reports: missingGlyphs, warnings: missingGlyphWarnings } = buildMissingGlyphReports(
     evalState.missingGlyphs,
   );
@@ -12383,7 +12413,14 @@ function programRootScope(evalState: EvaluationState, modules: ModuleGraph | und
   drawingValues = undefined;
   if (modules) {
     scope.module = { path: modules.entry, label: fileLabel(modules.entry), entry: true };
-    evalState.moduleDefs = { entryLabel: scope.module.label, imported: new Map(), ownOrigins: new Map(), rawRefs: new Map() };
+    evalState.moduleDefs = {
+      entryLabel: scope.module.label,
+      imported: new Map(),
+      ownOrigins: new Map(),
+      rawRefs: new Map(),
+      cssProperties: new Map(),
+      ownVarNames: new Set(),
+    };
     const fixed: FixedValues = new WeakMap();
     const drawing: DrawingValues = new WeakMap();
     fixedValues = fixed;

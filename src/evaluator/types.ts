@@ -1333,6 +1333,10 @@ export interface ModuleDefs {
   ownOrigins: Map<string, { line?: number; column?: number }>;
   /** Raw `url(#…)` ids the compiled file wrote, once per id and position, checked at the end against imported ids. */
   rawRefs: Map<string, { id: string; line?: number; column?: number }>;
+  /** `@property` rules imported files' code registered (Color(CSSVar(…))), by name; the first wins. */
+  cssProperties: Map<string, CSSPropertyDeclaration>;
+  /** Variable names the compiled file's own code made a CSSVar for; an imported rule for one never joins. */
+  ownVarNames: Set<string>;
 }
 
 /** The project path and label of the file a root scope runs (docs/modules.md). */

@@ -266,7 +266,7 @@ Masks, clip paths, gradients, patterns, markers and filters each have an id in t
 - **The prefix comes from the file the code is written in.** That holds even when an imported fn runs because your file called it.
 - **Values carry their full id.** With an imported marker `tip`, `marker-end: tip;` just works.
 - **Raw `url(#…)` strings don't cross files.** Inside `parts/arrows.pathogen`, `url(#arrowhead)` means that file's own arrowhead. In your file, use the imported value: a raw `url(#arrowhead)` that only matches another file's id is a warning that names the full id. The warning's code is `imported-id`; `--strict=imported-id` makes it an error.
-- **Only what's used reaches your SVG.** An imported file's defs and CSSVar registrations appear in your SVG only when your drawing uses them.
+- **Only what's used reaches your SVG.** An imported file's defs and CSSVar registrations appear in your SVG only when your drawing uses them. CSSVar names aren't prefixed: every file that uses a name shares one CSS variable. When your own code uses a name, another file's [`@property` rule](#color-property-declarations) for it is left out, since its color would win over yours: importing a file never changes how your own colors render. If your own code registers the name, imported colors that use it follow your rule.
 - **Escaping:** a file name with characters an id can't hold is escaped.
   - A leading digit gets a `_` in front: `2026-poster.pathogen` gives `_2026-poster--`.
   - Any other character besides letters, digits, `_` and `-` becomes `_` plus its Unicode code point in lowercase hex. A space gives `_20`, so `my gears.pathogen` gives `my_20gears--`; `é` gives `_e9`; and a folder named `v1.2` gives `v1_2e2`.
