@@ -78,7 +78,7 @@ Warnings never stop compilation unless you ask them to. They appear:
 - in the playground console, marked with a **warn** chip, and as a yellow squiggle on the line in the editor;
 - in VS Code, as a warning diagnostic on the line;
 - on the CLI's stderr as `file:line:col: warning: message` (exit code stays 0 unless [strict mode](#debug-strict-mode) is on);
-- in the structured result under `warnings`, one entry per instance, each with a `code`: `corner-op`, `cut`, `annotation-transfer`, `font-glyph`, `gradient`, `non-finite`, `layer-transform`, `marker-space`, or `ignored-move` — and, from the CLI and VS Code font loader, `font-weight` (the nearest weight was used) or `font-load` (a font was skipped because downloads are off; see [Font Loading by Environment](#path-blocks-font-loading-by-environment)).
+- in the structured result under `warnings`, one entry per instance, each with a `code`: `corner-op`, `cut`, `annotation-transfer`, `font-glyph`, `gradient`, `non-finite`, `layer-transform`, `marker-space`, `ignored-move`, or `imported-id` (a raw `url(#…)` in your file that only matches an id made in an imported file; see [Ids from other files](#modules-ids-from-other-files)) — and, from the CLI and VS Code font loader, `font-weight` (the nearest weight was used) or `font-load` (a font was skipped because downloads are off; see [Font Loading by Environment](#path-blocks-font-loading-by-environment)).
 
 A warning is also mirrored into the log stream as a `[warn] …` entry, so `--log-file` output keeps everything in one place.
 

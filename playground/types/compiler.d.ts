@@ -45,7 +45,8 @@ export type WarningCode =
   | 'marker-space'
   | 'ignored-move'
   | 'font-weight'
-  | 'font-load';
+  | 'font-load'
+  | 'imported-id';
 
 export interface CompileWarning {
   code: WarningCode;

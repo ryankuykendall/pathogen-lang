@@ -118,6 +118,44 @@ export function isFixedValueError(e: unknown): e is Error {
   return e instanceof Error && FIXED_CLAUSE.test(e.message);
 }
 
+// --- Ids from other files (docs/modules.md "Ids from other files") ---
+
+/** Two files whose paths give the same id prefix (`parts-gears.pathogen`, `parts/gears.pathogen`). */
+export function idPrefixClashError(firstLabel: string, secondLabel: string, prefix: string): string {
+  return `${firstLabel} and ${secondLabel} would both give their ids the prefix ${prefix}. Rename one of the files.`;
+}
+
+/** One of the compiled file's ids is an imported def's full id, and both reach the SVG. */
+export function importedIdClashError(
+  id: string,
+  entryLabel: string,
+  ownLine: number | undefined,
+  written: string,
+  fileLabelText: string,
+  line: number | undefined,
+): string {
+  const at = (n: number | undefined): string => (n === undefined ? '' : ` line ${n}`);
+  return `Duplicate defs ID '${id}': made in ${entryLabel}${at(ownLine)}, and as '${written}' in ${fileLabelText}${at(line)}. Rename one of them.`;
+}
+
+/** Two imported files whose prefix and id add up to the same full id (`a.pathogen`'s `b--x`, `a--b.pathogen`'s `x`). */
+export function crossFileIdClashError(
+  id: string,
+  firstWritten: string,
+  firstLabel: string,
+  firstLine: number | undefined,
+  written: string,
+  label: string,
+): string {
+  const at = firstLine === undefined ? '' : ` line ${firstLine}`;
+  return `Duplicate defs ID '${id}': made as '${firstWritten}' in ${firstLabel}${at}, and as '${written}' in ${label}. Rename one of them.`;
+}
+
+/** A raw `url(#…)` in the compiled file that matches only an imported def's id as written (a warning). */
+export function importedRawRefWarning(written: string, fileLabelText: string, fullId: string): string {
+  return `url(#${written}) matches no id in this file. The ${written} made in ${fileLabelText} is ${fullId} in your SVG; use the imported value instead.`;
+}
+
 // --- Loading files (src/host/load-modules.ts; docs/modules.md "Errors") ---
 
 /** A path as a file label in messages: the project path without its leading `/`. */

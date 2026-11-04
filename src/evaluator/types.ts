@@ -817,6 +817,7 @@ export const WARNING_CODES = [
   'ignored-move', // a move right before a stdlib shape, which starts its own subpath (ignored-move.ts)
   'font-weight', // font loader: the requested weight wasn't available, the nearest was used
   'font-load', // font loader: a family was skipped because downloads are off
+  'imported-id', // a raw url(#…) in the compiled file that only matches an imported file's id
 ] as const;
 
 export type WarningCode = (typeof WARNING_CODES)[number];
@@ -1305,6 +1306,33 @@ export interface EvaluationState {
    * finds its file. Absent when the compile was given no files.
    */
   modules?: Map<string, ModuleRecord>;
+  /** Ids across files (docs/modules.md "Ids from other files"). Shared like `modules`; absent without files. */
+  moduleDefs?: ModuleDefs;
+}
+
+/** The six maps of defs on an EvaluationState, by name. */
+export type DefsMapName = 'masks' | 'clipPaths' | 'gradients' | 'patterns' | 'markers' | 'filters';
+
+/** A def made by an imported file's code, which reaches the SVG only when something there refers to it. */
+export interface ImportedDef {
+  kind: DefsMapName;
+  value: MaskValue | ClipPathValue | GradientValue | PatternValue | MarkerValue | FilterValue;
+  /** The id as written (or the auto id), before the file's prefix. */
+  written: string;
+  file: ModuleIdentity;
+  line?: number;
+}
+
+/** What a compile with files knows about ids across its files. */
+export interface ModuleDefs {
+  /** The compiled file's label, for messages. */
+  entryLabel: string;
+  /** Defs made by imported files' code, by full id. */
+  imported: Map<string, ImportedDef>;
+  /** Where the compiled file made each of its own ids, for the clash message. */
+  ownOrigins: Map<string, { line?: number; column?: number }>;
+  /** Raw `url(#…)` ids the compiled file wrote, once per id and position, checked at the end against imported ids. */
+  rawRefs: Map<string, { id: string; line?: number; column?: number }>;
 }
 
 /** The project path and label of the file a root scope runs (docs/modules.md). */
@@ -1315,6 +1343,8 @@ export interface ModuleIdentity {
   label: string;
   /** The compiled file, as opposed to one it imports. */
   entry: boolean;
+  /** The prefix the file's ids get (`parts-gears--`); imported files only. */
+  idPrefix?: string;
 }
 
 /** An imported file after it has run. */

@@ -150,6 +150,24 @@ export function exportsOf(program: Program): { exported: string[]; declared: Set
   return { exported, declared };
 }
 
+/**
+ * The prefix an imported file's ids get (docs/modules.md "Ids from other
+ * files"): its path from the project folder, `/` turned into `-` and
+ * `.pathogen` dropped, then `--`. Any character an id can't hold becomes `_`
+ * plus its Unicode code point in lowercase hex, and a leading digit (or `-`,
+ * which an id can't start with either) gets a `_` in front.
+ */
+export function idPrefixOf(projectPath: string): string {
+  const stem = projectPath.replace(/^\//, '').replace(/\.pathogen$/, '');
+  let out = '';
+  for (const ch of stem) {
+    if (ch === '/') out += '-';
+    else if (/^[A-Za-z0-9_-]$/.test(ch)) out += ch;
+    else out += `_${ch.codePointAt(0)!.toString(16)}`;
+  }
+  return `${/^[0-9-]/.test(out) ? '_' : ''}${out}--`;
+}
+
 /** The file a scope runs: its root scope's identity, when the compile has files. */
 export function moduleOf(scope: Scope): ModuleIdentity | undefined {
   let root = scope;

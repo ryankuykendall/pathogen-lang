@@ -7,12 +7,16 @@ import { RESERVED_UNIT_NAMES, reservedNameBindingError, reservedNameReferenceErr
 import { BUILTIN_NAMES, builtinNameError, builtinNamespaceType } from '../builtin-names';
 import {
   assignImportedError,
+  crossFileIdClashError,
   declaredNotExportedError,
   declareImportedAgainError,
   fileLabel,
   fixedNamespaceError,
   fixedValueError,
   fixedVariableError,
+  idPrefixClashError,
+  importedIdClashError,
+  importedRawRefWarning,
   isFixedValueError,
   moduleNotLoadedError,
   namespaceNoExportError,
@@ -27,6 +31,7 @@ import {
   CHANGES_RECEIVER,
   exportsOf,
   fixFile,
+  idPrefixOf,
   importedFromSteps,
   ModuleTraceError,
   moduleOf,
@@ -164,6 +169,7 @@ import type {
   CSSPropertyDeclaration,
   CSSVarValue,
   CyclerValue,
+  DefsMapName,
   ElevationShadowFilterValue,
   EmbossFilterValue,
   EndpointValue,
@@ -181,6 +187,7 @@ import type {
   GridOutOfBoundsMode,
   GridValue,
   GroupLayerState,
+  ImportedDef,
   InnerShadowFilterValue,
   LayerOutput,
   LayerReference,
@@ -810,25 +817,78 @@ function hashFilterId(id: string): number {
 }
 
 /** Allocate a fresh, conflict-free auto-id for an inline filter constructor. */
-function nextAutoFilterId(state: EvaluationState, kind: string): string {
-  let n = 1;
-  // Bump until we land on a free id across all defs maps (auto-ids only ever collide with each other in practice).
+function nextAutoFilterId(state: EvaluationState, kind: string): { id: string; written: string } {
+  // Bump until we land on a free id (auto-ids only ever collide with each other in practice).
   // Termination: the id space is unbounded — we walk until we find a gap.
-  // eslint-disable-next-line no-constant-condition
-  while (true) {
-    const id = `pathogen-${kind}-${n}`;
-    if (
-      !state.masks.has(id) &&
-      !state.clipPaths.has(id) &&
-      !state.gradients.has(id) &&
-      !state.patterns.has(id) &&
-      !state.markers.has(id) &&
-      !state.filters.has(id)
-    ) {
-      return id;
-    }
-    n++;
+  // In an imported file the count is that file's own, so its first filter is
+  // numbered 1 whether the file is imported or compiled alone.
+  for (let n = 1; ; n++) {
+    const written = `pathogen-${kind}-${n}`;
+    const id = defsIdFor(state, written);
+    if (!defsIdUsed(state, id)) return { id, written };
   }
+}
+
+const DEFS_MAPS: readonly DefsMapName[] = ['masks', 'clipPaths', 'gradients', 'patterns', 'markers', 'filters'];
+
+/** The imported file whose code is running, or undefined in the compiled file's own code. */
+function importedFileRunning(state: EvaluationState): ModuleIdentity | undefined {
+  return state.moduleDefs && runningFile && !runningFile.entry ? runningFile : undefined;
+}
+
+/**
+ * The id a def gets (docs/modules.md "Ids from other files"): as written in
+ * the compiled file's code, with the file's prefix in an imported file's code,
+ * whichever file's drawing it runs in.
+ */
+function defsIdFor(state: EvaluationState, written: string): string {
+  const file = importedFileRunning(state);
+  return file ? `${file.idPrefix}${written}` : written;
+}
+
+/** Whether `id` is already a def's: among the compiled file's own, or among imported files' defs. */
+function defsIdUsed(state: EvaluationState, id: string): boolean {
+  if (importedFileRunning(state)) return state.moduleDefs!.imported.has(id);
+  return DEFS_MAPS.some((name) => state[name].has(id));
+}
+
+/**
+ * defsIdUsed, for a def being made with that id: the caller throws the
+ * duplicate error when it is. When another imported file made the id (a prefix
+ * and an id can add up the same way: `a.pathogen`'s `b--x` and
+ * `a--b.pathogen`'s `x`), the error names both files instead.
+ */
+function defsIdTaken(state: EvaluationState, id: string): boolean {
+  const file = importedFileRunning(state);
+  const other = file && state.moduleDefs!.imported.get(id);
+  if (file && other && other.file.path !== file.path) {
+    const written = id.slice(file.idPrefix?.length ?? 0);
+    throw new Error(crossFileIdClashError(id, other.written, other.file.label, other.line, written, file.label));
+  }
+  return defsIdUsed(state, id);
+}
+
+/**
+ * Keep a new def: the compiled file's go into its maps, and with files their
+ * position is noted for the clash message. An imported file's go into the
+ * compile's shared list, and reach the SVG only when something there refers
+ * to them (defsForOutput).
+ */
+function storeDef(
+  state: EvaluationState,
+  kind: DefsMapName,
+  id: string,
+  value: ImportedDef['value'],
+  written: string,
+  at: unknown,
+): void {
+  const file = importedFileRunning(state);
+  if (file) {
+    state.moduleDefs!.imported.set(id, { kind, value, written, file, line: getLine(at) });
+    return;
+  }
+  (state[kind] as unknown as Map<string, ImportedDef['value']>).set(id, value);
+  state.moduleDefs?.ownOrigins.set(id, { line: getLine(at), column: getCol(at) });
 }
 
 interface NoiseFilterStyleDefaults {
@@ -857,7 +917,8 @@ function noiseFilterDefaults(style: NoiseFilterStyleName): NoiseFilterStyleDefau
   }
 }
 
-function makeDefaultNoiseFilter(id: string, style: NoiseFilterStyleName): NoiseFilterValue {
+/** `written` is the id before an imported file's prefix: the seed comes from it (docs/modules.md "Noise seeds"). */
+function makeDefaultNoiseFilter(id: string, style: NoiseFilterStyleName, written: string = id): NoiseFilterValue {
   const d = noiseFilterDefaults(style);
   return {
     type: 'FilterValue',
@@ -868,7 +929,7 @@ function makeDefaultNoiseFilter(id: string, style: NoiseFilterStyleName): NoiseF
     octaves: d.octaves,
     amount: d.amount,
     monochrome: d.monochrome,
-    seed: hashFilterId(id),
+    seed: hashFilterId(written),
     blend: d.blend,
     contrast: d.contrast,
     stitch: d.stitch,
@@ -2184,6 +2245,10 @@ function evaluateStyleBlockLiteral(expr: StyleBlockLiteral, scope: Scope): Style
     const emittedVars: string[] = [];
     let angleUnitError: string | null = null;
     let mustThrow: Error | null = null;
+    // Whether the value is text as written (raw CSS, a string literal, a name
+    // that isn't a variable) rather than a value worked out from a variable or
+    // call. Only written text has raw ids (docs/modules.md "Ids from other files").
+    let fromSource = true;
     try {
       const parseResult = expressionParser.parse(prop.value);
       if (parseResult.status && parseResult.value) {
@@ -2216,6 +2281,7 @@ function evaluateStyleBlockLiteral(expr: StyleBlockLiteral, scope: Scope): Style
           angleUnitError = describeMissingAngleUnit('style.rotate', 'rotate:', parseResult.value);
         }
         const evaluated = evaluateExpression(parseResult.value, scope);
+        fromSource = parseResult.value.type === 'StringLiteral';
         if (typeof evaluated === 'number') {
           resolvedValue = formatNum(evaluated);
           trusted = true;
@@ -2315,6 +2381,7 @@ function evaluateStyleBlockLiteral(expr: StyleBlockLiteral, scope: Scope): Style
         if (spliced !== null) {
           resolvedValue = spliced;
           didSplice = true;
+          fromSource = false;
         }
       } catch (e) {
         if (styleValueMustThrow(e)) throw styleValueError(prop, expr, e, scope);
@@ -2375,9 +2442,54 @@ function evaluateStyleBlockLiteral(expr: StyleBlockLiteral, scope: Scope): Style
         throw new Error(formatError((e as Error).message, eLine, eCol));
       }
     }
+    // Text that mixes written url(#…) with a ${…} splice counts as a value
+    // (fromSource is false); the CSS validator only accepts a url() that is
+    // the whole value, so such text doesn't get this far today.
+    if (scope.evalState?.moduleDefs && resolvedValue.includes('url(#')) {
+      resolvedValue = idRefsAcrossFiles(scope.evalState, resolvedValue, prop.valueLoc ?? prop.loc, fromSource);
+    }
     storeStyleProperty(properties, prop.name, resolvedValue);
   }
   return { type: 'StyleBlockValue', properties };
+}
+
+const RAW_URL_REF = /url\(#([A-Za-z_][A-Za-z0-9_-]*)\)/g;
+
+/**
+ * The `url(#x)` references in a style value, in a compile with files
+ * (docs/modules.md "Ids from other files").
+ *
+ * In an imported file's code, `x` written in the text (`fromSource`) is that
+ * file's own name, so it gets the file's prefix, whether or not `x` has been
+ * made yet. A value worked out from a variable or call keeps its id when a def
+ * has that id: a def's value carries its full id, and `m.id` of a mask the
+ * compiled file passed in names that mask. A value naming no def's id is a
+ * name kept in a string (`const nm = 'cut';`), which is the file's own name
+ * too, as it would be compiled alone.
+ *
+ * In the compiled file's code, written text stays as is and is noted, so one
+ * matching only another file's id can be pointed out at the end (defsForOutput).
+ */
+function idRefsAcrossFiles(
+  state: EvaluationState,
+  value: string,
+  loc: { line?: number; column?: number } | undefined,
+  fromSource: boolean,
+): string {
+  const moduleDefs = state.moduleDefs!;
+  const file = importedFileRunning(state);
+  if (file) {
+    const known = (id: string): boolean => moduleDefs.imported.has(id) || DEFS_MAPS.some((name) => state[name].has(id));
+    return value.replace(RAW_URL_REF, (whole, id: string) =>
+      !fromSource && known(id) ? whole : `url(#${file.idPrefix}${id})`,
+    );
+  }
+  if (!fromSource) return value;
+  for (const match of value.matchAll(RAW_URL_REF)) {
+    const key = `${match[1]}:${loc?.line}:${loc?.column}`;
+    if (!moduleDefs.rawRefs.has(key)) moduleDefs.rawRefs.set(key, { id: match[1], line: loc?.line, column: loc?.column });
+  }
+  return value;
 }
 
 /**
@@ -2961,6 +3073,8 @@ function sharedProgramState(parent: EvaluationState | undefined) {
     dispatching: parent?.dispatching,
     // An import inside a fn called from a block still finds its file.
     modules: parent?.modules,
+    // A def made in a block is still a def of the file whose code made it.
+    moduleDefs: parent?.moduleDefs,
   } satisfies Partial<EvaluationState> & Record<Exclude<keyof EvaluationState, BlockLocalField>, unknown>;
 }
 
@@ -6139,17 +6253,11 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
       }
       case 'inherit': {
         if (expr.args.length !== 1) throw mError('Gradient.inherit() expects 1 argument (newId)');
-        const newId = evaluateExpression(expr.args[0], scope);
-        if (typeof newId !== 'string') throw mError('Gradient.inherit() argument must be a string');
+        const written = evaluateExpression(expr.args[0], scope);
+        if (typeof written !== 'string') throw mError('Gradient.inherit() argument must be a string');
         if (!scope.evalState) throw mError('Gradient.inherit() requires evaluation context');
-        if (
-          scope.evalState.masks.has(newId) ||
-          scope.evalState.clipPaths.has(newId) ||
-          scope.evalState.gradients.has(newId) ||
-          scope.evalState.patterns.has(newId) ||
-          scope.evalState.markers.has(newId) ||
-          scope.evalState.filters.has(newId)
-        ) {
+        const newId = defsIdFor(scope.evalState, written);
+        if (defsIdTaken(scope.evalState, newId)) {
           throw new Error(
             `Duplicate defs ID '${newId}': a Mask, ClipPath, Gradient, Pattern, Marker, or Filter with this ID already exists`,
           );
@@ -6171,7 +6279,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
           innerRadius: obj.innerRadius,
           innerFill: obj.innerFill,
         };
-        scope.evalState.gradients.set(newId, child);
+        storeDef(scope.evalState, 'gradients', newId, child, written, expr);
         return child;
       }
       // Mesh-specific methods
@@ -6639,13 +6747,14 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
         if (expr.args.length < 2 || expr.args.length > 4)
           throw mError('Marker.fromPathBlock() expects 2-4 arguments (id, shape, styles?, anchor?)');
         if (!scope.evalState) throw mError('Marker.fromPathBlock() requires evaluation context');
-        const id = evaluateExpression(expr.args[0], scope);
-        if (typeof id !== 'string') throw mError('Marker.fromPathBlock() first argument must be a string');
+        const written = evaluateExpression(expr.args[0], scope);
+        if (typeof written !== 'string') throw mError('Marker.fromPathBlock() first argument must be a string');
         try {
-          validateCSSIdent(id, 'marker-id');
+          validateCSSIdent(written, 'marker-id');
         } catch (e) {
           throw mError((e as Error).message);
         }
+        const id = defsIdFor(scope.evalState, written);
         const shapeArg = evaluateExpression(expr.args[1], scope);
         let commands: PathBlockCommand[];
         let projected = false;
@@ -6670,14 +6779,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
           if (typeof anchorArg !== 'string') throw mError('Marker.fromPathBlock() anchor must be a BBoxAnchor value');
           anchor = anchorArg;
         }
-        if (
-          scope.evalState.masks.has(id) ||
-          scope.evalState.clipPaths.has(id) ||
-          scope.evalState.gradients.has(id) ||
-          scope.evalState.patterns.has(id) ||
-          scope.evalState.markers.has(id) ||
-          scope.evalState.filters.has(id)
-        ) {
+        if (defsIdTaken(scope.evalState, id)) {
           throw mError(`Duplicate defs ID '${id}': a Mask, ClipPath, Gradient, Pattern, Marker, or Filter with this ID already exists`);
         }
         // The viewBox IS the shape's bounding box (what .boundingBox() reports), padded by
@@ -6704,7 +6806,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
           preserveAspectRatio: 'xMidYMid meet',
           paths: [{ d: defsPathData(commands), styles, bbox: bb, projected, loc: { line: getLine(expr), column: getCol(expr) } }],
         };
-        scope.evalState.markers.set(id, marker);
+        storeDef(scope.evalState, 'markers', id, marker, written, expr);
         return marker;
       }
       default:
@@ -8182,21 +8284,15 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope): Value {
       throw new Error(`Mask() expects 1 argument (id), got ${call.args.length}`);
     }
     if (!scope.evalState) throw new Error('Mask() requires evaluation context');
-    const id = evaluateExpression(call.args[0], scope);
-    if (typeof id !== 'string') throw new Error('Mask() argument must be a string');
-    try { validateCSSIdent(id, 'mask-id'); } catch (e) { throw new Error(formatError((e as Error).message, getLine(call), getCol(call))); }
-    if (
-      scope.evalState.masks.has(id) ||
-      scope.evalState.clipPaths.has(id) ||
-      scope.evalState.gradients.has(id) ||
-      scope.evalState.patterns.has(id) ||
-      scope.evalState.markers.has(id) ||
-      scope.evalState.filters.has(id)
-    ) {
+    const written = evaluateExpression(call.args[0], scope);
+    if (typeof written !== 'string') throw new Error('Mask() argument must be a string');
+    try { validateCSSIdent(written, 'mask-id'); } catch (e) { throw new Error(formatError((e as Error).message, getLine(call), getCol(call))); }
+    const id = defsIdFor(scope.evalState, written);
+    if (defsIdTaken(scope.evalState, id)) {
       throw new Error(`Duplicate defs ID '${id}': a Mask, ClipPath, Gradient, Pattern, Marker, or Filter with this ID already exists`);
     }
     const mask: MaskValue = { type: 'MaskValue', id, paths: [] };
-    scope.evalState.masks.set(id, mask);
+    storeDef(scope.evalState, 'masks', id, mask, written, call);
     return mask;
   }
 
@@ -8206,21 +8302,15 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope): Value {
       throw new Error(`ClipPath() expects 1 argument (id), got ${call.args.length}`);
     }
     if (!scope.evalState) throw new Error('ClipPath() requires evaluation context');
-    const id = evaluateExpression(call.args[0], scope);
-    if (typeof id !== 'string') throw new Error('ClipPath() argument must be a string');
-    try { validateCSSIdent(id, 'clippath-id'); } catch (e) { throw new Error(formatError((e as Error).message, getLine(call), getCol(call))); }
-    if (
-      scope.evalState.masks.has(id) ||
-      scope.evalState.clipPaths.has(id) ||
-      scope.evalState.gradients.has(id) ||
-      scope.evalState.patterns.has(id) ||
-      scope.evalState.markers.has(id) ||
-      scope.evalState.filters.has(id)
-    ) {
+    const written = evaluateExpression(call.args[0], scope);
+    if (typeof written !== 'string') throw new Error('ClipPath() argument must be a string');
+    try { validateCSSIdent(written, 'clippath-id'); } catch (e) { throw new Error(formatError((e as Error).message, getLine(call), getCol(call))); }
+    const id = defsIdFor(scope.evalState, written);
+    if (defsIdTaken(scope.evalState, id)) {
       throw new Error(`Duplicate defs ID '${id}': a Mask, ClipPath, Gradient, Pattern, Marker, or Filter with this ID already exists`);
     }
     const clipPath: ClipPathValue = { type: 'ClipPathValue', id, paths: [] };
-    scope.evalState.clipPaths.set(id, clipPath);
+    storeDef(scope.evalState, 'clipPaths', id, clipPath, written, call);
     return clipPath;
   }
 
@@ -8236,10 +8326,11 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope): Value {
       );
     }
     if (!scope.evalState) throw new Error('LinearGradient() requires evaluation context');
-    const id = evaluateExpression(call.args[0], scope);
-    if (typeof id !== 'string')
+    const written = evaluateExpression(call.args[0], scope);
+    if (typeof written !== 'string')
       throw new Error(formatError('LinearGradient() first argument must be a string', getLine(call), getCol(call)));
-    try { validateCSSIdent(id, 'gradient-id'); } catch (e) { throw new Error(formatError((e as Error).message, getLine(call), getCol(call))); }
+    try { validateCSSIdent(written, 'gradient-id'); } catch (e) { throw new Error(formatError((e as Error).message, getLine(call), getCol(call))); }
+    const id = defsIdFor(scope.evalState, written);
     const x1 = evaluateExpression(call.args[1], scope);
     const y1 = evaluateExpression(call.args[2], scope);
     const x2 = evaluateExpression(call.args[3], scope);
@@ -8249,14 +8340,7 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope): Value {
         formatError('LinearGradient() coordinate arguments must be numbers', getLine(call), getCol(call)),
       );
     }
-    if (
-      scope.evalState.masks.has(id) ||
-      scope.evalState.clipPaths.has(id) ||
-      scope.evalState.gradients.has(id) ||
-      scope.evalState.patterns.has(id) ||
-      scope.evalState.markers.has(id) ||
-      scope.evalState.filters.has(id)
-    ) {
+    if (defsIdTaken(scope.evalState, id)) {
       throw new Error(`Duplicate defs ID '${id}': a Mask, ClipPath, Gradient, Pattern, Marker, or Filter with this ID already exists`);
     }
     const gradient: GradientValue = {
@@ -8266,7 +8350,7 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope): Value {
       attrs: { x1: String(x1), y1: String(y1), x2: String(x2), y2: String(y2) },
       stops: [],
     };
-    scope.evalState.gradients.set(id, gradient);
+    storeDef(scope.evalState, 'gradients', id, gradient, written, call);
     // Execute trailing block if present
     if (call.block) {
       const blockScope = createScope(scope);
@@ -8288,10 +8372,11 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope): Value {
       );
     }
     if (!scope.evalState) throw new Error('RadialGradient() requires evaluation context');
-    const id = evaluateExpression(call.args[0], scope);
-    if (typeof id !== 'string')
+    const written = evaluateExpression(call.args[0], scope);
+    if (typeof written !== 'string')
       throw new Error(formatError('RadialGradient() first argument must be a string', getLine(call), getCol(call)));
-    try { validateCSSIdent(id, 'gradient-id'); } catch (e) { throw new Error(formatError((e as Error).message, getLine(call), getCol(call))); }
+    try { validateCSSIdent(written, 'gradient-id'); } catch (e) { throw new Error(formatError((e as Error).message, getLine(call), getCol(call))); }
+    const id = defsIdFor(scope.evalState, written);
     const cx = evaluateExpression(call.args[1], scope);
     const cy = evaluateExpression(call.args[2], scope);
     const r = evaluateExpression(call.args[3], scope);
@@ -8313,14 +8398,7 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope): Value {
         throw new Error(formatError('RadialGradient() fy must be a number', getLine(call), getCol(call)));
       attrs.fy = String(fy);
     }
-    if (
-      scope.evalState.masks.has(id) ||
-      scope.evalState.clipPaths.has(id) ||
-      scope.evalState.gradients.has(id) ||
-      scope.evalState.patterns.has(id) ||
-      scope.evalState.markers.has(id) ||
-      scope.evalState.filters.has(id)
-    ) {
+    if (defsIdTaken(scope.evalState, id)) {
       throw new Error(`Duplicate defs ID '${id}': a Mask, ClipPath, Gradient, Pattern, Marker, or Filter with this ID already exists`);
     }
     const gradient: GradientValue = {
@@ -8330,7 +8408,7 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope): Value {
       attrs,
       stops: [],
     };
-    scope.evalState.gradients.set(id, gradient);
+    storeDef(scope.evalState, 'gradients', id, gradient, written, call);
     // Execute trailing block if present
     if (call.block) {
       const blockScope = createScope(scope);
@@ -8352,10 +8430,11 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope): Value {
       );
     }
     if (!scope.evalState) throw new Error('Pattern() requires evaluation context');
-    const id = evaluateExpression(call.args[0], scope);
-    if (typeof id !== 'string')
+    const written = evaluateExpression(call.args[0], scope);
+    if (typeof written !== 'string')
       throw new Error(formatError('Pattern() first argument must be a string', getLine(call), getCol(call)));
-    try { validateCSSIdent(id, 'pattern-id'); } catch (e) { throw new Error(formatError((e as Error).message, getLine(call), getCol(call))); }
+    try { validateCSSIdent(written, 'pattern-id'); } catch (e) { throw new Error(formatError((e as Error).message, getLine(call), getCol(call))); }
+    const id = defsIdFor(scope.evalState, written);
     const x = evaluateExpression(call.args[1], scope);
     const y = evaluateExpression(call.args[2], scope);
     const w = evaluateExpression(call.args[3], scope);
@@ -8363,14 +8442,7 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope): Value {
     if (typeof x !== 'number' || typeof y !== 'number' || typeof w !== 'number' || typeof h !== 'number') {
       throw new Error(formatError('Pattern() coordinate arguments must be numbers', getLine(call), getCol(call)));
     }
-    if (
-      scope.evalState.masks.has(id) ||
-      scope.evalState.clipPaths.has(id) ||
-      scope.evalState.gradients.has(id) ||
-      scope.evalState.patterns.has(id) ||
-      scope.evalState.markers.has(id) ||
-      scope.evalState.filters.has(id)
-    ) {
+    if (defsIdTaken(scope.evalState, id)) {
       throw new Error(`Duplicate defs ID '${id}': a Mask, ClipPath, Gradient, Pattern, Marker, or Filter with this ID already exists`);
     }
     const pattern: PatternValue = {
@@ -8382,7 +8454,7 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope): Value {
       height: h,
       paths: [],
     };
-    scope.evalState.patterns.set(id, pattern);
+    storeDef(scope.evalState, 'patterns', id, pattern, written, call);
     // Execute trailing block if present
     if (call.block) {
       const blockScope = createScope(scope);
@@ -8404,10 +8476,11 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope): Value {
       );
     }
     if (!scope.evalState) throw new Error('Marker() requires evaluation context');
-    const id = evaluateExpression(call.args[0], scope);
-    if (typeof id !== 'string')
+    const written = evaluateExpression(call.args[0], scope);
+    if (typeof written !== 'string')
       throw new Error(formatError('Marker() first argument must be a string', getLine(call), getCol(call)));
-    try { validateCSSIdent(id, 'marker-id'); } catch (e) { throw new Error(formatError((e as Error).message, getLine(call), getCol(call))); }
+    try { validateCSSIdent(written, 'marker-id'); } catch (e) { throw new Error(formatError((e as Error).message, getLine(call), getCol(call))); }
+    const id = defsIdFor(scope.evalState, written);
     const markerWidth = evaluateExpression(call.args[1], scope);
     const markerHeight = evaluateExpression(call.args[2], scope);
     if (typeof markerWidth !== 'number' || typeof markerHeight !== 'number') {
@@ -8415,14 +8488,7 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope): Value {
         formatError('Marker() markerWidth and markerHeight arguments must be numbers', getLine(call), getCol(call)),
       );
     }
-    if (
-      scope.evalState.masks.has(id) ||
-      scope.evalState.clipPaths.has(id) ||
-      scope.evalState.gradients.has(id) ||
-      scope.evalState.patterns.has(id) ||
-      scope.evalState.markers.has(id) ||
-      scope.evalState.filters.has(id)
-    ) {
+    if (defsIdTaken(scope.evalState, id)) {
       throw new Error(`Duplicate defs ID '${id}': a Mask, ClipPath, Gradient, Pattern, Marker, or Filter with this ID already exists`);
     }
     const marker: MarkerValue = {
@@ -8438,7 +8504,7 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope): Value {
       preserveAspectRatio: 'xMidYMid meet',
       paths: [],
     };
-    scope.evalState.markers.set(id, marker);
+    storeDef(scope.evalState, 'markers', id, marker, written, call);
     // Execute trailing block if present
     if (call.block) {
       const blockScope = createScope(scope);
@@ -8557,9 +8623,9 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope): Value {
       );
     }
     if (!scope.evalState) throw new Error('NoiseFilter() requires evaluation context');
-    const id = nextAutoFilterId(scope.evalState, 'noise');
-    const filter: NoiseFilterValue = makeDefaultNoiseFilter(id, 'grain');
-    scope.evalState.filters.set(id, filter);
+    const { id, written } = nextAutoFilterId(scope.evalState, 'noise');
+    const filter: NoiseFilterValue = makeDefaultNoiseFilter(id, 'grain', written);
+    storeDef(scope.evalState, 'filters', id, filter, written, call);
     if (call.block) {
       const blockScope = createScope(scope);
       setVariable(blockScope, call.block.params[0], filter);
@@ -8580,9 +8646,9 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope): Value {
       );
     }
     if (!scope.evalState) throw new Error('GlowFilter() requires evaluation context');
-    const id = nextAutoFilterId(scope.evalState, 'glow');
+    const { id, written } = nextAutoFilterId(scope.evalState, 'glow');
     const filter: GlowFilterValue = makeDefaultGlowFilter(id);
-    scope.evalState.filters.set(id, filter);
+    storeDef(scope.evalState, 'filters', id, filter, written, call);
     if (call.block) {
       const blockScope = createScope(scope);
       setVariable(blockScope, call.block.params[0], filter);
@@ -8603,9 +8669,9 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope): Value {
       );
     }
     if (!scope.evalState) throw new Error('EmbossFilter() requires evaluation context');
-    const id = nextAutoFilterId(scope.evalState, 'emboss');
+    const { id, written } = nextAutoFilterId(scope.evalState, 'emboss');
     const filter: EmbossFilterValue = makeDefaultEmbossFilter(id);
-    scope.evalState.filters.set(id, filter);
+    storeDef(scope.evalState, 'filters', id, filter, written, call);
     if (call.block) {
       const blockScope = createScope(scope);
       setVariable(blockScope, call.block.params[0], filter);
@@ -8626,9 +8692,9 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope): Value {
       );
     }
     if (!scope.evalState) throw new Error('ElevationShadowFilter() requires evaluation context');
-    const id = nextAutoFilterId(scope.evalState, 'elevation-shadow');
+    const { id, written } = nextAutoFilterId(scope.evalState, 'elevation-shadow');
     const filter: ElevationShadowFilterValue = makeDefaultElevationShadowFilter(id);
-    scope.evalState.filters.set(id, filter);
+    storeDef(scope.evalState, 'filters', id, filter, written, call);
     if (call.block) {
       const blockScope = createScope(scope);
       setVariable(blockScope, call.block.params[0], filter);
@@ -8649,9 +8715,9 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope): Value {
       );
     }
     if (!scope.evalState) throw new Error('InnerShadowFilter() requires evaluation context');
-    const id = nextAutoFilterId(scope.evalState, 'inner-shadow');
+    const { id, written } = nextAutoFilterId(scope.evalState, 'inner-shadow');
     const filter: InnerShadowFilterValue = makeDefaultInnerShadowFilter(id);
-    scope.evalState.filters.set(id, filter);
+    storeDef(scope.evalState, 'filters', id, filter, written, call);
     if (call.block) {
       const blockScope = createScope(scope);
       setVariable(blockScope, call.block.params[0], filter);
@@ -8681,7 +8747,7 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope): Value {
       );
     }
     if (!scope.evalState) throw new Error('PixelateFilter() requires evaluation context');
-    const id = nextAutoFilterId(scope.evalState, 'pixelate');
+    const { id, written } = nextAutoFilterId(scope.evalState, 'pixelate');
     const filter: PixelateFilterValue = makeDefaultPixelateFilter(id);
     if (call.args.length === 3) {
       const w = evaluateExpression(call.args[0], scope);
@@ -8702,7 +8768,7 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope): Value {
       filter.height = h as number;
       filter.radius = r as number;
     }
-    scope.evalState.filters.set(id, filter);
+    storeDef(scope.evalState, 'filters', id, filter, written, call);
     if (call.block) {
       const blockScope = createScope(scope);
       setVariable(blockScope, call.block.params[0], filter);
@@ -8724,9 +8790,9 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope): Value {
       );
     }
     if (!scope.evalState) throw new Error('MotionBlurFilter() requires evaluation context');
-    const id = nextAutoFilterId(scope.evalState, 'motion-blur');
+    const { id, written } = nextAutoFilterId(scope.evalState, 'motion-blur');
     const filter: MotionBlurFilterValue = makeDefaultMotionBlurFilter(id);
-    scope.evalState.filters.set(id, filter);
+    storeDef(scope.evalState, 'filters', id, filter, written, call);
     if (call.block) {
       const blockScope = createScope(scope);
       setVariable(blockScope, call.block.params[0], filter);
@@ -8747,23 +8813,17 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope): Value {
       );
     }
     if (!scope.evalState) throw new Error('ConicGradient() requires evaluation context');
-    const id = evaluateExpression(call.args[0], scope);
-    if (typeof id !== 'string')
+    const written = evaluateExpression(call.args[0], scope);
+    if (typeof written !== 'string')
       throw new Error(formatError('ConicGradient() first argument must be a string', getLine(call), getCol(call)));
-    try { validateCSSIdent(id, 'gradient-id'); } catch (e) { throw new Error(formatError((e as Error).message, getLine(call), getCol(call))); }
+    try { validateCSSIdent(written, 'gradient-id'); } catch (e) { throw new Error(formatError((e as Error).message, getLine(call), getCol(call))); }
+    const id = defsIdFor(scope.evalState, written);
     const cx = evaluateExpression(call.args[1], scope);
     const cy = evaluateExpression(call.args[2], scope);
     if (typeof cx !== 'number' || typeof cy !== 'number') {
       throw new Error(formatError('ConicGradient() coordinate arguments must be numbers', getLine(call), getCol(call)));
     }
-    if (
-      scope.evalState.masks.has(id) ||
-      scope.evalState.clipPaths.has(id) ||
-      scope.evalState.gradients.has(id) ||
-      scope.evalState.patterns.has(id) ||
-      scope.evalState.markers.has(id) ||
-      scope.evalState.filters.has(id)
-    ) {
+    if (defsIdTaken(scope.evalState, id)) {
       throw new Error(`Duplicate defs ID '${id}': a Mask, ClipPath, Gradient, Pattern, Marker, or Filter with this ID already exists`);
     }
     const gradient: GradientValue = {
@@ -8779,7 +8839,7 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope): Value {
       innerRadius: 0,
       innerFill: 'transparent',
     };
-    scope.evalState.gradients.set(id, gradient);
+    storeDef(scope.evalState, 'gradients', id, gradient, written, call);
     // Execute trailing block if present
     if (call.block) {
       const blockScope = createScope(scope);
@@ -8801,10 +8861,11 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope): Value {
       );
     }
     if (!scope.evalState) throw new Error('MeshGradient() requires evaluation context');
-    const id = evaluateExpression(call.args[0], scope);
-    if (typeof id !== 'string')
+    const written = evaluateExpression(call.args[0], scope);
+    if (typeof written !== 'string')
       throw new Error(formatError('MeshGradient() first argument must be a string', getLine(call), getCol(call)));
-    try { validateCSSIdent(id, 'gradient-id'); } catch (e) { throw new Error(formatError((e as Error).message, getLine(call), getCol(call))); }
+    try { validateCSSIdent(written, 'gradient-id'); } catch (e) { throw new Error(formatError((e as Error).message, getLine(call), getCol(call))); }
+    const id = defsIdFor(scope.evalState, written);
     const width = evaluateExpression(call.args[1], scope);
     const height = evaluateExpression(call.args[2], scope);
     const cols = evaluateExpression(call.args[3], scope);
@@ -8824,14 +8885,7 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope): Value {
         formatError('MeshGradient() cols and rows must be >= 2 (need at least one patch)', getLine(call), getCol(call)),
       );
     }
-    if (
-      scope.evalState.masks.has(id) ||
-      scope.evalState.clipPaths.has(id) ||
-      scope.evalState.gradients.has(id) ||
-      scope.evalState.patterns.has(id) ||
-      scope.evalState.markers.has(id) ||
-      scope.evalState.filters.has(id)
-    ) {
+    if (defsIdTaken(scope.evalState, id)) {
       throw new Error(`Duplicate defs ID '${id}': a Mask, ClipPath, Gradient, Pattern, Marker, or Filter with this ID already exists`);
     }
     // Build grid: rows × cols MeshPointValue objects, evenly spaced
@@ -8863,7 +8917,7 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope): Value {
       meshCols: cols,
       meshRows: rows,
     };
-    scope.evalState.gradients.set(id, gradient);
+    storeDef(scope.evalState, 'gradients', id, gradient, written, call);
     // Execute trailing block if present
     if (call.block) {
       const blockScope = createScope(scope);
@@ -8885,23 +8939,17 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope): Value {
       );
     }
     if (!scope.evalState) throw new Error('FreeformGradient() requires evaluation context');
-    const id = evaluateExpression(call.args[0], scope);
-    if (typeof id !== 'string')
+    const written = evaluateExpression(call.args[0], scope);
+    if (typeof written !== 'string')
       throw new Error(formatError('FreeformGradient() first argument must be a string', getLine(call), getCol(call)));
-    try { validateCSSIdent(id, 'gradient-id'); } catch (e) { throw new Error(formatError((e as Error).message, getLine(call), getCol(call))); }
+    try { validateCSSIdent(written, 'gradient-id'); } catch (e) { throw new Error(formatError((e as Error).message, getLine(call), getCol(call))); }
+    const id = defsIdFor(scope.evalState, written);
     const width = evaluateExpression(call.args[1], scope);
     const height = evaluateExpression(call.args[2], scope);
     if (typeof width !== 'number' || typeof height !== 'number') {
       throw new Error(formatError('FreeformGradient() width and height must be numbers', getLine(call), getCol(call)));
     }
-    if (
-      scope.evalState.masks.has(id) ||
-      scope.evalState.clipPaths.has(id) ||
-      scope.evalState.gradients.has(id) ||
-      scope.evalState.patterns.has(id) ||
-      scope.evalState.markers.has(id) ||
-      scope.evalState.filters.has(id)
-    ) {
+    if (defsIdTaken(scope.evalState, id)) {
       throw new Error(`Duplicate defs ID '${id}': a Mask, ClipPath, Gradient, Pattern, Marker, or Filter with this ID already exists`);
     }
     const gradient: GradientValue = {
@@ -8915,7 +8963,7 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope): Value {
       freeformHeight: height,
       falloff: 2.0,
     };
-    scope.evalState.gradients.set(id, gradient);
+    storeDef(scope.evalState, 'gradients', id, gradient, written, call);
     // Execute trailing block if present
     if (call.block) {
       const blockScope = createScope(scope);
@@ -8937,23 +8985,17 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope): Value {
       );
     }
     if (!scope.evalState) throw new Error('TopoGradient() requires evaluation context');
-    const id = evaluateExpression(call.args[0], scope);
-    if (typeof id !== 'string')
+    const written = evaluateExpression(call.args[0], scope);
+    if (typeof written !== 'string')
       throw new Error(formatError('TopoGradient() first argument must be a string', getLine(call), getCol(call)));
-    try { validateCSSIdent(id, 'gradient-id'); } catch (e) { throw new Error(formatError((e as Error).message, getLine(call), getCol(call))); }
+    try { validateCSSIdent(written, 'gradient-id'); } catch (e) { throw new Error(formatError((e as Error).message, getLine(call), getCol(call))); }
+    const id = defsIdFor(scope.evalState, written);
     const width = evaluateExpression(call.args[1], scope);
     const height = evaluateExpression(call.args[2], scope);
     if (typeof width !== 'number' || typeof height !== 'number') {
       throw new Error(formatError('TopoGradient() width and height must be numbers', getLine(call), getCol(call)));
     }
-    if (
-      scope.evalState.masks.has(id) ||
-      scope.evalState.clipPaths.has(id) ||
-      scope.evalState.gradients.has(id) ||
-      scope.evalState.patterns.has(id) ||
-      scope.evalState.markers.has(id) ||
-      scope.evalState.filters.has(id)
-    ) {
+    if (defsIdTaken(scope.evalState, id)) {
       throw new Error(`Duplicate defs ID '${id}': a Mask, ClipPath, Gradient, Pattern, Marker, or Filter with this ID already exists`);
     }
     const gradient: GradientValue = {
@@ -8970,7 +9012,7 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope): Value {
       topoIterations: 200,
       topoBlend: 1.0,
     };
-    scope.evalState.gradients.set(id, gradient);
+    storeDef(scope.evalState, 'gradients', id, gradient, written, call);
     // Execute trailing block if present
     if (call.block) {
       const blockScope = createScope(scope);
@@ -11575,6 +11617,86 @@ function subpathData(commands: PathBlockCommand[]): string[] {
   });
 }
 
+/** The six defs maps, as buildCompileResult reads them. */
+type DefsMaps = Pick<EvaluationState, DefsMapName>;
+
+/**
+ * A layer's `trace: true` fields (traceFields): what ran, for debugging. The
+ * SVG is never drawn from them, so they can't refer to a def, and walking
+ * them would cost as much as the drawing.
+ */
+const TRACE_ONLY_FIELDS = new Set(['records', 'commands']);
+
+/**
+ * The defs that reach the SVG (docs/modules.md "Ids from other files"). The
+ * compiled file's own always do. In a compile with files, an imported file's
+ * def joins them only when something in the output refers to it: a `url(#id)`
+ * in any string (a style, another def's content, a style block resolved while
+ * its file loaded, an id written raw) or a gradient's `href`. A def that joins
+ * is searched in turn, so the defs it refers to join too. The search reads
+ * every string in the output rather than a list of fields, so a field added
+ * later can't leave a reference dangling.
+ */
+function defsForOutput(evalState: EvaluationState, layers: LayerOutput[]): DefsMaps {
+  const moduleDefs = evalState.moduleDefs;
+  // No imported defs: nothing to join, clash with or warn about.
+  if (!moduleDefs || moduleDefs.imported.size === 0) return evalState;
+  const merged: DefsMaps = {
+    masks: new Map(evalState.masks),
+    clipPaths: new Map(evalState.clipPaths),
+    gradients: new Map(evalState.gradients),
+    patterns: new Map(evalState.patterns),
+    markers: new Map(evalState.markers),
+    filters: new Map(evalState.filters),
+  };
+  const pending: unknown[] = [layers, ...DEFS_MAPS.map((name) => [...evalState[name].values()])];
+  const join = (id: string): void => {
+    const def = moduleDefs.imported.get(id);
+    if (!def) return;
+    // A reference names an id, so it reaches whichever def has it: with one
+    // of the compiled file's own ids, both would.
+    if (DEFS_MAPS.some((name) => evalState[name].has(id))) {
+      const own = moduleDefs.ownOrigins.get(id);
+      const message = importedIdClashError(id, moduleDefs.entryLabel, own?.line, def.written, def.file.label, def.line);
+      throw new Error(formatError(message, own?.line, own?.column));
+    }
+    if (merged[def.kind].has(id)) return;
+    (merged[def.kind] as unknown as Map<string, ImportedDef['value']>).set(id, def.value);
+    pending.push(def.value);
+  };
+  const seen = new Set<object>();
+  for (let i = 0; i < pending.length; i++) {
+    const item = pending[i];
+    if (typeof item === 'string') {
+      if (item.includes('url(#')) for (const match of item.matchAll(RAW_URL_REF)) join(match[1]);
+      continue;
+    }
+    if (typeof item !== 'object' || item === null || seen.has(item)) continue;
+    seen.add(item);
+    if (Array.isArray(item)) {
+      for (const element of item) pending.push(element);
+      continue;
+    }
+    // A gradient's href names the gradient it inherits from (Gradient.inherit).
+    const isGradient = (item as { type?: unknown }).type === 'GradientValue';
+    for (const [key, value] of Object.entries(item)) {
+      if (key === 'href' && isGradient && typeof value === 'string') join(value);
+      else if (!TRACE_ONLY_FIELDS.has(key)) pending.push(value);
+    }
+  }
+  // A raw url(#x) in the compiled file that names no id of its own, but is
+  // what another file wrote before its prefix.
+  for (const ref of moduleDefs.rawRefs.values()) {
+    if (DEFS_MAPS.some((name) => merged[name].has(ref.id))) continue;
+    for (const [fullId, def] of moduleDefs.imported) {
+      if (def.written !== ref.id) continue;
+      warn(evalState, 'imported-id', importedRawRefWarning(ref.id, def.file.label, fullId), ref);
+      break;
+    }
+  }
+  return merged;
+}
+
 function buildCompileResult(mainAccum: PathStore, evalState: EvaluationState): CompileResult {
   const layers: LayerOutput[] = [];
 
@@ -11795,9 +11917,12 @@ function buildCompileResult(mainAccum: PathStore, evalState: EvaluationState): C
     }
   }
 
+  // With files, the imported defs the output refers to join the compiled file's own.
+  const defs = defsForOutput(evalState, layers);
+
   // Build masks output
   const masks: MaskOutput[] = [];
-  for (const [, mask] of evalState.masks) {
+  for (const [, mask] of defs.masks) {
     masks.push({
       id: mask.id,
       elements: mask.paths.map((p) => ({ pathData: p.d, styles: { ...p.styles } })),
@@ -11806,7 +11931,7 @@ function buildCompileResult(mainAccum: PathStore, evalState: EvaluationState): C
 
   // Build clipPaths output
   const clipPaths: ClipPathOutput[] = [];
-  for (const [, clip] of evalState.clipPaths) {
+  for (const [, clip] of defs.clipPaths) {
     clipPaths.push({
       id: clip.id,
       elements: clip.paths.map((d) => ({ pathData: d })),
@@ -11815,7 +11940,7 @@ function buildCompileResult(mainAccum: PathStore, evalState: EvaluationState): C
 
   // Build gradients output
   const gradients: GradientOutput[] = [];
-  for (const [, grad] of evalState.gradients) {
+  for (const [, grad] of defs.gradients) {
     // For inherited GPU-rendered gradients (conic, mesh, freeform, topo),
     // resolve stops from parent — these are rasterized and can't use SVG xlink:href inheritance
     const isGpuType =
@@ -11825,7 +11950,7 @@ function buildCompileResult(mainAccum: PathStore, evalState: EvaluationState): C
       grad.gradientType === 'topo';
     let resolvedStops = grad.stops;
     if (isGpuType && resolvedStops.length === 0 && grad.href) {
-      const parent = evalState.gradients.get(grad.href);
+      const parent = defs.gradients.get(grad.href);
       if (parent) resolvedStops = parent.stops;
     }
     const stepsPerUnit = grad.steps ?? 10;
@@ -11954,7 +12079,7 @@ function buildCompileResult(mainAccum: PathStore, evalState: EvaluationState): C
 
   // Build patterns output
   const patterns: PatternOutput[] = [];
-  for (const [, pat] of evalState.patterns) {
+  for (const [, pat] of defs.patterns) {
     patterns.push({
       id: pat.id,
       x: pat.x,
@@ -11970,7 +12095,7 @@ function buildCompileResult(mainAccum: PathStore, evalState: EvaluationState): C
 
   // Build markers output
   const markers: MarkerOutput[] = [];
-  for (const [, marker] of evalState.markers) {
+  for (const [, marker] of defs.markers) {
     // marker-space (placement audit V7): a marker draws only inside its FINAL viewBox,
     // so the check runs here, after the program — assigning viewBox after append is fine.
     const vb = marker.viewBox.trim().split(/\s+/).map(Number);
@@ -12039,7 +12164,7 @@ function buildCompileResult(mainAccum: PathStore, evalState: EvaluationState): C
 
   // Build filters output
   const filters: FilterOutput[] = [];
-  for (const [, filter] of evalState.filters) {
+  for (const [, filter] of defs.filters) {
     if (filter.kind === 'noise') {
       filters.push({
         kind: 'noise',
@@ -12220,6 +12345,7 @@ function programRootScope(evalState: EvaluationState, modules: ModuleGraph | und
   fixedValues = undefined;
   if (modules) {
     scope.module = { path: modules.entry, label: fileLabel(modules.entry), entry: true };
+    evalState.moduleDefs = { entryLabel: scope.module.label, imported: new Map(), ownOrigins: new Map(), rawRefs: new Map() };
     const fixed: FixedValues = new WeakMap();
     fixedValues = fixed;
     loadModules(modules, evalState, fixed);
@@ -12239,12 +12365,21 @@ function programRootScope(evalState: EvaluationState, modules: ModuleGraph | und
 function loadModules(graph: ModuleGraph, main: EvaluationState, fixed: FixedValues): void {
   const records = new Map<string, ModuleRecord>();
   main.modules = records;
+  // Ids stay stable only if no two files share a prefix (docs/modules.md "Clashes are errors").
+  const prefixes = new Map<string, string>();
+  for (const path of graph.order) {
+    const prefix = idPrefixOf(path);
+    const first = prefixes.get(prefix);
+    if (first !== undefined) throw new Error(idPrefixClashError(first, fileLabel(path), prefix));
+    prefixes.set(prefix, fileLabel(path));
+  }
   for (const path of graph.order) {
     const file = graph.files.get(path);
     if (!file) continue;
-    const identity: ModuleIdentity = { path, label: fileLabel(path), entry: false };
+    const identity: ModuleIdentity = { path, label: fileLabel(path), entry: false, idPrefix: idPrefixOf(path) };
     const state = newEvaluationState({ fonts: main.fontRegistry, strictWarnings: main.strictWarnings });
     state.modules = records;
+    state.moduleDefs = main.moduleDefs;
     const scope = createScope();
     scope.evalState = state;
     scope.module = identity;
