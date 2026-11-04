@@ -128,6 +128,7 @@
   - 8 went from error to ok: the docs' example libraries and the VS Code fixture library. They start with `module;`, which the old code read as an undefined variable.
   - 51 skipped, one more than before: the docs' `parts/kit.pathogen`, whose `module;` before `import` the old parser rejects.
 - **Full suite on the commit's tree alone:** 190 files, 8,247 passed.
+- **After the commit, from the advisor's final check:** the plan's allowed list names glyphs and `Font.info`, but the probe and the matrix had no font loaded. A CLI test now runs a module that loads Inter with `@font`, reads `Font.info(…).capHeight` and builds `PathBlock.fromGlyph("A", …)[0]` while it loads. The main file draws the exported glyph, and the path data equals one file drawing it with its own `@font`. It passed the first time, so the seal had no gap there. The type check on the final tree shows only errors that predate this step.
 
 ## Code review
 

@@ -1394,6 +1394,35 @@ describe('imports (docs/modules.md)', () => {
     expect(imported).toBe(drawnGlyph(runCli([main])));
   });
 
+  it('a module builds glyph outlines and reads Font.info while it loads; your file draws them (docs/modules.md "Exporting")', () => {
+    // A lettering kit's core use: glyphs are values, so the seal must let them through.
+    mkdirSync(join(project, 'parts', 'fonts'), { recursive: true });
+    copyFileSync(
+      join(__dirname, 'fixtures', 'fonts', 'Inter-Regular.ttf'),
+      join(project, 'parts', 'fonts', 'Inter-Regular.ttf'),
+    );
+    writeFileSync(
+      join(project, 'parts', 'letters.pathogen'),
+      [
+        'module;',
+        '@font "./fonts/Inter-Regular.ttf";',
+        'const letterStyle = #{ font-family: Inter-Regular; font-size: 48; };',
+        'export const capHeight = Font.info(letterStyle).capHeight;',
+        'export const letterA = PathBlock.fromGlyph("A", letterStyle)[0];',
+        '',
+      ].join('\n'),
+    );
+    writeFileSync(
+      main,
+      'import { letterA, capHeight } from "./parts/letters.pathogen";\nlog(capHeight > 0);\nM 10 100\nletterA.draw()\n',
+    );
+    const imported = runCli([main, '--print-logs']);
+    expect([imported.status, imported.stderr]).toEqual([0, '[line 2] (capHeight > 0) = true\n']);
+    // The same glyph as one file drawing it with its own @font.
+    writeFileSync(main, glyphProgram('@font "./parts/fonts/Inter-Regular.ttf";', 'Inter-Regular'));
+    expect(imported.stdout).toBe(drawnGlyph(runCli([main])));
+  });
+
   it("a font warning from an imported file's @font line names it, on stderr and in --json", () => {
     writeFileSync(
       join(project, 'parts', 'family.pathogen'),
