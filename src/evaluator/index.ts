@@ -31,6 +31,8 @@ import { resolveProjectPath } from '../host/paths';
 import type { ImportSite, ModuleGraph } from '../host/load-modules';
 import {
   CHANGES_RECEIVER,
+  CHANGES_RECEIVER_TYPES,
+  DRAWING_KINDS,
   exportsOf,
   fixFile,
   idPrefixOf,
@@ -1426,6 +1428,8 @@ let drawingValues: DrawingValues | undefined;
 /** The error for using `value`, when it belongs to an imported file's ended drawing; undefined otherwise. */
 function drawingValueUse(value: unknown, target: Expression | undefined): string | undefined {
   if (drawingValues === undefined || typeof value !== 'object' || value === null) return undefined;
+  // Only the four drawing types are ever recorded: skip the lookup for the rest.
+  if (!DRAWING_KINDS.has((value as { type?: string }).type ?? '')) return undefined;
   const owner = drawingValues.get(value);
   return owner && useDrawingValueError(writtenName(target) ?? owner.name, owner.kind, owner.file.label);
 }
@@ -3456,7 +3460,12 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
 
   const receiver = receiverTypeName(obj);
   // A method that changes its receiver, on a value an imported file fixed.
-  if (fixedValues !== undefined && receiver && CHANGES_RECEIVER.has(`${receiver}.${expr.method}`)) {
+  if (
+    fixedValues !== undefined &&
+    receiver &&
+    CHANGES_RECEIVER_TYPES.has(receiver) &&
+    CHANGES_RECEIVER.has(`${receiver}.${expr.method}`)
+  ) {
     const message = fixedValueChange(obj, expr.object, expr.method === 'pick' ? 'pick from' : 'change');
     if (message) throw mError(message);
   }

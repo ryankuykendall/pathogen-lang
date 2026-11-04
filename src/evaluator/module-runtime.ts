@@ -220,6 +220,14 @@ export const CHANGES_RECEIVER: ReadonlySet<string> = new Set([
   'VariableOffsetBuilder.endCap',
 ]);
 
+/**
+ * The receiver types with at least one method in CHANGES_RECEIVER, so a call
+ * on any other type skips building its `Type.method` key.
+ */
+export const CHANGES_RECEIVER_TYPES: ReadonlySet<string> = new Set(
+  [...CHANGES_RECEIVER].map((key) => key.slice(0, key.indexOf('.'))),
+);
+
 /** Which file fixed a value or scope, and the name of the binding it was reached from. */
 export interface FixedOwner {
   file: ModuleIdentity;
@@ -242,7 +250,7 @@ export interface DrawingOwner {
 export type DrawingValues = WeakMap<object, DrawingOwner>;
 
 /** The types tied to a drawing: fixFile records them instead of fixing them. */
-const DRAWING_KINDS: ReadonlyMap<string, DrawingValueKind> = new Map<string, DrawingValueKind>([
+export const DRAWING_KINDS: ReadonlyMap<string, DrawingValueKind> = new Map<string, DrawingValueKind>([
   ['LayerReference', 'layer'],
   ['TransformReference', 'transform'],
   ['TransformPropertyReference', 'transform'],

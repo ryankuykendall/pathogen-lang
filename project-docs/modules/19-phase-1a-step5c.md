@@ -50,3 +50,18 @@
   - **S1, the pattern recognizing these errors: tightened** to the full "…'s drawing, which stays in that file." and "this file's drawing, which stays in this file." phrases. A test checks that an `assert` message with similar words still fails as an assert.
 
   `tests/modules-drawing.test.ts` now has 48 tests.
+
+## Follow-up: the cost per read and per call (a later commit)
+
+After step 5, the advisor asked for the cost of 5c's check on every property read and method call in a compile with files, which step 4's benchmark (writes only) didn't cover. `tmp/phase1/bench-step5c.ts` measures it, with medians of 21 runs and one import:
+
+| 30k-iteration loop | Step 3 | Step 4 | Step 5 | After the fix | No files |
+|---|---|---|---|---|---|
+| Property read (`p.x`) | 6.0 ms | 6.1 ms | 6.1 ms | 6.1 ms | 5.4 ms |
+| Method call (`p.distanceTo(q)`) | 16.3 ms | 18.3 ms | 18.7 ms | 17.2 ms | 16.0 ms |
+
+5c's own check cost about 2%. The larger cost was step 4's: every method call built a `Type.method` string to look up in `CHANGES_RECEIVER`. Two fast paths:
+- `CHANGES_RECEIVER_TYPES` skips building the key unless the receiver's type has a changing method;
+- `drawingValueUse` returns at once unless the value's type is one of the four drawing types (`DRAWING_KINDS`).
+
+The read loop's remaining overhead dates from step 3 and is outside this fix.
