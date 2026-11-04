@@ -219,7 +219,8 @@ log(nextId());
 ```
 
 ```text
-Cannot assign to lastId — it belongs to ids.pathogen, whose variables are fixed once it has loaded. Return the new value instead, or pass it in as a parameter
+Error: ids.pathogen line 5, col 3: Cannot assign to lastId — it belongs to ids.pathogen, whose variables are fixed once it has loaded. Return the new value instead, or pass it in as a parameter
+  called from main.pathogen line 4
 ```
 
 Give the fn what it needs, and have it hand back the result:
@@ -376,7 +377,10 @@ In VS Code, the error is shown on the call (or the import) in the file you're ed
 | Picking from an imported Cycler | `Cannot pick from palette — it comes from colors.pathogen, and imported values are fixed. Export a fn that makes one instead: export fn palette() { return Cycler([…]); }` |
 | An exported fn changing its file's variable | `Cannot assign to lastId — it belongs to ids.pathogen, whose variables are fixed once it has loaded. Return the new value instead, or pass it in as a parameter` |
 | An exported fn changing an array or object its file holds | `Cannot change seen — it belongs to names.pathogen, whose values are fixed once it has loaded. Return a new array instead` (for an object, `Return a new object instead`) |
+| An exported fn picking from a Cycler its file holds | `Cannot pick from palette — it belongs to colors.pathogen, whose values are fixed once it has loaded. Pass a Cycler in as a parameter instead` |
 | Changing an imported gradient, grid, mask or other value | `Cannot change sky — it comes from parts/shades.pathogen, and imported values are fixed. Make your own, or export a fn that makes one` |
+| An exported fn changing a gradient, grid, mask or other value its file holds | `Cannot change sky — it belongs to parts/shades.pathogen, whose values are fixed once it has loaded. Make a new one inside the fn, or pass one in as a parameter` |
+| Adding to or changing a namespace, such as `kit.extra = 1` | `Cannot change kit — it is imported from kit.pathogen, and imported values are fixed. Declare a variable of your own with let, under another name` |
 | Exporting a layer, transform or subscription | `Cannot export ink — it is a layer of this file's drawing, which stays in this file. Export a fn that draws instead`. For a transform, the middle reads `it is a transform of this file's drawing`; for a subscription, `it is a subscription to this file's drawing` |
 | Using another file's layer, transform or subscription | `Cannot use ink — it is a layer of inks.pathogen's drawing, which stays in that file. Export a fn that draws, and call it inside your own layer`. For a transform, the middle reads `it is a transform of inks.pathogen's drawing`; for a subscription, `it is a subscription to inks.pathogen's drawing` |
 | Two files with the same id prefix | `parts-gears.pathogen and parts/gears.pathogen would both give their ids the prefix parts-gears--. Rename one of the files.` |

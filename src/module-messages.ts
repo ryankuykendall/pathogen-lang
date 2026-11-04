@@ -52,6 +52,72 @@ export function assignImportedError(name: string, written: string): string {
   return `Cannot assign to ${name} — it is imported from ${importedFromLabel(written)}. Declare your own with let if it needs to change`;
 }
 
+// --- Values fixed once their file has loaded (docs/modules.md "What you import is fixed") ---
+
+/** The kind of value a change hits, which picks the advice at the end of the message. */
+export type FixedValueKind = 'array' | 'object' | 'cycler' | 'other';
+
+/**
+ * A change to a value that a file held when it finished loading. `own` is
+ * true when the code making the change is in that same file (an exported fn
+ * changing its file's values): the value "belongs to" the file. Otherwise it
+ * "comes from" a file the running code imported.
+ */
+export function fixedValueError(
+  name: string,
+  file: string,
+  kind: FixedValueKind,
+  own: boolean,
+  verb: 'change' | 'pick from' = 'change',
+): string {
+  if (own) {
+    const advice =
+      kind === 'array'
+        ? 'Return a new array instead'
+        : kind === 'object'
+          ? 'Return a new object instead'
+          : kind === 'cycler'
+            ? 'Pass a Cycler in as a parameter instead'
+            : 'Make a new one inside the fn, or pass one in as a parameter';
+    return `Cannot ${verb} ${name} — it belongs to ${file}, whose values are fixed once it has loaded. ${advice}`;
+  }
+  // A fn's name can't have a dot: `kit.palette` suggests `export fn palette()`.
+  const fnName = name.slice(name.lastIndexOf('.') + 1);
+  const advice =
+    kind === 'array'
+      ? `Copy it first: [...${name}]`
+      : kind === 'object'
+        ? `Copy it first: { ...${name} }`
+        : kind === 'cycler'
+          ? `Export a fn that makes one instead: export fn ${fnName}() { return Cycler([…]); }`
+          : 'Make your own, or export a fn that makes one';
+  return `Cannot ${verb} ${name} — it comes from ${file}, and imported values are fixed. ${advice}`;
+}
+
+/** An exported fn giving one of its file's variables a new value after the file has loaded (decision 29). */
+export function fixedVariableError(name: string, file: string): string {
+  return `Cannot assign to ${name} — it belongs to ${file}, whose variables are fixed once it has loaded. Return the new value instead, or pass it in as a parameter`;
+}
+
+/** `kit.extra = 1` or `kit["extra"] = 1` on a `* as kit` namespace. */
+export function fixedNamespaceError(name: string, file: string): string {
+  return `Cannot change ${name} — it is imported from ${file}, and imported values are fixed. Declare a variable of your own with let, under another name`;
+}
+
+/** The clause every message above carries after the file's name. */
+const FIXED_CLAUSE = /, (?:whose (?:values|variables) are fixed once it has loaded|and imported values are fixed)\. /;
+
+/**
+ * Whether `e` is one of the errors above. A style value keeps its raw text
+ * when evaluating it fails, so it lets these through, as it does a
+ * lexical-scope miss: otherwise the raw text is rejected with a message about
+ * a disallowed token. The test reads the words, so it still holds once the
+ * error has been traced through other files.
+ */
+export function isFixedValueError(e: unknown): e is Error {
+  return e instanceof Error && FIXED_CLAUSE.test(e.message);
+}
+
 // --- Loading files (src/host/load-modules.ts; docs/modules.md "Errors") ---
 
 /** A path as a file label in messages: the project path without its leading `/`. */

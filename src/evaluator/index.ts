@@ -10,21 +10,29 @@ import {
   declaredNotExportedError,
   declareImportedAgainError,
   fileLabel,
+  fixedNamespaceError,
+  fixedValueError,
+  fixedVariableError,
+  isFixedValueError,
   moduleNotLoadedError,
   namespaceNoExportError,
   noExportError,
   noProjectFolderError,
 } from '../module-messages';
+import type { FixedValueKind } from '../module-messages';
 import { parse } from '../parser';
 import { resolveProjectPath } from '../host/paths';
 import type { ImportSite, ModuleGraph } from '../host/load-modules';
 import {
+  CHANGES_RECEIVER,
   exportsOf,
+  fixFile,
   importedFromSteps,
   ModuleTraceError,
   moduleOf,
   splitPosition,
 } from './module-runtime';
+import type { FixedValues } from './module-runtime';
 import { splitSubpaths } from './subpaths';
 import { dispatchSubscriptions } from './subscriptions';
 import { CALLBACK_METHODS } from '../callback-methods';
@@ -1109,7 +1117,7 @@ function acrossFiles<T>(
     return run();
   } catch (e) {
     // lastStatementLine is still the callee's here: the catch runs before the finally.
-    throw traceAcrossFiles(e, from, to, loc);
+    throw traceAcrossFiles(e, from, to, loc, caller);
   } finally {
     runningFile = savedFile;
     lastStatementLine = savedLine;
@@ -1134,6 +1142,7 @@ function traceAcrossFiles(
   callee: ModuleIdentity,
   caller: ModuleIdentity,
   loc: { line?: number; column?: number } | undefined,
+  callerScope: Scope,
 ): unknown {
   // Only the evaluator's own errors are traced: a ReturnSignal, a non-Error,
   // or an error of another kind (a RangeError, a cancellation) passes through
@@ -1143,14 +1152,14 @@ function traceAcrossFiles(
   const step = `called from ${caller.label} line ${loc?.line ?? '?'}`;
   const site = caller.entry && loc?.line !== undefined ? { line: loc.line, column: loc.column } : undefined;
   if (error instanceof ModuleTraceError) {
-    error.addStep(step, site);
+    error.addStep(step, site, callerScope);
     return error;
   }
   const { line, column, detail } = splitPosition(error.message);
   // An error with no position of its own gets the line of the statement that
   // raised it (12-phase-1-plan.md amendments; only for other files).
   const traced = new ModuleTraceError(callee.label, line ?? lastStatementLine, line === undefined ? undefined : column, detail);
-  traced.addStep(step, site);
+  traced.addStep(step, site, callerScope);
   return traced;
 }
 
@@ -1336,6 +1345,45 @@ function warn(
  */
 let runningFile: ModuleIdentity | undefined;
 
+/**
+ * What each imported file held when it finished loading (fixFile), so that
+ * changing it is an error naming the file (docs/modules.md "What you import
+ * is fixed"). Undefined in a compile without files, so one-file programs pass
+ * every check with one comparison.
+ */
+let fixedValues: FixedValues | undefined;
+
+/** How the code names the value it changes: `sizes`, `kit.sizes`; else undefined. */
+function writtenName(expr: Expression | undefined): string | undefined {
+  if (!expr) return undefined;
+  if (expr.type === 'Identifier') return expr.name;
+  if (expr.type === 'MemberExpression') {
+    const object = writtenName(expr.object);
+    return object === undefined ? undefined : `${object}.${expr.property}`;
+  }
+  return undefined;
+}
+
+/**
+ * The error for changing `value`, when an imported file fixed it or it is a
+ * namespace; undefined otherwise. `target` is the expression that names it.
+ */
+function fixedValueChange(value: Value, target: Expression | undefined, verb: 'change' | 'pick from' = 'change'): string | undefined {
+  if (fixedValues === undefined || typeof value !== 'object' || value === null) return undefined;
+  if (isModuleNamespace(value)) return fixedNamespaceError(writtenName(target) ?? value.label, value.label);
+  const owner = fixedValues.get(value);
+  if (!owner) return undefined;
+  const kind: FixedValueKind = isArrayValue(value)
+    ? 'array'
+    : isObjectValue(value)
+      ? 'object'
+      : isCyclerValue(value)
+        ? 'cycler'
+        : 'other';
+  const own = runningFile?.path === owner.file.path;
+  return fixedValueError(writtenName(target) ?? owner.name, owner.file.label, kind, own, verb);
+}
+
 function runningFileTag(): { file?: string } {
   return runningFile && !runningFile.entry ? { file: runningFile.label } : {};
 }
@@ -1490,13 +1538,18 @@ function bindImport(
   (scope.imports ??= new Map()).set(name, { written, line: loc?.line });
 }
 
-function updateVariable(scope: Scope, name: string, value: Value, line?: number): void {
+function updateVariable(scope: Scope, name: string, value: Value, line?: number, column?: number): void {
   let current: Scope | null = scope;
   while (current) {
     if (current.variables.has(name)) {
       const imported = current.imports?.get(name);
       if (imported) throw new Error(formatError(assignImportedError(name, imported.written), line));
+      // A const can't change in any file, so that error comes first.
       if (current.consts?.has(name)) throw new Error(formatError(constReassignError(name), line));
+      // An exported fn giving its file's variable a new value after the file
+      // loaded (decision 29). fixFile records the file the variable is written in.
+      const fixedBy = fixedValues?.get(current);
+      if (fixedBy) throw new Error(formatError(fixedVariableError(name, fixedBy.file.label), line, column));
       if (scopeAudit !== null && current !== scope) auditBinding(scope, name, current, false);
       current.variables.set(name, value);
       return;
@@ -2073,14 +2126,38 @@ function defsPathData(commands: PathBlockCommand[]): string {
  * value is parsed on its own, so the inner "Line 1, col N:" counts from the
  * start of the value and is dropped.
  */
-function styleScopeMissError(
+/**
+ * Whether a style value lets an error through instead of keeping its raw
+ * text: a lexical-scope miss, or a change to a value an imported file fixed.
+ */
+function styleValueMustThrow(e: unknown): e is Error {
+  return isLexicalScopeMiss(e) || isFixedValueError(e);
+}
+
+/**
+ * A style value's error (styleValueMustThrow), placed at the value. The value
+ * was parsed on its own, so positions inside it read line 1. An error from
+ * this file takes the value's position. One traced from another file keeps
+ * its trace. When the value's own call (made from `scope`) is the step into
+ * this file, that step moves to the value; a call made deeper in, from a fn
+ * the value calls, is parsed with the file and keeps its line.
+ */
+function styleValueError(
   prop: StyleBlockLiteral['properties'][number],
   expr: StyleBlockLiteral,
-  miss: Error,
+  error: Error,
+  scope: Scope,
 ): Error {
   const line = prop.valueLoc?.line ?? prop.loc?.line ?? getLine(expr);
   const col = prop.valueLoc?.column ?? prop.loc?.column ?? getCol(expr);
-  const message = miss.message.replace(/^Line \d+(?:, col \d+)?: /, '');
+  if (error instanceof ModuleTraceError) {
+    if (line !== undefined && error.lastCaller === scope) {
+      // runningFile is undefined while the compiled file's own code runs.
+      error.moveLastStep(line, col, runningFile === undefined || runningFile.entry === true);
+    }
+    return error;
+  }
+  const message = error.message.replace(/^Line \d+(?:, col \d+)?: /, '');
   return new Error(formatError(`Style value for "${prop.name}": ${message}`, line, col));
 }
 
@@ -2106,7 +2183,7 @@ function evaluateStyleBlockLiteral(expr: StyleBlockLiteral, scope: Scope): Style
     // objects for THIS value — the validator allows exactly these tokens.
     const emittedVars: string[] = [];
     let angleUnitError: string | null = null;
-    let scopeMiss: Error | null = null;
+    let mustThrow: Error | null = null;
     try {
       const parseResult = expressionParser.parse(prop.value);
       if (parseResult.status && parseResult.value) {
@@ -2187,10 +2264,11 @@ function evaluateStyleBlockLiteral(expr: StyleBlockLiteral, scope: Scope): Style
       // Parse or eval failed — keep raw string (handles rgb(...), #hex, multi-value strings, etc.)
       // Except a name a named fn's caller has (phase 0a step 3): it resolved
       // under the old rule, so keeping the raw name would change the output
-      // silently. Thrown below, outside the try.
-      if (isLexicalScopeMiss(e)) scopeMiss = e;
+      // silently. And a change to an imported file's value, whose own message
+      // says what to do. Thrown below, outside the try.
+      if (styleValueMustThrow(e)) mustThrow = e;
     }
-    if (scopeMiss) throw styleScopeMissError(prop, expr, scopeMiss);
+    if (mustThrow) throw styleValueError(prop, expr, mustThrow, scope);
     if (angleUnitError) {
       throw new Error(
         formatError(angleUnitError, prop.valueLoc?.line ?? prop.loc?.line ?? getLine(expr), prop.valueLoc?.column),
@@ -2239,7 +2317,7 @@ function evaluateStyleBlockLiteral(expr: StyleBlockLiteral, scope: Scope): Style
           didSplice = true;
         }
       } catch (e) {
-        if (isLexicalScopeMiss(e)) throw styleScopeMissError(prop, expr, e);
+        if (styleValueMustThrow(e)) throw styleValueError(prop, expr, e, scope);
         const eLine = prop.valueLoc?.line ?? prop.loc?.line ?? getLine(expr);
         const eCol = prop.valueLoc?.column ?? prop.loc?.column ?? getCol(expr);
         throw new Error(formatError(`Style value for "${prop.name}": ${(e as Error).message}`, eLine, eCol));
@@ -2255,8 +2333,9 @@ function evaluateStyleBlockLiteral(expr: StyleBlockLiteral, scope: Scope): Style
       try {
         cssResolved = tryResolveCSSFunctionArgs(resolvedValue, scope, emittedVars);
       } catch (e) {
-        // Only a lexical-scope miss gets out of the resolver (css-function-resolve.ts).
-        if (isLexicalScopeMiss(e)) throw styleScopeMissError(prop, expr, e);
+        // Only a lexical-scope miss or a fixed-value change gets out of the
+        // resolver (css-function-resolve.ts).
+        if (styleValueMustThrow(e)) throw styleValueError(prop, expr, e, scope);
         throw e;
       }
       if (cssResolved !== null) {
@@ -3239,9 +3318,15 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
     return invokeUserFunction(target, label, args, scope, expr.loc);
   }
 
+  const receiver = receiverTypeName(obj);
+  // A method that changes its receiver, on a value an imported file fixed.
+  if (fixedValues !== undefined && receiver && CHANGES_RECEIVER.has(`${receiver}.${expr.method}`)) {
+    const message = fixedValueChange(obj, expr.object, expr.method === 'pick' ? 'pick from' : 'change');
+    if (message) throw mError(message);
+  }
+
   // One angle-unit check for every receiver method: the per-case bodies each
   // read their own arguments, so this is the only place that sees them all.
-  const receiver = receiverTypeName(obj);
   if (receiver) {
     const key = `${receiver}.${expr.method}`;
     for (const message of describeMissingAngleUnits(key, `${key}()`, expr.args)) {
@@ -6498,6 +6583,8 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
           throw mError('Object.delete() expects 2 arguments (object, key)');
         const key = args[1];
         if (typeof key !== 'string') throw mError('Object.delete() key must be a string');
+        const fixedChange = fixedValueChange(args[0], expr.args[0]);
+        if (fixedChange) throw mError(fixedChange);
         const val = args[0].properties.get(key) ?? null;
         args[0].properties.delete(key);
         return val;
@@ -10315,16 +10402,20 @@ function evaluateStatementToAccum(stmt: Statement, scope: Scope, accum: PathStor
       const value = evaluateExpression(stmt.value, scope);
       if (typeof value === 'object' && value !== null && 'type' in value && value.type === 'PathWithResult') {
         const pwr = value;
-        updateVariable(scope, stmt.name, pwr.result, getLine(stmt));
+        updateVariable(scope, stmt.name, pwr.result, getLine(stmt), getCol(stmt));
         if (pwr.path) recordPath(accum, pwr.path, pwr.commands ?? [], { loc: stmt.loc, fn: calleeName(stmt.value) });
         return;
       }
-      updateVariable(scope, stmt.name, value, getLine(stmt));
+      updateVariable(scope, stmt.name, value, getLine(stmt), getCol(stmt));
       return;
     }
 
     case 'IndexedAssignmentStatement': {
       const obj = evaluateExpression(stmt.object, scope);
+      if (fixedValues !== undefined) {
+        const fixedChange = fixedValueChange(obj, stmt.object);
+        if (fixedChange) throw new Error(formatError(fixedChange, getLine(stmt), getCol(stmt)));
+      }
       const index = evaluateExpression(stmt.index, scope);
       const value = evaluateExpression(stmt.value, scope);
 
@@ -10806,6 +10897,11 @@ function evaluateStatementToAccum(stmt: Statement, scope: Scope, accum: PathStor
 
     case 'MemberAssignmentStatement': {
       const obj = evaluateExpression(stmt.object, scope);
+      // Every property write on every type passes here: one check covers them all.
+      if (fixedValues !== undefined) {
+        const fixedChange = fixedValueChange(obj, stmt.object);
+        if (fixedChange) throw new Error(formatError(fixedChange, getLine(stmt), getCol(stmt)));
+      }
       // The one place every angle-valued property assignment passes through —
       // Marker.orient, the filter angles — before each assign* helper, which
       // sees only the runtime value and so cannot tell a literal from a variable.
@@ -12121,9 +12217,12 @@ function programRootScope(evalState: EvaluationState, modules: ModuleGraph | und
   // it ends (evaluate's finally), so a compile nested in another keeps both.
   runningFile = undefined;
   lastStatementLine = undefined;
+  fixedValues = undefined;
   if (modules) {
     scope.module = { path: modules.entry, label: fileLabel(modules.entry), entry: true };
-    loadModules(modules, evalState);
+    const fixed: FixedValues = new WeakMap();
+    fixedValues = fixed;
+    loadModules(modules, evalState, fixed);
   }
   return scope;
 }
@@ -12134,9 +12233,10 @@ function programRootScope(evalState: EvaluationState, modules: ModuleGraph | und
  * drawing, layers and ViewBox stay in it, and only its exports reach the
  * files that import it. Its logs and warnings join the compiled file's,
  * labelled with its file. An error while it loads names the file and the
- * imports that led to it.
+ * imports that led to it. Once a file has loaded, what it holds is fixed
+ * (fixFile; docs/modules.md "What you import is fixed").
  */
-function loadModules(graph: ModuleGraph, main: EvaluationState): void {
+function loadModules(graph: ModuleGraph, main: EvaluationState, fixed: FixedValues): void {
   const records = new Map<string, ModuleRecord>();
   main.modules = records;
   for (const path of graph.order) {
@@ -12163,6 +12263,8 @@ function loadModules(graph: ModuleGraph, main: EvaluationState): void {
     } finally {
       runningFile = saved;
     }
+    // After its subscriptions ran, so they could still draw on its own values.
+    fixFile(scope, identity, fixed);
     const { exported, declared } = exportsOf(program);
     const exports = new Map<string, Value>();
     for (const name of exported) {
@@ -12196,7 +12298,7 @@ export function evaluate(
 ): CompileResult {
   setNumberFormat(options?.toFixed);
   let annotateState: EvaluationState | undefined;
-  const outer = { file: runningFile, line: lastStatementLine };
+  const outer = { file: runningFile, line: lastStatementLine, fixed: fixedValues };
   try {
     const evalState = newEvaluationState({
       fonts: options?.fonts,
@@ -12225,6 +12327,7 @@ export function evaluate(
     resetNumberFormat();
     runningFile = outer.file;
     lastStatementLine = outer.line;
+    fixedValues = outer.fixed;
   }
 }
 
@@ -12280,7 +12383,7 @@ export function evaluateWithContext(
 ): EvaluateWithContextResult {
   setNumberFormat(options.toFixed);
   let annotateState: EvaluationState | undefined;
-  const outer = { file: runningFile, line: lastStatementLine };
+  const outer = { file: runningFile, line: lastStatementLine, fixed: fixedValues };
   try {
     const evalState = newEvaluationState({
       fonts: options.fonts,
@@ -12343,6 +12446,7 @@ export function evaluateWithContext(
     resetNumberFormat();
     runningFile = outer.file;
     lastStatementLine = outer.line;
+    fixedValues = outer.fixed;
   }
 }
 
