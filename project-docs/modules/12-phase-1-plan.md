@@ -313,6 +313,7 @@ Each step is one commit, tested on its own tree. All of phase 1a is pushed toget
 - **Semantics audit** against `8cbe778`: zero diffs expected, since no existing program uses the new words.
 - **`verify-phase1-surfaces.ts`:** the docs examples through the CLI, the VS Code bundle with the language server, and the playground's error.
 - **VS Code:** rebuild the `.vsix` and check it installed.
+- **Your approval of the docs changes made during steps 4–5** (`22-docs-changes-awaiting-approval.md`), added 2026-11-04. Each went through the content review, but not past you.
 - **Then:** the code review and the CHANGELOG; each commit's tree tested alone; push with your go-ahead.
 
 ## Per-step process
