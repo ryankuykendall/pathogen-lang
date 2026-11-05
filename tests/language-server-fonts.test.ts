@@ -13,9 +13,9 @@ import { pathToFileURL } from 'node:url';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 
 import { scriptedGoogle } from './host/font-bytes';
-import { DiagnosticFonts, RETRY_AFTER_MS } from '../packages/pathogen-language-server/src/fonts';
-import { DiagnosticSeverity, getDiagnostics, resolveFonts, StringTextDocument } from '../src';
-import { createNodeFontHost } from '../src/node';
+import { DiagnosticFonts, resolveWith, RETRY_AFTER_MS } from '../packages/pathogen-language-server/src/fonts';
+import { DiagnosticSeverity, getDiagnostics, resolveFonts, resolveModules, StringTextDocument } from '../src';
+import { createNodeFontHost, createNodeProjectHost } from '../src/node';
 
 import type { Where } from '../packages/pathogen-language-server/src/fonts';
 import type { ResolveFontsResult } from '../src';
@@ -131,6 +131,84 @@ describe('fonts for diagnostics', () => {
     } finally {
       rmSync(join(project, 'fonts', 'Later.ttf'));
     }
+  });
+});
+
+// Phase 1a step 6c part 4: docs/modules.md "Fonts in imported files", in the
+// editor as in the CLI (resolveFontsInFiles over the document's graph).
+describe('fonts in imported files', () => {
+  const MAIN = [
+    'import { ready } from "./parts/labels.pathogen";',
+    'let s = #{ font-family: Baumans-Regular; font-size: 48; };',
+    'let g = PathBlock.fromGlyph("A", s);',
+    '',
+  ].join('\n');
+  const labels = (fontPath: string) => `module;\n@font "${fontPath}";\nexport const ready = 1;\n`;
+
+  async function graphWith(labelsSource: string) {
+    mkdirSync(join(project, 'parts'), { recursive: true });
+    writeFileSync(join(project, 'parts', 'labels.pathogen'), labelsSource);
+    const { graph, errors } = await resolveModules(MAIN, {
+      host: createNodeProjectHost(project),
+      entry: '/poster.pathogen',
+    });
+    expect(errors).toEqual([]);
+    return graph;
+  }
+
+  it("an imported file's @font loads for the document, its ./ path from its own folder", async () => {
+    const graph = await graphWith(labels('../fonts/Baumans-Regular.ttf'));
+    const fonts = await new DiagnosticFonts(() => undefined).forDocument(programUri, MAIN, graph);
+    expect([fonts?.messages, [...(fonts?.registry?.fonts.keys() ?? [])]]).toEqual([[], ['Baumans-Regular']]);
+    expect(getDiagnostics(new StringTextDocument(MAIN), { fonts, modules: graph })).toEqual([]);
+  });
+
+  it('a missing font file in an imported file shows on the import that leads there', async () => {
+    const graph = await graphWith(labels('../fonts/Missing.ttf'));
+    const fonts = await new DiagnosticFonts(() => undefined).forDocument(programUri, MAIN, graph);
+    const diags = getDiagnostics(new StringTextDocument(MAIN), { ...(fonts ? { fonts } : {}), modules: graph });
+    expect(diags[0]).toMatchObject({
+      severity: DiagnosticSeverity.Error,
+      source: 'pathogen-fonts',
+      range: { start: { line: 0, character: 22 } },
+      message: `parts/labels.pathogen line 2, col 1: @font file "../fonts/Missing.ttf" was not found (looked for ${join(project, 'fonts', 'Missing.ttf')}).\n  imported from poster.pathogen line 1`,
+    });
+  });
+
+  it("editing an imported file's @font loads again", async () => {
+    const fonts = new DiagnosticFonts(() => undefined);
+    const broken = await fonts.forDocument(programUri, MAIN, await graphWith(labels('../fonts/Missing.ttf')));
+    expect(broken?.messages.map((m) => m.severity)).toEqual(['error']);
+    const fixed = await fonts.forDocument(programUri, MAIN, await graphWith(labels('../fonts/Baumans-Regular.ttf')));
+    expect([fixed?.messages, [...(fixed?.registry?.fonts.keys() ?? [])]]).toEqual([[], ['Baumans-Regular']]);
+  });
+
+  it('a font file the imported file names, added later under the same path, loads on the next check', async () => {
+    const fonts = new DiagnosticFonts(() => undefined);
+    const graph = await graphWith(labels('../fonts/LaterImported.ttf'));
+    expect((await fonts.forDocument(programUri, MAIN, graph))?.messages.map((m) => m.severity)).toEqual(['error']);
+    copyFileSync(join(project, 'fonts', 'Baumans-Regular.ttf'), join(project, 'fonts', 'LaterImported.ttf'));
+    try {
+      const after = await fonts.forDocument(programUri, MAIN, graph);
+      expect([after?.messages, !!after?.registry]).toEqual([[], true]);
+    } finally {
+      rmSync(join(project, 'fonts', 'LaterImported.ttf'));
+    }
+  });
+
+  it('the same files checked again load nothing again', async () => {
+    let loads = 0;
+    const fonts = new DiagnosticFonts(
+      () => undefined,
+      async (...args: Parameters<typeof resolveWith>) => {
+        loads++;
+        return resolveWith(...args);
+      },
+    );
+    const graph = await graphWith(labels('../fonts/Baumans-Regular.ttf'));
+    await fonts.forDocument(programUri, MAIN, graph);
+    await fonts.forDocument(programUri, MAIN, graph);
+    expect(loads).toBe(1);
   });
 });
 

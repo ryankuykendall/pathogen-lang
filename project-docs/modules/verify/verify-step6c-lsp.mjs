@@ -11,7 +11,7 @@
 //   node project-docs/modules/verify/verify-step6c-lsp.mjs
 // Writes verify-step6c-lsp-results.json beside this script and exits 1 on a failure.
 import { spawn } from 'node:child_process';
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { copyFileSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
@@ -268,6 +268,19 @@ try {
     'a file created on disk clears the error (didChangeWatchedFiles)',
     await diagnosticsWhere(() => diagnostics.get(uri('waiting.pathogen'))?.length === 0),
     diagnostics.get(uri('waiting.pathogen')),
+  );
+
+  // Fonts in imported files (step 6c part 4): a module's @font serves the importer's glyphs.
+  mkdirSync(join(project, 'fonts'), { recursive: true });
+  copyFileSync(join(repo, 'fonts', 'Baumans', 'Baumans-Regular.ttf'), join(project, 'fonts', 'Baumans-Regular.ttf'));
+  write('parts/labels.pathogen', 'module;\n@font "../fonts/Baumans-Regular.ttf";\nexport const ready = 1;\n');
+  const glyphs =
+    'import { ready } from "./parts/labels.pathogen";\nlet s = #{ font-family: Baumans-Regular; font-size: 48; };\nlet g = PathBlock.fromGlyph("A", s);\n';
+  open('glyphs.pathogen', glyphs);
+  check(
+    "an imported file's @font loads for the importer's glyphs: no problems",
+    await diagnosticsWhere(() => diagnostics.get(uri('glyphs.pathogen'))?.length === 0),
+    diagnostics.get(uri('glyphs.pathogen')),
   );
 
   // An unsaved document.

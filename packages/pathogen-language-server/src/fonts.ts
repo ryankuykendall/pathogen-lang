@@ -15,7 +15,7 @@
 import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { buildFontRegistry, ensureOpentype, planFontDirectives, resolveFonts } from 'pathogen-lang';
+import { buildFontRegistry, ensureOpentype, planFontDirectives, resolveFontsInFiles } from 'pathogen-lang';
 import {
   createNodeFontHost,
   defaultCacheDir,
@@ -27,7 +27,15 @@ import {
   projectEntry,
 } from 'pathogen-lang/node';
 
-import type { DiagnosticsOptions, FontData, FontLoadMessage, ResolveFontsResult } from 'pathogen-lang';
+import type {
+  DiagnosticsOptions,
+  FontData,
+  FontLoadMessage,
+  FontSourceFile,
+  ModuleGraph,
+  PlannedFontDirective,
+  ResolveFontsResult,
+} from 'pathogen-lang';
 
 type FontInfo = NonNullable<DiagnosticsOptions['fonts']>;
 
@@ -76,30 +84,51 @@ export class DiagnosticFonts {
     private readonly now: () => number = Date.now,
   ) {}
 
-  /** Font information for a document's diagnostics, or undefined while a download is pending. */
-  async forDocument(uri: string, source: string): Promise<FontInfo | undefined> {
+  /**
+   * Font information for a document's diagnostics, or undefined while a
+   * download is pending. With `modules`, the files it imports load their
+   * `@font` lines too, each from its own folder (docs/modules.md "Fonts in
+   * imported files"), as in the CLI.
+   */
+  async forDocument(uri: string, source: string, modules?: ModuleGraph): Promise<FontInfo | undefined> {
     this.closed.delete(uri);
-    if (!source.includes('@font')) return { messages: [] };
+    const imported: FontSourceFile[] = [];
+    for (const projectPath of modules?.order ?? []) {
+      const file = modules?.files.get(projectPath);
+      if (file?.source.includes('@font')) {
+        imported.push({ path: projectPath, source: file.source, label: projectPath.slice(1), imported: true });
+      }
+    }
+    if (!source.includes('@font') && imported.length === 0) return { messages: [] };
     const plan = planFontDirectives(source);
     // A source that doesn't parse: diagnostics report the parse error first.
     if (!plan) return undefined;
     const where = locate(uri.startsWith('file:') ? fileURLToPath(uri) : undefined);
     const envOffline = offlineReason(false);
-    const filePaths = plan.directives.filter((d) => d.kind === 'file').map((d) => d.source);
+    const filePaths = (directives: PlannedFontDirective[]) =>
+      directives.filter((d) => d.kind === 'file').map((d) => d.source);
     const stamps =
-      where.entry === '/<unsaved>' ? '' : fontFileStamps(where.root, where.entry, filePaths, where.projectFile);
-    const key = JSON.stringify([plan, where.root, where.entry, envOffline, stamps]);
+      where.entry === '/<unsaved>'
+        ? ''
+        : fontFileStamps(where.root, where.entry, filePaths(plan.directives), where.projectFile);
+    // An imported file's @font lines and their files are part of the key, so
+    // editing one (or adding the font file it names) loads again.
+    const importedKey = imported.map((file) => {
+      const filePlan = planFontDirectives(file.source);
+      return [file.path, filePlan, fontFileStamps(where.root, file.path, filePaths(filePlan?.directives ?? []), null)];
+    });
+    const key = JSON.stringify([plan, importedKey, where.root, where.entry, envOffline, stamps]);
     const known = this.memo.get(uri);
     if (known?.key === key && this.now() < known.until) return known.fonts;
     // Already downloading for this document: its recheck will come.
     if (this.downloading.has(key)) return undefined;
 
-    const first = await this.resolve(source, where, envOffline ?? FIRST_PASS);
+    const first = await this.resolve(source, where, envOffline ?? FIRST_PASS, imported);
     if (envOffline !== null || !first.downloadsSkipped) {
       return this.remember(uri, key, first, where);
     }
     this.downloading.add(key);
-    this.resolve(source, where, null)
+    this.resolve(source, where, null, imported)
       .then(async (full) => {
         if (!this.closed.has(uri)) await this.remember(uri, key, full, where);
       })
@@ -170,8 +199,17 @@ function locate(filePath: string | undefined): Where {
   return { root, programDir, entry, projectFile };
 }
 
-/** Load with the Node host; `offline` is why downloads are off, or null to allow them. */
-export async function resolveWith(source: string, where: Where, offline: string | null): Promise<ResolveFontsResult> {
+/**
+ * Load with the Node host; `offline` is why downloads are off, or null to
+ * allow them. `imported` are the files the document imports that have `@font`
+ * lines, in load order (resolveFontsInFiles, as the CLI does).
+ */
+export async function resolveWith(
+  source: string,
+  where: Where,
+  offline: string | null,
+  imported: readonly FontSourceFile[] = [],
+): Promise<ResolveFontsResult> {
   const host = createNodeFontHost({
     root: where.root,
     programDir: where.programDir,
@@ -183,5 +221,6 @@ export async function resolveWith(source: string, where: Where, offline: string 
   if (where.entry === '/<unsaved>') {
     host.readFile = async () => ({ ok: false, code: 'unreadable', detail: UNSAVED });
   }
-  return resolveFonts(source, { host, entry: where.entry });
+  const entry: FontSourceFile = { path: where.entry, source, label: where.entry.replace(/^\//, '') };
+  return resolveFontsInFiles([entry, ...imported], { host });
 }

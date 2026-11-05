@@ -588,7 +588,8 @@ async function validateTextDocument(textDocument: TextDocument): Promise<void> {
 
   let fonts: Awaited<ReturnType<DiagnosticFonts['forDocument']>>;
   try {
-    fonts = await diagnosticFonts.forDocument(textDocument.uri, source);
+    // The imported files' @font lines load too, as in the CLI.
+    fonts = await diagnosticFonts.forDocument(textDocument.uri, source, modules?.graph);
   } catch (err) {
     connection.console.error(`Pathogen: loading fonts for diagnostics failed: ${(err as Error).message}`);
     fonts = undefined;

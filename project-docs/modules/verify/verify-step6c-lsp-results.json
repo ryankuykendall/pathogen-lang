@@ -28,7 +28,7 @@
     "name": "go-to-definition opens the other file at the name",
     "ok": true,
     "detail": {
-      "uri": "file:///Users/ryan/claude-code-projects/svg-path-extended/tmp/verify-lsp-yzXCoD/parts/gears.pathogen",
+      "uri": "file:///Users/ryan/claude-code-projects/svg-path-extended/tmp/verify-lsp-aJExOr/parts/gears.pathogen",
       "range": {
         "start": {
           "line": 7,
@@ -171,13 +171,18 @@
           }
         },
         "severity": 1,
-        "message": "import file \"./parts/marks.pathogen\" was not found (looked for /Users/ryan/claude-code-projects/svg-path-extended/tmp/verify-lsp-yzXCoD/parts/marks.pathogen).",
+        "message": "import file \"./parts/marks.pathogen\" was not found (looked for /Users/ryan/claude-code-projects/svg-path-extended/tmp/verify-lsp-aJExOr/parts/marks.pathogen).",
         "source": "pathogen-modules"
       }
     ]
   },
   {
     "name": "a file created on disk clears the error (didChangeWatchedFiles)",
+    "ok": true,
+    "detail": []
+  },
+  {
+    "name": "an imported file's @font loads for the importer's glyphs: no problems",
     "ok": true,
     "detail": []
   },
