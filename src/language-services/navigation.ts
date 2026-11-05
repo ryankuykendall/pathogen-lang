@@ -5,6 +5,7 @@ import {
   namespaceReceiverAt,
   resolveExport,
   resolveImport,
+  syntaxTreeOf,
 } from './module-exports';
 import { analyzeScopes } from './scope-analysis';
 
@@ -49,8 +50,7 @@ export function getDefinition(
   // quote or a `/` too); the exported name in `{ Teeth as Kind }` leads to
   // the export.
   if (graph) {
-    const tree = scopes().tree;
-    const site = tree ? importSiteAt(tree, source, offset) : null;
+    const site = importSiteAt(syntaxTreeOf(scopes(), source), source, offset);
     if (site) {
       const file = importedFile(graph, graph.entry, site.path);
       if (file) {

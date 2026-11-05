@@ -11,9 +11,10 @@
  */
 import { describe, expect, it } from 'vitest';
 
-import { getDefinition, getHoverInfo, resolveModules, StringTextDocument } from '../src';
+import { getCompletions, getDefinition, getHoverInfo, resolveModules, StringTextDocument } from '../src';
+import { relativeImportPath } from '../src/language-services/module-exports';
 
-import type { ModuleGraph, Position, ProjectFileHost } from '../src';
+import type { CompletionItem, LanguageServiceOptions, ModuleGraph, Position, ProjectFileHost } from '../src';
 
 function memoryHost(files: Record<string, string>): ProjectFileHost {
   return {
@@ -287,6 +288,17 @@ describe('where the cursor is: word ends, quotes, paths, `as`', () => {
     }
   });
 
+  it('a file the AST builder rejects (a default import) still has its import paths', async () => {
+    const source = 'import gears from "./parts/gears.pathogen";\n';
+    const options = { modules: await graphFor(source) };
+    const doc = new StringTextDocument(source);
+    expect(getHoverInfo(doc, at(source, 0, 'parts'), options)).toBeNull();
+    expect(getDefinition(doc, at(source, 0, 'parts'), options)).toEqual({
+      file: '/parts/gears.pathogen',
+      range: FILE_START,
+    });
+  });
+
   it('`as` is not a name from another file', async () => {
     expect(await definition(at(MAIN, 0, ' as ', 1))).toBeNull();
     const hover = getHoverInfo(new StringTextDocument(MAIN), at(MAIN, 0, ' as '), { modules: await graphFor(MAIN) });
@@ -340,13 +352,195 @@ describe('names passed on, shadowed or not found', () => {
       'import * as gears from "./parts/gears.pathogen";\ngears.gear(',
       'import { , } from "./parts/gears.pathogen";\n',
     ]) {
-      const options = { modules: await graphAllowingErrors(source) };
+      const options = { modules: await graphAllowingErrors(source), projectFiles: PROJECT_FILES };
       const doc = new StringTextDocument(source);
       for (let offset = 0; offset <= source.length; offset++) {
         const position = doc.positionAt(offset);
         expect(() => getHoverInfo(doc, position, options), `${source} @${offset}`).not.toThrow();
         expect(() => getDefinition(doc, position, options), `${source} @${offset}`).not.toThrow();
+        expect(() => getCompletions(doc, position, options), `${source} @${offset}`).not.toThrow();
       }
     }
+  });
+});
+
+// --- completion (step 6b, part 2) ------------------------------------------------------
+
+/** The project's modules, as the language server will list them. */
+const PROJECT_FILES = ['/parts/gears.pathogen', '/parts/kit.pathogen', '/lib/marks.pathogen'];
+
+/**
+ * Completions at the `|` in `raw`. `files` false: no graph (the playground).
+ * The graph may hold load errors: a half-typed import is the usual case.
+ */
+async function completeAt(
+  raw: string,
+  // `projectFiles: null`: no file list (an undefined one would take the default).
+  settings: { files?: boolean; entry?: string; projectFiles?: readonly string[] | null } = {},
+): Promise<CompletionItem[]> {
+  const { files = true, entry = '/main.pathogen', projectFiles = PROJECT_FILES } = settings;
+  const offset = raw.indexOf('|');
+  const source = raw.slice(0, offset) + raw.slice(offset + 1);
+  const doc = new StringTextDocument(source);
+  const options: LanguageServiceOptions = files
+    ? {
+        modules: (await resolveModules(source, { host: memoryHost(FILES), entry })).graph,
+        ...(projectFiles ? { projectFiles } : {}),
+      }
+    : {};
+  return getCompletions(doc, doc.positionAt(offset), options);
+}
+
+const labels = (items: CompletionItem[]): string[] => items.map((i) => i.label).sort();
+
+const GEAR_ITEM = { label: 'gear', kind: 'function', detail: 'fn gear(center, radius, teeth) — parts/gears.pathogen' };
+const TEETH_ITEM = {
+  label: 'Teeth',
+  kind: 'variable',
+  detail: 'enum Teeth { Few, Standard, Fine } — parts/gears.pathogen',
+};
+const DEPTH_ITEM = { label: 'toothDepth', kind: 'variable', detail: 'const toothDepth: number — parts/gears.pathogen' };
+const shape = (items: CompletionItem[]) =>
+  items.map(({ label, kind, detail }) => ({ label, kind, detail })).sort((a, b) => a.label.localeCompare(b.label));
+
+describe('completion inside import { }', () => {
+  it("offers the file's exports, each with its signature and file", async () => {
+    expect(shape(await completeAt('import { | } from "./parts/gears.pathogen";'))).toEqual([
+      GEAR_ITEM,
+      TEETH_ITEM,
+      DEPTH_ITEM,
+    ]);
+  });
+
+  it('leaves out the names already imported, and narrows to what is typed', async () => {
+    expect(labels(await completeAt('import { gear, | } from "./parts/gears.pathogen";'))).toEqual([
+      'Teeth',
+      'toothDepth',
+    ]);
+    expect(labels(await completeAt('import { to| } from "./parts/gears.pathogen";'))).toEqual(['toothDepth']);
+  });
+
+  it('a name passed on by another file is offered with what it is', async () => {
+    expect(shape(await completeAt('import { | } from "./parts/kit.pathogen";'))).toEqual([GEAR_ITEM, TEETH_ITEM]);
+  });
+
+  it('offers nothing after `as` (a new name), before the path is written, or without the files', async () => {
+    expect(await completeAt('import { Teeth as | } from "./parts/gears.pathogen";')).toEqual([]);
+    expect(await completeAt('import * as | from "./parts/gears.pathogen";')).toEqual([]);
+    expect(await completeAt('import { |')).toEqual([]);
+    expect(await completeAt('import { | } from "./parts/gears.pathogen";', { files: false })).toEqual([]);
+  });
+
+  it('an import on a later line offers its own file, and leaves out only its own names', async () => {
+    expect(
+      labels(
+        await completeAt('import { gear } from "./parts/gears.pathogen";\nimport { | } from "./parts/kit.pathogen";\n'),
+      ),
+    ).toEqual(['Teeth', 'gear']);
+  });
+
+  it('outside the braces, completion is as anywhere else', async () => {
+    // Just after `}`: `from` comes next, so the keywords are offered, not the exports.
+    const afterBrace = await completeAt('import { gear }| from "./parts/gears.pathogen";');
+    expect(afterBrace.map((i) => i.label)).toContain('let');
+    expect(afterBrace.some((i) => i.detail.endsWith('— parts/gears.pathogen') || i.kind === 'file')).toBe(false);
+    // An import left open doesn't take over the lines after it: the parser ends it there.
+    expect((await completeAt('import { gear\nlet x = 1;\nlo|')).map((i) => i.label)).toContain('log');
+  });
+});
+
+describe("completion after a namespace's dot", () => {
+  it("offers the namespace's exports, and only those", async () => {
+    expect(shape(await completeAt('import * as gears from "./parts/gears.pathogen";\ngears.|'))).toEqual([
+      GEAR_ITEM,
+      TEETH_ITEM,
+      DEPTH_ITEM,
+    ]);
+    expect(labels(await completeAt('import * as gears from "./parts/gears.pathogen";\ngears.to|'))).toEqual([
+      'toothDepth',
+    ]);
+  });
+
+  it('follows names another file passes on', async () => {
+    expect(shape(await completeAt('import * as kit from "./parts/kit.pathogen";\nkit.|'))).toEqual([
+      GEAR_ITEM,
+      TEETH_ITEM,
+    ]);
+  });
+
+  it('inside a fn and in a template literal too', async () => {
+    expect(
+      labels(await completeAt('import * as gears from "./parts/gears.pathogen";\nfn f() {\n  return gears.|;\n}\n')),
+    ).toEqual(['Teeth', 'gear', 'toothDepth']);
+    expect(
+      labels(await completeAt('import * as gears from "./parts/gears.pathogen";\nlog(`${gears.to|}`);\n')),
+    ).toEqual(['toothDepth']);
+  });
+});
+
+describe('completion inside an import path', () => {
+  /** The range a path completion replaces: from just after the opening quote to the cursor. */
+  const pathRange = (raw: string) => {
+    const doc = new StringTextDocument(raw.replace('|', ''));
+    const cursor = raw.indexOf('|');
+    return { start: doc.positionAt(raw.lastIndexOf('"', cursor) + 1), end: doc.positionAt(cursor) };
+  };
+
+  it("offers the project's modules, written from this file's folder", async () => {
+    const raw = 'import { gear } from "|";';
+    const items = await completeAt(raw);
+    expect(labels(items)).toEqual(['./lib/marks.pathogen', './parts/gears.pathogen', './parts/kit.pathogen']);
+    expect(items.every((i) => i.kind === 'file')).toBe(true);
+    expect(items[0].range).toEqual(pathRange(raw));
+  });
+
+  it('narrows to what is typed, and replaces it', async () => {
+    const raw = 'import { gear } from "./pa|";';
+    const items = await completeAt(raw);
+    expect(labels(items)).toEqual(['./parts/gears.pathogen', './parts/kit.pathogen']);
+    expect(items[0].range).toEqual(pathRange(raw));
+  });
+
+  it('from a file in a subfolder: ../ for the others, and not the file itself', async () => {
+    expect(labels(await completeAt('import * as x from "|";', { entry: '/parts/kit.pathogen' }))).toEqual([
+      '../lib/marks.pathogen',
+      './gears.pathogen',
+    ]);
+  });
+
+  it('a path starting with / is written from the project folder', async () => {
+    expect(labels(await completeAt('import * as x from "/|";'))).toEqual([
+      '/lib/marks.pathogen',
+      '/parts/gears.pathogen',
+      '/parts/kit.pathogen',
+    ]);
+  });
+
+  it('works before the closing quote is typed', async () => {
+    expect(labels(await completeAt('import { gear } from "./pa|'))).toEqual([
+      './parts/gears.pathogen',
+      './parts/kit.pathogen',
+    ]);
+  });
+
+  it("offers nothing without the project's file list, and nothing after the closing quote", async () => {
+    expect(await completeAt('import { gear } from "|";', { projectFiles: null })).toEqual([]);
+    const afterQuote = await completeAt('import { gear } from "./parts/gears.pathogen"|;');
+    expect(afterQuote.filter((i) => i.kind === 'file')).toEqual([]);
+  });
+
+  it('a default import (an error the compile explains) still completes its path', async () => {
+    expect(labels(await completeAt('import gears from "./parts/g|";'))).toEqual(['./parts/gears.pathogen']);
+  });
+});
+
+describe('relativeImportPath', () => {
+  it('writes ./ inside the folder and ../ out of it', () => {
+    expect(relativeImportPath('/main.pathogen', '/parts/gears.pathogen')).toBe('./parts/gears.pathogen');
+    expect(relativeImportPath('/parts/kit.pathogen', '/parts/gears.pathogen')).toBe('./gears.pathogen');
+    expect(relativeImportPath('/parts/kit.pathogen', '/main.pathogen')).toBe('../main.pathogen');
+    expect(relativeImportPath('/a/b/c.pathogen', '/a/d/e.pathogen')).toBe('../d/e.pathogen');
+    expect(relativeImportPath('/a/b/c.pathogen', '/x/y.pathogen')).toBe('../../x/y.pathogen');
+    expect(relativeImportPath('/a/c.pathogen', '/a/b/c/d.pathogen')).toBe('./b/c/d.pathogen');
   });
 });

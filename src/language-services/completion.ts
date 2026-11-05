@@ -13,30 +13,56 @@ import {
   STDLIB_COMPLETIONS,
   TYPE_MEMBERS,
 } from './completion-data.generated';
+import { displayTypeName } from './hover';
 import { inferObjectProperties, regexNameResolver, resolveMemberAccess } from './member-resolution';
+import {
+  declarationSignature,
+  exportsOf,
+  importCompletionContextAt,
+  importedFile,
+  namespaceReceiverAt,
+  relativeImportPath,
+  resolveExport,
+  syntaxTreeOf,
+} from './module-exports';
 import { analyzeScopes } from './scope-analysis';
 import { inferRhsType } from './type-inference';
 import { findDeclaration, inferDeclType, inferExprElementType } from './type-inference-ast';
 import { FILTER_CONSTRUCTORS } from '../evaluator/constructor-registry';
+import { fileLabel } from '../module-messages';
 
 import type { CompletionEntry } from './completion-data-static';
 import type { TextDocument } from './document';
+import type { ImportCompletionContext, LanguageServiceOptions } from './module-exports';
 import type { ScopeInfo } from './scope-analysis';
-import type { Position } from './types';
+import type { Position, Range } from './types';
+import type { ModuleFile, ModuleGraph } from '../host/load-modules';
 
 export interface CompletionItem {
   label: string;
-  kind: 'function' | 'variable' | 'keyword' | 'property' | 'constant' | 'snippet';
+  kind: 'function' | 'variable' | 'keyword' | 'property' | 'constant' | 'snippet' | 'file';
   detail: string;
   sortText: string;
   insertText?: string;
   isSnippet?: boolean;
+  /**
+   * The text the item replaces, when it isn't the word before the cursor:
+   * an import's path (`./parts/ge`) has slashes and dots in it.
+   */
+  range?: Range;
 }
 
 /**
- * Get completion items at a position in a document.
+ * Get completion items at a position in a document. With `options.modules`,
+ * imports complete across files: the exports inside `import { }`, a
+ * namespace's members after its dot, and (with `options.projectFiles`) the
+ * project's modules inside an import's quotes (docs/modules.md "In each tool").
  */
-export function getCompletions(document: TextDocument, position: Position): CompletionItem[] {
+export function getCompletions(
+  document: TextDocument,
+  position: Position,
+  options: LanguageServiceOptions = {},
+): CompletionItem[] {
   const source = document.getText();
   const offset = document.offsetAt(position);
   const textBefore = source.slice(0, offset);
@@ -47,6 +73,23 @@ export function getCompletions(document: TextDocument, position: Position): Comp
   const getScopeInfo = () => {
     cachedScopeInfo ??= analyzeScopes(document);
     return cachedScopeInfo;
+  };
+
+  // Inside an import: neither expression nor statement territory, so nothing
+  // else applies. Without the files there is nothing to offer.
+  if (source.includes('import')) {
+    const context = importCompletionContextAt(syntaxTreeOf(getScopeInfo(), source), source, offset);
+    if (context) return importCompletions(context, options, document, position);
+  }
+
+  // `gears.` where gears is `* as gears`: the exports of its file.
+  const namespaceMembers = (): CompletionItem[] | null => {
+    const graph = options.modules;
+    if (!graph) return null;
+    const prefix = /[A-Za-z0-9_]*$/.exec(textBefore)?.[0] ?? '';
+    const receiver = namespaceReceiverAt(getScopeInfo(), source, offset - prefix.length, position);
+    const file = receiver ? importedFile(graph, graph.entry, receiver.path) : undefined;
+    return file ? filterByPrefix(exportItems(graph, file, new Set()), prefix) : null;
   };
 
   // AST-first name typing (regex-audit Phase 5b): resolve the declaration
@@ -69,6 +112,8 @@ export function getCompletions(document: TextDocument, position: Position): Comp
   // string is misclassified as a style block and we'd surface CSS property
   // completions where they don't belong.
   if (isInsideBacktickString(textBefore)) {
+    const templateNamespace = namespaceMembers();
+    if (templateNamespace) return templateNamespace;
     // Member access resolves inside `${...}` interpolations the same way it
     // does anywhere else — the resolver works on the raw textBefore slice.
     const templateMember = resolveMemberAccess(textBefore, source, resolveName, resolveElementType);
@@ -188,6 +233,8 @@ export function getCompletions(document: TextDocument, position: Position): Comp
   // on the raw textBefore slice — same as hover), then stdlib + enums +
   // in-scope declarations. Never CSS property/value items here.
   if (isInsideOpenInterp(textBefore)) {
+    const interpNamespace = namespaceMembers();
+    if (interpNamespace) return interpNamespace;
     const interpMember = resolveMemberAccess(textBefore, source, resolveName, resolveElementType);
     if (interpMember) {
       return filterByPrefix(
@@ -229,7 +276,9 @@ export function getCompletions(document: TextDocument, position: Position): Comp
   }
 
   // Member access (dot completions, call chains, deep property access) —
-  // shared with hover via member-resolution.ts.
+  // shared with hover via member-resolution.ts. A namespace's members first.
+  const namespace = namespaceMembers();
+  if (namespace) return namespace;
   const memberAccess = resolveMemberAccess(textBefore, source, resolveName, resolveElementType);
   if (memberAccess) {
     return filterByPrefix(
@@ -322,6 +371,58 @@ export function getCompletions(document: TextDocument, position: Position): Comp
   }
 
   return filterByPrefix(items, prefix);
+}
+
+/**
+ * Completions inside an import: the exports of its file inside `{ }`, none
+ * after `as` (a new name), and the project's modules inside its quotes.
+ */
+function importCompletions(
+  context: ImportCompletionContext,
+  options: LanguageServiceOptions,
+  document: TextDocument,
+  position: Position,
+): CompletionItem[] {
+  const graph = options.modules;
+  if (!graph || context.kind === 'alias') return [];
+  if (context.kind === 'names') {
+    const file = context.path === undefined ? undefined : importedFile(graph, graph.entry, context.path);
+    return file ? filterByPrefix(exportItems(graph, file, context.listed), context.prefix) : [];
+  }
+  if (!options.projectFiles) return [];
+  const range = { start: document.positionAt(context.from), end: position };
+  const fromRoot = context.typed.startsWith('/');
+  const items = options.projectFiles
+    .filter((path) => path !== graph.entry)
+    .map((path): CompletionItem => {
+      const label = fromRoot ? path : relativeImportPath(graph.entry, path);
+      return { label, kind: 'file', detail: 'module', sortText: sortKey(50, label), range };
+    });
+  return filterByPrefix(items, context.typed);
+}
+
+/**
+ * A file's exports as completions, each with what it is and where it is
+ * defined: `fn gear(center, radius, teeth) — parts/gears.pathogen`. A name
+ * another file passes on shows what it passes on.
+ */
+function exportItems(graph: ModuleGraph, file: ModuleFile, leaveOut: Set<string>): CompletionItem[] {
+  const items: CompletionItem[] = [];
+  for (const name of exportsOf(file).keys()) {
+    if (leaveOut.has(name)) continue;
+    const target = resolveExport(graph, file, name);
+    if (target.kind !== 'export') continue;
+    const { decl } = target;
+    const type = decl.kind === 'variable' ? inferDeclType(decl) : null;
+    const what = declarationSignature(decl) ?? `const ${decl.name}${type ? `: ${displayTypeName(type)}` : ''}`;
+    items.push({
+      label: name,
+      kind: decl.kind === 'function' ? 'function' : 'variable',
+      detail: `${what} — ${fileLabel(target.file.path)}`,
+      sortText: sortKey(60, name),
+    });
+  }
+  return items;
 }
 
 /**

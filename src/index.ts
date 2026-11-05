@@ -265,6 +265,7 @@ export type {
   DeclarationKind,
   CompletionItem,
   HoverInfo,
+  LanguageServiceOptions,
   Location,
   SignatureHelp,
   SignatureInformation,

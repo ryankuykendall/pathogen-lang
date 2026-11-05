@@ -15,7 +15,8 @@
 import { StringTextDocument } from './document';
 import { analyzeScopes, declarationName } from './scope-analysis';
 import { findDeclaration } from './type-inference-ast';
-import { resolveProjectPath } from '../host/paths';
+import { projectDirname, resolveProjectPath } from '../host/paths';
+import { lezerParser } from '../parser';
 
 import type { SyntaxNode, Tree } from '@lezer/common';
 
@@ -30,6 +31,12 @@ export interface LanguageServiceOptions {
    * document as its entry. Without it, an imported name is only a name.
    */
   modules?: ModuleGraph;
+  /**
+   * The project's importable files (modules), by project path, for
+   * completing an import's path. Needs `modules` too, for the document's own
+   * path.
+   */
+  projectFiles?: readonly string[];
 }
 
 /** An imported file, analyzed once per ModuleFile (the server keeps a graph per document). */
@@ -49,6 +56,15 @@ export function analyzeFile(file: ModuleFile): AnalyzedFile {
     analyzed.set(file, entry);
   }
   return entry;
+}
+
+/**
+ * The document's syntax tree: the one scope analysis kept, else a fresh
+ * parse. Scope analysis keeps none when the AST builder rejects the file,
+ * and a default import (`import gears from …`) is one such error.
+ */
+export function syntaxTreeOf(info: ScopeInfo, source: string): Tree {
+  return info.tree ?? lezerParser.parse(source);
 }
 
 /** The file an import's path names, resolved from the file the import is written in. */
@@ -194,6 +210,77 @@ function importSiteOf(node: SyntaxNode, source: string): ImportSite | null {
     return { path, name: source.slice(node.from, node.to) };
   }
   return null;
+}
+
+/** Where completion is inside an import (docs/modules.md "In each tool"). */
+export type ImportCompletionContext =
+  /** Inside `{ }`: the import's path if written yet, the names already listed, and the word typed. */
+  | { kind: 'names'; path?: string; listed: Set<string>; prefix: string }
+  /** After `as`: a new name, so there's nothing to offer. */
+  | { kind: 'alias' }
+  /** Inside the path's quotes: what is typed so far, which starts at offset `from`. */
+  | { kind: 'path'; typed: string; from: number };
+
+/** The completion context at `offset` when it is inside an import, else null. */
+export function importCompletionContextAt(tree: Tree, source: string, offset: number): ImportCompletionContext | null {
+  const node = tree.resolveInner(offset, -1);
+  let specifier: SyntaxNode | null = null;
+  for (let at: SyntaxNode | null = node; at; at = at.parent) {
+    if (at.name === 'String' && at.parent?.name === 'ImportDeclaration') {
+      // Strings in the tree are closed: inside means before the closing quote.
+      return offset > at.from && offset < at.to
+        ? { kind: 'path', typed: source.slice(at.from + 1, offset), from: at.from + 1 }
+        : null;
+    }
+    if (at.name === 'ImportSpecifier') specifier = at;
+    if (at.name === 'ImportSpecifiers') return namesContext(at, specifier, source, offset);
+    // `import * as |`: a new name.
+    if (at.name === 'NamespaceImport') return /\bas\b/.test(source.slice(at.from, offset)) ? { kind: 'alias' } : null;
+    if (at.name === 'ImportDeclaration' || at.name === 'Program') break;
+  }
+  // A path whose closing quote isn't typed yet doesn't parse as a string (the
+  // tree breaks the import apart), so it's read from the line.
+  const lineStart = source.lastIndexOf('\n', offset - 1) + 1;
+  const open = /^\s*import\b[^"\n]*\bfrom\s*"([^"\n]*)$/.exec(source.slice(lineStart, offset));
+  return open ? { kind: 'path', typed: open[1], from: offset - open[1].length } : null;
+}
+
+function namesContext(
+  specifiers: SyntaxNode,
+  specifier: SyntaxNode | null,
+  source: string,
+  offset: number,
+): ImportCompletionContext | null {
+  const close = specifiers.lastChild?.name === '}' ? specifiers.lastChild : null;
+  if (offset <= specifiers.from || (close && offset > close.from)) return null;
+  if (specifier && /\bas\b/.test(source.slice(specifier.from, offset))) return { kind: 'alias' };
+  const listed = new Set<string>();
+  for (let child = specifiers.firstChild; child; child = child.nextSibling) {
+    const id = child.name === 'ImportSpecifier' ? child.getChild('Identifier') : null;
+    // The name being typed isn't listed yet.
+    if (id && !(id.from <= offset && offset <= id.to)) listed.add(source.slice(id.from, id.to));
+  }
+  const pathNode = specifiers.parent?.getChild('String');
+  return {
+    kind: 'names',
+    ...(pathNode ? { path: source.slice(pathNode.from + 1, pathNode.to - 1) } : {}),
+    listed,
+    prefix: /[A-Za-z0-9_]*$/.exec(source.slice(specifiers.from + 1, offset))?.[0] ?? '',
+  };
+}
+
+/**
+ * How an import in `fromFile` writes the path to `toPath`: `./` for a file
+ * in its folder or below, `../` to climb out (docs/projects.md "Writing paths").
+ */
+export function relativeImportPath(fromFile: string, toPath: string): string {
+  const fromDir = projectDirname(fromFile).split('/').filter(Boolean);
+  const to = toPath.split('/').filter(Boolean);
+  let shared = 0;
+  while (shared < fromDir.length && shared < to.length - 1 && fromDir[shared] === to[shared]) shared++;
+  const up = fromDir.length - shared;
+  const rest = to.slice(shared).join('/');
+  return up === 0 ? `./${rest}` : `${'../'.repeat(up)}${rest}`;
 }
 
 function importDeclarationOf(node: SyntaxNode): SyntaxNode | null {

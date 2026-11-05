@@ -8,6 +8,7 @@ import {
   namespaceReceiverAt,
   resolveExport,
   resolveImport,
+  syntaxTreeOf,
 } from './module-exports';
 import { analyzeScopes } from './scope-analysis';
 import { inferBlockParamType, inferLoopVarType, inferType } from './type-inference';
@@ -153,8 +154,7 @@ export function getHoverInfo(
   // A word inside an import's path is part of a file name (`gears` in
   // "./parts/gears.pathogen"), not a name, a keyword or a path command.
   if (source.includes('import')) {
-    const tree = getScopeInfo().tree;
-    const site = tree ? importSiteAt(tree, source, word.startOffset) : null;
+    const site = importSiteAt(syntaxTreeOf(getScopeInfo(), source), source, word.startOffset);
     if (site && site.name === undefined) return null;
   }
 
@@ -219,8 +219,7 @@ export function getHoverInfo(
   // declarations, answered with the other names in step 6.
   const graph = options.modules;
   if (graph) {
-    const tree = getScopeInfo().tree;
-    const site = tree ? importSiteAt(tree, source, word.startOffset) : null;
+    const site = importSiteAt(syntaxTreeOf(getScopeInfo(), source), source, word.startOffset);
     if (site?.name !== undefined) {
       const file = importedFile(graph, graph.entry, site.path);
       if (file) {
@@ -358,7 +357,8 @@ const DISPLAY_TYPE_NAMES: Record<string, string> = {
   _ObjectLiteral: 'object',
 };
 
-function displayTypeName(typeName: string): string {
+/** An inferred type as the editors show it (completion details use it too). */
+export function displayTypeName(typeName: string): string {
   return DISPLAY_TYPE_NAMES[typeName] ?? typeName;
 }
 
