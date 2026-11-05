@@ -59,8 +59,9 @@ export const LANGUAGE_FEATURES: readonly LanguageFeature[] = [
     id: 'completion',
     fn: 'getCompletions',
     vscodeCapability: 'completionProvider',
-    // `:` opens value-position suggestions inside style blocks.
-    lspTriggerCharacters: ['.', '$', '#', '@', '&', ':'],
+    // `:` opens value-position suggestions inside style blocks; `"` and `/`
+    // an import's path list (the server offers nothing for them elsewhere).
+    lspTriggerCharacters: ['.', '$', '#', '@', '&', ':', '"', '/'],
     playgroundRequired: true,
   },
   {
@@ -141,9 +142,9 @@ export const LANGUAGE_FEATURES: readonly LanguageFeature[] = [
     vscodeCapability: 'semanticTokensProvider',
     playgroundRequired: false,
     playgroundSkipReason:
-      "Playground uses the Lezer grammar via @codemirror/language for syntax " +
-      "highlighting (pathogenLanguage() in code-editor-pane.ts). Layering " +
-      "semantic tokens on top would fight for token positions and double-render.",
+      'Playground uses the Lezer grammar via @codemirror/language for syntax ' +
+      'highlighting (pathogenLanguage() in code-editor-pane.ts). Layering ' +
+      'semantic tokens on top would fight for token positions and double-render.',
   },
   {
     id: 'codeLens',
@@ -151,9 +152,9 @@ export const LANGUAGE_FEATURES: readonly LanguageFeature[] = [
     vscodeCapability: 'codeLensProvider',
     playgroundRequired: false,
     playgroundSkipReason:
-      "Reference-count chrome above declarations has low value in a single-" +
-      "file editor; the document outline panel (documentSymbols) covers the " +
-      "same navigation use case more compactly.",
+      'Reference-count chrome above declarations has low value in a single-' +
+      'file editor; the document outline panel (documentSymbols) covers the ' +
+      'same navigation use case more compactly.',
   },
 ] as const;
 

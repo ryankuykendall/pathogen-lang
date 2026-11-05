@@ -8,10 +8,7 @@ let client: any;
 
 export function activate(context: vscode.ExtensionContext): void {
   // Register preview command
-  const previewCommand = vscode.commands.registerCommand(
-    'pathogen.openPreview',
-    () => openPreview(context),
-  );
+  const previewCommand = vscode.commands.registerCommand('pathogen.openPreview', () => openPreview(context));
   context.subscriptions.push(previewCommand);
   // Resolve vscode-languageclient from bundled server/node_modules
   // when installed from .vsix (vsce --no-dependencies strips the ext's own node_modules)
@@ -44,12 +41,8 @@ export function activate(context: vscode.ExtensionContext): void {
   const { LanguageClient, TransportKind } = lc;
 
   // Path to the language server module — check bundled location first, then dev
-  const bundledServer = context.asAbsolutePath(
-    path.join('server', 'out', 'server.js'),
-  );
-  const devServer = context.asAbsolutePath(
-    path.join('..', 'pathogen-language-server', 'out', 'server.js'),
-  );
+  const bundledServer = context.asAbsolutePath(path.join('server', 'out', 'server.js'));
+  const devServer = context.asAbsolutePath(path.join('..', 'pathogen-language-server', 'out', 'server.js'));
   const serverModule = fs.existsSync(bundledServer) ? bundledServer : devServer;
 
   const serverOptions = {
@@ -57,16 +50,22 @@ export function activate(context: vscode.ExtensionContext): void {
     debug: { module: serverModule, transport: TransportKind.stdio },
   };
 
+  // Files other documents import, created, changed or deleted on disk: the
+  // server checks the open documents again (docs/modules.md "In each tool").
+  // It watches the workspace folders.
+  const fileWatcher = vscode.workspace.createFileSystemWatcher('**/{*.pathogen,pathogen.json}');
+  context.subscriptions.push(fileWatcher);
+
   const clientOptions = {
-    documentSelector: [{ scheme: 'file', language: 'pathogen' }],
+    documentSelector: [
+      { scheme: 'file', language: 'pathogen' },
+      // An unsaved file is checked too; its imports say to save it first.
+      { scheme: 'untitled', language: 'pathogen' },
+    ],
+    synchronize: { fileEvents: fileWatcher },
   };
 
-  client = new LanguageClient(
-    'pathogenLanguageServer',
-    'Pathogen Language Server',
-    serverOptions,
-    clientOptions,
-  );
+  client = new LanguageClient('pathogenLanguageServer', 'Pathogen Language Server', serverOptions, clientOptions);
 
   client.start();
 }

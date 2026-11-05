@@ -7,15 +7,26 @@
  */
 import { createHash, randomUUID } from 'node:crypto';
 import { existsSync, readdirSync, readFileSync, realpathSync, statSync } from 'node:fs';
-import { lstat, mkdir, readFile, readlink, realpath, rename, unlink, writeFile } from 'node:fs/promises';
+import { lstat, mkdir, open, readdir, readFile, readlink, realpath, rename, unlink, writeFile } from 'node:fs/promises';
 import { homedir } from 'node:os';
 import { basename, delimiter, dirname, isAbsolute, join, parse, posix, relative, resolve, sep, win32 } from 'node:path';
 
 import { sfntLooksComplete } from '../host/google-fonts';
+import {
+  isModuleSource,
+  planImports,
+  resolveModules,
+  unsavedImportErrors,
+  withOpenDocuments,
+} from '../host/load-modules';
 import { resolveProjectPath } from '../host/paths';
 import { parseProjectFile, PROJECT_FILE_NAME } from '../host/project';
 
+import type { Dirent } from 'node:fs';
+import type { FileHandle } from 'node:fs/promises';
+
 import type { HostFetch, HostFetchResponse } from '../host/google-fonts';
+import type { ModuleGraph, ModuleLoadError } from '../host/load-modules';
 import type { ParsedProjectFile } from '../host/project';
 import type { FontCache, FontHost, HostReadResult, LocalFontMatch, ProjectFileHost } from '../host/types';
 
@@ -738,6 +749,110 @@ export function fontFileStamps(
   });
   if (projectFile) parts.push(stamp(projectFile));
   return parts.join('|');
+}
+
+// --- The files an editor document imports (docs/modules.md "In each tool") ---
+
+/** What an editor knows about a document's imports. */
+export interface EditorModules {
+  /** The project folder; null for a document that isn't saved. */
+  root: string | null;
+  /** The document's project path (`/<unsaved>` before it is saved). */
+  entry: string;
+  graph: ModuleGraph;
+  /** What couldn't be loaded, for getDiagnostics' `loadErrors`. */
+  errors: ModuleLoadError[];
+}
+
+/**
+ * The files an editor document imports, for the language server and the
+ * VS Code preview (two processes, one rule): the project folder from the
+ * file's own folder, the document's project path, then resolveModules
+ * through a host whose open buffers stand in for the files on disk.
+ * `filePath` is null for an unsaved document: with no folder for its paths
+ * to start from, each import is a load error saying to save it. A document
+ * without imports reads nothing.
+ */
+export async function resolveEditorModules(
+  filePath: string | null,
+  source: string,
+  openText: (absolutePath: string) => string | undefined,
+): Promise<EditorModules> {
+  if (filePath === null) {
+    const entry = '/<unsaved>';
+    return { root: null, entry, graph: { entry, files: new Map(), order: [] }, errors: unsavedImportErrors(source) };
+  }
+  const { root } = findProjectRoot(dirname(filePath));
+  const entry = projectEntry(root, filePath) ?? `/${relative(root, filePath).split(sep).join('/')}`;
+  if (planImports(source).length === 0) {
+    return { root, entry, graph: { entry, files: new Map(), order: [] }, errors: [] };
+  }
+  const host = withOpenDocuments(createNodeProjectHost(root), (projectPath) =>
+    openText(join(root, ...projectPath.split('/').filter(Boolean))),
+  );
+  const { graph, errors } = await resolveModules(source, { host, entry });
+  return { root, entry, graph, errors };
+}
+
+/** The absolute paths of the files a document imports: a change to any of them changes its results. */
+export function editorModulePaths(modules: EditorModules): string[] {
+  const { root } = modules;
+  if (root === null) return [];
+  return [...modules.graph.files.keys()].map((path) => join(root, ...path.split('/').filter(Boolean)));
+}
+
+/**
+ * The project's modules by project path, for completing an import's path:
+ * every `.pathogen` file under the folder that starts with `module;` (only
+ * a module can be imported). Folders named `node_modules` or starting with a
+ * dot are skipped, links are not followed, and the walk stops after looking
+ * at `maxFiles` `.pathogen` files, since a folder with no pathogen.json is
+ * its own project folder and could be large. Only the start of each file is
+ * read: `module;` comes first, after any comments.
+ */
+export async function listProjectModules(root: string, limits: { maxFiles?: number } = {}): Promise<string[]> {
+  const maxFiles = limits.maxFiles ?? 2000;
+  const found: string[] = [];
+  let looked = 0;
+  const queue: string[] = [''];
+  while (queue.length > 0 && looked < maxFiles) {
+    const folder = queue.shift()!;
+    let entries: Dirent[];
+    try {
+      entries = await readdir(join(root, ...folder.split('/').filter(Boolean)), { withFileTypes: true });
+    } catch {
+      continue;
+    }
+    entries.sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0));
+    for (const entry of entries) {
+      if (looked >= maxFiles) break;
+      if (entry.name.startsWith('.') || entry.name === 'node_modules') continue;
+      const path = `${folder}/${entry.name}`;
+      if (entry.isDirectory()) queue.push(path);
+      else if (entry.isFile() && entry.name.endsWith('.pathogen')) {
+        looked++;
+        if (await startsAsModule(join(root, ...path.split('/').filter(Boolean)))) found.push(path);
+      }
+    }
+  }
+  return found.sort();
+}
+
+/** How much of a file listProjectModules reads to find its `module;` line. */
+const MODULE_HEADER_WINDOW = 64 * 1024;
+
+async function startsAsModule(osPath: string): Promise<boolean> {
+  let handle: FileHandle | undefined;
+  try {
+    handle = await open(osPath, 'r');
+    const window = Buffer.alloc(MODULE_HEADER_WINDOW);
+    const { bytesRead } = await handle.read(window, 0, MODULE_HEADER_WINDOW, 0);
+    return isModuleSource(window.subarray(0, bytesRead).toString('utf8'));
+  } catch {
+    return false; // Unreadable: not offered.
+  } finally {
+    await handle?.close();
+  }
 }
 
 /** Read a response body chunk by chunk, calling `progress` as each arrives. */

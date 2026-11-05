@@ -15,6 +15,7 @@ import {
   getSignatureHelp,
   prepareRename,
   getRenameEdits,
+  renameRefusal,
   getSemanticTokens,
   StringTextDocument,
   SymbolKind,
@@ -24,12 +25,16 @@ import {
   getInlayHints,
   InlayHintKind,
 } from 'pathogen-lang';
+import * as path from 'node:path';
+
 import {
   CompletionItemKind,
   createConnection,
   DiagnosticSeverity as LSPDiagnosticSeverity,
   InsertTextFormat,
+  LSPErrorCodes,
   ProposedFeatures,
+  ResponseError,
   SymbolKind as LSPSymbolKind,
   TextDocuments,
   TextDocumentSyncKind,
@@ -37,6 +42,7 @@ import {
 import { TextDocument } from 'vscode-languageserver-textdocument';
 
 import { DiagnosticFonts } from './fonts';
+import { DocumentModules, filePathOf, samePathKey } from './modules';
 
 import type {
   CompletionItem,
@@ -56,6 +62,16 @@ const connection = createConnection(ProposedFeatures.all);
 // Document manager — full sync (sends entire document content on each change)
 const documents = new TextDocuments(TextDocument);
 
+// The files each open document imports (docs/modules.md "In each tool"),
+// read through the open buffers so unsaved edits count.
+const documentModules = new DocumentModules((absolutePath) => {
+  for (const document of documents.all()) {
+    const file = filePathOf(document.uri);
+    if (file !== null && samePathKey(file) === samePathKey(absolutePath)) return document.getText();
+  }
+  return undefined;
+});
+
 // Whether the client understands `${1:x}`/`$0` snippet syntax in completions.
 // When false, snippet templates are stripped to plain text before sending.
 let clientSupportsSnippets = false;
@@ -70,7 +86,8 @@ connection.onInitialize((params: InitializeParams): InitializeResult => {
       textDocumentSync: TextDocumentSyncKind.Full,
       documentSymbolProvider: true,
       completionProvider: {
-        triggerCharacters: ['.', '$', '#', '@', '&', ':'],
+        // `"` and `/` open an import's path list; anywhere else they offer nothing (onCompletion).
+        triggerCharacters: ['.', '$', '#', '@', '&', ':', '"', '/'],
       },
       hoverProvider: true,
       definitionProvider: true,
@@ -122,7 +139,12 @@ connection.onCompletion((params) => {
 
   const text = textDocument.getText();
   const doc = new StringTextDocument(text);
-  const items = getCompletions(doc, params.position);
+  const items = getCompletions(doc, params.position, documentModules.optionsFor(params.textDocument.uri));
+
+  // `"` and `/` trigger completion only for an import's path: a `/` in
+  // `calc(a / b)` or a comment must not open the keyword list.
+  const trigger = params.context?.triggerCharacter;
+  if ((trigger === '"' || trigger === '/') && !items.some((item) => item.kind === 'file')) return [];
 
   // Style-block property names (`stroke-width`) and enumerated values
   // (`line-through`) are hyphenated, but the client derives replacement
@@ -149,7 +171,12 @@ connection.onCompletion((params) => {
     });
   }
 
-  return items.map(toLSPCompletionItem);
+  // An item with its own range (an import's path, with its `/` and `.`)
+  // replaces exactly that, not the word the client would pick.
+  return items.map((item) => {
+    const lspItem = toLSPCompletionItem(item);
+    return item.range ? { ...lspItem, textEdit: { range: item.range, newText: lspItem.insertText } } : lspItem;
+  });
 });
 
 // Hover
@@ -158,7 +185,7 @@ connection.onHover((params) => {
   if (!textDocument) return null;
 
   const doc = new StringTextDocument(textDocument.getText());
-  const info = getHoverInfo(doc, params.position);
+  const info = getHoverInfo(doc, params.position, documentModules.optionsFor(params.textDocument.uri));
   if (!info) return null;
 
   return {
@@ -178,11 +205,15 @@ connection.onDefinition((params) => {
   if (!textDocument) return null;
 
   const doc = new StringTextDocument(textDocument.getText());
-  const location = getDefinition(doc, params.position);
+  const { uri } = params.textDocument;
+  const location = getDefinition(doc, params.position, documentModules.optionsFor(uri));
   if (!location) return null;
+  // A name from another file: its project path, in this document's project folder.
+  const target = location.file === undefined ? uri : documentModules.uriFor(uri, location.file);
+  if (!target) return null;
 
   return {
-    uri: params.textDocument.uri,
+    uri: target,
     range: {
       start: { line: location.range.start.line, character: location.range.start.character },
       end: { line: location.range.end.line, character: location.range.end.character },
@@ -212,7 +243,7 @@ connection.onSignatureHelp((params) => {
   if (!textDocument) return null;
 
   const doc = new StringTextDocument(textDocument.getText());
-  const help = getSignatureHelp(doc, params.position);
+  const help = getSignatureHelp(doc, params.position, documentModules.optionsFor(params.textDocument.uri));
   if (!help) return null;
 
   return {
@@ -233,7 +264,12 @@ connection.onPrepareRename((params) => {
 
   const doc = new StringTextDocument(textDocument.getText());
   const result = prepareRename(doc, params.position);
-  if (!result) return null;
+  if (!result) {
+    // A name other files share: say why rather than nothing (docs/modules.md
+    // "In each tool"). RequestFailed: the request was valid, the rename isn't.
+    const refusal = renameRefusal(doc, params.position);
+    return refusal ? new ResponseError(LSPErrorCodes.RequestFailed, refusal) : null;
+  }
 
   return {
     range: {
@@ -251,7 +287,11 @@ connection.onRenameRequest((params) => {
 
   const doc = new StringTextDocument(textDocument.getText());
   const edits = getRenameEdits(doc, params.position, params.newName);
-  if (edits.length === 0) return null;
+  if (edits.length === 0) {
+    // A client that skips prepareRename still gets the reason.
+    const refusal = renameRefusal(doc, params.position);
+    return refusal ? new ResponseError(LSPErrorCodes.RequestFailed, refusal) : null;
+  }
 
   return {
     changes: {
@@ -472,10 +512,23 @@ connection.onCodeLens((params) => {
 // Re-validate when a document changes (debounced to avoid flashing errors while typing)
 const validationTimers = new Map<string, ReturnType<typeof setTimeout>>();
 
-documents.onDidChangeContent((change) => {
-  const { uri } = change.document;
+/** Check an open document after `delay` ms, replacing a check already waiting for it. */
+function scheduleValidation(uri: string, delay: number): void {
   const existing = validationTimers.get(uri);
   if (existing) clearTimeout(existing);
+  validationTimers.set(
+    uri,
+    setTimeout(() => {
+      validationTimers.delete(uri);
+      // The current text: a dependent's own content didn't change, and may have since.
+      const document = documents.get(uri);
+      if (document) void validateTextDocument(document);
+    }, delay),
+  );
+}
+
+documents.onDidChangeContent((change) => {
+  const { uri } = change.document;
 
   // Check if the user is mid-expression (e.g., just typed a dot for member access)
   const source = change.document.getText();
@@ -483,24 +536,33 @@ documents.onDidChangeContent((change) => {
   const isMidExpression = trimmed.endsWith('.') || trimmed.endsWith('(') || trimmed.endsWith(',');
   const delay = isMidExpression ? 500 : 200;
 
-  validationTimers.set(
-    uri,
-    setTimeout(() => {
-      validationTimers.delete(uri);
-      void validateTextDocument(change.document);
-    }, delay),
-  );
+  scheduleValidation(uri, delay);
+  // The open files that import this one, directly or not, see its unsaved
+  // text: check them again too (docs/modules.md "In each tool").
+  for (const dependent of documentModules.dependents(uri)) scheduleValidation(dependent, delay);
 });
 
 // Clear diagnostics when a document is closed — and a check still waiting to
 // run for it, which would otherwise publish diagnostics for a closed file.
+// The files that import it read it from disk again.
 documents.onDidClose((event) => {
   const { uri } = event.document;
   const pending = validationTimers.get(uri);
   if (pending) clearTimeout(pending);
   validationTimers.delete(uri);
+  const dependents = documentModules.dependents(uri);
   diagnosticFonts.forget(uri);
+  documentModules.forget(uri);
   connection.sendDiagnostics({ uri, diagnostics: [] });
+  for (const dependent of dependents) scheduleValidation(dependent, 200);
+});
+
+// A .pathogen file or a pathogen.json created, changed or deleted on disk (the
+// client's file watcher): any open document may import it, or now find a file
+// it couldn't. Check them all; there are rarely more than a few.
+connection.onDidChangeWatchedFiles(() => {
+  documentModules.filesChanged();
+  for (const document of documents.all()) scheduleValidation(document.uri, 200);
 });
 
 // The fonts each document's @font directives name, loaded like the CLI does;
@@ -515,6 +577,15 @@ const diagnosticFonts = new DiagnosticFonts((uri) => {
  */
 async function validateTextDocument(textDocument: TextDocument): Promise<void> {
   const source = textDocument.getText();
+  // The files it imports first: hover, completion and the rest read them after.
+  let modules: Awaited<ReturnType<DocumentModules['refresh']>> | undefined;
+  try {
+    modules = await documentModules.refresh(textDocument.uri, source);
+  } catch (err) {
+    connection.console.error(`Pathogen: reading imported files failed: ${(err as Error).message}`);
+  }
+  if (documents.get(textDocument.uri)?.version !== textDocument.version) return;
+
   let fonts: Awaited<ReturnType<DiagnosticFonts['forDocument']>>;
   try {
     fonts = await diagnosticFonts.forDocument(textDocument.uri, source);
@@ -527,7 +598,10 @@ async function validateTextDocument(textDocument: TextDocument): Promise<void> {
 
   // Wrap the LSP TextDocument in our language-services TextDocument
   const doc = new StringTextDocument(source);
-  const diagnostics = getDiagnostics(doc, fonts ? { fonts } : {});
+  const diagnostics = getDiagnostics(doc, {
+    ...(fonts ? { fonts } : {}),
+    ...(modules ? { modules: modules.graph, loadErrors: modules.errors } : {}),
+  });
 
   // Convert language-services Diagnostic[] to LSP Diagnostic[]
   const lspDiagnostics: LSPDiagnostic[] = diagnostics.map(toLSPDiagnostic);
@@ -659,6 +733,8 @@ function mapCompletionKind(kind: string): CompletionItemKind {
       return CompletionItemKind.Constant;
     case 'snippet':
       return CompletionItemKind.Snippet;
+    case 'file':
+      return CompletionItemKind.File;
     default:
       return CompletionItemKind.Text;
   }

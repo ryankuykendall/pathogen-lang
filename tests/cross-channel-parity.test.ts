@@ -81,10 +81,7 @@ describe('cross-channel parity', () => {
     const catalogedFnNames = new Set(LANGUAGE_FEATURES.map((f) => f.fn));
 
     const unclassified = exports.filter(
-      (name) =>
-        FEATURE_PREFIXES.test(name) &&
-        !catalogedFnNames.has(name) &&
-        !HELPERS_NOT_FEATURES.has(name),
+      (name) => FEATURE_PREFIXES.test(name) && !catalogedFnNames.has(name) && !HELPERS_NOT_FEATURES.has(name),
     );
 
     it('has no unclassified get/format/prepare/analyze exports', () => {
@@ -109,9 +106,7 @@ describe('cross-channel parity', () => {
   describe('playground completeness: wired features are referenced in cm-language-services.ts', () => {
     const wiringSource = readText(PLAYGROUND_WIRING);
 
-    const required = LANGUAGE_FEATURES.filter(
-      (f) => f.playgroundRequired && !f.playgroundDeferred,
-    );
+    const required = LANGUAGE_FEATURES.filter((f) => f.playgroundRequired && !f.playgroundDeferred);
 
     for (const feat of required) {
       it(`${feat.id} (${feat.fn}) is referenced in cm-language-services.ts`, () => {
@@ -183,16 +178,14 @@ describe('cross-channel parity', () => {
         ).not.toBeNull();
 
         // Extract each quoted string inside the array — splitting by comma
-        // would fail when comma itself is a trigger character.
-        const declared = [...match![1].matchAll(/['"`]([^'"`]*)['"`]/g)]
-          .map((m) => m[1])
-          .sort();
+        // would fail when comma itself is a trigger character. Each string
+        // ends at its own kind of quote, so `'"'` is one entry.
+        const declared = [...match![1].matchAll(/(['"`])((?:(?!\1).)*)\1/g)].map((m) => m[2]).sort();
         const expected = [...feat.lspTriggerCharacters].sort();
 
         expect(
           declared,
-          `Feature ${feat.id}: trigger characters declared in server.ts ` +
-            `don't match the catalog.`,
+          `Feature ${feat.id}: trigger characters declared in server.ts ` + `don't match the catalog.`,
         ).toEqual(expected);
       }
     });

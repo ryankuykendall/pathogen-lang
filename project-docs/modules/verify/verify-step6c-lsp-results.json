@@ -1,0 +1,205 @@
+[
+  {
+    "name": "a project that loads has no problems",
+    "ok": true,
+    "detail": []
+  },
+  {
+    "name": "hover shows an imported fn's signature and file",
+    "ok": true,
+    "detail": {
+      "contents": {
+        "kind": "markdown",
+        "value": "**gear** — *function*\n\n`fn gear(center, radius, teeth)`\n\nDefined in parts/gears.pathogen, line 8"
+      },
+      "range": {
+        "start": {
+          "line": 3,
+          "character": 0
+        },
+        "end": {
+          "line": 3,
+          "character": 4
+        }
+      }
+    }
+  },
+  {
+    "name": "go-to-definition opens the other file at the name",
+    "ok": true,
+    "detail": {
+      "uri": "file:///Users/ryan/claude-code-projects/svg-path-extended/tmp/verify-lsp-yzXCoD/parts/gears.pathogen",
+      "range": {
+        "start": {
+          "line": 7,
+          "character": 10
+        },
+        "end": {
+          "line": 7,
+          "character": 14
+        }
+      }
+    }
+  },
+  {
+    "name": "parameter hints for an imported fn",
+    "ok": true,
+    "detail": {
+      "signatures": [
+        {
+          "label": "gear(center, radius, teeth)",
+          "documentation": "Defined in parts/gears.pathogen, line 8",
+          "parameters": [
+            {
+              "label": "center"
+            },
+            {
+              "label": "radius"
+            },
+            {
+              "label": "teeth"
+            }
+          ]
+        }
+      ],
+      "activeSignature": 0,
+      "activeParameter": 1
+    }
+  },
+  {
+    "name": "completion after a namespace's dot: its exports",
+    "ok": true,
+    "detail": [
+      "Teeth",
+      "gear",
+      "toothDepth"
+    ]
+  },
+  {
+    "name": "F2 on an imported name is refused with the reason",
+    "ok": true,
+    "detail": {
+      "jsonrpc": "2.0",
+      "id": 6,
+      "error": {
+        "code": -32803,
+        "message": "gear is imported from parts/gears.pathogen. Renaming across files isn't supported yet: rename it in each file."
+      }
+    }
+  },
+  {
+    "name": "completion in an import's quotes: the project's modules, File kind, replacing what's typed",
+    "ok": true,
+    "detail": [
+      {
+        "label": "./parts/gears.pathogen",
+        "kind": 17,
+        "detail": "module",
+        "sortText": "49./parts/gears.pathogen",
+        "insertText": "./parts/gears.pathogen",
+        "insertTextFormat": 1,
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 0,
+              "character": 20
+            },
+            "end": {
+              "line": 0,
+              "character": 22
+            }
+          },
+          "newText": "./parts/gears.pathogen"
+        }
+      }
+    ]
+  },
+  {
+    "name": "a '/' outside an import's path opens nothing",
+    "ok": true,
+    "detail": []
+  },
+  {
+    "name": "a `\"` opening an ordinary string opens nothing",
+    "ok": true,
+    "detail": []
+  },
+  {
+    "name": "a `/` in calc() opens nothing",
+    "ok": true,
+    "detail": []
+  },
+  {
+    "name": "a `/` in a comment opens nothing",
+    "ok": true,
+    "detail": []
+  },
+  {
+    "name": "editing an imported file rechecks the open file that imports it",
+    "ok": true,
+    "detail": [
+      {
+        "range": {
+          "start": {
+            "line": 0,
+            "character": 9
+          },
+          "end": {
+            "line": 0,
+            "character": 53
+          }
+        },
+        "severity": 1,
+        "message": "parts/gears.pathogen has no export named gear. It exports: cog, Teeth, toothDepth.",
+        "source": "pathogen-evaluator"
+      }
+    ]
+  },
+  {
+    "name": "an import of a missing file is an error at its path, in the CLI words",
+    "ok": true,
+    "detail": [
+      {
+        "range": {
+          "start": {
+            "line": 0,
+            "character": 21
+          },
+          "end": {
+            "line": 0,
+            "character": 46
+          }
+        },
+        "severity": 1,
+        "message": "import file \"./parts/marks.pathogen\" was not found (looked for /Users/ryan/claude-code-projects/svg-path-extended/tmp/verify-lsp-yzXCoD/parts/marks.pathogen).",
+        "source": "pathogen-modules"
+      }
+    ]
+  },
+  {
+    "name": "a file created on disk clears the error (didChangeWatchedFiles)",
+    "ok": true,
+    "detail": []
+  },
+  {
+    "name": "an unsaved file's import says to save it first",
+    "ok": true,
+    "detail": [
+      {
+        "range": {
+          "start": {
+            "line": 0,
+            "character": 21
+          },
+          "end": {
+            "line": 0,
+            "character": 46
+          }
+        },
+        "severity": 1,
+        "message": "Cannot import \"./parts/gears.pathogen\" until this file is saved: import paths start at the file's folder.",
+        "source": "pathogen-modules"
+      }
+    ]
+  }
+]
