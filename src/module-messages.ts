@@ -48,6 +48,19 @@ export function moduleDrawingReadError(name: 'ctx' | 'viewbox'): string {
   return `A module has no drawing while it loads, so ${name} can't be read. Read it in an exported fn that the importing file calls; there it describes that file's drawing.`;
 }
 
+/**
+ * A function that works from the pen (the contextAwareFunctions set:
+ * polarPoint, polarLine, heading, …) while a module loads. polarPoint, the one
+ * used to compute a point, names the way to measure from a chosen spot.
+ */
+export function modulePenError(name: string): string {
+  const tip =
+    name === 'polarPoint'
+      ? ' For a point at an angle and distance from a spot you choose, use Point(x, y).polarTranslate(angle, distance).'
+      : '';
+  return `A module has no pen while it loads, so ${name} can't be called here. Call it inside a path block (@{ … }), which has its own pen, or in an exported fn, which uses the pen of the place that calls it.${tip}`;
+}
+
 /** Importing a file that doesn't start with `module;`. */
 export function notAModuleError(written: string): string {
   return `Cannot import "${written}": it isn't a module. To make it one, add module; at the top of that file and move its drawing into exported fns.`;
@@ -140,7 +153,7 @@ export function fixedNamespaceError(name: string, file: string): string {
  * ones after it).
  */
 const IMPORTED_VALUE_CLAUSE =
-  /(?:, whose (?:values|variables) are fixed once it has loaded\. |, and imported values are fixed\. |A module can't draw while it loads\.|A module has no drawing)/;
+  /(?:, whose (?:values|variables) are fixed once it has loaded\. |, and imported values are fixed\. |A module can't draw while it loads\.|A module has no (?:drawing|pen))/;
 
 /**
  * Whether `e` is one of the errors above: a change to a fixed value, or a

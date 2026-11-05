@@ -870,7 +870,9 @@ fn drawGridToLayer(targetLayer, gridFn, type, angle, x, y, width, height, spacin
 
 ## Context-Aware Functions
 
-These functions use the current path context (position, tangent direction) to generate path segments. They maintain path continuity and are ideal for building complex shapes programmatically.
+Most of these functions work from the pen: where it is and which way it's heading. The ones that draw continue from it, which keeps a shape connected. The [intersection functions](#stdlib-intersections) and `polarOffset` don't use the pen. They're plain math and work anywhere.
+
+A [module](#modules-exporting) has no pen while it loads, so it can't call the others at its top level. Call them inside a path block, which has its own pen, or in an exported fn, which uses the pen of the place that calls it.
 
 ### Intersections
 

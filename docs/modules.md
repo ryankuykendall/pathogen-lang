@@ -76,7 +76,8 @@ fn hub(center, radius) {
   - path commands such as `M 0 0`, and drawing calls such as `circle(…);` or `shape.draw();`. That includes calling a fn that draws, even this file's own: `gear(…);` at the top level is an error;
   - layers: `define PathLayer(…)`, `PathLayer('ink') …` and `apply` blocks;
   - text lines such as ``text(10, 20)`Hi` ``;
-  - `define ViewBox`, `.subscribe(…)`, and reading `ctx` or `viewbox`: a module has no drawing of its own to describe.
+  - `define ViewBox`, `.subscribe(…)`, and reading `ctx` or `viewbox`: a module has no drawing of its own to describe;
+  - the [functions that work from the pen](#stdlib-context-aware-functions) (`polarPoint`, `polarMove`, `polarLine`, `arcFromCenter`, `arcFromPolarOffset`, `heading`, `turn`, `tangentLine` and `tangentArc`): a module has no pen while it loads. That includes calling a fn that uses one. A path block has its own pen, so they work inside one. `polarOffset` doesn't use the pen, so it's fine. For a point at an angle and distance from a spot you choose, use [`Point(x, y).polarTranslate(angle, distance)`](#syntax-points).
 
   These are fine: anything that makes a value, such as styles (`#{ … }`), path blocks (`@{ … }`), text blocks (`&{ … }`), colors, gradients, masks, markers and tables of numbers; and `@font`, `log()` and `assert()`. A path block keeps its commands as a value, so only `.draw()` on it counts as drawing. To draw, export a fn: it draws when your file calls it.
 - **Compiled by itself, a module draws nothing.** Its `log()` and `assert()` lines still run, so you can check its values. To see its shapes, import it into a small program that draws them.
@@ -392,6 +393,7 @@ In VS Code, the error is shown on the call (or the import) in the file you're ed
 | A module drawing while it loads: a path command, a drawing call (also through a fn it calls), a layer, `apply`, text or `.subscribe(…)` | `A module can't draw while it loads. Draw in an exported fn, and call it from the file that imports this one.` |
 | `define ViewBox` in a module | `A module has no drawing, so it can't define a ViewBox. The program that imports it sets the ViewBox.` |
 | Reading `ctx` or `viewbox` while a module loads (a path block's own `ctx` is fine) | `A module has no drawing while it loads, so ctx can't be read. Read it in an exported fn that the importing file calls; there it describes that file's drawing.` (`viewbox` reads the same way) |
+| A function that works from the pen while a module loads, such as `polarPoint` or `polarLine`, also through a fn it calls (in a path block it's fine) | `A module has no pen while it loads, so polarPoint can't be called here. Call it inside a path block (@{ … }), which has its own pen, or in an exported fn, which uses the pen of the place that calls it. For a point at an angle and distance from a spot you choose, use Point(x, y).polarTranslate(angle, distance).` (the others read the same way, without the last sentence) |
 | An import with no path yet, such as `import { gear` while you type | `Incomplete import — write it as import { name } from "./file.pathogen"; or import * as name from "./file.pathogen";` |
 | An import without braces or `* as` | `import gears from "./parts/gears.pathogen" isn't supported: Pathogen has no default export. Import its names: import { … } from "./parts/gears.pathogen"; or import * as gears from "./parts/gears.pathogen";` |
 | A built-in's name | `Cannot use Color as a name — it is a built-in constructor. Use another name` (see [Built-in names](#syntax-built-in-names)) |

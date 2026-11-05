@@ -7,7 +7,14 @@
 >
 > The step 5a and 5b rows otherwise stand.
 >
-> **After your 5e approval:** the missing-`;` example (in "Errors in other files" and in the Errors table) now reads `Missing ';' after const declaration`. That is what the code reports now that `module;` comes before the `const`. The reason is in `24-phase-1a-step5e.md`.
+> **After your 5e approval:** the missing-`;` example (in "Errors in other files" and in the Errors table) now reads `Missing ';' after const declaration`. That is what the code reports now that `module;` comes before the `const`. The reason is in `24-phase-1a-step5e.md`. **Approved by you on 2026-11-05** ("Approved on 'the Missing...' docs wording").
+>
+> **Pen helpers, 2026-11-05. Approved by you on 2026-11-05** ("Approved on the pen-helper docs; commit and start step 6"). You chose to make the functions that work from the pen an error at a module's top level ("Let's go with option 1 and make them an error"). The docs changes, content-reviewed:
+> - docs/modules.md "Exporting": a new bullet under "A module doesn't draw at its top level". It lists the nine functions, says a path block has its own pen, says `polarOffset` is fine, and points to `Point(x, y).polarTranslate(angle, distance)`.
+> - docs/modules.md Errors table: a new row with the exact message.
+> - docs/stdlib.md "Context-Aware Functions": the intro is rewritten, because it said every function there uses the pen and the intersection functions don't. It now says a module can't call the pen functions at its top level.
+>
+> Details are in `25-pen-helpers-in-modules.md`.
 
 2026-11-04. You approved the phase 1a docs on 2026-11-03 ("Let's move on"). Steps 4 and 5 changed published docs since then. Each change went through the content review, but the per-step process asks for your approval too. All of them are in local commits, none pushed. The push waits on your approval (plan step 7).
 

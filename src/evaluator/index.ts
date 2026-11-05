@@ -22,6 +22,7 @@ import {
   MODULE_VIEWBOX_MESSAGE,
   moduleDrawingReadError,
   moduleNotLoadedError,
+  modulePenError,
   namespaceNoExportError,
   noExportError,
   noProjectFolderError,
@@ -1336,9 +1337,8 @@ function isInsidePathBlock(scope: Scope): boolean {
  * reaches the sealed state and gets the same error.
  */
 function ctxValueFor(state: EvaluationState | undefined, line?: number, column?: number): Value | undefined {
-  let drawing = state as DrawingState | undefined;
-  while (drawing?._ctxSource) drawing = drawing._ctxSource as DrawingState;
-  if (!drawing) return undefined;
+  if (!state) return undefined;
+  const drawing = penStateOf(state);
   if (drawing._insidePathBlock) {
     return { type: 'ContextObject' as const, value: contextToObject(drawing.pathContext) } as Value;
   }
@@ -1349,6 +1349,28 @@ function ctxValueFor(state: EvaluationState | undefined, line?: number, column?:
     if (layer?.layerType === 'PathLayer') transformState = layer.transformState;
   }
   return { type: 'ContextObject' as const, value: contextToObject(drawing.pathContext, transformState) } as Value;
+}
+
+/** The state whose pen `state` uses: a text block's is the state that made it. */
+function penStateOf(state: EvaluationState): DrawingState {
+  let drawing = state as DrawingState;
+  while (drawing._ctxSource) drawing = drawing._ctxSource;
+  return drawing;
+}
+
+/**
+ * A function that works from the pen (polarPoint, polarLine, heading, …: the
+ * contextAwareFunctions set) needs one, as `ctx` does: a module has none while
+ * it loads (docs/modules.md "Exporting"). A path block's own pen is fine; a
+ * text block uses its maker's, as for ctxValueFor. polarOffset is in the set
+ * but only computes a step, so it never needs the pen.
+ */
+function assertHasPen(state: EvaluationState, name: string, at: unknown): void {
+  if (name === 'polarOffset') return;
+  const drawing = penStateOf(state);
+  if (drawing.drawingSealed && !drawing._insidePathBlock) {
+    throw new Error(formatError(modulePenError(name), getLine(at), getCol(at)));
+  }
 }
 
 function formatError(message: string, line?: number, column?: number): string {
@@ -9179,6 +9201,7 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope): Value {
     if (!scope.evalState) {
       throw new Error(`Function '${call.name}' requires evaluation context`);
     }
+    assertHasPen(scope.evalState, call.name, call);
     // Intentionally unwrap-only: context-aware functions consume angles into
     // geometry (heading() is documented plain radians) — no angle re-wrap.
     const args = call.args.map((arg) => {

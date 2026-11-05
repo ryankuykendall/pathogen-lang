@@ -12,6 +12,8 @@
  * (Before step 5e this file held step 5c's tests for a module's own layers,
  * transforms and subscriptions; a module can no longer make any of them.)
  */
+import { readFileSync } from 'node:fs';
+
 import { describe, expect, it } from 'vitest';
 
 import { compile, parse, resolveModules } from '../src';
@@ -58,6 +60,10 @@ const DRAWS =
 const VIEWBOX = "A module has no drawing, so it can't define a ViewBox. The program that imports it sets the ViewBox.";
 const READS = (name: 'ctx' | 'viewbox'): string =>
   `A module has no drawing while it loads, so ${name} can't be read. Read it in an exported fn that the importing file calls; there it describes that file's drawing.`;
+const POLAR_POINT_TIP =
+  ' For a point at an angle and distance from a spot you choose, use Point(x, y).polarTranslate(angle, distance).';
+const PEN = (name: string): string =>
+  `A module has no pen while it loads, so ${name} can't be called here. Call it inside a path block (@{ … }), which has its own pen, or in an exported fn, which uses the pen of the place that calls it.${name === 'polarPoint' ? POLAR_POINT_TIP : ''}`;
 
 /** A main file that imports `lib.pathogen` and draws one line of its own. */
 const MAIN = 'import * as lib from "./lib.pathogen";\n\nM 0 0 L 1 1\n';
@@ -136,6 +142,77 @@ describe("docs: a module doesn't draw at its top level", () => {
     expect(await errorOf(MAIN, lib(body))).toBe(libError(line, col, message));
   });
 
+  // The functions that work from the pen (docs/modules.md "Exporting"; the
+  // contextAwareFunctions set in src/stdlib/index.ts). Before, polarPoint here
+  // silently measured from (0, 0), and a polarLine kept as a value moved a pen
+  // that could never draw.
+  const PEN_HELPERS: [string, string, number][] = [
+    ['polarPoint', 'const tip = polarPoint(0deg, 10);', 13],
+    ['polarMove', 'const step = polarMove(0deg, 10);', 14],
+    ['polarLine', 'const seg = polarLine(0deg, 10);', 13],
+    ['arcFromCenter', 'const bend = arcFromCenter(5, 0, 5, 180deg, 0deg, 1);', 14],
+    ['arcFromPolarOffset', 'const bend = arcFromPolarOffset(0deg, 5, 90deg);', 14],
+    ['heading', 'heading(45deg);', 1],
+    ['turn', 'turn(10deg);', 1],
+    ['tangentLine', 'const reach = tangentLine(10);', 15],
+    ['tangentArc', 'const bend = tangentArc(5, 90deg);', 14],
+  ];
+
+  it.each(PEN_HELPERS)('%s is an error at its call', async (name, body, col) => {
+    expect(await errorOf(MAIN, lib(body))).toBe(libError(3, col, PEN(name)));
+  });
+
+  it("docs/modules.md's Errors table quotes polarPoint's message word for word", () => {
+    const docs = readFileSync(new URL('../docs/modules.md', import.meta.url), 'utf8');
+    expect(docs).toContain(`\`${PEN('polarPoint')}\``);
+  });
+
+  it('the list above is every function that works from the pen', async () => {
+    const { contextAwareFunctions } = await import('../src/stdlib');
+    // polarOffset is in the set but never reads the pen: it stays allowed (below).
+    expect([...contextAwareFunctions].filter((name) => name !== 'polarOffset').sort()).toEqual(
+      PEN_HELPERS.map(([name]) => name).sort(),
+    );
+  });
+
+  it("a pen helper in a fn the module calls while it loads is an error at the helper's line", async () => {
+    expect(await errorOf(MAIN, lib('fn tip(len) {\n  return polarPoint(0deg, len);\n}\nconst far = tip(10);'))).toBe(
+      libError(4, 10, PEN('polarPoint')),
+    );
+  });
+
+  it('a pen helper in a style value is an error at its ${', async () => {
+    expect(await errorOf(MAIN, lib('const thin = #{ stroke-width: ${polarPoint(0deg, 1).x}; };'))).toBe(
+      libError(3, 31, `Style value for "stroke-width": ${PEN('polarPoint')}`),
+    );
+  });
+
+  it('a pen helper in a text block is an error: the block shares the pen of the code that makes it', async () => {
+    expect(await errorOf(MAIN, lib('const label = &{ text(0, 0)`${polarPoint(0deg, 1).x}` };'))).toBe(
+      libError(3, 31, PEN('polarPoint')),
+    );
+  });
+
+  // A builder's block runs in the module's state, so it has no pen either: the
+  // same as reading ctx there.
+  it.each([
+    ['a Grid callback', 'const cells = Grid(2, 2) {|grid| log(polarPoint(0deg, 1).x); };', 38],
+    [
+      'a Marker body',
+      "const tip = Marker('tip', 10, 10) {|m| m.append(@{ m 0 0 l 10 5 z }); log(polarPoint(0deg, 1).x); };",
+      75,
+    ],
+  ])('a pen helper in %s the module builds while it loads is an error', async (_what, body, col) => {
+    expect(await errorOf(MAIN, lib(body))).toBe(libError(3, col, PEN('polarPoint')));
+  });
+
+  it('a pen helper in a callback the module runs while it loads is an error', async () => {
+    // Wrapped as any error in a .map() callback is.
+    expect(await errorOf(MAIN, lib('const tips = [0, 90].map() {|a| return polarPoint(a * 1deg, 10); };'))).toBe(
+      libError(3, undefined, `Error in .map() callback at index 0: Line 3, col 40: ${PEN('polarPoint')}`),
+    );
+  });
+
   it('a fn imported from another module that draws is an error where this module calls it', async () => {
     const message = await errorOf(MAIN, {
       '/lib.pathogen': 'module;\n\nimport { gear } from "./gears.pathogen";\n\ngear(4);\nexport const ok = 1;\n',
@@ -194,6 +271,18 @@ describe('docs: what a module may make at its top level', () => {
       'a callback that draws into its own discarded sink, as in any program',
       'const doubled = [1, 2].map() {|v| return v * 2; };',
     ],
+    // docs/modules.md: polarOffset doesn't use the pen, and polarTranslate
+    // measures from a point you choose.
+    [
+      'polarOffset and Point.polarTranslate',
+      'const step = polarOffset(0deg, 10);\nconst tip = Point(5, 5).polarTranslate(0deg, 10);\nassert(step.dx == 10 && tip.x == 15 && tip.y == 5, "polar");',
+    ],
+    // docs/path-blocks.md: pen helpers in a block use the block's own pen.
+    [
+      'a pen helper in a path block',
+      // `m 5 5;` ends the path statement: without it, polarLine would be its argument.
+      'const hook = @{\n  m 5 5;\n  polarLine(0deg, 10);\n  let tip = polarPoint(90deg, 4);\n  assert(tip.x == 15 && tip.y == 9, "block pen");\n};\nassert(hook.endPoint.x == 15 && hook.endPoint.y == 5, "block end");',
+    ],
   ];
 
   it.each(ALLOWED)('%s', async (_what, body) => {
@@ -246,12 +335,22 @@ describe('docs: a module compiled by itself', () => {
       `Line 6, col 1: ${DRAWS}`,
     );
     expect(() => compile('module;\n\nconst here = ctx.position;\n')).toThrow(`Line 3, col 14: ${READS('ctx')}`);
+    expect(() => compile('module;\n\nconst tip = polarPoint(0deg, 10);\n')).toThrow(
+      `Line 3, col 13: ${PEN('polarPoint')}`,
+    );
   });
 
   it('a program without the header is unchanged: it draws, and ctx and viewbox work', () => {
     const result = compile('define ViewBox(0, 0, 40, 20);\nM 0 0 L 5 5\nlog(ctx.position.x);\nlog(viewbox.width);\n');
     expect(result.layers.map((l) => l.data)).toEqual(['M 0 0 L 5 5']);
     expect(logsOf(result)).toEqual(['5', '40']);
+  });
+
+  it('a program without the header keeps its pen helpers at the top level, before its first path command too', () => {
+    const result = compile(
+      'const early = polarPoint(0deg, 10);\nM 50 50;\nconst late = polarPoint(0deg, 10);\nL early.x early.y L late.x late.y\n',
+    );
+    expect(result.layers.map((l) => l.data)).toEqual(['M 50 50 L 10 0 L 60 50']);
   });
 });
 
@@ -332,6 +431,37 @@ describe('what a module seals, and what it never does', () => {
       { '/lib.pathogen': 'module;\n\nexport fn report() {\n  log(ctx.position.x, viewbox.width);\n}\n' },
     );
     expect(logsOf(result)).toEqual(['7 40']);
+  });
+
+  it("an exported fn's pen helpers use the calling drawing's pen", async () => {
+    const result = await compileFiles(
+      // `M 50 50;` ends the path statement, so tick(10) runs after the pen moves.
+      'import { tick, tip } from "./lib.pathogen";\n\nM 50 50;\ntick(10);\nconst far = tip(5);\nL far.x far.y\n',
+      {
+        '/lib.pathogen':
+          'module;\n\nexport fn tick(len) {\n  polarLine(0deg, len);\n}\n\nexport fn tip(len) {\n  return polarPoint(90deg, len);\n}\n',
+      },
+    );
+    expect(result.layers[0].data).toBe(
+      compile('M 50 50;\npolarLine(0deg, 10);\nconst far = polarPoint(90deg, 5);\nL far.x far.y\n').layers[0].data,
+    );
+    expect(result.layers[0].data).toBe('M 50 50 L 60 50 L 60 55');
+  });
+
+  it("an exported lambda's pen helper uses the calling drawing's pen", async () => {
+    const result = await compileFiles(
+      'import { tipAt } from "./lib.pathogen";\n\nM 10 10;\nconst far = tipAt(5);\nL far.x far.y\n',
+      { '/lib.pathogen': 'module;\n\nexport const tipAt = {|len| polarPoint(0deg, len)};\n' },
+    );
+    expect(result.layers[0].data).toBe('M 10 10 L 15 10');
+  });
+
+  it("an exported fn called in the importing file's path block uses that block's pen", async () => {
+    const result = await compileFiles(
+      'import { tick } from "./lib.pathogen";\n\nconst hook = @{\n  m 2 2;\n  tick(3);\n};\nlog(hook.endPoint.x, hook.endPoint.y);\n',
+      { '/lib.pathogen': 'module;\n\nexport fn tick(len) {\n  polarLine(0deg, len);\n}\n' },
+    );
+    expect(logsOf(result)).toEqual(['5 2']);
   });
 
   it('an exported fn may define layers, apply and write text in the calling drawing', async () => {
