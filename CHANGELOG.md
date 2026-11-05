@@ -5,6 +5,153 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] - 2026-11-05 (modules: import and export)
+
+### Added
+
+#### Core
+
+- **Modules: a program can import fns, constants and enums from other `.pathogen` files.** A library starts with `module;` and marks what it offers with `export`. A program brings it in with `import { gear } from "./parts/gears.pathogen";`. Imports work in the CLI and VS Code, where files sit side by side on disk; a playground workspace is one program for now.
+- **Three ways to import.** `import { gear, Teeth } from "…";` brings in the names you list. `as` gives one another name in your file (`{ gear as cog }`). `import * as gears from "…";` brings in every export under one name: `gears.gear(…)`, `gears.Teeth.Standard`.
+  - Imports come first. Only comments, and a module's `module;` line, may come before them; `@font` and `define` count as statements.
+  - Paths follow the `@font` rules (docs/projects.md). `./` and `../` start at the file the import is written in, and `/` at the project folder. Forward slashes only, exact letter case, never outside the project folder, `.pathogen` written out. A name (`"gears.pathogen"`), a package (`"@studio/kit"`), another kind of file, a folder, a backslash or a drive letter is an error that says what to write.
+  - An imported name is a declaration. It can't be a built-in's name or be imported twice, and nothing else at your file's top level can share it.
+  - A name the file doesn't export lists what it does export: `parts/gears.pathogen has no export named gera. It exports: gear, Teeth, toothDepth.` A name it declares without `export` says to add `export`.
+  - Pathogen has no default export, so `import gears from "…";` is an error that shows the `{ }` and `* as` forms.
+  - Two files that import each other, directly or through others, are an error that names every file: `Import cycle: main.pathogen → parts/a.pathogen → main.pathogen. Move what both files need into a third file that both import.`
+- **`module;` makes a file a library, and only a library can be imported.** It must be the file's first statement; only comments may come before it. Importing any other file is `Cannot import "./parts/scene.pathogen": it isn't a module. To make it one, add module; at the top of that file and move its drawing into exported fns.`
+  - `export` goes in front of a top-level `const`, `fn` or `enum`. `export let` says to use `export const`. `export` in a file without `module;` is `export only works in a module. Remove export, or add module; at the top of the file to make it a module, which can't draw at its top level.`
+  - To pass on another file's name, export it as a const: `export const gear = gears.gear;`.
+- **A module makes values; it never draws at its top level.** Its top level declares fns, constants and enums, and builds values: styles, path and text blocks, glyphs, colors, gradients, masks, markers, Cyclers, tables of numbers. `@font`, `log()` and `assert()` are fine there too. Each of these is an error at its line:
+  - path commands, drawing calls, `.draw()` and a call to a fn that draws; layers, `apply`, text lines and `.subscribe(…)`: `A module can't draw while it loads. Draw in an exported fn, and call it from the file that imports this one.`
+  - `define ViewBox`, and reading `ctx` or `viewbox`, each with its own message (a module has no drawing to describe);
+  - the nine functions that work from the pen (`polarPoint`, `polarMove`, `polarLine`, `arcFromCenter`, `arcFromPolarOffset`, `heading`, `turn`, `tangentLine`, `tangentArc`), also through a fn the module calls: `A module has no pen while it loads, so polarPoint can't be called here. …`. A path block has its own pen, so they work inside one. `polarOffset` doesn't use the pen and stays allowed.
+  - The editors underline what they can see as you type. A call to a fn that draws is caught when it runs.
+  - Compiled by itself, a module draws nothing. Its `log()` and `assert()` lines still run.
+- **Each imported file runs once per compile, in a space of its own,** before your file. Only its exports reach your file. An exported fn finds its names in its own file and draws into the drawing that calls it: your pen, your current layer, `ctx` and `viewbox`. `viewbox` now follows the call like `ctx` does; within one file it is the same box either way.
+- **What you import is fixed.** Once a file has loaded:
+  - giving an imported name a new value is an error that names its file: `Cannot assign to gear — it is imported from parts/gears.pathogen. Declare your own with let if it needs to change`;
+  - changing an imported array, object, Cycler, gradient, grid, mask or other value, or adding to a namespace (`kit.extra = 1`), is an error that says what to do instead, such as a copy (`[...sizes]`, `{ ...style }`) or a fn that makes a fresh one;
+  - an exported fn can't change its own file's variables or what they hold: `Cannot assign to lastId — it belongs to ids.pathogen, whose variables are fixed once it has loaded. Return the new value instead, or pass it in as a parameter`.
+  - Reading is always fine, and inside the file, while it loads, everything works as usual. So a file behaves the same however many files import it.
+- **Ids from other files get a prefix.** A mask, clip path, gradient, pattern, marker or filter made by an imported file's code gets that file's path from the project folder in front of its id. `Marker('arrowhead', …)` in `parts/arrows.pathogen` is `parts-arrows--arrowhead` in your SVG, so two files can both use `arrowhead`.
+  - Your own ids never change. The prefix comes from the file the code is written in, even when your file calls its fn. Values carry their full id, so `marker-end: tip;` just works.
+  - A character an id can't hold is escaped as `_` plus its code point in hex (`my gears.pathogen` → `my_20gears--`), and a leading digit gets a `_` in front.
+  - Only what's used reaches your SVG: an imported def joins when your output refers to it, together with the defs it refers to.
+  - A raw `url(#…)` in an imported file means that file's own id. In your file, a raw `url(#arrowhead)` that only matches another file's id is a warning, code `imported-id`: `url(#arrowhead) matches no id in this file. The arrowhead made in parts/arrows.pathogen is parts-arrows--arrowhead in your SVG; use the imported value instead.`
+  - Clashes stop the compile: two files with one prefix (`parts-gears.pathogen` and `parts/gears.pathogen`), or one of your ids matching an imported one your drawing refers to.
+  - A `NoiseFilter()` at its file's top level has the same seed imported or compiled alone, because the seed comes from the id before the prefix.
+- **An imported CSSVar color brings its `@property` rule** when your SVG uses the variable. CSSVar names aren't prefixed: every file that uses a name shares one CSS variable. For a name your own code uses, the other file's rule is left out, so importing a file never changes how your own colors render.
+- **`@font` in an imported file loads too**, with its `./` paths starting from that file's folder. Fonts are shared across the compile by family and weight, so two files writing `@font "Inter";` use one font. Two files loading different fonts as one family and weight is an error that names both: `Two files load different fonts as "Inter" 400: ./a/Inter.ttf (main.pathogen) and ./b/Inter.ttf (parts/labels.pathogen). Use the same font in both files.`
+- **Errors, warnings and logs name their file.** An error in another file gives that file and line, then one `called from <file> line N` line for each file boundary on the way back to yours, or `imported from <file> line N` for each import. Calls within one file aren't listed:
+  - `Error: parts/gears.pathogen line 5, col 3: assertion failed: a gear needs at least 3 teeth`, then `  called from main.pathogen line 4`.
+  - A log reads `[parts/gears.pathogen line 12] toothDepth = 6`, and a warning `parts/gears.pathogen:12:5: warning: …`. Log entries and warnings carry a `file` field.
+  - Errors in the file you compile read exactly as before.
+- **For library callers:** `compile`, `compileWithContext` and `getDiagnostics` take `modules`, the files `resolveModules` reads through a host before the compile; without it, an import is the playground's no-project-folder error. Also new: `planImports`, `importPathMistake`, `withOpenDocuments`, `formatModuleLoadError`, `unsavedImportErrors`, `isModuleSource`, `ModuleTraceError`, `resolveFontsInFiles` and `renameRefusal`, and the optional `Diagnostic.alsoIn` (where an error from a call happened in another file); and in `pathogen-lang/node`, `createNodeProjectHost`, `resolveEditorModules`, `editorModulePaths` and `listProjectModules`.
+
+#### CLI
+
+- **`pathogen-lang main.pathogen` reads the files it imports** from `main.pathogen`'s folder and its project folder, before compiling. A file that can't be loaded stops the CLI with exit code 1. In the compiled file the error reads like an `@font` one (`main.pathogen:1:22: error: import file … was not found …`); in an imported file it names that file and position, then the `imported from` lines.
+- Code from `-e` or standard input imports from the current folder, or from the folder `--root` names, as `@font` does. A file outside the `--root` folder can't follow its imports: `… so its import paths can't be followed.`
+- A project folder compiles its `pathogen.json` `main`, whose imports start from the main's own folder.
+- A log or warning from an imported file prints under its path from the project folder, and has a `file` field in `--json` and `--log-file`.
+- Fonts load for every file the program imports.
+
+#### Language services
+
+These work in VS Code, which passes in the files a document imports:
+
+- **Hover** on an imported name, its alias, the name before `as`, or a namespace's member shows the export: what it is, its signature line (`fn gear(center, radius, teeth)`) and `Defined in parts/gears.pathogen, line 8`. A namespace lists its file's exports. A name the file doesn't export shows the compiler's message. A name another file passes on is followed to where it's defined.
+- **Go-to-definition** leads to the name in the other file, and from a namespace or an import's path to the top of that file.
+- **Completion** offers the file's exports inside `import { }` (without those already listed, each with its signature and file), a namespace's exports after `gears.`, and the project's modules inside an import's quotes, written from this file's folder (or from the project folder after a leading `/`). Paths are offered before the closing quote is typed, too.
+- **Parameter hints** for an imported fn, an alias, a namespace's fn and a name passed on from another file.
+- **Diagnostics:**
+  - a file that can't be loaded is an error at the import's path, in the CLI's words;
+  - an error in another file sits on the call or the import in your file, naming the other file's line;
+  - a font problem in an imported file's `@font` shows on the import that leads to it, naming that file and line.
+- **Every tool knows the new syntax:** the formatter, both highlighters, semantic tokens, scope analysis, keyword hover and completion (`module` inserts `module;`).
+- The built-in-name quick fix on an import renames the name after `as` (`import * as Color …` → `MyColor`).
+
+#### VS Code
+
+- **The language server reads the files a document imports**, with open tabs, unsaved edits included, standing in for the files on disk. Every feature above works in the editor. Go-to-definition opens the other file.
+- **Problems panel:** the diagnostics above, and an unsaved file's imports: `Cannot import "./parts/gears.pathogen" until this file is saved: import paths start at the file's folder.`
+- **An error in another open file shows at its own line too.** When your call makes an imported fn fail, the error sits on your call, naming the other file's line. If that file is open, it also shows at that line there, with its `called from` line. It clears when the call is fixed or your file is closed.
+- **Rechecking:**
+  - editing or closing an imported file rechecks the open files that import it, directly or through others;
+  - a `.pathogen` or `pathogen.json` file created, changed or deleted on disk rechecks every open document (a new file watcher, for the workspace folders);
+  - open tabs are matched to files by their real path on disk, so a tab opened through a linked folder, or with other letter case on a disk that ignores it, still counts.
+- **Path completion** opens when you type `"` or `/` in an import's path, as File items that replace exactly what you typed. Elsewhere those characters open nothing.
+- **Fonts across files:** an imported file's `@font` loads for the Problems panel too, so a glyph drawn in a module's font isn't "no fonts were loaded".
+- **The preview draws a program that imports modules,** matching the CLI's output to 1e-9, with the imported files' fonts. It redraws when an imported file is edited in a tab or changes on disk. A file that can't be loaded stops the drawing with the CLI's message, and an error inside an imported file shows its trace. A module's preview is empty, with a notice: `This file is a module: a module doesn't draw, so its preview is empty. To see its fns draw, open a program that imports it.`
+- Snippets for `import` and the `module;` line. The TextMate grammar highlights `from` only before an import's path and `module` only as the `module;` line.
+
+#### Playground
+
+- **An import is an error at its line**, because a workspace has no files beside it yet: `Cannot import "./parts/gears.pathogen": this program has no project folder to read files from. Imports work in the CLI and VS Code; a playground workspace is one program for now.`
+- The other module rules hold as in any file: `export` without `module;` is an error, and a workspace that starts with `module;` draws nothing.
+- F2 on an exported name shows the reason it can't be renamed in an alert.
+
+### Changed
+
+#### Core
+
+- **Breaking: `import` and `export` are keywords.** They can't be a variable, a parameter, or a bare object key or property any more: `obj.import` and `{ export: 1 }` no longer parse. A quoted key works: `{ 'export': 1 }`, read back with `o['export']`.
+  - No program in the repository used either word (1,452 programs, every position). None of the 216 programs saved on pathogen.studio did either (0 of 406 on the dev site), in a read-only scan on 2026-11-03 that counted names, keys and members.
+  - Checked again on 2026-11-05, just before release: none of the 220 programs saved on pathogen.studio (194 workspaces, 20 approvals, 6 review-queue entries) uses `import`, `export` or a bare `module;` line. Each was also compiled with the previous release and this one: 209 give the same result, 0 differ. 10 couldn't be compared because they already fail to parse (missing `;`), and 1 draws 1.9 million commands and didn't finish in the time limit.
+- **`from` and `module` stay ordinary names** except in their places: `from` between an import's names and its path, `module` as the `module;` line. A gradient's `.from`, `let from = bar.start;` and `let module = 3;` keep working.
+  - One exception: a bare `module;` statement is now read as the header. Anywhere but the top of the file it is `module; must be the file's first statement. Only comments may come before it.` Before, it was a statement that did nothing, or an undefined-variable error.
+- **No new built-in names** (decision 21). This release adds keywords, not standard-library functions, constructors, enums or namespaces, so the reserved-name list is unchanged.
+- `pathogen-lang/node` now includes the parser, to read a file's imports, so it grows from 20 KB to 197 KB.
+
+#### Language services
+
+- **Hover on a local fn or enum shows its signature line** (`` `fn draw(cx, cy)` ``, `` `enum Teeth { Few, Fine }` ``), the same line an imported one shows.
+- **Parameter hints show a local fn's parameters:** `draw(cx, cy)` with the current one marked, and "Defined at line 1". Before, they showed `draw(...)` with no parameters, described from the first fn of that name anywhere in the file. Now it's the fn the call sees, so another fn's inner fn of the same name no longer stands in for it.
+- **F2 refuses an imported or exported name, with the reason**, so a rename never changes only some of a name's uses: `gear is imported from parts/gears.pathogen. Renaming across files isn't supported yet: rename it in each file.` For an exported name: `gear is exported, so other files may use it. …`. A module's private names, and every name in a program without imports or exports, still rename. The language server sends the reason as the rename's error; the playground shows it in an alert.
+- **Completion inside an import offers only what can go there:** exports between the braces, paths between the quotes, and nothing after `as`. Before, both offered the whole keyword and standard-library list (169 items).
+
+#### VS Code
+
+- **Unsaved (untitled) documents are checked.** Before, the language server never saw a file until it was saved, so an untitled document had no diagnostics, hover or completion.
+
+### Fixed
+
+#### Language services
+
+- **Formatting keeps an `@font` path that holds `"` or `\`.** The formatter printed it without escaping, which changed the path or stopped the file from parsing.
+
+#### Documentation
+
+- **docs/modules.md, a new page** (registered in `DOC_FILES` as `modules`): exporting and the `module;` line, what a module can't do at its top level, importing, an imported file running on its own, imported fns drawing with your pen, what's fixed, ids from other files, fonts, errors in other files, each tool, and every error message in a table.
+- docs/syntax.md: `import` and `export` join the keyword list. `from` and `module` are keywords only in their one place. "Built-in names" covers an imported name, the quick fix after `as`, and F2. "Scoping" says `ctx` and `viewbox` both follow the caller.
+- docs/stdlib.md "Context-Aware Functions": the intro said every function there uses the pen, which the intersection functions and `polarOffset` don't. It now says which ones do, and that a module can't call them at its top level.
+- docs/debug.md lists the `imported-id` warning code.
+- docs/projects.md and docs/cli.md: imports are the second kind of file a program reads. They cover `-e` and standard input, and a log or warning from another file with its `file` field. docs/fonts.md and docs/path-blocks.md: `@font` in imported files. docs/markers.md, masks.md, gradients.md and filters.md: ids made in an imported file get a prefix, and noise filters are numbered per file.
+- Blog code samples now highlight `as` and `with` as keywords.
+
+#### Development
+
+- **New files:** `src/host/load-modules.ts` (the import step every tool with files runs before compiling; like the font loader, it reads only through a host), `src/evaluator/module-runtime.ts`, `src/module-messages.ts` (every module message, word for word with the docs), `src/parser/module-check.ts`, `src/language-services/module-exports.ts`, the language server's `src/modules.ts` and `src/cross-file-diagnostics.ts`, and the extension's `src/preview-modules.ts`.
+- **Tests:**
+  - tests/modules-syntax.test.ts (98), modules-loader (66), modules (36), modules-freeze (158, 1 skipped), modules-ids (67, 5 skipped), modules-drawing (84), modules-cssvar (10), modules-fonts (9) and modules-editors (74);
+  - tests/language-server-modules.test.ts (10), language-server-cross-file (7), node-editor-modules (9), vscode-preview-modules (8) and playground-rename-refusal (2, jsdom);
+  - tests/cli.test.ts "imports" (21), and additions to language-server-fonts (+5), vscode-font-session (+3), signature-help, keyword-registry and the all-syntax fixture. The VS Code fixture project `test-fixtures/modules/` holds a module and a program.
+  - Every documented message is pinned word for word.
+- **Verify scripts:**
+  - `project-docs/modules/verify/verify-step6c-lsp.mjs` drives a language server over stdio on a real folder: 19/19 for the package's build, and 19/19 for the server the `.vsix` ships (`PATHOGEN_SERVER=packages/vscode-pathogen/server/out/server.js`).
+  - `verify-step6d-preview.mjs`, run after `npm run build:vscode`, runs the shipped preview code and the real webview under its CSP in headless Chrome (8/8).
+  - `verify-phase1-surfaces.ts` runs one project through the engine, the CLI, the VS Code preview's path (the bundled `pathogen-lang/node` and compiler) and the playground bundle (17/17): the same drawing with imports, the playground's no-project-folder error, and the module rules on all four.
+  - `verify-phase1-playground.mjs` drives the real playground (4/4): the import and `export` errors in the error panel, a module workspace drawing nothing, and F2's alert.
+- **Semantics audit against `8cbe778`** (the last pushed commit) on the final tree: 1,470 programs.
+  - 1,398 unchanged and 0 changed.
+  - 68 skipped: the 16 module examples in docs/modules.md and the VS Code fixture's 2 files, which the old parser can't read, plus the 50 skipped as always.
+  - 4 too large, as always.
+- **Each step's audit** found 0 changed. In step 5e, 8 programs went from error to ok: the docs' and the fixture's libraries, whose `module;` line the old code read as an undefined variable.
+- **Benchmarks** at each step: one-file programs within noise. With files, hot write loops pay 4–10% for the fixed-value check, and a follow-up took a method-call loop from 18.7 to 17.2 ms.
+- Each commit's tree was tested alone. At 6f2e3f1: 196 files, 8,398 passed.
+- tests/cross-channel-parity.test.ts reads `'"'` as one trigger character, and `feature-catalog.ts` lists the new `"` and `/` triggers.
+
 ## [Unreleased] - 2026-11-02 (built-in names can't be declared)
 
 ### Changed

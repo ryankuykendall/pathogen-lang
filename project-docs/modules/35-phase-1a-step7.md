@@ -12,7 +12,7 @@
 | `verify-step6c-lsp.mjs` on the bundled server (`PATHOGEN_SERVER=packages/vscode-pathogen/server/out/server.js`) | **16/16**, the same as the package build |
 | `verify-phase1-playground.mjs`, the real playground on :3000 | **4/4** |
 | Docs approval (22-) | **Approved 2026-11-05** ("Approve"): no docs change waits on you |
-| Production KV scan (decision 34, plus a bare `module;`) | **Not run yet.** You said yes; `wrangler kv key list --remote` failed with `Authentication error [code: 10000]`. The export script empties `tmp/kv-sources/prod` before listing, so the 2026-11-03 copy is gone too. Needs `npx wrangler login` |
+| Production KV scan (decision 34, plus a bare `module;`) | You said yes. The first try failed with `Authentication error [code: 10000]`; one `npx wrangler whoami` refreshed the sign-in. Then, read-only: `scan-kv-keywords.ts --env prod --confirm`, **0 of 220 programs** (194 workspaces, 20 approvals, 6 queue entries) use `import`, `export` or a `module;` line. Export to `tmp/kv-sources/prod` (read-only), then the semantics audit vs `8cbe778` on the final tree (`tmp/phase1/tree-crossfile2`): 209 unchanged, **0 changed**, 10 skipped (the baseline parser rejects them: the known missing-`;` programs), 1 too large (1,926,648 commands, no result in 240 s) |
 
 ## verify-phase1-surfaces.ts
 
@@ -48,7 +48,7 @@ The draft also flagged:
 - plan 12 and decision 33 still describe the pre-5e rules (`export` anywhere, an imported file's drawing run then discarded). 23-/24- supersede them; plan 12 was never amended.
 - docs/modules.md line 348 says an error in another file "shows at its own line too" when that file is open. See "A gap: the error at its own line" below.
 
-One TODO stays in the entry, the production scan's result. The CHANGELOG isn't committed until it's filled in.
+The one TODO left, the production scan's result, is filled in from the results above.
 
 ## A gap: the error at its own line
 
@@ -60,7 +60,7 @@ docs/modules.md line 348 ("In each tool", VS Code): "the error is shown on the c
   - `/parts/gears.pathogen`: 0 diagnostics.
 - An error raised while the other file loads (`imported from`) does show, because that file's own check runs the same top level.
 
-Two ways out: build it (a step 6c follow-up, its own commit and checks), or take the clause out of line 348 (a docs change, so your approval again). Asked 2026-11-05.
+Two ways out: build it (a step 6c follow-up, its own commit and checks), or take the clause out of line 348 (a docs change, so your approval again). Asked 2026-11-05; you chose "Build it". **Built and committed as `6f2e3f1`** (`36-phase-1a-step6c-error-at-its-own-line.md`).
 
 ## File tables (your "optional" item)
 
@@ -71,5 +71,6 @@ Two ways out: build it (a step 6c follow-up, its own commit and checks), or take
 ## Still open
 
 - Checklist #11 in `tmp/modules-manual-test/CHECKLIST.md`: whether VS Code displays F2's refusal text. The server sends it (16/16 above); the playground shows it (4/4 above).
-- The production scan, then its line in the CHANGELOG, then the push (your go-ahead).
+- The push (your go-ahead). After it, `tmp/kv-sources/prod` (copies of users' code, gitignored) is deleted when you say so.
+- Checklist row 11b (the error at its own line, in VS Code).
 - `tmp/phase1` is about 18 GB of tree copies and audit work dirs, all gitignored. Cleanup waits on your word.
