@@ -33,4 +33,12 @@ export interface Diagnostic {
   message: string;
   /** The source of the diagnostic (e.g., 'pathogen-parser', 'pathogen-evaluator'). */
   source: string;
+  /**
+   * The same error at its own line in another file: one this document's call
+   * caused in an imported file's code, which that file's own check can't see
+   * (docs/modules.md "In each tool": "if that file is open, the error shows
+   * at its own line too"). `file` is a project path (`/parts/gears.pathogen`),
+   * `message` the error's words and its `called from` lines.
+   */
+  alsoIn?: { file: string; range: Range; message: string };
 }

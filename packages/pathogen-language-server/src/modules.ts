@@ -84,6 +84,12 @@ export class DocumentModules {
     return root ? pathToFileURL(path.join(root, ...projectPath.split('/').filter(Boolean))).href : null;
   }
 
+  /** A project path in the document's project folder, as the one spelling of its file (samePathKey). */
+  keyFor(uri: string, projectPath: string): string | null {
+    const root = this.byUri.get(uri)?.modules.root;
+    return root ? samePathKey(path.join(root, ...projectPath.split('/').filter(Boolean))) : null;
+  }
+
   /** The open documents whose results a change to `changedUri` affects: they import it, directly or not. */
   dependents(changedUri: string): string[] {
     const changed = filePathOf(changedUri);
@@ -145,6 +151,12 @@ export function filePathOf(uri: string): string | null {
   } catch {
     return null;
   }
+}
+
+/** A document's file as its one spelling (samePathKey); null for one that isn't a saved file. */
+export function fileKeyOf(uri: string): string | null {
+  const filePath = filePathOf(uri);
+  return filePath === null ? null : samePathKey(filePath);
 }
 
 /**

@@ -41,8 +41,9 @@ import {
 } from 'vscode-languageserver/node';
 import { TextDocument } from 'vscode-languageserver-textdocument';
 
+import { CrossFileDiagnostics } from './cross-file-diagnostics';
 import { DiagnosticFonts } from './fonts';
-import { DocumentModules, filePathOf, samePathKey } from './modules';
+import { DocumentModules, fileKeyOf, filePathOf, samePathKey } from './modules';
 
 import type {
   CompletionItem,
@@ -55,6 +56,7 @@ import type {
   TextEdit,
 } from 'pathogen-lang';
 import type { Diagnostic as LSPDiagnostic, InitializeParams, InitializeResult } from 'vscode-languageserver/node';
+import type { SentDiagnostic } from './cross-file-diagnostics';
 
 // Create the LSP connection (stdio transport)
 const connection = createConnection(ProposedFeatures.all);
@@ -527,6 +529,26 @@ function scheduleValidation(uri: string, delay: number): void {
   );
 }
 
+// Each open file's diagnostics with the errors other open documents found at
+// its lines (docs/modules.md "In each tool"); every publish goes through here.
+const crossFileDiagnostics = new CrossFileDiagnostics();
+
+function publish(uri: string): void {
+  connection.sendDiagnostics({ uri, diagnostics: crossFileDiagnostics.for(uri, fileKeyOf(uri)) });
+}
+
+/** Publish again for the open documents whose files are `keys`, except `except`. */
+function publishTo(keys: Set<string>, except: string): void {
+  if (keys.size === 0) return;
+  documents
+    .all()
+    .filter((document) => {
+      const key = document.uri === except ? null : fileKeyOf(document.uri);
+      return key !== null && keys.has(key);
+    })
+    .forEach((document) => publish(document.uri));
+}
+
 documents.onDidChangeContent((change) => {
   const { uri } = change.document;
 
@@ -554,6 +576,8 @@ documents.onDidClose((event) => {
   diagnosticFonts.forget(uri);
   documentModules.forget(uri);
   connection.sendDiagnostics({ uri, diagnostics: [] });
+  // The errors it sent to the files it imports go with it.
+  publishTo(crossFileDiagnostics.closed(uri), uri);
   for (const dependent of dependents) scheduleValidation(dependent, 200);
 });
 
@@ -595,6 +619,9 @@ async function validateTextDocument(textDocument: TextDocument): Promise<void> {
     fonts = undefined;
   }
   // A newer edit arrived while fonts loaded: its own validation will publish.
+  // A document closed meanwhile stops here too, so a late check can't send
+  // errors to other files again after onDidClose took them back. Nothing
+  // below awaits.
   if (documents.get(textDocument.uri)?.version !== textDocument.version) return;
 
   // Wrap the LSP TextDocument in our language-services TextDocument
@@ -607,7 +634,17 @@ async function validateTextDocument(textDocument: TextDocument): Promise<void> {
   // Convert language-services Diagnostic[] to LSP Diagnostic[]
   const lspDiagnostics: LSPDiagnostic[] = diagnostics.map(toLSPDiagnostic);
 
-  connection.sendDiagnostics({ uri: textDocument.uri, diagnostics: lspDiagnostics });
+  // An error this document's call caused in another file's code goes to that
+  // file too, at its own line, for when it is open.
+  const sent: SentDiagnostic[] = diagnostics.flatMap((d) => {
+    const to = d.alsoIn ? documentModules.keyFor(textDocument.uri, d.alsoIn.file) : null;
+    return d.alsoIn && to !== null
+      ? [{ to, diagnostic: toLSPDiagnostic({ ...d, range: d.alsoIn.range, message: d.alsoIn.message }) }]
+      : [];
+  });
+  const changed = crossFileDiagnostics.checked(textDocument.uri, lspDiagnostics, sent);
+  publish(textDocument.uri);
+  publishTo(changed, textDocument.uri);
 }
 
 /**

@@ -10,6 +10,7 @@ import {
   isLegacyStyleOpenerError,
   LEGACY_STYLE_OPENER_MESSAGE,
 } from '../parser';
+import { StringTextDocument } from './document';
 import { describeExportPlacement, describeIncompleteImport, findModuleViolations } from '../parser/module-check';
 import { parser as lezerParser } from '../parser/pathogen.generated';
 import { findReservedBindings } from '../parser/reserved-bindings';
@@ -262,11 +263,13 @@ function diagnose(document: TextDocument, options: DiagnosticsOptions, runEvalua
     // An error in another file: shown where it reaches this one — the call or
     // the import — with the whole trace as its message (docs/modules.md).
     if (err instanceof ModuleTraceError && err.site) {
+      const alsoIn = options.modules ? whereItHappened(err, options.modules) : undefined;
       diagnostics.push({
         range: makeRange(err.site.line - 1, Math.max(0, (err.site.column ?? 1) - 1), document),
         severity: DiagnosticSeverity.Error,
         message,
         source: 'pathogen-evaluator',
+        ...(alsoIn ? { alsoIn } : {}),
       });
       return diagnostics;
     }
@@ -284,6 +287,25 @@ function diagnose(document: TextDocument, options: DiagnosticsOptions, runEvalua
   }
 
   return diagnostics;
+}
+
+/**
+ * An error in an imported file's code that a call caused, at its own line
+ * there (Diagnostic.alsoIn). Only when the nearest step back is a call: an
+ * error while a file loads (`imported from`) is in that file's own check
+ * already, since its top level runs the same alone. Not for this document's
+ * own code (a lambda an imported fn calls back), nor without a line.
+ */
+function whereItHappened(err: ModuleTraceError, modules: ModuleGraph): Diagnostic['alsoIn'] {
+  if (err.line === undefined || !err.trail[0]?.startsWith('called from ')) return undefined;
+  const file = modules.files.get(`/${err.file}`);
+  if (!file) return undefined;
+  return {
+    file: file.path,
+    // The file as the graph read it: its open tab's text when it has one.
+    range: makeRange(err.line - 1, Math.max(0, (err.column ?? 1) - 1), new StringTextDocument(file.source)),
+    message: [err.detail, ...err.trail.map((step) => `  ${step}`)].join('\n'),
+  };
 }
 
 /**

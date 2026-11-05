@@ -879,3 +879,107 @@ describe('load errors with the other diagnostics', () => {
     );
   });
 });
+
+// docs/modules.md "In each tool": "In VS Code, the error is shown on the call
+// (or the import) in the file you're editing. The message there names the line
+// in the other file, and if that file is open, the error shows at its own line
+// too." The other file's own check can't see an error that a caller's
+// arguments cause, so this document's check says where it happened
+// (`alsoIn`), for the language server to show there.
+describe('an error in another file, at its own line', () => {
+  const files = {
+    ...FILES,
+    '/parts/checked.pathogen': [
+      'module;',
+      '',
+      'export fn gear(center, radius, teeth) {',
+      '  assert(teeth >= 3, "a gear needs at least 3 teeth");',
+      '  star(center.x, center.y, radius, radius - 6, teeth);',
+      '}',
+      '',
+    ].join('\n'),
+    '/parts/passes-on.pathogen':
+      'module;\n\nimport * as checked from "./checked.pathogen";\nexport const gear = checked.gear;\n',
+    // Calls the checked gear while it loads: the error is there, then "imported from".
+    '/parts/calls-while-loading.pathogen':
+      'module;\n\nimport { gear } from "./checked.pathogen";\nconst made = gear(Point(0, 0), 10, 2);\n',
+    // An error in its own top level while it loads.
+    '/parts/fails-to-load.pathogen': 'module;\n\nconst size = missingName * 2;\n',
+    '/parts/apply.pathogen': 'module;\n\nexport fn applyTo(f, x) {\n  return f(x);\n}\n',
+  };
+  const check = async (source: string) => {
+    const { graph, errors } = await resolveModules(source, { host: memoryHost(files), entry: '/main.pathogen' });
+    expect(errors).toEqual([]);
+    return getDiagnostics(new StringTextDocument(source), { modules: graph });
+  };
+  const ASSERT_LINE = { start: { line: 3, character: 2 }, end: { line: 3, character: 54 } };
+
+  it('a call from this file that fails in the other: the error on the call here, and where it happened there', async () => {
+    const source = 'import { gear } from "./parts/checked.pathogen";\n\ngear(Point(50, 50), 40, 2);\n';
+    const found = await check(source);
+    expect(found).toHaveLength(1);
+    expect(found[0].range.start).toEqual({ line: 2, character: 0 });
+    expect(found[0].message).toBe(
+      'parts/checked.pathogen line 4, col 3: assertion failed: a gear needs at least 3 teeth\n  called from main.pathogen line 3',
+    );
+    expect(found[0].alsoIn).toEqual({
+      file: '/parts/checked.pathogen',
+      range: ASSERT_LINE,
+      message: 'assertion failed: a gear needs at least 3 teeth\n  called from main.pathogen line 3',
+    });
+  });
+
+  it('through a namespace, and through a name another file passes on: the file the fn is written in', async () => {
+    for (const source of [
+      'import * as checked from "./parts/checked.pathogen";\nchecked.gear(Point(50, 50), 40, 2);\n',
+      'import { gear } from "./parts/passes-on.pathogen";\ngear(Point(50, 50), 40, 2);\n',
+    ]) {
+      const [found] = await check(source);
+      expect(found.alsoIn?.file).toBe('/parts/checked.pathogen');
+      expect(found.alsoIn?.range).toEqual(ASSERT_LINE);
+      expect(found.alsoIn?.message).toBe(
+        'assertion failed: a gear needs at least 3 teeth\n  called from main.pathogen line 2',
+      );
+    }
+  });
+
+  it('a call made while another file loads: the error goes to the fn, with every step back here', async () => {
+    const [found] = await check('import * as loads from "./parts/calls-while-loading.pathogen";\n');
+    // On the import's path here, as any error from a file while it loads.
+    expect(found.range.start).toEqual({ line: 0, character: 23 });
+    expect(found.alsoIn).toEqual({
+      file: '/parts/checked.pathogen',
+      range: ASSERT_LINE,
+      message: [
+        'assertion failed: a gear needs at least 3 teeth',
+        '  called from parts/calls-while-loading.pathogen line 4',
+        '  imported from main.pathogen line 1',
+      ].join('\n'),
+    });
+  });
+
+  it("an error in a file's own top level while it loads: that file's own check shows it, so nothing more", async () => {
+    const [found] = await check('import * as broken from "./parts/fails-to-load.pathogen";\n');
+    expect(found.message).toMatch(
+      /^parts\/fails-to-load\.pathogen line 3, col \d+: .*\n {2}imported from main\.pathogen line 1$/,
+    );
+    expect(found.alsoIn).toBeUndefined();
+    // And that file's own check does show it, at its line.
+    const own = getDiagnostics(new StringTextDocument(files['/parts/fails-to-load.pathogen']));
+    expect(own.map((d) => d.range.start.line)).toEqual([2]);
+  });
+
+  it("an error in this file's own code, called back from another file, stays here", async () => {
+    const [found] = await check(
+      'import { applyTo } from "./parts/apply.pathogen";\nlet r = applyTo({|v| v.nope()}, 2);\n',
+    );
+    expect(found.range.start.line).toBe(1);
+    expect(found.alsoIn).toBeUndefined();
+  });
+
+  it('no graph (the playground), or no error: nothing', async () => {
+    const source = 'import { gear } from "./parts/checked.pathogen";\ngear(Point(50, 50), 40, 12);\n';
+    expect(await check(source)).toEqual([]);
+    for (const d of getDiagnostics(new StringTextDocument(source))) expect(d.alsoIn).toBeUndefined();
+  });
+});

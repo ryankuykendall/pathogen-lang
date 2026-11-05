@@ -28,7 +28,7 @@
     "name": "go-to-definition opens the other file at the name",
     "ok": true,
     "detail": {
-      "uri": "file:///Users/ryan/claude-code-projects/svg-path-extended/tmp/verify-lsp-3qibiO/parts/gears.pathogen",
+      "uri": "file:///Users/ryan/claude-code-projects/svg-path-extended/tmp/verify-lsp-5bDYeZ/parts/gears.pathogen",
       "range": {
         "start": {
           "line": 7,
@@ -171,7 +171,7 @@
           }
         },
         "severity": 1,
-        "message": "import file \"./parts/marks.pathogen\" was not found (looked for /Users/ryan/claude-code-projects/svg-path-extended/tmp/verify-lsp-3qibiO/parts/marks.pathogen).",
+        "message": "import file \"./parts/marks.pathogen\" was not found (looked for /Users/ryan/claude-code-projects/svg-path-extended/tmp/verify-lsp-5bDYeZ/parts/marks.pathogen).",
         "source": "pathogen-modules"
       }
     ]
@@ -183,6 +183,59 @@
   },
   {
     "name": "an imported file's @font loads for the importer's glyphs: no problems",
+    "ok": true,
+    "detail": []
+  },
+  {
+    "name": "an error a call causes in another open file shows at that file's own line, with its called-from line",
+    "ok": true,
+    "detail": {
+      "checked": [
+        {
+          "range": {
+            "start": {
+              "line": 3,
+              "character": 2
+            },
+            "end": {
+              "line": 3,
+              "character": 54
+            }
+          },
+          "severity": 1,
+          "message": "assertion failed: a gear needs at least 3 teeth\n  called from caller.pathogen line 2",
+          "source": "pathogen-evaluator"
+        }
+      ],
+      "caller": [
+        {
+          "range": {
+            "start": {
+              "line": 1,
+              "character": 0
+            },
+            "end": {
+              "line": 1,
+              "character": 27
+            }
+          },
+          "severity": 1,
+          "message": "parts/checked.pathogen line 4, col 3: assertion failed: a gear needs at least 3 teeth\n  called from caller.pathogen line 2",
+          "source": "pathogen-evaluator"
+        }
+      ]
+    }
+  },
+  {
+    "name": "fixing the call clears it from the other file",
+    "ok": true,
+    "detail": {
+      "checked": [],
+      "caller": []
+    }
+  },
+  {
+    "name": "closing the calling file clears it from the other file",
     "ok": true,
     "detail": []
   },

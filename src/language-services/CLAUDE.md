@@ -60,7 +60,7 @@ npm run check:completions             # strict drift check + git-diff sync check
 |------|---------|-------------|
 | `types.ts` | Position, Range, Diagnostic types (LSP-compatible) | New diagnostic kinds needed |
 | `document.ts` | TextDocument abstraction (StringTextDocument) | Stable — rarely changes |
-| `diagnostics.ts` | `getDiagnostics()` — Lezer error recovery + contextual messages. Options: `fonts`, `modules` (the import graph), `loadErrors` (what resolveModules couldn't load, placed on the import that leads there) | New syntax constructs |
+| `diagnostics.ts` | `getDiagnostics()` — Lezer error recovery + contextual messages. Options: `fonts`, `modules` (the import graph), `loadErrors` (what resolveModules couldn't load, placed on the import that leads there). An error a call caused in another file's code also carries `alsoIn`, where it happened, for an editor to show there | New syntax constructs |
 | `module-exports.ts` | Names from other files (docs/modules.md "In each tool"): `LanguageServiceOptions { modules?, projectFiles? }`, the options every cross-file feature takes, the graph passed in as data (never a file read). Each imported file analyzed once; export resolution follows re-exports; the import part under the cursor (`importSiteAt`, `importCompletionContextAt`) from the Lezer tree; `namespaceReceiverAt` for `ns.member` | Module features (imports, exports, namespaces) |
 | `scope-analysis.ts` | `analyzeScopes()` — scope tree, declarations (with `typeContext` AST nodes for inference), references. Uses the **lenient** `parseLezer` so the scope tree survives mid-typing errors | New declaration/statement types |
 | `completion-data-static.ts` | Hand-written keywords, style properties, snippets | New keyword / style property |

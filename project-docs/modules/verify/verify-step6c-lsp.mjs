@@ -21,7 +21,9 @@ const repo = join(here, '..', '..', '..');
 const server = process.env.PATHOGEN_SERVER
   ? join(repo, process.env.PATHOGEN_SERVER)
   : join(repo, 'packages', 'pathogen-language-server', 'out', 'server.js');
-const resultsFile = process.env.PATHOGEN_SERVER ? 'verify-step6c-lsp-bundled-results.json' : 'verify-step6c-lsp-results.json';
+const resultsFile = process.env.PATHOGEN_SERVER
+  ? 'verify-step6c-lsp-bundled-results.json'
+  : 'verify-step6c-lsp-results.json';
 
 // --- a project on disk ---
 mkdirSync(join(repo, 'tmp'), { recursive: true });
@@ -285,6 +287,52 @@ try {
     "an imported file's @font loads for the importer's glyphs: no problems",
     await diagnosticsWhere(() => diagnostics.get(uri('glyphs.pathogen'))?.length === 0),
     diagnostics.get(uri('glyphs.pathogen')),
+  );
+
+  // An error in another file, at its own line (docs/modules.md "In each tool":
+  // "if that file is open, the error shows at its own line too").
+  const CHECKED =
+    'module;\n\nexport fn gear(center, radius, teeth) {\n  assert(teeth >= 3, "a gear needs at least 3 teeth");\n  star(center.x, center.y, radius, radius - 6, teeth);\n}\n';
+  write('parts/checked.pathogen', CHECKED);
+  const caller = (teeth) => `import { gear } from "./parts/checked.pathogen";\ngear(Point(50, 50), 40, ${teeth});\n`;
+  const AT_ASSERT = 'assertion failed: a gear needs at least 3 teeth\n  called from caller.pathogen line 2';
+  const atAssert = () =>
+    (diagnostics.get(uri('parts/checked.pathogen')) ?? []).filter(
+      (d) => d.message === AT_ASSERT && d.range.start.line === 3 && d.range.start.character === 2,
+    ).length === 1;
+  // The caller first: the file opened after it still gets the error.
+  open('caller.pathogen', caller(2));
+  await diagnosticsWhere(() => (diagnostics.get(uri('caller.pathogen')) ?? []).length === 1);
+  open('parts/checked.pathogen', CHECKED);
+  check(
+    "an error a call causes in another open file shows at that file's own line, with its called-from line",
+    (await diagnosticsWhere(atAssert)) &&
+      diagnostics.get(uri('caller.pathogen'))?.[0]?.message ===
+        'parts/checked.pathogen line 4, col 3: assertion failed: a gear needs at least 3 teeth\n  called from caller.pathogen line 2',
+    { checked: diagnostics.get(uri('parts/checked.pathogen')), caller: diagnostics.get(uri('caller.pathogen')) },
+  );
+  const changeCaller = (teeth) =>
+    notify('textDocument/didChange', {
+      textDocument: { uri: uri('caller.pathogen'), version: version++ },
+      contentChanges: [{ text: caller(teeth) }],
+    });
+  changeCaller(12);
+  check(
+    'fixing the call clears it from the other file',
+    await diagnosticsWhere(
+      () =>
+        diagnostics.get(uri('parts/checked.pathogen'))?.length === 0 &&
+        diagnostics.get(uri('caller.pathogen'))?.length === 0,
+    ),
+    { checked: diagnostics.get(uri('parts/checked.pathogen')), caller: diagnostics.get(uri('caller.pathogen')) },
+  );
+  changeCaller(2);
+  await diagnosticsWhere(atAssert);
+  notify('textDocument/didClose', { textDocument: { uri: uri('caller.pathogen') } });
+  check(
+    'closing the calling file clears it from the other file',
+    await diagnosticsWhere(() => diagnostics.get(uri('parts/checked.pathogen'))?.length === 0),
+    diagnostics.get(uri('parts/checked.pathogen')),
   );
 
   // An unsaved document.
