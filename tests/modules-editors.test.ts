@@ -12,6 +12,7 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  DiagnosticSeverity,
   getCodeActions,
   getCompletions,
   getDefinition,
@@ -23,6 +24,7 @@ import {
   renameRefusal,
   resolveModules,
   StringTextDocument,
+  unsavedImportErrors,
 } from '../src';
 import { relativeImportPath } from '../src/language-services/module-exports';
 
@@ -78,6 +80,12 @@ const FILES = {
   '/parts/renamed.pathogen': 'module;\n\nimport { gear as cog } from "./gears.pathogen";\nexport const gear = cog;\n',
   '/parts/whole.pathogen': 'module;\n\nimport * as gears from "./gears.pathogen";\nexport const all = gears;\n',
   '/parts/lambdas.pathogen': 'module;\n\nexport const rim = {|radius| radius * 2};\n',
+  // For load errors (step 6c): a module importing a missing file, one level
+  // deeper, and a program that isn't a module.
+  '/parts/broken.pathogen': 'module;\nimport { x } from "./missing.pathogen";\n',
+  '/parts/deeper.pathogen': 'module;\n\nimport * as broken from "./broken.pathogen";\n',
+  '/parts/scene.pathogen': 'export const size = 4;\nM 0 0 L 10 10\n',
+  '/parts/family.pathogen': 'module;\n@font "Gravitas One";\nexport const ready = 1;\n',
 };
 
 /** A graph that may hold load errors (a half-typed import, a missing file). */
@@ -715,3 +723,159 @@ function applyEdits(source: string, edits: { range: { start: Position; end: Posi
   }
   return out;
 }
+
+// --- errors in the Problems panel (step 6c, part 1) ------------------------------------
+
+describe('errors loading other files show where the file being edited imports them', () => {
+  /** [1-based line, 1-based column, message] of each diagnostic, as resolveModules found the files. */
+  async function problems(source: string): Promise<[number, number, string][]> {
+    const { graph, errors } = await resolveModules(source, { host: memoryHost(FILES), entry: '/main.pathogen' });
+    return getDiagnostics(new StringTextDocument(source), { modules: graph, loadErrors: errors }).map((d) => [
+      d.range.start.line + 1,
+      d.range.start.character + 1,
+      d.message,
+    ]);
+  }
+
+  it("a mistake in this file's import is at its path, in the CLI's words, and nothing else", async () => {
+    expect(await problems('// main.pathogen\nimport { gear } from "./parts/gera.pathogen";\n')).toEqual([
+      [
+        2,
+        22,
+        'import file "./parts/gera.pathogen" was not found (looked for /Users/you/my-gears/parts/gera.pathogen).',
+      ],
+    ]);
+    expect(await problems('import * as scene from "./parts/scene.pathogen";\n')).toEqual([
+      [
+        1,
+        24,
+        'Cannot import "./parts/scene.pathogen": it isn\'t a module. To make it one, add module; at the top of that file and move its drawing into exported fns.',
+      ],
+    ]);
+  });
+
+  it('a mistake in an imported file is on the import that leads there, with the files it came through', async () => {
+    // At the import's path, as the evaluator places an error from another file.
+    expect(await problems('import { x } from "./parts/broken.pathogen";\n')).toEqual([
+      [
+        1,
+        19,
+        'parts/broken.pathogen line 2, col 19: import file "./missing.pathogen" was not found (looked for /Users/you/my-gears/parts/missing.pathogen).\n  imported from main.pathogen line 1',
+      ],
+    ]);
+    // Two files down: still this file's import, with both steps.
+    expect(await problems('// main\n\nimport * as deeper from "./parts/deeper.pathogen";\n')).toEqual([
+      [
+        3,
+        25,
+        'parts/broken.pathogen line 2, col 19: import file "./missing.pathogen" was not found (looked for /Users/you/my-gears/parts/missing.pathogen).\n  imported from parts/deeper.pathogen line 3\n  imported from main.pathogen line 3',
+      ],
+    ]);
+  });
+
+  it('a mistake elsewhere in this file still shows, with the import error', async () => {
+    const found = await problems('import { gear } from "./parts/gera.pathogen";\nlet x = ;\n');
+    expect(found.map(([line]) => line)).toEqual([1, 2]);
+  });
+});
+
+describe('an unsaved file', () => {
+  // docs/modules.md "Errors": "An unsaved file in VS Code".
+  it("each import says it can't be read until the file is saved", () => {
+    const source =
+      'import { gear } from "./parts/gears.pathogen";\nimport * as kit from "./parts/kit.pathogen";\ngear(Point(1, 1), 2, 3);\n';
+    const found = getDiagnostics(new StringTextDocument(source), { loadErrors: unsavedImportErrors(source) });
+    expect(found.map((d) => [d.range.start.line + 1, d.range.start.character + 1, d.message])).toEqual([
+      [
+        1,
+        22,
+        'Cannot import "./parts/gears.pathogen" until this file is saved: import paths start at the file\'s folder.',
+      ],
+      [
+        2,
+        22,
+        'Cannot import "./parts/kit.pathogen" until this file is saved: import paths start at the file\'s folder.',
+      ],
+    ]);
+  });
+});
+
+describe("a font problem in an imported file's @font line", () => {
+  it('shows on the import that leads there, naming the file and line', async () => {
+    const source = 'import { ready } from "./parts/family.pathogen";\nM 0 0\n';
+    const { graph } = await resolveModules(source, { host: memoryHost(FILES), entry: '/main.pathogen' });
+    const found = getDiagnostics(new StringTextDocument(source), {
+      modules: graph,
+      fonts: {
+        messages: [
+          {
+            severity: 'warning',
+            message: 'Font "Gravitas One" is not available.',
+            line: 2,
+            column: 1,
+            file: 'parts/family.pathogen',
+          },
+        ],
+      },
+    });
+    // At the import's path, as for a load error in another file.
+    expect(found.map((d) => [d.range.start.line + 1, d.range.start.character + 1, d.severity, d.message])).toEqual([
+      [
+        1,
+        23,
+        DiagnosticSeverity.Warning,
+        'parts/family.pathogen line 2, col 1: Font "Gravitas One" is not available.\n  imported from main.pathogen line 1',
+      ],
+    ]);
+  });
+
+  it("a file the graph doesn't have goes at the top, never at the other file's line number here", () => {
+    const source = 'M 0 0\nM 1 1\nM 2 2\n';
+    const found = getDiagnostics(new StringTextDocument(source), {
+      fonts: { messages: [{ severity: 'warning', message: 'Missing.', line: 3, file: 'parts/other.pathogen' }] },
+    });
+    // No column: the position reads "line 3" alone.
+    expect(found.map((d) => [d.range.start.line, d.range.start.character, d.message])).toEqual([
+      [0, 0, 'parts/other.pathogen line 3: Missing.'],
+    ]);
+  });
+});
+
+describe('load errors with the other diagnostics', () => {
+  it("the document's own parse error and font message still show; the evaluator's pass doesn't run", async () => {
+    const source = 'import { gear } from "./parts/gera.pathogen";\n@font "Gravitas One";\nlet x = ;\n';
+    const { graph, errors } = await resolveModules(source, { host: memoryHost(FILES), entry: '/main.pathogen' });
+    const found = getDiagnostics(new StringTextDocument(source), { modules: graph, loadErrors: errors });
+    expect(found.map((d) => [d.range.start.line + 1, d.source])).toEqual([
+      [1, 'pathogen-modules'],
+      [3, 'pathogen-parser'],
+    ]);
+    // With no parse error: the font message, and nothing from the evaluator.
+    const clean = 'import { gear } from "./parts/gera.pathogen";\nM 0 0 L calc(0 / 0) 0\n';
+    const loaded = await resolveModules(clean, { host: memoryHost(FILES), entry: '/main.pathogen' });
+    const withFonts = getDiagnostics(new StringTextDocument(clean), {
+      modules: loaded.graph,
+      loadErrors: loaded.errors,
+      fonts: { messages: [{ severity: 'warning', message: 'A font note.', line: 2, column: 1 }] },
+    });
+    expect(withFonts.map((d) => [d.range.start.line + 1, d.source])).toEqual([
+      [1, 'pathogen-modules'],
+      [2, 'pathogen-fonts'],
+    ]);
+  });
+
+  it('an import cycle shows on the import that starts it', async () => {
+    const files = {
+      ...FILES,
+      '/parts/a.pathogen': 'module;\nimport { b } from "./b.pathogen";\nexport const a = 1;\n',
+      '/parts/b.pathogen': 'module;\nimport { a } from "./a.pathogen";\nexport const b = 1;\n',
+    };
+    const source = 'import { a } from "./parts/a.pathogen";\n';
+    const { graph, errors } = await resolveModules(source, { host: memoryHost(files), entry: '/main.pathogen' });
+    const found = getDiagnostics(new StringTextDocument(source), { modules: graph, loadErrors: errors });
+    expect(found.map((d) => [d.range.start.line + 1, d.range.start.character + 1])).toEqual([[1, 19]]);
+    expect(found[0].message).toMatch(
+      /^parts\/b\.pathogen line 2, col 19: Import cycle: parts\/a\.pathogen → parts\/b\.pathogen → parts\/a\.pathogen\./,
+    );
+  });
+});

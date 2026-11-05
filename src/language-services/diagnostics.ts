@@ -1,6 +1,7 @@
 import { evaluate } from '../evaluator';
 import { ModuleTraceError } from '../evaluator/module-runtime';
 import { groupWarnings } from '../evaluator/warning-groups';
+import { describeInImportedFile } from '../host/load-modules';
 import {
   parse,
   detectMissingSemicolon,
@@ -16,7 +17,7 @@ import { findReservedBindings } from '../parser/reserved-bindings';
 import type { TextDocument } from './document';
 import type { Diagnostic } from './types';
 import type { FontRegistry } from '../evaluator/types';
-import type { ModuleGraph } from '../host/load-modules';
+import type { ModuleGraph, ModuleLoadError } from '../host/load-modules';
 import { DiagnosticSeverity } from './types';
 
 /**
@@ -35,7 +36,14 @@ export interface DiagnosticsOptions {
    */
   fonts?: {
     registry?: FontRegistry;
-    messages: readonly { severity: 'error' | 'warning'; message: string; line?: number; column?: number }[];
+    /** `file`: an imported file's `@font` line (resolveFontsInFiles), shown on the import that leads there. */
+    messages: readonly {
+      severity: 'error' | 'warning';
+      message: string;
+      line?: number;
+      column?: number;
+      file?: string;
+    }[];
   };
   /**
    * Every file the document imports, read by the host (resolveModules;
@@ -43,6 +51,13 @@ export interface DiagnosticsOptions {
    * what the playground shows.
    */
   modules?: ModuleGraph;
+  /**
+   * What resolveModules couldn't load (a missing file, a cycle, a file that
+   * isn't a module), or unsavedImportErrors for a file not saved yet. Each
+   * shows on the import in this document that leads to it, and the
+   * evaluator's pass is skipped, as the CLI stops before compiling.
+   */
+  loadErrors?: readonly ModuleLoadError[];
 }
 
 // Parser error: "Parse error at line {line}, column {column}: {message}"
@@ -60,6 +75,33 @@ const EVAL_ERROR_LINE_RE = /^Line (\d+): (.+)$/;
  * and for evaluator error detection.
  */
 export function getDiagnostics(document: TextDocument, options: DiagnosticsOptions = {}): Diagnostic[] {
+  const loadErrors = options.loadErrors ?? [];
+  if (loadErrors.length === 0) return diagnose(document, options, true);
+  // The document's own mistakes still show; only the run waits for the files.
+  const placed = loadErrors.map((error) => loadErrorDiagnostic(error, document));
+  return [...placed, ...diagnose(document, options, false)].sort(
+    (a, b) => a.range.start.line - b.range.start.line || a.range.start.character - b.range.start.character,
+  );
+}
+
+/**
+ * A file that couldn't be loaded. A mistake in this document's own import is
+ * at its path, in the CLI's words; one further along is on the import here
+ * that leads to it, with the files it came through (docs/modules.md "Errors
+ * in other files").
+ */
+function loadErrorDiagnostic(error: ModuleLoadError, document: TextDocument): Diagnostic {
+  const here = error.importedFrom.length === 0;
+  const site = here ? error : error.importedFrom[error.importedFrom.length - 1];
+  return {
+    range: makeRange(site.line - 1, Math.max(0, site.column - 1), document),
+    severity: DiagnosticSeverity.Error,
+    message: here ? error.message : describeInImportedFile(error.file, error, error.message, error.importedFrom),
+    source: 'pathogen-modules',
+  };
+}
+
+function diagnose(document: TextDocument, options: DiagnosticsOptions, runEvaluator: boolean): Diagnostic[] {
   const source = document.getText();
   const diagnostics: Diagnostic[] = [];
 
@@ -160,14 +202,27 @@ export function getDiagnostics(document: TextDocument, options: DiagnosticsOptio
   }
 
   // Phase 3: Parse succeeded — report the host's font loading, then evaluate.
+  // A message from an imported file's @font line goes on the import here that
+  // leads to that file, naming it.
   for (const m of options.fonts?.messages ?? []) {
+    const imported = m.file === undefined ? undefined : options.modules?.files.get(`/${m.file}`);
+    const site = imported?.importedFrom[imported.importedFrom.length - 1];
+    // Another file's line numbers mean nothing here: without its import, the top.
+    const ownLine = m.file === undefined ? Math.max(0, (m.line ?? 1) - 1) : 0;
+    const ownColumn = m.file === undefined ? Math.max(0, (m.column ?? 1) - 1) : 0;
     diagnostics.push({
-      range: makeRange(Math.max(0, (m.line ?? 1) - 1), Math.max(0, (m.column ?? 1) - 1), document),
+      range: site
+        ? makeRange(site.line - 1, Math.max(0, site.column - 1), document)
+        : makeRange(ownLine, ownColumn, document),
       severity: m.severity === 'error' ? DiagnosticSeverity.Error : DiagnosticSeverity.Warning,
-      message: m.message,
+      message:
+        m.file === undefined
+          ? m.message
+          : describeInImportedFile(`/${m.file}`, m, m.message, imported?.importedFrom ?? []),
       source: 'pathogen-fonts',
     });
   }
+  if (!runEvaluator) return diagnostics;
   //
   // Without a font registry from the host, any program that uses
   // font-requiring constructs (PathBlock.fromGlyph, TextBlock.toPathBlock, …)

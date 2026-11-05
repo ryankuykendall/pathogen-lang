@@ -26,6 +26,7 @@ import {
   importOtherExtensionError,
   importUnreadableError,
   notAModuleError,
+  unsavedFileImportError,
 } from '../module-messages';
 import { parser as lezerParser } from '../parser/pathogen.generated';
 
@@ -326,7 +327,37 @@ export function withOpenDocuments(
  */
 export function formatModuleLoadError(error: ModuleLoadError, typedEntry: string): string {
   if (error.importedFrom.length === 0) return `${typedEntry}:${error.line}:${error.column}: error: ${error.message}`;
-  const where = `${fileLabel(error.file)} line ${error.line}, col ${error.column}: ${error.message}`;
-  const trail = error.importedFrom.map((site) => `  imported from ${fileLabel(site.file)} line ${site.line}`);
-  return [`Error: ${where}`, ...trail].join('\n');
+  return `Error: ${describeInImportedFile(error.file, error, error.message, error.importedFrom)}`;
+}
+
+/**
+ * A message from an imported file, as the editors and the CLI show it: the
+ * file and position, then one `imported from` line per import that led
+ * there (docs/modules.md "Errors in other files").
+ */
+export function describeInImportedFile(
+  file: string,
+  at: { line?: number; column?: number },
+  message: string,
+  importedFrom: readonly ImportSite[],
+): string {
+  const column = at.column === undefined ? '' : `, col ${at.column}`;
+  const position = at.line === undefined ? '' : ` line ${at.line}${column}`;
+  const trail = importedFrom.map((site) => `  imported from ${fileLabel(site.file)} line ${site.line}`);
+  return [`${fileLabel(file)}${position}: ${message}`, ...trail].join('\n');
+}
+
+/**
+ * The imports of a file that isn't saved yet, each as a load error at its
+ * path: with no folder to start from, none of them can be read (docs/modules.md
+ * "In each tool"). The editors show them as for any import that can't load.
+ */
+export function unsavedImportErrors(source: string): ModuleLoadError[] {
+  return planImports(source).map((planned) => ({
+    message: unsavedFileImportError(planned.written),
+    file: '/<unsaved>',
+    line: planned.line,
+    column: planned.column,
+    importedFrom: [],
+  }));
 }

@@ -67,8 +67,10 @@ export { ModuleTraceError } from './evaluator/module-runtime';
 export {
   formatModuleLoadError,
   importPathMistake,
+  isModuleSource,
   planImports,
   resolveModules,
+  unsavedImportErrors,
   withOpenDocuments,
 } from './host/load-modules';
 export type {

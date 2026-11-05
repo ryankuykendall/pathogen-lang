@@ -78,6 +78,14 @@ export function renameExportedError(name: string): string {
   return `${name} is exported, so other files may use it. Renaming across files isn't supported yet: rename it in each file.`;
 }
 
+/**
+ * An import in a file VS Code hasn't saved yet: its paths have no folder to
+ * start from (docs/modules.md "In each tool" and "Errors").
+ */
+export function unsavedFileImportError(written: string): string {
+  return `Cannot import "${written}" until this file is saved: import paths start at the file's folder.`;
+}
+
 /** An import that doesn't have its path yet — what the editor sees while one is being typed. */
 export const INCOMPLETE_IMPORT_MESSAGE =
   'Incomplete import — write it as import { name } from "./file.pathogen"; or import * as name from "./file.pathogen";';
