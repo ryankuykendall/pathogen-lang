@@ -91,6 +91,10 @@ function renameBuiltinNameFix(document: TextDocument, diag: Diagnostic, name: st
     return start?.line === diag.range.start.line && start.character === diag.range.start.character;
   });
   if (!decl) return null;
+  // An import's fix changes the name after `as` (docs/syntax.md "Built-in
+  // names"). `import { circle }` has none: renaming it would import another
+  // export, and no file can export a built-in's name, so there's no fix.
+  if (decl.kind === 'import' && decl.importFrom?.name === decl.name) return null;
   const used = new Set([...info.declarations.map((d) => d.name), ...info.references.map((r) => r.name)]);
   const newName = suggestName(name, (candidate) => used.has(candidate), decl.kind === 'function');
   return {

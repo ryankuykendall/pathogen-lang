@@ -1,4 +1,5 @@
 import { analyzeScopes, declarationName } from './scope-analysis';
+import { renameExportedError, renameImportedError } from '../module-messages';
 
 import type { TextDocument } from './document';
 import type { Declaration, Reference, ScopeInfo } from './scope-analysis';
@@ -40,19 +41,41 @@ export const NON_RENAMEABLE = new Set([
 
 /**
  * Check if the symbol at position can be renamed.
- * Returns the current name and range, or null if not renameable.
+ * Returns the current name and range, or null if not renameable. A name
+ * other files share is not (renameRefusal says why).
  */
 export function prepareRename(document: TextDocument, position: Position): PrepareRenameResult | null {
   const source = document.getText();
   const word = getWordAt(source, document.offsetAt(position));
   if (!word) return null;
   const info = analyzeScopes(document);
-  return declarationAt(document, info, position, word.text) ? { range: word.range, placeholder: word.text } : null;
+  const target = declarationAt(document, info, position, word.text);
+  return target && !refusalFor(target) ? { range: word.range, placeholder: word.text } : null;
+}
+
+/**
+ * Why the name at position can't be renamed, when it is one other files
+ * share: an imported name, or an exported one (docs/modules.md "In each
+ * tool"). Renaming it in one file would leave the others with the old name,
+ * so F2 says so instead of changing only some of its uses. Null otherwise.
+ */
+export function renameRefusal(document: TextDocument, position: Position): string | null {
+  const word = getWordAt(document.getText(), document.offsetAt(position));
+  if (!word) return null;
+  const target = declarationAt(document, analyzeScopes(document), position, word.text);
+  return target ? refusalFor(target) : null;
+}
+
+function refusalFor(decl: Declaration): string | null {
+  if (decl.kind === 'import' && decl.importFrom) return renameImportedError(decl.name, decl.importFrom.path);
+  if (decl.exported) return renameExportedError(decl.name);
+  return null;
 }
 
 /**
  * Compute text edits to rename the symbol at position to newName.
  * Returns edits for the declaration and all references in the same scope chain.
+ * None for a name other files share (renameRefusal).
  */
 export function getRenameEdits(document: TextDocument, position: Position, newName: string): TextEdit[] {
   const source = document.getText();
@@ -60,7 +83,7 @@ export function getRenameEdits(document: TextDocument, position: Position, newNa
   if (!word) return [];
   const info = analyzeScopes(document);
   const target = declarationAt(document, info, position, word.text);
-  return target ? renameDeclarationEdits(document, info, target, newName) : [];
+  return target && !refusalFor(target) ? renameDeclarationEdits(document, info, target, newName) : [];
 }
 
 /**

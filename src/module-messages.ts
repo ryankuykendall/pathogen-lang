@@ -66,6 +66,18 @@ export function notAModuleError(written: string): string {
   return `Cannot import "${written}": it isn't a module. To make it one, add module; at the top of that file and move its drawing into exported fns.`;
 }
 
+// --- Renaming (docs/modules.md "In each tool": F2 can't rename across files yet) ---
+
+/** F2 on an imported name: its uses in the other file would keep the old name. */
+export function renameImportedError(name: string, written: string): string {
+  return `${name} is imported from ${importedFromLabel(written)}. Renaming across files isn't supported yet: rename it in each file.`;
+}
+
+/** F2 on an exported name: the files that import it would keep the old name. */
+export function renameExportedError(name: string): string {
+  return `${name} is exported, so other files may use it. Renaming across files isn't supported yet: rename it in each file.`;
+}
+
 /** An import that doesn't have its path yet — what the editor sees while one is being typed. */
 export const INCOMPLETE_IMPORT_MESSAGE =
   'Incomplete import — write it as import { name } from "./file.pathogen"; or import * as name from "./file.pathogen";';

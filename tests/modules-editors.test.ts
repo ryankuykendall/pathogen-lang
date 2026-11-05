@@ -11,7 +11,19 @@
  */
 import { describe, expect, it } from 'vitest';
 
-import { getCompletions, getDefinition, getHoverInfo, resolveModules, StringTextDocument } from '../src';
+import {
+  getCodeActions,
+  getCompletions,
+  getDefinition,
+  getDiagnostics,
+  getHoverInfo,
+  getRenameEdits,
+  getSignatureHelp,
+  prepareRename,
+  renameRefusal,
+  resolveModules,
+  StringTextDocument,
+} from '../src';
 import { relativeImportPath } from '../src/language-services/module-exports';
 
 import type { CompletionItem, LanguageServiceOptions, ModuleGraph, Position, ProjectFileHost } from '../src';
@@ -65,6 +77,7 @@ const FILES = {
   // Passing on a name imported under another name, and a whole namespace.
   '/parts/renamed.pathogen': 'module;\n\nimport { gear as cog } from "./gears.pathogen";\nexport const gear = cog;\n',
   '/parts/whole.pathogen': 'module;\n\nimport * as gears from "./gears.pathogen";\nexport const all = gears;\n',
+  '/parts/lambdas.pathogen': 'module;\n\nexport const rim = {|radius| radius * 2};\n',
 };
 
 /** A graph that may hold load errors (a half-typed import, a missing file). */
@@ -544,3 +557,161 @@ describe('relativeImportPath', () => {
     expect(relativeImportPath('/a/c.pathogen', '/a/b/c/d.pathogen')).toBe('./b/c/d.pathogen');
   });
 });
+
+// --- signature help (step 6b, part 3) --------------------------------------------------
+
+describe('parameter hints for a fn from another file', () => {
+  /** Signature help at the `|` in `raw`, with the files unless `files` is false. */
+  async function hintsAt(raw: string, files = true) {
+    const offset = raw.indexOf('|');
+    const source = raw.slice(0, offset) + raw.slice(offset + 1);
+    const doc = new StringTextDocument(source);
+    const options = files ? { modules: await graphFor(source) } : {};
+    return getSignatureHelp(doc, doc.positionAt(offset), options);
+  }
+
+  const gearHint = (called: string, activeParameter: number) => ({
+    signatures: [
+      {
+        label: `${called}(center, radius, teeth)`,
+        parameters: [{ label: 'center' }, { label: 'radius' }, { label: 'teeth' }],
+        documentation: 'Defined in parts/gears.pathogen, line 8',
+      },
+    ],
+    activeSignature: 0,
+    activeParameter,
+  });
+
+  it('an imported fn shows the parameters it is defined with', async () => {
+    expect(await hintsAt('import { gear } from "./parts/gears.pathogen";\ngear(Point(1, 1), |')).toEqual(
+      gearHint('gear', 1),
+    );
+  });
+
+  it('under another name, the call shows the name it uses', async () => {
+    expect(await hintsAt('import { gear as cog } from "./parts/gears.pathogen";\ncog(|')).toEqual(gearHint('cog', 0));
+  });
+
+  it("a namespace's fn, and one another file passes on", async () => {
+    expect(await hintsAt('import * as gears from "./parts/gears.pathogen";\ngears.gear(1, 2, |')).toEqual(
+      gearHint('gear', 2),
+    );
+    expect(await hintsAt('import * as kit from "./parts/kit.pathogen";\nkit.gear(|')).toEqual(gearHint('gear', 0));
+  });
+
+  it("a namespace's member that isn't a fn, or isn't exported, has no hint", async () => {
+    expect(await hintsAt('import * as gears from "./parts/gears.pathogen";\ngears.toothDepth(|')).toBeNull();
+    expect(await hintsAt('import * as gears from "./parts/gears.pathogen";\ngears.hub(|')).toBeNull();
+  });
+
+  it('a const holding a lambda has no hint, from another file as in this one (a known limit)', async () => {
+    expect(await hintsAt('import * as shapes from "./parts/lambdas.pathogen";\nshapes.rim(|')).toBeNull();
+    expect(await hintsAt('import { rim } from "./parts/lambdas.pathogen";\nrim(|')).toBeNull();
+    expect(await hintsAt('let rim = {|radius| radius * 2};\nrim(|', false)).toBeNull();
+  });
+
+  it('without the files there is no hint, as before', async () => {
+    expect(await hintsAt('import { gear } from "./parts/gears.pathogen";\ngear(|', false)).toBeNull();
+  });
+});
+
+// --- rename and the quick fix (step 6b, part 4) ----------------------------------------
+
+describe('F2 on a name other files share', () => {
+  // docs/modules.md "In each tool": "F2 on an imported or exported name says it
+  // can't rename across files yet, instead of changing only some of its uses;
+  // rename it in each file."
+  const IMPORTED = (name: string, file: string) =>
+    `${name} is imported from ${file}. Renaming across files isn't supported yet: rename it in each file.`;
+  const EXPORTED = (name: string) =>
+    `${name} is exported, so other files may use it. Renaming across files isn't supported yet: rename it in each file.`;
+
+  const refusalAt = (source: string, line: number, needle: string) => {
+    const doc = new StringTextDocument(source);
+    const position = at(source, line, needle);
+    return {
+      prepare: prepareRename(doc, position),
+      edits: getRenameEdits(doc, position, 'renamed'),
+      refusal: renameRefusal(doc, position),
+    };
+  };
+
+  it('an imported name, its alias and a namespace: refused, saying where they come from', () => {
+    const source =
+      'import { gear, Teeth as Kind } from "./parts/gears.pathogen";\nimport * as kit from "./parts/kit.pathogen";\ngear(Point(1, 1), Kind.Few, 3);\nlog(kit);\n';
+    expect(refusalAt(source, 2, 'gear')).toEqual({
+      prepare: null,
+      edits: [],
+      refusal: IMPORTED('gear', 'parts/gears.pathogen'),
+    });
+    expect(refusalAt(source, 0, 'Kind').refusal).toBe(IMPORTED('Kind', 'parts/gears.pathogen'));
+    expect(refusalAt(source, 3, 'kit').refusal).toBe(IMPORTED('kit', 'parts/kit.pathogen'));
+  });
+
+  it('an exported name, at its declaration or a use: refused', () => {
+    expect(refusalAt(GEARS, 7, 'gear')).toEqual({ prepare: null, edits: [], refusal: EXPORTED('gear') });
+    expect(refusalAt(GEARS, 8, 'toothDepth').refusal).toBe(EXPORTED('toothDepth'));
+    expect(refusalAt(GEARS, 5, 'Teeth').refusal).toBe(EXPORTED('Teeth'));
+  });
+
+  it('a parameter that shares an export’s name is its own name: it renames', () => {
+    const source = 'module;\nexport const size = 2;\nexport fn grow(size) {\n  return size * 2;\n}\n';
+    const param = refusalAt(source, 3, 'size');
+    expect(param.refusal).toBeNull();
+    expect(param.edits.map((e) => e.range.start.line)).toEqual([2, 3]);
+  });
+
+  it("a module's own names still rename, and so does anything in a program", () => {
+    const hub = refusalAt(GEARS, 9, 'hub');
+    expect(hub.refusal).toBeNull();
+    expect(hub.prepare?.placeholder).toBe('hub');
+    expect(hub.edits.map((e) => e.range.start.line)).toEqual([13, 9]);
+    expect(refusalAt('let size = 2;\nlog(size);\n', 1, 'size').refusal).toBeNull();
+  });
+});
+
+describe("the built-in-name quick fix on an import (docs/syntax.md 'Built-in names')", () => {
+  // "For an import, the quick fix changes the name after `as` instead."
+  const fixOf = (source: string) => {
+    const doc = new StringTextDocument(source);
+    const diag = getDiagnostics(doc).find((d) => d.message.startsWith('Cannot use Color as a name'));
+    expect(diag).toBeDefined();
+    return getCodeActions(doc, diag!.range, [diag!]).find((a) => a.title.startsWith('Rename Color'));
+  };
+
+  it('`* as Color` and `{ gear as Color }`: the name after `as`, and its uses', () => {
+    for (const [source, fixed] of [
+      [
+        'import * as Color from "./parts/gears.pathogen";\nlog(Color.toothDepth);\n',
+        'import * as MyColor from "./parts/gears.pathogen";\nlog(MyColor.toothDepth);\n',
+      ],
+      [
+        'import { gear as Color } from "./parts/gears.pathogen";\nColor(Point(1, 1), 2, 3);\n',
+        'import { gear as MyColor } from "./parts/gears.pathogen";\nMyColor(Point(1, 1), 2, 3);\n',
+      ],
+    ]) {
+      // suggestName's choice for a capitalised name (tests/builtin-names.test.ts).
+      const action = fixOf(source);
+      expect(action?.title).toBe('Rename Color to MyColor');
+      expect(applyEdits(source, action!.edit.changes)).toBe(fixed);
+    }
+  });
+
+  it('`import { circle }` gets no rename: no file can export a built-in name, so `as` would not help', () => {
+    const source = 'import { circle } from "./parts/gears.pathogen";\n';
+    const doc = new StringTextDocument(source);
+    const diag = getDiagnostics(doc).find((d) => d.message.startsWith('Cannot use circle as a name'));
+    expect(diag).toBeDefined();
+    expect(getCodeActions(doc, diag!.range, [diag!]).filter((a) => a.title.startsWith('Rename'))).toEqual([]);
+  });
+});
+
+function applyEdits(source: string, edits: { range: { start: Position; end: Position }; newText: string }[]): string {
+  const doc = new StringTextDocument(source);
+  const sorted = [...edits].sort((a, b) => doc.offsetAt(b.range.start) - doc.offsetAt(a.range.start));
+  let out = source;
+  for (const edit of sorted) {
+    out = out.slice(0, doc.offsetAt(edit.range.start)) + edit.newText + out.slice(doc.offsetAt(edit.range.end));
+  }
+  return out;
+}

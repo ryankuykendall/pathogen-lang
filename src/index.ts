@@ -240,6 +240,7 @@ export {
   getSignatureHelp,
   prepareRename,
   getRenameEdits,
+  renameRefusal,
   getSemanticTokens,
   encodeSemanticTokens,
   TOKEN_TYPES,

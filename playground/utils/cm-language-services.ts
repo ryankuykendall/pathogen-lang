@@ -317,6 +317,14 @@ export function runRename(editorView: unknown): boolean {
   const doc = new services.StringTextDocument(source);
   const prep = services.prepareRename(doc, { line, character });
   if (!prep) {
+    // A name other files share (an exported one) can't be renamed yet: say why
+    // rather than doing nothing (docs/modules.md "In each tool").
+    // Optional: a bundle older than renameRefusal (a stale served copy) just skips the reason.
+    const refusal = services.renameRefusal?.(doc, { line, character });
+    if (refusal) {
+      window.alert(refusal);
+      return true;
+    }
     // Not a renameable symbol (keyword, builtin, or no word under cursor).
     return false;
   }

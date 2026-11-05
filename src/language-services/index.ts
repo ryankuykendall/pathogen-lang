@@ -23,7 +23,7 @@ export type { Location } from './navigation';
 export type { LanguageServiceOptions } from './module-exports';
 export { getSignatureHelp } from './signature-help';
 export type { SignatureHelp, SignatureInformation, ParameterInformation } from './signature-help';
-export { prepareRename, getRenameEdits } from './rename';
+export { prepareRename, getRenameEdits, renameRefusal } from './rename';
 export type { TextEdit, PrepareRenameResult } from './rename';
 export { getSemanticTokens, encodeSemanticTokens, TOKEN_TYPES, TOKEN_MODIFIERS } from './semantic-tokens';
 export type { SemanticToken } from './semantic-tokens';

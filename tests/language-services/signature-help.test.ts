@@ -235,3 +235,42 @@ describe('method signature help', () => {
     expect(atEnd('let xs = [1];\nlet r = xs.map(')!.activeParameter).toBe(0);
   });
 });
+
+// Phase 1a, step 6b part 3: one parameter list for fns in this file and in
+// others (tests/modules-editors.test.ts has the other files).
+describe('a fn written in this file', () => {
+  it('shows its parameters and where it is defined', () => {
+    expect(sigHelpAtEnd('fn draw(cx, cy) {\n  M cx cy\n}\ndraw(1, ')).toEqual({
+      signatures: [
+        { label: 'draw(cx, cy)', parameters: [{ label: 'cx' }, { label: 'cy' }], documentation: 'Defined at line 1' },
+      ],
+      activeSignature: 0,
+      activeParameter: 1,
+    });
+  });
+
+  it('a fn with no parameters', () => {
+    expect(sigHelpAtEnd('fn tick() {\n  M 0 0\n}\ntick(')).toEqual({
+      signatures: [{ label: 'tick()', parameters: [], documentation: 'Defined at line 1' }],
+      activeSignature: 0,
+      activeParameter: 0,
+    });
+  });
+
+  it('the fn the call sees: an inner fn of the same name wins inside its own body', () => {
+    const source = 'fn mark(a) {\n  M a a\n}\nfn outer() {\n  fn mark(x, y) {\n    M x y\n  }\n  mark(1, ';
+    expect(sigHelpAtEnd(source)?.signatures[0].label).toBe('mark(x, y)');
+  });
+
+  it("…but not a sibling fn's inner fn, written earlier in the file", () => {
+    const source =
+      'fn mark(a) {\n  M a a\n}\nfn other() {\n  fn mark(x, y) {\n    M x y\n  }\n}\nfn third() {\n  mark(1);\n}\n';
+    const line = 9;
+    expect(sigHelp(source, line, source.split('\n')[line].indexOf('(') + 1)?.signatures[0].label).toBe('mark(a)');
+  });
+
+  it('a fn called before the line that declares it', () => {
+    const source = 'draw(1, 2);\nfn draw(cx, cy) {\n  M cx cy\n}\n';
+    expect(sigHelp(source, 0, 5)?.signatures[0].label).toBe('draw(cx, cy)');
+  });
+});
