@@ -278,8 +278,11 @@ export function importCycleError(cycle: readonly string[]): string {
 
 // --- Binding imports at run time (src/evaluator; docs/modules.md "Errors") ---
 
-/** Export names for a message: alphabetical, ignoring case (`gear, Teeth, toothDepth`). */
-function exportList(names: Iterable<string>): string {
+/**
+ * Export names for a message: alphabetical, ignoring case (`gear, Teeth,
+ * toothDepth`). The editors list a namespace's exports the same way.
+ */
+export function exportList(names: Iterable<string>): string {
   const sorted = [...names].sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()) || a.localeCompare(b));
   return sorted.length > 0 ? sorted.join(', ') : 'nothing';
 }

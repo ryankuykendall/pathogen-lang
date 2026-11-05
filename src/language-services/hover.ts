@@ -1,13 +1,24 @@
 import { STDLIB_COMPLETIONS, TYPE_ELEMENT_TYPES, TYPE_PROPERTY_TYPES } from './completion-data.generated';
 import { regexNameResolver, resolveMemberAccess } from './member-resolution';
+import {
+  declarationSignature,
+  exportsOf,
+  importedFile,
+  importSiteAt,
+  namespaceReceiverAt,
+  resolveExport,
+  resolveImport,
+} from './module-exports';
 import { analyzeScopes } from './scope-analysis';
 import { inferBlockParamType, inferLoopVarType, inferType } from './type-inference';
 import { findDeclaration, inferDeclType, inferExprElementType } from './type-inference-ast';
+import { exportList, fileLabel, noExportError } from '../module-messages';
 import { lezerParser } from '../parser';
 
 import type { SyntaxNode } from '@lezer/common';
 
 import type { TextDocument } from './document';
+import type { ImportTarget, LanguageServiceOptions } from './module-exports';
 import type { Declaration, ScopeInfo } from './scope-analysis';
 import type { Position, Range } from './types';
 
@@ -115,15 +126,37 @@ for (const entry of STDLIB_COMPLETIONS) {
 }
 
 /**
- * Get hover information at a position in a document.
+ * Get hover information at a position in a document. With `options.modules`,
+ * a name from another file shows what that file declares (docs/modules.md
+ * "In each tool").
  */
-export function getHoverInfo(document: TextDocument, position: Position): HoverInfo | null {
+export function getHoverInfo(
+  document: TextDocument,
+  position: Position,
+  options: LanguageServiceOptions = {},
+): HoverInfo | null {
   const source = document.getText();
   const offset = document.offsetAt(position);
 
   // Extract the word at the cursor position
   const word = getWordAt(source, offset);
   if (!word) return null;
+
+  // Scope analysis is lazily computed once: in a file without imports,
+  // keyword/stdlib/color hovers never pay for a parse.
+  let cachedScopeInfo: ScopeInfo | null = null;
+  const getScopeInfo = () => {
+    cachedScopeInfo ??= analyzeScopes(document);
+    return cachedScopeInfo;
+  };
+
+  // A word inside an import's path is part of a file name (`gears` in
+  // "./parts/gears.pathogen"), not a name, a keyword or a path command.
+  if (source.includes('import')) {
+    const tree = getScopeInfo().tree;
+    const site = tree ? importSiteAt(tree, source, word.startOffset) : null;
+    if (site && site.name === undefined) return null;
+  }
 
   // 1. Check if it's a keyword
   if (KEYWORD_HOVER[word.text]) {
@@ -169,14 +202,6 @@ export function getHoverInfo(document: TextDocument, position: Position): HoverI
     }
   }
 
-  // Scope analysis is lazily computed once — keyword/stdlib/color hovers
-  // above and below never pay for a parse.
-  let cachedScopeInfo: ScopeInfo | null = null;
-  const getScopeInfo = () => {
-    cachedScopeInfo ??= analyzeScopes(document);
-    return cachedScopeInfo;
-  };
-
   // AST-first name typing shared with completion (regex fallback inside).
   const resolveName = (name: string): string | null => {
     const decl = findDeclaration(getScopeInfo(), name, position);
@@ -188,6 +213,30 @@ export function getHoverInfo(document: TextDocument, position: Position): HoverI
     const decl = findDeclaration(getScopeInfo(), name, position);
     return decl?.typeContext?.kind === 'init' ? inferExprElementType(decl.typeContext.expr, decl.scope) : null;
   };
+
+  // 2b. Names from other files: the exported name in `import { Teeth as Kind }`,
+  // and a namespace's member (`gears.gear`). Imported names themselves are
+  // declarations, answered with the other names in step 6.
+  const graph = options.modules;
+  if (graph) {
+    const tree = getScopeInfo().tree;
+    const site = tree ? importSiteAt(tree, source, word.startOffset) : null;
+    if (site?.name !== undefined) {
+      const file = importedFile(graph, graph.entry, site.path);
+      if (file) {
+        return { contents: importTargetHover(word.text, resolveExport(graph, file, site.name)), range: word.range };
+      }
+    }
+    const receiver = namespaceReceiverAt(getScopeInfo(), source, word.startOffset, position);
+    if (receiver) {
+      const file = importedFile(graph, graph.entry, receiver.path);
+      if (file) {
+        const target = resolveExport(graph, file, word.text);
+        // A member the file doesn't export has no hover: the compile names it.
+        return target.kind === 'export' ? { contents: importTargetHover(word.text, target), range: word.range } : null;
+      }
+    }
+  }
 
   // 3. Member access — the word follows a `.`: resolve the receiver through
   // the same path as member completion and describe the matched member.
@@ -249,15 +298,48 @@ export function getHoverInfo(document: TextDocument, position: Position): HoverI
   }
   if (!matched) matched = findDeclaration(getScopeInfo(), word.text, position);
   if (matched) {
+    if (graph && matched.kind === 'import') {
+      const target = resolveImport(graph, graph.entry, matched);
+      if (target) return { contents: importTargetHover(matched.name, target), range: word.range };
+    }
     const inferred = inferSymbolType(matched, word.text, source);
     const kindWithType = inferred ? `${KIND_LABELS[matched.kind]}: ${inferred}` : KIND_LABELS[matched.kind];
+    const signature = declarationSignature(matched);
     return {
-      contents: `**${matched.name}** — *${kindWithType}*\n\nDefined at line ${matched.range.start.line + 1}`,
+      contents: [
+        `**${matched.name}** — *${kindWithType}*`,
+        ...(signature ? [`\`${signature}\``] : []),
+        `Defined at line ${matched.range.start.line + 1}`,
+      ].join('\n\n'),
       range: word.range,
     };
   }
 
   return null;
+}
+
+/**
+ * A name from another file: what it is, its signature and where it is
+ * defined, as for a name in this file but with the file. `shownName` is the
+ * name as this file writes it (an alias, or a namespace's member).
+ */
+function importTargetHover(shownName: string, target: ImportTarget): string {
+  const label = fileLabel(target.file.path);
+  if (target.kind === 'namespace') {
+    return `**${shownName}** — *namespace*\n\nThe exports of ${label}: ${exportList(exportsOf(target.file).keys())}`;
+  }
+  if (target.kind === 'missing') {
+    return `**${shownName}** — *${KIND_LABELS.import}*\n\n${noExportError(label, target.name, exportsOf(target.file).keys())}`;
+  }
+  const { decl } = target;
+  const inferred = inferSymbolType(decl, decl.name, target.analyzed.document.getText());
+  const kindWithType = inferred ? `${KIND_LABELS[decl.kind]}: ${inferred}` : KIND_LABELS[decl.kind];
+  const signature = declarationSignature(decl);
+  return [
+    `**${shownName}** — *${kindWithType}*`,
+    ...(signature ? [`\`${signature}\``] : []),
+    `Defined in ${label}, line ${decl.range.start.line + 1}`,
+  ].join('\n\n');
 }
 
 const KIND_LABELS: Record<Declaration['kind'], string> = {

@@ -20,6 +20,7 @@ export { getHoverInfo } from './hover';
 export type { HoverInfo } from './hover';
 export { getDefinition, getReferences } from './navigation';
 export type { Location } from './navigation';
+export type { LanguageServiceOptions } from './module-exports';
 export { getSignatureHelp } from './signature-help';
 export type { SignatureHelp, SignatureInformation, ParameterInformation } from './signature-help';
 export { prepareRename, getRenameEdits } from './rename';

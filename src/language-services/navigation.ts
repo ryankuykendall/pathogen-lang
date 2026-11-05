@@ -1,39 +1,107 @@
+import {
+  exportNameRange,
+  importedFile,
+  importSiteAt,
+  namespaceReceiverAt,
+  resolveExport,
+  resolveImport,
+} from './module-exports';
 import { analyzeScopes } from './scope-analysis';
 
 import type { TextDocument } from './document';
+import type { ImportTarget, LanguageServiceOptions } from './module-exports';
+import type { Declaration, ScopeInfo } from './scope-analysis';
 import type { Position, Range } from './types';
 
 export interface Location {
+  /**
+   * Another file, by its project path (`/parts/gears.pathogen`); none means
+   * the document asked about. The language server turns it into a URI.
+   */
+  file?: string;
   range: Range;
 }
+
+/** The top of a file: where a namespace or an import's path leads. */
+const FILE_START: Range = { start: { line: 0, character: 0 }, end: { line: 0, character: 0 } };
 
 /**
  * Get the definition location for the symbol at the given position.
  * Returns null for builtins (stdlib, ctx, etc.) since they have no user-authored source.
+ * With `options.modules`, a name from another file leads to its declaration
+ * there (docs/modules.md "In each tool").
  */
-export function getDefinition(document: TextDocument, position: Position): Location | null {
+export function getDefinition(
+  document: TextDocument,
+  position: Position,
+  options: LanguageServiceOptions = {},
+): Location | null {
   const source = document.getText();
   const offset = document.offsetAt(position);
+  const graph = options.modules;
+  let scopeInfo: ScopeInfo | null = null;
+  const scopes = (): ScopeInfo => {
+    scopeInfo ??= analyzeScopes(document);
+    return scopeInfo;
+  };
+
+  // An import's path opens the file, wherever in the string the cursor is (a
+  // quote or a `/` too); the exported name in `{ Teeth as Kind }` leads to
+  // the export.
+  if (graph) {
+    const tree = scopes().tree;
+    const site = tree ? importSiteAt(tree, source, offset) : null;
+    if (site) {
+      const file = importedFile(graph, graph.entry, site.path);
+      if (file) {
+        return site.name === undefined
+          ? { file: file.path, range: FILE_START }
+          : locationOf(resolveExport(graph, file, site.name));
+      }
+    }
+  }
+
   const word = getWordAt(source, offset);
   if (!word) return null;
 
-  const scopeInfo = analyzeScopes(document);
+  // `gears.gear`: the export the namespace's file declares.
+  if (graph) {
+    const receiver = namespaceReceiverAt(scopes(), source, word.start, position);
+    if (receiver) {
+      const file = importedFile(graph, graph.entry, receiver.path);
+      if (file) return locationOf(resolveExport(graph, file, word.text));
+    }
+  }
+
+  const otherFile = (decl: Declaration): Location | null => {
+    if (!graph || decl.kind !== 'import') return null;
+    const target = resolveImport(graph, graph.entry, decl);
+    return target ? locationOf(target) : null;
+  };
 
   // Find a reference at this position that resolves to a declaration
-  for (const ref of scopeInfo.references) {
+  const info = scopes();
+  for (const ref of info.references) {
     if (ref.name === word.text && ref.declaration && isPositionInRange(position, ref.range)) {
-      return { range: ref.declaration.range };
+      return otherFile(ref.declaration) ?? { range: ref.declaration.range };
     }
   }
 
   // Check if the position is ON a declaration (go-to-def on the definition itself)
-  for (const decl of scopeInfo.declarations) {
+  for (const decl of info.declarations) {
     if (decl.name === word.text && isPositionInRange(position, decl.range)) {
-      return { range: decl.range };
+      return otherFile(decl) ?? { range: decl.range };
     }
   }
 
   return null;
+}
+
+/** Where a name from another file is declared; null for one the file doesn't export. */
+function locationOf(target: ImportTarget): Location | null {
+  if (target.kind === 'namespace') return { file: target.file.path, range: FILE_START };
+  if (target.kind === 'missing') return null;
+  return { file: target.file.path, range: exportNameRange(target) };
 }
 
 /**

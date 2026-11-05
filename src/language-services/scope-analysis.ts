@@ -64,6 +64,17 @@ export interface Declaration {
   typeContext?: DeclTypeContext;
   /** Declared with `const`: never assigned again (semantic tokens add `readonly`) */
   isConst?: boolean;
+  /** Marked `export` (docs/modules.md "Exporting"). */
+  exported?: true;
+  /** A fn's parameter names, in order. */
+  params?: string[];
+  /** An enum's member names, in order. */
+  members?: string[];
+  /**
+   * An imported name: the path as written in the import, and the name the
+   * other file exports. No `name` for `* as`, which names the whole file.
+   */
+  importFrom?: { path: string; name?: string };
 }
 
 export interface Reference {
@@ -263,6 +274,7 @@ function walkStatement(stmt: Statement, scope: Scope, col: Collector): void {
       const bind = (name: string, typeContext?: DeclTypeContext): void => {
         const decl = addDecl(scope, name, 'variable', stmt.loc, col, typeContext);
         if (stmt.kind === 'const') decl.isConst = true;
+        if (stmt.exported) decl.exported = true;
       };
       if (stmt.pattern) {
         if (stmt.pattern.type === 'ArrayDestructuringPattern') {
@@ -286,16 +298,23 @@ function walkStatement(stmt: Statement, scope: Scope, col: Collector): void {
       resolveId(stmt.name, stmt.loc, scope, col);
       break;
     case 'FunctionDefinition': {
-      addDecl(scope, stmt.name, 'function', stmt.loc, col);
+      const fnDecl = addDecl(scope, stmt.name, 'function', stmt.loc, col);
+      fnDecl.params = stmt.params;
+      if (stmt.exported) fnDecl.exported = true;
       const fnScope = mkScope(scope);
       for (const p of stmt.params) addDecl(fnScope, p, 'parameter', stmt.loc, col);
       defer(col, () => walkStatements(stmt.body, fnScope, col));
       break;
     }
-    case 'EnumDefinition':
-      addDecl(scope, stmt.name, 'enum', stmt.loc, col);
-      for (const m of stmt.members) { if (m.value) walkExpr(m.value, scope, col); }
+    case 'EnumDefinition': {
+      const enumDecl = addDecl(scope, stmt.name, 'enum', stmt.loc, col);
+      enumDecl.members = stmt.members.map((m) => m.name);
+      if (stmt.exported) enumDecl.exported = true;
+      for (const m of stmt.members) {
+        if (m.value) walkExpr(m.value, scope, col);
+      }
       break;
+    }
     case 'ForLoop': {
       walkExpr(stmt.start, scope, col);
       walkExpr(stmt.end, scope, col);
@@ -397,12 +416,15 @@ function walkStatement(stmt: Statement, scope: Scope, col: Collector): void {
       break;
     case 'ImportDeclaration': {
       // Each imported name is declared here, fixed like a const (docs/modules.md).
-      // What it holds lives in the other file; nothing here reads that file.
-      const bindImport = (name: string, loc: SourceLocation | undefined): void => {
-        addDecl(scope, name, 'import', loc ?? stmt.loc, col).isConst = true;
+      // What it holds lives in the other file: nothing here reads that file, but
+      // the declaration says where to look (module-exports.ts reads it there).
+      const bindImport = (name: string, loc: SourceLocation | undefined, imported?: string): void => {
+        const decl = addDecl(scope, name, 'import', loc ?? stmt.loc, col);
+        decl.isConst = true;
+        decl.importFrom = imported === undefined ? { path: stmt.source } : { path: stmt.source, name: imported };
       };
       if (stmt.namespace) bindImport(stmt.namespace.local, stmt.namespace.loc);
-      for (const spec of stmt.specifiers) bindImport(spec.local, spec.localLoc);
+      for (const spec of stmt.specifiers) bindImport(spec.local, spec.localLoc, spec.imported);
       break;
     }
     case 'Comment':
