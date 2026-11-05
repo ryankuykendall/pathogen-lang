@@ -24,9 +24,10 @@ The extension spawns the language server as a child process. The server imports 
 
 | File | Purpose |
 |------|---------|
-| `src/extension.ts` | Entry point. Starts LanguageClient, registers preview command |
-| `src/preview.ts` | The preview panel's VS Code glue (`PreviewPanel`): owns its listeners, shows the active `.pathogen` document, loads its fonts through `FontSession` and posts numbered `fonts` / `update` messages |
-| `src/font-session.ts` | Fonts for the preview, loaded in the extension host by the CLI's loader (`pathogen-lang` + `pathogen-lang/node`, from the bundled `server/node_modules`). No `vscode` import — tested by `tests/vscode-font-session.test.ts` |
+| `src/extension.ts` | Entry point. Starts LanguageClient (saved and `untitled` `.pathogen` documents; a `**/{*.pathogen,pathogen.json}` watcher feeds the server's didChangeWatchedFiles), registers preview command |
+| `src/preview.ts` | The preview panel's VS Code glue (`PreviewPanel`): owns its listeners, shows the active `.pathogen` document, reads the files it imports through `previewModules`, loads its fonts through `FontSession` and posts numbered `fonts` / `update` messages. Redraws when an imported file's tab changes, or a `.pathogen` file changes on disk while the document imports anything |
+| `src/preview-modules.ts` | The files the preview's document imports (`resolveEditorModules` from `pathogen-lang/node`, open tabs over the disk), as plain data for `update` (`files` as entries: postMessage can't carry a Map); load errors in the CLI's words; a module's notice. No `vscode` import — tested by `tests/vscode-preview-modules.test.ts` |
+| `src/font-session.ts` | Fonts for the preview, loaded in the extension host by the CLI's loader (`pathogen-lang` + `pathogen-lang/node`, from the bundled `server/node_modules`), imported files' `@font` included. No `vscode` import — tested by `tests/vscode-font-session.test.ts` |
 | `src/webview-html.ts` | The webview page and its inline script: compiles with the bundled library (`<script src="${compilerUri}">`), a fresh font registry per compile from the update's `fontIds`, `@font-face` for live `<text>`, renders via the shared `buildSvgTree` + `mountInto`. Pan/zoom is the shared `PanZoomController` (`window.PathogenPanZoom`, from `compiler/pan-zoom.global.js`) — CSS-transform during the gesture, baked into the viewBox on idle; wheel + drag + touch pinch. No `vscode` import — `project-docs/modules/verify/verify-vscode-fonts.mjs` loads it under its real CSP |
 | `syntaxes/pathogen.tmLanguage.json` | TextMate grammar for syntax highlighting |
 | `snippets/pathogen.code-snippets` | Code snippets (for, fn, if, switch, shapes, etc. — 35 as of 2026-09) |
@@ -38,8 +39,9 @@ The extension spawns the language server as a child process. The server imports 
 
 | File | Purpose |
 |------|---------|
-| `src/server.ts` | LSP adapter — each `connection.on*` handler wraps a language-services function |
-| `src/fonts.ts` | Fonts for diagnostics (`DiagnosticFonts`): installed and cached fonts first, a background download when needed, then a recheck — diagnostics never wait for the network |
+| `src/server.ts` | LSP adapter — each `connection.on*` handler wraps a language-services function, with `documentModules.optionsFor(uri)` for the features across files |
+| `src/modules.ts` | Imports (`DocumentModules`): each open document's files read at its check (`resolveEditorModules`, open buffers first) and kept for requests, which never read the disk; the open documents a change affects; a project path back to a URI; the project's modules for path completion. Tested by `tests/language-server-modules.test.ts` |
+| `src/fonts.ts` | Fonts for diagnostics (`DiagnosticFonts`): installed and cached fonts first, a background download when needed, then a recheck — diagnostics never wait for the network. Imported files' `@font` load too |
 
 ## LSP Capabilities
 
@@ -47,12 +49,12 @@ The extension spawns the language server as a child process. The server imports 
 |-----------|---------------------------|---------|
 | `textDocumentSync: Full` | `getDiagnostics()` | On document change |
 | `documentSymbolProvider` | `getDocumentSymbols()` | Outline request |
-| `completionProvider` (`.`, `$`, `#`) | `getCompletions()` | Typing trigger chars |
+| `completionProvider` (`.`, `$`, `#`, `@`, `&`, `:`, `"`, `/`) | `getCompletions()` | Typing trigger chars; `"` and `/` only open an import's path list (the server returns nothing for them elsewhere) |
 | `hoverProvider` | `getHoverInfo()` | Mouse hover |
 | `definitionProvider` | `getDefinition()` | Ctrl+Click / F12 |
 | `referencesProvider` | `getReferences()` | Find All References |
 | `signatureHelpProvider` (`(`, `,`) | `getSignatureHelp()` | Inside function call |
-| `renameProvider` (prepare) | `prepareRename()`, `getRenameEdits()` | F2 |
+| `renameProvider` (prepare) | `prepareRename()`, `getRenameEdits()`; `renameRefusal()` as a `RequestFailed` error for an imported or exported name | F2 |
 | `semanticTokensProvider` (full) | `getSemanticTokens()`, `encodeSemanticTokens()` | File open/change |
 | `documentFormattingProvider` | `formatDocument()` | Format Document |
 | `codeActionProvider` | `getCodeActions()` | Lightbulb / quick fix |
@@ -77,7 +79,10 @@ cd packages/vscode-pathogen && npm run watch
 
 **Dependency chain**: If `src/language-services/` changes → rebuild root lib (`npm run build`) → rebuild language server → extension picks up changes.
 
-**Testing**: The packages have no test scripts of their own (`"test": "echo 'No tests yet'"`); their logic is tested from the root suite — `tests/vscode-font-session.test.ts` (the preview's fonts) and `tests/language-server-fonts.test.ts` (diagnostics' fonts), with `pathogen-lang` mapped to the sources in `vitest.config.ts`. End to end: `node project-docs/modules/verify/verify-vscode-fonts.mjs` after `npm run build:vscode` (extension host, the real webview under its CSP, the bundled language server).
+**Testing**: The packages have no test scripts of their own (`"test": "echo 'No tests yet'"`); their logic is tested from the root suite — `tests/vscode-font-session.test.ts` (the preview's fonts), `tests/vscode-preview-modules.test.ts` (the preview's imports), `tests/language-server-fonts.test.ts` (diagnostics' fonts) and `tests/language-server-modules.test.ts` (the server's imports), with `pathogen-lang` mapped to the sources in `vitest.config.ts`. End to end, after `npm run build:vscode`:
+- `node project-docs/modules/verify/verify-vscode-fonts.mjs`: the extension host, the real webview under its CSP, the bundled language server (fonts; needs the network);
+- `node project-docs/modules/verify/verify-step6c-lsp.mjs`: a language server over stdio on a real project folder (imports: hover, definition, completion, F2, rechecks, watched files). `PATHOGEN_SERVER=packages/vscode-pathogen/server/out/server.js` runs the bundled one;
+- `node project-docs/modules/verify/verify-step6d-preview.mjs`: the preview's imports through the shipped `out/` code and the real webview.
 
 ## TextMate Grammar
 

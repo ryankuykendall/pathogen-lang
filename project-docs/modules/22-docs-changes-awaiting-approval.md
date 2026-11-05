@@ -1,5 +1,9 @@
-# Docs changes since your approval (awaiting it before the push)
+# Docs changes since your approval (approved 2026-11-05)
 
+> **Approved by you on 2026-11-05, step 7: every row below, as amended by step 5e.** Asked as one question listing the `ids.pathogen` trace, the three Errors-table rows, the `imported-id` code, the id-clash wording, the CSSVar sentence and docs/debug.md; you answered "Approve". With the 5e, missing-`;` and pen-helper approvals above, no docs change in phase 1a is waiting on you.
+>
+> **Out of date since step 6:** the last line of "Behaviour choices" ("In the CLI only, so far: an imported file's `@font` lines load"). The language server got imported fonts in step 6c (`33-phase-1a-step6c-fonts.md`) and the VS Code preview in step 6d (`34-phase-1a-step6d-preview.md`). The two layer bullets are superseded by step 5e, as the update below says.
+>
 > **Update, 2026-11-04, step 5e (modules are libraries).** docs/modules.md was rewritten for strict modules. The full list is in `24-phase-1a-step5e.md`, section "Docs". It supersedes some rows below:
 > - the step 4 `ids.pathogen` fence now reads line 7, not line 5;
 > - the duplicate-id row now says `arrows.pathogen line 4`;

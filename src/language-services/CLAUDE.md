@@ -60,7 +60,8 @@ npm run check:completions             # strict drift check + git-diff sync check
 |------|---------|-------------|
 | `types.ts` | Position, Range, Diagnostic types (LSP-compatible) | New diagnostic kinds needed |
 | `document.ts` | TextDocument abstraction (StringTextDocument) | Stable — rarely changes |
-| `diagnostics.ts` | `getDiagnostics()` — Lezer error recovery + contextual messages | New syntax constructs |
+| `diagnostics.ts` | `getDiagnostics()` — Lezer error recovery + contextual messages. Options: `fonts`, `modules` (the import graph), `loadErrors` (what resolveModules couldn't load, placed on the import that leads there) | New syntax constructs |
+| `module-exports.ts` | Names from other files (docs/modules.md "In each tool"): `LanguageServiceOptions { modules?, projectFiles? }`, the options every cross-file feature takes, the graph passed in as data (never a file read). Each imported file analyzed once; export resolution follows re-exports; the import part under the cursor (`importSiteAt`, `importCompletionContextAt`) from the Lezer tree; `namespaceReceiverAt` for `ns.member` | Module features (imports, exports, namespaces) |
 | `scope-analysis.ts` | `analyzeScopes()` — scope tree, declarations (with `typeContext` AST nodes for inference), references. Uses the **lenient** `parseLezer` so the scope tree survives mid-typing errors | New declaration/statement types |
 | `completion-data-static.ts` | Hand-written keywords, style properties, snippets | New keyword / style property |
 | `completion-data.generated.ts` | **Generated** — see above | Never by hand; `npm run generate:completions` |
@@ -69,10 +70,10 @@ npm run check:completions             # strict drift check + git-diff sync check
 | `type-inference-ast.ts` | **AST-first inference** (regex-audit Phase 5b): `inferDeclType()` types a Declaration via its `typeContext` node; `inferExprType()`/`inferExprElementType()` type expressions structurally. Always tried before the regex rules | New inference rules go HERE, not in type-inference.ts |
 | `type-inference.ts` | Legacy regex inference — kept as the fallback safety net for the AST path. Do not add new rules | Never — extend `type-inference-ast.ts` instead |
 | `hover.ts` | `getHoverInfo()` — keywords, path commands, stdlib, member hover via `member-resolution.ts`, declaration/reference types via `type-inference-ast.ts` (declaration-site hover included) | New keywords; stdlib + members flow in automatically |
-| `signature-help.ts` | `getSignatureHelp()` — active parameter tracking | Flows from generated `SIGNATURE_DATA` |
+| `signature-help.ts` | `getSignatureHelp()` — active parameter tracking; a user fn's parameters, in this file or (with `modules`) another | Flows from generated `SIGNATURE_DATA` |
 | `symbols.ts` | `getDocumentSymbols()` — outline/breadcrumbs | New AST nodes that appear in outline |
-| `navigation.ts` | `getDefinition()`, `getReferences()` | New declaration types |
-| `rename.ts` | `prepareRename()`, `getRenameEdits()` | Rarely |
+| `navigation.ts` | `getDefinition()` (a `Location.file` project path for another file), `getReferences()` (this file only) | New declaration types |
+| `rename.ts` | `prepareRename()`, `getRenameEdits()`, `renameRefusal()` (imported and exported names can't be renamed across files yet; this says why) | Rarely |
 | `semantic-tokens.ts` | `getSemanticTokens()` — scope-aware highlighting | New token categories |
 | `formatter.ts` | `formatDocument()` — AST-based code formatting | New statement/block types |
 | `code-actions.ts` | `getCodeActions()` — quick fixes for diagnostics | New diagnostic-to-fix mappings |
@@ -98,7 +99,7 @@ For the full cross-system checklist (including VS Code extension, playground, do
 ## Snippet Handling Per Surface
 
 - **Playground**: `playground/utils/cm-completion-bridge.ts` converts VS Code snippet syntax to CodeMirror fields (`$0` → `${}`, choice fields → first choice) and uses the native `@codemirror/autocomplete` `snippet()` for tab-stop cycling (manual fallback selects the first placeholder). Style property-name positions widen the word/replacement pattern to include `-` via `isStylePropertyNamePosition` — everywhere else `-` stays an operator boundary.
-- **VS Code**: `packages/pathogen-language-server/src/server.ts` sends `InsertTextFormat.Snippet` when the client advertises `snippetSupport` (placeholders stripped to plain text otherwise) and attaches an explicit `textEdit` covering the hyphenated prefix in style property-name position (the client word pattern treats `-` as a boundary).
+- **VS Code**: `packages/pathogen-language-server/src/server.ts` sends `InsertTextFormat.Snippet` when the client advertises `snippetSupport` (placeholders stripped to plain text otherwise) and attaches an explicit `textEdit` covering the hyphenated prefix in style property-name position (the client word pattern treats `-` as a boundary). An item with its own `range` (an import's path, `kind: 'file'`) gets a `textEdit` for exactly that range.
 
 ## Testing
 
@@ -121,6 +122,7 @@ Tests live in `tests/language-services/` with 1:1 correspondence to source files
 | `code-actions.ts` | `tests/language-services/code-actions.test.ts` |
 | `inlay-hints.ts` | `tests/language-services/inlay-hints.test.ts` |
 | constructor registry | `tests/constructor-registry.test.ts` |
+| `module-exports.ts` and every feature across files | `tests/modules-editors.test.ts` (outside the 1:1 layout: the graph is built with `resolveModules`, as the language server builds it) |
 
 **Pattern**: Create a `StringTextDocument` from source text, call the language-service function, assert on returned items. Assert `detail`/`insertText`/`isSnippet` content, not just label presence — label-only assertions let signature drift and missing templates pass silently.
 

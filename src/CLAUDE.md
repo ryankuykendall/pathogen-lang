@@ -47,9 +47,11 @@ src/
 │   ├── project.ts     # pathogen.json v1 validation
 │   ├── google-fonts.ts # css2 URLs/parsing (gstatic only), curated catalog + weight snapping, font-file checks
 │   ├── font-face-css.ts # @font-face CSS for live <text>
-│   └── load-fonts.ts  # planFontDirectives, resolveFonts (files → installed → cache → Google), buildFontRegistry
+│   ├── load-fonts.ts  # planFontDirectives, resolveFonts / resolveFontsInFiles (files → installed → cache → Google), buildFontRegistry
+│   └── load-modules.ts # Imports (docs/modules.md): planImports, resolveModules → ModuleGraph + load errors, withOpenDocuments, unsavedImportErrors
 ├── node/
-│   └── index.ts       # `pathogen-lang/node`: the Node FontHost (project files, font search, file cache, downloads), used by the CLI, VS Code and the LSP
+│   └── index.ts       # `pathogen-lang/node`: the Node FontHost and ProjectFileHost (project files, font search, file cache, downloads); resolveEditorModules / listProjectModules for the editors. Used by the CLI, VS Code and the LSP
+├── module-messages.ts # Every import/export/module error and message, one home for the docs, compiler and editors
 ├── cli.ts             # CLI entry point (file, folder, stdin, inline, --output-svg-file, --print-logs)
 ├── index.ts           # Library exports (compile, compileWithContext)
 └── worker.ts          # Web Worker entry point for async compilation

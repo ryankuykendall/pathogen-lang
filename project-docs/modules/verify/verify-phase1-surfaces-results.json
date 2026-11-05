@@ -1,0 +1,87 @@
+[
+  {
+    "name": "main: the engine draws the gears",
+    "ok": true,
+    "detail": "1 path(s)"
+  },
+  {
+    "name": "main: the CLI draws exactly what the engine draws",
+    "ok": true,
+    "detail": "1 path(s)"
+  },
+  {
+    "name": "main: VS Code's preview path draws exactly what the engine draws",
+    "ok": true,
+    "detail": "1 path(s)"
+  },
+  {
+    "name": "main: the playground gives the docs' no-project-folder error at the import",
+    "ok": true,
+    "detail": "error: Line 1, col 1: Cannot import \"./parts/gears.pathogen\": this program has no project folder to read files from. Imports work in the CLI and VS Code; a playground workspace is one program for now."
+  },
+  {
+    "name": "export without module;: an error (engine)",
+    "ok": true,
+    "detail": "error: Parse error at line 1, column 1: export only works in a module. Remove export, or add module; at the top of the file to make it a module, which can't draw at its top level."
+  },
+  {
+    "name": "export without module;: an error (vscode)",
+    "ok": true,
+    "detail": "error: Parse error at line 1, column 1: export only works in a module. Remove export, or add module; at the top of the file to make it a module, which can't draw at its top level."
+  },
+  {
+    "name": "export without module;: an error (playground)",
+    "ok": true,
+    "detail": "error: Parse error at line 1, column 1: export only works in a module. Remove export, or add module; at the top of the file to make it a module, which can't draw at its top level."
+  },
+  {
+    "name": "export without module;: an error (cli)",
+    "ok": true,
+    "detail": "error: Error: Parse error at line 1, column 1: export only works in a module. Remove export, or add module; at the top of the file to make it a module, which can't draw at its top level."
+  },
+  {
+    "name": "a module compiled by itself draws nothing (engine)",
+    "ok": true,
+    "detail": "0 path(s)"
+  },
+  {
+    "name": "a module compiled by itself draws nothing (cli)",
+    "ok": true,
+    "detail": "0 path(s)"
+  },
+  {
+    "name": "a module compiled by itself draws nothing (vscode)",
+    "ok": true,
+    "detail": "0 path(s)"
+  },
+  {
+    "name": "a module compiled by itself draws nothing (playground)",
+    "ok": true,
+    "detail": "0 path(s)"
+  },
+  {
+    "name": "a module's top-level path command is an error (engine)",
+    "ok": true,
+    "detail": "error: Parse error at line 3, column 1: A module can't draw while it loads. Draw in an exported fn, and call it from the file that imports this one."
+  },
+  {
+    "name": "a module's top-level path command is an error (cli)",
+    "ok": true,
+    "detail": "error: Error: Parse error at line 3, column 1: A module can't draw while it loads. Draw in an exported fn, and call it from the file that imports this one."
+  },
+  {
+    "name": "a module's top-level path command is an error (vscode)",
+    "ok": true,
+    "detail": "error: Parse error at line 3, column 1: A module can't draw while it loads. Draw in an exported fn, and call it from the file that imports this one."
+  },
+  {
+    "name": "a module's top-level path command is an error (playground)",
+    "ok": true,
+    "detail": "error: Parse error at line 3, column 1: A module can't draw while it loads. Draw in an exported fn, and call it from the file that imports this one."
+  },
+  {
+    "name": "a program without imports draws the same on all four",
+    "ok": true,
+    "detail": "1 path(s) | 1 path(s) | 1 path(s)"
+  }
+]

@@ -1,0 +1,22 @@
+[
+  {
+    "name": "an import is an error at the import line, in the docs' words",
+    "ok": true,
+    "detail": "Line 1:1 — Cannot import \"./parts/gears.pathogen\": this program has no project folder to read files from. Imports work in the CLI and VS Code; a playground workspace is one program for now. Copy Debug Info"
+  },
+  {
+    "name": "export without module; is an error at the export word",
+    "ok": true,
+    "detail": "Line 1:1 — export only works in a module. Remove export, or add module; at the top of the file to make it a module, which can't draw at its top level. Copy Debug Info"
+  },
+  {
+    "name": "a module workspace compiles without error and draws nothing",
+    "ok": true,
+    "detail": "{\"panel\":\"\",\"drawn\":[]}"
+  },
+  {
+    "name": "F2 on an exported name says why it cannot rename, and asks for no new name",
+    "ok": true,
+    "detail": "[{\"type\":\"alert\",\"message\":\"dot is exported, so other files may use it. Renaming across files isn't supported yet: rename it in each file.\"}]"
+  }
+]

@@ -17,7 +17,11 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const repo = join(here, '..', '..', '..');
-const server = join(repo, 'packages', 'pathogen-language-server', 'out', 'server.js');
+// PATHOGEN_SERVER=packages/vscode-pathogen/server/out/server.js runs the one the .vsix ships (its own node_modules).
+const server = process.env.PATHOGEN_SERVER
+  ? join(repo, process.env.PATHOGEN_SERVER)
+  : join(repo, 'packages', 'pathogen-language-server', 'out', 'server.js');
+const resultsFile = process.env.PATHOGEN_SERVER ? 'verify-step6c-lsp-bundled-results.json' : 'verify-step6c-lsp-results.json';
 
 // --- a project on disk ---
 mkdirSync(join(repo, 'tmp'), { recursive: true });
@@ -303,7 +307,7 @@ try {
   rmSync(project, { recursive: true, force: true });
 }
 
-writeFileSync(join(here, 'verify-step6c-lsp-results.json'), `${JSON.stringify(results, null, 2)}\n`);
+writeFileSync(join(here, resultsFile), `${JSON.stringify(results, null, 2)}\n`);
 const failed = results.filter((r) => !r.ok);
 console.log(`\n${results.length - failed.length}/${results.length} passed`);
 process.exit(failed.length > 0 ? 1 : 0);
