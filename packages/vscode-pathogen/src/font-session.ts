@@ -26,6 +26,22 @@ export interface FontLoadMessageLike {
   message: string;
   line?: number;
   column?: number;
+  /** An imported file's `@font` line, as a path from the project folder. */
+  file?: string;
+}
+
+/** The parts of a `ModuleGraph` the session reads: the files a document imports. */
+export interface ModuleGraphLike {
+  order: readonly string[];
+  files: ReadonlyMap<string, { source: string }>;
+}
+
+/** One file of a compile (pathogen-lang `FontSourceFile`). */
+interface FontSourceFileLike {
+  path: string;
+  source: string;
+  label: string;
+  imported?: boolean;
 }
 
 /** The parts of a `FontDirectivePlan` the session reads. */
@@ -39,6 +55,11 @@ export interface PathogenLib {
   resolveFonts: (
     source: string,
     options: { host: unknown; entry: string },
+  ) => Promise<{ fonts: ResolvedFontLike[]; messages: FontLoadMessageLike[]; retryable: boolean }>;
+  /** The fonts of every file in a compile, for a document that imports files with `@font`. */
+  resolveFontsInFiles?: (
+    files: readonly FontSourceFileLike[],
+    options: { host: unknown },
   ) => Promise<{ fonts: ResolvedFontLike[]; messages: FontLoadMessageLike[]; retryable: boolean }>;
 }
 
@@ -119,38 +140,59 @@ export class FontSession {
    * fixed network or a newly installed font is picked up without hammering.
    * Identical loads in progress share one run.
    */
-  async load(source: string, filePath: string | undefined): Promise<DocumentFonts> {
-    if (!source.includes('@font')) return NO_FONTS;
+  async load(source: string, filePath: string | undefined, modules?: ModuleGraphLike): Promise<DocumentFonts> {
+    // The files the document imports that have @font lines (docs/modules.md
+    // "Fonts in imported files"), in load order, as the CLI loads them.
+    const imported: FontSourceFileLike[] = [];
+    for (const projectPath of modules?.order ?? []) {
+      const file = modules?.files.get(projectPath);
+      if (file?.source.includes('@font')) {
+        imported.push({ path: projectPath, source: file.source, label: projectPath.slice(1), imported: true });
+      }
+    }
+    if (!source.includes('@font') && imported.length === 0) return NO_FONTS;
     const plan = this.options.lib.planFontDirectives(source);
     // A source that doesn't parse loads nothing; the compile shows the parse error.
     if (plan === null) return NO_FONTS;
 
     const where = this.locate(filePath);
-    const filePaths = plan.directives.filter((d) => d.kind === 'file').map((d) => d.source);
+    const filePaths = (p: PlanLike | null) =>
+      (p?.directives ?? []).filter((d) => d.kind === 'file').map((d) => d.source);
     const stamps = where.unsaved
       ? ''
-      : this.options.node.fontFileStamps(where.root, where.entry, filePaths, where.projectFile);
-    const key = JSON.stringify([plan, where.root, where.entry, this.offlineReason(), stamps]);
+      : this.options.node.fontFileStamps(where.root, where.entry, filePaths(plan), where.projectFile);
+    // An imported file's @font lines and their files are part of the key, so
+    // editing one (or adding the font file it names) loads again.
+    const importedKey = imported.map((file) => {
+      const filePlan = this.options.lib.planFontDirectives(file.source);
+      return [file.path, filePlan, this.options.node.fontFileStamps(where.root, file.path, filePaths(filePlan), null)];
+    });
+    const key = JSON.stringify([plan, importedKey, where.root, where.entry, this.offlineReason(), stamps]);
     const now = this.options.now?.() ?? Date.now();
     if (this.memo?.key === key && now < this.memo.until) return this.memo.result;
 
     const running = this.inFlight.get(key);
     if (running) return running;
-    const run = this.run(source, where, key).finally(() => this.inFlight.delete(key));
+    const run = this.run(source, where, key, imported).finally(() => this.inFlight.delete(key));
     this.inFlight.set(key, run);
     return run;
   }
 
-  private async run(source: string, where: Where, key: string): Promise<DocumentFonts> {
+  private async run(source: string, where: Where, key: string, imported: FontSourceFileLike[]): Promise<DocumentFonts> {
     const errors: string[] = [];
     if (where.projectFile) {
       const project = await this.options.node.loadProjectFile(where.projectFile);
       if (!project.ok) errors.push(project.message);
     }
-    const { fonts, messages, retryable } = await this.options.lib.resolveFonts(source, {
-      host: this.host(where),
-      entry: where.entry,
-    });
+    const { lib } = this.options;
+    const host = this.host(where);
+    const { fonts, messages, retryable } =
+      imported.length > 0 && lib.resolveFontsInFiles
+        ? await lib.resolveFontsInFiles(
+            [{ path: where.entry, source, label: where.entry.replace(/^\//, '') }, ...imported],
+            { host },
+          )
+        : await lib.resolveFonts(source, { host, entry: where.entry });
     for (const font of fonts) this.remember(font);
     const result: DocumentFonts = {
       fontIds: fonts.map((f) => f.id),
@@ -279,6 +321,9 @@ function clampWeight(weight: number | undefined): number {
 }
 
 function positioned(m: FontLoadMessageLike): string {
+  const column = m.column !== undefined ? `, col ${m.column}` : '';
+  // An imported file's message names it, as an error from another file does.
+  if (m.file !== undefined) return `${m.file}${m.line === undefined ? '' : ` line ${m.line}${column}`}: ${m.message}`;
   if (m.line === undefined) return m.message;
-  return `Line ${m.line}${m.column !== undefined ? `, col ${m.column}` : ''}: ${m.message}`;
+  return `Line ${m.line}${column}: ${m.message}`;
 }

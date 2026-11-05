@@ -224,6 +224,39 @@ describe('loading a document’s fonts', () => {
   });
 });
 
+// Phase 1a step 6d: docs/modules.md "Fonts in imported files", in the preview.
+describe('fonts in the files a document imports', () => {
+  const MAIN = 'import { ready } from "./parts/labels.pathogen";\nM 0 0\n';
+  async function graphWith(labelsSource: string) {
+    mkdirSync(join(project, 'parts'), { recursive: true });
+    writeFileSync(join(project, 'parts', 'labels.pathogen'), labelsSource);
+    return (await node.resolveEditorModules(program, MAIN, () => undefined)).graph;
+  }
+
+  it("an imported file's @font loads for the preview, its ./ path from its own folder", async () => {
+    const graph = await graphWith('module;\n@font "../fonts/Baumans-Regular.ttf";\nexport const ready = 1;\n');
+    const loaded = await session().load(MAIN, program, graph);
+    expect([loaded.notices, loaded.errors, loaded.fontIds.length]).toEqual([[], [], 1]);
+  });
+
+  it("an imported file's font problem names that file", async () => {
+    const graph = await graphWith('module;\n@font "../fonts/Missing.ttf";\nexport const ready = 1;\n');
+    const loaded = await session().load(MAIN, program, graph);
+    expect(loaded.errors).toEqual([
+      `parts/labels.pathogen line 2, col 1: @font file "../fonts/Missing.ttf" was not found (looked for ${join(project, 'fonts', 'Missing.ttf')}).`,
+    ]);
+  });
+
+  it("editing the imported file's @font loads again", async () => {
+    const s = session();
+    expect(
+      (await s.load(MAIN, program, await graphWith('module;\n@font "../fonts/Missing.ttf";\n'))).errors,
+    ).toHaveLength(1);
+    const fixed = await s.load(MAIN, program, await graphWith('module;\n@font "../fonts/Baumans-Regular.ttf";\n'));
+    expect([fixed.errors, fixed.fontIds.length]).toEqual([[], 1]);
+  });
+});
+
 describe('handing fonts to the webview', () => {
   it('each font once; a reloaded webview gets them again; a re-ask always answers', async () => {
     const s = session();

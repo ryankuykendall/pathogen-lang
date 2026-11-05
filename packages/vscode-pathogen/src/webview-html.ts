@@ -6,7 +6,9 @@
  * Messages (see preview.ts for the host side):
  *   host → webview  `fonts`   { fonts: [{ id, family, weight, style, kind, buffer }], reply? } — each font
  *                             once; `reply` marks the answer to `needFonts`
- *                   `update`  { seq, uri, source, fontIds, notices, errors } — `seq` grows with every update
+ *                   `update`  { seq, uri, source, fontIds, notices, errors, modules? } — `seq` grows with every
+ *                             update; `modules` is the files the document imports, `files` as [path, file]
+ *                             entries (preview-modules.ts), which compile() takes back as a Map
  *                   `status`  { text } e.g. "Loading fonts…" while a first download runs
  *   webview → host  `ready`        the page loaded (again: a hidden panel reloads)
  *                   `needFonts`    { ids } an update named fonts this page doesn't hold
@@ -437,6 +439,9 @@ export function getWebviewContent(compilerUri: string, panZoomUri: string, cspSo
     let lastFontIds = [];
     let lastFontErrors = [];
     let lastUri = null;
+    // The files the document imports, as compile() takes them (the update
+    // sends them as entries: postMessage can't carry a Map).
+    let lastModules = null;
     let lastSeq = -1;
 
     // --- Fonts ---
@@ -661,7 +666,10 @@ export function getWebviewContent(compilerUri: string, panZoomUri: string, cspSo
         }
 
         const fonts = registryFor(lastFontIds);
-        const result = PathogenLang.compile(modifiedSource, fonts ? { fonts: fonts } : undefined);
+        const options = {};
+        if (fonts) options.fonts = fonts;
+        if (lastModules) options.modules = lastModules;
+        const result = PathogenLang.compile(modifiedSource, options);
         lastResult = result;
 
         // Canvas dims come from the COMPILED viewBox (the define ViewBox(...)
@@ -943,6 +951,10 @@ export function getWebviewContent(compilerUri: string, panZoomUri: string, cspSo
       lastSource = msg.source || '';
       lastFontIds = msg.fontIds || [];
       lastFontErrors = msg.errors || [];
+      lastModules =
+        msg.modules && Array.isArray(msg.modules.files)
+          ? { entry: msg.modules.entry, order: msg.modules.order || [], files: new Map(msg.modules.files) }
+          : null;
       showNotices(msg.notices || []);
       const ready = lastFontIds.length && opentypeReady ? opentypeReady : Promise.resolve();
       ready.then(

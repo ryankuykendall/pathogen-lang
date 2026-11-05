@@ -6,9 +6,11 @@ import * as path from 'node:path';
 import * as vscode from 'vscode';
 
 import { FontSession } from './font-session';
+import { previewModules, samePathKey } from './preview-modules';
 import { getWebviewContent } from './webview-html';
 
 import type { DocumentFonts, FontPayload, PathogenLib, PathogenNodeLib } from './font-session';
+import type { PreviewLib, PreviewModules, PreviewNodeLib } from './preview-modules';
 
 // Headless webview tests load the page directly (project-docs/modules/verify/).
 export { getWebviewContent } from './webview-html';
@@ -48,6 +50,12 @@ class PreviewPanel {
   private readonly disposables: vscode.Disposable[] = [];
   private readonly fonts: FontSession | null;
   private readonly fontsUnavailable: string | null;
+  /** The libraries for reading imports; null when they couldn't be loaded (fontsUnavailable says why). */
+  private readonly imports: { lib: PreviewLib; node: PreviewNodeLib } | null;
+  /** The files the document on show imports (real paths): a change to one draws it again. */
+  private watched = new Set<string>();
+  /** An import couldn't be loaded: any .pathogen tab may be the fix (a file it couldn't find), so any edit redraws. */
+  private importFailed = false;
   private document: vscode.TextDocument;
   private debounce: ReturnType<typeof setTimeout> | undefined;
   /** The newest push's number: the webview orders updates by it, and only its result is sent. */
@@ -59,8 +67,10 @@ class PreviewPanel {
     const libs = loadPathogen(context);
     if (libs instanceof Error) {
       this.fonts = null;
-      this.fontsUnavailable = `Fonts can't be loaded in this preview: ${libs.message} Rebuild the extension with \`npm run build:vscode:install\`.`;
+      this.imports = null;
+      this.fontsUnavailable = `Fonts and imported files can't be loaded in this preview: ${libs.message} Rebuild the extension with \`npm run build:vscode:install\`.`;
     } else {
+      this.imports = libs as unknown as { lib: PreviewLib; node: PreviewNodeLib };
       this.fonts = new FontSession({
         ...libs,
         // The extension doesn't run in Restricted Mode (package.json declares
@@ -97,15 +107,29 @@ class PreviewPanel {
     webview.onDidReceiveMessage((msg: unknown) => this.onMessage(msg), null, this.disposables);
     vscode.workspace.onDidChangeTextDocument(
       (e) => {
-        // Only the document on show: edits to other files never replace it.
-        if (e.document.uri.toString() !== this.document.uri.toString()) return;
-        this.document = e.document;
-        if (this.debounce) clearTimeout(this.debounce);
-        this.debounce = setTimeout(() => this.push(this.document), 150);
+        // The document on show, or a file it imports (its unsaved text counts):
+        // draw it again. Edits to other files never replace it.
+        if (e.document.uri.toString() === this.document.uri.toString()) {
+          this.document = e.document;
+        } else {
+          const watched = e.document.uri.scheme === 'file' && this.watched.has(samePathKey(e.document.uri.fsPath));
+          if (!watched && !(this.importFailed && e.document.languageId === 'pathogen')) return;
+        }
+        this.redraw();
       },
       null,
       this.disposables,
     );
+    // A .pathogen file changed, created or deleted on disk (in the workspace
+    // folders): it may be one the document imports, or one it couldn't find.
+    const onDisk = vscode.workspace.createFileSystemWatcher('**/*.pathogen');
+    const fromDisk = () => {
+      if (this.watched.size > 0 || /\bimport\b/.test(this.document.getText())) this.redraw();
+    };
+    onDisk.onDidChange(fromDisk, null, this.disposables);
+    onDisk.onDidCreate(fromDisk, null, this.disposables);
+    onDisk.onDidDelete(fromDisk, null, this.disposables);
+    this.disposables.push(onDisk);
     vscode.window.onDidChangeActiveTextEditor(
       (editor) => {
         if (editor?.document.languageId === 'pathogen') this.show(editor.document);
@@ -117,6 +141,12 @@ class PreviewPanel {
 
   reveal(): void {
     this.panel.reveal(vscode.ViewColumn.Beside, true);
+  }
+
+  /** Draw the document on show again, once a burst of edits settles. */
+  private redraw(): void {
+    if (this.debounce) clearTimeout(this.debounce);
+    this.debounce = setTimeout(() => this.push(this.document), 150);
   }
 
   show(document: vscode.TextDocument): void {
@@ -167,6 +197,18 @@ class PreviewPanel {
   private async send(document: vscode.TextDocument, seq: number): Promise<void> {
     const source = document.getText();
     const filePath = document.uri.scheme === 'file' ? document.uri.fsPath : undefined;
+    // The files it imports first: open tabs over the disk (docs/modules.md "In each tool").
+    let imported: PreviewModules = { errors: [], notices: [], watched: [] };
+    if (this.imports) {
+      try {
+        imported = await previewModules(this.imports, filePath, source, openBufferText);
+      } catch (err) {
+        imported = { errors: [`Imported files couldn't be read: ${(err as Error).message}`], notices: [], watched: [] };
+      }
+    }
+    if (this.disposed || seq !== this.latest) return;
+    this.watched = new Set(imported.watched.map(samePathKey));
+    this.importFailed = imported.errors.length > 0;
     let loaded: DocumentFonts = { fontIds: [], notices: [], errors: [] };
     if (this.fonts) {
       // A first download can take a while: say so rather than look frozen.
@@ -174,7 +216,7 @@ class PreviewPanel {
         if (seq === this.latest) this.post({ type: 'status', text: 'Loading fonts…' }).catch(() => undefined);
       }, 400);
       try {
-        loaded = await this.fonts.load(source, filePath);
+        loaded = await this.fonts.load(source, filePath, imported.graph);
       } catch (err) {
         loaded = { fontIds: [], notices: [], errors: [`Fonts couldn't be loaded: ${(err as Error).message}`] };
       } finally {
@@ -186,7 +228,17 @@ class PreviewPanel {
     if (this.disposed || seq !== this.latest) return;
     const fresh = this.fonts?.undelivered(loaded.fontIds) ?? [];
     if (fresh.length > 0) await this.post({ type: 'fonts', fonts: copies(fresh) });
-    await this.post({ type: 'update', seq, uri: document.uri.toString(), source, ...loaded });
+    await this.post({
+      type: 'update',
+      seq,
+      uri: document.uri.toString(),
+      source,
+      fontIds: loaded.fontIds,
+      // A file that couldn't be loaded stops the compile, like a font error.
+      notices: [...imported.notices, ...loaded.notices],
+      errors: [...imported.errors, ...loaded.errors],
+      ...(imported.message ? { modules: imported.message } : {}),
+    });
   }
 
   private async loadDisplayFonts(families: unknown[]): Promise<void> {
@@ -218,6 +270,15 @@ class PreviewPanel {
     if (this.debounce) clearTimeout(this.debounce);
     for (const d of this.disposables.splice(0)) d.dispose();
   }
+}
+
+/** An open tab's text by absolute path, so unsaved edits in an imported file show. */
+function openBufferText(absolutePath: string): string | undefined {
+  const key = samePathKey(absolutePath);
+  const open = vscode.workspace.textDocuments.find(
+    (doc) => doc.uri.scheme === 'file' && samePathKey(doc.uri.fsPath) === key,
+  );
+  return open?.getText();
 }
 
 /** Each message gets its own copy of the font bytes, so a send can never empty the session's copy. */
