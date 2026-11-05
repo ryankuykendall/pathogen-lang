@@ -13,12 +13,16 @@ const TMP_DIR = join(__dirname, 'tmp');
 /** macOS and Windows by default: this file is found under another letter case. */
 const caseInsensitiveFs = existsSync(__filename.toUpperCase());
 
-function runCli(args: string[], input?: string): { stdout: string; stderr: string; status: number } {
+function runCli(
+  args: string[],
+  input?: string,
+  cwd = join(__dirname, '..'),
+): { stdout: string; stderr: string; status: number } {
   try {
     const result = spawnSync('npx', ['tsx', CLI_PATH, ...args], {
       input,
       encoding: 'utf-8',
-      cwd: join(__dirname, '..'),
+      cwd,
     });
     return {
       stdout: result.stdout || '',
@@ -1255,6 +1259,19 @@ describe('imports (docs/modules.md)', () => {
     '// parts/gears.pathogen\nmodule;\nexport fn gear(center, radius, teeth) {\n  assert(teeth >= 3, \'a gear needs at least 3 teeth\');\n  star(center.x, center.y, radius, radius - 6, teeth);\n}\nlog("gears loaded");\n';
   const MODULE_DRAWS =
     "A module can't draw while it loads. Draw in an exported fn, and call it from the file that imports this one.";
+  /**
+   * What `gear(Point(55, 50), 40, 12);` draws when gear is written in the same
+   * file: the star's first point is (55, 10). Run once, on first use.
+   */
+  let oneFileGearOutput: string | undefined;
+  const oneFileGear = (): string => {
+    oneFileGearOutput ??= runCli([
+      '-e',
+      'fn gear(center, radius, teeth) { star(center.x, center.y, radius, radius - 6, teeth); }\ngear(Point(55, 50), 40, 12);',
+    ]).stdout;
+    expect(oneFileGearOutput).toMatch(/^M 55 10 /);
+    return oneFileGearOutput;
+  };
 
   beforeAll(() => {
     mkdirSync(join(project, 'parts'), { recursive: true });
@@ -1271,7 +1288,10 @@ describe('imports (docs/modules.md)', () => {
   });
 
   it('compiles a program that imports a file, drawing what one file would', () => {
-    writeFileSync(main, '// main.pathogen\nimport { gear } from "./parts/gears.pathogen";\n\ngear(Point(55, 50), 40, 12);\n');
+    writeFileSync(
+      main,
+      '// main.pathogen\nimport { gear } from "./parts/gears.pathogen";\n\ngear(Point(55, 50), 40, 12);\n',
+    );
     const result = runCli([main]);
     const oneFile = runCli([
       '-e',
@@ -1282,7 +1302,10 @@ describe('imports (docs/modules.md)', () => {
   });
 
   it('an error in an imported fn names its file and the call (docs/modules.md "Errors in other files")', () => {
-    writeFileSync(main, '// main.pathogen\nimport { gear } from "./parts/gears.pathogen";\n\ngear(Point(55, 50), 40, 2);\n');
+    writeFileSync(
+      main,
+      '// main.pathogen\nimport { gear } from "./parts/gears.pathogen";\n\ngear(Point(55, 50), 40, 2);\n',
+    );
     const result = runCli([main]);
     expect(result.status).toBe(1);
     expect(result.stderr).toBe(
@@ -1345,7 +1368,7 @@ describe('imports (docs/modules.md)', () => {
     expect(result).toEqual({ stdout: '\n', stderr: '[line 7] gears loaded\n', status: 0 });
   });
 
-  it("an import of a missing file is an error at the import, like an @font path", () => {
+  it('an import of a missing file is an error at the import, like an @font path', () => {
     writeFileSync(main, '// main.pathogen\nimport { gear } from "./parts/gera.pathogen";\n');
     const result = runCli([main]);
     expect(result.status).toBe(1);
@@ -1380,9 +1403,12 @@ describe('imports (docs/modules.md)', () => {
     expect(json.warnings.map((w) => [w.file, w.line])).toEqual([['parts/warn.pathogen', 4]]);
   });
 
-  it("an imported file's @font loads, its ./ path from its own folder (docs/modules.md \"Fonts in imported files\")", () => {
+  it('an imported file\'s @font loads, its ./ path from its own folder (docs/modules.md "Fonts in imported files")', () => {
     mkdirSync(join(project, 'parts', 'fonts'), { recursive: true });
-    copyFileSync(join(__dirname, 'fixtures', 'fonts', 'Inter-Regular.ttf'), join(project, 'parts', 'fonts', 'Inter-Regular.ttf'));
+    copyFileSync(
+      join(__dirname, 'fixtures', 'fonts', 'Inter-Regular.ttf'),
+      join(project, 'parts', 'fonts', 'Inter-Regular.ttf'),
+    );
     writeFileSync(
       join(project, 'parts', 'labels.pathogen'),
       'module;\n@font "./fonts/Inter-Regular.ttf";\nexport const ready = 1;\n',
@@ -1432,7 +1458,9 @@ describe('imports (docs/modules.md)', () => {
     const result = runCli([main, '--offline']);
     expect(result.status).toBe(0);
     expect(result.stderr).toMatch(/^parts\/family\.pathogen:2:1: warning: /);
-    const json = JSON.parse(runCli([main, '--offline', '--json']).stdout) as { warnings: { code: string; file?: string }[] };
+    const json = JSON.parse(runCli([main, '--offline', '--json']).stdout) as {
+      warnings: { code: string; file?: string }[];
+    };
     expect(json.warnings.map((w) => [w.code, w.file])).toEqual([['font-load', 'parts/family.pathogen']]);
   });
 
@@ -1463,6 +1491,64 @@ describe('imports (docs/modules.md)', () => {
     ]);
     expect(result.status).toBe(0);
     expect(result.stdout).toMatch(/^M 55 10 /);
+  });
+
+  // docs/modules.md "In each tool": "Code passed with -e or on standard input
+  // imports from the current folder, or from the folder named by --root".
+  it('code from -e imports from the current folder, without --root', () => {
+    const result = runCli(
+      ['-e', 'import { gear } from "./gears.pathogen";\ngear(Point(55, 50), 40, 12);'],
+      undefined,
+      join(project, 'parts'),
+    );
+    expect(result.status).toBe(0);
+    expect(result.stdout).toBe(oneFileGear());
+  });
+
+  it('code on standard input imports from the current folder, without --root', () => {
+    const result = runCli(
+      ['-'],
+      'import { gear } from "./gears.pathogen";\ngear(Point(55, 50), 40, 12);\n',
+      join(project, 'parts'),
+    );
+    expect(result.status).toBe(0);
+    expect(result.stdout).toBe(oneFileGear());
+  });
+
+  // "With --json and --log-file, a warning or log from another file has a
+  // file field naming it."
+  it('a log from an imported file has a file field in --json and in --log-file', () => {
+    writeFileSync(main, 'import { gear } from "./parts/gears.pathogen";\nlog("main");\n');
+    const json = JSON.parse(runCli([main, '--json']).stdout) as { logs: { file?: string; line: number }[] };
+    expect(json.logs.map((l) => [l.file, l.line])).toEqual([
+      ['parts/gears.pathogen', 7],
+      [undefined, 2],
+    ]);
+    const logFile = join(project, 'logs.json');
+    expect(runCli([main, `--log-file=${logFile}`]).status).toBe(0);
+    const logged = JSON.parse(readFileSync(logFile, 'utf-8')) as { file?: string; line: number }[];
+    expect(logged.map((l) => [l.file, l.line])).toEqual([
+      ['parts/gears.pathogen', 7],
+      [undefined, 2],
+    ]);
+  });
+
+  it('a project folder compiles its main, and the main imports from its own folder', () => {
+    const folder = join(TMP_DIR, 'modules-folder-project');
+    mkdirSync(join(folder, 'src', 'parts'), { recursive: true });
+    try {
+      writeFileSync(join(folder, 'pathogen.json'), '{ "main": "src/poster.pathogen" }\n');
+      writeFileSync(join(folder, 'src', 'parts', 'gears.pathogen'), GEARS);
+      writeFileSync(
+        join(folder, 'src', 'poster.pathogen'),
+        'import { gear } from "./parts/gears.pathogen";\ngear(Point(55, 50), 40, 12);\n',
+      );
+      const result = runCli([folder]);
+      expect(result.status).toBe(0);
+      expect(result.stdout).toBe(oneFileGear());
+    } finally {
+      rmSync(folder, { recursive: true, force: true });
+    }
   });
 
   it('a file outside the --root folder cannot follow its import paths', () => {
