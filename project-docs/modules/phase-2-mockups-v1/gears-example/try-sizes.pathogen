@@ -1,0 +1,8 @@
+// Three sizes side by side.
+import { gear, Teeth } from "./parts/gears.pathogen";
+
+define ViewBox(0, 0, 300, 100);
+
+for (i in 0..2) {
+  gear(Point(50 + i * 100, 50), 20 + i * 10, Teeth.Standard);
+}

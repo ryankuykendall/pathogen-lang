@@ -1,0 +1,932 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mockup v1 — Multi-file workspaces in the playground</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baumans&family=DM+Sans:wght@400;500;600;700&family=DM+Serif+Display:ital@0;1&family=Inconsolata:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  /* ===== Real playground tokens, copied from playground/styles/theme.css (2026-11-05) ===== */
+  :root {
+    --bg-primary: #f7f0e3; --bg-secondary: #fdf6ed; --bg-tertiary: rgba(28,23,34,0.05); --bg-elevated: #ffffff;
+    --text-primary: #1c1722; --text-secondary: #5a4f6a; --text-tertiary: #9087a0; --text-inverse: #fffaf2;
+    --border-color: rgba(28,23,34,0.10); --border-subtle: rgba(28,23,34,0.06); --border-strong: rgba(28,23,34,0.18);
+    --accent-color: #c0518e; --accent-hover: #b04680; --accent-subtle: rgba(192,81,142,0.10); --accent-text: #fffaf2;
+    --accent-contrast: #1c1722; --accent-from: #e16a8f; --accent-to: #a83d80;
+    --secondary-accent: #9461c4; --secondary-accent-hover: #7e4fb0; --secondary-accent-subtle: rgba(148,97,196,0.16); --secondary-accent-text: #5e3590;
+    --secondary-from: #b384e0; --secondary-to: #6d3aa6;
+    --success-color: #10b981; --success-bg: #ecfdf5; --success-border: #a7f3d0;
+    --warning-color: #f59e0b; --warning-bg: #fffbeb; --warning-border: #fde68a;
+    --error-color: #ef4444; --error-bg: #fef2f2; --error-border: #fecaca; --error-text: #dc2626;
+    --info-color: #3b82f6; --info-bg: #eff6ff; --info-border: #bfdbfe;
+    --hover-bg: rgba(0,0,0,0.04); --active-bg: rgba(0,0,0,0.08); --focus-ring: rgba(192,81,142,0.4);
+    --shadow-sm: 0 1px 2px rgba(28,23,34,0.05);
+    --shadow-md: 0 4px 6px -1px rgba(28,23,34,0.07), 0 2px 4px -1px rgba(28,23,34,0.04);
+    --shadow-lg: 0 10px 15px -3px rgba(28,23,34,0.08), 0 4px 6px -2px rgba(28,23,34,0.04);
+    --shadow-xl: 0 20px 25px -5px rgba(28,23,34,0.10), 0 10px 10px -5px rgba(28,23,34,0.04);
+    --shadow-glow: 0 8px 28px rgba(192,81,142,0.30), 0 0 0 1px rgba(192,81,142,0.18);
+    --shadow-tint-rgb: 165, 110, 140;
+    --radius-sm: 4px; --radius-md: 8px; --radius-lg: 12px; --radius-xl: 16px;
+    --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+    --font-mono: 'Inconsolata', 'SF Mono', Monaco, 'Cascadia Code', monospace;
+    --font-brand: 'Baumans', cursive;
+    --font-body: 'DM Sans', system-ui, sans-serif;
+    --font-display: 'DM Serif Display', Georgia, serif;
+    --bg-atmosphere-1: rgba(180,130,220,0.18); --bg-atmosphere-2: rgba(255,175,130,0.20);
+    --code-keyword: #6d3aa6; --code-pr: #3d6b9e; --code-fn: #a83d80; --code-num: #d97a6e; --code-str: #5a8a72; --code-comment: #9087a0; --code-op: #6b5a7a; --code-tp: #b65a2a;
+
+    /* Editor: light uses CodeMirror's defaultHighlightStyle + base theme (code-editor-pane.ts _getThemeExtensions) */
+    --cm-host-bg: var(--bg-secondary); --cm-text: var(--text-primary);
+    --cm-gutter-bg: #f5f5f5; --cm-gutter-fg: #6c6c6c; --cm-gutter-border: #dddddd;
+    --cm-active: #cceeff44; --cm-active-gutter: #e2f2ff; --cm-err-line: rgba(255,0,0,0.08);
+    --cm-kw: #770088; --cm-num: #116644; --cm-str: #aa1111; --cm-com: #994400; --cm-tpl: #ee4400;
+    --cm-id: var(--text-primary); --cm-op: var(--text-primary); --cm-pun: var(--text-primary);
+    --cm-tip-bg: #f5f5f5; --cm-tip-border: 1px solid #bbbbbb; --cm-tip-fg: var(--text-primary);
+    --tabs-bg: var(--bg-primary);
+
+    /* Mockup-only */
+    --mock-page: #ece4d6; --mock-canvas: #f3ebde;
+  }
+  [data-theme='dark'] {
+    --bg-primary: #14101c; --bg-secondary: #100c17; --bg-tertiary: rgba(255,250,242,0.05); --bg-elevated: #1a1424;
+    --text-primary: #f6e9da; --text-secondary: #b5a8c4; --text-tertiary: #7a6f8a; --text-inverse: #14101c;
+    --border-color: rgba(246,233,218,0.10); --border-subtle: rgba(246,233,218,0.05); --border-strong: rgba(246,233,218,0.20);
+    --accent-color: #f7b56e; --accent-hover: #ffc585; --accent-subtle: rgba(247,181,110,0.15); --accent-text: #1a1424;
+    --accent-contrast: #1a1424; --accent-from: #ffd194; --accent-to: #e89254;
+    --secondary-accent: #c4a4e8; --secondary-accent-hover: #d4baef; --secondary-accent-subtle: rgba(196,164,232,0.16); --secondary-accent-text: #d4bcef;
+    --secondary-from: #d8c4f0; --secondary-to: #9c7cd5;
+    --success-color: #22c55e; --success-bg: rgba(34,197,94,0.15); --success-border: rgba(34,197,94,0.3);
+    --warning-color: #e0a840; --warning-bg: rgba(224,168,64,0.15); --warning-border: rgba(224,168,64,0.3);
+    --error-color: #ef4444; --error-bg: rgba(239,68,68,0.6); --error-border: rgba(239,68,68,0.5); --error-text: #fcd5d5;
+    --info-color: #3b82f6; --info-bg: rgba(59,130,246,0.15); --info-border: rgba(59,130,246,0.3);
+    --hover-bg: rgba(255,255,255,0.06); --active-bg: rgba(255,255,255,0.1); --focus-ring: rgba(247,181,110,0.4);
+    --shadow-sm: 0 1px 2px rgba(0,0,0,0.3);
+    --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.4), 0 2px 4px -1px rgba(0,0,0,0.3);
+    --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.4), 0 4px 6px -2px rgba(0,0,0,0.3);
+    --shadow-xl: 0 20px 25px -5px rgba(0,0,0,0.5), 0 10px 10px -5px rgba(0,0,0,0.4);
+    --shadow-glow: 0 8px 28px rgba(247,181,110,0.32), 0 0 0 1px rgba(247,181,110,0.30);
+    --shadow-tint-rgb: 213, 180, 144;
+    --bg-atmosphere-1: rgba(140,100,200,0.18); --bg-atmosphere-2: rgba(220,140,90,0.18);
+    --code-keyword: #c4a4e8; --code-pr: #8ab4e8; --code-fn: #f7b56e; --code-num: #f0a07b; --code-str: #8fc4a1; --code-comment: #7a6f8a; --code-op: #a8a0b8; --code-tp: #e8b48a;
+
+    /* Editor: dark uses One Dark (oneDarkTheme + oneDarkHighlightStyle) */
+    --cm-host-bg: #282c34; --cm-text: #abb2bf;
+    --cm-gutter-bg: #282c34; --cm-gutter-fg: #7d8799; --cm-gutter-border: transparent;
+    --cm-active: #6699ff0b; --cm-active-gutter: #2c313a; --cm-err-line: rgba(255,80,80,0.12);
+    --cm-kw: #c678dd; --cm-num: #e5c07b; --cm-str: #98c379; --cm-com: #7d8799; --cm-tpl: #56b6c2;
+    --cm-id: #e06c75; --cm-op: #56b6c2; --cm-pun: #abb2bf;
+    --cm-tip-bg: #353a42; --cm-tip-border: none; --cm-tip-fg: #abb2bf;
+    --tabs-bg: #21252b;
+
+    --mock-page: #0b0811; --mock-canvas: #110d18;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body { background: var(--mock-page); color: var(--text-primary); font-family: var(--font-body); font-size: 14px; }
+  button { font-family: inherit; color: inherit; }
+  code { font-family: var(--font-mono); }
+  svg { flex: none; }
+
+  /* ===== Mockup harness (from the snapshots v3 template) ===== */
+  .harness { position: sticky; top: 0; z-index: 100; display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; padding: 10px 20px; background: #1c1722; color: #f6e9da; font-size: 13px; }
+  .harness h1 { margin: 0 12px 0 0; font-size: 14px; font-weight: 600; font-family: var(--font-body); }
+  .harness nav { display: flex; gap: 4px; flex-wrap: wrap; }
+  .harness nav button, .harness .tgl { background: transparent; border: 1px solid rgba(246,233,218,0.2); color: #f6e9da; border-radius: 6px; padding: 4px 10px; cursor: pointer; font-size: 12px; }
+  .harness nav button[aria-pressed='true'] { background: #f6e9da; color: #1c1722; }
+  .harness .spacer { flex: 1; }
+  .notes { max-width: 1280px; margin: 20px auto 0; padding: 0 20px; color: var(--text-secondary); line-height: 1.5; }
+  .notes h2 { color: var(--text-primary); font-size: 18px; margin: 0 0 4px; font-family: var(--font-body); font-weight: 600; letter-spacing: 0; display: flex; align-items: center; gap: 8px; }
+  .notes ul { margin: 6px 0 0; padding-left: 18px; }
+  .notes li { margin: 2px 0; }
+  .notes b { color: var(--text-primary); font-weight: 600; }
+  .notes code { font-size: 13px; }
+  .tag { display: inline-block; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; border-radius: 4px; padding: 1px 6px; }
+  .tag.rec { color: #fff; background: #2563eb; }
+  .tag.alt { color: var(--text-secondary); background: var(--bg-tertiary); border: 1px solid var(--border-strong); }
+  .statebar { max-width: 1280px; margin: 10px auto 4px; padding: 0 20px; display: flex; gap: 6px; flex-wrap: wrap; align-items: center; font-size: 12px; color: var(--text-secondary); }
+  .statebar button { border: 1px solid var(--border-strong); background: var(--bg-elevated); border-radius: 999px; padding: 4px 12px; cursor: pointer; font-size: 12px; color: var(--text-primary); }
+  .statebar button[aria-pressed='true'] { background: var(--text-primary); color: var(--bg-primary); border-color: transparent; }
+  .statebar .lbl { font-weight: 600; text-transform: uppercase; letter-spacing: .06em; font-size: 11px; }
+  .statedesc { max-width: 1280px; margin: 0 auto 10px; padding: 0 20px; font-size: 13px; color: var(--text-secondary); min-height: 20px; }
+  .statedesc b { color: var(--text-primary); font-weight: 600; }
+  .screen { display: none; }
+  .screen.active { display: block; }
+  .frame { max-width: 1280px; margin: 0 auto 40px; padding: 0 20px; }
+  .window { position: relative; border-radius: 12px; overflow: hidden; box-shadow: 0 30px 60px -20px rgba(0,0,0,0.35); border: 1px solid var(--border-color);
+    background: radial-gradient(900px 500px at 0% 0%, var(--bg-atmosphere-1), transparent 60%), radial-gradient(800px 600px at 100% 100%, var(--bg-atmosphere-2), transparent 60%), var(--bg-primary); }
+
+  /* ===== App header (app-header) ===== */
+  .topnav { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; height: 52px; padding: 0 24px; border-bottom: 1px solid var(--border-subtle); }
+  .brand { font-family: var(--font-brand); font-size: 22px; line-height: 1; justify-self: start; }
+  .brand span { color: var(--secondary-accent); }
+  .brand small { display: block; font-family: var(--font-mono); font-size: 9px; color: var(--text-tertiary); letter-spacing: .04em; margin-top: 3px; }
+  .navpill { display: flex; gap: 2px; padding: 4px; border: 1px solid var(--border-color); border-radius: 12px; background: var(--bg-tertiary); }
+  .navpill a { padding: 6px 12px; border-radius: 8px; color: var(--text-secondary); font-size: 13px; font-weight: 500; }
+  .navpill a.on { background: var(--secondary-accent-subtle); color: var(--secondary-accent-text); }
+  .nav-right { justify-self: end; display: flex; gap: 10px; align-items: center; }
+  .theme-btn { width: 32px; height: 32px; border-radius: 50%; border: 1px solid var(--border-color); background: var(--bg-tertiary); display: grid; place-items: center; color: var(--text-secondary); padding: 0; }
+  .theme-btn svg { width: 16px; height: 16px; }
+  .theme-btn .moon, [data-theme='dark'] .theme-btn .sun { display: none; }
+  [data-theme='dark'] .theme-btn .moon { display: block; }
+  .acct { display: inline-flex; align-items: center; gap: 8px; height: 32px; padding: 0 10px 0 3px; border-radius: 999px; border: 1px solid var(--border-color); background: var(--bg-tertiary); font-size: 13px; font-weight: 500; }
+  .acct svg { width: 12px; height: 12px; color: var(--text-tertiary); }
+  .avatar { width: 26px; height: 26px; border-radius: 50%; background: linear-gradient(135deg, var(--secondary-from), var(--secondary-to)); color: #fff; display: grid; place-items: center; font-size: 11px; font-weight: 600; flex: none; }
+
+  /* ===== Breadcrumb bar (app-breadcrumb.css) ===== */
+  .crumbbar { display: grid; grid-template-columns: minmax(0,1fr) auto; align-items: center; gap: 16px; padding: 6px 16px; min-height: 42px; border-bottom: 1px solid var(--border-subtle); }
+  .crumbs { display: flex; align-items: center; font-size: 13px; color: var(--text-secondary); min-width: 0; white-space: nowrap; }
+  .crumbs .sep { margin: 0 8px; color: var(--text-tertiary); }
+  .crumbs .cur { color: var(--text-primary); font-weight: 500; }
+  .crumbs .ws-id, .crumbs .ws-size { font-family: var(--font-mono); font-size: 11px; color: var(--text-tertiary); margin-left: 6px; font-weight: 400; }
+  .crumbs .file { font-family: var(--font-mono); font-size: 13.5px; color: var(--text-primary); font-weight: 600; }
+  .crumbs .file .dir { color: var(--text-tertiary); font-weight: 500; }
+  .controls { display: flex; align-items: center; gap: 16px; }
+  .cl, .cr { display: flex; align-items: center; gap: 8px; }
+  .btn-s { display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; font-size: 12px; line-height: 1.4; background: transparent; border: 1px solid var(--border-color); border-radius: 4px; color: var(--text-secondary); cursor: pointer; white-space: nowrap; }
+  .btn-s:hover { background: var(--bg-tertiary); color: var(--text-primary); }
+  .btn-s svg { width: 14px; height: 14px; }
+  .btn-s[disabled] { color: var(--text-tertiary); opacity: .7; cursor: not-allowed; }
+  .split, .tbar { display: inline-flex; }
+  .split .btn-s:first-child, .tbar .btn-s:first-child { border-radius: 4px 0 0 4px; }
+  .split .btn-s:last-child, .tbar .btn-s:last-child { border-radius: 0 4px 4px 0; margin-left: -1px; }
+  .split .count { color: var(--text-tertiary); font-variant-numeric: tabular-nums; }
+  .btn-s.active { background: var(--secondary-accent-subtle); border-color: var(--secondary-accent); color: var(--secondary-accent-text); position: relative; z-index: 1; }
+  .cstat, .save { font-family: var(--font-mono); font-size: 12px; font-weight: 500; padding: 4px 8px; border-radius: 4px; line-height: 1.4; }
+  .cstat.ok, .save { background: var(--success-bg); color: var(--success-color); }
+  .cstat.err { background: var(--error-bg); color: var(--error-text); }
+  .kebab { width: 28px; height: 28px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-secondary); display: grid; place-items: center; padding: 0; }
+  .kebab svg { width: 18px; height: 18px; }
+
+  /* ===== Workspace row (playground-main: files | editor | preview) ===== */
+  .ws-wrap { position: relative; }
+  .ws { position: relative; display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); height: 600px; }
+  .ws.has-tree { grid-template-columns: 248px minmax(0,1fr) minmax(0,1fr); }
+
+  /* Files pane (new) — row look borrowed from layers-panel.css */
+  .files { background: var(--bg-primary); border-right: 1px solid var(--border-color); display: flex; flex-direction: column; min-height: 0; min-width: 0; }
+  .files-head { height: 34px; flex: none; display: flex; align-items: center; gap: 4px; padding: 0 6px 0 12px; border-bottom: 1px solid var(--border-color); font-size: 11px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: .03em; }
+  .files-head .sp { flex: 1; }
+  .ibtn { width: 24px; height: 24px; border: none; background: none; border-radius: 4px; display: grid; place-items: center; color: var(--text-secondary); padding: 0; cursor: pointer; }
+  .ibtn:hover { background: var(--hover-bg); color: var(--text-primary); }
+  .ibtn.on { background: var(--active-bg); color: var(--text-primary); }
+  .ibtn svg { width: 16px; height: 16px; }
+  .files-list { padding: 4px 0; overflow: hidden; flex: 1; }
+  .frow { display: flex; align-items: center; gap: 6px; height: 28px; padding-right: 6px; cursor: pointer; font-family: var(--font-mono); font-size: 12.5px; font-weight: 500; color: var(--text-primary); }
+  .frow:hover { background: var(--hover-bg); }
+  .frow.sel { background: var(--secondary-accent-subtle); color: var(--secondary-accent-text); font-weight: 600; }
+  .frow .chev { width: 14px; display: grid; place-items: center; color: var(--text-tertiary); flex: none; }
+  .frow .chev svg { width: 12px; height: 12px; }
+  .frow .fic { width: 14px; height: 14px; flex: none; color: var(--text-secondary); position: relative; display: grid; place-items: center; }
+  .frow .fic svg { width: 14px; height: 14px; }
+  .frow.lib .fic { color: var(--secondary-accent); }
+  .frow.dir .fic { color: var(--text-tertiary); }
+  .frow .fname { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .edot { position: absolute; top: -3px; right: -4px; width: 8px; height: 8px; border-radius: 50%; background: var(--error-color); box-shadow: 0 0 0 2px var(--bg-primary); }
+  .badge-main { font-family: var(--font-body); font-size: 10px; font-weight: 600; letter-spacing: .02em; padding: 1px 7px; border-radius: 999px; background: var(--secondary-accent-subtle); color: var(--secondary-accent-text); flex: none; }
+  .frow.sel .badge-main { background: var(--bg-elevated); }
+  .badge-mod { font-family: var(--font-mono); font-size: 10.5px; font-weight: 500; color: var(--text-tertiary); border: 1px solid var(--border-color); padding: 0 4px; border-radius: 4px; flex: none; }
+  .fk { width: 20px; height: 20px; border: none; background: none; border-radius: 4px; padding: 0; display: grid; place-items: center; color: var(--text-secondary); visibility: hidden; flex: none; }
+  .fk svg { width: 16px; height: 16px; }
+  .frow:hover .fk, .frow.sel .fk, .frow.menu .fk { visibility: visible; }
+  .frow.menu { background: var(--hover-bg); }
+  .frow.menu .fk { background: var(--active-bg); color: var(--text-primary); }
+
+  /* Editor (code-editor-pane + CodeMirror) */
+  .ed { position: relative; min-width: 0; display: flex; flex-direction: column; background: var(--cm-host-bg); border-right: 1px solid var(--border-color); }
+  .cm { position: relative; flex: 1; overflow: hidden; font-family: var(--font-mono); font-weight: 500; font-size: 14px; line-height: 20px; padding: 4px 0; color: var(--cm-text); }
+  .cm::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 27px; background: var(--cm-gutter-bg); border-right: 1px solid var(--cm-gutter-border); }
+  .cm-ln { display: flex; position: relative; }
+  .cm-ln .gn { width: 27px; flex: none; text-align: right; padding: 0 4px 0 3px; color: var(--cm-gutter-fg); position: relative; }
+  .cm-ln .lt { flex: 1; padding: 0 2px 0 6px; white-space: pre; }
+  .cm-ln.act .lt { background: var(--cm-active); }
+  .cm-ln.act .gn { background: var(--cm-active-gutter); }
+  .cm-ln.err .lt { background: var(--cm-err-line); }
+  .t-kw { color: var(--cm-kw); } .t-num { color: var(--cm-num); } .t-str { color: var(--cm-str); } .t-com { color: var(--cm-com); }
+  .t-tpl { color: var(--cm-tpl); } .t-id { color: var(--cm-id); } .t-op { color: var(--cm-op); } .t-pun { color: var(--cm-pun); }
+  .sq { text-decoration: underline wavy var(--error-text); text-decoration-skip-ink: none; text-underline-offset: 3px; }
+  .cm-tip { position: absolute; z-index: 30; background: var(--cm-tip-bg); border: var(--cm-tip-border); color: var(--cm-tip-fg); font-family: var(--font-mono); font-size: 12px; line-height: 1.5; max-width: 400px; padding: 6px 10px; }
+  .cm-tip strong { color: var(--accent-color); }
+  .cm-tip code { background: var(--bg-secondary); padding: 1px 4px; border-radius: 3px; font-size: 11px; }
+  .cm-tip.lint { border-left: 5px solid #dd1111; padding: 3px 8px 3px 8px; font-size: 13px; white-space: pre-wrap; width: 380px; }
+  .cm-tip a { color: inherit; text-decoration: underline; text-underline-offset: 2px; cursor: pointer; }
+  .pointer { position: absolute; z-index: 31; width: 14px; height: 20px; pointer-events: none; }
+
+  /* Tabs (alternatives) */
+  .tabs { display: flex; align-items: stretch; height: 34px; flex: none; background: var(--tabs-bg); border-bottom: 1px solid var(--border-color); }
+  .tab { display: flex; align-items: center; gap: 6px; padding: 0 8px 0 12px; font-family: var(--font-mono); font-size: 12.5px; font-weight: 500; color: var(--text-secondary); border-right: 1px solid var(--border-color); cursor: pointer; white-space: nowrap; }
+  .tab .fic { width: 13px; height: 13px; display: grid; color: var(--text-secondary); }
+  .tab.lib .fic { color: var(--secondary-accent); }
+  .tab .fic svg { width: 13px; height: 13px; }
+  .tab.sel { background: var(--cm-host-bg); color: var(--text-primary); box-shadow: inset 0 2px 0 var(--secondary-accent); margin-bottom: -1px; font-weight: 600; }
+  .tab .x { color: var(--text-tertiary); width: 16px; text-align: center; font-size: 14px; }
+  .tab-add { width: 34px; display: grid; place-items: center; color: var(--text-secondary); border: none; background: none; padding: 0; }
+  .tab-add svg { width: 16px; height: 16px; }
+
+  /* Preview (svg-preview-pane) */
+  .pv { position: relative; background: var(--bg-primary); padding: 24px; display: flex; flex-direction: column; min-width: 0; }
+  .pv-box { position: relative; flex: 1; min-height: 0; border-radius: 12px; overflow: hidden; box-shadow: var(--shadow-lg); background: var(--mock-canvas); }
+  .pv-canvas { position: absolute; inset: 0; display: grid; place-items: center; }
+  .pv-canvas svg { width: 90%; height: auto; display: block; box-shadow: 0 1px 3px rgba(0,0,0,.08); }
+  .pv-box.stale .pv-canvas { opacity: .45; filter: grayscale(.35); }
+  /* Status stack above the zoom pill. Today the stale badge sits top-center; with the tree open the
+     preview is ~500px wide and that spot runs into the minimap and the fullscreen button. */
+  .pv-status { position: absolute; left: 50%; bottom: 46px; transform: translateX(-50%); z-index: 14; display: flex; flex-direction: column; align-items: center; gap: 6px; pointer-events: none; }
+  .stale-badge { color: var(--text-primary); background: var(--bg-elevated); border: 1px solid var(--border-color); border-radius: 8px; box-shadow: var(--shadow-sm); padding: 5px 12px; font-size: 12px; font-weight: 500; white-space: nowrap; }
+  .pv-label { display: inline-flex; gap: 6px; align-items: center; font-size: 11.5px; color: var(--text-secondary); background: color-mix(in srgb, var(--bg-elevated) 80%, transparent); border-radius: 999px; padding: 3px 11px 3px 9px; white-space: nowrap; }
+  .pv-label svg { width: 13px; height: 13px; color: var(--text-tertiary); }
+  .pv-label code { font-size: 12px; color: var(--text-primary); font-weight: 600; }
+  .minimap { position: absolute; top: 16px; left: 16px; width: 120px; height: 120px; background: var(--bg-elevated); border: 1px solid var(--border-color); border-radius: 12px; box-shadow: var(--shadow-lg); overflow: hidden; z-index: 10; display: grid; place-items: center; }
+  .minimap .mm { position: relative; width: 108px; }
+  .minimap .mm svg { width: 100%; display: block; }
+  .minimap .vp { position: absolute; inset: -1px; border: 1px solid var(--accent-color); background: var(--accent-subtle); }
+  .r32 { width: 32px; height: 32px; padding: 0; display: grid; place-items: center; border: 1px solid var(--border-color); border-radius: 8px; background: var(--bg-elevated); color: var(--text-secondary); box-shadow: var(--shadow-md); cursor: pointer; }
+  .r32 svg { width: 16px; height: 16px; }
+  .r32.on { background: color-mix(in srgb, var(--secondary-accent) 18%, var(--bg-elevated)); border-color: var(--secondary-accent); color: var(--secondary-accent-text); }
+  .pv-fs { position: absolute; top: 16px; left: 144px; z-index: 10; }
+  .chrome-r { position: absolute; top: 16px; right: 16px; display: flex; flex-direction: column; gap: 8px; z-index: 10; }
+  .chip-tip { position: absolute; right: 56px; z-index: 20; background: #1c1722; color: #f6e9da; font-size: 12px; padding: 6px 9px; border-radius: 6px; white-space: nowrap; box-shadow: var(--shadow-lg); }
+  [data-theme='dark'] .chip-tip { background: #f6e9da; color: #1c1722; }
+  .zoom { position: absolute; left: 50%; bottom: 10px; transform: translateX(-50%); display: flex; align-items: center; gap: 14px; padding: 5px 16px; border-radius: 999px; background: var(--bg-elevated); border: 1px solid var(--border-color); box-shadow: var(--shadow-sm); font-size: 12px; color: var(--text-secondary); z-index: 10; }
+  .zoom i { width: 1px; height: 14px; background: var(--border-color); }
+  .zoom .pct { font-family: var(--font-mono); font-size: 10.5px; }
+  .notice { position: absolute; inset: 0; display: grid; place-items: center; text-align: center; padding: 40px; }
+  .notice > div { max-width: 310px; font-size: 13px; line-height: 1.55; color: var(--text-secondary); }
+  .notice svg { width: 30px; height: 30px; color: var(--text-tertiary); display: block; margin: 0 auto 10px; }
+
+  /* Footer (playground-footer) */
+  .foot { display: flex; align-items: center; gap: 16px; height: 52px; padding: 0 16px; background: var(--bg-secondary); border-top: 1px solid var(--border-color); }
+  .foot .g { display: flex; align-items: center; gap: 6px; }
+  .foot label { font-size: 12px; font-weight: 500; color: var(--text-secondary); text-transform: uppercase; letter-spacing: .03em; }
+  .foot .vb { padding: 6px 8px; border-radius: 8px; font-family: var(--font-mono); font-size: 13px; color: var(--text-secondary); background: var(--bg-tertiary); white-space: nowrap; }
+  .foot .sw { width: 20px; height: 20px; border-radius: 50%; border: 1px solid var(--border-strong); background: #fff; flex: none; }
+  .foot .sw.grey { background: #c9c9c9; }
+  .foot .cb { width: 16px; height: 16px; border: 1.5px solid var(--text-tertiary); border-radius: 3px; flex: none; }
+  .foot .selc { display: inline-flex; align-items: center; gap: 10px; padding: 6px 8px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--bg-tertiary); font-family: var(--font-mono); font-size: 13px; font-weight: 500; }
+  .foot .selc svg { width: 10px; height: 10px; color: var(--text-secondary); }
+  .foot .sepv { width: 1px; height: 24px; background: var(--border-color); flex: none; }
+  .foot .sp { flex: 1; }
+  .foot .docs { padding: 6px 16px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--bg-tertiary); font-size: 13px; font-weight: 500; color: var(--text-primary); }
+
+  /* Error panel (shared/error-panel.ts) */
+  .errp { position: absolute; bottom: 52px; z-index: 20; background: var(--error-bg); color: var(--error-text); padding: 12px 20px; font-family: var(--font-mono); font-size: 14px; line-height: 1.4; border: 1px solid var(--error-border); border-radius: 8px; box-shadow: var(--shadow-md); }
+  .errp .content { white-space: pre-wrap; word-break: break-word; max-height: calc(1.4em * 7); overflow: hidden; padding-right: 120px; }
+  .errp .badge { position: absolute; top: 12px; right: 20px; padding: 2px 8px; border-radius: 10px; background: var(--error-color); color: #fff; font-family: var(--font-sans); font-size: 11px; font-weight: 600; line-height: 1.4; }
+  .errp .dbg { position: absolute; bottom: 12px; right: 20px; padding: 4px 10px; border: 1px solid var(--error-text); border-radius: 4px; background: transparent; color: var(--error-text); font-family: var(--font-sans); font-size: 12px; font-weight: 500; }
+  .errp a { color: inherit; text-decoration: underline; text-underline-offset: 2px; font-weight: 600; cursor: pointer; }
+
+  /* Menus (kebab-menu look from app-breadcrumb.css) */
+  .dd { position: absolute; z-index: 40; min-width: 220px; background: var(--bg-elevated); border: 1px solid var(--border-color); border-radius: 12px; box-shadow: var(--shadow-lg); padding: 6px; overflow: hidden; animation: ddIn .15s ease; }
+  @keyframes ddIn { from { opacity: 0; transform: translateY(-4px); } }
+  .dd::before { content: ''; position: absolute; inset: 0; background: radial-gradient(380px 180px at 100% 0%, var(--secondary-accent-subtle), transparent 60%); pointer-events: none; }
+  .dd > * { position: relative; }
+  .dd button { display: grid; grid-template-columns: 20px 1fr auto; align-items: center; gap: 12px; width: 100%; padding: 8px 10px; border: none; background: transparent; text-align: left; font-size: 13px; font-weight: 500; color: var(--text-primary); border-radius: 6px; cursor: pointer; }
+  .dd button:hover, .dd button.hl { background: var(--bg-tertiary); }
+  .dd button svg { width: 16px; height: 16px; color: var(--text-secondary); }
+  .dd button small { color: var(--text-tertiary); font-weight: 400; font-size: 11px; }
+  .dd .div { height: 1px; background: var(--border-subtle); margin: 4px 6px; }
+  .dd .danger, .dd .danger svg { color: var(--error-color); }
+
+  /* Modal (edit-workspace-metadata-modal look) */
+  .modal { position: absolute; inset: 0; z-index: 60; display: grid; place-items: center; font-family: var(--font-sans); }
+  .modal .bd { position: absolute; inset: 0; background: rgba(0,0,0,.5); }
+  .modal .card { position: relative; width: 480px; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 12px; box-shadow: var(--shadow-lg); }
+  .modal .mh { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; border-bottom: 1px solid var(--border-color); }
+  .modal h2 { margin: 0; font-size: 16px; font-weight: 600; font-family: var(--font-display); color: var(--text-primary); letter-spacing: -0.012em; }
+  .modal .close { width: 32px; height: 32px; border-radius: 8px; border: 1px solid transparent; background: transparent; color: var(--text-secondary); font-size: 18px; padding: 0; }
+  .modal .mb { padding: 20px; display: flex; flex-direction: column; gap: 16px; }
+  .modal .fg { display: flex; flex-direction: column; gap: 6px; }
+  .modal .fg > label, .modal .fg > .lab { font-size: 14px; font-weight: 500; color: var(--text-primary); }
+  .modal input[type=text] { width: 100%; padding: 8px 12px; border: 1px solid var(--accent-color); border-radius: 4px; font-size: 14px; font-family: var(--font-mono); background: var(--bg-primary); color: var(--text-primary); box-shadow: 0 0 0 3px var(--accent-subtle); outline: none; }
+  .modal .hint { font-size: 13px; color: var(--text-secondary); }
+  .kind { display: grid; grid-template-columns: 18px 1fr; gap: 10px; padding: 10px 12px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--bg-primary); cursor: pointer; }
+  .kind.on { border-color: var(--secondary-accent); background: color-mix(in srgb, var(--secondary-accent) 9%, var(--bg-primary)); }
+  .kind .rd { width: 16px; height: 16px; border-radius: 50%; border: 1.5px solid var(--text-tertiary); margin-top: 2px; }
+  .kind.on .rd { border: 5px solid var(--secondary-accent); }
+  .kind b { font-size: 14px; font-weight: 600; color: var(--text-primary); }
+  .kind span { font-size: 14px; color: var(--text-secondary); }
+  .kind small { display: block; color: var(--text-secondary); font-size: 13px; margin-top: 2px; line-height: 1.4; }
+  .modal .mf { display: flex; justify-content: flex-end; gap: 8px; padding: 14px 20px; border-top: 1px solid var(--border-color); background: var(--bg-primary); border-radius: 0 0 12px 12px; }
+  .modal .btn { padding: 8px 16px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-primary); font-size: 13px; font-weight: 500; font-family: inherit; }
+  .modal .btn.primary { background: var(--accent-color); border-color: var(--accent-color); color: var(--accent-text); }
+
+  /* ===== Narrow (below 800px: panes stack) ===== */
+  .split-screen { max-width: 1280px; margin: 20px auto 40px; padding: 0 20px; display: grid; grid-template-columns: minmax(0,1fr) 392px; gap: 40px; align-items: start; }
+  .split-screen .notes, .split-screen .statebar, .split-screen .statedesc { margin-left: 0; margin-right: 0; padding: 0; max-width: none; }
+  .phone { width: 392px; border-radius: 28px; }
+  .phone .topnav { grid-template-columns: 1fr auto; padding: 0 12px 0 16px; }
+  .phone .brand { font-size: 19px; }
+  .phone .crumbbar { grid-template-columns: minmax(0,1fr); padding: 6px 8px; gap: 8px; }
+  .phone .crumbs { font-size: 12px; }
+  .phone .crumbs .sep { margin: 0 6px; }
+  .phone .crumbs .file { font-size: 12.5px; }
+  .phone .controls { flex-wrap: wrap; gap: 8px; }
+  .phone .cl, .phone .cr { flex-wrap: wrap; gap: 6px; }
+  .phone .btn-s { padding: 3px 8px; font-size: 11px; }
+  .phone .ed { height: 300px; flex: none; border-right: none; border-bottom: 1px solid var(--border-color); }
+  .phone .pv { height: 250px; flex: none; padding: 16px; }
+  .phone .foot { height: auto; flex-wrap: wrap; gap: 10px 12px; padding: 8px 12px; }
+  .phone .foot .sepv { display: none; }
+  .scrim { position: absolute; left: 0; right: 0; top: 52px; bottom: 0; background: rgba(20,16,28,.45); z-index: 50; }
+  .slide { position: absolute; top: 52px; bottom: 0; left: 0; width: 300px; background: var(--bg-primary); box-shadow: var(--shadow-xl); z-index: 51; display: flex; flex-direction: column; border-right: 1px solid var(--border-color); animation: slideIn .2s ease; }
+  @keyframes slideIn { from { transform: translateX(-24px); opacity: .4; } }
+  .slide .files-head { height: 44px; font-size: 12px; }
+  .slide .frow { height: 36px; font-size: 13.5px; }
+  .slide .ibtn { width: 32px; height: 32px; }
+
+  /* ===== Public detail page (workspace-detail.css) ===== */
+  .dp { padding-bottom: 32px; }
+  .dp-sub { display: flex; justify-content: space-between; align-items: center; padding: 18px 32px 0; }
+  .dp-crumb { font-family: var(--font-mono); font-size: 11.5px; font-weight: 600; letter-spacing: .18em; text-transform: uppercase; color: var(--text-tertiary); }
+  .dp-crumb a { color: var(--secondary-accent-text); }
+  .dp-crumb .s { margin: 0 7px; opacity: .65; }
+  .dp-crumb .here { color: var(--text-secondary); }
+  .dp-cta { display: inline-flex; gap: 8px; padding: 10px 20px; font-weight: 600; font-size: 14px; color: var(--accent-text); background: linear-gradient(135deg, var(--accent-from), var(--accent-to)); border-radius: 999px; box-shadow: var(--shadow-glow); }
+  .dp-plate { margin: 22px 32px 0; background: var(--bg-elevated); border: 1px solid var(--border-color); border-radius: 12px; padding: 30px; display: grid; place-items: center; box-shadow: 0 1px 2px rgba(var(--shadow-tint-rgb), .08), 0 16px 40px rgba(var(--shadow-tint-rgb), .14); }
+  .dp-plate svg { width: 400px; display: block; }
+  .dp-meta { padding: 24px 32px 0; }
+  .dp-meta h1 { font-family: var(--font-display); font-weight: 400; font-size: 44px; line-height: 1.04; margin: 0; letter-spacing: -0.012em; }
+  .dp-meta h1 em { font-style: italic; background: linear-gradient(120deg, var(--secondary-from), var(--secondary-to)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .dp-by { margin-top: 12px; font-size: 15px; color: var(--text-secondary); display: flex; gap: 10px; align-items: center; }
+  .dp-by .h { color: var(--secondary-accent-text); font-weight: 600; }
+  .dp-src { margin: 30px 32px 0; background: var(--bg-elevated); border: 1px solid var(--border-color); border-radius: 12px; overflow: hidden; box-shadow: 0 1px 2px rgba(var(--shadow-tint-rgb), .06), 0 8px 24px rgba(var(--shadow-tint-rgb), .06); }
+  .dp-sum { display: flex; align-items: baseline; padding: 22px 29px; border-bottom: 1px solid var(--border-subtle); }
+  .dp-sum .t { font-family: var(--font-display); font-size: 22px; flex: 1; }
+  .dp-sum .m { font-family: var(--font-mono); font-size: 12px; font-weight: 600; letter-spacing: .14em; text-transform: uppercase; color: var(--text-tertiary); }
+  .dp-sum .pm { font-family: var(--font-display); font-size: 22px; color: var(--secondary-accent-text); margin-left: 16px; line-height: 1; }
+  .dp-tabs { display: flex; gap: 2px; padding: 8px 22px 0; border-bottom: 1px solid var(--border-subtle); }
+  .dp-tab { font-family: var(--font-mono); font-size: 13.5px; font-weight: 500; padding: 8px 12px 10px; color: var(--text-secondary); border-bottom: 2px solid transparent; margin-bottom: -1px; cursor: pointer; display: flex; gap: 7px; align-items: center; }
+  .dp-tab .dir { color: var(--text-tertiary); }
+  .dp-tab.on { color: var(--text-primary); border-bottom-color: var(--secondary-accent); font-weight: 600; }
+  .dp-code { background: var(--bg-secondary); font-family: var(--font-mono); font-size: 14.5px; line-height: 1.7; padding: 10px 0 14px; }
+  .dp-code .l { display: flex; }
+  .dp-code .n { width: 46px; flex: none; text-align: right; padding-right: 12px; color: var(--text-tertiary); border-right: 1px solid var(--border-subtle); margin-right: 16px; }
+  .dp-code .tx { white-space: pre; color: var(--text-primary); }
+  .dp-code .t-kw { color: var(--code-keyword); font-weight: 600; } .dp-code .t-num { color: var(--code-num); } .dp-code .t-str { color: var(--code-str); }
+  .dp-code .t-com { color: var(--code-comment); font-style: italic; } .dp-code .t-op { color: var(--code-op); } .dp-code .t-id { color: var(--text-primary); }
+  .dp-code .t-tpl { color: var(--code-str); } .dp-code .t-pun { color: var(--text-primary); }
+</style>
+</head>
+<body>
+
+<div class="harness">
+  <h1>Multi-file workspaces — mockup v1</h1>
+  <nav id="screens">
+    <button data-s="tree" aria-pressed="true">1 · Files: tree</button>
+    <button data-s="tabs">2 · Tabs (alt)</button>
+    <button data-s="both">3 · Tree + tabs (alt)</button>
+    <button data-s="errors">4 · Errors across files</button>
+    <button data-s="narrow">5 · Narrow</button>
+    <button data-s="pin">6 · Preview pin (alt)</button>
+    <button data-s="source">7 · View source</button>
+  </nav>
+  <span class="spacer"></span>
+  <button class="tgl" id="theme">Toggle light / dark</button>
+</div>
+
+<!-- ============ 1. TREE ============ -->
+<section class="screen active" id="s-tree">
+  <div class="notes">
+    <h2>1 · Files: a tree beside the editor <span class="tag rec">recommended</span></h2>
+    <ul>
+      <li><b>Q1 (a).</b> A Files pane is the first pane, and its toggle sits beside Console. The breadcrumb names the open file after the workspace.</li>
+      <li><b>Q2.</b> Folders are paths with <code>/</code>, shown as a tree. This is the same shape as a CLI or VS Code project folder.</li>
+      <li><b>Q3 (b).</b> The preview always shows main. Editing a library redraws main live, and a quiet label above the zoom controls says so. <b>This changes decision 16</b> (main plus a pin), which 37- still records, so it needs your sign-off. Screen 6 shows the pin.</li>
+      <li><b>Q4.</b> Main has a <code>main</code> badge and stays at the top of the tree. A program's row menu has Set as main. A new workspace starts as one <code>main.pathogen</code>. Libraries show a box icon and <code>module;</code>.</li>
+      <li><b>Q5.</b> The <b>+</b> in the header offers New file and New folder. A row menu offers Rename…, Duplicate and Delete…. Rename takes a path, so it can also move a file.</li>
+      <li><b>Layout change:</b> with the tree open the preview is about 500px wide. Today's top-center stale badge would run into the minimap and the fullscreen button there, so the badge and the label sit above the zoom controls (screen 4).</li>
+      <li><b>Not drawn:</b> each file keeps its own undo history (Q8). The workspace saves as one unit, with one save status (Q9).</li>
+      <li><b>Open:</b> Delete… needs a confirm step, which could name the files that import it. Rename could reuse the New file dialog instead of today's <code>window.prompt</code>. Only <code>.pathogen</code> files for now (Q10); each kind of file has its own icon, so data files can get theirs later.</li>
+    </ul>
+  </div>
+  <div class="statebar" id="st-tree">
+    <span class="lbl">State</span>
+    <button data-st="main" aria-pressed="true">Editing main</button>
+    <button data-st="library">Editing a library</button>
+    <button data-st="row-menu">Row menu: library</button>
+    <button data-st="program-menu">Row menu: program</button>
+    <button data-st="add-menu">+ menu</button>
+    <button data-st="new-file">New file dialog</button>
+    <button data-st="collapsed">Tree closed</button>
+  </div>
+  <div class="statedesc" id="sd-tree"></div>
+  <div class="frame"><div class="window" id="w-tree"></div></div>
+</section>
+
+<!-- ============ 2. TABS ============ -->
+<section class="screen" id="s-tabs">
+  <div class="notes">
+    <h2>2 · Files: tabs <span class="tag alt">alternative · Q1 (b)</span></h2>
+    <ul>
+      <li>Open files are tabs above the editor. Main's tab has the <code>main</code> badge, and <b>+</b> opens New file.</li>
+      <li>Tabs hide two things: folders, and the files you haven't opened. Opening a closed file needs another way in, such as a file picker.</li>
+      <li>Not recommended for phase 2. A workspace holds a handful of files, and the playground has no tab strip yet (the audit lists it as missing).</li>
+    </ul>
+  </div>
+  <div class="statebar" id="st-tabs">
+    <span class="lbl">State</span>
+    <button data-st="library" aria-pressed="true">Editing a library</button>
+  </div>
+  <div class="statedesc" id="sd-tabs"></div>
+  <div class="frame"><div class="window" id="w-tabs"></div></div>
+</section>
+
+<!-- ============ 3. TREE + TABS ============ -->
+<section class="screen" id="s-both">
+  <div class="notes">
+    <h2>3 · Files: tree and tabs <span class="tag alt">alternative · Q1 (c)</span></h2>
+    <ul>
+      <li>The tree lists the whole workspace; the tabs hold the files you've opened.</li>
+      <li>This pays off with many files. With a handful, the tabs repeat the tree and take a row from the editor.</li>
+      <li>Recommendation: start with the tree (screen 1), and add tabs later if workspaces grow.</li>
+    </ul>
+  </div>
+  <div class="statebar" id="st-both">
+    <span class="lbl">State</span>
+    <button data-st="library" aria-pressed="true">Editing a library</button>
+  </div>
+  <div class="statedesc" id="sd-both"></div>
+  <div class="frame"><div class="window" id="w-both"></div></div>
+</section>
+
+<!-- ============ 4. ERRORS ============ -->
+<section class="screen" id="s-errors">
+  <div class="notes">
+    <h2>4 · Errors and navigation across files <span class="tag rec">recommended · Q6, Q7</span></h2>
+    <ul>
+      <li><b>Q6.</b> An error in another file names that file and its line, then each call that led there. This is how the CLI and VS Code print it. Every file and line in the panel is a link that opens that file at that line.</li>
+      <li>The tree puts an error dot on the file where the error happened and on main. Opening that file shows the squiggle at its line.</li>
+      <li>Each panel entry names its file, the open file included, so that every entry can be a link. Today's one-file panel reads <code>Line 2:37 — …</code>.</li>
+      <li>With the tree open, the error panel moves right to sit over the editor instead of the tree. Here it shows up to 7 lines; today's limit is 5. The stale badge moves down above the zoom controls (see screen 1).</li>
+      <li><b>Q7.</b> Hovering an imported name says where it is defined, as in VS Code. Cmd-click (Ctrl-click) opens that file at the name.</li>
+      <li><b>Open:</b> should the hover's "Defined in" be a link too? Console lines would name their file as well (not drawn here).</li>
+    </ul>
+  </div>
+  <div class="statebar" id="st-errors">
+    <span class="lbl">State</span>
+    <button data-st="other-file" aria-pressed="true">Error in another file</button>
+    <button data-st="opened">After clicking the link</button>
+    <button data-st="hover">Hover an imported name</button>
+    <button data-st="renamed">After a rename</button>
+  </div>
+  <div class="statedesc" id="sd-errors"></div>
+  <div class="frame"><div class="window" id="w-errors"></div></div>
+</section>
+
+<!-- ============ 5. NARROW ============ -->
+<section class="screen" id="s-narrow">
+  <div class="split-screen">
+    <div>
+      <div class="notes">
+        <h2>5 · Narrow screens <span class="tag rec">recommended · Q11</span></h2>
+        <ul>
+          <li>Below 800px the panes stack as they do today: the editor, then the preview.</li>
+          <li><b>Files</b> in the breadcrumb opens the tree as a slide-over from the left. Tapping a file opens it and closes the slide-over; tapping the dimmed page closes it too.</li>
+          <li>Rows are 36px tall here, for touch.</li>
+          <li>Lines don't wrap: the editor scrolls sideways, as it does today.</li>
+          <li><b>Open:</b> the top bar at this width is a guess (brand, menu, avatar); this mockup doesn't change it.</li>
+        </ul>
+      </div>
+      <div class="statebar" id="st-narrow" style="margin-top:14px">
+        <span class="lbl">State</span>
+        <button data-st="closed" aria-pressed="true">Tree closed</button>
+        <button data-st="open">Slide-over open</button>
+      </div>
+      <div class="statedesc" id="sd-narrow" style="margin-top:8px"></div>
+    </div>
+    <div class="window phone" id="w-narrow"></div>
+  </div>
+</section>
+
+<!-- ============ 6. PIN ============ -->
+<section class="screen" id="s-pin">
+  <div class="notes">
+    <h2>6 · Preview: main plus a pin <span class="tag alt">decision 16 as written · Q3 (a)</span></h2>
+    <ul>
+      <li>A pin in the preview's chrome keeps the preview on the open file.</li>
+      <li>Since step 5e a module never draws. Pinning a library shows an empty preview with the module notice, worded like VS Code's.</li>
+      <li>The pin only helps a workspace with several programs. Recommendation: (b), on screen 1, and add the pin later if people ask for it.</li>
+      <li>Whatever the preview shows, thumbnails, export and snapshots use main.</li>
+    </ul>
+  </div>
+  <div class="statebar" id="st-pin">
+    <span class="lbl">State</span>
+    <button data-st="main" aria-pressed="true">Unpinned (main)</button>
+    <button data-st="pinned">Pinned to the library</button>
+  </div>
+  <div class="statedesc" id="sd-pin"></div>
+  <div class="frame"><div class="window" id="w-pin"></div></div>
+</section>
+
+<!-- ============ 7. VIEW SOURCE ============ -->
+<section class="screen" id="s-source">
+  <div class="notes">
+    <h2>7 · Public page: View source <span class="tag rec">recommended · Q12</span></h2>
+    <ul>
+      <li>View source lists the files as tabs: main first, then the others by path. The line count covers every file.</li>
+      <li>"Open as new workspace" copies every file, and so do forks and snapshots. The export legend prints main.</li>
+      <li><code>?state=</code> links stay for one-file workspaces. A multi-file workspace is shared by its public link.</li>
+      <li><b>Open:</b> tabs, or one long listing with a heading per file?</li>
+    </ul>
+  </div>
+  <div class="statebar" id="st-source">
+    <span class="lbl">State</span>
+    <button data-st="tabs" aria-pressed="true">Source open</button>
+  </div>
+  <div class="statedesc" id="sd-source"></div>
+  <div class="frame"><div class="window" id="w-source"></div></div>
+</section>
+
+<script>
+/* ---------- the workspace's files (CLI-verified copies in gears-example/) ---------- */
+const MAIN = [
+  '// Two gears that mesh.',
+  'import { gear, Teeth as Kind } from "./parts/gears.pathogen";',
+  'import * as kit from "./parts/kit.pathogen";',
+  '',
+  'define ViewBox(0, 0, 200, 100);',
+  '',
+  'gear(Point(55, 50), 40, Kind.Standard);',
+  'kit.gear(Point(150, 50), 28, kit.Teeth.Few);',
+];
+const MAIN_ERR = MAIN.map((l, i) => i === 6 ? 'gear(55, 40, Kind.Standard);' : l);
+const GEARS = [
+  '// A gear: a star outline with a round hub.',
+  'module;',
+  '',
+  'export const toothDepth = 6;',
+  '',
+  'export enum Teeth { Few = 8, Standard = 12, Fine = 20 }',
+  '',
+  'export fn gear(center, radius, teeth) {',
+  '  star(center.x, center.y, radius, radius - toothDepth, teeth);',
+  '  hub(center, radius);',
+  '}',
+  '',
+  '// Not exported: only this file can use it.',
+  'fn hub(center, radius) {',
+  '  circle(center.x, center.y, radius * 0.3);',
+  '}',
+];
+const KIT = [
+  '// Everything a drawing needs, under one name.',
+  'module;',
+  '',
+  'import * as gears from "./gears.pathogen";',
+  '',
+  'export const gear = gears.gear;',
+  'export const Teeth = gears.Teeth;',
+];
+const LABELS = [
+  '// Small captions under each part.',
+  'module;',
+  '',
+  'export const captionSize = 8;',
+  '',
+  'export fn caption(at, words) {',
+  '  text(at.x, at.y)`${words}`;',
+  '}',
+];
+const TRY = [
+  '// Three sizes side by side.',
+  'import { gear, Teeth } from "./parts/gears.pathogen";',
+  '',
+  'define ViewBox(0, 0, 300, 100);',
+  '',
+  'for (i in 0..2) {',
+  '  gear(Point(50 + i * 100, 50), 20 + i * 10, Teeth.Standard);',
+  '}',
+];
+const CODE = { 'main.pathogen': MAIN, 'parts/gears.pathogen': GEARS, 'parts/cogs.pathogen': GEARS, 'parts/kit.pathogen': KIT, 'parts/labels.pathogen': LABELS, 'try-sizes.pathogen': TRY };
+
+/* ---------- icons (24-unit stroke, like the preview chrome) ---------- */
+const sv = (d, extra = '') => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"${extra}>${d}</svg>`;
+const I = {
+  camera: sv('<path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/>'),
+  layers: sv('<path d="M12 2 2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>'),
+  expand: sv('<path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/>'),
+  kebab: `<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="12" cy="5" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="12" cy="19" r="1.8"/></svg>`,
+  plus: sv('<path d="M12 5v14M5 12h14"/>'),
+  chevD: sv('<path d="m6 9 6 6 6-6"/>'),
+  chevR: sv('<path d="m9 6 6 6-6 6"/>'),
+  prog: sv('<path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6"/><path d="M8 16c1.4-2.6 2.6-2.6 4 0s2.6 2.6 4 0"/>'),
+  lib: sv('<path d="M21 8 12 3 3 8v8l9 5 9-5z"/><path d="m3 8 9 5 9-5M12 13v8"/>'),
+  folder: sv('<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>'),
+  filePlus: sv('<path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6M12 12v6M9 15h6"/>'),
+  folderPlus: sv('<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M12 10v6M9 13h6"/>'),
+  pencil: sv('<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/>'),
+  copy: sv('<rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>'),
+  trash: sv('<path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/>'),
+  star: sv('<path d="m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z"/>'),
+  pin: sv('<path d="M12 17v5M9 3h6l-1 7 3 3v2H7v-2l3-3z"/>'),
+  eye: sv('<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>'),
+  sun: sv('<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>', ' class="sun"'),
+  moon: sv('<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/>', ' class="moon"'),
+  menu: sv('<path d="M4 6h16M4 12h16M4 18h16"/>'),
+  x: sv('<path d="M18 6 6 18M6 6l12 12"/>'),
+};
+const POINTER = `<svg class="pointer" viewBox="0 0 14 20"><path d="M1 1v15l4-3.5 2.6 5.8 2.4-1.1-2.6-5.6H13z" fill="#fff" stroke="#000" stroke-width="1.2" stroke-linejoin="round"/></svg>`;
+
+/* ---------- the drawing: star() + circle() exactly as the stdlib emits them ---------- */
+function gearD(cx, cy, r, teeth) {
+  const inner = r - 6; let d = '';
+  for (let i = 0; i < teeth * 2; i++) {
+    const a = -Math.PI / 2 + i * Math.PI / teeth, rr = i % 2 ? inner : r;
+    d += (i ? ' L ' : 'M ') + (cx + rr * Math.cos(a)).toFixed(2) + ' ' + (cy + rr * Math.sin(a)).toFixed(2);
+  }
+  const h = r * 0.3;
+  return `${d} Z M ${cx - h} ${cy} a ${h} ${h} 0 1 1 ${2 * h} 0 a ${h} ${h} 0 1 1 ${-2 * h} 0`;
+}
+const ART = `<svg viewBox="0 0 200 100" xmlns="http://www.w3.org/2000/svg"><rect width="200" height="100" fill="#fff"/><path d="${gearD(55, 50, 40, 12)} ${gearD(150, 50, 28, 8)}" fill="none" stroke="#000" stroke-width="2" stroke-linejoin="round"/></svg>`;
+
+/* ---------- a tiny Pathogen highlighter (tags from src/parser/highlight.ts) ---------- */
+const KW = new Set('define default ViewBox calc layer apply text tspan for in if else let const enum fn return break continue switch case where import export with as from module'.split(' '));
+const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+function tokens(line) {
+  const out = [], re = /(\/\/.*$)|("[^"]*"|'[^']*')|(`[^`]*`)|(\d+(?:\.\d+)?)|([A-Za-z_]\w*)|(\.\.|[=+\-*/<>!?:%.])|(\s+)|(.)/g;
+  let m;
+  while ((m = re.exec(line))) {
+    const c = m[1] ? 'com' : m[2] ? 'str' : m[3] ? 'tpl' : m[4] ? 'num' : m[5] ? (KW.has(m[0]) ? 'kw' : 'id') : m[6] ? 'op' : m[7] ? '' : 'pun';
+    out.push({ t: m[0], c, from: m.index });
+  }
+  return out;
+}
+/* marks: [{ from, to, cls }] in 0-based columns, `to` exclusive */
+function lineHtml(text, marks = []) {
+  let html = '';
+  const cuts = new Set(marks.flatMap(m => [m.from, m.to]));
+  for (const tk of tokens(text)) {
+    const s = tk.from, e = s + tk.t.length;
+    const pts = [s, ...[...cuts].filter(x => x > s && x < e).sort((a, b) => a - b), e];
+    for (let i = 0; i < pts.length - 1; i++) {
+      const a = pts[i], b = pts[i + 1];
+      marks.forEach(m => { if (m.from === a) html += `<span class="${m.cls}">`; });
+      const txt = esc(text.slice(a, b));
+      html += tk.c ? `<span class="t-${tk.c}">${txt}</span>` : txt;
+      marks.forEach(m => { if (m.to === b) html += '</span>'; });
+    }
+  }
+  return html || ' ';
+}
+const mark = (col, len, cls = 'sq') => ({ from: col - 1, to: col - 1 + len, cls });
+
+/* ---------- layout constants (data-positioned overlays; Inconsolata 14px = 7px per column) ---------- */
+const TREE_W = 248, HEAD_H = 34, ROW_H = 28, LIST_PAD = 4, LH = 20, CM_PAD = 4, TEXT_X = 33, CH = 7, TABS_H = 34;
+
+/* ---------- tree data ---------- */
+const T_MAIN = { p: 'main.pathogen', k: 'prog', main: true };
+const T_PARTS = { folder: 'parts' };
+const TREES = {
+  base: [T_MAIN, T_PARTS, { p: 'parts/gears.pathogen', k: 'lib', d: 1 }, { p: 'parts/kit.pathogen', k: 'lib', d: 1 }, { p: 'parts/labels.pathogen', k: 'lib', d: 1 }],
+  extra: [T_MAIN, T_PARTS, { p: 'parts/gears.pathogen', k: 'lib', d: 1 }, { p: 'parts/kit.pathogen', k: 'lib', d: 1 }, { p: 'parts/labels.pathogen', k: 'lib', d: 1 }, { p: 'try-sizes.pathogen', k: 'prog' }],
+  renamed: [T_MAIN, T_PARTS, { p: 'parts/cogs.pathogen', k: 'lib', d: 1 }, { p: 'parts/kit.pathogen', k: 'lib', d: 1 }, { p: 'parts/labels.pathogen', k: 'lib', d: 1 }],
+};
+const baseName = p => p.split('/').pop();
+const kindOf = p => (CODE[p] && CODE[p][1] === 'module;') ? 'lib' : 'prog';
+
+/* ---------- pieces ---------- */
+function topnav(active = 'Workspaces', narrow = false) {
+  if (narrow) return `<div class="topnav"><div class="brand">Pathogen <span>Studio</span><small>built on Pathogen v0.8.0</small></div>
+    <div class="nav-right"><button class="theme-btn">${I.menu}</button><span class="avatar">RK</span></div></div>`;
+  const items = ['Workspaces', 'Docs', 'Explore', 'Featured', 'Blog', 'Preferences'];
+  return `<div class="topnav"><div class="brand">Pathogen <span>Studio</span><small>built on Pathogen v0.8.0</small></div>
+    <nav class="navpill">${items.map(n => `<a class="${n === active ? 'on' : ''}">${n}</a>`).join('')}</nav>
+    <div class="nav-right"><button class="theme-btn" title="Theme">${I.sun}${I.moon}</button><span class="acct"><span class="avatar">RK</span>Ryan K ${I.chevD}</span></div></div>`;
+}
+function fileCrumb(p) {
+  const i = p.lastIndexOf('/');
+  return `<span class="file">${i >= 0 ? `<span class="dir">${esc(p.slice(0, i + 1))}</span>` : ''}${esc(p.slice(i + 1))}</span>`;
+}
+function crumbbar(c) {
+  const err = c.chip === 'err';
+  const filesBtn = c.layout === 'tabs' ? '' : `<button class="btn-s ${c.treeOpen ? 'active' : ''}" title="Show the workspace's files">Files</button>`;
+  return `<div class="crumbbar">
+    <nav class="crumbs"><span>Workspaces</span><span class="sep">/</span><span class="cur">My Gears</span>${c.narrow ? '' : '<span class="ws-id">(3-Gq8vR2mLpX_k-T4wNc)</span><span class="ws-size">(3 KB)</span>'}<span class="sep">/</span>${fileCrumb(c.open)}</nav>
+    <div class="controls">
+      <div class="cl">
+        <span class="cstat ${err ? 'err' : 'ok'}">${err ? 'Error' : 'Ready'}</span>
+        <span class="split"><button class="btn-s" ${err ? 'disabled' : ''}>${I.camera}Snapshot</button><button class="btn-s"><span class="count">2</span> ›</button></span>
+        <span class="tbar">${filesBtn}<button class="btn-s">Console</button></span>
+        <button class="btn-s">Copy Code</button>
+      </div>
+      <div class="cr"><span class="save">Saved</span><button class="kebab" title="More actions">${I.kebab}</button></div>
+    </div></div>`;
+}
+function treeRows(c) {
+  return TREES[c.tree].map((r, i) => {
+    const depth = r.d || 0, pad = 8 + depth * 14;
+    if (r.folder) return `<div class="frow dir" style="padding-left:${pad}px"><span class="chev">${I.chevD}</span><span class="fic">${I.folder}</span><span class="fname">${r.folder}</span><button class="fk">${I.kebab}</button></div>`;
+    const cls = ['frow', r.k, r.p === c.open ? 'sel' : '', c.menu && c.menu.row === i ? 'menu' : ''].join(' ');
+    const dot = c.dots.includes(r.p) ? '<span class="edot" title="Error"></span>' : '';
+    const badge = r.main ? '<span class="badge-main">main</span>' : r.k === 'lib' ? '<span class="badge-mod">module;</span>' : '';
+    return `<div class="${cls}" data-p="${r.p}" style="padding-left:${pad}px"><span class="chev"></span><span class="fic">${r.k === 'lib' ? I.lib : I.prog}${dot}</span><span class="fname">${baseName(r.p)}</span>${badge}<button class="fk" title="More">${I.kebab}</button></div>`;
+  }).join('');
+}
+function filesPane(c, extraHead = '') {
+  return `<aside class="files"><div class="files-head"><span>Files</span><span class="sp"></span><button class="ibtn ${c.addMenu ? 'on' : ''}" title="New file or folder">${I.plus}</button>${extraHead}</div>
+    <div class="files-list">${treeRows(c)}</div></aside>`;
+}
+function tabStrip(c) {
+  return `<div class="tabs">${c.tabs.map(p => {
+    const k = kindOf(p), isMain = p === 'main.pathogen';
+    return `<div class="tab ${k} ${p === c.open ? 'sel' : ''}"><span class="fic">${k === 'lib' ? I.lib : I.prog}</span>${baseName(p)}${isMain ? ' <span class="badge-main">main</span>' : ''}<span class="x">${isMain ? '' : '×'}</span></div>`;
+  }).join('')}<button class="tab-add" title="New file">${I.plus}</button></div>`;
+}
+function editor(c) {
+  const lines = c.code || CODE[c.open];
+  const body = lines.map((l, i) => {
+    const n = i + 1, cls = ['cm-ln', n === c.active ? 'act' : '', c.errLines.includes(n) ? 'err' : ''].join(' ');
+    return `<div class="${cls}"><span class="gn">${n}</span><span class="lt">${lineHtml(l, c.marks[n])}</span></div>`;
+  }).join('');
+  let tip = '';
+  if (c.tip) {
+    const off = c.tabs ? TABS_H : 0, lineTop = off + CM_PAD + (c.tip.line - 1) * LH, left = TEXT_X + (c.tip.col - 1) * CH;
+    if (c.tip.type === 'hover') tip = `<div class="cm-tip" style="left:${left - 4}px;top:${lineTop - 3}px;transform:translateY(-100%)">${c.tip.html}</div>${POINTER.replace('class="pointer"', `class="pointer" style="left:${left + 16}px;top:${lineTop + 13}px"`)}`;
+    else tip = `<div class="cm-tip lint" style="left:${left - 4}px;top:${lineTop + LH + 3}px">${c.tip.html}</div>`;
+  }
+  return `<div class="ed">${c.tabs ? tabStrip(c) : ''}<div class="cm">${body}</div>${tip}</div>`;
+}
+function preview(c) {
+  const isLib = kindOf(c.open) === 'lib';
+  const pinnedLib = c.pin === 'on' && isLib;
+  const label = c.open !== 'main.pathogen' && !pinnedLib ? `<div class="pv-label">${I.eye}Previewing <code>main.pathogen</code></div>`
+    : pinnedLib ? `<div class="pv-label">${I.pin}Pinned to <code>${esc(c.open)}</code></div>` : '';
+  const canvas = pinnedLib
+    ? `<div class="notice"><div>${I.lib}This file is a module: a module doesn't draw, so its preview is empty. To see its fns draw, open a program that imports it.</div></div>`
+    : `<div class="pv-canvas">${ART}</div>`;
+  const mini = pinnedLib ? '' : `<div class="mm">${ART}<span class="vp"></span></div>`;
+  const pinBtn = c.pin ? `<button class="r32 ${c.pin === 'on' ? 'on' : ''}" title="Pin the preview to this file">${I.pin}</button>` : '';
+  const pinTip = c.pin === 'off' ? `<div class="chip-tip" style="top:56px">Pin the preview to ${esc(c.open)}</div>` : '';
+  return `<div class="pv">
+    <div class="pv-box ${c.stale ? 'stale' : ''}">${canvas}</div>
+    <div class="pv-status">${c.stale ? '<div class="stale-badge">Stale preview — fix errors to update</div>' : ''}${label}</div>
+    <div class="minimap">${mini}</div>
+    <button class="r32 pv-fs" title="Fullscreen">${I.expand}</button>
+    <div class="chrome-r"><button class="r32" title="Toggle inspector">${I.layers}</button>${pinBtn}</div>${pinTip}
+    <div class="zoom"><span>−</span><span>Fit</span><span>+</span><i></i><span class="pct">100%</span></div>
+  </div>`;
+}
+function footer() {
+  return `<div class="foot">
+    <div class="g"><label>viewBox</label><span class="vb">0 0 200 100</span></div><span class="sepv"></span>
+    <div class="g"><label>BG</label><span class="sw"></span></div><span class="sepv"></span>
+    <div class="g"><label>Grid</label><span class="cb"></span><span class="sw grey"></span><span class="selc">20px ${I.chevD}</span></div><span class="sepv"></span>
+    <div class="g"><label>Precision</label><span class="selc">Off ${I.chevD}</span></div>
+    <span class="sp"></span><button class="docs">Docs</button></div>`;
+}
+function errorPanel(c) {
+  if (!c.panel) return '';
+  const tree = c.treeOpen && c.layout !== 'tabs';
+  const pos = tree ? `left:${TREE_W}px;width:calc((100% - ${TREE_W}px) / 2)` : 'left:0;width:50%';
+  return `<div class="errp" style="${pos}"><div class="content">${c.panel.html}</div>${c.panel.count > 1 ? `<span class="badge">${c.panel.count} errors</span>` : ''}<button class="dbg">Copy Debug Info</button></div>`;
+}
+function menus(c) {
+  let out = '';
+  const left = TREE_W - 32;
+  if (c.addMenu) out += `<div class="dd" style="left:${left}px;top:${HEAD_H - 4}px">
+      <button class="hl">${I.filePlus}<span>New file…</span></button><button>${I.folderPlus}<span>New folder…</span></button></div>`;
+  if (c.menu) {
+    const top = HEAD_H + LIST_PAD + c.menu.row * ROW_H + ROW_H - 2;
+    const common = `<button>${I.pencil}<span>Rename…</span></button><button>${I.copy}<span>Duplicate</span></button><div class="div"></div><button class="danger">${I.trash}<span>Delete…</span></button>`;
+    out += `<div class="dd" style="left:${left}px;top:${top}px">${c.menu.kind === 'prog' ? `<button class="hl">${I.star}<span>Set as main</span></button><div class="div"></div>` : ''}${common}</div>`;
+  }
+  return out;
+}
+function modal(c) {
+  if (c.modal !== 'new-file') return '';
+  return `<div class="modal"><div class="bd"></div><div class="card" role="dialog">
+    <div class="mh"><h2>New file</h2><button class="close" aria-label="Close">×</button></div>
+    <div class="mb">
+      <div class="fg"><label for="nf-path">Path</label><input type="text" id="nf-path" value="parts/new.pathogen" spellcheck="false">
+        <div class="hint">A <code>/</code> puts the file in a folder: this one goes in <code>parts/</code>.</div></div>
+      <div class="fg"><span class="lab">Kind</span>
+        <div class="kind on"><span class="rd"></span><div><b>Library</b> <span>(starts with <code>module;</code>)</span><small>Exports fns, constants and enums for other files. It doesn't draw.</small></div></div>
+        <div class="kind"><span class="rd"></span><div><b>Program</b><small>Draws. It can be set as main.</small></div></div>
+      </div>
+    </div>
+    <div class="mf"><button class="btn">Cancel</button><button class="btn primary">Create</button></div>
+  </div></div>`;
+}
+
+/* ---------- a whole workspace window ---------- */
+const BASE = { layout: 'tree', treeOpen: true, tree: 'base', open: 'main.pathogen', code: null, active: 0, marks: {}, errLines: [], dots: [], chip: 'ok', stale: false, panel: null, menu: null, addMenu: false, modal: null, tip: null, pin: null, tabs: null, narrow: false };
+const C = o => Object.assign({}, BASE, o);
+function workspace(c) {
+  const tree = c.treeOpen && c.layout !== 'tabs';
+  return `${topnav()}${crumbbar(c)}<div class="ws-wrap"><div class="ws ${tree ? 'has-tree' : ''}">${tree ? filesPane(c) : ''}${editor(c)}${preview(c)}${tree ? menus(c) : ''}</div>${footer()}${errorPanel(c)}</div>${modal(c)}`;
+}
+function narrow(c) {
+  const open = c.slide;
+  const slide = open ? `<div class="scrim"></div><div class="slide">${filesPane(C({ open: c.open, tree: 'base' }), `<button class="ibtn" title="Close">${I.x}</button>`).replace('<aside class="files">', '<aside class="files" style="flex:1;border-right:none">')}</div>` : '';
+  return `${topnav('Workspaces', true)}${crumbbar(Object.assign({}, c, { treeOpen: open }))}<div style="display:flex;flex-direction:column">${editor(c)}${preview(c)}</div>${footer()}${slide}`;
+}
+
+/* ---------- the detail page ---------- */
+const SRC_FILES = ['main.pathogen', 'parts/gears.pathogen', 'parts/kit.pathogen', 'parts/labels.pathogen'];
+let srcTab = 'main.pathogen';
+function detailPage() {
+  const total = SRC_FILES.reduce((n, p) => n + CODE[p].length, 0);
+  const tabs = SRC_FILES.map(p => {
+    const i = p.lastIndexOf('/');
+    return `<span class="dp-tab ${p === srcTab ? 'on' : ''}" data-src="${p}"><span>${i >= 0 ? `<span class="dir">${p.slice(0, i + 1)}</span>` : ''}${p.slice(i + 1)}</span>${p === 'main.pathogen' ? '<span class="badge-main">main</span>' : ''}</span>`;
+  }).join('');
+  const code = CODE[srcTab].map((l, i) => `<div class="l"><span class="n">${i + 1}</span><span class="tx">${lineHtml(l)}</span></div>`).join('');
+  return `${topnav('Explore')}<div class="dp">
+    <div class="dp-sub"><nav class="dp-crumb"><a>Explore</a><span class="s">›</span><a>@ryan</a><span class="s">›</span><span class="here">My Gears</span></nav><a class="dp-cta">Open as new workspace <span>→</span></a></div>
+    <div class="dp-plate">${ART}</div>
+    <div class="dp-meta"><h1>My <em>Gears</em></h1><p class="dp-by" style="margin-bottom:0"><span class="avatar">R</span><span>by</span><span class="h">@ryan</span><span>·</span><span>Published Nov 5, 2026</span></p></div>
+    <div class="dp-src"><div class="dp-sum"><span class="t">View source</span><span class="m">Pathogen · ${SRC_FILES.length} files · ${total} lines</span><span class="pm">−</span></div>
+      <div class="dp-tabs">${tabs}</div><div class="dp-code">${code}</div></div>
+  </div>`;
+}
+
+/* ---------- screens and their states (each chip sets the whole state) ---------- */
+const PANEL_OTHER = { count: 1, html: `<a data-go="errors:opened">parts/gears.pathogen line 9</a>: Cannot access property 'x' on non-object value\n  called from <a data-go="errors:other-file">main.pathogen line 7</a>` };
+const PANEL_RENAMED = { count: 2, html: `<a>main.pathogen line 2, col 37</a>: import file "./parts/gears.pathogen" was not found (looked for /parts/gears.pathogen in My Gears).\n<a>parts/kit.pathogen line 4, col 24</a>: import file "./gears.pathogen" was not found (looked for /parts/gears.pathogen in My Gears).\n  imported from <a>main.pathogen line 3</a>` };
+const LINT_9 = `Cannot access property 'x' on non-object value\n— called from <a data-go="errors:other-file">main.pathogen line 7</a>`;
+const HOVER_GEAR = `<strong>gear</strong> — <em>function</em><br><br><code>fn gear(center, radius, teeth)</code><br><br>Defined in parts/gears.pathogen, line 8`;
+const LIB = 'parts/gears.pathogen';
+
+const SCREENS = {
+  tree: { el: 'w-tree', build: workspace, states: {
+    'main': [C({ active: 7 }), 'Editing <b>main.pathogen</b>. The preview draws it.'],
+    'library': [C({ open: LIB, active: 9 }), 'Editing <b>parts/gears.pathogen</b>, a library. The preview still draws main, and the label above the zoom controls says so.'],
+    'row-menu': [C({ open: LIB, active: 9, menu: { row: 2, kind: 'lib' } }), 'The row menu on a library: Rename…, Duplicate, Delete…. It opens over the editor, so it never clips at the tree\'s edge.'],
+    'program-menu': [C({ tree: 'extra', active: 7, menu: { row: 5, kind: 'prog' } }), 'A second program, <b>try-sizes.pathogen</b>. Its row menu adds Set as main.'],
+    'add-menu': [C({ active: 7, addMenu: true }), 'The <b>+</b> in the tree header: New file… and New folder….'],
+    'new-file': [C({ active: 7, modal: 'new-file' }), 'New file asks for a path and a kind. Library is the default, since a workspace already has its main. Create is the one accent button.'],
+    'collapsed': [C({ open: LIB, active: 9, treeOpen: false }), 'Tree closed: Files in the breadcrumb is off, and the panes are laid out as today. The file crumb still says which file is open.'],
+  } },
+  tabs: { el: 'w-tabs', build: workspace, states: {
+    'library': [C({ layout: 'tabs', treeOpen: false, open: LIB, active: 9, tabs: ['main.pathogen', LIB, 'parts/kit.pathogen'] }), 'Editing <b>parts/gears.pathogen</b> from its tab. labels.pathogen isn\'t open, so nothing on screen shows it exists.'],
+  } },
+  both: { el: 'w-both', build: workspace, states: {
+    'library': [C({ layout: 'tree-tabs', open: LIB, active: 9, tabs: ['main.pathogen', LIB, 'parts/kit.pathogen'] }), 'Editing <b>parts/gears.pathogen</b>, with three files open as tabs.'],
+  } },
+  errors: { el: 'w-errors', build: workspace, states: {
+    'other-file': [C({ code: MAIN_ERR, active: 7, marks: { 7: [mark(1, 27)] }, errLines: [7], dots: ['main.pathogen', LIB], chip: 'err', stale: true, panel: PANEL_OTHER }),
+      'main calls <b>gear(55, 40, …)</b> with a number where gear expects a Point. The error happens in gears.pathogen line 9, and the preview goes stale. Click the first link.'],
+    'opened': [C({ open: LIB, active: 9, marks: { 9: [mark(8, 8)] }, errLines: [9], dots: ['main.pathogen', LIB], chip: 'err', stale: true, panel: PANEL_OTHER, tip: { type: 'lint', line: 9, col: 8, html: LINT_9 } }),
+      'After clicking <b>parts/gears.pathogen line 9</b>: the file opens with line 9 squiggled. Hovering the squiggle says where it was called from. The preview still shows main, stale.'],
+    'hover': [C({ active: 7, tip: { type: 'hover', line: 7, col: 1, html: HOVER_GEAR } }),
+      'Hovering <b>gear</b> in main.pathogen. The text comes from hover.ts and matches VS Code.'],
+    'renamed': [C({ tree: 'renamed', active: 2, marks: { 2: [mark(37, 24)], 3: [mark(22, 22)] }, errLines: [2, 3], dots: ['main.pathogen', 'parts/kit.pathogen'], chip: 'err', stale: true, panel: PANEL_RENAMED }),
+      'After renaming parts/gears.pathogen to <b>parts/cogs.pathogen</b>. Imports in other files aren\'t rewritten yet; cross-file rename is on the backlog. main\'s import breaks, and so does kit.pathogen\'s own import of ./gears.pathogen, so the panel shows 2 errors. The not-found wording is a proposal: the message is <code>(looked for &lt;path&gt;)</code>, and a workspace host would pass "/parts/gears.pathogen in My Gears".'],
+  } },
+  narrow: { el: 'w-narrow', build: narrow, states: {
+    'closed': [C({ narrow: true, treeOpen: false, active: 7 }), '392px wide, editing <b>main.pathogen</b>.'],
+    'open': [C({ narrow: true, treeOpen: false, active: 7, slide: true }), 'Files tapped: the tree slides over from the left, over a dimmed page.'],
+  } },
+  pin: { el: 'w-pin', build: workspace, states: {
+    'main': [C({ open: LIB, active: 9, pin: 'off' }), 'Unpinned: editing a library, the preview shows main. The pin sits under the layers button.'],
+    'pinned': [C({ open: LIB, active: 9, pin: 'on' }), 'Pinned to <b>parts/gears.pathogen</b>: a module doesn\'t draw, so the preview is empty.'],
+  } },
+  source: { el: 'w-source', build: detailPage, states: {
+    'tabs': [null, 'The public page at /u/ryan/my-gears, with View source open. Click the file tabs.'],
+  } },
+};
+
+const current = {};
+function pressGroup(container, attr, val) {
+  container.querySelectorAll(`[${attr}]`).forEach(b => b.setAttribute('aria-pressed', String(b.getAttribute(attr) === val)));
+}
+function renderState(screen, state, override) {
+  const s = SCREENS[screen];
+  const [cfg, desc] = s.states[state] || [];
+  current[screen] = state;
+  pressGroup(document.getElementById('st-' + screen), 'data-st', override ? '' : state);
+  document.getElementById('sd-' + screen).innerHTML = override ? 'Clicked in the mockup.' : desc;
+  const el = document.getElementById(s.el);
+  el.innerHTML = s.build(override || cfg);
+  wire(screen, el, override || cfg);
+}
+function wire(screen, el, cfg) {
+  el.querySelectorAll('[data-go]').forEach(a => a.onclick = () => { const [sc, st] = a.dataset.go.split(':'); renderState(sc, st); });
+  if (screen === 'tree' || screen === 'both') {
+    el.querySelectorAll('.frow[data-p]').forEach(r => r.onclick = () => {
+      const p = r.dataset.p;
+      renderState(screen, null, Object.assign({}, cfg, { open: p, active: 1, menu: null, addMenu: false, tabs: cfg.tabs && !cfg.tabs.includes(p) ? [...cfg.tabs, p] : cfg.tabs }));
+    });
+  }
+  if (screen === 'source') el.querySelectorAll('[data-src]').forEach(t => t.onclick = () => { srcTab = t.dataset.src; renderState('source', 'tabs'); });
+  const input = el.querySelector('#nf-path');
+  if (input) { input.focus({ preventScroll: true }); input.setSelectionRange(6, 9); }
+}
+function showScreen(screen) {
+  pressGroup(document.getElementById('screens'), 'data-s', screen);
+  document.querySelectorAll('.screen').forEach(sec => sec.classList.toggle('active', sec.id === 's-' + screen));
+  renderState(screen, current[screen] || Object.keys(SCREENS[screen].states)[0]);
+}
+document.getElementById('screens').onclick = e => { const b = e.target.closest('button'); if (b) showScreen(b.dataset.s); };
+Object.keys(SCREENS).forEach(screen => {
+  document.getElementById('st-' + screen).onclick = e => { const b = e.target.closest('button[data-st]'); if (b) renderState(screen, b.dataset.st); };
+  renderState(screen, Object.keys(SCREENS[screen].states)[0]);
+});
+document.getElementById('theme').onclick = () => {
+  const el = document.documentElement;
+  el.setAttribute('data-theme', el.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
+};
+window.mockup = { showScreen, renderState };
+</script>
+</body>
+</html>

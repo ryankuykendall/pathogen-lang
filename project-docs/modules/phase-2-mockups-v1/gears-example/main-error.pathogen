@@ -1,0 +1,8 @@
+// Two gears that mesh.
+import { gear, Teeth as Kind } from "./parts/gears.pathogen";
+import * as kit from "./parts/kit.pathogen";
+
+define ViewBox(0, 0, 200, 100);
+
+gear(55, 40, Kind.Standard);
+kit.gear(Point(150, 50), 28, kit.Teeth.Few);

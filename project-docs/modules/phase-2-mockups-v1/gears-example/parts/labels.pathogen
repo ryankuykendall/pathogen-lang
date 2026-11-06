@@ -1,0 +1,8 @@
+// Small captions under each part.
+module;
+
+export const captionSize = 8;
+
+export fn caption(at, words) {
+  text(at.x, at.y)`${words}`;
+}
