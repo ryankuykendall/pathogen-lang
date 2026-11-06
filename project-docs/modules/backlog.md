@@ -37,6 +37,12 @@ Deferred work from the modules, data and files effort. Each entry says what it i
 ### `star(…)` with a string point count
 - `star(cx, cy, r1, r2, 'twelve')` draws `m 0 0 z` instead of failing. Found while checking phase 1a's examples (plan 12 follow-ups).
 
+### A missing enum member is `null`, not an error
+- `enum Teeth { Few = 8, Fine = 20 } log(Teeth.Huge);` logs `Teeth.Huge = null` (checked 2026-11-06). A typo in a member name silently becomes `null`. A namespace's missing member is an error that lists the exports; an enum could do the same. Not documented either way (docs/syntax.md "User-Defined Enums"). Found while building the phase 2 v2 mockups.
+
+### A fn that only writes text fails inside a TextLayer `apply`
+- `layer('captions').apply { caption(10, 20); }`, where `caption` only calls `text(x, y)`, fails with `Line 10: Path commands cannot be used inside a TextLayer apply block` (checked 2026-11-06, `tmp/phase1/probe-textlayer-fn.pathogen`). docs/layers.md "Restrictions" only forbids path commands (`M`, `L`) there. A bare call statement seems to go through path output. Found while building the phase 2 v2 mockups; `parts/labels`' `caption()` there opens the layer itself to work around it.
+
 ### Found in the phase 2 audit (playground and API)
 Existing issues outside the modules work, found while mapping phase 2 (`38-phase-2-audit.md`, "Found along the way"):
 - **"Copy URL" always opens the create form.** It reads `route.params.id`, but the workspace route's parameter is `slugId`, so every link is `/workspace/new?state=…` (`playground/utils/url-state.ts:105`, `utils/router.ts:39`). Decide what the link should open, then fix.

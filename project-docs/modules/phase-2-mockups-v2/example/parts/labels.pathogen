@@ -1,0 +1,9 @@
+// Small captions under each part.
+// The program that calls caption() defines the 'captions' TextLayer.
+module;
+
+export fn caption(at, words) {
+  layer('captions').apply {
+    text(at.x, at.y)`${words}`;
+  }
+}

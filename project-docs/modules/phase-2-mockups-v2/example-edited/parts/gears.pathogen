@@ -1,0 +1,16 @@
+// A gear: a star outline with a round hub.
+module;
+
+export const toothDepth = 10;
+
+export enum Teeth { Few = 8, Standard = 12, Fine = 20 }
+
+export fn gear(center, radius, teeth) {
+  star(center.x, center.y, radius, radius - toothDepth, teeth);
+  hub(center, radius);
+}
+
+// Not exported: only this file can use it.
+fn hub(center, radius) {
+  circle(center.x, center.y, radius * 0.3);
+}

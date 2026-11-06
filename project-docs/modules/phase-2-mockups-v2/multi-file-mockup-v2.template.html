@@ -1,0 +1,973 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mockup v2 — Several programs in one workspace</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baumans&family=DM+Sans:wght@400;500;600;700&family=DM+Serif+Display:ital@0;1&family=Inconsolata:wght@400;500;600&display=swap" rel="stylesheet">
+<!-- Built by build.ts from multi-file-mockup-v2.template.html. Edit the template, then run
+     npx tsx project-docs/modules/phase-2-mockups-v2/build.ts -->
+<style>
+  /* ===== Real playground tokens, copied from playground/styles/theme.css (2026-11-05, as v1) ===== */
+  :root {
+    --bg-primary: #f7f0e3; --bg-secondary: #fdf6ed; --bg-tertiary: rgba(28,23,34,0.05); --bg-elevated: #ffffff;
+    --text-primary: #1c1722; --text-secondary: #5a4f6a; --text-tertiary: #9087a0; --text-inverse: #fffaf2;
+    --border-color: rgba(28,23,34,0.10); --border-subtle: rgba(28,23,34,0.06); --border-strong: rgba(28,23,34,0.18);
+    --accent-color: #c0518e; --accent-hover: #b04680; --accent-subtle: rgba(192,81,142,0.10); --accent-text: #fffaf2;
+    --accent-contrast: #1c1722; --accent-from: #e16a8f; --accent-to: #a83d80;
+    --secondary-accent: #9461c4; --secondary-accent-hover: #7e4fb0; --secondary-accent-subtle: rgba(148,97,196,0.16); --secondary-accent-text: #5e3590;
+    --secondary-from: #b384e0; --secondary-to: #6d3aa6;
+    --success-color: #10b981; --success-bg: #ecfdf5; --success-border: #a7f3d0;
+    --warning-color: #f59e0b; --warning-bg: #fffbeb; --warning-border: #fde68a;
+    --error-color: #ef4444; --error-bg: #fef2f2; --error-border: #fecaca; --error-text: #dc2626;
+    --info-color: #3b82f6; --info-bg: #eff6ff; --info-border: #bfdbfe;
+    --hover-bg: rgba(0,0,0,0.04); --active-bg: rgba(0,0,0,0.08); --focus-ring: rgba(192,81,142,0.4);
+    --shadow-sm: 0 1px 2px rgba(28,23,34,0.05);
+    --shadow-md: 0 4px 6px -1px rgba(28,23,34,0.07), 0 2px 4px -1px rgba(28,23,34,0.04);
+    --shadow-lg: 0 10px 15px -3px rgba(28,23,34,0.08), 0 4px 6px -2px rgba(28,23,34,0.04);
+    --shadow-xl: 0 20px 25px -5px rgba(28,23,34,0.10), 0 10px 10px -5px rgba(28,23,34,0.04);
+    --radius-sm: 4px; --radius-md: 8px; --radius-lg: 12px; --radius-xl: 16px;
+    --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+    --font-mono: 'Inconsolata', 'SF Mono', Monaco, 'Cascadia Code', monospace;
+    --font-brand: 'Baumans', cursive;
+    --font-body: 'DM Sans', system-ui, sans-serif;
+    --font-display: 'DM Serif Display', Georgia, serif;
+    --bg-atmosphere-1: rgba(180,130,220,0.18); --bg-atmosphere-2: rgba(255,175,130,0.20);
+
+    /* Editor: light uses CodeMirror's defaultHighlightStyle + base theme (code-editor-pane.ts _getThemeExtensions) */
+    --cm-host-bg: var(--bg-secondary); --cm-text: var(--text-primary);
+    --cm-gutter-bg: #f5f5f5; --cm-gutter-fg: #6c6c6c; --cm-gutter-border: #dddddd;
+    --cm-active: #cceeff44; --cm-active-gutter: #e2f2ff; --cm-err-line: rgba(255,0,0,0.08);
+    --cm-kw: #770088; --cm-num: #116644; --cm-str: #aa1111; --cm-com: #994400; --cm-tpl: #ee4400;
+    --cm-id: var(--text-primary); --cm-op: var(--text-primary); --cm-pun: var(--text-primary);
+    --tabs-bg: var(--bg-primary);
+
+    /* Mockup-only */
+    --mock-page: #ece4d6; --mock-canvas: #f3ebde;
+  }
+  [data-theme='dark'] {
+    --bg-primary: #14101c; --bg-secondary: #100c17; --bg-tertiary: rgba(255,250,242,0.05); --bg-elevated: #1a1424;
+    --text-primary: #f6e9da; --text-secondary: #b5a8c4; --text-tertiary: #7a6f8a; --text-inverse: #14101c;
+    --border-color: rgba(246,233,218,0.10); --border-subtle: rgba(246,233,218,0.05); --border-strong: rgba(246,233,218,0.20);
+    --accent-color: #f7b56e; --accent-hover: #ffc585; --accent-subtle: rgba(247,181,110,0.15); --accent-text: #1a1424;
+    --accent-contrast: #1a1424; --accent-from: #ffd194; --accent-to: #e89254;
+    --secondary-accent: #c4a4e8; --secondary-accent-hover: #d4baef; --secondary-accent-subtle: rgba(196,164,232,0.16); --secondary-accent-text: #d4bcef;
+    --secondary-from: #d8c4f0; --secondary-to: #9c7cd5;
+    --success-color: #22c55e; --success-bg: rgba(34,197,94,0.15); --success-border: rgba(34,197,94,0.3);
+    --warning-color: #e0a840; --warning-bg: rgba(224,168,64,0.15); --warning-border: rgba(224,168,64,0.3);
+    --error-color: #ef4444; --error-bg: rgba(239,68,68,0.6); --error-border: rgba(239,68,68,0.5); --error-text: #fcd5d5;
+    --info-color: #3b82f6; --info-bg: rgba(59,130,246,0.15); --info-border: rgba(59,130,246,0.3);
+    --hover-bg: rgba(255,255,255,0.06); --active-bg: rgba(255,255,255,0.1); --focus-ring: rgba(247,181,110,0.4);
+    --shadow-sm: 0 1px 2px rgba(0,0,0,0.3);
+    --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.4), 0 2px 4px -1px rgba(0,0,0,0.3);
+    --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.4), 0 4px 6px -2px rgba(0,0,0,0.3);
+    --shadow-xl: 0 20px 25px -5px rgba(0,0,0,0.5), 0 10px 10px -5px rgba(0,0,0,0.4);
+    --bg-atmosphere-1: rgba(140,100,200,0.18); --bg-atmosphere-2: rgba(220,140,90,0.18);
+
+    /* Editor: dark uses One Dark (oneDarkTheme + oneDarkHighlightStyle) */
+    --cm-host-bg: #282c34; --cm-text: #abb2bf;
+    --cm-gutter-bg: #282c34; --cm-gutter-fg: #7d8799; --cm-gutter-border: transparent;
+    --cm-active: #6699ff0b; --cm-active-gutter: #2c313a; --cm-err-line: rgba(255,80,80,0.12);
+    --cm-kw: #c678dd; --cm-num: #e5c07b; --cm-str: #98c379; --cm-com: #7d8799; --cm-tpl: #56b6c2;
+    --cm-id: #e06c75; --cm-op: #56b6c2; --cm-pun: #abb2bf;
+    --tabs-bg: #21252b;
+
+    --mock-page: #0b0811; --mock-canvas: #110d18;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body { background: var(--mock-page); color: var(--text-primary); font-family: var(--font-body); font-size: 14px; }
+  button { font-family: inherit; color: inherit; }
+  code { font-family: var(--font-mono); }
+  svg { flex: none; }
+
+  /* ===== Mockup harness (as v1) ===== */
+  .harness { position: sticky; top: 0; z-index: 100; display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; padding: 10px 20px; background: #1c1722; color: #f6e9da; font-size: 13px; }
+  .harness h1 { margin: 0 12px 0 0; font-size: 14px; font-weight: 600; font-family: var(--font-body); }
+  .harness nav { display: flex; gap: 4px; flex-wrap: wrap; }
+  .harness nav button, .harness .tgl { background: transparent; border: 1px solid rgba(246,233,218,0.2); color: #f6e9da; border-radius: 6px; padding: 4px 10px; cursor: pointer; font-size: 12px; }
+  .harness nav button[aria-pressed='true'] { background: #f6e9da; color: #1c1722; }
+  .harness .spacer { flex: 1; }
+  .notes { max-width: 1280px; margin: 20px auto 0; padding: 0 20px; color: var(--text-secondary); line-height: 1.5; }
+  .notes h2 { color: var(--text-primary); font-size: 18px; margin: 0 0 4px; font-family: var(--font-body); font-weight: 600; letter-spacing: 0; display: flex; align-items: center; gap: 8px; }
+  .notes h3 { color: var(--text-primary); font-size: 13px; margin: 12px 0 0; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; }
+  .notes ul { margin: 4px 0 0; padding-left: 18px; }
+  .notes li { margin: 2px 0; }
+  .notes b { color: var(--text-primary); font-weight: 600; }
+  .notes code { font-size: 13px; }
+  .notes .cols { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 32px; }
+  .tag { display: inline-block; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; border-radius: 4px; padding: 1px 6px; }
+  .tag.rec { color: #fff; background: #2563eb; }
+  .tag.alt { color: var(--text-secondary); background: var(--bg-tertiary); border: 1px solid var(--border-strong); }
+  .tag.ask { color: #fff; background: #b45309; }
+  .statebar { max-width: 1280px; margin: 12px auto 4px; padding: 0 20px; display: flex; gap: 6px; flex-wrap: wrap; align-items: center; font-size: 12px; color: var(--text-secondary); }
+  .statebar button { border: 1px solid var(--border-strong); background: var(--bg-elevated); border-radius: 999px; padding: 4px 12px; cursor: pointer; font-size: 12px; color: var(--text-primary); }
+  .statebar button[aria-pressed='true'] { background: var(--text-primary); color: var(--bg-primary); border-color: transparent; }
+  .statebar .lbl { font-weight: 600; text-transform: uppercase; letter-spacing: .06em; font-size: 11px; }
+  .statedesc { max-width: 1280px; margin: 0 auto 10px; padding: 0 20px; font-size: 13px; color: var(--text-secondary); min-height: 20px; }
+  .statedesc b { color: var(--text-primary); font-weight: 600; }
+  .screen { display: none; }
+  .screen.active { display: block; }
+  .frame { max-width: 1280px; margin: 0 auto 40px; padding: 0 20px; }
+  .window { position: relative; border-radius: 12px; overflow: hidden; box-shadow: 0 30px 60px -20px rgba(0,0,0,0.35); border: 1px solid var(--border-color);
+    background: radial-gradient(900px 500px at 0% 0%, var(--bg-atmosphere-1), transparent 60%), radial-gradient(800px 600px at 100% 100%, var(--bg-atmosphere-2), transparent 60%), var(--bg-primary); }
+
+  /* ===== App header (app-header) ===== */
+  .topnav { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; height: 52px; padding: 0 24px; border-bottom: 1px solid var(--border-subtle); }
+  .brand { font-family: var(--font-brand); font-size: 22px; line-height: 1; justify-self: start; }
+  .brand span { color: var(--secondary-accent); }
+  .brand small { display: block; font-family: var(--font-mono); font-size: 9px; color: var(--text-tertiary); letter-spacing: .04em; margin-top: 3px; }
+  .navpill { display: flex; gap: 2px; padding: 4px; border: 1px solid var(--border-color); border-radius: 12px; background: var(--bg-tertiary); }
+  .navpill a { padding: 6px 12px; border-radius: 8px; color: var(--text-secondary); font-size: 13px; font-weight: 500; }
+  .navpill a.on { background: var(--secondary-accent-subtle); color: var(--secondary-accent-text); }
+  .nav-right { justify-self: end; display: flex; gap: 10px; align-items: center; }
+  .theme-btn { width: 32px; height: 32px; border-radius: 50%; border: 1px solid var(--border-color); background: var(--bg-tertiary); display: grid; place-items: center; color: var(--text-secondary); padding: 0; }
+  .theme-btn svg { width: 16px; height: 16px; }
+  .theme-btn .moon, [data-theme='dark'] .theme-btn .sun { display: none; }
+  [data-theme='dark'] .theme-btn .moon { display: block; }
+  .acct { display: inline-flex; align-items: center; gap: 8px; height: 32px; padding: 0 10px 0 3px; border-radius: 999px; border: 1px solid var(--border-color); background: var(--bg-tertiary); font-size: 13px; font-weight: 500; }
+  .acct svg { width: 12px; height: 12px; color: var(--text-tertiary); }
+  .avatar { width: 26px; height: 26px; border-radius: 50%; background: linear-gradient(135deg, var(--secondary-from), var(--secondary-to)); color: #fff; display: grid; place-items: center; font-size: 11px; font-weight: 600; flex: none; }
+
+  /* ===== Breadcrumb bar (app-breadcrumb.css) ===== */
+  .crumbbar { display: grid; grid-template-columns: minmax(0,1fr) auto; align-items: center; gap: 16px; padding: 6px 16px; min-height: 42px; border-bottom: 1px solid var(--border-subtle); }
+  .crumbs { display: flex; align-items: center; font-size: 13px; color: var(--text-secondary); min-width: 0; white-space: nowrap; }
+  .crumbs .sep { margin: 0 8px; color: var(--text-tertiary); }
+  .crumbs .cur { color: var(--text-primary); font-weight: 500; }
+  .crumbs .ws-id, .crumbs .ws-size { font-family: var(--font-mono); font-size: 11px; color: var(--text-tertiary); margin-left: 6px; font-weight: 400; }
+  .crumbs .file { font-family: var(--font-mono); font-size: 13.5px; color: var(--text-primary); font-weight: 600; }
+  .crumbs .file .dir { color: var(--text-tertiary); font-weight: 500; }
+  .controls { display: flex; align-items: center; gap: 16px; }
+  .cl, .cr { display: flex; align-items: center; gap: 8px; }
+  .btn-s { display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; font-size: 12px; line-height: 1.4; background: transparent; border: 1px solid var(--border-color); border-radius: 4px; color: var(--text-secondary); cursor: pointer; white-space: nowrap; }
+  .btn-s svg { width: 14px; height: 14px; }
+  .btn-s[disabled] { color: var(--text-tertiary); opacity: .7; cursor: not-allowed; }
+  .split, .tbar { display: inline-flex; }
+  .split .btn-s:first-child, .tbar .btn-s:first-child { border-radius: 4px 0 0 4px; }
+  .split .btn-s:last-child, .tbar .btn-s:last-child { border-radius: 0 4px 4px 0; margin-left: -1px; }
+  .split .count { color: var(--text-tertiary); font-variant-numeric: tabular-nums; }
+  .btn-s.active { background: var(--secondary-accent-subtle); border-color: var(--secondary-accent); color: var(--secondary-accent-text); position: relative; z-index: 1; }
+  .cstat, .save { font-family: var(--font-mono); font-size: 12px; font-weight: 500; padding: 4px 8px; border-radius: 4px; line-height: 1.4; }
+  .cstat.ok, .save { background: var(--success-bg); color: var(--success-color); }
+  .cstat.err { background: var(--error-bg); color: var(--error-text); }
+  .kebab { width: 28px; height: 28px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-secondary); display: grid; place-items: center; padding: 0; }
+  .kebab svg { width: 18px; height: 18px; }
+
+  /* ===== Workspace row: files | editor | preview ===== */
+  .ws-wrap { position: relative; }
+  .ws { position: relative; display: grid; grid-template-columns: 248px minmax(0,1fr) minmax(0,1fr); height: 600px; }
+
+  /* Files pane: row look borrowed from layers-panel.css */
+  .files { background: var(--bg-primary); border-right: 1px solid var(--border-color); display: flex; flex-direction: column; min-height: 0; min-width: 0; }
+  .files-head { height: 34px; flex: none; display: flex; align-items: center; gap: 4px; padding: 0 6px 0 12px; border-bottom: 1px solid var(--border-color); font-size: 11px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: .03em; }
+  .files-head .sp { flex: 1; }
+  .ibtn { width: 24px; height: 24px; border: none; background: none; border-radius: 4px; display: grid; place-items: center; color: var(--text-secondary); padding: 0; cursor: pointer; }
+  .ibtn:hover { background: var(--hover-bg); color: var(--text-primary); }
+  .ibtn svg { width: 16px; height: 16px; }
+  .files-list { padding: 4px 0; overflow: hidden; flex: 1; }
+  .frow { display: flex; align-items: center; gap: 6px; height: 28px; padding-right: 6px; cursor: pointer; font-family: var(--font-mono); font-size: 12.5px; font-weight: 500; color: var(--text-primary); }
+  .frow:hover, .frow.hov { background: var(--hover-bg); }
+  .frow.sel { background: var(--secondary-accent-subtle); color: var(--secondary-accent-text); font-weight: 600; }
+  .frow .chev { width: 14px; display: grid; place-items: center; color: var(--text-tertiary); flex: none; }
+  .frow .chev svg { width: 12px; height: 12px; }
+  .frow .fic { width: 14px; height: 14px; flex: none; color: var(--text-secondary); position: relative; display: grid; place-items: center; }
+  .frow .fic svg { width: 14px; height: 14px; }
+  .frow.lib .fic { color: var(--secondary-accent); }
+  .frow.plain .fic { color: var(--text-secondary); }
+  .frow.tint .fname { color: var(--secondary-accent-text); }
+  .frow.dir .fic { color: var(--text-tertiary); }
+  .frow .fname { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .frow .pstar { width: 12px; height: 12px; color: var(--text-tertiary); display: grid; place-items: center; flex: none; margin-right: 2px; }
+  .frow .pstar svg { width: 11px; height: 11px; }
+  .edot { position: absolute; top: -3px; right: -4px; width: 8px; height: 8px; border-radius: 50%; background: var(--error-color); box-shadow: 0 0 0 2px var(--bg-primary); }
+  .fk { width: 20px; height: 20px; border: none; background: none; border-radius: 4px; padding: 0; display: grid; place-items: center; color: var(--text-secondary); visibility: hidden; flex: none; }
+  .fk svg { width: 16px; height: 16px; }
+  .frow:hover .fk, .frow.sel .fk, .frow.menu .fk { visibility: visible; }
+  .frow.menu { background: var(--hover-bg); }
+  .frow.menu .fk { background: var(--active-bg); color: var(--text-primary); }
+  /* C: the "show in preview" control on program rows */
+  .fshow { width: 20px; height: 20px; border: none; background: none; border-radius: 4px; padding: 0; display: grid; place-items: center; color: var(--text-tertiary); visibility: hidden; flex: none; cursor: pointer; }
+  .fshow svg { width: 14px; height: 14px; }
+  .frow:hover .fshow, .frow.hov .fshow, .fshow.on, .board .fshow { visibility: visible; }
+  .frow.hov .fshow { color: var(--text-secondary); background: var(--active-bg); }
+  .fshow.on { color: var(--secondary-accent); }
+  .board .fshow:not(.on) { opacity: .7; }
+  .sdot { width: 9px; height: 9px; border-radius: 50%; border: 1.5px solid currentColor; }
+  .fshow.on .sdot { background: currentColor; }
+
+  /* Editor (code-editor-pane + CodeMirror) */
+  .ed { position: relative; min-width: 0; display: flex; flex-direction: column; background: var(--cm-host-bg); border-right: 1px solid var(--border-color); }
+  .cm { position: relative; flex: 1; overflow: hidden; font-family: var(--font-mono); font-weight: 500; font-size: 14px; line-height: 20px; padding: 4px 0; color: var(--cm-text); }
+  .cm::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 27px; background: var(--cm-gutter-bg); border-right: 1px solid var(--cm-gutter-border); }
+  .cm-ln { display: flex; position: relative; }
+  .cm-ln .gn { width: 27px; flex: none; text-align: right; padding: 0 4px 0 3px; color: var(--cm-gutter-fg); position: relative; }
+  .cm-ln .lt { flex: 1; padding: 0 2px 0 6px; white-space: pre; }
+  .cm-ln.act .lt { background: var(--cm-active); }
+  .cm-ln.act .gn { background: var(--cm-active-gutter); }
+  .cm-ln.chg .gn { box-shadow: inset -3px 0 0 var(--secondary-accent); }
+  .t-kw { color: var(--cm-kw); } .t-num { color: var(--cm-num); } .t-str { color: var(--cm-str); } .t-com { color: var(--cm-com); }
+  .t-tpl { color: var(--cm-tpl); } .t-id { color: var(--cm-id); } .t-op { color: var(--cm-op); } .t-pun { color: var(--cm-pun); }
+
+  /* Editor tabs: no .pathogen, no badges; a quiet folder hint when two open tabs share a name */
+  .tabs { display: flex; align-items: stretch; height: 34px; flex: none; background: var(--tabs-bg); border-bottom: 1px solid var(--border-color); }
+  .tab { display: flex; align-items: center; gap: 6px; padding: 0 8px 0 12px; font-family: var(--font-mono); font-size: 12.5px; font-weight: 500; color: var(--text-secondary); border-right: 1px solid var(--border-color); cursor: pointer; white-space: nowrap; }
+  .tab .fic { width: 13px; height: 13px; display: grid; color: var(--text-secondary); }
+  .tab.lib .fic { color: var(--secondary-accent); }
+  .tab .fic svg { width: 13px; height: 13px; }
+  .tab.sel { background: var(--cm-host-bg); color: var(--text-primary); box-shadow: inset 0 2px 0 var(--secondary-accent); margin-bottom: -1px; font-weight: 600; }
+  .tab .x { color: var(--text-tertiary); width: 16px; text-align: center; font-size: 14px; }
+  .hint { color: var(--text-tertiary); font-weight: 400; }
+  .tab-add { width: 34px; display: grid; place-items: center; color: var(--text-secondary); border: none; background: none; padding: 0; }
+  .tab-add svg { width: 16px; height: 16px; }
+
+  /* Preview (svg-preview-pane). Chrome sits inside the box so a strip above or below it has room. */
+  .pv { position: relative; background: var(--bg-primary); padding: 20px 24px; display: flex; flex-direction: column; min-width: 0; min-height: 0; }
+  .pv.pv-roll { padding-bottom: 12px; }
+  .pv-box { position: relative; flex: 1; min-height: 0; border-radius: 12px; overflow: hidden; box-shadow: var(--shadow-lg); background: var(--mock-canvas); }
+  .pv-canvas { position: absolute; inset: 52px 28px 56px; }
+  .pv-canvas svg { width: 100%; height: 100%; display: block; filter: drop-shadow(0 1px 3px rgba(0,0,0,.14)); }
+  /* <text> in a drawing: the browser's default serif, as the CLI's --png renders it */
+  .pv-canvas svg text, .mini-img svg text, .minimap svg text { font-family: 'Times New Roman', Times, serif; }
+  .pv-canvas.z { inset: 0; }
+  .pv-canvas.z svg { filter: none; }
+  .pv-box.stale .pv-canvas { opacity: .45; filter: grayscale(.35); }
+  .pv-status { position: absolute; left: 50%; bottom: 46px; transform: translateX(-50%); z-index: 14; display: flex; flex-direction: column; align-items: center; gap: 6px; pointer-events: none; }
+  .stale-badge { color: var(--text-primary); background: var(--bg-elevated); border: 1px solid var(--border-color); border-radius: 8px; box-shadow: var(--shadow-sm); padding: 5px 12px; font-size: 12px; font-weight: 500; white-space: nowrap; }
+  .pv-label { display: inline-block; font-size: 11.5px; line-height: 18px; color: var(--text-secondary); background: color-mix(in srgb, var(--bg-elevated) 88%, transparent); border: 1px solid var(--border-subtle); border-radius: 999px; padding: 3px 11px 3px 9px; white-space: nowrap; }
+  .pv-label svg { width: 13px; height: 13px; color: var(--text-tertiary); vertical-align: -2px; margin-right: 5px; }
+  .pv-label code { font-size: 12px; color: var(--text-primary); font-weight: 600; }
+  .pv-label a { pointer-events: auto; color: var(--secondary-accent-text); font-weight: 600; text-decoration: underline; text-underline-offset: 2px; cursor: pointer; }
+  .minimap { position: absolute; top: 12px; left: 12px; width: 120px; height: 120px; background: var(--bg-elevated); border: 1px solid var(--border-color); border-radius: 12px; box-shadow: var(--shadow-lg); overflow: hidden; z-index: 10; padding: 6px; }
+  .minimap svg { width: 100%; height: 100%; display: block; }
+  .minimap .vp { position: absolute; inset: 0; border: 1px solid var(--accent-color); background: var(--accent-subtle); border-radius: 11px; }
+  .r32 { width: 32px; height: 32px; padding: 0; display: grid; place-items: center; border: 1px solid var(--border-color); border-radius: 8px; background: var(--bg-elevated); color: var(--text-secondary); box-shadow: var(--shadow-md); cursor: pointer; }
+  .r32 svg { width: 16px; height: 16px; }
+  .pv-fs { position: absolute; top: 12px; left: 140px; z-index: 10; }
+  .pv-fs.alone { left: 12px; }
+  .chrome-r { position: absolute; top: 12px; right: 12px; display: flex; flex-direction: column; gap: 8px; z-index: 10; }
+  .zoom { position: absolute; left: 50%; bottom: 10px; transform: translateX(-50%); display: flex; align-items: center; gap: 14px; padding: 5px 16px; border-radius: 999px; background: var(--bg-elevated); border: 1px solid var(--border-color); box-shadow: var(--shadow-sm); font-size: 12px; color: var(--text-secondary); z-index: 10; }
+  .zoom i { width: 1px; height: 14px; background: var(--border-color); }
+  .zoom .pct { font-family: var(--font-mono); font-size: 10.5px; }
+  .star-i { display: inline-grid; place-items: center; width: 11px; height: 11px; color: var(--text-tertiary); flex: none; }
+  .star-i svg { width: 11px; height: 11px; }
+  .udot { width: 6px; height: 6px; border-radius: 50%; background: var(--secondary-accent); flex: none; }
+
+  /* A: program tabs in the preview. Pills, so they don't read as a second row of editor tabs. */
+  .ptabs { display: flex; gap: 6px; margin: -6px 0 12px; flex: none; }
+  .ptab { display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 11px; border-radius: 999px; border: 1px solid var(--border-color); background: var(--bg-tertiary); color: var(--text-secondary); font-family: var(--font-mono); font-size: 12px; font-weight: 500; cursor: pointer; white-space: nowrap; }
+  .ptab.on { background: var(--bg-elevated); color: var(--text-primary); border-color: var(--border-strong); box-shadow: var(--shadow-sm); font-weight: 600; }
+
+  /* B: the Programs strip, docked under the preview, in place of the minimap */
+  .roll { flex: none; margin-top: 10px; }
+  .roll-head { display: flex; align-items: center; gap: 6px; height: 20px; font-size: 10.5px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--text-tertiary); }
+  .roll-head .cnt { font-family: var(--font-mono); letter-spacing: 0; font-weight: 500; }
+  .roll-head .sp { flex: 1; }
+  .roll-head .ibtn { width: 20px; height: 20px; color: var(--text-tertiary); }
+  .roll-head .ibtn svg { width: 14px; height: 14px; }
+  .roll-row { display: flex; gap: 10px; margin-top: 4px; }
+  .mini { position: relative; width: 104px; padding: 0; border: none; background: none; cursor: pointer; text-align: left; flex: none; }
+  .mini-img { position: relative; display: block; height: 62px; padding: 5px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--mock-canvas); transition: transform .1s; }
+  .mini-img svg { width: 100%; height: 100%; display: block; filter: drop-shadow(0 1px 1px rgba(0,0,0,.12)); }
+  .mini:hover .mini-img, .mini.hov .mini-img { transform: translateY(-2px); border-color: var(--border-strong); }
+  .mini.on .mini-img { border-color: var(--secondary-accent); box-shadow: 0 0 0 1px var(--secondary-accent); }
+  .mini.upd .mini-img svg, .mini.err .mini-img svg { opacity: .5; }
+  .mini.err .mini-img svg { filter: grayscale(.6); }
+  .mini-l { display: flex; gap: 5px; align-items: center; margin-top: 5px; font-family: var(--font-mono); font-size: 11.5px; color: var(--text-secondary); white-space: nowrap; overflow: hidden; }
+  .mini.on .mini-l { color: var(--text-primary); font-weight: 600; }
+  .spin { position: absolute; top: 6px; right: 6px; width: 14px; height: 14px; border-radius: 50%; border: 2px solid var(--border-strong); border-top-color: var(--secondary-accent); background: var(--bg-elevated); animation: spin .9s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .mbad { position: absolute; top: 5px; right: 5px; width: 16px; height: 16px; border-radius: 50%; background: var(--error-color); color: #fff; font-size: 11px; font-weight: 700; display: grid; place-items: center; box-shadow: 0 0 0 2px var(--bg-elevated); font-family: var(--font-sans); }
+  .mtip { position: absolute; bottom: calc(100% + 8px); left: 0; width: 310px; z-index: 30; background: #1c1722; color: #f6e9da; font-size: 12px; line-height: 1.45; padding: 8px 10px; border-radius: 6px; box-shadow: var(--shadow-lg); white-space: normal; font-family: var(--font-body); }
+  .mtip.r { left: auto; right: 0; }
+  .mtip code { font-size: 11.5px; white-space: nowrap; }
+  .mtip .mt-h { color: #b5a8c4; font-size: 11px; margin-top: 4px; display: block; }
+  [data-theme='dark'] .mtip { background: #f6e9da; color: #1c1722; }
+  [data-theme='dark'] .mtip .mt-h { color: #5a4f6a; }
+  .roll.collapsed .roll-head { height: 30px; }
+  .rchip { display: inline-flex; align-items: center; gap: 5px; height: 24px; padding: 0 9px; border-radius: 999px; border: 1px solid var(--border-color); background: transparent; color: var(--text-secondary); font-family: var(--font-mono); font-size: 11.5px; font-weight: 500; letter-spacing: 0; text-transform: none; cursor: pointer; }
+  .rchip.on { background: var(--bg-elevated); color: var(--text-primary); border-color: var(--secondary-accent); font-weight: 600; }
+  .rchip.err { border-color: var(--error-border); }
+
+  /* Tooltips (chip-tip look from v1) */
+  .chip-tip { position: absolute; z-index: 35; background: #1c1722; color: #f6e9da; font-size: 12px; padding: 6px 9px; border-radius: 6px; white-space: nowrap; box-shadow: var(--shadow-lg); font-family: var(--font-body); }
+  [data-theme='dark'] .chip-tip { background: #f6e9da; color: #1c1722; }
+
+  /* Footer (playground-footer) */
+  .foot { display: flex; align-items: center; gap: 16px; height: 52px; padding: 0 16px; background: var(--bg-secondary); border-top: 1px solid var(--border-color); }
+  .foot .g { display: flex; align-items: center; gap: 6px; }
+  .foot label { font-size: 12px; font-weight: 500; color: var(--text-secondary); text-transform: uppercase; letter-spacing: .03em; }
+  .foot .vb { padding: 6px 8px; border-radius: 8px; font-family: var(--font-mono); font-size: 13px; color: var(--text-secondary); background: var(--bg-tertiary); white-space: nowrap; }
+  .foot .vb small { font-family: var(--font-body); color: var(--text-tertiary); font-size: 11.5px; margin-left: 4px; }
+  .foot .sw { width: 20px; height: 20px; border-radius: 50%; border: 1px solid var(--border-strong); background: #fff; flex: none; }
+  .foot .sw.grey { background: #c9c9c9; }
+  .foot .cb { width: 16px; height: 16px; border: 1.5px solid var(--text-tertiary); border-radius: 3px; flex: none; }
+  .foot .selc { display: inline-flex; align-items: center; gap: 10px; padding: 6px 8px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--bg-tertiary); font-family: var(--font-mono); font-size: 13px; font-weight: 500; }
+  .foot .selc svg { width: 10px; height: 10px; color: var(--text-secondary); }
+  .foot .sepv { width: 1px; height: 24px; background: var(--border-color); flex: none; }
+  .foot .sp { flex: 1; }
+  .foot .docs { padding: 6px 16px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--bg-tertiary); font-size: 13px; font-weight: 500; color: var(--text-primary); }
+
+  /* Error panel (shared/error-panel.ts), over the editor column, never the tree */
+  .errp { position: absolute; bottom: 52px; z-index: 20; background: var(--error-bg); color: var(--error-text); padding: 12px 20px; font-family: var(--font-mono); font-size: 14px; line-height: 1.4; border: 1px solid var(--error-border); border-radius: 8px; box-shadow: var(--shadow-md); }
+  .errp .content { white-space: pre-wrap; word-break: break-word; max-height: calc(1.4em * 7); overflow: hidden; padding-right: 120px; }
+  .errp .dbg { position: absolute; bottom: 12px; right: 20px; padding: 4px 10px; border: 1px solid var(--error-text); border-radius: 4px; background: transparent; color: var(--error-text); font-family: var(--font-sans); font-size: 12px; font-weight: 500; }
+  .errp .who { display: block; font-family: var(--font-sans); font-size: 11.5px; font-weight: 600; margin-bottom: 4px; opacity: .85; }
+  .errp a { color: inherit; text-decoration: underline; text-underline-offset: 2px; font-weight: 600; cursor: pointer; }
+
+  /* Menus (kebab-menu look from app-breadcrumb.css) */
+  .dd { position: absolute; z-index: 40; min-width: 230px; background: var(--bg-elevated); border: 1px solid var(--border-color); border-radius: 12px; box-shadow: var(--shadow-lg); padding: 6px; overflow: hidden; }
+  .dd::before { content: ''; position: absolute; inset: 0; background: radial-gradient(380px 180px at 100% 0%, var(--secondary-accent-subtle), transparent 60%); pointer-events: none; }
+  .dd > * { position: relative; }
+  .dd button { display: grid; grid-template-columns: 20px 1fr auto; align-items: center; gap: 12px; width: 100%; padding: 8px 10px; border: none; background: transparent; text-align: left; font-size: 13px; font-weight: 500; color: var(--text-primary); border-radius: 6px; cursor: pointer; }
+  .dd button:hover, .dd button.hl { background: var(--bg-tertiary); }
+  .dd button svg { width: 16px; height: 16px; color: var(--text-secondary); }
+  .dd button small { display: block; color: var(--text-tertiary); font-weight: 400; font-size: 11.5px; margin-top: 1px; }
+  .dd .div { height: 1px; background: var(--border-subtle); margin: 4px 6px; }
+  .dd .danger, .dd .danger svg { color: var(--error-color); }
+  .dd .static { position: static; }
+
+  /* Boards: side-by-side explorations inside one window */
+  .board { display: grid; gap: 16px; padding: 20px; }
+  .bcard { background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 12px; overflow: hidden; display: flex; flex-direction: column; }
+  .bcard .files { height: auto; border-right: none; border-bottom: 1px solid var(--border-color); }
+  .bcard .files-list { flex: none; }
+  .bcap { padding: 12px 14px 14px; font-size: 13px; color: var(--text-secondary); line-height: 1.45; }
+  .bcap h4 { margin: 0 0 4px; font-size: 14px; color: var(--text-primary); font-weight: 600; }
+  .bcap h4 .tag { margin-left: 6px; vertical-align: 1px; }
+  .bcap b { color: var(--text-primary); font-weight: 600; }
+  .bmenu { padding: 8px 10px 4px; }
+  .bmenu .dd { position: static; min-width: 0; box-shadow: var(--shadow-md); }
+  .crop { overflow: hidden; border-bottom: 1px solid var(--border-color); background: var(--mock-page); }
+  /* Crops: the tree and the preview only (no editor, crumb or footer), at about half size */
+  .crop .window { zoom: .512; width: 760px; border-radius: 0; box-shadow: none; border: none; }
+  .ws.ws-crop { grid-template-columns: 248px minmax(0,1fr); }
+  .crop .window * { animation: none !important; }
+
+  /* Comparison table */
+  .cmp { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 13px; }
+  .cmp th, .cmp td { text-align: left; padding: 6px 10px; border-bottom: 1px solid var(--border-color); vertical-align: top; }
+  .cmp th { color: var(--text-primary); font-weight: 600; }
+  .cmp td:first-child { color: var(--text-primary); }
+  .cmp .y { color: var(--success-color); font-weight: 600; }
+  .cmp .n { color: var(--error-text); font-weight: 600; }
+  [data-theme='dark'] .cmp .n { color: #f87171; }
+</style>
+</head>
+<body>
+
+<div class="harness">
+  <h1>Multi-file workspaces — mockup v2</h1>
+  <nav id="screens">
+    <button data-s="base" aria-pressed="true">0 · Tree + tabs</button>
+    <button data-s="a-tabs">A · Preview tabs</button>
+    <button data-s="b-roll">B · Programs strip</button>
+    <button data-s="c-tree">C · Choose in the tree</button>
+    <button data-s="d-demos">D · Demos as files</button>
+    <button data-s="e-primary">E · Primary</button>
+    <button data-s="compare">Compare</button>
+  </nav>
+  <span class="spacer"></span>
+  <button class="tgl" id="theme">Toggle light / dark</button>
+</div>
+
+<!-- ============ 0. BASE ============ -->
+<section class="screen active" id="s-base">
+  <div class="notes">
+    <h2>0 · The base: a tree and tabs <span class="tag rec">decided in v1 review</span></h2>
+    <div class="cols">
+      <ul>
+        <li>Every screen in v2 starts from this layout. The tree lists the workspace; the tabs hold the files you've opened.</li>
+        <li><b>Tabs</b> drop <code>.pathogen</code> and the badges. Other file types, when they come, show their extension (<code>cities.csv</code>).</li>
+        <li><b>Same name in two folders:</b> both tabs get a quiet folder hint, <code>gears · parts</code> and <code>gears · demos</code>, only while both are open. This is VS Code's rule (state 2).</li>
+        <li><b>Assumption:</b> the tree and the breadcrumb drop <code>.pathogen</code> too, for the same reason.</li>
+      </ul>
+      <ul>
+        <li><b>Telling libraries from programs</b> without badges: state 3 compares three ways. Recommended: two icons, a page for programs and a box for libraries.</li>
+        <li><b>What the preview shows: a rule change.</b> <span class="tag ask">needs your sign-off</span> The preview shows the program you open. While you edit a library, it keeps the last program you looked at, if that program imports the file (directly, or through another library). If it doesn't, the preview moves to one that does. This replaces v1's "always main" (Q3 b) and decision 16's pin. Screens A–C are three ways to pick a different program by hand.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="statebar" id="st-base">
+    <span class="lbl">State</span>
+    <button data-st="main" aria-pressed="true">Editing main</button>
+    <button data-st="same-name">Same name, two folders</button>
+    <button data-st="icons">Telling files apart</button>
+  </div>
+  <div class="statedesc" id="sd-base"></div>
+  <div class="frame"><div class="window" id="w-base"></div></div>
+</section>
+
+<!-- ============ A. PREVIEW TABS ============ -->
+<section class="screen" id="s-a-tabs">
+  <div class="notes">
+    <h2>A · Tabs in the preview, one per program <span class="tag alt">exploration</span></h2>
+    <div class="cols">
+      <ul>
+        <li><b>Answers:</b> how you switch between programs, and which programs an edit to a library affects.</li>
+        <li>One pill per program: the primary first, with a small star, then the others by path. Click one to show that program. The file in the editor doesn't change.</li>
+        <li><b>Editing a library:</b> the preview keeps the last program you looked at. A dot marks each program that imports the file you're editing (state 3: <code>kit</code> is imported by main and try-sizes, not by the gears demo).</li>
+        <li>The pills look unlike the editor tabs on purpose, so two rows of tabs don't read as one thing.</li>
+      </ul>
+      <ul>
+        <li><b>Pros:</b> familiar; one click; costs one 28px row; keeps today's minimap as the navigator.</li>
+        <li><b>Cons:</b> names only. You can't see the other drawings, or that one of them broke, without clicking. Six or more programs overflow the pane (it would need a "more" menu).</li>
+        <li><b>Open:</b> should a program with an error get a red mark on its pill? (Probably yes, as in B.)</li>
+      </ul>
+    </div>
+  </div>
+  <div class="statebar" id="st-a-tabs">
+    <span class="lbl">State</span>
+    <button data-st="main" aria-pressed="true">Showing main</button>
+    <button data-st="other">Click another tab</button>
+    <button data-st="library">Editing a library</button>
+  </div>
+  <div class="statedesc" id="sd-a-tabs"></div>
+  <div class="frame"><div class="window" id="w-a-tabs"></div></div>
+</section>
+
+<!-- ============ B. PROGRAMS STRIP ============ -->
+<section class="screen" id="s-b-roll">
+  <div class="notes">
+    <h2>B · A strip of live miniatures in place of the minimap <span class="tag rec">recommended</span></h2>
+    <div class="cols">
+      <ul>
+        <li><b>Answers:</b> seeing every program at once, switching with one click, and where the minimap's job goes.</li>
+        <li>A <b>Programs</b> strip is docked under the preview: one live miniature per program, the primary first with a small star. Click a miniature to show it large. The file in the editor doesn't change.</li>
+        <li><b>The navigator:</b> when you zoom in, the shown program's miniature carries the viewport rectangle (state 3). Drag it to pan; click elsewhere on it to jump there, as today's minimap does. At Fit there is no rectangle. Clicking another miniature switches programs, and the view goes back to Fit.</li>
+        <li><b>Where it sits:</b> along the bottom. Drawings are usually wider than tall, and with the tree open the preview is about 470px wide, so height is the cheaper side. Along the top it would fight the fullscreen button and the stale badge. Down one side it would take about 115px of those 470.</li>
+        <li><b>Updating</b> (state 4): a program that imports the file you're editing keeps its last picture, dimmed, with a small spinner, until it recompiles.</li>
+        <li><b>Errors</b> (states 5, 6): a red mark on the miniature, and the error dot on the files in the tree. Hover says what went wrong; a click shows the program large, stale, with the error panel over the editor.</li>
+        <li><b>Collapsed</b> (state 8): one line of names. It still switches programs, but has no pictures and no navigator; the zoom pill and dragging still work.</li>
+      </ul>
+      <ul>
+        <li><b>Not the snapshot strip.</b> The snapshots page has its own film strip: frozen past images, by date, on another page. The fullscreen tray (bottom-right) shows this visit's snapshots. The Programs strip is live, captioned with file names, and lives only in the workspace view. Its name says "Programs", not "film".</li>
+        <li><b>Fullscreen:</b> the strip starts collapsed at the bottom-left. The zoom pill stays at the centre and the snapshot tray at the bottom-right, so they don't overlap.</li>
+        <li><b>What draws:</b> you wrote "files with a <code>define Viewbox(...)</code> declaration". Recommended: <b>every program draws</b>, meaning every file without <code>module;</code>. A program without <code>define ViewBox</code> still draws, at the default <code>0 0 200 200</code> (state 7; the footer says "default"). That's the compiler's own test, so a quick try with no ViewBox still shows up. "Only programs that define a ViewBox" would hide drawings that work in the CLI and VS Code.</li>
+        <li><b>Performance:</b> every miniature is a compile. Only the shown program compiles on each keystroke. The others recompile after a pause (about a second with no typing), only when a file they import changed, one at a time in the worker, and are cancelled if you type again. A miniature is drawn from its program's last result, scaled down as the minimap is today, so it costs no extra compile. Off-screen miniatures wait until they're scrolled into view.</li>
+        <li><b>Open:</b> past four programs the strip scrolls sideways. Should a double-click on a miniature also open its file?</li>
+      </ul>
+    </div>
+  </div>
+  <div class="statebar" id="st-b-roll">
+    <span class="lbl">State</span>
+    <button data-st="main" aria-pressed="true">Showing main</button>
+    <button data-st="other">Click a miniature</button>
+    <button data-st="zoomed">Zoomed in</button>
+    <button data-st="updating">Editing a library</button>
+    <button data-st="error">Another program broke</button>
+    <button data-st="error-shown">Its error, shown</button>
+    <button data-st="no-viewbox">No define ViewBox</button>
+    <button data-st="collapsed">Collapsed</button>
+  </div>
+  <div class="statedesc" id="sd-b-roll"></div>
+  <div class="frame"><div class="window" id="w-b-roll"></div></div>
+</section>
+
+<!-- ============ C. CHOOSE IN THE TREE ============ -->
+<section class="screen" id="s-c-tree">
+  <div class="notes">
+    <h2>C · Choosing in the tree <span class="tag alt">exploration</span></h2>
+    <div class="cols">
+      <ul>
+        <li><b>Answers:</b> how to send a program to the preview from the tree, without a picture strip.</li>
+        <li><b>Recommended control: a dot.</b> It is filled on the program that's shown. Hovering another program's row shows an empty ring, with "Show in preview" as its tooltip. The row menu has "Show in preview" too, in words.</li>
+        <li><b>Why a dot.</b> Exactly one program is shown at a time, and a radio-like dot says "one of these". A pin says "stay put", which is no longer the job: the preview already follows you. An eye already means hide/show in the layers panel, and an eye says that several can be on at once.</li>
+        <li>The dot appears only on programs, so it is also a second way to tell them from libraries.</li>
+      </ul>
+      <ul>
+        <li><b>Pros:</b> takes no space; it lives where the files already are; it works for any number of programs.</li>
+        <li><b>Cons:</b> no pictures. It's hidden when the tree is closed, and on narrow screens (where the tree is a slide-over). A dot without a word needs its tooltip once.</li>
+        <li><b>Open:</b> opening a program already shows it. So the dot is only for "show without opening". Is that worth a control on every row, or is the row menu enough?</li>
+      </ul>
+    </div>
+  </div>
+  <div class="statebar" id="st-c-tree">
+    <span class="lbl">State</span>
+    <button data-st="dot" aria-pressed="true">The dot</button>
+    <button data-st="menu">Row menu</button>
+    <button data-st="metaphors">Pin, eye, dot, menu</button>
+  </div>
+  <div class="statedesc" id="sd-c-tree"></div>
+  <div class="frame"><div class="window" id="w-c-tree"></div></div>
+</section>
+
+<!-- ============ D. DEMOS AS FILES ============ -->
+<section class="screen" id="s-d-demos">
+  <div class="notes">
+    <h2>D · Demos as files <span class="tag rec">recommended: any program can be a demo</span></h2>
+    <div class="cols">
+      <ul>
+        <li><b>Answers:</b> how a library gets a picture now that a library never draws.</li>
+        <li>A demo is just a program that imports the library. While you edit a library, the preview shows the last program you looked at that imports it; if none, the first program that does.</li>
+        <li>State 1: you open <code>parts/labels</code>. main doesn't import it, so the preview moves to the gears demo, and a label says why.</li>
+        <li><b>Conventions</b> (state 2): a <code>demos/</code> folder, a <code>gears.demo</code> name, or none. <b>Recommended: none the tools depend on.</b> The import is what ties a demo to its library. A <code>demos/</code> folder is a good habit, and "New demo" in a library's row menu makes it free: it creates <code>demos/&lt;name&gt;</code> with the import filled in (states 3, 4).</li>
+        <li>A <code>.demo</code> name would be a new kind of file name, and it breaks "no extension shown means .pathogen".</li>
+      </ul>
+      <ul>
+        <li><b>The <code>demo { }</code> block</b> (delayed) may not be needed. A demo file is a program like any other: you can open it, export it, or make it the primary. A block inside the library would be a second way to say the same thing.</li>
+        <li><b>Found along the way, not fixed:</b> calling a fn on its own line inside a TextLayer's <code>apply</code> block fails with "Path commands cannot be used inside a TextLayer apply block", even when the fn only draws text. This happens in one file too. So <code>parts/labels</code>' <code>caption()</code> opens the <code>'captions'</code> layer itself, and the program that calls it has to define that layer.</li>
+        <li><b>Open:</b> should "New demo" add <code>define ViewBox</code>? It doesn't here: the demo draws at the default view box.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="statebar" id="st-d-demos">
+    <span class="lbl">State</span>
+    <button data-st="labels" aria-pressed="true">Editing a library</button>
+    <button data-st="conventions">Naming conventions</button>
+    <button data-st="unused">Nothing imports it yet</button>
+    <button data-st="new-demo">After New demo</button>
+  </div>
+  <div class="statedesc" id="sd-d-demos"></div>
+  <div class="frame"><div class="window" id="w-d-demos"></div></div>
+</section>
+
+<!-- ============ E. PRIMARY ============ -->
+<section class="screen" id="s-e-primary">
+  <div class="notes">
+    <h2>E · The primary program <span class="tag rec">recommended</span></h2>
+    <div class="cols">
+      <ul>
+        <li>One program is the <b>primary</b>. Thumbnails, export, snapshots and publishing use it, as they use main today. <code>pathogen.json</code>'s <code>main</code> stores it, so the CLI's folder mode agrees.</li>
+        <li><b>Chosen</b> with "Set as primary" in a program's row menu, or in a miniature's menu (right-click) in the Programs strip.</li>
+        <li><b>Shown</b> by a small star: in the strip (or the preview tabs), and, if you like, after its name in the tree. No pill, no badge.</li>
+      </ul>
+      <ul>
+        <li>A new workspace's first program is the primary. Deleting the primary asks which program takes over.</li>
+        <li><b>Open:</b> Export and Snapshot while another program is shown. They use the primary; should their buttons say so ("Snapshot main"), or offer the shown program?</li>
+        <li><b>Open:</b> one word. The UI says "primary", <code>pathogen.json</code> says <code>main</code>. Keep both, or rename the key?</li>
+      </ul>
+    </div>
+  </div>
+  <div class="statebar" id="st-e-primary">
+    <span class="lbl">State</span>
+    <button data-st="set" aria-pressed="true">Set as primary</button>
+  </div>
+  <div class="statedesc" id="sd-e-primary"></div>
+  <div class="frame"><div class="window" id="w-e-primary"></div></div>
+</section>
+
+<!-- ============ COMPARE ============ -->
+<section class="screen" id="s-compare">
+  <div class="notes">
+    <h2>Compare A, B and C</h2>
+    <table class="cmp">
+      <thead><tr><th></th><th>A · Preview tabs</th><th>B · Programs strip</th><th>C · Dot in the tree</th></tr></thead>
+      <tbody>
+        <tr><td>See every program at once</td><td class="n">Names only</td><td class="y">Live pictures</td><td class="n">Names only</td></tr>
+        <tr><td>Switch in one click</td><td class="y">Yes</td><td class="y">Yes</td><td class="y">Yes, with the tree open</td></tr>
+        <tr><td>See that another program broke</td><td>With a mark</td><td class="y">Mark on its picture</td><td>Tree's error dot</td></tr>
+        <tr><td>Shows which programs use the file you edit</td><td>Dot on the pill</td><td class="y">Dot, plus the spinner while they redraw</td><td class="n">No</td></tr>
+        <tr><td>Navigator when zoomed in</td><td>Today's minimap</td><td class="y">The shown miniature</td><td>Today's minimap</td></tr>
+        <tr><td>Space it takes</td><td>One 28px row</td><td>About 110px (30px collapsed)</td><td class="y">None</td></tr>
+        <tr><td>Many programs</td><td>Overflows at about six</td><td>Scrolls past four</td><td class="y">Any number</td></tr>
+        <tr><td>Extra compiles</td><td class="y">None</td><td>One per program, after a pause</td><td class="y">None</td></tr>
+      </tbody>
+    </table>
+    <h3>Recommendation</h3>
+    <ul>
+      <li><b>B for seeing and switching</b>, with the preview following the program you open (screen 0). The strip also takes over the minimap's job.</li>
+      <li><b>From C, keep only "Show in preview" in the row menu.</b> The dot is a good fallback if B is dropped, or for when the strip is collapsed.</li>
+      <li><b>D:</b> any program can be a demo; "New demo" makes <code>demos/&lt;name&gt;</code>. The <code>demo { }</code> block can stay delayed, maybe for good.</li>
+      <li><b>E:</b> a small star on the primary; "Set as primary" in the menus.</li>
+      <li><b>Every program draws</b>, with or without <code>define ViewBox</code>.</li>
+    </ul>
+  </div>
+  <div class="statebar" id="st-compare">
+    <span class="lbl">State</span>
+    <button data-st="all" aria-pressed="true">A, B, C side by side</button>
+  </div>
+  <div class="statedesc" id="sd-compare"></div>
+  <div class="frame"><div class="window" id="w-compare"></div></div>
+</section>
+
+<script>
+/* ---------- the example workspace: real sources + CLI-compiled SVGs, inlined by build.ts ---------- */
+const DATA = __DATA__;
+const SRC = DATA.src, SVG = DATA.svg;
+
+/* ---------- icons (24-unit stroke, like the preview chrome) ---------- */
+const sv = (d, extra = '') => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"${extra}>${d}</svg>`;
+const I = {
+  camera: sv('<path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/>'),
+  layers: sv('<path d="M12 2 2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>'),
+  expand: sv('<path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/>'),
+  kebab: `<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="12" cy="5" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="12" cy="19" r="1.8"/></svg>`,
+  plus: sv('<path d="M12 5v14M5 12h14"/>'),
+  chevD: sv('<path d="m6 9 6 6 6-6"/>'),
+  chevU: sv('<path d="m6 15 6-6 6 6"/>'),
+  prog: sv('<path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6"/><path d="M8 16c1.4-2.6 2.6-2.6 4 0s2.6 2.6 4 0"/>'),
+  lib: sv('<path d="M21 8 12 3 3 8v8l9 5 9-5z"/><path d="m3 8 9 5 9-5M12 13v8"/>'),
+  folder: sv('<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>'),
+  filePlus: sv('<path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6M12 12v6M9 15h6"/>'),
+  pencil: sv('<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/>'),
+  copy: sv('<rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>'),
+  trash: sv('<path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/>'),
+  star: sv('<path d="m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z"/>'),
+  pin: sv('<path d="M12 17v5M9 3h6l-1 7 3 3v2H7v-2l3-3z"/>'),
+  eye: sv('<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>'),
+  radio: sv('<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3" fill="currentColor"/>'),
+  sun: sv('<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>', ' class="sun"'),
+  moon: sv('<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/>', ' class="moon"'),
+};
+const STAR = `<span class="star-i" title="Primary">${I.star}</span>`;
+
+/* ---------- the workspace model, derived from the sources (imports are read from the import lines) ---------- */
+const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+const baseName = p => p.split('/').pop();
+const folderOf = p => p.includes('/') ? p.slice(0, p.lastIndexOf('/')) : '';
+const isLib = p => !!SRC[p] && SRC[p].includes('module;');
+function resolveImport(from, spec) {
+  const parts = from.split('/').slice(0, -1);
+  for (const seg of spec.replace(/\.pathogen$/, '').split('/')) {
+    if (seg === '.' || seg === '') continue;
+    if (seg === '..') parts.pop(); else parts.push(seg);
+  }
+  return parts.join('/');
+}
+const importsOf = p => (SRC[p] || []).map(l => /^import .* from "([^"]+)"/.exec(l)).filter(Boolean).map(m => resolveImport(p, m[1]));
+/* direct or through another library */
+function uses(p, target, seen = new Set()) {
+  if (seen.has(p)) return false;
+  seen.add(p);
+  return importsOf(p).some(q => q === target || uses(q, target, seen));
+}
+const hasViewBox = p => (SRC[p] || []).some(l => l.startsWith('define ViewBox'));
+const PROG_ART = { 'main': 'main', 'demos/gears': 'demo', 'try-sizes': 'try', 'demos/springs': 'springs' };
+const PROGS = ['main', 'demos/gears', 'try-sizes'];
+const PROGS_SPRINGS = ['main', 'demos/gears', 'demos/springs', 'try-sizes'];
+
+/* A name gets a quiet folder hint when another name in the same set matches it (VS Code's rule). */
+function label(p, set) {
+  const clash = set.some(q => q !== p && baseName(q) === baseName(p));
+  return `${esc(baseName(p))}${clash ? ` <span class="hint">· ${esc(folderOf(p) || '/')}</span>` : ''}`;
+}
+
+/* ---------- drawings: the CLI's SVG, with an optional crop (zoom) and viewport rectangle (navigator) ---------- */
+function art(key, o = {}) {
+  let s = SVG[key].svg;
+  if (o.crop) s = s.replace(/viewBox="[^"]*"/, `viewBox="${o.crop.join(' ')}" preserveAspectRatio="xMidYMid slice"`);
+  if (o.vp) {
+    const [x, y, w, h] = o.vp;
+    s = s.replace(/<\/svg>$/, `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="2" style="fill:var(--accent-subtle);stroke:var(--accent-color);stroke-width:1.5" vector-effect="non-scaling-stroke"/></svg>`);
+  }
+  return s;
+}
+const progArt = (c, p) => (c.edited && p === 'main') ? 'mainEdited' : PROG_ART[p];
+
+/* ---------- a tiny Pathogen highlighter (tags from src/parser/highlight.ts) ---------- */
+const KW = new Set('define default ViewBox calc layer apply text tspan for in if else let const enum fn return break continue switch case where import export with as from module'.split(' '));
+function tokens(line) {
+  const out = [], re = /(\/\/.*$)|("[^"]*"|'[^']*')|(`[^`]*`)|(\d+(?:\.\d+)?)|([A-Za-z_]\w*)|(\.\.|[=+\-*/<>!?:%.])|(\s+)|(.)/g;
+  let m;
+  while ((m = re.exec(line))) {
+    const c = m[1] ? 'com' : m[2] ? 'str' : m[3] ? 'tpl' : m[4] ? 'num' : m[5] ? (KW.has(m[0]) ? 'kw' : 'id') : m[6] ? 'op' : m[7] ? '' : 'pun';
+    out.push({ t: m[0], c });
+  }
+  return out;
+}
+const lineHtml = text => tokens(text).map(tk => tk.c ? `<span class="t-${tk.c}">${esc(tk.t)}</span>` : esc(tk.t)).join('') || ' ';
+
+/* ---------- layout constants ---------- */
+const TREE_W = 248, HEAD_H = 34, ROW_H = 28, LIST_PAD = 4;
+
+/* ---------- tree data (folders first, then files, as VS Code sorts) ---------- */
+const TREES = {
+  base: [{ folder: 'demos' }, { p: 'demos/gears', d: 1 }, { folder: 'parts' }, { p: 'parts/gears', d: 1 }, { p: 'parts/kit', d: 1 }, { p: 'parts/labels', d: 1 }, { p: 'main' }, { p: 'try-sizes' }],
+  newlib: [{ folder: 'demos' }, { p: 'demos/gears', d: 1 }, { folder: 'parts' }, { p: 'parts/gears', d: 1 }, { p: 'parts/kit', d: 1 }, { p: 'parts/labels', d: 1 }, { p: 'parts/springs', d: 1 }, { p: 'main' }, { p: 'try-sizes' }],
+  newdemo: [{ folder: 'demos' }, { p: 'demos/gears', d: 1 }, { p: 'demos/springs', d: 1 }, { folder: 'parts' }, { p: 'parts/gears', d: 1 }, { p: 'parts/kit', d: 1 }, { p: 'parts/labels', d: 1 }, { p: 'parts/springs', d: 1 }, { p: 'main' }, { p: 'try-sizes' }],
+  dotDemo: [{ folder: 'parts' }, { p: 'parts/gears', d: 1 }, { p: 'parts/gears.demo', d: 1, prog: true }, { p: 'parts/kit', d: 1 }, { p: 'parts/labels', d: 1 }, { p: 'main' }, { p: 'try-sizes' }],
+  noRule: [{ folder: 'parts' }, { p: 'parts/gears', d: 1 }, { p: 'parts/kit', d: 1 }, { p: 'parts/labels', d: 1 }, { p: 'gear-sizes', prog: true }, { p: 'main' }, { p: 'try-sizes' }],
+};
+const rowIndex = (tree, p) => TREES[tree].findIndex(r => r.p === p);
+
+/* ---------- pieces ---------- */
+function topnav() {
+  const items = ['Workspaces', 'Docs', 'Explore', 'Featured', 'Blog', 'Preferences'];
+  return `<div class="topnav"><div class="brand">Pathogen <span>Studio</span><small>built on Pathogen v0.8.0</small></div>
+    <nav class="navpill">${items.map(n => `<a class="${n === 'Workspaces' ? 'on' : ''}">${n}</a>`).join('')}</nav>
+    <div class="nav-right"><button class="theme-btn" title="Theme">${I.sun}${I.moon}</button><span class="acct"><span class="avatar">RK</span>Ryan K ${I.chevD}</span></div></div>`;
+}
+function fileCrumb(p) {
+  const i = p.lastIndexOf('/');
+  return `<span class="file">${i >= 0 ? `<span class="dir">${esc(p.slice(0, i + 1))}</span>` : ''}${esc(p.slice(i + 1))}</span>`;
+}
+function crumbbar(c) {
+  const err = c.chip === 'err';
+  return `<div class="crumbbar">
+    <nav class="crumbs"><span>Workspaces</span><span class="sep">/</span><span class="cur">My Gears</span><span class="ws-id">(3-Gq8vR2mLpX_k-T4wNc)</span><span class="ws-size">(4 KB)</span><span class="sep">/</span>${fileCrumb(c.open)}</nav>
+    <div class="controls">
+      <div class="cl">
+        <span class="cstat ${err ? 'err' : 'ok'}">${err ? 'Error' : 'Ready'}</span>
+        <span class="split"><button class="btn-s" ${err ? 'disabled' : ''}>${I.camera}Snapshot</button><button class="btn-s"><span class="count">2</span> ›</button></span>
+        <span class="tbar"><button class="btn-s active" title="Show the workspace's files">Files</button><button class="btn-s">Console</button></span>
+        <button class="btn-s">Copy Code</button>
+      </div>
+      <div class="cr"><span class="save">Saved</span><button class="kebab" title="More actions">${I.kebab}</button></div>
+    </div></div>`;
+}
+function showCtl(c, p) {
+  const on = p === c.shown;
+  const tip = on ? 'Shown in the preview' : 'Show in preview';
+  if (c.show === 'dot') return `<button class="fshow ${on ? 'on' : ''}" title="${tip}"><span class="sdot"></span></button>`;
+  if (c.show === 'eye') return `<button class="fshow ${on ? 'on' : ''}" title="${tip}">${I.eye}</button>`;
+  if (c.show === 'pin') return `<button class="fshow ${on ? 'on' : ''}" title="${on ? 'Pinned to the preview' : 'Pin to the preview'}">${I.pin}</button>`;
+  return '';
+}
+function treeRows(c) {
+  const mode = c.iconMode || 'two';
+  return TREES[c.tree].map((r, i) => {
+    const pad = 8 + (r.d || 0) * 14;
+    if (r.folder) return `<div class="frow dir" style="padding-left:${pad}px"><span class="chev">${I.chevD}</span><span class="fic">${I.folder}</span><span class="fname">${r.folder}</span></div>`;
+    const lib = !r.prog && isLib(r.p);
+    const icon = mode === 'two' && lib ? I.lib : I.prog;
+    const cls = ['frow', lib ? 'lib' : 'prog', mode !== 'two' ? 'plain' : '', mode === 'color' && lib ? 'tint' : '', r.p === c.open ? 'sel' : '', c.menu && c.menu.row === i ? 'menu' : '', c.hoverRow === i ? 'hov' : ''].join(' ');
+    const dot = (c.dots || []).includes(r.p) ? '<span class="edot" title="Error"></span>' : '';
+    const star = c.treeStar && r.p === (c.primary || 'main') ? `<span class="pstar" title="Primary">${I.star}</span>` : '';
+    const show = !lib && c.show ? showCtl(c, r.p) : '';
+    return `<div class="${cls}" data-p="${r.p}" style="padding-left:${pad}px"><span class="chev"></span><span class="fic">${icon}${dot}</span><span class="fname">${esc(baseName(r.p))}</span>${star}${show}<button class="fk" title="More">${I.kebab}</button></div>`;
+  }).join('');
+}
+function filesPane(c) {
+  return `<aside class="files"><div class="files-head"><span>Files</span><span class="sp"></span><button class="ibtn" title="New file or folder">${I.plus}</button></div>
+    <div class="files-list">${treeRows(c)}</div></aside>`;
+}
+function tabStrip(c) {
+  return `<div class="tabs">${c.tabs.map(p => {
+    const lib = isLib(p);
+    return `<div class="tab ${lib ? 'lib' : ''} ${p === c.open ? 'sel' : ''}" data-tab="${p}"><span class="fic">${lib ? I.lib : I.prog}</span>${label(p, c.tabs)}<span class="x">×</span></div>`;
+  }).join('')}<button class="tab-add" title="New file">${I.plus}</button></div>`;
+}
+function editor(c) {
+  const lines = c.code ? SRC[c.code] : SRC[c.open];
+  const body = lines.map((l, i) => {
+    const n = i + 1, cls = ['cm-ln', n === c.active ? 'act' : '', (c.changed || []).includes(n) ? 'chg' : ''].join(' ');
+    return `<div class="${cls}"><span class="gn">${n}</span><span class="lt">${lineHtml(l)}</span></div>`;
+  }).join('');
+  return `<div class="ed">${tabStrip(c)}<div class="cm">${body}</div></div>`;
+}
+function programs(c) { return c.progs || PROGS; }
+function ptabs(c) {
+  const ps = programs(c);
+  return `<div class="ptabs">${ps.map(p => {
+    const u = c.usesMark && uses(p, c.open);
+    return `<button class="ptab ${p === c.shown ? 'on' : ''}" data-show="${p}" title="${p}.pathogen${u ? ` imports ${c.open}` : ''}">${u ? '<span class="udot"></span>' : ''}${label(p, ps)}${p === (c.primary || 'main') ? STAR : ''}</button>`;
+  }).join('')}</div>`;
+}
+function mini(c, p, i, ps) {
+  const on = p === c.shown, upd = (c.updating || []).includes(p), err = (c.errProgs || []).includes(p);
+  const u = c.usesMark && uses(p, c.open);
+  const vp = on && c.zoom ? c.zoom.crop : null;
+  const tip = c.miniTip && c.miniTip.p === p ? `<span class="mtip ${i >= 2 ? 'r' : ''}">${c.miniTip.html}</span>` : '';
+  return `<button class="mini ${on ? 'on' : ''} ${upd ? 'upd' : ''} ${err ? 'err' : ''} ${c.hoverMini === p ? 'hov' : ''}" data-show="${p}" title="${p}.pathogen">
+    <span class="mini-img">${art(progArt(c, p), { vp })}${upd ? '<span class="spin" title="Updating"></span>' : ''}${err ? '<span class="mbad">!</span>' : ''}</span>
+    <span class="mini-l">${u ? '<span class="udot" title="Imports the file you\'re editing"></span>' : ''}${label(p, ps)}${p === (c.primary || 'main') ? STAR : ''}</span>${tip}</button>`;
+}
+function roll(c) {
+  const ps = programs(c);
+  if (c.rollCollapsed) {
+    return `<div class="roll collapsed"><div class="roll-head"><span>Programs</span><span class="cnt">${ps.length}</span>
+      ${ps.map(p => `<button class="rchip ${p === c.shown ? 'on' : ''}" data-show="${p}">${label(p, ps)}${p === (c.primary || 'main') ? STAR : ''}</button>`).join('')}
+      <span class="sp"></span><button class="ibtn" title="Show the miniatures">${I.chevU}</button></div></div>`;
+  }
+  return `<div class="roll"><div class="roll-head"><span>Programs</span><span class="cnt">${ps.length}</span><span class="sp"></span><button class="ibtn" title="Hide the miniatures">${I.chevD}</button></div>
+    <div class="roll-row">${ps.map((p, i) => mini(c, p, i, ps)).join('')}</div></div>`;
+}
+function previewBox(c) {
+  const key = progArt(c, c.shown);
+  const canvas = c.zoom ? `<div class="pv-canvas z">${art(key, { crop: c.zoom.crop })}</div>` : `<div class="pv-canvas">${art(key)}</div>`;
+  const mm = c.pv === 'roll' ? '' : `<div class="minimap">${art(key)}<span class="vp"></span></div>`;
+  let lbl = c.pvLabel || '';
+  if (!lbl && c.pv === 'single' && c.open !== c.shown) lbl = `${I.radio}Showing <code>${esc(c.shown)}</code>`;
+  return `<div class="pv-box ${c.stale ? 'stale' : ''}">${canvas}${mm}
+    <button class="r32 pv-fs ${c.pv === 'roll' ? 'alone' : ''}" title="Fullscreen">${I.expand}</button>
+    <div class="chrome-r"><button class="r32" title="Toggle inspector">${I.layers}</button></div>
+    <div class="pv-status">${c.stale ? '<div class="stale-badge">Stale preview — fix errors to update</div>' : ''}${lbl ? `<div class="pv-label">${lbl}</div>` : ''}</div>
+    <div class="zoom"><span>−</span><span>Fit</span><span>+</span><i></i><span class="pct">${c.zoom ? c.zoom.pct : '100%'}</span></div></div>`;
+}
+function preview(c) {
+  return `<div class="pv pv-${c.pv}">${c.pv === 'tabs' ? ptabs(c) : ''}${previewBox(c)}${c.pv === 'roll' ? roll(c) : ''}</div>`;
+}
+function footer(c) {
+  const vb = SVG[progArt(c, c.shown)].vb.join(' ');
+  return `<div class="foot">
+    <div class="g"><label>viewBox</label><span class="vb">${vb}${hasViewBox(c.shown) ? '' : '<small>default</small>'}</span></div><span class="sepv"></span>
+    <div class="g"><label>BG</label><span class="sw"></span></div><span class="sepv"></span>
+    <div class="g"><label>Grid</label><span class="cb"></span><span class="sw grey"></span><span class="selc">20px ${I.chevD}</span></div><span class="sepv"></span>
+    <div class="g"><label>Precision</label><span class="selc">Off ${I.chevD}</span></div>
+    <span class="sp"></span><button class="docs">Docs</button></div>`;
+}
+function errorPanel(c) {
+  if (!c.panel) return '';
+  return `<div class="errp" style="left:${TREE_W}px;width:calc((100% - ${TREE_W}px) / 2)"><div class="content">${c.panel}</div><button class="dbg">Copy Debug Info</button></div>`;
+}
+const MENU_COMMON = `<button>${I.pencil}<span>Rename…</span></button><button>${I.copy}<span>Duplicate</span></button><div class="div"></div><button class="danger">${I.trash}<span>Delete…</span></button>`;
+function menuItems(kind, hl) {
+  if (kind === 'lib') return `<button class="${hl === 'demo' ? 'hl' : ''}">${I.filePlus}<span>New demo<small>A program in demos/ that imports this file</small></span></button><div class="div"></div>${MENU_COMMON}`;
+  return `<button class="${hl === 'show' ? 'hl' : ''}">${I.radio}<span>Show in preview</span></button>
+    <button class="${hl === 'primary' ? 'hl' : ''}">${I.star}<span>Set as primary<small>Thumbnails, export, snapshots and publishing use it</small></span></button><div class="div"></div>${MENU_COMMON}`;
+}
+function overlays(c) {
+  let out = '';
+  if (c.menu) {
+    const top = HEAD_H + LIST_PAD + c.menu.row * ROW_H + ROW_H - 2;
+    out += `<div class="dd" style="left:${TREE_W - 32}px;top:${top}px;width:270px">${menuItems(c.menu.kind, c.menu.hl)}</div>`;
+  }
+  if (c.treeTip) {
+    const top = HEAD_H + LIST_PAD + c.treeTip.row * ROW_H + 1;
+    out += `<div class="chip-tip" style="left:${TREE_W + 4}px;top:${top}px">${c.treeTip.text}</div>`;
+  }
+  return out;
+}
+
+/* ---------- boards (several small trees side by side) ---------- */
+function treeCard(cfg, title, body, tag = '') {
+  return `<div class="bcard">${filesPane(cfg)}${cfg.boardMenu ? `<div class="bmenu"><div class="dd">${menuItems('prog', 'show')}</div></div>` : ''}<div class="bcap"><h4>${title}${tag}</h4>${body}</div></div>`;
+}
+function board(c) {
+  const T = o => Object.assign({ tree: 'base', open: 'main', shown: 'main' }, o);
+  const rec = ' <span class="tag rec">recommended</span>';
+  if (c.board === 'icons') return `<div class="board" style="grid-template-columns:repeat(3,minmax(0,1fr))">
+    ${treeCard(T({ iconMode: 'two' }), 'Two icons', 'A page for programs, a box for libraries. The shape carries the difference, so it works without colour too. It leaves room for data files to get their own icon later.', rec)}
+    ${treeCard(T({ iconMode: 'color' }), 'One icon, tinted names', 'Same icon; libraries\' names take the accent colour. Colour alone is easy to miss, and it fights the selected row\'s colour.')}
+    ${treeCard(T({ iconMode: 'none' }), 'Nothing', 'Every file looks the same. You find out a file is a library by opening it and seeing <code>module;</code>. Fine for three files, not for twelve.')}
+  </div>`;
+  if (c.board === 'metaphors') return `<div class="board" style="grid-template-columns:repeat(4,minmax(0,1fr))">
+    ${treeCard(T({ show: 'pin' }), 'Pin', '"Keep the preview here." But the preview already follows the program you open; the job is choosing, not holding.')}
+    ${treeCard(T({ show: 'eye' }), 'Eye', 'The layers panel already uses the eye to hide and show layers. An eye also suggests several can be on at once.')}
+    ${treeCard(T({ show: 'dot' }), 'Dot', 'A radio-like dot: one of these is shown. Filled on the shown program, a ring on hover. It appears only on programs.', rec)}
+    ${treeCard(T({ boardMenu: true }), 'Row menu only', '"Show in preview" in words, one click deeper. Nothing on the rows. Enough if the Programs strip (B) ships.')}
+  </div>`;
+  if (c.board === 'conventions') return `<div class="board" style="grid-template-columns:repeat(3,minmax(0,1fr))">
+    ${treeCard(T({ shown: 'demos/gears', open: 'parts/gears', show: 'dot' }), 'A <code>demos/</code> folder', 'Demos live apart from the parts they show. A habit, not a rule: "New demo" in a library\'s row menu puts them here.', rec)}
+    ${treeCard(T({ tree: 'dotDemo', open: 'parts/gears', shown: 'parts/gears.demo', show: 'dot' }), 'A <code>gears.demo</code> name', 'The demo sits beside its library. But it\'s a new kind of name, and it breaks "no extension shown means .pathogen".')}
+    ${treeCard(T({ tree: 'noRule', open: 'parts/gears', shown: 'gear-sizes', show: 'dot' }), 'No convention', 'Any program that imports the library is its demo. This is true under all three; the folder only tidies.')}
+  </div>`;
+  if (c.board === 'compare') {
+    const crop = (cfg, title, body, tag = '') => `<div class="bcard"><div class="crop"><div class="window">${workspace(Object.assign({}, cfg, { crop: true }))}</div></div><div class="bcap"><h4>${title}${tag}</h4>${body}</div></div>`;
+    return `<div class="board" style="grid-template-columns:repeat(3,minmax(0,1fr))">
+      ${crop(SCREENS['a-tabs'].states.library[0], 'A · Preview tabs', 'Names in pills over the preview. Keeps the minimap.')}
+      ${crop(SCREENS['b-roll'].states.updating[0], 'B · Programs strip', 'Live miniatures under the preview; the shown one is the navigator.', ' <span class="tag rec">recommended</span>')}
+      ${crop(SCREENS['c-tree'].states.dot[0], 'C · Dot in the tree', 'No new chrome; the dot marks what\'s shown. Keeps the minimap.')}
+    </div>`;
+  }
+  return '';
+}
+
+/* ---------- a whole workspace window ---------- */
+const BASE = { tree: 'base', open: 'main', shown: 'main', tabs: ['main', 'parts/gears', 'parts/kit'], pv: 'single', code: null, active: 0, changed: [], dots: [], chip: 'ok', stale: false, panel: null, menu: null, show: null };
+const C = o => Object.assign({}, BASE, o);
+function workspace(c) {
+  if (c.board) return board(c);
+  if (c.crop) return `<div class="ws-wrap"><div class="ws ws-crop">${filesPane(c)}${preview(c)}${overlays(c)}</div></div>`;
+  return `${c.noTop ? '' : topnav()}${crumbbar(c)}<div class="ws-wrap"><div class="ws">${filesPane(c)}${editor(c)}${preview(c)}${overlays(c)}</div>${footer(c)}${errorPanel(c)}</div>`;
+}
+
+/* ---------- screens and their states (each chip sets the whole state) ---------- */
+const ERR_PANEL = `<span class="who">try-sizes</span><a>parts/gears.pathogen line 9</a>: Cannot access property 'x' on non-object value\n  called from <a>try-sizes.pathogen line 6</a>`;
+const ERR_TIP = `<b>try-sizes</b> has an error.<br><code>parts/gears.pathogen line 9</code>: Cannot access property 'x' on non-object value, called from <code>try-sizes.pathogen line 6</code>.<span class="mt-h">Click to show it with the error panel.</span>`;
+const R = o => C(Object.assign({ pv: 'roll' }, o));
+const SCREENS = {
+  base: { states: {
+    'main': [C({ active: 7 }), 'Editing <b>main</b>. The tabs say <code>main</code>, <code>gears</code>, <code>kit</code>: no extension, no badge. The preview draws main.'],
+    'same-name': [C({ open: 'demos/gears', shown: 'demos/gears', tabs: ['main', 'parts/gears', 'demos/gears', 'parts/kit'], active: 12 }),
+      'Two files called <b>gears</b> are open, so both tabs get their folder: <code>gears · parts</code> and <code>gears · demos</code>. Opening the demo, a program, shows it in the preview.'],
+    'icons': [C({ board: 'icons' }), 'The same tree three ways, with no badges.'],
+  } },
+  'a-tabs': { states: {
+    'main': [C({ pv: 'tabs', active: 7 }), 'Editing <b>main</b>. The preview has a pill per program: <code>main</code> (the primary, with its star), <code>gears</code> (the demo) and <code>try-sizes</code>.'],
+    'other': [C({ pv: 'tabs', shown: 'demos/gears', active: 7 }), 'Clicked the <b>gears</b> pill: the preview draws the demo. The editor stays on main.'],
+    'library': [C({ pv: 'tabs', open: 'parts/kit', tabs: ['main', 'parts/gears', 'parts/kit'], active: 6, usesMark: true }),
+      'Editing <b>parts/kit</b>. The preview keeps main, the last program you looked at. The dots say which programs import kit: main and try-sizes. The gears demo doesn\'t.'],
+  } },
+  'b-roll': { states: {
+    'main': [R({ active: 7 }), 'Editing <b>main</b>. The strip under the preview holds the three programs; main is the primary (star) and is shown (outlined). The minimap is gone, and the fullscreen button moves to its corner.'],
+    'other': [R({ shown: 'demos/gears', active: 7 }), 'Clicked the <b>gears</b> miniature: the preview draws the demo. The editor stays on main.'],
+    'zoomed': [R({ active: 7, zoom: { crop: [18, 15, 74, 70], pct: '300%' } }), 'Zoomed to 300% on the big gear. The rectangle on main\'s miniature shows what\'s in view: the strip is the navigator now. Drag the rectangle to pan.'],
+    'updating': [R({ open: 'parts/gears', code: 'parts/gears#edited', active: 4, changed: [4], edited: true, updating: ['demos/gears', 'try-sizes'], usesMark: true }),
+      'You changed <b>toothDepth</b> from 6 to 10 in parts/gears. main is shown, so it redraws at once. The gears demo and try-sizes import gears too (try-sizes through kit), so they have the dot; their miniatures keep their last picture, dimmed, with a spinner, until they recompile after a pause.'],
+    'error': [R({ active: 7, errProgs: ['try-sizes'], dots: ['try-sizes', 'parts/gears'], miniTip: { p: 'try-sizes', html: ERR_TIP }, hoverMini: 'try-sizes' }),
+      'try-sizes broke while main is shown. Its miniature keeps its last picture with a red mark, and the tree puts error dots on <b>try-sizes</b> and on <b>gears</b>, where it failed. Hovering the miniature says what went wrong. The chip still says Ready: it is about the program shown.'],
+    'error-shown': [R({ active: 7, shown: 'try-sizes', errProgs: ['try-sizes'], dots: ['try-sizes', 'parts/gears'], stale: true, chip: 'err', panel: ERR_PANEL }),
+      'After clicking the broken miniature: try-sizes is shown large, stale, and the error panel opens over the editor (not the tree), naming the program it\'s about. Its links open each file at the line.'],
+    'no-viewbox': [R({ open: 'try-sizes', shown: 'try-sizes', tabs: ['main', 'parts/kit', 'try-sizes'], active: 5 }),
+      '<b>try-sizes</b> has no <code>define ViewBox</code>. It still draws, at the default 0 0 200 200, so it is square, and the footer says "default". It is a program, so it is in the strip.'],
+    'collapsed': [R({ active: 7, rollCollapsed: true }), 'The strip collapsed to one line of names. You can still switch programs; there are no pictures and no navigator.'],
+  } },
+  'c-tree': { states: {
+    'dot': [C({ open: 'parts/gears', tabs: ['main', 'parts/gears'], active: 9, show: 'dot', hoverRow: 7, treeTip: { row: 7, text: 'Show in preview' } }),
+      'Editing <b>parts/gears</b>. The filled dot on main says it is shown. Hovering try-sizes shows an empty ring; a click would show try-sizes without opening it. Libraries have no dot. The preview has today\'s minimap, and its label names what is shown.'],
+    'menu': [C({ open: 'parts/gears', tabs: ['main', 'parts/gears'], active: 9, show: 'dot', menu: { row: 1, kind: 'prog', hl: 'show' } }),
+      'The row menu on <b>demos/gears</b>: "Show in preview" says the same thing in words, then "Set as primary" (screen E). It opens over the editor, so it never clips at the tree\'s edge.'],
+    'metaphors': [C({ board: 'metaphors' }), 'Four ways to say "show this program", each with main shown.'],
+  } },
+  'd-demos': { states: {
+    'labels': [R({ open: 'parts/labels', tabs: ['main', 'parts/labels'], shown: 'demos/gears', active: 6, usesMark: true, pvLabel: `${I.radio}Showing <code>demos/gears</code>: it imports <code>parts/labels</code>` }),
+      'Opened <b>parts/labels</b> while main was shown. main doesn\'t import labels, so the preview moves to the one program that does, the gears demo, and says why. Only its miniature has the dot.'],
+    'conventions': [C({ board: 'conventions' }), 'Three ways to keep demos, each with parts/gears open and its demo shown.'],
+    'unused': [R({ tree: 'newlib', open: 'parts/springs', tabs: ['main', 'parts/springs'], active: 4, usesMark: true, pvLabel: `No program imports <code>parts/springs</code> yet · <a>New demo</a>` }),
+      'A new library, <b>parts/springs</b>, that nothing imports yet. The preview keeps the last program, and the label offers <b>New demo</b>. The same item is in the library\'s row menu.'],
+    'new-demo': [R({ tree: 'newdemo', open: 'demos/springs', shown: 'demos/springs', progs: PROGS_SPRINGS, tabs: ['main', 'parts/springs', 'demos/springs'], active: 4 }),
+      'After <b>New demo</b>: <code>demos/springs</code> holds the import and one call, with no ViewBox, so it draws at the default view box. It joins the strip. Two <code>springs</code> tabs are open, so both get their folder.'],
+  } },
+  'e-primary': { states: {
+    'set': [R({ active: 7, treeStar: true, menu: { row: 7, kind: 'prog', hl: 'primary' } }),
+      'The row menu on <b>try-sizes</b>, with "Set as primary" and what that means. main is primary now: a small star in the strip, and an optional one after its name in the tree.'],
+  } },
+  compare: { states: {
+    'all': [C({ board: 'compare' }), 'The tree and the preview of each, at half size (the editor is left out). A while editing parts/kit; B and C while editing parts/gears.'],
+  } },
+};
+
+const current = {};
+function pressGroup(container, attr, val) {
+  container.querySelectorAll(`[${attr}]`).forEach(b => b.setAttribute('aria-pressed', String(b.getAttribute(attr) === val)));
+}
+function renderState(screen, state, override) {
+  const s = SCREENS[screen];
+  const [cfg, desc] = s.states[state] || [];
+  current[screen] = state;
+  pressGroup(document.getElementById('st-' + screen), 'data-st', override ? '' : state);
+  document.getElementById('sd-' + screen).innerHTML = override ? 'Clicked in the mockup.' : desc;
+  const el = document.getElementById('w-' + screen);
+  const c = override || cfg;
+  el.innerHTML = workspace(c);
+  if (!c.board) wire(screen, el, c);
+}
+function wire(screen, el, cfg) {
+  const again = o => renderState(screen, null, Object.assign({}, cfg, { menu: null, treeTip: null, hoverRow: null, miniTip: null, hoverMini: null }, o));
+  el.querySelectorAll('[data-show]').forEach(b => b.onclick = () => again({ shown: b.dataset.show, zoom: null, stale: false, panel: null, chip: 'ok', pvLabel: null }));
+  el.querySelectorAll('.frow[data-p]').forEach(r => r.onclick = e => {
+    const p = r.dataset.p;
+    if (!SRC[p]) return;
+    if (e.target.closest('.fshow')) return again({ shown: p, zoom: null, pvLabel: null });
+    const o = { open: p, code: null, active: 1, changed: [], tabs: cfg.tabs.includes(p) ? cfg.tabs : [...cfg.tabs, p], pvLabel: null, usesMark: cfg.usesMark };
+    if (!isLib(p)) Object.assign(o, { shown: p, zoom: null });
+    else if (!uses(cfg.shown, p)) { const q = programs(cfg).find(x => uses(x, p)); if (q) Object.assign(o, { shown: q, zoom: null }); }
+    again(o);
+  });
+  el.querySelectorAll('[data-tab]').forEach(t => t.onclick = () => {
+    const p = t.dataset.tab;
+    const o = { open: p, code: null, active: 1, changed: [], pvLabel: null };
+    if (!isLib(p)) Object.assign(o, { shown: p, zoom: null });
+    again(o);
+  });
+}
+function showScreen(screen) {
+  pressGroup(document.getElementById('screens'), 'data-s', screen);
+  document.querySelectorAll('.screen').forEach(sec => sec.classList.toggle('active', sec.id === 's-' + screen));
+  renderState(screen, current[screen] || Object.keys(SCREENS[screen].states)[0]);
+}
+document.getElementById('screens').onclick = e => { const b = e.target.closest('button'); if (b) showScreen(b.dataset.s); };
+Object.keys(SCREENS).forEach(screen => {
+  document.getElementById('st-' + screen).onclick = e => { const b = e.target.closest('button[data-st]'); if (b) renderState(screen, b.dataset.st); };
+  renderState(screen, Object.keys(SCREENS[screen].states)[0]);
+});
+document.getElementById('theme').onclick = () => {
+  const el = document.documentElement;
+  el.setAttribute('data-theme', el.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
+};
+window.mockup = { showScreen, renderState };
+</script>
+</body>
+</html>

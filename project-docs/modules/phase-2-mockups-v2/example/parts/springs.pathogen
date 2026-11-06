@@ -1,0 +1,8 @@
+// A coil spring seen from the side: a row of loops.
+module;
+
+export fn spring(at, length, coils) {
+  for (i in 1..coils) {
+    circle(at.x + (i - 0.5) * length / coils, at.y, length / coils);
+  }
+}

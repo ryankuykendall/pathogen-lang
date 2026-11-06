@@ -1,0 +1,7 @@
+// Everything a drawing needs, under one name.
+module;
+
+import * as gears from "./gears.pathogen";
+
+export const gear = gears.gear;
+export const Teeth = gears.Teeth;

@@ -1,0 +1,7 @@
+// A quick try: how big can a Few gear get?
+// No define ViewBox, so it draws at the default 0 0 200 200.
+import * as kit from "./parts/kit.pathogen";
+
+for (i in 0..2) {
+  kit.gear(30 + i * 62, 15 + i * 10, kit.Teeth.Few);
+}

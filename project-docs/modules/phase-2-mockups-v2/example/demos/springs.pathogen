@@ -1,0 +1,4 @@
+// A demo of parts/springs.
+import { spring } from "../parts/springs.pathogen";
+
+spring(Point(20, 100), 160, 8);
