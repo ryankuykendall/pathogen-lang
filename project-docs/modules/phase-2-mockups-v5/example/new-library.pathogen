@@ -1,0 +1,4 @@
+module;
+
+// A library. Export fns, consts and enums here;
+// other files import them.
