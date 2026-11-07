@@ -560,7 +560,7 @@
       </ul>
       <ul>
         <li><b>After</b> (state 3): the new rows flash, and a toast says what was added. One file opens in a tab; several don't. The preview doesn't change; uploaded programs go at the end of the chip's list and of <code>entryPoints</code>.</li>
-        <li><b>What can be added</b> (state 4): <code>.pathogen</code> files only, in phase 2. The picker shows only <code>.pathogen</code> files, so other types arrive only by drag and drop. The toast names each file left out, and why. A <code>pathogen.json</code> gets a message of its own (screen J, state 5).</li>
+        <li><b>What can be added</b> (state 4): <code>.pathogen</code> files only, in phase 2. The file picker shows only <code>.pathogen</code> files, so other types arrive only by drag and drop or inside a folder from Upload folder…. The toast names each file left out, and why. A <code>pathogen.json</code> gets a message of its own (screen J, state 5).</li>
         <li><b>Decided in your v5 review: font files</b> wait for the work on other file types (.json, .csv, .svg and fonts), after phase 2. Until then they're refused with the playground's existing font message.</li>
         <li><b>Open:</b> size limits, per file and per workspace (the server has no limit on code today; it's on the backlog): storage design, 2b. Importing a whole project folder is step 2g.</li>
         <li>Moving a file by dragging it within the tree is a rename, so it rewrites imports too. Not drawn here.</li>
@@ -652,8 +652,8 @@
         <li><b>Renaming a file</b> rewrites its entry, as it rewrites the import paths in the other files (step 2d). Renaming <code>main.pathogen</code> to <code>poster.pathogen</code> keeps it first, so <code>poster.pathogen</code> gets the badge.</li>
       </ul>
       <ul>
-        <li><b>Deleting the main</b> (state 3, <b>changed in v6</b>, decided in note 45 and drawn here for the first time): the next entry becomes the main, and a toast says so. After a Set as main, the next entry is the old main, so deleting the new one brings the old one back. v5 said <code>main.pathogen</code> took over, or you were asked.</li>
-        <li><b>The main becomes a library</b> (state 4, decided in note 45 and drawn here for the first time). Adding <code>module;</code> to any other program takes it out of the list (and taking the line out appends it again). The main stays first instead, with an error, so the main never changes without you choosing it. The compiler's own error names the line; the playground adds what to do about the main.</li>
+        <li><b>Deleting the main</b> (state 3, <b>changed in v6</b>, proposed in note 44 and not yet agreed): the next entry becomes the main, and a toast says so. After a Set as main, the next entry is the old main, so deleting the new one brings the old one back. v5 said <code>main.pathogen</code> took over, or you were asked.</li>
+        <li><b>The main becomes a library</b> (state 4, proposed in note 44 and not yet agreed). Adding <code>module;</code> to any other program takes it out of the list (and taking the line out appends it again). The main stays first instead, with an error, so the main never changes without you choosing it. The compiler's own error names the line; the playground adds what to do about the main.</li>
       </ul>
     </div>
   </div>
