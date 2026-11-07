@@ -1,5 +1,7 @@
 # Phase 2 storage design: a workspace that holds files
 
+> **Amended 2026-11-07:** after your answers, `48-storage-design-v2.md` replaces sections 1 (every file is a blob in R2), 3 (no spaces), 4 (every hash regenerated), 6 (snapshots as manifests), 7 (limits by file type) and parts of 8. The rest stands.
+
 2026-11-07, step 2b, for your approval. The facts about today's code were checked by a read-only survey the same day. Every reference in `38-phase-2-audit.md`'s storage section still holds. Decisions it builds on: notes 39 to 46.
 
 ## Today, in brief

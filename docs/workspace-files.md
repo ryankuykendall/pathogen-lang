@@ -1,9 +1,9 @@
 <!--
-DRAFT, 2026-11-07, step 2b. Not published. It becomes docs/workspace-files.md, registered in
-scripts/build-docs.ts DOC_FILES as 'workspace-files.md': 'workspaceFiles', when the multi-file UI
-ships to users. Recommended (note 46, a question): that waits for 2e, so publishing, forks and
-snapshots carry every file from the first day, and for 2h's Copy Debug Info, which note 42 ties to 2d.
-The page then needs sections for those. Export as a project folder (2g) comes later: see "Not yet".
+NOT PUBLISHED YET, on purpose: this page is not in scripts/build-docs.ts DOC_FILES. Registering it
+('workspace-files.md': 'workspaceFiles') publishes it; that happens in the push that ships the
+multi-file UI, which waits until step 2e is done (decided 2026-11-07, note 48), so publishing, forks
+and snapshots carry every file from the first day. 2h's Copy Debug Info lands with 2d (note 42).
+The page then needs sections for those, and this comment comes out. Export as a project folder (2g) comes later: see "Not yet".
 Copy Code: which file it copies is decided in 2d.
 On publishing, update in the same push: docs/projects.md line 3 ("The playground can't read files
 yet"), its In each tool Playground bullet ("one program for now") with a link to this page, and the
@@ -115,4 +115,4 @@ An error in a file other than the program the preview shows names that file and 
 
 ## Limits
 
-[TO DECIDE, note 47: the most files a workspace can hold, the largest file, and the largest workspace. Filled in from note 47's limits once you approve them.]
+[TO DECIDE, note 48: the most files a workspace can hold, the largest file of each type, and the largest workspace; and which characters a name may use. Filled in once you approve them.]
