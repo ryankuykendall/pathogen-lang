@@ -57,4 +57,5 @@ These come from the recommendations in `38-phase-2-audit.md` and haven't been re
 - Tests: `tests/host/project.test.ts`, `tests/cli.test.ts`, `tests/host/node-host.test.ts`. The messages are pinned word for word from the docs.
 - VS Code: `packages/vscode-pathogen/test-fixtures/modules/pathogen.json`. Rerun `project-docs/modules/verify/verify-step6c-lsp.mjs` and `verify-step6d-preview.mjs`, since every tool reads `pathogen.json` through `loadProjectFileSync`.
 - The CHANGELOG's Unreleased entry for `pathogen.json`.
+- The month in `docs/projects.md`'s "What changed (November 2026)" callout: set it to the month the code lands.
 - Unchanged: the repository's root `pathogen.json` (`{}`). The v1 and v2 mockup folders keep their `{ "main": … }`; they are historical and nothing compiles them.
