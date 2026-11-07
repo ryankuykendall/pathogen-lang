@@ -44,7 +44,7 @@ src/
 ├── host/              # The shared pre-compile loader: pure decisions, no I/O (runs in Node, a Worker or a webview)
 │   ├── types.ts       # FontHost: what a surface provides (readFile, findLocalFont, fetch, cache, decodeWoff2)
 │   ├── paths.ts       # The @font path rule (./ ../ /), project paths, generic families
-│   ├── project.ts     # pathogen.json v1 validation
+│   ├── project.ts     # pathogen.json: parseProjectFile (shape, every tool), projectMain (entryPoints' use-time checks), the folder-compile main messages
 │   ├── google-fonts.ts # css2 URLs/parsing (gstatic only), curated catalog + weight snapping, font-file checks
 │   ├── font-face-css.ts # @font-face CSS for live <text>
 │   ├── load-fonts.ts  # planFontDirectives, resolveFonts / resolveFontsInFiles (files → installed → cache → Google), buildFontRegistry
@@ -172,7 +172,7 @@ Context-aware functions receive the current path context and can read pen positi
 
 ```
 pathogen-lang <file>           Compile a file
-pathogen-lang <folder>         Compile the "main" in <folder>/pathogen.json
+pathogen-lang <folder>         Compile the project's main: the first of <folder>/pathogen.json's "entryPoints", or main.pathogen
 pathogen-lang -                Read from stdin
 pathogen-lang -e <code>        Compile inline code
 pathogen-lang --src=<file>     Compile a file (explicit flag)

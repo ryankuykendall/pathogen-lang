@@ -66,7 +66,7 @@ beforeAll(() => {
   mkdirSync(join(project, 'fonts', 'Raleway'), { recursive: true });
   mkdirSync(join(project, 'parts'), { recursive: true });
   mkdirSync(outside, { recursive: true });
-  writeFileSync(join(project, 'pathogen.json'), '{ "main": "main.pathogen" }');
+  writeFileSync(join(project, 'pathogen.json'), '{ "entryPoints": ["main.pathogen"] }');
   writeFileSync(join(project, 'fonts', 'Baumans-Regular.ttf'), 'font-bytes');
   writeFileSync(join(project, 'fonts', 'Raleway', 'Raleway-Bold.ttf'), minimalSfnt('raleway-bold'));
   writeFileSync(join(outside, 'secret.txt'), 'secret');
@@ -412,7 +412,7 @@ describe('reading pathogen.json', () => {
   it('loads and validates the project file', async () => {
     expect(await loadProjectFile(join(project, 'pathogen.json'))).toEqual({
       ok: true,
-      project: { main: '/main.pathogen' },
+      project: { entryPoints: [{ written: 'main.pathogen', path: '/main.pathogen' }] },
     });
   });
 
@@ -428,7 +428,7 @@ describe('reading pathogen.json', () => {
   it('a pathogen.json that is not JSON says so, then gives the parser its say', async () => {
     const folder = join(base, 'broken-json');
     mkdirSync(folder, { recursive: true });
-    writeFileSync(join(folder, 'pathogen.json'), '{ "main": ');
+    writeFileSync(join(folder, 'pathogen.json'), '{ "entryPoints": ');
     const prefix = `pathogen.json (${folder}) is not valid JSON: `;
     const parsed = await loadProjectFile(join(folder, 'pathogen.json'));
     expect(parsed.ok ? null : parsed.message.slice(0, prefix.length)).toBe(prefix);

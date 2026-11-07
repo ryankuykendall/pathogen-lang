@@ -5,6 +5,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] - 2026-11-07 (pathogen.json lists entry points)
+
+### Changed
+
+#### Core
+
+- **`pathogen.json`'s `main` key is now `entryPoints`, a list of the project's programs whose first entry is the main:** `{ "entryPoints": ["poster.pathogen", "main.pathogen"] }`. Without the key, the main is `main.pathogen`, so `{}` and `{ "entryPoints": ["main.pathogen"] }` mean the same thing. `main` was never in an npm release.
+  - **Checked whenever `pathogen.json` is read,** by every tool: a list of paths inside the project folder, each ending in `.pathogen`, with forward slashes. `main.pathogen`, `./main.pathogen` and `/main.pathogen` name the same file.
+  - **Checked only when the list is used** (today the CLI's folder compile): not empty, no file twice, and the main exists, with its letter case matching, and isn't a module. A mistake there never stops a file compiled by name.
+  - A leftover `main` says what replaces it, with your own value: `… "main" is now "entryPoints", a list whose first entry is the main. Replace it with "entryPoints": ["poster.pathogen"].` A key that differs from `entryPoints` only in letter case asks `Did you mean "entryPoints"?`.
+  - For library callers: `projectMain` (the main and the use-time checks), `CONVENTIONAL_MAIN`, and the `ProjectEntry` and `ProjectMain` types. `ProjectFile.main` is replaced by `ProjectFile.entryPoints`.
+
+#### CLI
+
+- **`pathogen-lang <folder>` compiles the project's main:** the first entry in `entryPoints`, or `main.pathogen`. A folder whose `pathogen.json` is `{}` used to stop with `has no "main"`; it now compiles its `main.pathogen`.
+- The main is read like an imported file: its letter case must match the disk on every system, and a symbolic link on the way can't lead outside the project folder. A main that is a module, or doesn't exist, says how to fix it, and where it looked (docs/projects.md, Errors).
+
+### Documentation
+
+- `docs/projects.md`: the `pathogen.json` section, a "What changed (November 2026)" note, the CLI table and the Errors rows; `docs/cli.md`, "Compile a Folder".
+- `docs/workspace-files.md` (new, not yet published): "Files in a Workspace", for the multi-file playground. It isn't in `DOC_FILES` until that ships, but `tests/docs-examples.test.ts` already reads it.
+
 ## [Unreleased] - 2026-11-05 (modules: import and export)
 
 ### Added

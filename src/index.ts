@@ -89,8 +89,8 @@ export {
   projectPathStem,
   resolveProjectPath,
 } from './host/paths';
-export { parseProjectFile, PROJECT_FILE_NAME } from './host/project';
-export type { ParsedProjectFile, ProjectFile } from './host/project';
+export { CONVENTIONAL_MAIN, parseProjectFile, PROJECT_FILE_NAME, projectMain } from './host/project';
+export type { ParsedProjectFile, ProjectEntry, ProjectFile, ProjectMain } from './host/project';
 export {
   CURATED_GOOGLE_FONTS,
   curatedVariants,

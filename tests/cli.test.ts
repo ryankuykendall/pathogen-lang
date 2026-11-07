@@ -1,5 +1,14 @@
 import { spawnSync } from 'node:child_process';
-import { copyFileSync, existsSync, mkdirSync, readFileSync, rmSync, unlinkSync, writeFileSync } from 'node:fs';
+import {
+  copyFileSync,
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  rmSync,
+  symlinkSync,
+  unlinkSync,
+  writeFileSync,
+} from 'node:fs';
 import { join } from 'node:path';
 
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
@@ -1066,28 +1075,98 @@ g[0].draw()
       rmSync(folder, { recursive: true, force: true });
     });
 
-    it('compiles the main named in its pathogen.json', () => {
-      writeFileSync(join(folder, 'pathogen.json'), '{ "main": "drawing.pathogen" }\n');
-      const result = runCli([folder]);
-      expect(result.status).toBe(0);
-      expect(result.stdout.trim()).toBe('M 1 2 L 3 4');
+    /** Run the CLI on the folder and expect it to stop with exactly this message. */
+    const failsWith = (message: string, target = folder) =>
+      expect(runCli([target])).toEqual({ stdout: '', stderr: `Error: ${message}\n`, status: 1 });
+
+    it('compiles the first entry in its pathogen.json', () => {
+      writeFileSync(join(folder, 'pathogen.json'), '{ "entryPoints": ["drawing.pathogen", "main.pathogen"] }\n');
+      expect(runCli([folder])).toEqual({ stdout: 'M 1 2 L 3 4\n', stderr: '', status: 0 });
     });
 
-    it('a pathogen.json without "main" says what to add', () => {
+    it('without entryPoints, compiles main.pathogen', () => {
       writeFileSync(join(folder, 'pathogen.json'), '{}\n');
-      const result = runCli([folder]);
-      expect(result.status).toBe(1);
-      expect(result.stderr).toBe(
-        `Error: ${join(folder, 'pathogen.json')} has no "main". Add "main": "your-program.pathogen", or compile a file directly.\n`,
+      writeFileSync(join(folder, 'main.pathogen'), 'M 5 6\n');
+      try {
+        expect(runCli([folder])).toEqual({ stdout: 'M 5 6\n', stderr: '', status: 0 });
+      } finally {
+        rmSync(join(folder, 'main.pathogen'));
+      }
+    });
+
+    it('without entryPoints and without main.pathogen, says what to add', () => {
+      writeFileSync(join(folder, 'pathogen.json'), '{}\n');
+      failsWith(
+        `The main of ${folder}, main.pathogen, doesn't exist (looked for ${join(folder, 'main.pathogen')}). Add it, list your program in pathogen.json ("entryPoints": ["your-program.pathogen"]), or compile a file directly.`,
       );
     });
 
-    it('a main that does not exist is an error', () => {
-      writeFileSync(join(folder, 'pathogen.json'), '{ "main": "missing.pathogen" }\n');
-      const result = runCli([folder]);
-      expect(result.status).toBe(1);
-      expect(result.stderr).toBe(
-        `Error: ${join(folder, 'pathogen.json')} names "main": "/missing.pathogen", which doesn't exist.\n`,
+    it('a first entry that does not exist says where it looked', () => {
+      writeFileSync(join(folder, 'pathogen.json'), '{ "entryPoints": ["missing.pathogen", "drawing.pathogen"] }\n');
+      failsWith(
+        `The main of ${folder}, missing.pathogen, doesn't exist (looked for ${join(folder, 'missing.pathogen')}). pathogen.json lists it first in "entryPoints": add the file, or put another program first.`,
+      );
+    });
+
+    it('a first entry whose letter case differs from the file on disk is an error on every system', () => {
+      writeFileSync(join(folder, 'pathogen.json'), '{ "entryPoints": ["Drawing.pathogen"] }\n');
+      failsWith(
+        `The main of ${folder}, Drawing.pathogen, differs from the file on disk only in letter case: drawing.pathogen. Paths are case-sensitive on every system.`,
+      );
+    });
+
+    it('a main that is a module is an error, listed or by convention', () => {
+      writeFileSync(join(folder, 'gears.pathogen'), 'module;\nexport const teeth = 12;\n');
+      writeFileSync(join(folder, 'main.pathogen'), 'module;\n');
+      try {
+        writeFileSync(join(folder, 'pathogen.json'), '{ "entryPoints": ["gears.pathogen"] }\n');
+        failsWith(
+          `The main of ${folder}, gears.pathogen, is a module (it starts with module;), and a module doesn't draw. Take out module;, or put a program first in pathogen.json's "entryPoints".`,
+        );
+        writeFileSync(join(folder, 'pathogen.json'), '{}\n');
+        failsWith(
+          `The main of ${folder}, main.pathogen, is a module (it starts with module;), and a module doesn't draw. Take out module;, list a program in pathogen.json ("entryPoints": ["your-program.pathogen"]), or compile a file directly.`,
+        );
+      } finally {
+        rmSync(join(folder, 'gears.pathogen'));
+        rmSync(join(folder, 'main.pathogen'));
+      }
+    });
+
+    it('an empty list and a repeated path are errors when the folder is compiled', () => {
+      const label = `pathogen.json (${folder})`;
+      writeFileSync(join(folder, 'pathogen.json'), '{ "entryPoints": [] }\n');
+      failsWith(
+        `${label}: "entryPoints" is empty. List at least one program, or leave the key out to use main.pathogen.`,
+      );
+      writeFileSync(join(folder, 'pathogen.json'), '{ "entryPoints": ["drawing.pathogen", "./drawing.pathogen"] }\n');
+      failsWith(
+        `${label}: "entryPoints" lists the same file twice: entry 1, "drawing.pathogen", and entry 2, "./drawing.pathogen".`,
+      );
+    });
+
+    it.skipIf(process.platform === 'win32')(
+      'a main reached through a symbolic link that leads outside the project is an error',
+      () => {
+        const outsideFile = join(TMP_DIR, 'folder-arg-outside.pathogen');
+        writeFileSync(outsideFile, 'M 0 0\n');
+        symlinkSync(outsideFile, join(folder, 'linked.pathogen'));
+        writeFileSync(join(folder, 'pathogen.json'), '{ "entryPoints": ["linked.pathogen"] }\n');
+        try {
+          failsWith(
+            `The main of ${folder}, linked.pathogen, leaves the project folder (${folder}) through a symbolic link. Move the file into the project folder.`,
+          );
+        } finally {
+          rmSync(join(folder, 'linked.pathogen'));
+          rmSync(outsideFile);
+        }
+      },
+    );
+
+    it('a leftover main key says what replaces it', () => {
+      writeFileSync(join(folder, 'pathogen.json'), '{ "main": "drawing.pathogen" }\n');
+      failsWith(
+        `pathogen.json (${folder}): "main" is now "entryPoints", a list whose first entry is the main. Replace it with "entryPoints": ["drawing.pathogen"].`,
       );
     });
 
@@ -1095,10 +1174,9 @@ g[0].draw()
       const bare = join(TMP_DIR, 'folder-bare');
       mkdirSync(bare, { recursive: true });
       try {
-        const result = runCli([bare]);
-        expect(result.status).toBe(1);
-        expect(result.stderr).toBe(
-          `Error: ${bare} is a folder with no pathogen.json. Add one with "main", or compile a file directly.\n`,
+        failsWith(
+          `${bare} is a folder with no pathogen.json. Add one (an empty {} compiles main.pathogen), or compile a file directly.`,
+          bare,
         );
       } finally {
         rmSync(bare, { recursive: true, force: true });
@@ -1106,12 +1184,15 @@ g[0].draw()
     });
 
     it('a trailing slash on the folder makes no difference', () => {
-      writeFileSync(join(folder, 'pathogen.json'), '{ "main": "drawing.pathogen" }\n');
+      writeFileSync(join(folder, 'pathogen.json'), '{ "entryPoints": ["drawing.pathogen"] }\n');
       expect(runCli([`${folder}/`])).toEqual({ stdout: 'M 1 2 L 3 4\n', stderr: '', status: 0 });
     });
 
     it('a pathogen.json saved with a byte-order mark works', () => {
-      writeFileSync(join(folder, 'pathogen.json'), `${String.fromCodePoint(0xfeff)}{ "main": "drawing.pathogen" }\n`);
+      writeFileSync(
+        join(folder, 'pathogen.json'),
+        `${String.fromCodePoint(0xfeff)}{ "entryPoints": ["drawing.pathogen"] }\n`,
+      );
       expect(runCli([folder])).toEqual({ stdout: 'M 1 2 L 3 4\n', stderr: '', status: 0 });
     });
 
@@ -1123,7 +1204,7 @@ g[0].draw()
         join(__dirname, 'fixtures', 'fonts', 'Inter-Regular.ttf'),
         join(project, 'type', 'Inter-Regular.ttf'),
       );
-      writeFileSync(join(project, 'pathogen.json'), '{ "main": "src/poster.pathogen" }\n');
+      writeFileSync(join(project, 'pathogen.json'), '{ "entryPoints": ["src/poster.pathogen"] }\n');
       try {
         const poster = join(project, 'src', 'poster.pathogen');
         writeFileSync(poster, glyphProgram('@font "../type/Inter-Regular.ttf";', 'Inter-Regular'));
@@ -1142,7 +1223,7 @@ g[0].draw()
         join(__dirname, 'fixtures', 'fonts', 'Inter-Regular.ttf'),
         join(project, 'type', 'Inter-Regular.ttf'),
       );
-      writeFileSync(join(project, 'pathogen.json'), '{ "main": "main.pathogen" }\n');
+      writeFileSync(join(project, 'pathogen.json'), '{ "entryPoints": ["main.pathogen"] }\n');
       writeFileSync(join(project, 'main.pathogen'), glyphProgram('@font "/type/Inter-Regular.ttf";', 'Inter-Regular'));
       try {
         drawnGlyph(runCli([project]));
@@ -1166,11 +1247,11 @@ g[0].draw()
           status: 1,
         });
         rmSync(join(odd, 'pathogen.json'), { recursive: true });
-        mkdirSync(join(odd, 'drawing'), { recursive: true });
-        writeFileSync(join(odd, 'pathogen.json'), '{ "main": "drawing" }\n');
+        mkdirSync(join(odd, 'drawing.pathogen'), { recursive: true });
+        writeFileSync(join(odd, 'pathogen.json'), '{ "entryPoints": ["drawing.pathogen"] }\n');
         expect(runCli([odd])).toEqual({
           stdout: '',
-          stderr: `Error: ${join(odd, 'drawing')} is a folder, not a file.\n`,
+          stderr: `Error: ${join(odd, 'drawing.pathogen')} is a folder, not a file.\n`,
           status: 1,
         });
       } finally {
@@ -1196,7 +1277,7 @@ g[0].draw()
       writeFileSync(program, '@font "./x.ttf";\nM 0 0\n');
       expect(runCli([program])).toEqual({
         stdout: '',
-        stderr: `Error: pathogen.json (${project}) has an unknown key "mian". Known keys: main.\n`,
+        stderr: `Error: pathogen.json (${project}) has an unknown key "mian". Known keys: entryPoints.\n`,
         status: 1,
       });
     });
@@ -1537,7 +1618,7 @@ describe('imports (docs/modules.md)', () => {
     const folder = join(TMP_DIR, 'modules-folder-project');
     mkdirSync(join(folder, 'src', 'parts'), { recursive: true });
     try {
-      writeFileSync(join(folder, 'pathogen.json'), '{ "main": "src/poster.pathogen" }\n');
+      writeFileSync(join(folder, 'pathogen.json'), '{ "entryPoints": ["src/poster.pathogen"] }\n');
       writeFileSync(join(folder, 'src', 'parts', 'gears.pathogen'), GEARS);
       writeFileSync(
         join(folder, 'src', 'poster.pathogen'),

@@ -34,7 +34,7 @@ pathogen-lang --src=input.pathogen
 pathogen-lang my-gears
 ```
 
-Compiles the program named by `main` in `my-gears/pathogen.json` — see [Projects and Files](#projects-pathogenjson).
+Compiles the project's main: the first entry in `my-gears/pathogen.json`'s `entryPoints`, or `my-gears/main.pathogen` when there's no list. See [Projects and Files](#projects-pathogenjson).
 
 ### Compile Inline Code
 

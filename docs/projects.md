@@ -2,6 +2,8 @@
 
 A Pathogen program can read two kinds of files from your computer: font files named by [`@font`](#path-blocks-font-directive), and other `.pathogen` files named by [`import`](#modules-importing). This page covers where those files may live and how you write their paths. The rules are the same in the CLI and the VS Code preview. The playground can't read files yet — see [In each tool](#projects-in-each-tool).
 
+> **What changed (November 2026):** `pathogen.json`'s `main` key is now `entryPoints`, a list whose first entry is the main: `{ "main": "poster.pathogen" }` becomes `{ "entryPoints": ["poster.pathogen"] }`. A `pathogen.json` that still has `main` gets an error showing the new form, in the CLI and in VS Code. Until you change it, it stops every file in the project that uses `@font` or `import`, and folder compiles. A folder whose `pathogen.json` has no `entryPoints` now compiles its `main.pathogen`; it used to stop with an error. See [pathogen.json](#projects-pathogenjson).
+
 > **What changed (October 2026):**
 > - A path that starts with `/` used to mean your computer's root folder in the CLI (`@font "/System/Library/Fonts/Supplemental/Georgia.ttf"`). It now means the project folder. For a font installed on your computer, write its family name instead — `@font "Georgia";` — and the CLI looks for it in the system font folders.
 > - Paths must now start with `./`, `../` or `/`. `@font "Inter.ttf"`, `@font "fonts/Inter.ttf"`, backslashes and drive letters (`C:\…`) used to be accepted and are now errors, each with the fix spelled out.
@@ -34,20 +36,33 @@ An empty object marks the folder as a project:
 {}
 ```
 
-It can also name the program to compile when you give the CLI the folder instead of a file:
+It can also list the project's programs, in order:
 
 ```json
 {
-  "main": "main.pathogen"
+  "entryPoints": [
+    "poster.pathogen",
+    "main.pathogen",
+    "demos/gears.pathogen"
+  ]
 }
 ```
 
+The first entry is the project's **main**: the program `pathogen-lang <folder>` compiles. Without `entryPoints`, the main is `main.pathogen`, so `{}` and `{ "entryPoints": ["main.pathogen"] }` mean the same thing. Only the first entry is used today. Listing the others is optional; it records the order of the project's programs.
+
 | Key | Meaning |
 |-----|---------|
-| `main` | The program `pathogen-lang <folder>` compiles, relative to the folder holding `pathogen.json`. `main.pathogen` and `./main.pathogen` both work; it must use forward slashes and stay inside the project folder. |
+| `entryPoints` | The project's programs, the main first, as paths relative to the folder holding `pathogen.json`. `main.pathogen`, `./main.pathogen` and `/main.pathogen` all work and mean the same file. Each must end in `.pathogen`, use forward slashes, match the file's letter case, and stay inside the project folder. |
 | `$schema` | Ignored, so an editor's schema hint doesn't cause an error. |
 
-Any other key is an error, so a typo such as `"mian"` doesn't go unnoticed. More keys will arrive with later features; an older `pathogen-lang` reports a newer key as unknown, so update it if that happens.
+List programs only. A [module](#modules-exporting), a file that starts with `module;`, doesn't draw, so it can't be an entry point. A program you don't list still compiles when you name its file: `pathogen-lang my-gears/try-sizes.pathogen` works whatever `entryPoints` says.
+
+`entryPoints` is checked in two ways:
+
+- **Whenever `pathogen.json` is read:** `entryPoints` must be a list of paths inside the project folder, ending in `.pathogen` and written with forward slashes. Every tool that reads `pathogen.json` checks this, so a mistake here stops the files that use `@font` or `import` (see [In each tool](#projects-in-each-tool)).
+- **When the list is used:** it can't be empty or name a path twice (`main.pathogen`, `./main.pathogen` and `/main.pathogen` count as the same path), and the main must exist, with its letter case matching, and be a program. Today only the CLI uses the list, when you give it a folder, so a mistake here never stops a file you compile by name.
+
+Any other key is an error, so a typo such as `"entrypoints"` doesn't go unnoticed. More keys will arrive with later features; an older `pathogen-lang` reports a newer key as unknown, so update it if that happens.
 
 ## Writing paths
 
@@ -71,7 +86,7 @@ Four rules hold on every operating system:
 ## In each tool
 
 - **CLI.** The project folder depends on what you compile; see the table below.
-- **VS Code.** The preview and the editor's error checking find the project folder from the file you're editing, as above.
+- **VS Code.** The preview and the editor's error checking find the project folder from the file you're editing, as above. The preview shows the file you're editing, not the main. A `pathogen.json` with an error stops the files in its project that use `import` or `@font`, with the same message as the CLI.
 - **Playground.** A workspace is one program for now, with no files beside it, so there is nothing to read. A file path in `@font` produces a warning that suggests a Google Fonts family instead, and an `import` is an error.
 
 In the CLI:
@@ -79,12 +94,12 @@ In the CLI:
 | You compile | Project folder | `./` paths start in |
 |-------------|----------------|---------------------|
 | A file: `pathogen-lang poster/main.pathogen` | Found from the file, as above | The file's folder |
-| A folder: `pathogen-lang poster` | `poster/`, whose `pathogen.json` names the `main` to compile | The `main` file's folder |
+| A folder: `pathogen-lang poster` | `poster/`. The CLI compiles its main: the first entry in its `pathogen.json`'s `entryPoints`, or `main.pathogen` | The main's folder |
 | A file, with `--root=<folder>` | The folder you name | The file's folder |
 | Code from `-e` or standard input | The current folder; there's no `pathogen.json` search | The current folder |
 | Code from `-e` or standard input, with `--root=<folder>` | The folder you name | The current folder if it's inside the project folder, otherwise the project folder |
 
-A file outside the `--root` folder still compiles, but a file path in its `@font` or `import` is an error, because it has no place in the project to start from. A family name's [`fonts/` folder](#path-blocks-font-loading-by-environment) is looked for starting where `./` paths start. The CLI reads `pathogen.json` only when it needs it, for a folder's `main` or to find the project folder of a program with `@font` or `import`, so a broken one doesn't stop a program with neither. See also [the CLI reference](#cli-fonts-and-files).
+A file outside the `--root` folder still compiles, but a file path in its `@font` or `import` is an error, because it has no place in the project to start from. A family name's [`fonts/` folder](#path-blocks-font-loading-by-environment) is looked for starting where `./` paths start. The CLI reads `pathogen.json` only when it needs it, for a folder's main or to find the project folder of a program with `@font` or `import`, so a broken one doesn't stop a program with neither. See also [the CLI reference](#cli-fonts-and-files).
 
 ## Errors
 
@@ -110,9 +125,16 @@ These are the messages for `@font`. A path in an `import` gets matching messages
 | `pathogen.json` is a folder | `pathogen.json (/Users/you/my-gears) is a folder, not a file.` |
 | `pathogen.json` can't be read | `pathogen.json (/Users/you/my-gears) could not be read: …` followed by your system's reason |
 | `pathogen.json` isn't valid JSON | `pathogen.json (/Users/you/my-gears) is not valid JSON: …` followed by the JSON parser's own explanation, whose wording depends on your Node.js version |
-| `pathogen.json` isn't an object | `pathogen.json (/Users/you/my-gears) must contain a JSON object, such as {} or { "main": "main.pathogen" }.` |
-| An unknown key | `pathogen.json (/Users/you/my-gears) has an unknown key "mian". Known keys: main.` |
-| A bad `main` | `pathogen.json (/Users/you/my-gears): "main" must be a path inside the project folder, written with forward slashes, such as "main.pathogen".` |
-| A folder with no `main` | `my-gears/pathogen.json has no "main". Add "main": "your-program.pathogen", or compile a file directly.` |
-| A folder with no `pathogen.json` | `my-gears is a folder with no pathogen.json. Add one with "main", or compile a file directly.` |
-| `main` names a missing file | `my-gears/pathogen.json names "main": "/main.pathogen", which doesn't exist.` |
+| `pathogen.json` isn't an object | `pathogen.json (/Users/you/my-gears) must contain a JSON object, such as {} or { "entryPoints": ["main.pathogen"] }.` |
+| An unknown key | `pathogen.json (/Users/you/my-gears) has an unknown key "entrypoints". Did you mean "entryPoints"?` That's for a key that differs from a known one only in letter case. Any other unknown key ends `Known keys: entryPoints.` |
+| The old `main` key | `pathogen.json (/Users/you/my-gears): "main" is now "entryPoints", a list whose first entry is the main. Replace it with "entryPoints": ["poster.pathogen"].` The list shows your own `main`, when it's a path ending in `.pathogen`. With `entryPoints` there too: `pathogen.json (/Users/you/my-gears): "main" is no longer a key; remove it. The first entry in "entryPoints" is the main.` |
+| `entryPoints` isn't a list | `pathogen.json (/Users/you/my-gears): "entryPoints" must be a list of paths, such as ["poster.pathogen"].` The example shows your own value in a list, when it's a path ending in `.pathogen`. |
+| An entry without `.pathogen` | `pathogen.json (/Users/you/my-gears): "entryPoints" entry 1, "poster", has no .pathogen extension. Write the file's full name: "poster.pathogen".` |
+| `entryPoints` is empty | `pathogen.json (/Users/you/my-gears): "entryPoints" is empty. List at least one program, or leave the key out to use main.pathogen.` |
+| A bad entry | `pathogen.json (/Users/you/my-gears): "entryPoints" entry 2, "C:/art/poster.pathogen", must be a path inside the project folder, written with forward slashes, such as "main.pathogen".` |
+| The same path twice | `pathogen.json (/Users/you/my-gears): "entryPoints" lists the same file twice: entry 1, "main.pathogen", and entry 3, "./main.pathogen".` |
+| A folder with no `pathogen.json` | `my-gears is a folder with no pathogen.json. Add one (an empty {} compiles main.pathogen), or compile a file directly.` |
+| The main doesn't exist | `The main of my-gears, poster.pathogen, doesn't exist (looked for /Users/you/my-gears/poster.pathogen). pathogen.json lists it first in "entryPoints": add the file, or put another program first.` Without `entryPoints`: `The main of my-gears, main.pathogen, doesn't exist (looked for /Users/you/my-gears/main.pathogen). Add it, list your program in pathogen.json ("entryPoints": ["your-program.pathogen"]), or compile a file directly.` |
+| The main is reached through a symbolic link that leads outside the project folder | `The main of my-gears, poster.pathogen, leaves the project folder (/Users/you/my-gears) through a symbolic link. Move the file into the project folder.` |
+| The main's letter case differs | `The main of my-gears, Poster.pathogen, differs from the file on disk only in letter case: poster.pathogen. Paths are case-sensitive on every system.` |
+| The main is a module | `The main of my-gears, parts/gears.pathogen, is a module (it starts with module;), and a module doesn't draw. Take out module;, or put a program first in pathogen.json's "entryPoints".` Without `entryPoints`: `The main of my-gears, main.pathogen, is a module (it starts with module;), and a module doesn't draw. Take out module;, list a program in pathogen.json ("entryPoints": ["your-program.pathogen"]), or compile a file directly.` |

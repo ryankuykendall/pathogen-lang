@@ -28,7 +28,7 @@
     "name": "go-to-definition opens the other file at the name",
     "ok": true,
     "detail": {
-      "uri": "file:///Users/ryan/claude-code-projects/svg-path-extended/tmp/verify-lsp-5bDYeZ/parts/gears.pathogen",
+      "uri": "file:///Users/ryan/claude-code-projects/svg-path-extended/tmp/verify-lsp-OJbu8y/parts/gears.pathogen",
       "range": {
         "start": {
           "line": 7,
@@ -171,7 +171,7 @@
           }
         },
         "severity": 1,
-        "message": "import file \"./parts/marks.pathogen\" was not found (looked for /Users/ryan/claude-code-projects/svg-path-extended/tmp/verify-lsp-5bDYeZ/parts/marks.pathogen).",
+        "message": "import file \"./parts/marks.pathogen\" was not found (looked for /Users/ryan/claude-code-projects/svg-path-extended/tmp/verify-lsp-OJbu8y/parts/marks.pathogen).",
         "source": "pathogen-modules"
       }
     ]

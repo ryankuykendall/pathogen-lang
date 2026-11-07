@@ -9,15 +9,18 @@ import {
   ensureOpentype,
   formatModuleLoadError,
   generateSvg,
+  isModuleSource,
   planFontDirectives,
   planImports,
   PROJECT_FILE_NAME,
+  projectMain,
   resolveFontsInFiles,
   resolveModules,
   toJsonDocument,
   WARNING_CODES,
 } from '.';
 import { groupWarnings } from './evaluator/warning-groups';
+import { mainCaseMessage, mainIsModuleMessage, mainLeavesMessage, mainMissingMessage } from './host/project';
 import {
   createNodeFontHost,
   createNodeProjectHost,
@@ -27,6 +30,7 @@ import {
   loadProjectFileSync,
   offlineReason,
   projectEntry,
+  readProjectFile,
 } from './node';
 
 import type {
@@ -71,7 +75,9 @@ pathogen-lang - Extended SVG path syntax compiler
 
 Usage:
   pathogen-lang <file>       Compile a file
-  pathogen-lang <folder>     Compile the "main" named in <folder>/pathogen.json
+  pathogen-lang <folder>     Compile the project's main: the first entry in
+                             <folder>/pathogen.json's "entryPoints", or
+                             <folder>/main.pathogen
   pathogen-lang -            Read from stdin
   pathogen-lang -e <code>    Compile inline code
   pathogen-lang --src=<file> Compile a file (explicit flag)
@@ -382,21 +388,12 @@ function fail(message: string): never {
   process.exit(1);
 }
 
-/** Read a text file the CLI needs, or stop with a message naming it (never a stack trace). */
-function readText(file: string, label: string): string {
-  try {
-    if (statSync(file).isDirectory()) fail(`${label} is a folder, not a file.`);
-    return readFileSync(file, 'utf-8');
-  } catch (err) {
-    fail(`${label} could not be read: ${(err as Error).message}`);
-  }
-}
-
 /**
- * Read the program named on the command line. A folder means "the main in
- * its pathogen.json" (docs/projects.md); the folder is then the project folder.
+ * Read the program named on the command line. A folder means "the project's
+ * main" (docs/projects.md): the first entry in its pathogen.json's
+ * `entryPoints`, or main.pathogen. The folder is then the project folder.
  */
-function readInput(arg: string): { source: string; sourceFile: string; projectRoot?: string } {
+async function readInput(arg: string): Promise<{ source: string; sourceFile: string; projectRoot?: string }> {
   let isFolder = false;
   try {
     isFolder = statSync(arg).isDirectory();
@@ -411,26 +408,52 @@ function readInput(arg: string): { source: string; sourceFile: string; projectRo
     }
   }
   const folder = arg.replace(/[\\/]+$/, '') || arg;
-  const projectFile = join(folder, PROJECT_FILE_NAME);
-  if (!existsSync(projectFile)) {
-    fail(`${folder} is a folder with no pathogen.json. Add one with "main", or compile a file directly.`);
+  const root = resolve(folder);
+  if (!existsSync(join(folder, PROJECT_FILE_NAME))) {
+    fail(
+      `${folder} is a folder with no pathogen.json. Add one (an empty {} compiles main.pathogen), or compile a file directly.`,
+    );
   }
-  const parsed = loadProjectFileSync(resolve(projectFile));
+  const parsed = loadProjectFileSync(join(root, PROJECT_FILE_NAME));
   if (!parsed.ok) fail(parsed.message);
-  const mainPath = parsed.project.main;
-  if (!mainPath) fail(`${projectFile} has no "main". Add "main": "your-program.pathogen", or compile a file directly.`);
-  const mainFile = join(folder, ...mainPath.split('/').filter(Boolean));
-  if (!existsSync(mainFile)) fail(`${projectFile} names "main": "${mainPath}", which doesn't exist.`);
-  return { source: readText(mainFile, mainFile), sourceFile: mainFile, projectRoot: resolve(folder) };
+  const chosen = projectMain(parsed.project, root);
+  if (!chosen.ok) fail(chosen.message);
+
+  // The main is read as an import is: its letter case must match the disk, and
+  // a link on its way must not lead outside the project folder.
+  const shown = chosen.path.slice(1);
+  const mainFile = join(folder, ...chosen.path.split('/').filter(Boolean));
+  const read = await readProjectFile(root, chosen.path);
+  if (!read.ok) {
+    const why = (): string => {
+      switch (read.code) {
+        case 'not-found':
+          return mainMissingMessage(folder, shown, chosen.listed, resolve(mainFile));
+        case 'case-mismatch':
+          return mainCaseMessage(folder, shown, read.actual.slice(1));
+        case 'escapes-root':
+          return mainLeavesMessage(folder, shown, root);
+        case 'folder':
+          return `${mainFile} is a folder, not a file.`;
+        case 'unreadable':
+          return `${mainFile} could not be read: ${read.detail}`;
+      }
+    };
+    fail(why());
+  }
+  // Decoded as `readFileSync(file, 'utf-8')` decodes a file named directly, so both compile alike.
+  const source = Buffer.from(read.bytes).toString('utf8');
+  if (isModuleSource(source)) fail(mainIsModuleMessage(folder, shown, chosen.listed));
+  return { source, sourceFile: mainFile, projectRoot: root };
 }
 
-function parseArgs(args: string[]): {
+async function parseArgs(args: string[]): Promise<{
   source: string;
   options: CliOptions;
   outputFile?: string;
   sourceFile?: string;
   projectRoot?: string;
-} {
+}> {
   const options: CliOptions = {};
   let source: string | null = null;
   let outputFile: string | undefined;
@@ -634,7 +657,7 @@ function parseArgs(args: string[]): {
     if (arg === '-') {
       source = readFileSync(0, 'utf-8');
     } else if (!arg.startsWith('-')) {
-      const input = readInput(arg);
+      const input = await readInput(arg);
       source = input.source;
       sourceFile = input.sourceFile;
       projectRoot = input.projectRoot;
@@ -1057,7 +1080,7 @@ async function main() {
     process.exit(0);
   }
 
-  const { source, options, outputFile, sourceFile, projectRoot } = parseArgs(args);
+  const { source, options, outputFile, sourceFile, projectRoot } = await parseArgs(args);
 
   try {
     if (options.json && (options.svgOutput || options.renderGpu || options.pngOutput)) {
