@@ -1,0 +1,1170 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mockup v6 — pathogen.json and the entry points</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baumans&family=DM+Sans:wght@400;500;600;700&family=DM+Serif+Display:ital@0;1&family=Inconsolata:wght@400;500;600&display=swap" rel="stylesheet">
+<!-- Built by build.ts from multi-file-mockup-v6.template.html. Edit the template, then run
+     npx tsx project-docs/modules/phase-2-mockups-v6/build.ts -->
+<style>
+  /* ===== Real playground tokens, copied from playground/styles/theme.css (2026-11-05, as v1 and v2) ===== */
+  :root {
+    --bg-primary: #f7f0e3; --bg-secondary: #fdf6ed; --bg-tertiary: rgba(28,23,34,0.05); --bg-elevated: #ffffff;
+    --text-primary: #1c1722; --text-secondary: #5a4f6a; --text-tertiary: #9087a0; --text-inverse: #fffaf2;
+    --border-color: rgba(28,23,34,0.10); --border-subtle: rgba(28,23,34,0.06); --border-strong: rgba(28,23,34,0.18);
+    --accent-color: #c0518e; --accent-hover: #b04680; --accent-subtle: rgba(192,81,142,0.10); --accent-text: #fffaf2;
+    --accent-contrast: #1c1722; --accent-from: #e16a8f; --accent-to: #a83d80;
+    --secondary-accent: #9461c4; --secondary-accent-hover: #7e4fb0; --secondary-accent-subtle: rgba(148,97,196,0.16); --secondary-accent-text: #5e3590;
+    --secondary-from: #b384e0; --secondary-to: #6d3aa6;
+    --success-color: #10b981; --success-bg: #ecfdf5; --success-border: #a7f3d0;
+    --warning-color: #f59e0b; --warning-bg: #fffbeb; --warning-border: #fde68a;
+    --error-color: #ef4444; --error-bg: #fef2f2; --error-border: #fecaca; --error-text: #dc2626;
+    --info-color: #3b82f6; --info-bg: #eff6ff; --info-border: #bfdbfe;
+    --hover-bg: rgba(0,0,0,0.04); --active-bg: rgba(0,0,0,0.08); --focus-ring: rgba(192,81,142,0.4);
+    --shadow-sm: 0 1px 2px rgba(28,23,34,0.05);
+    --shadow-md: 0 4px 6px -1px rgba(28,23,34,0.07), 0 2px 4px -1px rgba(28,23,34,0.04);
+    --shadow-lg: 0 10px 15px -3px rgba(28,23,34,0.08), 0 4px 6px -2px rgba(28,23,34,0.04);
+    --shadow-xl: 0 20px 25px -5px rgba(28,23,34,0.10), 0 10px 10px -5px rgba(28,23,34,0.04);
+    --radius-sm: 4px; --radius-md: 8px; --radius-lg: 12px; --radius-xl: 16px;
+    --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+    --font-mono: 'Inconsolata', 'SF Mono', Monaco, 'Cascadia Code', monospace;
+    --font-brand: 'Baumans', cursive;
+    --font-body: 'DM Sans', system-ui, sans-serif;
+    --font-display: 'DM Serif Display', Georgia, serif;
+    --bg-atmosphere-1: rgba(180,130,220,0.18); --bg-atmosphere-2: rgba(255,175,130,0.20);
+
+    /* Editor: light uses CodeMirror's defaultHighlightStyle + base theme (code-editor-pane.ts _getThemeExtensions) */
+    --cm-host-bg: var(--bg-secondary); --cm-text: var(--text-primary);
+    --cm-gutter-bg: #f5f5f5; --cm-gutter-fg: #6c6c6c; --cm-gutter-border: #dddddd;
+    --cm-active: #cceeff44; --cm-active-gutter: #e2f2ff;
+    --cm-kw: #770088; --cm-num: #116644; --cm-str: #aa1111; --cm-com: #994400; --cm-tpl: #ee4400;
+    --cm-id: var(--text-primary); --cm-op: var(--text-primary); --cm-pun: var(--text-primary);
+    --tabs-bg: var(--bg-primary);
+
+    /* Mockup-only */
+    --mock-page: #ece4d6;
+  }
+  [data-theme='dark'] {
+    --bg-primary: #14101c; --bg-secondary: #100c17; --bg-tertiary: rgba(255,250,242,0.05); --bg-elevated: #1a1424;
+    --text-primary: #f6e9da; --text-secondary: #b5a8c4; --text-tertiary: #7a6f8a; --text-inverse: #14101c;
+    --border-color: rgba(246,233,218,0.10); --border-subtle: rgba(246,233,218,0.05); --border-strong: rgba(246,233,218,0.20);
+    --accent-color: #f7b56e; --accent-hover: #ffc585; --accent-subtle: rgba(247,181,110,0.15); --accent-text: #1a1424;
+    --accent-contrast: #1a1424; --accent-from: #ffd194; --accent-to: #e89254;
+    --secondary-accent: #c4a4e8; --secondary-accent-hover: #d4baef; --secondary-accent-subtle: rgba(196,164,232,0.16); --secondary-accent-text: #d4bcef;
+    --secondary-from: #d8c4f0; --secondary-to: #9c7cd5;
+    --success-color: #22c55e; --success-bg: rgba(34,197,94,0.15); --success-border: rgba(34,197,94,0.3);
+    --warning-color: #e0a840; --warning-bg: rgba(224,168,64,0.15); --warning-border: rgba(224,168,64,0.3);
+    --error-color: #ef4444; --error-bg: rgba(239,68,68,0.6); --error-border: rgba(239,68,68,0.5); --error-text: #fcd5d5;
+    --info-color: #3b82f6; --info-bg: rgba(59,130,246,0.15); --info-border: rgba(59,130,246,0.3);
+    --hover-bg: rgba(255,255,255,0.06); --active-bg: rgba(255,255,255,0.1); --focus-ring: rgba(247,181,110,0.4);
+    --shadow-sm: 0 1px 2px rgba(0,0,0,0.3);
+    --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.4), 0 2px 4px -1px rgba(0,0,0,0.3);
+    --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.4), 0 4px 6px -2px rgba(0,0,0,0.3);
+    --shadow-xl: 0 20px 25px -5px rgba(0,0,0,0.5), 0 10px 10px -5px rgba(0,0,0,0.4);
+    --bg-atmosphere-1: rgba(140,100,200,0.18); --bg-atmosphere-2: rgba(220,140,90,0.18);
+
+    /* Editor: dark uses One Dark (oneDarkTheme + oneDarkHighlightStyle) */
+    --cm-host-bg: #282c34; --cm-text: #abb2bf;
+    --cm-gutter-bg: #282c34; --cm-gutter-fg: #7d8799; --cm-gutter-border: transparent;
+    --cm-active: #6699ff0b; --cm-active-gutter: #2c313a;
+    --cm-kw: #c678dd; --cm-num: #e5c07b; --cm-str: #98c379; --cm-com: #7d8799; --cm-tpl: #56b6c2;
+    --cm-id: #e06c75; --cm-op: #56b6c2; --cm-pun: #abb2bf;
+    --tabs-bg: #21252b;
+
+    --mock-page: #0b0811;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body { background: var(--mock-page); color: var(--text-primary); font-family: var(--font-body); font-size: 14px; }
+  button { font-family: inherit; color: inherit; }
+  code { font-family: var(--font-mono); }
+  svg { flex: none; }
+
+  /* ===== Mockup harness (as v1, v2) ===== */
+  .harness { position: sticky; top: 0; z-index: 100; display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; padding: 10px 20px; background: #1c1722; color: #f6e9da; font-size: 13px; }
+  .harness h1 { margin: 0 12px 0 0; font-size: 14px; font-weight: 600; font-family: var(--font-body); }
+  .harness nav { display: flex; gap: 4px; flex-wrap: wrap; }
+  .harness nav button, .harness .tgl { background: transparent; border: 1px solid rgba(246,233,218,0.2); color: #f6e9da; border-radius: 6px; padding: 4px 10px; cursor: pointer; font-size: 12px; }
+  .harness nav button[aria-pressed='true'] { background: #f6e9da; color: #1c1722; }
+  .harness .spacer { flex: 1; }
+  .notes { max-width: 1280px; margin: 20px auto 0; padding: 0 20px; color: var(--text-secondary); line-height: 1.5; }
+  .notes h2 { color: var(--text-primary); font-size: 18px; margin: 0 0 4px; font-family: var(--font-body); font-weight: 600; letter-spacing: 0; display: flex; align-items: center; gap: 8px; }
+  .notes h3 { color: var(--text-primary); font-size: 13px; margin: 12px 0 0; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; }
+  .notes ul { margin: 4px 0 0; padding-left: 18px; }
+  .notes li { margin: 2px 0; }
+  .notes b { color: var(--text-primary); font-weight: 600; }
+  .notes code { font-size: 13px; }
+  .notes .cols { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 32px; }
+  .tag { display: inline-block; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; border-radius: 4px; padding: 1px 6px; }
+  .tag.rec { color: #fff; background: #2563eb; }
+  .tag.alt { color: var(--text-secondary); background: var(--bg-tertiary); border: 1px solid var(--border-strong); }
+  .tag.ask { color: #fff; background: #b45309; }
+  .tag.done { color: #fff; background: #047857; }
+  .statebar { max-width: 1280px; margin: 12px auto 4px; padding: 0 20px; display: flex; gap: 6px; flex-wrap: wrap; align-items: center; font-size: 12px; color: var(--text-secondary); }
+  .statebar button { border: 1px solid var(--border-strong); background: var(--bg-elevated); border-radius: 999px; padding: 4px 12px; cursor: pointer; font-size: 12px; color: var(--text-primary); }
+  .statebar button[aria-pressed='true'] { background: var(--text-primary); color: var(--bg-primary); border-color: transparent; }
+  .statebar .lbl { font-weight: 600; text-transform: uppercase; letter-spacing: .06em; font-size: 11px; }
+  .statedesc { max-width: 1280px; margin: 0 auto 10px; padding: 0 20px; font-size: 13px; color: var(--text-secondary); min-height: 20px; }
+  .statedesc b { color: var(--text-primary); font-weight: 600; }
+  .screen { display: none; }
+  .screen.active { display: block; }
+  .frame-out { max-width: 1280px; margin: 0 auto 40px; padding: 0 20px; }
+  .window { position: relative; border-radius: 12px; overflow: hidden; box-shadow: 0 30px 60px -20px rgba(0,0,0,0.35); border: 1px solid var(--border-color);
+    background: radial-gradient(900px 500px at 0% 0%, var(--bg-atmosphere-1), transparent 60%), radial-gradient(800px 600px at 100% 100%, var(--bg-atmosphere-2), transparent 60%), var(--bg-primary); }
+
+  /* ===== App header (app-header) ===== */
+  .topnav { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; height: 52px; padding: 0 24px; border-bottom: 1px solid var(--border-subtle); }
+  .brand { font-family: var(--font-brand); font-size: 22px; line-height: 1; justify-self: start; }
+  .brand span { color: var(--secondary-accent); }
+  .brand small { display: block; font-family: var(--font-mono); font-size: 9px; color: var(--text-tertiary); letter-spacing: .04em; margin-top: 3px; }
+  .navpill { display: flex; gap: 2px; padding: 4px; border: 1px solid var(--border-color); border-radius: 12px; background: var(--bg-tertiary); }
+  .navpill a { padding: 6px 12px; border-radius: 8px; color: var(--text-secondary); font-size: 13px; font-weight: 500; }
+  .navpill a.on { background: var(--secondary-accent-subtle); color: var(--secondary-accent-text); }
+  .nav-right { justify-self: end; display: flex; gap: 10px; align-items: center; }
+  .theme-btn { width: 32px; height: 32px; border-radius: 50%; border: 1px solid var(--border-color); background: var(--bg-tertiary); display: grid; place-items: center; color: var(--text-secondary); padding: 0; }
+  .theme-btn svg { width: 16px; height: 16px; }
+  .theme-btn .moon, [data-theme='dark'] .theme-btn .sun { display: none; }
+  [data-theme='dark'] .theme-btn .moon { display: block; }
+  .acct { display: inline-flex; align-items: center; gap: 8px; height: 32px; padding: 0 10px 0 3px; border-radius: 999px; border: 1px solid var(--border-color); background: var(--bg-tertiary); font-size: 13px; font-weight: 500; }
+  .acct svg { width: 12px; height: 12px; color: var(--text-tertiary); }
+  .avatar { width: 26px; height: 26px; border-radius: 50%; background: linear-gradient(135deg, var(--secondary-from), var(--secondary-to)); color: #fff; display: grid; place-items: center; font-size: 11px; font-weight: 600; flex: none; }
+
+  /* ===== Breadcrumb bar (app-breadcrumb.css) ===== */
+  .crumbbar { display: grid; grid-template-columns: minmax(0,1fr) auto; align-items: center; gap: 16px; padding: 6px 16px; min-height: 42px; border-bottom: 1px solid var(--border-subtle); }
+  .crumbs { display: flex; align-items: center; font-size: 13px; color: var(--text-secondary); min-width: 0; white-space: nowrap; }
+  .crumbs .sep { margin: 0 8px; color: var(--text-tertiary); }
+  .crumbs .cur { color: var(--text-primary); font-weight: 500; }
+  .crumbs .ws-id, .crumbs .ws-size { font-family: var(--font-mono); font-size: 11px; color: var(--text-tertiary); margin-left: 6px; font-weight: 400; }
+  .crumbs .file { font-family: var(--font-mono); font-size: 13.5px; color: var(--text-primary); font-weight: 600; }
+  .crumbs .file .dir { color: var(--text-tertiary); font-weight: 500; }
+  .controls { display: flex; align-items: center; gap: 16px; }
+  .cl, .cr { display: flex; align-items: center; gap: 8px; }
+  .btn-s { display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; font-size: 12px; line-height: 1.4; background: transparent; border: 1px solid var(--border-color); border-radius: 4px; color: var(--text-secondary); cursor: pointer; white-space: nowrap; }
+  .btn-s svg { width: 14px; height: 14px; }
+  .btn-s[disabled] { color: var(--text-tertiary); opacity: .7; cursor: not-allowed; }
+  .split, .tbar { display: inline-flex; }
+  .split .btn-s:first-child, .tbar .btn-s:first-child { border-radius: 4px 0 0 4px; }
+  .split .btn-s:last-child, .tbar .btn-s:last-child { border-radius: 0 4px 4px 0; margin-left: -1px; }
+  .split .count { color: var(--text-tertiary); font-variant-numeric: tabular-nums; }
+  .btn-s.active { background: var(--secondary-accent-subtle); border-color: var(--secondary-accent); color: var(--secondary-accent-text); position: relative; z-index: 1; }
+  .cstat, .save { font-family: var(--font-mono); font-size: 12px; font-weight: 500; padding: 4px 8px; border-radius: 4px; line-height: 1.4; }
+  .cstat.ok, .save { background: var(--success-bg); color: var(--success-color); }
+  .cstat.err { background: var(--error-bg); color: var(--error-text); }
+  .kebab { width: 28px; height: 28px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-secondary); display: grid; place-items: center; padding: 0; }
+  .kebab svg { width: 18px; height: 18px; }
+
+  /* ===== Workspace row: files | editor | preview [| inspector]. No footer: the row runs to the bottom. ===== */
+  .ws-wrap { position: relative; }
+  .ws { position: relative; display: grid; grid-template-columns: 248px minmax(0,1fr) minmax(0,1fr); height: 652px; }
+  .ws.with-insp { grid-template-columns: 248px minmax(0,1fr) minmax(0,1fr) 240px; }
+
+  /* Files pane: row look borrowed from layers-panel.css */
+  .files { background: var(--bg-primary); border-right: 1px solid var(--border-color); display: flex; flex-direction: column; min-height: 0; min-width: 0; }
+  .files-head { height: 34px; flex: none; display: flex; align-items: center; gap: 4px; padding: 0 6px 0 12px; border-bottom: 1px solid var(--border-color); font-size: 11px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: .03em; }
+  .files-head .sp { flex: 1; }
+  .ibtn { width: 24px; height: 24px; border: none; background: none; border-radius: 4px; display: grid; place-items: center; color: var(--text-secondary); padding: 0; cursor: pointer; }
+  .ibtn:hover { background: var(--hover-bg); color: var(--text-primary); }
+  .ibtn svg { width: 16px; height: 16px; }
+  .files-list { padding: 4px 0; overflow: hidden; flex: 1; }
+  .frow { display: flex; align-items: center; gap: 6px; height: 28px; padding-right: 6px; cursor: pointer; font-family: var(--font-mono); font-size: 12.5px; font-weight: 500; color: var(--text-primary); }
+  .frow:hover { background: var(--hover-bg); }
+  .frow.sel { background: var(--secondary-accent-subtle); color: var(--secondary-accent-text); font-weight: 600; }
+  .frow .chev { width: 14px; display: grid; place-items: center; color: var(--text-tertiary); flex: none; }
+  .frow .chev svg { width: 12px; height: 12px; }
+  .frow .fic { width: 14px; height: 14px; flex: none; color: var(--text-secondary); position: relative; display: grid; place-items: center; }
+  .frow .fic svg { width: 14px; height: 14px; }
+  .frow.lib .fic { color: var(--secondary-accent); }
+  .frow.dir .fic { color: var(--text-tertiary); }
+  .frow .fname { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  /* The tree keeps the extension; it reads a step quieter than the name */
+  .frow .ext { color: var(--text-tertiary); font-weight: 400; }
+  .frow.sel .ext { color: inherit; opacity: .6; }
+  /* The main badge (v1's look): only on an entry point that isn't main.pathogen */
+  .badge-main { font-family: var(--font-body); font-size: 10px; font-weight: 600; letter-spacing: .02em; padding: 1px 7px; border-radius: 999px; background: var(--secondary-accent-subtle); color: var(--secondary-accent-text); flex: none; line-height: 15px; }
+  .frow.sel .badge-main, .prow.on .badge-main { background: var(--bg-elevated); }
+  .edot { position: absolute; top: -3px; right: -4px; width: 8px; height: 8px; border-radius: 50%; background: var(--error-color); box-shadow: 0 0 0 2px var(--bg-primary); }
+  .fk { width: 20px; height: 20px; border: none; background: none; border-radius: 4px; padding: 0; display: grid; place-items: center; color: var(--text-secondary); visibility: hidden; flex: none; }
+  .fk svg { width: 16px; height: 16px; }
+  .frow:hover .fk, .frow.sel .fk, .frow.menu .fk { visibility: visible; }
+  .frow.menu { background: var(--hover-bg); }
+  .frow.menu .fk { background: var(--active-bg); color: var(--text-primary); }
+  /* J: pathogen.json, the last row of the top level: muted, with a lock where the menu button would be */
+  .frow.pj:not(.sel) { color: var(--text-secondary); font-weight: 400; }
+  .frow.pj:not(.sel) .fic, .frow.pj:not(.sel) .ext { color: var(--text-tertiary); }
+  .frow.pj .lock { width: 20px; display: grid; place-items: center; color: var(--text-tertiary); flex: none; }
+  .frow.pj.sel .lock { color: inherit; opacity: .7; }
+  .frow.pj .lock svg { width: 13px; height: 13px; }
+
+  /* Editor (code-editor-pane + CodeMirror) */
+  .ed { position: relative; min-width: 0; display: flex; flex-direction: column; background: var(--cm-host-bg); border-right: 1px solid var(--border-color); }
+  .cm { position: relative; flex: 1; overflow: hidden; font-family: var(--font-mono); font-weight: 500; font-size: 14px; line-height: 20px; padding: 4px 0; color: var(--cm-text); }
+  .cm::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 27px; background: var(--cm-gutter-bg); border-right: 1px solid var(--cm-gutter-border); }
+  .cm-ln { display: flex; position: relative; }
+  .cm-ln .gn { width: 27px; flex: none; text-align: right; padding: 0 4px 0 3px; color: var(--cm-gutter-fg); position: relative; }
+  .cm-ln .lt { flex: 1; padding: 0 2px 0 6px; white-space: pre; }
+  .cm-ln.act .lt { background: var(--cm-active); }
+  .cm-ln.act .gn { background: var(--cm-active-gutter); }
+  .cm-ln.chg .gn { box-shadow: inset -3px 0 0 var(--secondary-accent); }
+  .t-kw { color: var(--cm-kw); } .t-num { color: var(--cm-num); } .t-str { color: var(--cm-str); } .t-com { color: var(--cm-com); }
+  .t-tpl { color: var(--cm-tpl); } .t-id { color: var(--cm-id); } .t-op { color: var(--cm-op); } .t-pun { color: var(--cm-pun); }
+
+  /* Editor tabs: no .pathogen, no badges; a folder hint when two open tabs share a name. Docs toggle at the right end. */
+  .tabs { display: flex; align-items: stretch; height: 34px; flex: none; background: var(--tabs-bg); border-bottom: 1px solid var(--border-color); }
+  .tab { display: flex; align-items: center; gap: 6px; padding: 0 8px 0 12px; font-family: var(--font-mono); font-size: 12.5px; font-weight: 500; color: var(--text-secondary); border-right: 1px solid var(--border-color); cursor: pointer; white-space: nowrap; }
+  .tab .fic { width: 13px; height: 13px; display: grid; color: var(--text-secondary); }
+  .tab.lib .fic { color: var(--secondary-accent); }
+  .tab .fic svg { width: 13px; height: 13px; }
+  .tab.sel { background: var(--cm-host-bg); color: var(--text-primary); box-shadow: inset 0 2px 0 var(--secondary-accent); margin-bottom: -1px; font-weight: 600; }
+  .tab .x { color: var(--text-tertiary); width: 16px; text-align: center; font-size: 14px; }
+  .hint { color: var(--text-tertiary); font-weight: 400; }
+  .tab-add { width: 34px; display: grid; place-items: center; color: var(--text-secondary); border: none; background: none; padding: 0; }
+  .tab-add svg { width: 16px; height: 16px; }
+  /* The tabs scroll sideways (clipped here) so the docs toggle always keeps its place */
+  .tabs-scroll { flex: 1; min-width: 0; display: flex; align-items: stretch; overflow: hidden; }
+  .tabs-scroll .tab, .tabs-scroll .tab-add { flex: none; }
+  .tab-docs { width: 38px; flex: none; display: grid; place-items: center; border: none; border-left: 1px solid var(--border-color); background: none; color: var(--text-secondary); padding: 0; cursor: pointer; }
+  .tab-docs svg { width: 16px; height: 16px; }
+  .tab-docs:hover { color: var(--text-primary); background: var(--hover-bg); }
+  .tab-docs.on { color: var(--secondary-accent-text); background: var(--secondary-accent-subtle); box-shadow: inset 0 -2px 0 var(--secondary-accent); }
+  .tab .lk { display: grid; color: var(--text-tertiary); }
+  .tab .lk svg { width: 11px; height: 11px; }
+
+  /* J: the read-only line at the top of pathogen.json's editor */
+  .ro-bar { flex: none; display: flex; align-items: center; gap: 8px; padding: 6px 12px; font-family: var(--font-body); font-size: 12px; line-height: 1.4; color: var(--text-secondary); background: var(--tabs-bg); border-bottom: 1px solid var(--border-color); }
+  .ro-bar svg { width: 14px; height: 14px; flex: none; color: var(--text-tertiary); }
+  .ro-bar b { color: var(--text-primary); font-weight: 600; }
+  .ro-bar.hl { background: var(--secondary-accent-subtle); color: var(--secondary-accent-text); box-shadow: inset 3px 0 0 var(--secondary-accent); }
+  .ro-bar.hl svg, .ro-bar.hl b { color: var(--secondary-accent-text); }
+
+  /* Preview (svg-preview-pane), with no card: the drawing sits on the pane */
+  .pv { position: relative; background: var(--bg-primary); display: flex; flex-direction: column; min-width: 0; min-height: 0; }
+  .pv-box { position: relative; flex: 1; min-height: 0; }
+  .pv-canvas { position: absolute; inset: 56px 32px 60px; }
+  .pv-canvas svg { width: 100%; height: 100%; display: block; }
+  /* <text> in a drawing: the browser's default serif, as the CLI's --png renders it */
+  .pv-canvas svg text, .frame-img svg text, .prow-img svg text, .pick-img svg text { font-family: 'Times New Roman', Times, serif; }
+  .pv-canvas.z { inset: 0; }
+  .pv-box.stale .pv-canvas { opacity: .45; filter: grayscale(.35); }
+  .stale-badge { color: var(--text-primary); background: var(--bg-elevated); border: 1px solid var(--border-color); border-radius: 8px; box-shadow: var(--shadow-sm); padding: 5px 12px; font-size: 12px; font-weight: 500; white-space: nowrap; }
+  .stale-top { position: absolute; top: 14px; left: 50%; transform: translateX(-50%); z-index: 14; }
+  .pv-label { display: inline-block; font-size: 11.5px; line-height: 18px; color: var(--text-secondary); background: color-mix(in srgb, var(--bg-elevated) 88%, transparent); border: 1px solid var(--border-subtle); border-radius: 999px; padding: 3px 11px; white-space: nowrap; }
+  .pv-label code { font-size: 12px; color: var(--text-primary); font-weight: 600; }
+  .r32 { width: 32px; height: 32px; padding: 0; display: grid; place-items: center; border: 1px solid var(--border-color); border-radius: 8px; background: var(--bg-elevated); color: var(--text-secondary); box-shadow: var(--shadow-md); cursor: pointer; }
+  .r32 svg { width: 16px; height: 16px; }
+  .r32.on { background: var(--secondary-accent-subtle); border-color: var(--secondary-accent); color: var(--secondary-accent-text); }
+  .pv-fs { position: absolute; top: 12px; left: 12px; z-index: 10; }
+  .chrome-r { position: absolute; top: 12px; right: 12px; display: flex; flex-direction: column; gap: 8px; z-index: 10; }
+  .zoom-wrap { position: absolute; left: 50%; bottom: 12px; transform: translateX(-50%); z-index: 10; }
+  .zoom { display: flex; align-items: center; gap: 14px; height: 30px; padding: 0 16px; border-radius: 999px; background: var(--bg-elevated); border: 1px solid var(--border-color); box-shadow: var(--shadow-sm); font-size: 12px; color: var(--text-secondary); white-space: nowrap; }
+  .zoom i { width: 1px; height: 14px; background: var(--border-color); }
+  .zoom .pct { font-family: var(--font-mono); font-size: 10.5px; }
+  .star-i { display: inline-grid; place-items: center; width: 11px; height: 11px; color: var(--text-tertiary); flex: none; }
+  .star-i svg { width: 11px; height: 11px; }
+  .udot { width: 6px; height: 6px; border-radius: 50%; background: var(--secondary-accent); flex: none; display: inline-block; }
+  .spin { position: absolute; top: 4px; right: 4px; width: 12px; height: 12px; border-radius: 50%; border: 2px solid var(--border-strong); border-top-color: var(--secondary-accent); background: var(--bg-elevated); animation: spin .9s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .mbad { position: absolute; top: 3px; right: 3px; width: 14px; height: 14px; border-radius: 50%; background: var(--error-color); color: #fff; font-size: 10px; font-weight: 700; display: grid; place-items: center; box-shadow: 0 0 0 2px var(--bg-elevated); font-family: var(--font-sans); }
+
+  /* B: the compact Programs strip, a tray along the bottom of the preview */
+  .strip { position: relative; z-index: 12; flex: none; display: flex; gap: 6px; padding: 6px 12px; border-top: 1px solid var(--border-color); background: var(--bg-secondary); }
+  .frame { position: relative; width: 64px; padding: 0; border: none; background: none; cursor: pointer; text-align: left; flex: none; }
+  .frame-img { position: relative; display: block; height: 34px; padding: 3px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-tertiary); }
+  .frame-img svg { width: 100%; height: 100%; display: block; }
+  .frame:hover .frame-img, .frame.hov .frame-img { border-color: var(--border-strong); }
+  .frame.on .frame-img { border-color: var(--secondary-accent); box-shadow: 0 0 0 1px var(--secondary-accent); }
+  .frame.upd .frame-img svg, .frame.err .frame-img svg { opacity: .5; }
+  .frame.err .frame-img svg { filter: grayscale(.6); }
+  .frame .spin { top: 3px; right: 3px; width: 10px; height: 10px; border-width: 1.5px; }
+  .frame .mbad { top: 2px; right: 2px; width: 12px; height: 12px; font-size: 9px; }
+  .frame-l { display: flex; gap: 3px; align-items: center; margin-top: 3px; font-family: var(--font-mono); font-size: 10.5px; line-height: 13px; color: var(--text-secondary); white-space: nowrap; overflow: hidden; }
+  .frame.on .frame-l { color: var(--text-primary); font-weight: 600; }
+  .frame-l .star-i, .frame-l .star-i svg { width: 9px; height: 9px; }
+  .frame-l .udot { width: 5px; height: 5px; }
+  .mtip { position: absolute; bottom: calc(100% + 8px); left: 0; width: 300px; z-index: 30; background: #1c1722; color: #f6e9da; font-size: 12px; line-height: 1.45; padding: 8px 10px; border-radius: 6px; box-shadow: var(--shadow-lg); white-space: normal; font-family: var(--font-body); }
+  .mtip code { font-size: 11.5px; white-space: nowrap; }
+  .mtip .mt-h { color: #b5a8c4; font-size: 11px; margin-top: 4px; display: block; }
+  [data-theme='dark'] .mtip { background: #f6e9da; color: #1c1722; }
+  [data-theme='dark'] .mtip .mt-h { color: #5a4f6a; }
+
+  /* F and G: the program chip, and its list of miniatures */
+  .tgroup { position: absolute; top: 12px; left: 50%; transform: translateX(-50%); z-index: 15; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+  .bgroup { position: absolute; bottom: 12px; left: 50%; transform: translateX(-50%); z-index: 15; display: flex; align-items: center; gap: 8px; }
+  .pick { position: relative; display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 9px 0 13px; border-radius: 999px; border: 1px solid var(--border-color); background: var(--bg-elevated); box-shadow: var(--shadow-sm); cursor: pointer; font-family: var(--font-mono); font-size: 12px; font-weight: 600; color: var(--text-primary); white-space: nowrap; }
+  .pick:hover { border-color: var(--border-strong); }
+  .pick.open { border-color: var(--secondary-accent); box-shadow: 0 0 0 3px var(--secondary-accent-subtle); }
+  .pick-img { position: relative; width: 32px; height: 20px; border-radius: 4px; overflow: hidden; background: var(--bg-tertiary); flex: none; display: block; }
+  .pick-img svg { width: 100%; height: 100%; display: block; }
+  .pick .caret { display: grid; place-items: center; color: var(--text-tertiary); }
+  .pick .caret svg { width: 12px; height: 12px; }
+  .pick-err { position: absolute; top: -3px; right: -3px; width: 10px; height: 10px; border-radius: 50%; background: var(--error-color); box-shadow: 0 0 0 2px var(--bg-elevated); }
+  .pick-dd { position: absolute; z-index: 40; width: 292px; background: var(--bg-elevated); border: 1px solid var(--border-color); border-radius: 12px; box-shadow: var(--shadow-xl); padding: 6px; font-family: var(--font-body); }
+  .pick-dd.down { top: 38px; left: 50%; transform: translateX(-50%); }
+  .pick-dd.up { bottom: 38px; right: 0; }
+  .pick-h { display: flex; align-items: center; gap: 6px; padding: 4px 8px 6px; font-size: 10.5px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--text-tertiary); }
+  .pick-h .cnt { font-family: var(--font-mono); letter-spacing: 0; font-weight: 500; }
+  .prow { display: grid; grid-template-columns: 64px minmax(0,1fr) auto; gap: 10px; align-items: center; padding: 5px 6px; border-radius: 8px; cursor: pointer; }
+  .prow:hover, .prow.hov { background: var(--bg-tertiary); }
+  .prow.on { background: var(--secondary-accent-subtle); }
+  .prow-img { position: relative; display: block; width: 64px; height: 40px; padding: 3px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-tertiary); }
+  .prow.on .prow-img { border-color: var(--secondary-accent); }
+  .prow-img svg { width: 100%; height: 100%; display: block; }
+  .prow.upd .prow-img svg, .prow.err .prow-img svg { opacity: .5; }
+  .prow.err .prow-img svg { filter: grayscale(.6); }
+  .prow-t { min-width: 0; }
+  .prow-n { display: flex; align-items: center; gap: 5px; font-family: var(--font-mono); font-size: 12.5px; font-weight: 600; color: var(--text-primary); white-space: nowrap; }
+  .prow-p { display: block; font-family: var(--font-mono); font-size: 11px; color: var(--text-tertiary); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .prow-e { display: block; font-size: 11px; color: var(--error-text); margin-top: 2px; line-height: 1.3; }
+  [data-theme='dark'] .prow-e { color: #f87171; }
+  .prow-r { display: flex; align-items: center; gap: 6px; }
+  .prow-chk { display: grid; place-items: center; color: var(--secondary-accent); }
+  .prow-chk svg { width: 16px; height: 16px; }
+  .prow-open { width: 26px; height: 26px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-elevated); display: grid; place-items: center; color: var(--text-secondary); padding: 0; cursor: pointer; }
+  .prow-open svg { width: 14px; height: 14px; }
+  .pick-f { border-top: 1px solid var(--border-subtle); margin-top: 4px; padding: 7px 8px 3px; font-size: 11.5px; color: var(--text-tertiary); display: flex; align-items: center; gap: 6px; }
+  .pick-f code { font-size: 11.5px; color: var(--text-secondary); }
+
+  /* Tooltips (chip-tip look from v1) */
+  .chip-tip { position: absolute; z-index: 35; background: #1c1722; color: #f6e9da; font-size: 12px; padding: 6px 9px; border-radius: 6px; white-space: nowrap; box-shadow: var(--shadow-lg); font-family: var(--font-body); }
+  [data-theme='dark'] .chip-tip { background: #f6e9da; color: #1c1722; }
+
+  /* Inspector (inspector-panel + embedded panels), with the footer's controls in a new top section */
+  .insp { background: var(--bg-elevated); border-left: 1px solid var(--border-color); overflow: hidden; display: flex; flex-direction: column; min-width: 0; }
+  .insp-h { display: flex; align-items: center; justify-content: space-between; height: 34px; flex: none; padding: 0 6px 0 10px; border-bottom: 1px solid var(--border-color); font-size: 11px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: .03em; }
+  .insp-h .ibtn svg { width: 14px; height: 14px; }
+  .isec-h { display: flex; align-items: center; gap: 6px; padding: 6px 8px; background: var(--bg-secondary); border-bottom: 1px solid var(--border-color); font-size: 11px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: .03em; }
+  .isec-h .arr { font-size: 8px; display: inline-block; }
+  .isec-h .arr.c { transform: rotate(-90deg); }
+  .isec-h .badge { margin-left: auto; font-size: 10px; font-family: var(--font-mono); background: var(--bg-tertiary); padding: 0 6px; border-radius: 8px; line-height: 1.2rem; }
+  .isec-body { padding: 4px 0 6px; border-bottom: 1px solid var(--border-color); }
+  .irow { display: grid; grid-template-columns: 82px 1fr; align-items: center; gap: 8px; padding: 5px 10px; }
+  .irow label { color: var(--text-secondary); font-size: 12px; font-weight: 500; }
+  .irow .ctl { display: flex; align-items: center; gap: 6px; }
+  .sw { width: 18px; height: 18px; border-radius: 50%; border: 1px solid var(--border-strong); background: #fff; flex: none; }
+  .sw.grey { background: #c9c9c9; }
+  .cb { width: 15px; height: 15px; border: 1.5px solid var(--text-tertiary); border-radius: 3px; flex: none; }
+  .selc { display: inline-flex; align-items: center; gap: 8px; padding: 3px 7px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--bg-tertiary); font-family: var(--font-mono); font-size: 12px; font-weight: 500; }
+  .selc svg { width: 10px; height: 10px; color: var(--text-secondary); }
+  .ival { font-family: var(--font-mono); font-size: 11.5px; color: var(--text-tertiary); }
+  .lrow { display: flex; align-items: center; gap: 6px; height: 28px; padding: 0 8px; }
+  .lrow .cdot { width: 8px; height: 8px; border-radius: 50%; flex: none; }
+  .lrow .ln { flex: 1; font-family: var(--font-mono); font-size: 12px; color: var(--text-primary); }
+  .lrow .ty { font-family: var(--font-mono); font-size: 9px; color: var(--text-secondary); background: var(--bg-secondary); padding: 1px 4px; border-radius: 4px; }
+  .lrow .eye { width: 24px; height: 24px; display: grid; place-items: center; color: var(--text-secondary); }
+  .lrow .eye svg { width: 14px; height: 14px; }
+
+  /* Docs panel (docs-panel.ts): slides in from the right, as today */
+  .docsp { position: absolute; top: 0; right: 0; bottom: 0; width: 420px; z-index: 45; background: var(--bg-elevated); border-left: 1px solid var(--border-color); box-shadow: -4px 0 24px rgba(0,0,0,.15); display: flex; flex-direction: column; }
+  .docsp-h { display: flex; align-items: center; justify-content: space-between; padding: 14px 18px; border-bottom: 1px solid var(--border-color); }
+  .docsp-h h2 { margin: 0; font-size: 17px; font-weight: 600; font-family: var(--font-body); }
+  .docsp-h .x { font-size: 20px; color: var(--text-secondary); }
+  .docsp-tabs { display: flex; gap: 2px; padding: 8px 12px; border-bottom: 1px solid var(--border-color); flex-wrap: wrap; }
+  .docsp-tabs span { padding: 5px 10px; border-radius: 6px; font-size: 12.5px; color: var(--text-secondary); }
+  .docsp-tabs span.on { background: var(--secondary-accent-subtle); color: var(--secondary-accent-text); font-weight: 600; }
+  .docsp-body { padding: 14px 18px; font-size: 13px; line-height: 1.55; color: var(--text-secondary); overflow: hidden; }
+  .docsp-body h3 { margin: 0 0 6px; font-size: 15px; color: var(--text-primary); font-weight: 600; }
+  .docsp-body pre { font-family: var(--font-mono); background: var(--bg-tertiary); padding: 8px 10px; border-radius: 6px; font-size: 12.5px; color: var(--text-primary); margin: 8px 0 12px; }
+
+  /* Error panel (shared/error-panel.ts), over the editor column, never the tree */
+  .errp { position: absolute; bottom: 12px; z-index: 20; background: var(--error-bg); color: var(--error-text); padding: 12px 20px; font-family: var(--font-mono); font-size: 14px; line-height: 1.4; border: 1px solid var(--error-border); border-radius: 8px; box-shadow: var(--shadow-md); }
+  .errp .content { white-space: pre-wrap; word-break: break-word; max-height: calc(1.4em * 7); overflow: hidden; padding-right: 120px; }
+  .errp .dbg { position: absolute; bottom: 12px; right: 20px; padding: 4px 10px; border: 1px solid var(--error-text); border-radius: 4px; background: transparent; color: var(--error-text); font-family: var(--font-sans); font-size: 12px; font-weight: 500; }
+  .errp .who { display: block; font-family: var(--font-sans); font-size: 11.5px; font-weight: 600; margin-bottom: 4px; opacity: .85; }
+  .errp a { color: inherit; text-decoration: underline; text-underline-offset: 2px; font-weight: 600; cursor: pointer; }
+
+  /* Menus (kebab-menu look from app-breadcrumb.css) */
+  .dd { position: absolute; z-index: 40; min-width: 230px; background: var(--bg-elevated); border: 1px solid var(--border-color); border-radius: 12px; box-shadow: var(--shadow-lg); padding: 6px; overflow: hidden; }
+  .dd::before { content: ''; position: absolute; inset: 0; background: radial-gradient(380px 180px at 100% 0%, var(--secondary-accent-subtle), transparent 60%); pointer-events: none; }
+  .dd > * { position: relative; }
+  .dd button { display: grid; grid-template-columns: 20px 1fr auto; align-items: center; gap: 12px; width: 100%; padding: 8px 10px; border: none; background: transparent; text-align: left; font-size: 13px; font-weight: 500; color: var(--text-primary); border-radius: 6px; cursor: pointer; }
+  .dd button:hover, .dd button.hl { background: var(--bg-tertiary); }
+  .dd button svg { width: 16px; height: 16px; color: var(--text-secondary); }
+  .dd button small { display: block; color: var(--text-tertiary); font-weight: 400; font-size: 11.5px; margin-top: 1px; }
+  .dd .div { height: 1px; background: var(--border-subtle); margin: 4px 6px; }
+  .dd .danger, .dd .danger svg { color: var(--error-color); }
+  .dd .dd-h { padding: 6px 10px 4px; font-size: 10.5px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--text-tertiary); }
+  .dd .dd-h code { font-size: 11px; letter-spacing: 0; text-transform: none; color: var(--text-secondary); }
+
+  /* N: adding files. The name field, its hint, an empty folder, the "+" pressed */
+  .files-head .ibtn.on { background: var(--secondary-accent-subtle); color: var(--secondary-accent-text); }
+  .frow .fic.lib { color: var(--secondary-accent); }
+  .frow.input { cursor: text; }
+  .fin { flex: 1; min-width: 0; display: flex; align-items: center; height: 22px; margin-right: 4px; padding: 0 6px; border: 1px solid var(--secondary-accent); border-radius: 4px; background: var(--bg-elevated); box-shadow: 0 0 0 2px var(--secondary-accent-subtle); white-space: nowrap; overflow: hidden; }
+  .fin .ext { color: var(--text-tertiary); font-weight: 400; }
+  .fin .cursor { width: 1.5px; height: 14px; background: var(--text-primary); margin: 0 1px; flex: none; }
+  .fin.bad { border-color: var(--error-color); box-shadow: 0 0 0 2px color-mix(in srgb, var(--error-color) 18%, transparent); }
+  .fhint { font-size: 11px; line-height: 1.35; color: var(--text-tertiary); padding: 2px 10px 6px 0; }
+  .fhint code { font-size: 11px; }
+  .fhint.bad { color: var(--error-text); }
+  [data-theme='dark'] .fhint.bad { color: #f87171; }
+  .frow.empty { cursor: default; font-family: var(--font-body); font-style: italic; font-weight: 400; font-size: 12px; color: var(--text-tertiary); }
+  .frow.empty:hover { background: none; }
+
+  /* U: uploads. The drop target, new rows, the drag ghost, the clash prompt, the toast */
+  .frow.drop { background: var(--secondary-accent-subtle); box-shadow: inset 0 0 0 1.5px var(--secondary-accent); border-radius: 4px; color: var(--secondary-accent-text); }
+  .frow.in-drop { background: color-mix(in srgb, var(--secondary-accent-subtle) 55%, transparent); }
+  .frow.flash { background: color-mix(in srgb, var(--success-color) 16%, transparent); }
+  .ghost { position: absolute; z-index: 50; display: flex; flex-direction: column; gap: 3px; pointer-events: none; }
+  .ghost .gf { display: inline-flex; align-items: center; gap: 6px; padding: 4px 9px; border-radius: 6px; background: var(--bg-elevated); border: 1px solid var(--border-strong); box-shadow: var(--shadow-lg); font-family: var(--font-mono); font-size: 12px; color: var(--text-primary); white-space: nowrap; }
+  .ghost .gf svg { width: 13px; height: 13px; color: var(--secondary-accent); }
+  .ghost .gl { font-size: 11.5px; font-weight: 600; color: var(--secondary-accent-text); background: var(--bg-elevated); border-radius: 999px; padding: 2px 9px; align-self: flex-start; border: 1px solid var(--secondary-accent); }
+  .clash { position: absolute; z-index: 45; width: 300px; background: var(--bg-elevated); border: 1px solid var(--border-color); border-radius: 10px; box-shadow: var(--shadow-lg); padding: 11px 12px 12px; font-size: 12.5px; color: var(--text-secondary); line-height: 1.45; }
+  .clash::before { content: ''; position: absolute; left: -6px; top: 12px; width: 10px; height: 10px; background: var(--bg-elevated); border-left: 1px solid var(--border-color); border-bottom: 1px solid var(--border-color); transform: rotate(45deg); }
+  .clash b { color: var(--text-primary); font-weight: 600; }
+  .clash code { font-size: 12px; color: var(--text-primary); }
+  .clash .row { display: flex; gap: 6px; margin-top: 9px; }
+  .clash .row button { flex: 1; padding: 5px 8px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-tertiary); font-size: 12px; font-weight: 600; color: var(--text-primary); cursor: pointer; }
+  .clash .row button.pri { background: var(--secondary-accent-subtle); border-color: var(--secondary-accent); color: var(--secondary-accent-text); }
+  .clash small { display: block; margin-top: 7px; font-size: 11px; color: var(--text-tertiary); }
+  /* app-toast (shared/app-toast.ts): top right, accent bar on the left; red for errors */
+  .toast { position: absolute; top: 14px; right: 16px; z-index: 70; width: 360px; display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: start; padding: 11px 14px; background: var(--bg-elevated); border: 1px solid var(--border-color); border-left: 3px solid var(--accent-color); border-radius: 8px; box-shadow: var(--shadow-lg); font-size: 13px; line-height: 1.45; color: var(--text-primary); }
+  .toast.error { border-left-color: var(--error-color); }
+  .toast .x { color: var(--text-tertiary); font-size: 16px; line-height: 1; }
+  .toast code { font-size: 12px; white-space: nowrap; }
+  .toast ul { margin: 4px 0 0; padding-left: 16px; color: var(--text-secondary); }
+  .toast li { margin: 3px 0; }
+
+  /* E: the export dialog's Project format */
+  .modal-bd { position: absolute; inset: 0; z-index: 60; background: rgba(20,16,28,.45); display: grid; place-items: center; }
+  .modal { width: 580px; background: var(--bg-elevated); border-radius: 14px; border: 1px solid var(--border-color); box-shadow: var(--shadow-xl); overflow: hidden; }
+  .modal-h { display: flex; justify-content: space-between; align-items: center; padding: 14px 18px; border-bottom: 1px solid var(--border-color); }
+  .modal-h h2 { margin: 0; font-size: 17px; font-weight: 600; font-family: var(--font-body); }
+  .modal-h .x { font-size: 20px; color: var(--text-secondary); }
+  .modal-b { padding: 14px 18px; display: grid; gap: 12px; }
+  .modal-b > label { font-size: 12px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: .03em; }
+  .fmt { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+  .fmt span { border: 1px solid var(--border-color); border-radius: 8px; padding: 7px 8px; text-align: center; font-size: 13px; font-weight: 600; background: var(--bg-tertiary); color: var(--text-primary); }
+  .fmt span small { display: block; font-weight: 400; font-size: 11px; color: var(--text-tertiary); }
+  .fmt span.on { border-color: var(--secondary-accent); background: var(--secondary-accent-subtle); color: var(--secondary-accent-text); }  .modal-b p { margin: 0; font-size: 13px; color: var(--text-secondary); line-height: 1.5; }
+  .ptree { font-family: var(--font-mono); font-size: 12.5px; line-height: 21px; background: var(--bg-tertiary); border-radius: 8px; padding: 8px 12px; color: var(--text-primary); }
+  .ptree .dirn { color: var(--text-secondary); }
+  .ptree .gen { color: var(--secondary-accent-text); font-weight: 600; }
+  .ptree .note { font-family: var(--font-body); color: var(--text-tertiary); font-size: 11.5px; margin-left: 10px; }
+  .ptree .json { display: block; margin: 2px 0 4px 18px; padding: 4px 8px; border-left: 2px solid var(--secondary-accent); color: var(--text-primary); }
+  .modal-f { display: flex; justify-content: flex-end; gap: 8px; padding: 12px 18px; border-top: 1px solid var(--border-color); }
+  .btn-p { background: var(--accent-color); color: var(--accent-text); border: none; border-radius: 8px; padding: 8px 14px; font-weight: 600; font-size: 13px; }
+  .btn-g { background: transparent; color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 8px; padding: 8px 14px; font-weight: 500; font-size: 13px; }
+
+  /* Boards: side-by-side crops inside one window */
+  .board { display: grid; gap: 16px; padding: 20px; }
+  .bcard { background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 12px; overflow: hidden; display: flex; flex-direction: column; }
+  .bcap { padding: 12px 14px 14px; font-size: 13px; color: var(--text-secondary); line-height: 1.45; }
+  .bcap h4 { margin: 0 0 4px; font-size: 14px; color: var(--text-primary); font-weight: 600; }
+  .bcap h4 .tag { margin-left: 6px; vertical-align: 1px; }
+  .crop { overflow: hidden; border-bottom: 1px solid var(--border-color); background: var(--mock-page); }
+  /* Crops: the tree and the preview only (no editor or crumb), at about half size */
+  .crop .window { zoom: .512; width: 760px; border-radius: 0; box-shadow: none; border: none; }
+  .ws.ws-crop { grid-template-columns: 248px minmax(0,1fr); }
+  .crop .window * { animation: none !important; }
+
+  /* Comparison table */
+  .cmp { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 13px; }
+  .cmp th, .cmp td { text-align: left; padding: 6px 10px; border-bottom: 1px solid var(--border-color); vertical-align: top; }
+  .cmp th { color: var(--text-primary); font-weight: 600; }
+  .cmp td:first-child { color: var(--text-primary); }
+  .cmp .y { color: var(--success-color); font-weight: 600; }
+  .cmp .n { color: var(--error-text); font-weight: 600; }
+  [data-theme='dark'] .cmp .n { color: #f87171; }
+</style>
+</head>
+<body>
+
+<div class="harness">
+  <h1>Multi-file workspaces — mockup v6</h1>
+  <nav id="screens">
+    <button data-s="pj" aria-pressed="true">J · pathogen.json</button>
+    <button data-s="main">E · The main</button>
+    <button data-s="add">N · New files</button>
+    <button data-s="upload">U · Uploads</button>
+    <button data-s="base">0 · Layout</button>
+    <button data-s="picker">G · The program chip</button>
+  </nav>
+  <span class="spacer"></span>
+  <button class="tgl" id="theme">Toggle light / dark</button>
+</div>
+
+<!-- ============ J. PATHOGEN.JSON ============ -->
+<section class="screen active" id="s-pj">
+  <div class="notes">
+    <h2>J · <code>pathogen.json</code> in the tree, read-only <span class="tag ask">new, for your review</span></h2>
+    <div class="cols">
+      <ul>
+        <li><b>Every workspace shows it,</b> a new one included (state 1): the last row of the top level, quieter than your files, with a lock where the menu button would be. It has no row menu, so no Rename, Delete or Move. Hovering it says what it is.</li>
+        <li><b>Open it</b> like any file (state 2). Its tab keeps <code>.json</code>; only <code>.pathogen</code> is dropped from tab labels. Opening it doesn't change the preview, and the chip never lists it.</li>
+        <li><b>What it holds:</b> <code>entryPoints</code>, the workspace's programs in order. The first is the main. Libraries aren't listed; <code>module;</code> is what makes a file a library.</li>
+        <li><b>Read-only for you.</b> A line at the top of the editor says the playground writes the file and how to change the main. Typing does nothing, and the line lights up to say why (state 3).</li>
+      </ul>
+      <ul>
+        <li><b>The playground keeps it current.</b> A new or uploaded program is added at the end (state 4); renaming a file rewrites its entry; deleting one drops it. Screen E has Set as main and deleting the main.</li>
+        <li><b>Not stored as text.</b> The workspace stores the list, and the file is written from it the same way every time, so the two can't disagree (storage design, 2b). Export (2g) writes this same file.</li>
+        <li><b>The name is reserved, in every folder</b> (state 5). A <code>pathogen.json</code> can only arrive by drag and drop or Upload folder…, since the picker shows only <code>.pathogen</code> files. At the top it would replace the playground's own file; inside a folder, the CLI would treat that folder as a project of its own, and its <code>../</code> imports would stop working. Either way it's left out, and the toast says why. Importing a whole project is step 2g.</li>
+        <li><b>A program that isn't listed</b> (a project from VS Code, say) still compiles and still appears, after the listed ones. Only the order depends on the list.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="statebar" id="st-pj">
+    <span class="lbl">State</span>
+    <button data-st="new" aria-pressed="true">New workspace</button>
+    <button data-st="open">Opened</button>
+    <button data-st="readonly">Typing in it</button>
+    <button data-st="appended">A new program</button>
+    <button data-st="reserved">Dropping a pathogen.json</button>
+  </div>
+  <div class="statedesc" id="sd-pj"></div>
+  <div class="frame-out"><div class="window" id="w-pj"></div></div>
+</section>
+
+<!-- ============ N. NEW FILES AND FOLDERS ============ -->
+<section class="screen" id="s-add">
+  <div class="notes">
+    <h2>N · The "+" in the Files header: new files and folders <span class="tag done">approved in your v5 review</span></h2>
+    <div class="cols">
+      <ul>
+        <li><b>The "+"</b> opens a menu (state 1): New program, New library and New folder, then Upload files… and Upload folder… (screen U). Its first line says where things go: the folder of the row you're on (here <code>parts/</code>, because you're editing <code>parts/gears.pathogen</code>), or the top of the workspace.</li>
+        <li>A folder's row menu has the same items, for that folder.</li>
+        <li><b>The tabs bar loses its "+".</b> Files are added in one place, the tree. When the tree is hidden, the breadcrumb's Files button brings it back.</li>
+        <li><b>New program or library</b> (state 2): a name field appears first in that folder. You type the name, and <code>.pathogen</code> is added for you. A slash makes folders: <code>shapes/star</code> creates <code>shapes/</code> too. Enter creates the file; Esc cancels.</li>
+      </ul>
+      <ul>
+        <li><b>A name already there</b> (state 3) is refused in place. Names are compared without case, so <code>Gears.pathogen</code> and <code>gears.pathogen</code> can't both exist: they would collide once the project is a folder on macOS or Windows. Which characters a name may hold (spaces, for one) is a question for the storage design (2b).</li>
+        <li><b>What a new file starts with:</b> a library, <code>module;</code> and a one-line comment (state 4). A program starts like a new workspace, with <code>define ViewBox</code> and the default layer (state 5).</li>
+        <li><b>After creating,</b> the file opens in a new tab. The preview doesn't change; a new program goes at the end of the chip's list and of <code>entryPoints</code> (state 5). <b>Changed in v6:</b> v5 sorted it in by path.</li>
+        <li><b>New folder</b> (state 6): a folder with nothing in it shows "Empty", and it is selected, so the "+" now adds to it. <b>Decided in your v5 review:</b> an empty folder is kept, so the structure you make survives a reload. The workspace stores folders as well as files (storage design, 2b).</li>
+      </ul>
+    </div>
+  </div>
+  <div class="statebar" id="st-add">
+    <span class="lbl">State</span>
+    <button data-st="menu" aria-pressed="true">The "+" menu</button>
+    <button data-st="naming">Naming a library</button>
+    <button data-st="taken">Name taken</button>
+    <button data-st="new-library">New library</button>
+    <button data-st="new-program">New program</button>
+    <button data-st="new-folder">New folder</button>
+  </div>
+  <div class="statedesc" id="sd-add"></div>
+  <div class="frame-out"><div class="window" id="w-add"></div></div>
+</section>
+
+<!-- ============ U. UPLOADS ============ -->
+<section class="screen" id="s-upload">
+  <div class="notes">
+    <h2>U · Uploading files from your computer <span class="tag done">approved in your v5 review</span></h2>
+    <div class="cols">
+      <ul>
+        <li><b>Two ways in.</b> "Upload files…" or "Upload folder…" in the "+" menu opens your system's file picker. Or drag files and folders from your desktop onto the tree (state 1): the folder under the pointer lights up, and that's where they go. Dropping on a file means its folder; on empty space, the top.</li>
+        <li><b>Two picker items, because of the browser:</b> one picker can choose several files, or one folder, but not both at once.</li>
+        <li><b>A folder keeps its insides:</b> <code>shapes/</code> holding <code>star.pathogen</code> and <code>round/dot.pathogen</code> lands as <code>shapes/star.pathogen</code> and <code>shapes/round/dot.pathogen</code>.</li>
+        <li><b>Same name</b> (state 2): files without a clash go in at once. For each clash, a small prompt beside the tree asks: Replace, Keep both (the new one becomes <code>labels-2.pathogen</code>), or Skip. With several clashes it offers "Do this for all". Names are compared without case, as for new files.</li>
+      </ul>
+      <ul>
+        <li><b>After</b> (state 3): the new rows flash, and a toast says what was added. One file opens in a tab; several don't. The preview doesn't change; uploaded programs go at the end of the chip's list and of <code>entryPoints</code>.</li>
+        <li><b>What can be added</b> (state 4): <code>.pathogen</code> files only, in phase 2. The picker shows only <code>.pathogen</code> files, so other types arrive only by drag and drop. The toast names each file left out, and why. A <code>pathogen.json</code> gets a message of its own (screen J, state 5).</li>
+        <li><b>Decided in your v5 review: font files</b> wait for the work on other file types (.json, .csv, .svg and fonts), after phase 2. Until then they're refused with the playground's existing font message.</li>
+        <li><b>Open:</b> size limits, per file and per workspace (the server has no limit on code today; it's on the backlog): storage design, 2b. Importing a whole project folder is step 2g.</li>
+        <li>Moving a file by dragging it within the tree is a rename, so it rewrites imports too. Not drawn here.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="statebar" id="st-upload">
+    <span class="lbl">State</span>
+    <button data-st="drag" aria-pressed="true">Dragging onto a folder</button>
+    <button data-st="clash">Same name</button>
+    <button data-st="added">Added</button>
+    <button data-st="unsupported">Files it can't take</button>
+  </div>
+  <div class="statedesc" id="sd-upload"></div>
+  <div class="frame-out"><div class="window" id="w-upload"></div></div>
+</section>
+
+<!-- ============ 0. LAYOUT ============ -->
+<section class="screen" id="s-base">
+  <div class="notes">
+    <h2>0 · The layout <span class="tag done">approved in your v4 review</span></h2>
+    <div class="cols">
+      <ul>
+        <li><b>The program chip</b> sits beside the zoom controls, the two centred at the bottom. Closed, it shows the program's name and a caret. Screen G has the details.</li>
+        <li><b>Only the chip changes the preview.</b> Opening a file from the tree or a tab, or editing a library, leaves the preview on the program you chose (state 2).</li>
+        <li>A workspace opens on its main: the first program in <code>pathogen.json</code>'s <code>entryPoints</code>, which is <code>main.pathogen</code> unless another file has the <code>main</code> badge (screen E). If the program shown is deleted, the preview goes back to the main.</li>
+      </ul>
+      <ul>
+        <li><b>As in v4:</b> the tree and the breadcrumb keep <code>.pathogen</code>, the tabs don't; no card around the preview; no footer; Docs at the right end of the tabs bar; Background, Grid and Precision in the inspector's Canvas section; no minimap.</li>
+        <li><b>As in v5:</b> the tabs bar has no "+" (screen N; kept in your v5 review).</li>
+        <li><b>New in v6:</b> every tree ends with <code>pathogen.json</code> (screen J), a new workspace's too (state 1).</li>
+        <li><b>The mini-workspace</b> will get Background and Grid, not Precision. It gets its own mockup when it's built (step 2d). Export is left out until step 2g.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="statebar" id="st-base">
+    <span class="lbl">State</span>
+    <button data-st="new" aria-pressed="true">New workspace</button>
+    <button data-st="files">Opening another file</button>
+    <button data-st="docs">Docs open</button>
+    <button data-st="inspector">Inspector open</button>
+  </div>
+  <div class="statedesc" id="sd-base"></div>
+  <div class="frame-out"><div class="window" id="w-base"></div></div>
+</section>
+
+<!-- ============ G. THE PROGRAM CHIP ============ -->
+<section class="screen" id="s-picker">
+  <div class="notes">
+    <h2>G · The program chip, beside the zoom controls <span class="tag done">approved in your v4 review</span></h2>
+    <div class="cols">
+      <ul>
+        <li><b>The chip</b> names the program shown. Click it for the list, which opens upward: each program with a miniature, its name, its path, and a check on the one shown. Every file that isn't a library is listed, with or without <code>define ViewBox</code>.</li>
+        <li><b>Changed in v6: the order is <code>entryPoints</code>'</b>, the main first, then the others in the order they were added; a program that isn't listed comes after them. v5 put the entry point first and sorted the rest by path. In this example the two orders happen to match.</li>
+        <li><b>Click a row</b> to show that program. <b>Hover a row</b> for "Open in the editor", which opens the file and leaves the preview alone (state 2).</li>
+        <li><b>The dot</b> before a name: that program uses the file you're editing. Its tooltip says so.</li>
+      </ul>
+      <ul>
+        <li><b>Editing a library</b> (state 3): the preview stays on what you chose. Programs that use the library get the dot; the ones not shown spin until they redraw.</li>
+        <li><b>Editing a program that isn't shown</b> (state 4): the preview stays on main, so typing in try-sizes doesn't change it. In the list, try-sizes has the dot.</li>
+        <li><b>An error in another program</b> (state 5): a red dot on the chip; the row says where it failed.</li>
+        <li><b>Zoomed in</b> (state 6): no navigator. Drag the drawing to pan; Fit takes you back.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="statebar" id="st-picker">
+    <span class="lbl">State</span>
+    <button data-st="closed" aria-pressed="true">Closed</button>
+    <button data-st="open">Open</button>
+    <button data-st="library">Editing a library</button>
+    <button data-st="other-program">Editing another program</button>
+    <button data-st="error">Another program broke</button>
+    <button data-st="zoomed">Zoomed in</button>
+  </div>
+  <div class="statedesc" id="sd-picker"></div>
+  <div class="frame-out"><div class="window" id="w-picker"></div></div>
+</section>
+
+<!-- ============ E. THE MAIN BADGE ============ -->
+<section class="screen" id="s-main">
+  <div class="notes">
+    <h2>E · The main: first in <code>entryPoints</code> <span class="tag done">badge and menu approved in v4</span> <span class="tag ask">list behaviour new, for your review</span></h2>
+    <div class="cols">
+      <ul>
+        <li><b>The main is the first entry</b> in <code>pathogen.json</code>'s <code>entryPoints</code>: what thumbnails and publishing use, and what <code>pathogen-lang &lt;folder&gt;</code> compiles. A new workspace's list is <code>["main.pathogen"]</code>, and while <code>main.pathogen</code> is first, nothing marks it.</li>
+        <li><b>"Set as main"</b> in a program's row menu (state 1) moves that file to the front of the list (state 2). The old main moves to second, and the rest keep their order. The new main gets the <code>main</code> badge, in the tree and in the chip's list, as approved in v4. With <code>pathogen.json</code> open, you see the list change.</li>
+        <li>On <code>main.pathogen</code>, the same item moves it back to the front, and the badge goes.</li>
+        <li><b>Setting the main doesn't change the preview:</b> in state 2 the chip still shows main.</li>
+        <li><b>Renaming a file</b> rewrites its entry, as it rewrites the import paths in the other files (step 2d). Renaming <code>main.pathogen</code> to <code>poster.pathogen</code> keeps it first, so <code>poster.pathogen</code> gets the badge.</li>
+      </ul>
+      <ul>
+        <li><b>Deleting the main</b> (state 3, <b>changed in v6</b>, decided in note 45 and drawn here for the first time): the next entry becomes the main, and a toast says so. After a Set as main, the next entry is the old main, so deleting the new one brings the old one back. v5 said <code>main.pathogen</code> took over, or you were asked.</li>
+        <li><b>The main becomes a library</b> (state 4, decided in note 45 and drawn here for the first time). Adding <code>module;</code> to any other program takes it out of the list (and taking the line out appends it again). The main stays first instead, with an error, so the main never changes without you choosing it. The compiler's own error names the line; the playground adds what to do about the main.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="statebar" id="st-main">
+    <span class="lbl">State</span>
+    <button data-st="menu" aria-pressed="true">Set as main</button>
+    <button data-st="set">After Set as main</button>
+    <button data-st="delete">Deleting the main</button>
+    <button data-st="library">The main becomes a library</button>
+  </div>
+  <div class="statedesc" id="sd-main"></div>
+  <div class="frame-out"><div class="window" id="w-main"></div></div>
+</section>
+
+<script>
+/* ---------- the example workspace: real sources + CLI-compiled SVGs, inlined by build.ts ---------- */
+const DATA = __DATA__;
+const SRC = DATA.src, SVG = DATA.svg;
+
+/* ---------- icons (24-unit stroke, like the preview chrome) ---------- */
+const sv = (d, extra = '') => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"${extra}>${d}</svg>`;
+const I = {
+  camera: sv('<path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/>'),
+  layers: sv('<path d="M12 2 2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>'),
+  expand: sv('<path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/>'),
+  kebab: `<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="12" cy="5" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="12" cy="19" r="1.8"/></svg>`,
+  plus: sv('<path d="M12 5v14M5 12h14"/>'),
+  chevD: sv('<path d="m6 9 6 6 6-6"/>'),
+  chevU: sv('<path d="m6 15 6-6 6 6"/>'),
+  prog: sv('<path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6"/><path d="M8 16c1.4-2.6 2.6-2.6 4 0s2.6 2.6 4 0"/>'),
+  lib: sv('<path d="M21 8 12 3 3 8v8l9 5 9-5z"/><path d="m3 8 9 5 9-5M12 13v8"/>'),
+  folder: sv('<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>'),
+  filePlus: sv('<path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6M12 12v6M9 15h6"/>'),
+  pencil: sv('<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/>'),
+  copy: sv('<rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>'),
+  trash: sv('<path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/>'),
+  star: sv('<path d="m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z"/>'),
+  radio: sv('<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3" fill="currentColor"/>'),
+  book: sv('<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>'),
+  x: sv('<path d="M18 6 6 18M6 6l12 12"/>'),
+  check: sv('<path d="M20 6 9 17l-5-5"/>'),
+  code: sv('<path d="m16 18 6-6-6-6M8 6l-6 6 6 6"/>'),
+  upload: sv('<path d="M12 15V3M7 8l5-5 5 5"/><path d="M4 15v4a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-4"/>'),
+  folderPlus: sv('<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M12 10v6M9 13h6"/>'),
+  folderUp: sv('<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M12 16v-6M9 12.5l3-3 3 3"/>'),
+  file: sv('<path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6"/>'),
+  eye: sv('<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>'),
+  lock: sv('<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>'),
+  braces: sv('<path d="M8 3H7a2 2 0 0 0-2 2v5a2 2 0 0 1-2 2 2 2 0 0 1 2 2v5a2 2 0 0 0 2 2h1M16 3h1a2 2 0 0 1 2 2v5a2 2 0 0 0 2 2 2 2 0 0 0-2 2v5a2 2 0 0 1-2 2h-1"/>'),
+  sun: sv('<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>', ' class="sun"'),
+  moon: sv('<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/>', ' class="moon"'),
+};
+
+/* ---------- the workspace model, derived from the sources (imports are read from the import lines) ---------- */
+const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+const baseName = p => p.split('/').pop();
+const folderOf = p => p.includes('/') ? p.slice(0, p.lastIndexOf('/')) : '';
+const isLib = p => !!SRC[p] && SRC[p].includes('module;');
+function resolveImport(from, spec) {
+  const parts = from.split('/').slice(0, -1);
+  for (const seg of spec.replace(/\.pathogen$/, '').split('/')) {
+    if (seg === '.' || seg === '') continue;
+    if (seg === '..') parts.pop(); else parts.push(seg);
+  }
+  return parts.join('/');
+}
+const importsOf = p => (SRC[p] || []).map(l => /^import .* from "([^"]+)"/.exec(l)).filter(Boolean).map(m => resolveImport(p, m[1]));
+/* direct or through another library */
+function uses(p, target, seen = new Set()) {
+  if (seen.has(p)) return false;
+  seen.add(p);
+  return importsOf(p).some(q => q === target || uses(q, target, seen));
+}
+const PROG_ART = { 'main': 'main', 'demos/gears': 'demo', 'try-sizes': 'try', 'poster': 'blank', 'shapes/star': 'blank' };
+/* The main gains module; (screen E, state 4): its first line is the header, the rest as before */
+SRC['main#module'] = ['module;', ...SRC.main];
+/* pathogen.json: written from the workspace's entry-point list, never stored as text */
+const PJ = 'pathogen.json';
+/* entryPoints, in the order the programs were added; the first is the main */
+const ENTRY = ['main', 'demos/gears', 'try-sizes'];
+const entryList = c => (c.newWs ? ['main'] : c.entry || ENTRY);
+const primaryOf = c => entryList(c)[0];
+/* c.libNow: a program whose module; header was just typed (the sources don't change) */
+const isLibIn = (c, p) => (c.libNow || []).includes(p) || isLib(p);
+/* The chip's list: entryPoints' order (the main stays first even when it's broken), then any
+   program that isn't listed (c.unlisted: one from VS Code, say), by path. Libraries never. */
+function programs(c) {
+  const listed = entryList(c).filter((p, i) => i === 0 || !isLibIn(c, p));
+  return [...listed, ...(c.unlisted || []).filter(p => !listed.includes(p)).sort()];
+}
+/* The file's text, as JSON.stringify(..., null, 2) writes it */
+const pjLines = c => JSON.stringify({ entryPoints: entryList(c).map(p => `${p}.pathogen`) }, null, 2).split('\n');
+
+/* A name gets a quiet folder hint when another name in the same set matches it (VS Code's rule). */
+function label(p, set) {
+  const clash = set.some(q => q !== p && baseName(q) === baseName(p));
+  return `${esc(baseName(p))}${clash ? ` <span class="hint">· ${esc(folderOf(p) || '/')}</span>` : ''}`;
+}
+
+/* ---------- drawings: the CLI's SVG, with an optional crop (zoom) and view rectangle (navigator) ---------- */
+function art(key, o = {}) {
+  let s = SVG[key].svg;
+  if (o.crop) s = s.replace(/viewBox="[^"]*"/, `viewBox="${o.crop.join(' ')}" preserveAspectRatio="xMidYMid slice"`);
+  if (o.vp) {
+    const [x, y, w, h] = o.vp;
+    s = s.replace(/<\/svg>$/, `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="2" style="fill:var(--accent-subtle);stroke:var(--accent-color);stroke-width:1.5" vector-effect="non-scaling-stroke"/></svg>`);
+  }
+  return s;
+}
+function progArt(c, p) {
+  if (c.newWs) return 'blank';
+  if (c.edited && p === 'main') return 'mainEdited';
+  return PROG_ART[p];
+}
+
+/* ---------- a tiny Pathogen highlighter (tags from src/parser/highlight.ts) ---------- */
+const KW = new Set('define default ViewBox PathLayer TextLayer calc layer apply text tspan for in if else let const enum fn return break continue switch case where import export with as from module'.split(' '));
+function tokens(line) {
+  const out = [], re = /(\/\/.*$)|("[^"]*"|'[^']*')|(`[^`]*`)|(#[0-9a-fA-F]{3,6}\b)|(\d+(?:\.\d+)?)|([A-Za-z_][\w-]*)|(\.\.|[=+\-*/<>!?:%.])|(\s+)|(.)/g;
+  let m;
+  while ((m = re.exec(line))) {
+    const c = m[1] ? 'com' : m[2] ? 'str' : m[3] ? 'tpl' : m[4] ? 'num' : m[5] ? 'num' : m[6] ? (KW.has(m[0]) ? 'kw' : 'id') : m[7] ? 'op' : m[8] ? '' : 'pun';
+    out.push({ t: m[0], c });
+  }
+  return out;
+}
+const lineHtml = text => tokens(text).map(tk => tk.c ? `<span class="t-${tk.c}">${esc(tk.t)}</span>` : esc(tk.t)).join('') || ' ';
+
+/* ---------- layout constants ---------- */
+const TREE_W = 248, HEAD_H = 34, ROW_H = 28, LIST_PAD = 4;
+
+/* ---------- tree data (folders first, then files, as VS Code sorts) ---------- */
+const DEMOS = [{ folder: 'demos' }, { p: 'demos/gears', d: 1 }];
+const PARTS = [{ p: 'parts/gears', d: 1 }, { p: 'parts/kit', d: 1 }, { p: 'parts/labels', d: 1 }];
+const ROOT = [{ p: 'main' }, { p: 'try-sizes' }];
+const TAKEN = 'parts/ already has gears.pathogen.';
+const TREES = {
+  base: [...DEMOS, { folder: 'parts' }, ...PARTS, ...ROOT],
+  new: [{ p: 'main' }],
+  /* "+" screen: the name field sits first in its folder, as VS Code puts it */
+  naming: [...DEMOS, { folder: 'parts' }, { input: 'ratchet', kind: 'lib', d: 1, hint: 'Starts with <code>module;</code> · Enter to create, Esc to cancel' }, ...PARTS, ...ROOT],
+  taken: [...DEMOS, { folder: 'parts' }, { input: 'gears', kind: 'lib', d: 1, err: true, hint: TAKEN }, ...PARTS, ...ROOT],
+  newlib: [...DEMOS, { folder: 'parts' }, ...PARTS, { p: 'parts/ratchet', d: 1 }, ...ROOT],
+  newprog: [...DEMOS, { folder: 'parts' }, ...PARTS, { p: 'main' }, { p: 'poster' }, { p: 'try-sizes' }],
+  newfolder: [...DEMOS, { folder: 'examples', sel: true }, { empty: true, d: 1 }, { folder: 'parts' }, ...PARTS, ...ROOT],
+  /* uploads */
+  drag: [...DEMOS, { folder: 'parts', drop: true }, ...PARTS.map(r => Object.assign({ inDrop: true }, r)), ...ROOT],
+  conflict: [...DEMOS, { folder: 'parts' }, ...PARTS, { p: 'parts/springs', d: 1, flash: true }, ...ROOT],
+  uploaded: [...DEMOS, { folder: 'parts' }, ...PARTS, { p: 'parts/labels-2', d: 1, flash: true }, { p: 'parts/springs', d: 1, flash: true }, ...ROOT],
+  uploadedTop: [...DEMOS, { folder: 'parts' }, ...PARTS, { p: 'main' }, { p: 'springs', flash: true }, { p: 'try-sizes' }],
+  /* J and E */
+  shapes: [...DEMOS, { folder: 'parts' }, ...PARTS, { folder: 'shapes' }, { p: 'shapes/star', d: 1, flash: true }, ...ROOT],
+  noMain: [...DEMOS, { folder: 'parts' }, ...PARTS, { p: 'try-sizes' }],
+};
+
+/* ---------- pieces ---------- */
+function topnav() {
+  const items = ['Workspaces', 'Docs', 'Explore', 'Featured', 'Blog', 'Preferences'];
+  return `<div class="topnav"><div class="brand">Pathogen <span>Studio</span><small>built on Pathogen v0.8.0</small></div>
+    <nav class="navpill">${items.map(n => `<a class="${n === 'Workspaces' ? 'on' : ''}">${n}</a>`).join('')}</nav>
+    <div class="nav-right"><button class="theme-btn" title="Theme">${I.sun}${I.moon}</button><span class="acct"><span class="avatar">RK</span>Ryan K ${I.chevD}</span></div></div>`;
+}
+function fileCrumb(p) {
+  if (p === PJ) return `<span class="file">${PJ}</span>`;
+  const i = p.lastIndexOf('/');
+  return `<span class="file">${i >= 0 ? `<span class="dir">${esc(p.slice(0, i + 1))}</span>` : ''}${esc(p.slice(i + 1))}.pathogen</span>`;
+}
+function crumbbar(c) {
+  const err = c.chip === 'err';
+  const ws = c.newWs ? ['Untitled', '(9-Lm2xQ7tRb_w-K1sPa)', '(1 KB)'] : ['My Gears', '(3-Gq8vR2mLpX_k-T4wNc)', '(4 KB)'];
+  return `<div class="crumbbar">
+    <nav class="crumbs"><span>Workspaces</span><span class="sep">/</span><span class="cur">${ws[0]}</span><span class="ws-id">${ws[1]}</span><span class="ws-size">${ws[2]}</span><span class="sep">/</span>${fileCrumb(c.open)}</nav>
+    <div class="controls">
+      <div class="cl">
+        <span class="cstat ${err ? 'err' : 'ok'}">${err ? 'Error' : 'Ready'}</span>
+        <span class="split"><button class="btn-s" ${err ? 'disabled' : ''}>${I.camera}Snapshot</button><button class="btn-s"><span class="count">${c.newWs ? 0 : 2}</span> ›</button></span>
+        <span class="tbar"><button class="btn-s active" title="Show the workspace's files">Files</button><button class="btn-s">Console</button></span>
+        <button class="btn-s">Copy Code</button>
+      </div>
+      <div class="cr"><span class="save">Saved</span><button class="kebab" title="More actions">${I.kebab}</button></div>
+    </div></div>`;
+}
+function treeRows(c) {
+  return TREES[c.tree].map((r, i) => {
+    const pad = 8 + (r.d || 0) * 14;
+    if (r.folder) return `<div class="frow dir ${r.drop ? 'drop' : ''} ${r.sel ? 'sel' : ''}" style="padding-left:${pad}px"><span class="chev">${I.chevD}</span><span class="fic">${I.folder}</span><span class="fname">${r.folder}</span></div>`;
+    /* the name field for a new file: not a file yet, so not clickable */
+    if (r.input) {
+      return `<div class="frow input" style="padding-left:${pad}px"><span class="chev"></span><span class="fic ${r.kind}">${r.kind === 'lib' ? I.lib : I.prog}</span>
+        <span class="fin ${r.err ? 'bad' : ''}"><span>${esc(r.input)}</span><span class="cursor"></span><span class="ext">.pathogen</span></span></div>
+        <div class="fhint ${r.err ? 'bad' : ''}" style="padding-left:${pad + 34}px">${r.hint}</div>`;
+    }
+    if (r.empty) return `<div class="frow empty" style="padding-left:${pad + 20}px">Empty</div>`;
+    const lib = isLibIn(c, r.p);
+    const cls = ['frow', lib ? 'lib' : 'prog', r.p === c.open && !c.folderSel ? 'sel' : '', c.menu && c.menu.row === i ? 'menu' : '', r.flash ? 'flash' : '', r.inDrop ? 'in-drop' : ''].join(' ');
+    const dot = (c.dots || []).includes(r.p) ? '<span class="edot" title="Error"></span>' : '';
+    return `<div class="${cls}" data-p="${r.p}" style="padding-left:${pad}px"><span class="chev"></span><span class="fic">${lib ? I.lib : I.prog}${dot}</span><span class="fname">${esc(baseName(r.p))}<span class="ext">.pathogen</span></span>${badgeFor(c, r.p)}<button class="fk" title="More">${I.kebab}</button></div>`;
+  }).join('') + pjRow(c);
+}
+/* pathogen.json: always the last row of the top level. No menu: a lock in its place. */
+function pjRow(c) {
+  return `<div class="frow pj ${c.open === PJ && !c.folderSel ? 'sel' : ''}" data-p="${PJ}" style="padding-left:8px"><span class="chev"></span><span class="fic">${I.braces}</span><span class="fname">pathogen<span class="ext">.json</span></span><span class="lock" title="Read-only: the playground writes this file">${I.lock}</span></div>`;
+}
+function filesPane(c) {
+  return `<aside class="files"><div class="files-head"><span>Files</span><span class="sp"></span><button class="ibtn plus-btn ${c.plusMenu || c.plusTip ? 'on' : ''}" title="Add a file or folder">${I.plus}</button></div>
+    <div class="files-list">${treeRows(c)}</div></aside>`;
+}
+function tabStrip(c) {
+  return `<div class="tabs"><div class="tabs-scroll">${c.tabs.map(p => {
+    /* pathogen.json's tab keeps .json, with a lock */
+    if (p === PJ) return `<div class="tab ${p === c.open ? 'sel' : ''}" data-tab="${p}"><span class="fic">${I.braces}</span>${PJ}<span class="lk" title="Read-only">${I.lock}</span><span class="x">×</span></div>`;
+    const lib = isLibIn(c, p);
+    return `<div class="tab ${lib ? 'lib' : ''} ${p === c.open ? 'sel' : ''}" data-tab="${p}"><span class="fic">${lib ? I.lib : I.prog}</span>${label(p, c.tabs.filter(q => q !== PJ))}<span class="x">×</span></div>`;
+  }).join('')}</div>
+    <button class="tab-docs ${c.docs ? 'on' : ''}" aria-pressed="${!!c.docs}" title="${c.docs ? 'Hide the docs' : 'Show the docs'}">${I.book}</button></div>`;
+}
+/* JSON: keys as CodeMirror's propertyName (plain text in light, One Dark's coral), strings, punctuation */
+function jsonLineHtml(text) {
+  const out = [], re = /("[^"]*")(\s*:)?|([{}[\],])|(\s+)|(.)/g;
+  let m;
+  while ((m = re.exec(text))) {
+    if (m[1]) out.push(`<span class="${m[2] ? 't-id' : 't-str'}">${esc(m[1])}</span>${m[2] ? `<span class="t-pun">${esc(m[2])}</span>` : ''}`);
+    else if (m[3]) out.push(`<span class="t-pun">${esc(m[3])}</span>`);
+    else out.push(esc(m[0]));
+  }
+  return out.join('') || ' ';
+}
+const RO_LINE = `${I.lock}<span><b>Read-only.</b> The playground writes this file from your workspace. To change the main, use Set as main on a program.</span>`;
+function editor(c) {
+  const pj = c.open === PJ && !c.code;
+  const lines = pj ? pjLines(c) : c.code ? SRC[c.code] : SRC[c.open];
+  const hl = pj ? jsonLineHtml : lineHtml;
+  const body = lines.map((l, i) => {
+    const n = i + 1, cls = ['cm-ln', n === c.active ? 'act' : '', (c.changed || []).includes(n) ? 'chg' : ''].join(' ');
+    return `<div class="${cls}"><span class="gn">${n}</span><span class="lt">${hl(l)}</span></div>`;
+  }).join('');
+  const ro = pj ? `<div class="ro-bar ${c.roHint ? 'hl' : ''}">${RO_LINE}</div>` : '';
+  return `<div class="ed">${tabStrip(c)}${ro}<div class="cm">${body}</div></div>`;
+}
+
+/* The program chip and its list. Only the chip changes what the preview shows. */
+const MAIN_BADGE = '<span class="badge-main" title="The main: first in pathogen.json\'s entryPoints. Thumbnails and publishing use it">main</span>';
+/* main.pathogen as the main gets no badge (the convention); any other main does */
+const badgeFor = (c, p) => (p === primaryOf(c) && p !== 'main' ? MAIN_BADGE : '');
+function pickChip(c) {
+  const err = (c.errProgs || []).length > 0;
+  return `<button class="pick ${c.pickOpen ? 'open' : ''}" aria-expanded="${!!c.pickOpen}" title="Showing ${c.shown}.pathogen. Choose a program">
+    <span>${label(c.shown, programs(c))}</span>
+    ${err ? '<span class="pick-err" title="Another program has an error"></span>' : ''}<span class="caret">${I.chevU}</span></button>`;
+}
+function prow(c, p, ps) {
+  const on = p === c.shown, upd = (c.updating || []).includes(p), err = (c.errProgs || []).includes(p);
+  const self = c.usesMark && p === c.open;
+  const u = self || (c.usesMark && uses(p, c.open));
+  const dotTip = self ? 'The file you\'re editing' : `Uses ${c.open}.pathogen, the file you're editing`;
+  const sub = err ? `<span class="prow-e">${c.errLine}</span>` : `<span class="prow-p">${esc(p)}.pathogen</span>`;
+  const openBtn = c.hoverRow === p ? `<button class="prow-open" data-open="${p}" title="Open ${p}.pathogen in the editor">${I.code}</button>` : '';
+  return `<div class="prow ${on ? 'on' : ''} ${upd ? 'upd' : ''} ${err ? 'err' : ''} ${c.hoverRow === p ? 'hov' : ''}" data-show="${p}">
+    <span class="prow-img">${art(progArt(c, p))}${upd ? '<span class="spin" title="Updating"></span>' : ''}${err ? '<span class="mbad">!</span>' : ''}</span>
+    <span class="prow-t"><span class="prow-n">${u ? `<span class="udot" title="${esc(dotTip)}"></span>` : ''}${label(p, ps)}${badgeFor(c, p)}</span>${sub}</span>
+    <span class="prow-r">${openBtn}${on ? `<span class="prow-chk" title="Shown">${I.check}</span>` : ''}</span></div>`;
+}
+function pickList(c) {
+  const ps = programs(c);
+  return `<div class="pick-dd up"><div class="pick-h"><span>Programs</span><span class="cnt">${ps.length}</span></div>
+    ${ps.map(p => prow(c, p, ps)).join('')}</div>`;
+}
+const zoomPill = c => `<div class="zoom"><span>−</span><span>Fit</span><span>+</span><i></i><span class="pct">${c.zoom ? c.zoom.pct : '100%'}</span></div>`;
+const STALE = '<div class="stale-badge">Stale preview — fix errors to update</div>';
+
+function previewBox(c) {
+  const key = progArt(c, c.shown);
+  const canvas = c.zoom ? `<div class="pv-canvas z">${art(key, { crop: c.zoom.crop })}</div>` : `<div class="pv-canvas">${art(key)}</div>`;
+  const many = programs(c).length > 1;
+  const bottom = many
+    ? `<div class="bgroup">${zoomPill(c)}<div style="position:relative">${pickChip(c)}${c.pickOpen ? pickList(c) : ''}</div></div>`
+    : `<div class="zoom-wrap">${zoomPill(c)}</div>`;
+  return `<div class="pv-box ${c.stale ? 'stale' : ''}">${canvas}
+    <button class="r32 pv-fs" title="Fullscreen">${I.expand}</button>
+    <div class="chrome-r"><button class="r32 insp-tgl ${c.inspector ? 'on' : ''}" title="Toggle inspector">${I.layers}</button></div>
+    ${c.stale ? `<div class="stale-top">${STALE}</div>` : ''}${bottom}</div>`;
+}
+const preview = c => `<div class="pv">${previewBox(c)}</div>`;
+
+/* The inspector, with the footer's three controls in a Canvas section above Layers */
+function inspector(c) {
+  if (!c.inspector) return '';
+  const layers = c.newWs
+    ? [['#bbb', 'main-path-layer', 'path']]
+    : [['#888', 'default', 'path'], ['#555', 'captions', 'text']];
+  return `<aside class="insp">
+    <div class="insp-h"><span>Inspector</span><button class="ibtn" title="Close inspector">${I.x}</button></div>
+    <div class="isec-h"><span class="arr">▼</span>Canvas</div>
+    <div class="isec-body">
+      <div class="irow"><label>Background</label><span class="ctl"><span class="sw"></span><span class="ival">#ffffff</span></span></div>
+      <div class="irow"><label>Grid</label><span class="ctl"><span class="cb"></span><span class="sw grey"></span><span class="selc">20px ${I.chevD}</span></span></div>
+      <div class="irow" title="Rounds the numbers in the path data. Export starts from this value."><label>Precision</label><span class="ctl"><span class="selc">Off ${I.chevD}</span></span></div>
+    </div>
+    <div class="isec-h"><span class="arr">▼</span>Layers<span class="badge">${layers.length}</span></div>
+    <div class="isec-body">${layers.map(([col, n, t]) => `<div class="lrow"><span class="cdot" style="background:${col}"></span><span class="ln">${n}</span><span class="ty">${t}</span><span class="eye">${I.eye}</span></div>`).join('')}</div>
+    <div class="isec-h"><span class="arr c">▼</span>Palette</div>
+    <div class="isec-h"><span class="arr c">▼</span>CSS Variables</div>
+  </aside>`;
+}
+function docsPanel(c) {
+  if (!c.docs) return '';
+  return `<div class="docsp"><div class="docsp-h"><h2>Documentation</h2><span class="x">×</span></div>
+    <div class="docsp-tabs"><span class="on">Syntax</span><span>Stdlib</span><span>Layers</span><span>Path Blocks</span><span>Debug</span><span>CLI</span></div>
+    <div class="docsp-body"><h3>Variables</h3>Declare a name with <code>let</code> (its value can change) or <code>const</code> (it can't).
+      <pre>let size = 40;\nconst teeth = 12;</pre>
+      <h3>Functions</h3>A <code>fn</code> takes values and can draw where it's called.
+      <pre>fn dot(at) {\n  circle(at.x, at.y, 2);\n}</pre></div></div>`;
+}
+function errorPanel(c) {
+  if (!c.panel) return '';
+  /* c.panelTall: two messages, so the panel grows instead of scrolling (the real one scrolls past 7 lines) */
+  return `<div class="errp" style="left:${TREE_W + 12}px;width:calc((100% - ${TREE_W}px) / 2 - 24px)"><div class="content" ${c.panelTall ? 'style="max-height:none;padding-bottom:30px"' : ''}>${c.panel}</div><button class="dbg">Copy Debug Info</button></div>`;
+}
+/* The row menu: no "Show in preview" (only the chip changes the preview) */
+const MENU_COMMON = `<button>${I.pencil}<span>Rename…<small>Also updates the imports that name it</small></span></button><button>${I.copy}<span>Duplicate</span></button><div class="div"></div><button class="danger">${I.trash}<span>Delete…</span></button>`;
+function menuItems(kind, hl) {
+  if (kind === 'lib') return MENU_COMMON;
+  return `<button class="${hl === 'primary' ? 'hl' : ''}">${I.star}<span>Set as main<small>Puts it first in pathogen.json. Thumbnails and publishing use the main</small></span></button><div class="div"></div>${MENU_COMMON}`;
+}
+
+/* N: the "+" menu. It adds to the folder of the selected row, or the top of the workspace. */
+function plusTarget(c) {
+  if (c.plusTarget) return c.plusTarget;
+  const f = folderOf(c.open);
+  return f ? `${f}/` : '';
+}
+function plusMenu(c) {
+  if (!c.plusMenu) return '';
+  const t = plusTarget(c);
+  return `<div class="dd" style="left:8px;top:${HEAD_H + 2}px;width:240px">
+    <div class="dd-h">${t ? `Add to <code>${esc(t)}</code>` : 'Add at the top'}</div>
+    <button>${I.prog}<span>New program<small>A file that draws</small></span></button>
+    <button class="hl">${I.lib}<span>New library<small>Starts with <code>module;</code></small></span></button>
+    <button>${I.folderPlus}<span>New folder</span></button>
+    <div class="div"></div>
+    <button>${I.upload}<span>Upload files…<small>Or drop them on the tree</small></span></button>
+    <button>${I.folderUp}<span>Upload folder…<small>Keeps the folders inside it</small></span></button>
+  </div>`;
+}
+/* U: the drag ghost over the drop target, the clash prompt, and the toast */
+function ghost(c) {
+  if (!c.ghost) return '';
+  const row = TREES[c.tree].findIndex(r => r.drop);
+  const top = HEAD_H + LIST_PAD + (row + 2) * ROW_H + 6;
+  return `<div class="ghost" style="left:176px;top:${top}px"><span class="gl">Drop to add to parts/</span><span class="gf">${I.file}springs.pathogen</span><span class="gf">${I.file}labels.pathogen</span></div>`;
+}
+function clash(c) {
+  if (!c.clash) return '';
+  const row = TREES[c.tree].findIndex(r => r.p === c.clash.at);
+  const top = HEAD_H + LIST_PAD + row * ROW_H - 4;
+  return `<div class="clash" style="left:${TREE_W + 10}px;top:${top}px"><b>labels.pathogen</b> is already in <code>parts/</code>.
+    <div class="row"><button>Replace</button><button class="pri">Keep both</button><button>Skip</button></div>
+    <small>Keep both adds it as <code>labels-2.pathogen</code>. springs.pathogen went in already.</small></div>`;
+}
+function toast(c) {
+  if (!c.toast) return '';
+  return `<div class="toast ${c.toast.error ? 'error' : ''}"><div>${c.toast.html}</div><span class="x">×</span></div>`;
+}
+function overlays(c) {
+  let out = plusMenu(c) + ghost(c) + clash(c);
+  if (c.plusTip) out += `<div class="chip-tip" style="left:${TREE_W + 6}px;top:6px">${c.plusTip}</div>`;
+  /* J: hovering pathogen.json's row (it is the last row, after TREES[c.tree]) */
+  if (c.pjTip) {
+    const top = HEAD_H + LIST_PAD + TREES[c.tree].length * ROW_H + ROW_H + 2;
+    out += `<div class="chip-tip" style="left:24px;top:${top}px;white-space:normal;width:300px;line-height:1.45">${c.pjTip}</div>`;
+  }
+  /* J: typing in pathogen.json: just under the cursor's line, right of its text (the read-only line above wraps to two lines, 47px) */
+  if (c.roTip) {
+    const top = HEAD_H + 47 + 4 + c.active * 20 + 4;
+    out += `<div class="chip-tip" style="left:${TREE_W + 230}px;top:${top}px">${c.roTip}</div>`;
+  }
+  if (c.menu) {
+    const top = HEAD_H + LIST_PAD + c.menu.row * ROW_H + ROW_H - 2;
+    out += `<div class="dd" style="left:${TREE_W - 32}px;top:${top}px;width:300px">${menuItems(c.menu.kind, c.menu.hl)}</div>`;
+  }
+  return out;
+}
+
+/* ---------- a whole workspace window ---------- */
+const BASE = { tree: 'base', open: 'main', shown: 'main', tabs: ['main', 'parts/gears', 'parts/kit'], code: null, active: 0, changed: [], dots: [], chip: 'ok', stale: false, panel: null, menu: null };
+const C = o => Object.assign({}, BASE, o);
+function workspace(c) {
+  return `${topnav()}${crumbbar(c)}<div class="ws-wrap"><div class="ws ${c.inspector ? 'with-insp' : ''}">${filesPane(c)}${editor(c)}${preview(c)}${inspector(c)}${overlays(c)}</div>${errorPanel(c)}${docsPanel(c)}</div>${toast(c)}`;
+}
+
+/* ---------- screens and their states (each chip sets the whole state) ---------- */
+const ERR_LINE = 'Error in parts/gears.pathogen line 9';
+const NEW = { newWs: true, tree: 'new', tabs: ['main'], code: 'main#new', active: 7 };
+const EDIT_GEARS = { open: 'parts/gears', code: 'parts/gears#edited', active: 4, changed: [4], edited: true, updating: ['demos/gears', 'try-sizes'], usesMark: true };
+const ON_GEARS = { open: 'parts/gears', tabs: ['main', 'parts/gears', 'parts/kit'], active: 9 };
+const ADDED = 'Added 2 files to <code>parts/</code>: <code>springs.pathogen</code> and <code>labels-2.pathogen</code>.';
+const UNSUPPORTED = `Added <code>springs.pathogen</code>. Not added:<ul>
+  <li><code>cities.csv</code>: workspaces hold .pathogen files for now; data files come later.</li>
+  <li><code>Raleway-Bold.ttf</code>: the playground can't load font files yet. Use the Google Fonts family instead: <code>@font "Raleway" 700;</code></li></ul>`;
+const PJ_TABS = ['main', 'parts/gears', PJ];
+const RESERVED = `Added <code>shapes/star.pathogen</code>. Not added:<ul>
+  <li><code>pathogen.json</code>: the playground writes this file itself. To change the main, use Set as main on a program.</li>
+  <li><code>shapes/pathogen.json</code>: inside a folder, it would make that folder a project of its own.</li></ul>`;
+const DELETED = 'Deleted <code>main.pathogen</code>. <code>demos/gears.pathogen</code> is the main now: it was next in <code>entryPoints</code>.';
+/* The compiler's error first (MODULE_VIEWBOX_MESSAGE, src/module-messages.ts), then the playground's line about the main */
+const LIB_PANEL = `<span class="who">main.pathogen</span>Line 6: A module has no drawing, so it can't define a ViewBox. The program that imports it sets the ViewBox.<span class="who" style="margin-top:10px">The main</span>A library can't be the main. Take out module;, or <a>set another program as main</a>.`;
+const SCREENS = {
+  pj: { states: {
+    'new': [C(Object.assign({}, NEW, { pjTip: '<b>pathogen.json</b>, the project file. It lists your programs, the main first. The playground writes it; open it to read it.' })),
+      'A <b>new workspace</b>: <code>main.pathogen</code>, and <code>pathogen.json</code> as the last row, quieter, with a lock. Hovering its row says what it is.'],
+    'open': [C({ open: PJ, tabs: PJ_TABS, active: 0 }),
+      '<b>pathogen.json</b> opened from the tree. Its tab keeps <code>.json</code> and has a lock, and the line at the top of the editor says it\'s read-only. The preview still shows main.'],
+    'readonly': [C({ open: PJ, tabs: PJ_TABS, active: 4, roHint: true, roTip: 'Read-only. Set as main changes this list' }),
+      'You tried to type on line 4. Nothing changes; the line at the top lights up, and a tip by the cursor says why.'],
+    'appended': [C({ tree: 'newprog', open: PJ, tabs: ['main', 'parts/gears', 'poster', PJ], entry: [...ENTRY, 'poster'], active: 0, changed: [6] }),
+      'After <b>New program</b> (screen N, state 5), with pathogen.json\'s tab clicked: <code>poster.pathogen</code> was added at the end of the list (the marked line).'],
+    'reserved': [C({ tree: 'shapes', open: 'shapes/star', tabs: ['main', 'parts/gears', 'shapes/star'], active: 1, entry: [...ENTRY, 'shapes/star'], toast: { error: true, html: RESERVED } }),
+      'You dropped <code>pathogen.json</code> and a folder, <code>shapes/</code>, on the top of the tree. <b>shapes/star.pathogen</b> went in (and to the end of <code>entryPoints</code>); neither pathogen.json did, and the toast says why.'],
+  } },
+  add: { states: {
+    'menu': [C(Object.assign({ plusMenu: true }, ON_GEARS)), 'You\'re editing <b>parts/gears.pathogen</b>, so the "+" menu adds to <code>parts/</code>. New library is highlighted: state 2 follows it.'],
+    'naming': [C(Object.assign({ tree: 'naming' }, ON_GEARS)), 'After <b>New library</b>: a name field, first in <code>parts/</code>. You typed <code>ratchet</code>; <code>.pathogen</code> is added for you.'],
+    'taken': [C(Object.assign({ tree: 'taken' }, ON_GEARS)), 'The name <code>gears</code> is taken in parts/, so Enter does nothing, and the field says why.'],
+    'new-library': [C({ tree: 'newlib', open: 'parts/ratchet', tabs: ['main', 'parts/gears', 'parts/kit', 'parts/ratchet'], active: 3 }),
+      'After Enter: <b>parts/ratchet.pathogen</b> opens in a new tab, starting with <code>module;</code>. It is a library, so it isn\'t in the chip\'s list, and the preview still shows main.'],
+    'new-program': [C({ tree: 'newprog', open: 'poster', tabs: ['main', 'parts/gears', 'poster'], active: 1, entry: [...ENTRY, 'poster'], pickOpen: true }),
+      'A new program, <b>poster.pathogen</b>, at the top. It starts like a new workspace, and it goes at the end of the chip\'s list (open here) and of <code>entryPoints</code>. The preview still shows main until you pick poster.'],
+    'new-folder': [C({ tree: 'newfolder', folderSel: true, plusTip: 'Add a file or folder to <code>examples/</code>' }),
+      'After <b>New folder</b>: <code>examples/</code> is empty and selected, so the "+" now adds to it, as its tooltip says.'],
+  } },
+  upload: { states: {
+    'drag': [C({ tree: 'drag', ghost: true }), 'Dragging two files from the desktop over <b>parts/</b>: the folder lights up, and the label says where they\'ll go.'],
+    'clash': [C({ tree: 'conflict', clash: { at: 'parts/labels' } }), 'springs.pathogen went straight in. <b>labels.pathogen</b> is already in parts/, so a prompt beside it asks what to do.'],
+    'added': [C({ tree: 'uploaded', toast: { html: ADDED } }), 'After <b>Keep both</b>: the two new files flash in the tree, and a toast says what was added. Nothing opened (there were two), and the preview didn\'t change.'],
+    'unsupported': [C({ tree: 'uploadedTop', toast: { error: true, html: UNSUPPORTED } }),
+      'Three files dropped on the top of the tree: <b>springs.pathogen</b> went in, and the toast says why the other two didn\'t.'],
+  } },
+  base: { states: {
+    'new': [C(NEW), 'A <b>new workspace</b>: <code>main.pathogen</code> only, with the usual starting code. One program, so there is no chip, just the zoom controls.'],
+    'files': [C({ open: 'demos/gears', tabs: ['main', 'parts/gears', 'demos/gears', 'parts/kit'], active: 12 }),
+      'You opened <b>demos/gears.pathogen</b> from the tree. The preview still shows main: only the chip changes it. Two files called gears are open, so their tabs say <code>gears · parts</code> and <code>gears · demos</code>.'],
+    'docs': [C({ active: 7, docs: true }), 'The <b>docs</b> toggle at the right end of the tabs bar is pressed; the docs panel slides in from the right.'],
+    'inspector': [C(Object.assign({}, NEW, { inspector: true })), 'The inspector is open, with Background, Grid and Precision in its <b>Canvas</b> section, above Layers.'],
+  } },
+  picker: { states: {
+    'closed': [C({ active: 7 }), 'The chip beside the zoom controls names the program shown, <b>main</b>.'],
+    'open': [C({ active: 7, pickOpen: true, hoverRow: 'demos/gears' }), 'The list, opened upward. Hovering the gears row shows "Open in the editor"; clicking the row itself would show it.'],
+    'library': [C(Object.assign({ pickOpen: true }, EDIT_GEARS)), 'Editing <b>parts/gears</b>: the preview stays on main. All three programs use gears (try-sizes through kit), so all have the dot; the two not shown spin until they redraw.'],
+    'other-program': [C({ open: 'try-sizes', tabs: ['main', 'parts/kit', 'try-sizes'], active: 6, usesMark: true, pickOpen: true }),
+      'Editing <b>try-sizes</b> while main is shown: the preview doesn\'t change. In the list, try-sizes has the dot (hover: "The file you\'re editing").'],
+    'error': [C({ active: 7, errProgs: ['try-sizes'], dots: ['try-sizes', 'parts/gears'], errLine: ERR_LINE, pickOpen: true }),
+      'try-sizes broke while main is shown. The chip has a red dot, and try-sizes\' row says where it failed. The tree marks try-sizes.pathogen and gears.pathogen.'],
+    'zoomed': [C({ active: 7, zoom: { crop: [18, 15, 74, 70], pct: '300%' } }), 'Zoomed to 300%. No navigator: drag the drawing to pan, Fit to go back.'],
+  } },
+  main: { states: {
+    'menu': [C({ open: PJ, tabs: PJ_TABS, active: 0, menu: { row: 7, kind: 'prog', hl: 'primary' } }),
+      'The row menu on <b>try-sizes.pathogen</b>, with "Set as main". pathogen.json is open: main.pathogen is first, so nothing in the tree is marked.'],
+    'set': [C({ open: PJ, tabs: PJ_TABS, active: 0, entry: ['try-sizes', 'main', 'demos/gears'], changed: [3, 4, 5], pickOpen: true }),
+      'After Set as main: <b>try-sizes.pathogen</b> moved to the front of <code>entryPoints</code>, and main to second (the marked lines). try-sizes has the <code>main</code> badge in the tree and in the list, which follows the new order. The chip still shows main.'],
+    'delete': [C({ tree: 'noMain', open: PJ, tabs: ['parts/gears', PJ], shown: 'demos/gears', active: 0, entry: ['demos/gears', 'try-sizes'], changed: [3], toast: { html: DELETED } }),
+      '<b>main.pathogen</b> was deleted. demos/gears was next in the list, so it\'s the main now: it has the badge, the preview moved to it (the program shown was deleted), and the toast says so.'],
+    'library': [C({ open: 'main', code: 'main#module', active: 1, changed: [1], libNow: ['main'], stale: true, chip: 'err', errProgs: ['main'], errLine: 'A library now, so it can\'t be the main', dots: ['main'], panel: LIB_PANEL, panelTall: true, pickOpen: true }),
+      'You typed <code>module;</code> at the top of <b>main.pathogen</b>. It\'s a library now, but it stays first, so the main doesn\'t move without you choosing. The tree and the tab show the library icon; the chip has a red dot, and main\'s row says why. In the error panel, the first message is the compiler\'s own (line 6: a module can\'t define a ViewBox); the second is the playground\'s, about the main.'],
+  } },
+};
+
+const current = {};
+function pressGroup(container, attr, val) {
+  container.querySelectorAll(`[${attr}]`).forEach(b => b.setAttribute('aria-pressed', String(b.getAttribute(attr) === val)));
+}
+function renderState(screen, state, override) {
+  const s = SCREENS[screen];
+  const [cfg, desc] = s.states[state] || [];
+  current[screen] = state;
+  pressGroup(document.getElementById('st-' + screen), 'data-st', override ? '' : state);
+  document.getElementById('sd-' + screen).innerHTML = override ? 'Clicked in the mockup.' : desc;
+  const el = document.getElementById('w-' + screen);
+  const c = override || cfg;
+  el.innerHTML = workspace(c);
+  if (!c.board) wire(screen, el, c);
+}
+function wire(screen, el, cfg) {
+  const again = o => renderState(screen, null, Object.assign({}, cfg, { menu: null, miniTip: null, hoverMini: null, hoverRow: null, plusMenu: false, plusTip: null, ghost: false, clash: null, toast: null, pjTip: null, roTip: null, roHint: false }, o));
+  /* Opening a file never changes the preview: only the chip's list does */
+  const openFile = p => again({ open: p, code: null, active: 1, changed: [], edited: false, updating: [], tabs: cfg.tabs.includes(p) ? cfg.tabs : [...cfg.tabs, p], pickOpen: false });
+  el.querySelectorAll('[data-open]').forEach(b => b.onclick = e => { e.stopPropagation(); openFile(b.dataset.open); });
+  el.querySelectorAll('[data-show]').forEach(b => b.onclick = () => again({ shown: b.dataset.show, zoom: null, stale: false, panel: null, chip: 'ok', pickOpen: false }));
+  el.querySelectorAll('.pick').forEach(b => b.onclick = () => again({ pickOpen: !cfg.pickOpen }));
+  el.querySelectorAll('.plus-btn').forEach(b => b.onclick = () => again({ plusMenu: !cfg.plusMenu }));
+  el.querySelectorAll('.frow[data-p]').forEach(r => r.onclick = () => { if (SRC[r.dataset.p] || r.dataset.p === PJ) openFile(r.dataset.p); });
+  el.querySelectorAll('[data-tab]').forEach(t => t.onclick = () => openFile(t.dataset.tab));
+  el.querySelectorAll('.tab-docs').forEach(b => b.onclick = () => again({ docs: !cfg.docs }));
+  el.querySelectorAll('.docsp .x').forEach(b => b.onclick = () => again({ docs: false }));
+  el.querySelectorAll('.insp-tgl, .insp-h .ibtn').forEach(b => b.onclick = () => again({ inspector: !cfg.inspector }));
+  el.querySelectorAll('.modal .x, .modal .btn-g').forEach(b => b.onclick = () => again({ exportDlg: false }));
+}
+function showScreen(screen) {
+  pressGroup(document.getElementById('screens'), 'data-s', screen);
+  document.querySelectorAll('.screen').forEach(sec => sec.classList.toggle('active', sec.id === 's-' + screen));
+  renderState(screen, current[screen] || Object.keys(SCREENS[screen].states)[0]);
+}
+document.getElementById('screens').onclick = e => { const b = e.target.closest('button'); if (b) showScreen(b.dataset.s); };
+Object.keys(SCREENS).forEach(screen => {
+  document.getElementById('st-' + screen).onclick = e => { const b = e.target.closest('button[data-st]'); if (b) renderState(screen, b.dataset.st); };
+  renderState(screen, Object.keys(SCREENS[screen].states)[0]);
+});
+document.getElementById('theme').onclick = () => {
+  const el = document.documentElement;
+  el.setAttribute('data-theme', el.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
+};
+window.mockup = { showScreen, renderState };
+</script>
+</body>
+</html>
