@@ -12,7 +12,7 @@
   {
     "name": "A3 a missing file is an error in the CLI's words",
     "ok": true,
-    "detail": "[\"broken.pathogen:1:22: error: import file \\\"./parts/gera.pathogen\\\" was not found (looked for /Users/ryan/claude-code-projects/svg-path-extended/tmp/vscode-preview-modules-r9y7qw/parts/gera.pathogen).\"]"
+    "detail": "[\"broken.pathogen:1:22: error: import file \\\"./parts/gera.pathogen\\\" was not found (looked for /Users/ryan/claude-code-projects/svg-path-extended/tmp/vscode-preview-modules-Pivr39/parts/gera.pathogen).\"]"
   },
   {
     "name": "B1 a program that imports a module draws what the CLI draws (within 1e-9)",
@@ -27,7 +27,7 @@
   {
     "name": "B3 a file that can't be loaded shows its error in the preview",
     "ok": true,
-    "detail": "Compilation Errorbroken.pathogen:1:22: error: import file \"./parts/gera.pathogen\" was not found (looked for /Users/ryan/claude-code-projects/svg-path-extended/tmp/vscode-preview-modules-r9y7qw/parts/gera.pathogen)."
+    "detail": "Compilation Errorbroken.pathogen:1:22: error: import file \"./parts/gera.pathogen\" was not found (looked for /Users/ryan/claude-code-projects/svg-path-extended/tmp/vscode-preview-modules-Pivr39/parts/gera.pathogen)."
   },
   {
     "name": "B4 an unsaved edit in the imported file reaches the preview, and its error names that file",

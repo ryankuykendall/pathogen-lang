@@ -122,9 +122,13 @@ class PreviewPanel {
     );
     // A .pathogen file changed, created or deleted on disk (in the workspace
     // folders): it may be one the document imports, or one it couldn't find.
-    const onDisk = vscode.workspace.createFileSystemWatcher('**/*.pathogen');
-    const fromDisk = () => {
-      if (this.watched.size > 0 || /\bimport\b/.test(this.document.getText())) this.redraw();
+    // A pathogen.json too: a broken one stops a document that uses import or
+    // @font (docs/projects.md "In each tool"), so fixing it must redraw. It is
+    // read from disk, so only a saved change counts.
+    const onDisk = vscode.workspace.createFileSystemWatcher('**/{*.pathogen,pathogen.json}');
+    const fromDisk = (changed: vscode.Uri) => {
+      const uses = changed.path.endsWith('/pathogen.json') ? /\bimport\b|@font\b/ : /\bimport\b/;
+      if (this.watched.size > 0 || uses.test(this.document.getText())) this.redraw();
     };
     onDisk.onDidChange(fromDisk, null, this.disposables);
     onDisk.onDidCreate(fromDisk, null, this.disposables);

@@ -128,6 +128,28 @@ describe('loading a document’s fonts', () => {
     ]);
   });
 
+  it('a broken pathogen.json: the fonts report it for a document without imports, and leave it to the imports otherwise', async () => {
+    const broken = mkdtempSync(join(TMP, 'vscode-session-broken-'));
+    mkdirSync(join(broken, 'fonts'));
+    copyFileSync(BAUMANS, join(broken, 'fonts', 'Baumans-Regular.ttf'));
+    writeFileSync(join(broken, 'pathogen.json'), '{ "main": "poster.pathogen" }\n');
+    const poster = join(broken, 'poster.pathogen');
+    try {
+      const fontsOnly = await session().load('@font "./fonts/Baumans-Regular.ttf";\nM 0 0', poster);
+      expect(fontsOnly.errors).toEqual([
+        `pathogen.json (${broken}): "main" is now "entryPoints", a list whose first entry is the main. Replace it with "entryPoints": ["poster.pathogen"].`,
+      ]);
+      // previewModules reports it at the import (tests/vscode-preview-modules.test.ts), so it shows once.
+      const withImports = await session().load(
+        'import { gear } from "./parts/gears.pathogen";\n@font "./fonts/Baumans-Regular.ttf";\nM 0 0',
+        poster,
+      );
+      expect([withImports.errors, withImports.fontIds.length]).toEqual([[], 1]);
+    } finally {
+      rmSync(broken, { recursive: true, force: true });
+    }
+  });
+
   it('an unsaved document can’t read files and says to save first', async () => {
     const loaded = await session().load('@font "./fonts/Baumans-Regular.ttf";', undefined);
     expect(loaded.errors).toEqual([

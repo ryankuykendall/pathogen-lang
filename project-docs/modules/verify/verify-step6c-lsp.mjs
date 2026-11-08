@@ -348,6 +348,45 @@ try {
     ),
     diagnostics.get('untitled:Untitled-1'),
   );
+
+  // A broken pathogen.json (step 2b, note 49): a file that imports stops, as
+  // in the CLI, with the message once, at its first import, even when the
+  // file also has @font. Fixing the file clears it.
+  // The gears buffer back as it was (an earlier case renamed its fn).
+  notify('textDocument/didChange', {
+    textDocument: { uri: uri('parts/gears.pathogen'), version: version++ },
+    contentChanges: [{ text: GEARS }],
+  });
+  await diagnosticsWhere(() => diagnostics.get(uri('main.pathogen'))?.length === 0);
+  const both = 'import { gear } from "./gears.pathogen";\n@font "../fonts/Baumans-Regular.ttf";\nM 0 0\n';
+  open('parts/both.pathogen', both);
+  await diagnosticsWhere(() => diagnostics.get(uri('parts/both.pathogen'))?.length === 0);
+  write('pathogen.json', '{ "main": "main.pathogen" }\n');
+  notify('workspace/didChangeWatchedFiles', { changes: [{ uri: uri('pathogen.json'), type: 2 }] });
+  // Once, at the first import's path: column 28 in main.pathogen (`import { gear, Teeth } from "`), 21 in both.pathogen.
+  const leftoverMain = (path, character) => {
+    const found = (diagnostics.get(uri(path)) ?? []).filter((d) =>
+      d.message.endsWith(
+        '"main" is now "entryPoints", a list whose first entry is the main. Replace it with "entryPoints": ["main.pathogen"].',
+      ),
+    );
+    return found.length === 1 && found[0].range.start.line === 0 && found[0].range.start.character === character;
+  };
+  check(
+    'a broken pathogen.json stops a file that imports, once, at its first import (also with @font)',
+    await diagnosticsWhere(() => leftoverMain('main.pathogen', 28) && leftoverMain('parts/both.pathogen', 21)),
+    { main: diagnostics.get(uri('main.pathogen')), both: diagnostics.get(uri('parts/both.pathogen')) },
+  );
+  write('pathogen.json', '{}\n');
+  notify('workspace/didChangeWatchedFiles', { changes: [{ uri: uri('pathogen.json'), type: 2 }] });
+  check(
+    'fixing pathogen.json clears it',
+    await diagnosticsWhere(
+      () =>
+        diagnostics.get(uri('main.pathogen'))?.length === 0 && diagnostics.get(uri('parts/both.pathogen'))?.length === 0,
+    ),
+    { main: diagnostics.get(uri('main.pathogen')), both: diagnostics.get(uri('parts/both.pathogen')) },
+  );
 } finally {
   await request('shutdown', null);
   notify('exit', null);

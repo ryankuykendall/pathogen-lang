@@ -22,6 +22,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **`pathogen-lang <folder>` compiles the project's main:** the first entry in `entryPoints`, or `main.pathogen`. A folder whose `pathogen.json` is `{}` used to stop with `has no "main"`; it now compiles its `main.pathogen`.
 - The main is read like an imported file: its letter case must match the disk on every system, and a symbolic link on the way can't lead outside the project folder. A main that is a module, or doesn't exist, says how to fix it, and where it looked (docs/projects.md, Errors).
 
+### Fixed
+
+#### VS Code
+
+- **A broken `pathogen.json` now stops a file that imports, as it does in the CLI.** Before, VS Code reported it only for files that use `@font`, and a file that only imports compiled as if nothing were wrong. The message shows once, at the file's first import, in the Problems panel and the preview (`resolveEditorModules` reports it; the font loading leaves it out for a file with imports). The preview now also redraws when `pathogen.json` changes on disk.
+
 ### Documentation
 
 - `docs/projects.md`: the `pathogen.json` section, a "What changed (November 2026)" note, the CLI table and the Errors rows; `docs/cli.md`, "Compile a Folder".

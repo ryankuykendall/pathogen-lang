@@ -56,6 +56,8 @@ export interface PathogenLib {
     source: string,
     options: { host: unknown; entry: string },
   ) => Promise<{ fonts: ResolvedFontLike[]; messages: FontLoadMessageLike[]; retryable: boolean }>;
+  /** A document's import lines: one with imports gets a broken pathogen.json's message from them instead. */
+  planImports?: (source: string) => readonly unknown[];
   /** The fonts of every file in a compile, for a document that imports files with `@font`. */
   resolveFontsInFiles?: (
     files: readonly FontSourceFileLike[],
@@ -167,20 +169,37 @@ export class FontSession {
       const filePlan = this.options.lib.planFontDirectives(file.source);
       return [file.path, filePlan, this.options.node.fontFileStamps(where.root, file.path, filePaths(filePlan), null)];
     });
-    const key = JSON.stringify([plan, importedKey, where.root, where.entry, this.offlineReason(), stamps]);
+    // A document with imports gets a broken pathogen.json's message from its
+    // imports (previewModules, through resolveEditorModules), so it isn't repeated here.
+    const reportProjectFile = (this.options.lib.planImports?.(source).length ?? 0) === 0;
+    const key = JSON.stringify([
+      plan,
+      importedKey,
+      where.root,
+      where.entry,
+      this.offlineReason(),
+      stamps,
+      reportProjectFile,
+    ]);
     const now = this.options.now?.() ?? Date.now();
     if (this.memo?.key === key && now < this.memo.until) return this.memo.result;
 
     const running = this.inFlight.get(key);
     if (running) return running;
-    const run = this.run(source, where, key, imported).finally(() => this.inFlight.delete(key));
+    const run = this.run(source, where, key, imported, reportProjectFile).finally(() => this.inFlight.delete(key));
     this.inFlight.set(key, run);
     return run;
   }
 
-  private async run(source: string, where: Where, key: string, imported: FontSourceFileLike[]): Promise<DocumentFonts> {
+  private async run(
+    source: string,
+    where: Where,
+    key: string,
+    imported: FontSourceFileLike[],
+    reportProjectFile: boolean,
+  ): Promise<DocumentFonts> {
     const errors: string[] = [];
-    if (where.projectFile) {
+    if (where.projectFile && reportProjectFile) {
       const project = await this.options.node.loadProjectFile(where.projectFile);
       if (!project.ok) errors.push(project.message);
     }

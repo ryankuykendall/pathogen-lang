@@ -175,6 +175,37 @@ describe('fonts in imported files', () => {
     });
   });
 
+  it('a broken pathogen.json: reported here for a document without imports, and left to its imports otherwise', async () => {
+    const broken = mkdtempSync(join(TMP, 'lsp-fonts-broken-'));
+    mkdirSync(join(broken, 'fonts'));
+    copyFileSync(join(project, 'fonts', 'Baumans-Regular.ttf'), join(broken, 'fonts', 'Baumans-Regular.ttf'));
+    writeFileSync(join(broken, 'pathogen.json'), '{ "main": "poster.pathogen" }\n');
+    const uri = pathToFileURL(join(broken, 'poster.pathogen')).href;
+    try {
+      const fontsOnly = await new DiagnosticFonts(() => undefined).forDocument(
+        uri,
+        '@font "./fonts/Baumans-Regular.ttf";\nM 0 0',
+      );
+      expect(fontsOnly?.messages).toEqual([
+        {
+          severity: 'error',
+          message: `pathogen.json (${broken}): "main" is now "entryPoints", a list whose first entry is the main. Replace it with "entryPoints": ["poster.pathogen"].`,
+        },
+      ]);
+      // resolveEditorModules reports it at the import (tests/node-editor-modules.test.ts), so it shows once.
+      const withImports = await new DiagnosticFonts(() => undefined).forDocument(
+        uri,
+        'import { gear } from "./parts/gears.pathogen";\n@font "./fonts/Baumans-Regular.ttf";\nM 0 0',
+      );
+      expect([withImports?.messages, [...(withImports?.registry?.fonts.keys() ?? [])]]).toEqual([
+        [],
+        ['Baumans-Regular'],
+      ]);
+    } finally {
+      rmSync(broken, { recursive: true, force: true });
+    }
+  });
+
   it("editing an imported file's @font loads again", async () => {
     const fonts = new DiagnosticFonts(() => undefined);
     const broken = await fonts.forDocument(programUri, MAIN, await graphWith(labels('../fonts/Missing.ttf')));

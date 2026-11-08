@@ -28,7 +28,7 @@
     "name": "go-to-definition opens the other file at the name",
     "ok": true,
     "detail": {
-      "uri": "file:///Users/ryan/claude-code-projects/svg-path-extended/tmp/verify-lsp-OJbu8y/parts/gears.pathogen",
+      "uri": "file:///Users/ryan/claude-code-projects/svg-path-extended/tmp/verify-lsp-34Ttdj/parts/gears.pathogen",
       "range": {
         "start": {
           "line": 7,
@@ -171,7 +171,7 @@
           }
         },
         "severity": 1,
-        "message": "import file \"./parts/marks.pathogen\" was not found (looked for /Users/ryan/claude-code-projects/svg-path-extended/tmp/verify-lsp-OJbu8y/parts/marks.pathogen).",
+        "message": "import file \"./parts/marks.pathogen\" was not found (looked for /Users/ryan/claude-code-projects/svg-path-extended/tmp/verify-lsp-34Ttdj/parts/marks.pathogen).",
         "source": "pathogen-modules"
       }
     ]
@@ -259,5 +259,53 @@
         "source": "pathogen-modules"
       }
     ]
+  },
+  {
+    "name": "a broken pathogen.json stops a file that imports, once, at its first import (also with @font)",
+    "ok": true,
+    "detail": {
+      "main": [
+        {
+          "range": {
+            "start": {
+              "line": 0,
+              "character": 28
+            },
+            "end": {
+              "line": 0,
+              "character": 53
+            }
+          },
+          "severity": 1,
+          "message": "pathogen.json (/Users/ryan/claude-code-projects/svg-path-extended/tmp/verify-lsp-34Ttdj): \"main\" is now \"entryPoints\", a list whose first entry is the main. Replace it with \"entryPoints\": [\"main.pathogen\"].",
+          "source": "pathogen-modules"
+        }
+      ],
+      "both": [
+        {
+          "range": {
+            "start": {
+              "line": 0,
+              "character": 21
+            },
+            "end": {
+              "line": 0,
+              "character": 40
+            }
+          },
+          "severity": 1,
+          "message": "pathogen.json (/Users/ryan/claude-code-projects/svg-path-extended/tmp/verify-lsp-34Ttdj): \"main\" is now \"entryPoints\", a list whose first entry is the main. Replace it with \"entryPoints\": [\"main.pathogen\"].",
+          "source": "pathogen-modules"
+        }
+      ]
+    }
+  },
+  {
+    "name": "fixing pathogen.json clears it",
+    "ok": true,
+    "detail": {
+      "main": [],
+      "both": []
+    }
   }
 ]

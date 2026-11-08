@@ -772,6 +772,11 @@ export interface EditorModules {
  * `filePath` is null for an unsaved document: with no folder for its paths
  * to start from, each import is a load error saying to save it. A document
  * without imports reads nothing.
+ *
+ * A broken pathogen.json stops a document with imports, as it stops the CLI
+ * (docs/projects.md "In each tool"): its message is the load error, at the
+ * first import's path. The editors' font loading leaves it out for such a
+ * document, so it shows once.
  */
 export async function resolveEditorModules(
   filePath: string | null,
@@ -782,10 +787,18 @@ export async function resolveEditorModules(
     const entry = '/<unsaved>';
     return { root: null, entry, graph: { entry, files: new Map(), order: [] }, errors: unsavedImportErrors(source) };
   }
-  const { root } = findProjectRoot(dirname(filePath));
+  const { root, projectFile } = findProjectRoot(dirname(filePath));
   const entry = projectEntry(root, filePath) ?? `/${relative(root, filePath).split(sep).join('/')}`;
-  if (planImports(source).length === 0) {
-    return { root, entry, graph: { entry, files: new Map(), order: [] }, errors: [] };
+  const imports = planImports(source);
+  const nothing: ModuleGraph = { entry, files: new Map(), order: [] };
+  if (imports.length === 0) return { root, entry, graph: nothing, errors: [] };
+  if (projectFile) {
+    const project = loadProjectFileSync(projectFile);
+    if (!project.ok) {
+      const [first] = imports;
+      const error = { message: project.message, file: entry, line: first.line, column: first.column, importedFrom: [] };
+      return { root, entry, graph: nothing, errors: [error] };
+    }
   }
   const host = withOpenDocuments(createNodeProjectHost(root), (projectPath) =>
     openText(join(root, ...projectPath.split('/').filter(Boolean))),

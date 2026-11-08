@@ -37,6 +37,38 @@ afterAll(() => {
 
 const noBuffers = (): undefined => undefined;
 
+describe('resolveEditorModules with a broken pathogen.json', () => {
+  let broken = '';
+  const MAIN_SOURCE = '// main.pathogen\nimport { gear } from "./parts/gears.pathogen";\ngear(4);\n';
+  const message = () =>
+    `pathogen.json (${broken}): "main" is now "entryPoints", a list whose first entry is the main. Replace it with "entryPoints": ["poster.pathogen"].`;
+
+  beforeAll(() => {
+    broken = mkdtempSync(join(TMP, 'editor-modules-broken-'));
+    mkdirSync(join(broken, 'parts'));
+    writeFileSync(join(broken, 'pathogen.json'), '{ "main": "poster.pathogen" }\n');
+    writeFileSync(join(broken, 'parts', 'gears.pathogen'), GEARS);
+    writeFileSync(join(broken, 'main.pathogen'), MAIN_SOURCE);
+  });
+
+  afterAll(() => {
+    rmSync(broken, { recursive: true, force: true });
+  });
+
+  it('stops a document with imports, as it stops the CLI: the message is the error at the first import', async () => {
+    const result = await resolveEditorModules(join(broken, 'main.pathogen'), MAIN_SOURCE, noBuffers);
+    expect(result.errors).toEqual([
+      { message: message(), file: '/main.pathogen', line: 2, column: 22, importedFrom: [] },
+    ]);
+    expect(result.graph.files.size).toBe(0);
+  });
+
+  it('a document without imports reads nothing from the project, so it compiles', async () => {
+    const result = await resolveEditorModules(join(broken, 'main.pathogen'), 'M 0 0\n', noBuffers);
+    expect(result.errors).toEqual([]);
+  });
+});
+
 describe('resolveEditorModules', () => {
   it("finds the project folder, the document's place in it, and the files it imports", async () => {
     const main = join(project, 'main.pathogen');

@@ -15,7 +15,7 @@
 import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { buildFontRegistry, ensureOpentype, planFontDirectives, resolveFontsInFiles } from 'pathogen-lang';
+import { buildFontRegistry, ensureOpentype, planFontDirectives, planImports, resolveFontsInFiles } from 'pathogen-lang';
 import {
   createNodeFontHost,
   defaultCacheDir,
@@ -117,7 +117,10 @@ export class DiagnosticFonts {
       const filePlan = planFontDirectives(file.source);
       return [file.path, filePlan, fontFileStamps(where.root, file.path, filePaths(filePlan?.directives ?? []), null)];
     });
-    const key = JSON.stringify([plan, importedKey, where.root, where.entry, envOffline, stamps]);
+    // A document with imports gets a broken pathogen.json's message from its
+    // imports (resolveEditorModules), so it isn't repeated here.
+    const reportProjectFile = planImports(source).length === 0;
+    const key = JSON.stringify([plan, importedKey, where.root, where.entry, envOffline, stamps, reportProjectFile]);
     const known = this.memo.get(uri);
     if (known?.key === key && this.now() < known.until) return known.fonts;
     // Already downloading for this document: its recheck will come.
@@ -125,12 +128,12 @@ export class DiagnosticFonts {
 
     const first = await this.resolve(source, where, envOffline ?? FIRST_PASS, imported);
     if (envOffline !== null || !first.downloadsSkipped) {
-      return this.remember(uri, key, first, where);
+      return this.remember(uri, key, first, where, reportProjectFile);
     }
     this.downloading.add(key);
     this.resolve(source, where, null, imported)
       .then(async (full) => {
-        if (!this.closed.has(uri)) await this.remember(uri, key, full, where);
+        if (!this.closed.has(uri)) await this.remember(uri, key, full, where, reportProjectFile);
       })
       .catch((err: unknown) => {
         // Past the loader's own messages (which cover a failed download).
@@ -159,9 +162,15 @@ export class DiagnosticFonts {
     this.collectParsed();
   }
 
-  private async remember(uri: string, key: string, result: ResolveFontsResult, where: Where): Promise<FontInfo> {
+  private async remember(
+    uri: string,
+    key: string,
+    result: ResolveFontsResult,
+    where: Where,
+    reportProjectFile: boolean,
+  ): Promise<FontInfo> {
     const messages: FontLoadMessage[] = [...result.messages];
-    if (where.projectFile) {
+    if (where.projectFile && reportProjectFile) {
       const project = await loadProjectFile(where.projectFile);
       if (!project.ok) messages.unshift({ severity: 'error', message: project.message });
     }

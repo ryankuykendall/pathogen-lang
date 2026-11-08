@@ -76,6 +76,19 @@ describe('previewModules', () => {
     ]);
   });
 
+  it("a broken pathogen.json stops a document with imports, in the CLI's words", async () => {
+    const broken = mkdtempSync(join(TMP, 'preview-modules-broken-'));
+    writeFileSync(join(broken, 'pathogen.json'), '{ "main": "poster.pathogen" }\n');
+    try {
+      const found = await previewModules({ lib, node }, join(broken, 'main.pathogen'), MAIN, noBuffers);
+      expect(found.errors).toEqual([
+        `main.pathogen:1:22: error: pathogen.json (${broken}): "main" is now "entryPoints", a list whose first entry is the main. Replace it with "entryPoints": ["poster.pathogen"].`,
+      ]);
+    } finally {
+      rmSync(broken, { recursive: true, force: true });
+    }
+  });
+
   it('an unsaved document: its imports say to save it first', async () => {
     const found = await previewModules({ lib, node }, undefined, MAIN, noBuffers);
     expect(found.errors).toEqual([
