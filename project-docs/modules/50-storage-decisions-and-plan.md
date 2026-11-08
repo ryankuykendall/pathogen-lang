@@ -162,6 +162,28 @@ Noted, not changed: the re-review check can only fail if records are paired wron
 5. **The dry run again**: everything "already". Then the export and the collision check, as a smoke test of the R2 read.
 6. **Later:** the sweep script (step 8), and removing the old-shape reader once nothing old remains.
 
+## Step 8, the sweep: a proposal, not built (2026-11-08)
+
+The sweep deletes data, and the simple design has a hole, so this is for you to decide first. Nothing breaks without it: until it runs, unreferenced blobs only cost storage (note 48 §3: "the sweep can wait").
+
+**The hole.** A save may name, by hash, a blob that is under the workspace's prefix but that no manifest names. Note 48 §3 plans this on purpose: a data file is uploaded first and joins the manifest with the next save. So an old blob that nothing names can become named again without being uploaded again, and a grace period on R2's upload time doesn't protect it. (A save that uploads identical bytes again also overwrites the blob before its manifest is written.)
+
+**Proposed design:**
+- **It runs inside the API Worker,** since wrangler can't list R2 objects: admin-only routes, plus a script that drives them, dry run by default.
+- **References,** per prefix `files/{ws}/`:
+  - the `workspace:{ws}` record;
+  - its approval;
+  - its entries in both review queues;
+  - every `snapshots/{ws}/*/manifest.json`, found by listing R2.
+
+  Rejections hold no files, and records from before phase 2 name no blobs. A record or manifest the sweep can't parse stops that prefix.
+- **Two passes:**
+  1. **Mark.** List the prefix's blobs, then read the references, and return the hashes nothing names. The script saves them in `tmp/` with the time.
+  2. **Sweep,** at least the grace period later (the script enforces it, default 24 hours). For each candidate, the Worker re-reads the references and lists the blob again. It deletes the blob only if nothing names it and it was uploaded before the mark. A blob named or uploaded again since the mark is kept.
+- **Prefixes with no workspace record,** left by a failed create, copy or start-from-snapshot, are mostly what it will find. They get their own test.
+- **What remains:** a save could name a candidate by hash, or upload it again, in the moment between the sweep's re-read and its delete; R2 deletes aren't conditional. Then a load says the file is missing from storage, and the next save of that file's text writes it again. The window is milliseconds, and the tool is run by hand.
+- **Code it needs:** the R2 type gains list's `delimiter` and its `delimitedPrefixes`, and each object's `uploaded` (exact names checked against the binding's docs). The test bucket gains a clock.
+
 ## Questions from building
 
 1. **Which Workers plan** is the Cloudflare account on? On Free, loads cap out near 40 files; on Paid, the 1,000-call budget is what applies.
@@ -175,3 +197,4 @@ Noted, not changed: the re-review check can only fail if records are paired wron
    Since the step 3 review, a copy over 480 different files is refused with a message (option (c) at 480), so nothing fails silently whichever you choose. Under (a) that refusal can't happen.
 3. **The style-opener follow-up run** (see "At shipping", step 2): did it run after 2026-09-04, or is it settled without it?
 4. **The production migration**: the dry run and the write each need your go-ahead, at shipping time (after 2e). Nothing has touched production.
+5. **The sweep** (step 8, above): build it now with the two-pass design, or after 2e ships?
