@@ -192,7 +192,12 @@ program
 
     let server: Server | null = null;
     let browser: Browser | null = null;
-    const outcome = { done: [] as string[], skippedGpu: [] as string[], failed: [] as [string, string][] };
+    const outcome = {
+      done: [] as string[],
+      skippedGpu: [] as string[],
+      skippedFiles: [] as string[],
+      failed: [] as [string, string][],
+    };
 
     try {
       let page: Page | null = null;
@@ -211,7 +216,17 @@ program
       for (const entry of targets) {
         const label = `${entry.workspaceId} (${entry.ownerHandle ?? '?'}/${entry.slug})`;
         try {
-          const approval = await fetchJson<{ code?: string }>(authed(`/admin/approval/${encodeURIComponent(entry.workspaceId)}`));
+          // The admin read returns `code` for an approval that is just
+          // main.pathogen. One with several files (phase 2) carries only
+          // `files`; this harness compiles one string, so it's skipped by name.
+          const approval = await fetchJson<{ code?: string; files?: Record<string, unknown> }>(
+            authed(`/admin/approval/${encodeURIComponent(entry.workspaceId)}`),
+          );
+          if (approval.code === undefined && Object.keys(approval.files ?? {}).length > 1) {
+            outcome.skippedFiles.push(label);
+            console.log(`⏭  ${label} — holds several files, skipped (this script compiles a one-file program)`);
+            continue;
+          }
           const code = approval.code ?? '';
           if (!code.trim()) throw new Error('approval record has no code');
 
@@ -260,10 +275,17 @@ program
       server?.close();
     }
 
-    console.log(`\n${opts.dryRun ? 'Dry run' : 'Sweep'} complete: ${outcome.done.length} ${opts.dryRun ? 'candidates' : 'regenerated'}, ${outcome.skippedGpu.length} GPU-skipped, ${outcome.failed.length} failed.`);
+    console.log(
+      `\n${opts.dryRun ? 'Dry run' : 'Sweep'} complete: ${outcome.done.length} ${opts.dryRun ? 'candidates' : 'regenerated'}, ` +
+        `${outcome.skippedGpu.length} GPU-skipped, ${outcome.skippedFiles.length} several-file-skipped, ${outcome.failed.length} failed.`,
+    );
     if (outcome.skippedGpu.length) {
       console.log('GPU-gradient sources (kept raster hero):');
       for (const s of outcome.skippedGpu) console.log(`  - ${s}`);
+    }
+    if (outcome.skippedFiles.length) {
+      console.log('Approvals holding several files (not compiled here):');
+      for (const s of outcome.skippedFiles) console.log(`  - ${s}`);
     }
     if (outcome.failed.length) {
       console.log('Failed (left untouched):');

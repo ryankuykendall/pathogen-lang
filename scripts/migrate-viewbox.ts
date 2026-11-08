@@ -249,6 +249,15 @@ async function migrateWorkspace(flags: string[], key: string, dryRun: boolean): 
     return { kind: 'error', message: `JSON parse failed: ${(e as Error).message}` };
   }
 
+  // Since phase 2 a record may hold `files` (a manifest; the text is in R2,
+  // project-docs/modules/48-storage-design-v2.md). This script reads and
+  // writes only `code`, so it leaves such a record alone.
+  if ((workspace as { files?: unknown }).files !== undefined) {
+    return {
+      kind: 'error',
+      message: 'holds files in R2 (the phase 2 shape); this script reads only the one `code` string',
+    };
+  }
   const code = workspace.code ?? '';
   const canonical = canonicalize(code, (workspace.preferences ?? {}) as Record<string, unknown>);
 

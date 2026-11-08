@@ -16,17 +16,12 @@
 
 import { describe, expect, it } from 'vitest';
 
+import { makeQueueEntry, pushReviewQueue, readApproval } from '../../website/api/moderation';
 import { handleApiRequest } from '../../website/api/router';
-import { pushReviewQueue, readApproval } from '../../website/api/moderation';
-import type {
-  Env,
-  KVNamespace,
-  R2Bucket,
-  R2Object,
-  ReviewQueueEntry,
-  Workspace,
-} from '../../website/api/types';
+import { readStoredFiles } from '../../website/api/workspace-files';
 import { MemoryD1, MemoryKV } from '../auth/helpers';
+
+import type { Env, KVNamespace, R2Bucket, R2Object, Workspace } from '../../website/api/types';
 
 class MemoryR2 implements R2Bucket {
   private store = new Map<string, string>();
@@ -98,21 +93,13 @@ async function createWorkspace(env: Env, userId: string, code: string): Promise<
 }
 
 // Push a pending review-queue entry for an existing workspace so
-// adminReviewDecision has something to approve.
+// adminReviewDecision has something to approve. It freezes the record's
+// files as submitting does (the text is already in R2, under the workspace).
 async function queueForReview(env: Env, id: string, userId: string): Promise<void> {
-  const wsJson = await (env.WORKSPACES as unknown as KVNamespace).get(`workspace:${id}`);
+  const wsJson = await env.WORKSPACES.get(`workspace:${id}`);
   const ws = JSON.parse(wsJson!) as Workspace;
-  const entry: ReviewQueueEntry = {
-    workspaceId: id,
-    userId,
-    code: ws.code,
-    codeHash: ws.contentHash,
-    name: ws.name,
-    description: ws.description || '',
-    slug: 'big-workspace',
-    submittedAt: new Date().toISOString(),
-  };
-  await pushReviewQueue(env, entry);
+  expect(ws.userId).toBe(userId);
+  await pushReviewQueue(env, makeQueueEntry(ws, await readStoredFiles(ws, ws.contentHash), new Date().toISOString()));
 }
 
 async function approve(env: Env, id: string, svg: string | null): Promise<Response> {

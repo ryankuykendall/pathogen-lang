@@ -225,6 +225,13 @@ program
         continue;
       }
       if (!workspace.isPublic) continue;
+      // Since phase 2 a record may hold `files` (a manifest; the text is in
+      // R2, project-docs/modules/48-storage-design-v2.md). The approval this
+      // script synthesizes copies only `code`, so it leaves such a record alone.
+      if ((workspace as { files?: unknown }).files !== undefined) {
+        console.log(`  skip ${workspaceId}: holds files in R2 (the phase 2 shape); this script copies only \`code\``);
+        continue;
+      }
 
       const hasApproval = approvalKeys.has(`approval:${workspaceId}`);
       const latestState = stateByWorkspace.get(workspaceId);

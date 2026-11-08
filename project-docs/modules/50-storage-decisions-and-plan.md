@@ -89,6 +89,21 @@ A code review of the endpoints (step 3) found these. Each is fixed and has a tes
 
 The playground check (`verify/verify-storage-step3-playground.ts`, against `npm run dev:stack`) passes before and after the fixes: today's playground creates, loads, edits, saves (Cmd-S) and reloads a workspace through the new API, and the record holds a manifest with the text in R2.
 
+## Step 4: review, approval and the public source read (2026-11-08)
+
+Step 3 left queue entries without `code`, and the admin moderation screen compiles `code` for each card's thumbnail, the review modal, and the SVG it sends with Approve. Step 4 gives it back:
+
+- **Both queue listings** (`/admin/queue/review`, `/admin/queue/rereview`) list each entry with its frozen source. An entry that is just `main.pathogen` carries its text as `code` and in `files`, for one R2 read (none for a record from before phase 2). An entry with several files carries its manifest only; an admin reads those files by hash. An entry whose files can't be read is listed with `sourceError`, so one bad entry doesn't hide the queue. Both listings now resolve owners the same way, so the review listing also says whether the owner is flagged.
+- **`GET /admin/approval/:id`** returns the approval with every file's text, and `code` for a just-main approval. The moderation screen's two reads of it, and `backfill-approval-svgs.ts`, work unchanged; the script skips an approval with several files by name.
+- **Every listing's hash** (approved, featured, rejected, flagged) is in today's rule.
+- **`GET /approval-source/:id`** (new, public) serves the approval's frozen files, never the live ones, so an edit waiting for re-review stays unseen. It is guarded like `/approval-svg/:id` (404 unless the workspace exists, is public and isn't flagged) and cached for 60 seconds, like `source.json`. It returns `workspaceId`, `name`, `description`, the files, `codeHash`, and `code` for a just-main approval. Step 6 makes the detail page and `source.json` read it.
+
+**Review** (a code review of step 4): no information exposure found. Fixed: the moderation screen threw on an entry with no `code` (`code.trim()` on undefined), which the API already allows; it now treats one like empty code. `verify/verify-storage-step4-admin.ts` reproduced the throw on the old bundle and passes on the new one. Also fixed: a stale `code` beside `files` is never passed through. Two more scripts that read only `code` (`migrate-viewbox.ts`, `backfill-publication-state.ts`) now leave records that hold files alone.
+
+**Checked by hand** (`verify/verify-storage-step4-admin.ts`, against `npm run dev:stack`): the API freezes a workspace into the review queue; the served moderation screen lists it, compiles its thumbnail, and Approve sends an SVG compiled from the frozen text; the admin read and `/approval-source/:id` return that text. The script stands in for the sign-in only: it answers `GET /me` with an admin user and adds the dev API's admin token to `/admin/*` requests.
+
+**For 2e:** the moderation screen shows an entry with several files as having no source. It needs to load those files by hash and compile them with their imports. Autosave's dirty check still uses its own copy of the old hash, so after a change and an undo it sends one save the server skips; 2c moves it to the shared hash.
+
 ## Questions from building
 
 1. **Which Workers plan** is the Cloudflare account on? On Free, loads cap out near 40 files; on Paid, the 1,000-call budget is what applies.

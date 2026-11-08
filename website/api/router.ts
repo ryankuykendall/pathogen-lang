@@ -55,7 +55,14 @@ import {
   writeRejection,
 } from './moderation.js';
 import { setUserFlag } from '../auth/users.js';
-import type { Env, Workspace, WorkspaceApproval, WorkspaceListing, WorkspaceRejection } from './types.js';
+import type {
+  Env,
+  ReviewQueueEntry,
+  Workspace,
+  WorkspaceApproval,
+  WorkspaceListing,
+  WorkspaceRejection,
+} from './types.js';
 import {
   deleteThumbMeta,
   errorResponse,
@@ -70,6 +77,7 @@ import { MAIN_FILE, fileKind, readStoredFiles } from './workspace-files.js';
 import {
   filesFromBody,
   filesWithText,
+  frozenSource,
   mainText,
   materialize,
   patchWorkspaceRecord,
@@ -205,6 +213,28 @@ async function resolveQueueOwners(
         }
       }
       return { ...e, ownerHandle: handle, ownerDisplayName: displayName, ownerFlagged: flagged };
+    }),
+  );
+}
+
+// A review or re-review queue as the admin screen lists it: owners resolved,
+// and each entry's frozen source (note 48 §4). An entry that is just
+// main.pathogen carries its text as `code`, which the screen compiles for
+// the card, the review modal and the SVG it sends with Approve; one with
+// several files carries its manifest. About one R2 read an entry. An entry
+// whose files can't be read is listed with `sourceError`, so one bad entry
+// doesn't hide the queue.
+async function listQueueForAdmin(env: Env, entries: ReviewQueueEntry[]): Promise<Array<Record<string, unknown>>> {
+  const withOwners = await resolveQueueOwners(env, entries);
+  return Promise.all(
+    withOwners.map(async (entry, i) => {
+      // A legacy `code` is never passed through: the source says what it is.
+      const { code: _legacy, ...rest } = entry;
+      try {
+        return { ...rest, ...(await frozenSource(env, entries[i], 'just-main')) };
+      } catch (err) {
+        return { ...rest, sourceError: (err as Error).message };
+      }
     }),
   );
 }
@@ -969,6 +999,38 @@ export const apiHandlers: Record<string, (request: Request, env: Env, ...args: s
     }
   },
 
+  // GET /approval-source/:id — public read of an approved workspace's source,
+  // for the detail page and its source.json (note 48 §4): the Pages worker
+  // has no R2 binding, as for /approval-svg/:id. It serves the APPROVAL's
+  // frozen files, never the live ones, so an edit waiting for re-review
+  // stays unseen. Guarded like getApprovalSvg: 404 unless the workspace
+  // exists, is public and isn't flagged. A short cache, like source.json's,
+  // so an unpublish or a flag takes effect quickly.
+  async getApprovalSource(_request: Request, env: Env, id: string): Promise<Response> {
+    try {
+      const wsJson = await env.WORKSPACES.get(`workspace:${id}`);
+      if (!wsJson) return errorResponse('Workspace not found', 404);
+      const workspace: Workspace & { flagged?: boolean } = JSON.parse(wsJson);
+      if (!workspace.isPublic || workspace.flagged) {
+        return errorResponse('Workspace not available', 404);
+      }
+      const approval = await readApproval(env, id);
+      if (!approval) return errorResponse('No approval record', 404);
+      const source = await frozenSource(env, approval, 'all');
+      return new Response(
+        JSON.stringify({ workspaceId: id, name: approval.name, description: approval.description ?? '', ...source }),
+        {
+          headers: {
+            'Content-Type': 'application/json;charset=utf-8',
+            'Cache-Control': 'public, s-maxage=60, max-age=30',
+          },
+        },
+      );
+    } catch (err) {
+      return errorResponse('Failed to get approval source: ' + (err as Error).message, 500);
+    }
+  },
+
   // DELETE /api/workspace/:id/thumbnail?kind=manual|auto|all
   // kind=manual (default) removes the manual layer only, revealing the auto layer
   // if one exists. kind=auto removes the auto/legacy layer. kind=all removes both
@@ -1080,28 +1142,9 @@ export const apiHandlers: Record<string, (request: Request, env: Env, ...args: s
   async adminListReviewQueue(request: Request, env: Env): Promise<Response> {
     if (!(await isAdminRequest(request, env))) return errorResponse('Unauthorized', 401);
     try {
-      const entries = await listReviewQueue(env);
-      // Resolve owner handles for display. Failures are swallowed (entry
-      // appears with userId only).
-      const enriched = await Promise.all(
-        entries.map(async (e) => {
-          let handle: string | null = null;
-          let displayName: string | null = null;
-          if (env.USERS_DB) {
-            try {
-              const user = await findUserById(env.USERS_DB, e.userId);
-              if (user) {
-                handle = user.handle;
-                displayName = user.display_name;
-              }
-            } catch {
-              /* leave null */
-            }
-          }
-          return { ...e, ownerHandle: handle, ownerDisplayName: displayName };
-        }),
-      );
-      return jsonResponse({ entries: enriched });
+      // Owner handles are resolved for display; a failed lookup leaves the
+      // entry with its userId only.
+      return jsonResponse({ entries: await listQueueForAdmin(env, await listReviewQueue(env)) });
     } catch (err) {
       return errorResponse('Failed to read review queue: ' + (err as Error).message, 500);
     }
@@ -1265,25 +1308,25 @@ export const apiHandlers: Record<string, (request: Request, env: Env, ...args: s
   async adminListRereviewQueue(request: Request, env: Env): Promise<Response> {
     if (!(await isAdminRequest(request, env))) return errorResponse('Unauthorized', 401);
     try {
-      const entries = await listRereviewQueue(env);
-      const enriched = await resolveQueueOwners(env, entries);
-      return jsonResponse({ entries: enriched });
+      return jsonResponse({ entries: await listQueueForAdmin(env, await listRereviewQueue(env)) });
     } catch (err) {
       return errorResponse('Failed to read re-review queue: ' + (err as Error).message, 500);
     }
   },
 
   // GET /admin/approval/:id — admin-only. Returns the frozen approval
-  // record (code, svg, slug, ownerHandle, …) so the moderation UI can
-  // open the review modal against the moderated snapshot rather than
-  // the live workspace. Legacy approvals without `svg` still expose
-  // `code` for client-side compile.
+  // record (svg, slug, ownerHandle, …) with its files and their text, so
+  // the moderation UI can open the review modal against the moderated
+  // snapshot rather than the live workspace. `code` is the text of an
+  // approval that is just main.pathogen, which the UI compiles when there's
+  // no `svg`; `codeHash` is in today's rule.
   async adminGetApproval(request: Request, env: Env, id: string): Promise<Response> {
     if (!(await isAdminRequest(request, env))) return errorResponse('Unauthorized', 401);
     try {
       const approval = await readApproval(env, id);
       if (!approval) return errorResponse('No approval record', 404);
-      return jsonResponse(approval);
+      const { code: _legacy, ...rest } = approval;
+      return jsonResponse({ ...rest, ...(await frozenSource(env, approval, 'all')) });
     } catch (err) {
       return errorResponse('Failed to load approval: ' + (err as Error).message, 500);
     }
@@ -1368,7 +1411,8 @@ export const apiHandlers: Record<string, (request: Request, env: Env, ...args: s
               slug: a.slug,
               ownerHandle: a.ownerHandle ?? null,
               ownerFlagged,
-              codeHash: a.codeHash,
+              // In today's rule, as every listing shows it (no I/O).
+              codeHash: (await readStoredFiles(a, a.codeHash)).hash,
               approvedAt: a.approvedAt,
               featuredAt: a.featuredAt ?? null,
               thumbnailAt,
@@ -1413,7 +1457,7 @@ export const apiHandlers: Record<string, (request: Request, env: Env, ...args: s
             slug: approval.slug,
             ownerHandle: approval.ownerHandle ?? null,
             ownerFlagged,
-            codeHash: approval.codeHash,
+            codeHash: (await readStoredFiles(approval, approval.codeHash)).hash,
             // Featured cards render an "approved <date>" meta line (FeaturedEntry
             // extends ApprovedEntry); without approvedAt it showed "Invalid Date".
             approvedAt: approval.approvedAt,
@@ -1453,7 +1497,7 @@ export const apiHandlers: Record<string, (request: Request, env: Env, ...args: s
               name = ws.name;
               userId = ws.userId;
               thumbnailAt = (await readThumbMeta(env, r.workspaceId, ws)).thumbnailAt;
-              codeHash = ws.contentHash;
+              codeHash = (await storedFilesOf(ws)).hash;
               workspaceFlagged = Boolean(ws.flagged);
             }
             if (env.USERS_DB && userId) {
@@ -1515,7 +1559,7 @@ export const apiHandlers: Record<string, (request: Request, env: Env, ...args: s
         entries.push({
           workspaceId: wsId,
           name: ws.name,
-          codeHash: ws.contentHash,
+          codeHash: (await storedFilesOf(ws)).hash,
           ownerHandle: handle,
           ownerUserId: ws.userId,
           ownerFlagged,
@@ -1966,6 +2010,11 @@ export async function handleApiRequest(request: Request, env: Env, apiPath: stri
   const publicApprovalSvgMatch = apiPath.match(/^\/approval-svg\/([^/]+)$/);
   if (publicApprovalSvgMatch && method === 'GET') {
     return apiHandlers.getApprovalSvg(request, env, publicApprovalSvgMatch[1]);
+  }
+
+  const approvalSourceMatch = apiPath.match(/^\/approval-source\/([^/]+)$/);
+  if (approvalSourceMatch && method === 'GET') {
+    return apiHandlers.getApprovalSource(request, env, approvalSourceMatch[1]);
   }
 
   // ─── Admin ────────────────────────────────────────────────────────

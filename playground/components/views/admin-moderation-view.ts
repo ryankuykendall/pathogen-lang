@@ -44,7 +44,10 @@ const API_BASE = __PATHOGEN_API_BASE__;
 interface QueueEntry {
   workspaceId: string;
   userId: string;
-  code: string;
+  // The text of an entry that is just main.pathogen. An entry with several
+  // files (phase 2) carries only its manifest, and an entry whose files
+  // can't be read carries `sourceError`; neither has `code`.
+  code?: string;
   codeHash: string;
   name: string;
   description: string;
@@ -326,14 +329,15 @@ class AdminModerationView extends HTMLElement {
     return `${tab}:${workspaceId}`;
   }
 
-  private async _compileSvg(code: string, key: string): Promise<string | null> {
+  private async _compileSvg(code: string | undefined, key: string): Promise<string | null> {
     if (this._svg.has(key)) return this._svg.get(key) ?? null;
     if (this._svgPending.has(key)) return null;
     // Empty / whitespace-only code can't produce a meaningful render —
     // generateSvg returns an SVG with an empty <path d="" />. Mark it
     // failed up-front so the modal goes straight to the source-and-error
-    // state instead of showing a blank preview.
-    if (!code.trim()) {
+    // state instead of showing a blank preview. No code at all is an entry
+    // with several files, or one whose files couldn't be read.
+    if (!code?.trim()) {
       this._svg.set(key, '');
       return null;
     }
@@ -1252,7 +1256,7 @@ class AdminModerationView extends HTMLElement {
           tab === 'pending'
             ? this._pending.find((p) => p.workspaceId === id)
             : this._rereview.find((p) => p.workspaceId === id);
-        if (entry) this._openReview(entry.workspaceId, tab, entry.code, entry.name);
+        if (entry) this._openReview(entry.workspaceId, tab, entry.code ?? '', entry.name);
       });
     });
     root.querySelectorAll('[data-action="review-catalog"]').forEach((btn) => {

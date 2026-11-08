@@ -92,6 +92,41 @@ export async function filesWithText(
   };
 }
 
+/** A review-queue entry or an approval: files frozen when it was made, under its workspace's prefix. */
+export interface FrozenRecord extends StoredFileFields {
+  workspaceId: string;
+  codeHash?: string;
+}
+
+export interface FrozenSource {
+  files: Record<string, FileEntry | FileWithText>;
+  folders: string[];
+  entryPoints: string[];
+  /** In today's rule, also for a record from before phase 2. */
+  codeHash: string;
+  /** Its one program's text, for a record that is just main.pathogen. */
+  code?: string;
+}
+
+/**
+ * A queue entry's or an approval's source, as an admin screen or the detail
+ * page reads it. `texts: 'all'` returns every .pathogen file's text (one R2
+ * read each). `texts: 'just-main'` is for listings, which must stay near one
+ * call an entry: a record that is just main.pathogen gets its text (one read;
+ * none for a record from before phase 2), and one with several files comes
+ * back as its manifest, whose files an admin reads by hash
+ * (GET /workspace/:id/file/:sha256).
+ */
+export async function frozenSource(env: Env, record: FrozenRecord, texts: 'all' | 'just-main'): Promise<FrozenSource> {
+  const stored = await readStoredFiles(record, record.codeHash);
+  const { manifest } = stored;
+  if (texts === 'just-main' && !isJustMain(manifest)) {
+    return { files: manifest.files, folders: manifest.folders, entryPoints: manifest.entryPoints, codeHash: stored.hash };
+  }
+  const { contentHash, ...withText } = await filesWithText(env, record.workspaceId, stored);
+  return { ...withText, codeHash: contentHash };
+}
+
 /** The text of the workspace's main program, or null when it has no programs. */
 export async function mainText(env: Env, workspaceId: string, files: StoredFiles): Promise<string | null> {
   const main = files.manifest.entryPoints[0];
