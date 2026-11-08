@@ -76,17 +76,29 @@ program
     rmSync(out, { recursive: true, force: true });
     mkdirSync(out, { recursive: true });
 
-    const counts = { workspace: 0, approval: 0, queueEntries: 0, empty: 0, unreadable: 0 };
+    // Since phase 2 a record may hold `files` (a manifest) with the text in R2
+    // (project-docs/modules/48-storage-design-v2.md). This script reads KV
+    // only, so such records are counted, not exported. TODO(storage step 7):
+    // read their .pathogen files from R2 so the audits see them.
+    const counts = { workspace: 0, approval: 0, queueEntries: 0, empty: 0, unreadable: 0, filesInR2: 0 };
     for (const prefix of ['workspace:', 'approval:']) {
       const keys = kvList(flags, prefix);
       console.log(`${prefix} ${keys.length} keys`);
       for (const key of keys) {
         const raw = kvGet(flags, key);
         let code: unknown;
+        let holdsFiles = false;
         try {
-          code = raw ? (JSON.parse(raw) as { code?: unknown }).code : undefined;
+          const parsed = raw ? (JSON.parse(raw) as { code?: unknown; files?: unknown }) : undefined;
+          code = parsed?.code;
+          holdsFiles = parsed?.files !== undefined;
         } catch {
           code = undefined;
+        }
+        if (holdsFiles) {
+          counts.filesInR2++;
+          console.log(`  files in R2, not exported ${key}`);
+          continue;
         }
         if (raw === null || code === undefined) {
           counts.unreadable++;
@@ -104,7 +116,7 @@ program
     for (const key of ['queue:review', 'queue:rereview']) {
       const raw = kvGet(flags, key);
       if (!raw) continue;
-      let entries: { workspaceId?: string; code?: unknown }[] = [];
+      let entries: { workspaceId?: string; code?: unknown; files?: unknown }[] = [];
       try {
         entries = JSON.parse(raw);
       } catch {
@@ -113,6 +125,11 @@ program
       }
       if (!Array.isArray(entries)) continue;
       entries.forEach((entry, i) => {
+        if (entry.files !== undefined) {
+          counts.filesInR2++;
+          console.log(`  files in R2, not exported ${key} --${entry.workspaceId ?? i}`);
+          return;
+        }
         if (typeof entry.code !== 'string' || !entry.code.trim()) return;
         writeFileSync(join(out, fileName(key, `--${entry.workspaceId ?? i}`)), entry.code);
         counts.queueEntries++;
@@ -120,7 +137,7 @@ program
     }
     console.log(
       `\nwrote ${counts.workspace} workspaces, ${counts.approval} approvals, ${counts.queueEntries} queue entries to ${out}` +
-        ` (${counts.empty} empty, ${counts.unreadable} unreadable)`,
+        ` (${counts.empty} empty, ${counts.unreadable} unreadable, ${counts.filesInR2} holding files in R2, not exported)`,
     );
   });
 program.parse();

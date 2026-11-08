@@ -69,6 +69,26 @@ The playground's side (the store, autosave, the editor) is 2c and 2d. The review
   - **Copying** (duplicate, fork, restoring a snapshot) needs two calls per file. A workspace near 500 files would pass 1,000. That's a question for you (below).
   - **On Workers Free,** the 50-subrequest cap would limit a load to about 40 files. Which plan the account is on decides whether the 500-file limit holds at all.
 
+## Step 3 review (2026-11-08)
+
+A code review of the endpoints (step 3) found these. Each is fixed and has a test in `tests/api/workspace-files-api.test.ts`, unless it says otherwise.
+
+| Finding | What was done |
+|---|---|
+| **Copy passed the call budget.** It read every file twice (once to copy, again for the response): three calls a file. | Copy reads each `.pathogen` text once, writes it, and answers from the texts it holds: two calls a file. It copies at most 6 blobs at a time, so a large workspace isn't all in memory. Above **480** different files it refuses with a 413 and a message. This is a backstop only: question 2 below still decides how large workspaces copy. |
+| **A save could revert an admin's publish or flag.** The save wrote back the record it read first, and a save with files can take a while (up to 500 R2 writes). | Every write of a record now goes through `patchWorkspaceRecord`: re-read, apply only this request's changes, write. A save's rev is one past the newer of the two reads, so two racing saves can't share a rev. KV has no compare-and-swap, so the window isn't zero; it is the re-read→put gap. |
+| **A file sent by hash carried the client's size,** so a client could slip past the size limits, and the manifest could disagree with R2. | The size comes from the stored manifest, from a text in the same save, or from R2 (`head`); a size the client sends is ignored. |
+| **A save with unchanged files dropped a rename** sent with it (as before phase 2). | Only a save that changes nothing at all is skipped. |
+| **Requeue checked one read and froze another.** | It checks the record it freezes. |
+| **Scripts that read only `code`:** `migrate-builtin-names-kv.ts` and `migrate-style-opener-kv.ts` would write a `code` beside a record's files that nothing reads. `export-workspace-sources.ts` would export an empty source. | The migrations refuse such a record with a message. The export counts it as "holding files in R2, not exported"; reading those from R2 is part of step 7. No tests: these scripts call wrangler. |
+| **`backfill-approval-svgs.ts`** reads `code` from the admin approval read. | Step 4 changes that read; the script is updated with it. |
+| **Admin listings show stored hashes as they are,** in two rules for old and new records. | Step 4 (the listings), with `readStoredFiles(x, x.codeHash).hash`. |
+| **A load holds every `.pathogen` text in memory,** up to the 50 MB workspace limit, in a 128 MB Worker. | Not fixed. A hand-written workspace is far below this; the fix (return hashes only above a total size, and the client reads by hash) needs the playground's side, so it's on the 2c list. |
+| **The "copy from a workspace" flow** in `new-workspace-view.ts` reads `code`, which a load leaves out for a workspace with several files. | Unreachable until the playground can make one; on the 2d list. |
+| **A public workspace's file route serves the live files,** so an edit pending re-review is readable by anyone with its hash. | The same as `GET /workspace/:id` today; no change. Noted for 2e. |
+
+The playground check (`verify/verify-storage-step3-playground.ts`, against `npm run dev:stack`) passes before and after the fixes: today's playground creates, loads, edits, saves (Cmd-S) and reloads a workspace through the new API, and the record holds a manifest with the text in R2.
+
 ## Questions from building
 
 1. **Which Workers plan** is the Cloudflare account on? On Free, loads cap out near 40 files; on Paid, the 1,000-call budget is what applies.
@@ -78,3 +98,5 @@ The playground's side (the store, autosave, the editor) is 2c and 2d. The review
    - **(c)** keep 500, and refuse to copy a workspace over about 450 files, with a message.
 
    Recommended: (a). A workspace that size is unlikely to be hand-made, and one request keeps a copy all-or-nothing.
+
+   Since the step 3 review, a copy over 480 different files is refused with a message (option (c) at 480), so nothing fails silently whichever you choose. Under (a) that refusal can't happen.

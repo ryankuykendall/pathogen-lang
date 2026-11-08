@@ -9,18 +9,22 @@
 
 import { describe, expect, it } from 'vitest';
 
+import { MemoryR2 } from './memory-r2';
+import { storedRecord, storedText } from './workspace-helpers';
 import { handleApiRequest } from '../../website/api/router';
-import type { Env, KVNamespace, R2Bucket } from '../../website/api/types';
 import { MemoryKV } from '../auth/helpers';
 
-function makeEnv(): { env: Env; kv: MemoryKV } {
-  const kv = new MemoryKV();
+import type { Env, KVNamespace } from '../../website/api/types';
+
+function makeEnv(): { env: Env; kv: KVNamespace; r2: MemoryR2 } {
+  const kv = new MemoryKV() as unknown as KVNamespace;
+  const r2 = new MemoryR2();
   const env = {
-    WORKSPACES: kv as unknown as KVNamespace,
-    THUMBNAILS: undefined as unknown as R2Bucket,
+    WORKSPACES: kv,
+    THUMBNAILS: r2,
     USERS_DB: undefined as unknown as Env['USERS_DB'],
   } as Env;
-  return { env, kv };
+  return { env, kv, r2 };
 }
 
 async function createWorkspace(env: Env, userId: string, code: string): Promise<string> {
@@ -62,7 +66,7 @@ describe('workspace optimistic concurrency', () => {
   });
 
   it('rejects a stale baseRev with 409 and does not change the persisted code', async () => {
-    const { env, kv } = makeEnv();
+    const { env, kv, r2 } = makeEnv();
     const id = await createWorkspace(env, 'u1', 'reddish');
 
     // Tab A saves yellowish from rev 0 → rev 1.
@@ -78,9 +82,8 @@ describe('workspace optimistic concurrency', () => {
     expect(conflict.currentRev).toBe(1);
 
     // The newer code survives — the stale write did not clobber it.
-    const doc = JSON.parse((await (kv as unknown as KVNamespace).get(`workspace:${id}`))!);
-    expect(doc.code).toBe('yellowish');
-    expect(doc.rev).toBe(1);
+    expect(await storedText(kv, r2, id)).toBe('yellowish');
+    expect((await storedRecord(kv, id)).rev).toBe(1);
   });
 
   it('lets the same client save sequentially by advancing baseRev from each response', async () => {
@@ -109,7 +112,7 @@ describe('workspace optimistic concurrency', () => {
   });
 
   it('falls back to last-write-wins when baseRev is omitted (backward compatible)', async () => {
-    const { env, kv } = makeEnv();
+    const { env, kv, r2 } = makeEnv();
     const id = await createWorkspace(env, 'u1', 'A');
 
     // Advance to rev 1 with a base-aware write...
@@ -120,8 +123,7 @@ describe('workspace optimistic concurrency', () => {
     const body = (await res.json()) as { rev: number };
     expect(body.rev).toBe(2); // still increments
 
-    const doc = JSON.parse((await (kv as unknown as KVNamespace).get(`workspace:${id}`))!);
-    expect(doc.code).toBe('C');
+    expect(await storedText(kv, r2, id)).toBe('C');
   });
 
   it('does not require baseRev for non-code updates (name/preferences)', async () => {
@@ -136,7 +138,7 @@ describe('workspace optimistic concurrency', () => {
   });
 
   it('a non-code update preserves the latest code and rev (no clobber)', async () => {
-    const { env, kv } = makeEnv();
+    const { env, kv, r2 } = makeEnv();
     const id = await createWorkspace(env, 'u1', 'A');
 
     // Code advances to rev 1.
@@ -146,8 +148,8 @@ describe('workspace optimistic concurrency', () => {
     const res = await update(env, id, 'u1', { name: 'Renamed', preferences: { gridSize: 5 } });
     expect(res.status).toBe(200);
 
-    const doc = JSON.parse((await (kv as unknown as KVNamespace).get(`workspace:${id}`))!);
-    expect(doc.code).toBe('B');
+    const doc = await storedRecord(kv, id);
+    expect(await storedText(kv, r2, id)).toBe('B');
     expect(doc.rev).toBe(1);
     expect(doc.name).toBe('Renamed');
     expect(doc.preferences.gridSize).toBe(5);

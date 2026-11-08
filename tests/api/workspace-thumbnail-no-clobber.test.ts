@@ -123,7 +123,7 @@ describe('thumbnail upload cannot clobber code', () => {
   });
 
   it('preserves the latest code when a save precedes the thumbnail upload', async () => {
-    const { env, kv } = makeEnv();
+    const { env } = makeEnv();
     const id = await createWorkspace(env, 'user-1', 'reddish');
 
     // User edits reddish → yellowish (the real-world repro).
@@ -131,8 +131,8 @@ describe('thumbnail upload cannot clobber code', () => {
     // Thumbnail upload captures the fresh render and stamps the sidecar.
     await uploadThumbnail(env, id, 'user-1', 'auto');
 
-    const doc = JSON.parse((await rawDoc(kv, id))!) as Workspace;
-    expect(doc.code).toBe('yellowish');
+    // The code lives in R2 now; a load returns it as `code` for a one-file workspace.
+    expect((await getWorkspace(env, id, 'user-1')).code).toBe('yellowish');
   });
 
   it('a thumbnail upload that interleaves with a code save keeps the newer code', async () => {
@@ -147,8 +147,7 @@ describe('thumbnail upload cannot clobber code', () => {
     await updateCode(env, id, 'user-1', 'B');
     await uploadThumbnail(env, id, 'user-1', 'manual');
 
-    const doc = JSON.parse((await rawDoc(kv, id))!) as Workspace;
-    expect(doc.code).toBe('B');
+    expect((await getWorkspace(env, id, 'user-1')).code).toBe('B');
   });
 
   it('getWorkspace returns sidecar timestamps, overriding stale inline fields (lazy migration)', async () => {

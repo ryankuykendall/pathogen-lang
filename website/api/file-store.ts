@@ -45,41 +45,60 @@ export async function readTexts(env: Env, workspaceId: string, hashes: Iterable<
   return new Map(texts);
 }
 
+/** The stored size of a blob under the workspace, in bytes; null when it isn't there. */
+export async function storedSize(env: Env, workspaceId: string, sha256: string): Promise<number | null> {
+  const key = fileKey(workspaceId, sha256);
+  if (env.THUMBNAILS.head) return (await env.THUMBNAILS.head(key))?.size ?? null;
+  const object = await env.THUMBNAILS.get(key);
+  return object ? (await new Response(object.body).arrayBuffer()).byteLength : null;
+}
+
 /** Whether a blob is stored under the workspace. */
 export async function hasFile(env: Env, workspaceId: string, sha256: string): Promise<boolean> {
-  const key = fileKey(workspaceId, sha256);
-  if (env.THUMBNAILS.head) return (await env.THUMBNAILS.head(key)) !== null;
-  return (await env.THUMBNAILS.get(key)) !== null;
+  return (await storedSize(env, workspaceId, sha256)) !== null;
 }
+
+/** At most this many blobs are held in memory at once while copying. */
+const COPY_CONCURRENCY = 6;
 
 /**
  * Copy blobs from one workspace's prefix to another's: a fork, a duplicate,
  * a restored snapshot. Two calls per blob, so the caller keeps the count
- * inside the request's budget.
+ * inside the request's budget. Six at a time (a Worker's connection limit),
+ * so a large workspace isn't all in memory at once.
  */
 export async function copyFiles(env: Env, fromId: string, toId: string, hashes: Iterable<string>): Promise<void> {
-  await Promise.all(
-    [...new Set(hashes)].map(async (sha256) => {
-      const object = await env.THUMBNAILS.get(fileKey(fromId, sha256));
-      if (!object) throw new Error(`File ${sha256} of workspace ${fromId} is missing from storage`);
-      await env.THUMBNAILS.put(fileKey(toId, sha256), await new Response(object.body).arrayBuffer(), {
-        httpMetadata: { contentType: TEXT_TYPE },
-      });
-    }),
-  );
+  const queue = [...new Set(hashes)];
+  const copyOne = async (sha256: string): Promise<void> => {
+    const object = await env.THUMBNAILS.get(fileKey(fromId, sha256));
+    if (!object) throw new Error(`File ${sha256} of workspace ${fromId} is missing from storage`);
+    await env.THUMBNAILS.put(fileKey(toId, sha256), await new Response(object.body).arrayBuffer(), {
+      httpMetadata: { contentType: TEXT_TYPE },
+    });
+  };
+  const workers = Array.from({ length: Math.min(COPY_CONCURRENCY, queue.length) }, async () => {
+    for (let sha256 = queue.shift(); sha256 !== undefined; sha256 = queue.shift()) await copyOne(sha256);
+  });
+  await Promise.all(workers);
+}
+
+/** Delete every blob under the workspace. */
+export function deleteWorkspaceFiles(env: Env, workspaceId: string): Promise<number> {
+  return deletePrefix(env, filesPrefix(workspaceId));
 }
 
 /**
- * Delete every blob under the workspace: one list call per 1,000 keys, then
+ * Delete every R2 object under a prefix: one list call per 1,000 keys, then
  * one delete per 1,000. The keys are all listed before any is deleted, so a
- * page cursor never points past keys that moved up.
+ * page cursor never points past keys that moved up. A bucket without `list`
+ * (an older test double) deletes nothing.
  */
-export async function deleteWorkspaceFiles(env: Env, workspaceId: string): Promise<number> {
+export async function deletePrefix(env: Env, prefix: string): Promise<number> {
   if (!env.THUMBNAILS.list) return 0;
   const keys: string[] = [];
   let cursor: string | undefined;
   do {
-    const page = await env.THUMBNAILS.list({ prefix: filesPrefix(workspaceId), cursor, limit: DELETE_BATCH });
+    const page = await env.THUMBNAILS.list({ prefix, cursor, limit: DELETE_BATCH });
     keys.push(...page.objects.map((o) => o.key));
     cursor = page.truncated ? page.cursor : undefined;
   } while (cursor);

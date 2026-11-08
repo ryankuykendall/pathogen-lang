@@ -684,8 +684,10 @@ describe.skipIf(!sqlite)('snapshots API', () => {
       expect(await res.json()).toEqual({ success: true, deletedSnapshots: 400 });
       expect(ctx.r2.keys('snapshots/')).toEqual([]);
       // 1201 keys → 2 batched deletes, not 1201 single ones. (deleteWorkspace's
-      // own approval.svg cleanup adds one more.)
-      expect(ctx.r2.deleteCalls).toBe(3);
+      // own approval.svg cleanup adds one more, and its files, one blob under
+      // files/{id}/, one more.)
+      expect(ctx.r2.deleteCalls).toBe(4);
+      expect(ctx.r2.keys(`files/${ws}/`)).toEqual([]);
     });
 
     it('answers 503 for list and create when the snapshots table is missing, and still loads the workspace', async () => {

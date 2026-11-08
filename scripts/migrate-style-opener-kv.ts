@@ -142,6 +142,14 @@ interface QueueEntry {
   [key: string]: unknown;
 }
 
+/**
+ * Since phase 2, a record may hold `files` (a manifest; the text is in R2,
+ * project-docs/modules/48-storage-design-v2.md) instead of `code`. This script
+ * reads only `code`, so it says so instead of passing such a record by.
+ */
+const HOLDS_FILES =
+  'holds files in R2 (the phase 2 shape); this script reads only the one `code` string, so it leaves the record alone';
+
 type Outcome =
   | 'migrated'
   | 'skipped-no-legacy'
@@ -182,6 +190,7 @@ function migrateWorkspace(ctx: Ctx, key: string): Outcome {
   } catch (e) {
     return record(ctx, key, 'error', { detail: `JSON parse failed: ${(e as Error).message}` });
   }
+  if (ws.files !== undefined) return record(ctx, key, 'error', { detail: HOLDS_FILES });
   const out = migrateCode(ws.code ?? '', ctx.legacy);
   if (out.kind === 'no-legacy') return record(ctx, key, 'skipped-no-legacy');
   if (out.kind === 'already-migrated') return record(ctx, key, 'skipped-already-migrated');
@@ -218,6 +227,7 @@ function migrateApproval(ctx: Ctx, key: string): Outcome {
   } catch (e) {
     return record(ctx, key, 'error', { detail: `JSON parse failed: ${(e as Error).message}` });
   }
+  if (approval.files !== undefined) return record(ctx, key, 'error', { detail: HOLDS_FILES });
   const out = migrateCode(approval.code ?? '', ctx.legacy);
   if (out.kind === 'no-legacy') return record(ctx, key, 'skipped-no-legacy');
   if (out.kind === 'already-migrated') return record(ctx, key, 'skipped-already-migrated');
@@ -249,6 +259,10 @@ function migrateQueue(ctx: Ctx, key: string): Outcome {
   let openers = 0;
   let failed: string | null = null;
   for (const entry of entries) {
+    if (entry.files !== undefined) {
+      failed = `${entry.workspaceId}: ${HOLDS_FILES}`;
+      continue;
+    }
     const out = migrateCode(entry.code ?? '', ctx.legacy);
     if (out.kind === 'rewritten') {
       entry.code = out.text;

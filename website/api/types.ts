@@ -3,6 +3,8 @@
 // namespace, R2 bucket, and D1 database — keeping types in one place
 // avoids drift.
 
+import type { StoredFileFields } from './workspace-files.js';
+
 export interface KVNamespace {
   get(key: string): Promise<string | null>;
   put(key: string, value: string, options?: { expirationTtl?: number }): Promise<void>;
@@ -108,9 +110,13 @@ export interface WorkspaceListing {
   rereviewPending?: boolean;
 }
 
-export interface Workspace extends WorkspaceListing {
+// A workspace's files (StoredFileFields): `files`, `folders` and
+// `entryPoints`, with the bytes in R2 at files/{id}/{sha256}
+// (project-docs/modules/48-storage-design-v2.md). A record saved before
+// phase 2 has `code` instead, the one program's text, until its files first
+// change or the migration rewrites it; read either through readStoredFiles.
+export interface Workspace extends WorkspaceListing, StoredFileFields {
   userId: string;
-  code: string;
   preferences: Record<string, unknown>;
   contentHash: string;
   // Monotonic code-revision counter for optimistic concurrency. Incremented on
@@ -181,11 +187,13 @@ export interface PublicationStateRow {
 }
 
 // Frozen at submission time — admins approve exactly what the user
-// submitted, even if the live workspace is edited in the interim.
-export interface ReviewQueueEntry {
+// submitted, even if the live workspace is edited in the interim. The
+// frozen files are a manifest (StoredFileFields), about 100 bytes a file:
+// the bytes stay in R2, which saves never delete. Entries from before phase
+// 2 carry `code` instead.
+export interface ReviewQueueEntry extends StoredFileFields {
   workspaceId: string;
   userId: string;
-  code: string;
   codeHash: string;
   name: string;
   description: string;
@@ -193,10 +201,11 @@ export interface ReviewQueueEntry {
   submittedAt: string;
 }
 
-export interface WorkspaceApproval {
+// The approved files are a manifest frozen from the queue entry
+// (StoredFileFields); approvals from before phase 2 carry `code` instead.
+export interface WorkspaceApproval extends StoredFileFields {
   workspaceId: string;
   userId: string;
-  code: string;
   codeHash: string;
   slug: string;            // frozen at approval time; unique within (userId, slug)
   name: string;

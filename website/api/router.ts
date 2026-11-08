@@ -60,12 +60,37 @@ import {
   deleteThumbMeta,
   errorResponse,
   generateNanoId,
-  hashContent,
   jsonResponse,
   readThumbMeta,
   slugify,
   writeThumbMeta,
 } from './utils.js';
+import { copyFiles, deletePrefix, deleteWorkspaceFiles, fileKey, putText, readTexts } from './file-store.js';
+import { MAIN_FILE, fileKind, readStoredFiles } from './workspace-files.js';
+import {
+  filesFromBody,
+  filesWithText,
+  mainText,
+  materialize,
+  patchWorkspaceRecord,
+  readWorkspaceRecord,
+  setFiles,
+  storedFilesOf,
+} from './workspace-store.js';
+
+/**
+ * The most distinct files one copy takes: two R2 calls each (a read and a
+ * write) plus a few KV calls must fit the 1,000 KV and R2 calls Cloudflare
+ * allows one request. Note 50, "Questions from building", asks how larger
+ * workspaces should copy.
+ */
+const COPY_MAX_FILES = 480;
+
+/** A record as responses show it: never the legacy `code` field (the files say it), and today's hash. */
+function withoutLegacyCode(workspace: Workspace, hash: string): Omit<Workspace, 'code'> {
+  const { code: _legacy, ...rest } = workspace;
+  return { ...rest, contentHash: hash };
+}
 
 // Canvas dimensions now live in source via `define ViewBox(originX, originY,
 // width, height);`. Older clients may still send `width`/`height` in the
@@ -288,10 +313,9 @@ export const apiHandlers: Record<string, (request: Request, env: Env, ...args: s
 
     try {
       const body = (await request.json()) as Record<string, unknown>;
-      const { name, description, code, isPublic, preferences } = body as {
+      const { name, description, isPublic, preferences } = body as {
         name?: string;
         description?: string;
-        code?: string;
         isPublic?: boolean;
         preferences?: Record<string, unknown>;
       };
@@ -306,7 +330,21 @@ export const apiHandlers: Record<string, (request: Request, env: Env, ...args: s
       const id = generateNanoId();
       const slug = slugify(name);
       const now = new Date().toISOString();
-      const contentHash = await hashContent(code || '');
+
+      // `files` (and folders, entryPoints), or today's playground's one `code`
+      // string, which makes a workspace that is just main.pathogen. The
+      // blobs are written before the record; a failure in between leaves
+      // blobs nothing names, which the sweep script removes.
+      const change = await filesFromBody(
+        env,
+        id,
+        body.files !== undefined
+          ? { files: body.files, folders: body.folders, entryPoints: body.entryPoints }
+          : { code: body.code ?? '' },
+        null,
+      );
+      if (!change.ok) return errorResponse(change.message, change.status ?? 400);
+      const stored = change.value!;
 
       // Canvas dimensions now live in source via `define ViewBox(...)`.
       // Strip legacy `width`/`height` from incoming preferences so they
@@ -319,17 +357,17 @@ export const apiHandlers: Record<string, (request: Request, env: Env, ...args: s
         userId,
         name: name.trim(),
         description: (description as string | undefined)?.trim() || '',
-        code: code || '',
         isPublic: Boolean(isPublic),
         preferences: sanitizedPrefs,
         createdAt: now,
         updatedAt: now,
-        contentHash,
+        contentHash: stored.hash,
         rev: 0,
         thumbnailAt: null,
         manualThumbnailAt: null,
         autoThumbnailAt: null,
       };
+      setFiles(workspace, stored);
 
       // New workspaces never enter the public index directly — even when
       // the client requests isPublic:true, the workspace is stored private
@@ -347,17 +385,20 @@ export const apiHandlers: Record<string, (request: Request, env: Env, ...args: s
 
       if (requestedPublic && env.USERS_DB) {
         const submittedAt = new Date().toISOString();
-        await pushReviewQueue(env, makeQueueEntry(workspace, submittedAt));
+        await pushReviewQueue(env, makeQueueEntry(workspace, stored, submittedAt));
         await appendState(env.USERS_DB, {
           workspaceId: id,
           state: 'pending',
           byUserId: userId,
-          codeHash: workspace.contentHash,
+          codeHash: stored.hash,
         });
       }
 
       const responseState = await getEffectiveStateString(env, id);
-      return jsonResponse({ ...workspace, publicationState: responseState }, 201);
+      return jsonResponse(
+        { ...workspace, ...(await filesWithText(env, id, stored)), publicationState: responseState },
+        201,
+      );
     } catch (err) {
       return errorResponse('Failed to create workspace: ' + (err as Error).message, 500);
     }
@@ -392,7 +433,18 @@ export const apiHandlers: Record<string, (request: Request, env: Env, ...args: s
         workspace.userId === userId
           ? await countSnapshotsForWorkspace(env, workspace.id).catch(() => undefined)
           : undefined;
-      return jsonResponse({ ...workspace, ...meta, publicationState, rereviewPending, snapshotCount });
+      // The files with their text: one R2 read per .pathogen file. A
+      // workspace that is just main.pathogen also gets `code`, for today's
+      // playground.
+      const stored = await storedFilesOf(workspace);
+      return jsonResponse({
+        ...withoutLegacyCode(workspace, stored.hash),
+        ...(await filesWithText(env, workspace.id, stored)),
+        ...meta,
+        publicationState,
+        rereviewPending,
+        snapshotCount,
+      });
     } catch (err) {
       return errorResponse('Failed to load workspace: ' + (err as Error).message, 500);
     }
@@ -407,18 +459,21 @@ export const apiHandlers: Record<string, (request: Request, env: Env, ...args: s
       const wsJson = await env.WORKSPACES.get(`workspace:${id}`);
       if (!wsJson) return errorResponse('Workspace not found', 404);
 
-      const workspace: Workspace = JSON.parse(wsJson);
+      let workspace: Workspace = JSON.parse(wsJson);
       if (workspace.userId !== userId) return errorResponse('Access denied', 403);
 
       const body = (await request.json()) as Record<string, unknown>;
-      const { name, description, code, isPublic, preferences, baseRev } = body as {
+      const { name, description, isPublic, preferences, baseRev } = body as {
         name?: string;
         description?: string;
-        code?: string;
         isPublic?: boolean;
         preferences?: Record<string, unknown>;
         baseRev?: number;
       };
+      // A save sends `files` (and folders, entryPoints), or today's
+      // playground's one `code` string.
+      const touchesFiles = body.files !== undefined || body.code !== undefined;
+      let stored = await storedFilesOf(workspace);
 
       // isPublic transitions now flow through the moderation state machine.
       //   false → true  : submission. Push queue entry, append 'pending'
@@ -436,106 +491,115 @@ export const apiHandlers: Record<string, (request: Request, env: Env, ...args: s
         if (gate) return gate;
       }
 
-      if (code !== undefined) {
+      const changesMetadata =
+        name !== undefined || description !== undefined || preferences !== undefined || isPublic !== undefined;
+      let next: typeof stored | null = null;
+      if (touchesFiles) {
         const currentRev = workspace.rev ?? 0;
+        const conflict = (error: string) =>
+          jsonResponse({ error, conflict: true, currentRev, rev: currentRev, updatedAt: workspace.updatedAt }, 409);
         // Optimistic concurrency: when the client tells us which revision it
         // edited from, reject the write if the doc has since advanced (another
         // tab/window saved). This stops a stale tab from clobbering newer code.
         // Clients that don't send baseRev keep the old last-write-wins behavior.
         if (baseRev !== undefined && baseRev !== currentRev) {
-          return jsonResponse(
-            {
-              error: 'Workspace was modified in another tab or window',
-              conflict: true,
-              currentRev,
-              rev: currentRev,
-              updatedAt: workspace.updatedAt,
-            },
-            409,
-          );
+          return conflict('Workspace was modified in another tab or window');
         }
-        const newHash = await hashContent(code);
-        if (newHash === workspace.contentHash) {
-          return jsonResponse({ ...workspace, rev: currentRev, publicationState: priorState, skipped: true });
-        }
-        workspace.code = code;
-        workspace.contentHash = newHash;
-        workspace.rev = currentRev + 1;
-      }
-
-      if (name !== undefined) {
-        workspace.name = name.trim();
-        workspace.slug = slugify(name);
-      }
-      if (description !== undefined) workspace.description = description.trim();
-      if (preferences !== undefined) {
-        // Strip width/height — canvas dimensions live in source via define ViewBox.
-        workspace.preferences = { ...(workspace.preferences || {}), ...stripDimensions(preferences) };
-      }
-      // isPublic on the workspace record is only flipped during the
-      // approval flow (→ true) or the owner-unpublish path (→ false).
-      // The submit-for-review path doesn't change it.
-
-      workspace.updatedAt = new Date().toISOString();
-
-      // Non-code updates (rename, preferences, publish toggle) write the whole
-      // doc back, so a code save that landed since we read at the top of this
-      // handler would be reverted — the same clobber class, just via a
-      // different field. When we did NOT touch code, re-read immediately before
-      // the write and carry over the freshest code/contentHash/rev so a
-      // concurrent code save survives. (Shrinks the window to this re-read→put
-      // gap; KV has no CAS, so it isn't zero — a Durable Object would close it.)
-      if (code === undefined) {
-        const freshJson = await env.WORKSPACES.get(`workspace:${id}`);
-        if (freshJson) {
-          const fresh = JSON.parse(freshJson) as Workspace;
-          workspace.code = fresh.code;
-          workspace.contentHash = fresh.contentHash;
-          workspace.rev = fresh.rev;
+        // New blobs are written here, before the manifest below: a failed save
+        // can leave a blob nothing names, never a manifest naming a missing one.
+        const change = await filesFromBody(env, id, body, stored);
+        if (!change.ok) return change.status === 409 ? conflict(change.message) : errorResponse(change.message);
+        // Compared in today's hash rule, also for a record from before phase
+        // 2, so an unchanged save is skipped whichever shape it was stored in.
+        // A save that also renames or changes preferences still does those.
+        if (change.value!.hash !== stored.hash) next = change.value!;
+        else if (!changesMetadata) {
+          return jsonResponse({
+            ...withoutLegacyCode(workspace, stored.hash),
+            rev: currentRev,
+            publicationState: priorState,
+            skipped: true,
+          });
         }
       }
+
+      // The write re-reads the record and applies only this request's
+      // changes, so neither a save that landed since the read at the top of
+      // this handler nor an admin's publish or flag is reverted. (Shrinks the
+      // window to the re-read→put gap; KV has no CAS, so it isn't zero — a
+      // Durable Object would close it.) isPublic on the record is only flipped
+      // by the approval flow (→ true) or the owner-unpublish path (→ false);
+      // the submit-for-review path doesn't change it.
+      const readRev = workspace.rev ?? 0;
+      const updatedAt = new Date().toISOString();
+      const written = await patchWorkspaceRecord(env, id, (record) => {
+        if (next) {
+          setFiles(record, next);
+          // From whichever is newer, so a save that raced this one can't reuse
+          // its rev: the other tab's next save then gets its 409.
+          record.rev = Math.max(record.rev ?? 0, readRev) + 1;
+        }
+        if (name !== undefined) {
+          record.name = name.trim();
+          record.slug = slugify(name);
+        }
+        if (description !== undefined) record.description = description.trim();
+        if (preferences !== undefined) {
+          // Strip width/height — canvas dimensions live in source via define ViewBox.
+          record.preferences = { ...(record.preferences || {}), ...stripDimensions(preferences) };
+        }
+        if (ownerUnpublish && env.USERS_DB) record.isPublic = false;
+        record.updatedAt = updatedAt;
+      });
+      if (!written) return errorResponse('Workspace not found', 404);
+      workspace = written;
+      stored = next ?? (await storedFilesOf(written));
 
       if (ownerUnpublish && env.USERS_DB) {
-        workspace.isPublic = false;
         await appendState(env.USERS_DB, {
           workspaceId: id,
           state: 'unpublished',
           byUserId: userId,
-          codeHash: workspace.contentHash,
+          codeHash: stored.hash,
         });
         await unpublishFromIndex(env, id);
       }
 
-      await env.WORKSPACES.put(`workspace:${id}`, JSON.stringify(workspace));
-
       if (submittingForReview && env.USERS_DB) {
         const submittedAt = workspace.updatedAt;
-        await pushReviewQueue(env, makeQueueEntry(workspace, submittedAt));
+        await materialize(env, id, stored);
+        await pushReviewQueue(env, makeQueueEntry(workspace, stored, submittedAt));
         await appendState(env.USERS_DB, {
           workspaceId: id,
           state: 'pending',
           byUserId: userId,
-          codeHash: workspace.contentHash,
+          codeHash: stored.hash,
         });
       }
 
       // Re-review trigger: a workspace with an approval record whose
-      // code hash now differs from that snapshot enters the re-review
-      // queue. The public index keeps serving the prior snapshot, so
-      // the effective state on the state machine stays 'approved' (no
-      // new row appended) — queue membership alone is the signal that
-      // a re-review is pending. Re-edits during re-review just refresh
-      // the queue entry; pushRereviewQueue dedupes on workspaceId.
-      if (code !== undefined && !ownerUnpublish && !submittingForReview) {
+      // files now differ from that snapshot enters the re-review queue.
+      // The public index keeps serving the prior snapshot, so the
+      // effective state on the state machine stays 'approved' (no new row
+      // appended) — queue membership alone is the signal that a re-review
+      // is pending. Re-edits during re-review just refresh the queue entry;
+      // pushRereviewQueue dedupes on workspaceId. The approval's hash is
+      // read in today's rule, so an approval from before phase 2 still
+      // matches its unedited workspace.
+      if (next && !ownerUnpublish && !submittingForReview) {
         const approval = await readApproval(env, id);
-        if (approval && approval.codeHash !== workspace.contentHash) {
-          await pushRereviewQueue(env, makeQueueEntry(workspace, workspace.updatedAt));
+        if (approval && (await readStoredFiles(approval, approval.codeHash)).hash !== stored.hash) {
+          await pushRereviewQueue(env, makeQueueEntry(workspace, stored, workspace.updatedAt));
         }
       }
 
       const responseState = await getEffectiveStateString(env, id);
       const rereviewPending = await isRereviewPending(env, id);
-      return jsonResponse({ ...workspace, publicationState: responseState, rereviewPending });
+      return jsonResponse({
+        ...withoutLegacyCode(workspace, stored.hash),
+        publicationState: responseState,
+        rereviewPending,
+      });
     } catch (err) {
       return errorResponse('Failed to update workspace: ' + (err as Error).message, 500);
     }
@@ -579,9 +643,15 @@ export const apiHandlers: Record<string, (request: Request, env: Env, ...args: s
         env.THUMBNAILS.delete(`${id}/approval.svg`),
         deleteThumbMeta(env, id),
         removeFromReviewQueue(env, id),
+        removeFromRereviewQueue(env, id),
         unpublishFromIndex(env, id),
         removeFromFeatured(env, id),
       ]);
+      // The workspace's files, and its thumbnails (which deleting used to
+      // leave behind). Last, so a failure here leaves only blobs nothing
+      // names, which the sweep script removes.
+      await deleteWorkspaceFiles(env, id);
+      await deletePrefix(env, `${id}/`);
 
       return jsonResponse({ success: true, deletedSnapshots });
     } catch (err) {
@@ -609,6 +679,37 @@ export const apiHandlers: Record<string, (request: Request, env: Env, ...args: s
       const newId = generateNanoId();
       const now = new Date().toISOString();
 
+      // The files are copied to the new workspace's prefix: two R2 calls each
+      // (a read and a write), so a copy must stay inside the request's call
+      // budget. The .pathogen texts read here also answer the request. Blobs
+      // are written before the record; a failure in between leaves blobs
+      // nothing names, which the sweep script removes.
+      const stored = await storedFilesOf(original);
+      const hashes = [...new Set(Object.values(stored.manifest.files).map((f) => f.sha256))];
+      if (hashes.length > COPY_MAX_FILES) {
+        return errorResponse(
+          `This workspace has ${hashes.length} different files; a copy can take at most ${COPY_MAX_FILES} at once.`,
+          413,
+        );
+      }
+      const textHashes = new Set(
+        Object.entries(stored.manifest.files)
+          .filter(([path]) => fileKind(path) === 'pathogen')
+          .map(([, entry]) => entry.sha256),
+      );
+      const texts =
+        stored.legacyText !== null
+          ? new Map([[stored.manifest.files[MAIN_FILE].sha256, stored.legacyText]])
+          : await readTexts(env, id, textHashes);
+      await Promise.all([...texts.values()].map((text) => putText(env, newId, text)));
+      await copyFiles(
+        env,
+        id,
+        newId,
+        hashes.filter((sha256) => !texts.has(sha256)),
+      );
+      const copied = { ...stored, legacyText: null };
+
       const newWorkspace: Workspace = {
         ...original,
         id: newId,
@@ -626,6 +727,9 @@ export const apiHandlers: Record<string, (request: Request, env: Env, ...args: s
         manualThumbnailAt: null,
         autoThumbnailAt: null,
       };
+      // A copy starts unflagged: the flag is a moderation decision about the original.
+      delete newWorkspace.flagged;
+      setFiles(newWorkspace, copied);
 
       await env.WORKSPACES.put(`workspace:${newId}`, JSON.stringify(newWorkspace));
 
@@ -634,9 +738,43 @@ export const apiHandlers: Record<string, (request: Request, env: Env, ...args: s
       workspaceIds.unshift(newId);
       await env.WORKSPACES.put(`user:${userId}:workspaces`, JSON.stringify(workspaceIds));
 
-      return jsonResponse(newWorkspace, 201);
+      return jsonResponse({ ...newWorkspace, ...(await filesWithText(env, newId, copied, texts)) }, 201);
     } catch (err) {
       return errorResponse('Failed to copy workspace: ' + (err as Error).message, 500);
+    }
+  },
+
+  // GET /workspace/:id/file/:sha256 — one of the workspace's files, by its
+  // hash (note 48 §2). The owner, anyone for a public workspace, and an
+  // admin may read it. Others get 403; a hash the workspace doesn't name is
+  // a 404, except for an admin, who may read a submission's or an
+  // approval's files after the live workspace moved on. Content-addressed
+  // bytes never change, so the browser may keep them for good.
+  async getWorkspaceFile(request: Request, env: Env, id: string, sha256: string): Promise<Response> {
+    try {
+      if (!/^[0-9a-f]{64}$/.test(sha256)) return errorResponse('File not found', 404);
+      const workspace = await readWorkspaceRecord(env, id);
+      if (!workspace) return errorResponse('Workspace not found', 404);
+      const userId = await getEffectiveUserId(request, env);
+      const mayRead = workspace.isPublic || workspace.userId === userId;
+      const admin = mayRead ? false : await isAdminRequest(request, env);
+      if (!mayRead && !admin) return errorResponse('Access denied', 403);
+
+      const stored = await storedFilesOf(workspace);
+      const named = Object.values(stored.manifest.files).some((f) => f.sha256 === sha256);
+      if (!named && !admin) return errorResponse('File not found', 404);
+      const headers = {
+        'Content-Type': 'text/plain; charset=utf-8',
+        'Cache-Control': 'private, max-age=31536000, immutable',
+        'X-Content-Type-Options': 'nosniff',
+      };
+      // A record from before phase 2 keeps its one text on the record.
+      if (named && stored.legacyText !== null) return new Response(stored.legacyText, { headers });
+      const object = await env.THUMBNAILS.get(fileKey(id, sha256));
+      if (!object) return errorResponse('File not found', 404);
+      return new Response(object.body, { headers });
+    } catch (err) {
+      return errorResponse('Failed to read file: ' + (err as Error).message, 500);
     }
   },
 
@@ -911,19 +1049,23 @@ export const apiHandlers: Record<string, (request: Request, env: Env, ...args: s
       if (!env.USERS_DB) return errorResponse('Moderation DB unavailable', 500);
 
       // Reject empty submissions. An admin can't meaningfully approve a
-      // workspace with no code, and a blank preview in the moderation UI
-      // would be the only signal something was off.
-      if (!workspace.code || !workspace.code.trim()) {
+      // workspace whose main program is empty (or that has none), and a
+      // blank preview in the moderation UI would be the only signal
+      // something was off.
+      const stored = await storedFilesOf(workspace);
+      const main = await mainText(env, id, stored);
+      if (!main || !main.trim()) {
         return errorResponse('Workspace has no code to review', 400);
       }
 
       const submittedAt = new Date().toISOString();
-      await pushReviewQueue(env, makeQueueEntry(workspace, submittedAt));
+      await materialize(env, id, stored);
+      await pushReviewQueue(env, makeQueueEntry(workspace, stored, submittedAt));
       await appendState(env.USERS_DB, {
         workspaceId: id,
         state: 'pending',
         byUserId: userId,
-        codeHash: workspace.contentHash,
+        codeHash: stored.hash,
       });
 
       const publicationState = await getEffectiveStateString(env, id);
@@ -1016,6 +1158,9 @@ export const apiHandlers: Record<string, (request: Request, env: Env, ...args: s
       // unpublish to remove from /explore).
       const queueEntry = (await getReviewQueueEntry(env, id)) || (await getRereviewQueueEntry(env, id));
       if (!queueEntry) return errorResponse('No pending submission for this workspace', 404);
+      // The submitted files, in today's hash rule (an entry from before
+      // phase 2 carries `code`, read as just main.pathogen).
+      const submitted = await readStoredFiles(queueEntry, queueEntry.codeHash);
 
       const wsJson = await env.WORKSPACES.get(`workspace:${id}`);
       if (!wsJson) return errorResponse('Workspace not found', 404);
@@ -1033,7 +1178,7 @@ export const apiHandlers: Record<string, (request: Request, env: Env, ...args: s
           workspaceId: id,
           state: 'rejected',
           byUserId: adminUserId,
-          codeHash: queueEntry.codeHash,
+          codeHash: submitted.hash,
           internalNotes: internalNotes || null,
         });
         await removeFromReviewQueue(env, id);
@@ -1066,11 +1211,17 @@ export const apiHandlers: Record<string, (request: Request, env: Env, ...args: s
         });
         approvalSvgAt = new Date().toISOString();
       }
+      // The approval freezes the submitted manifest; its blobs stay under the
+      // workspace, since saves never delete. An entry from before phase 2 has
+      // its text written to R2 first.
+      await materialize(env, id, submitted);
       const approval: WorkspaceApproval = {
         workspaceId: id,
         userId: queueEntry.userId,
-        code: queueEntry.code,
-        codeHash: queueEntry.codeHash,
+        files: submitted.manifest.files,
+        folders: submitted.manifest.folders,
+        entryPoints: submitted.manifest.entryPoints,
+        codeHash: submitted.hash,
         slug: uniqueSlug,
         name: queueEntry.name,
         description: queueEntry.description,
@@ -1084,17 +1235,20 @@ export const apiHandlers: Record<string, (request: Request, env: Env, ...args: s
       };
       await writeApproval(env, approval);
 
-      workspace.isPublic = true;
-      await env.WORKSPACES.put(`workspace:${id}`, JSON.stringify(workspace));
+      // Re-read before writing, so a save that landed during the review isn't reverted.
+      const published =
+        (await patchWorkspaceRecord(env, id, (record) => {
+          record.isPublic = true;
+        })) ?? workspace;
 
       await appendState(env.USERS_DB, {
         workspaceId: id,
         state: 'approved',
         byUserId: adminUserId,
-        codeHash: queueEntry.codeHash,
+        codeHash: submitted.hash,
       });
 
-      await publishApprovalToIndex(env, approval, workspace);
+      await publishApprovalToIndex(env, approval, published);
       if (feature) {
         await addToFeatured(env, id);
       }
@@ -1411,11 +1565,10 @@ export const apiHandlers: Record<string, (request: Request, env: Env, ...args: s
     if (!(await isAdminRequest(request, env))) return errorResponse('Unauthorized', 401);
     if (!env.USERS_DB) return errorResponse('Moderation DB unavailable', 500);
     try {
-      const wsJson = await env.WORKSPACES.get(`workspace:${id}`);
-      if (!wsJson) return errorResponse('Workspace not found', 404);
-      const workspace: Workspace = JSON.parse(wsJson);
-      workspace.isPublic = false;
-      await env.WORKSPACES.put(`workspace:${id}`, JSON.stringify(workspace));
+      const workspace = await patchWorkspaceRecord(env, id, (record) => {
+        record.isPublic = false;
+      });
+      if (!workspace) return errorResponse('Workspace not found', 404);
       await unpublishFromIndex(env, id);
       await removeFromFeatured(env, id);
       const adminId = await resolveAdminUserId(request, env);
@@ -1423,7 +1576,7 @@ export const apiHandlers: Record<string, (request: Request, env: Env, ...args: s
         workspaceId: id,
         state: 'unpublished',
         byUserId: adminId,
-        codeHash: workspace.contentHash,
+        codeHash: (await storedFilesOf(workspace)).hash,
         internalNotes: 'admin unpublish',
       });
       return jsonResponse({ ok: true, isPublic: false });
@@ -1471,9 +1624,6 @@ export const apiHandlers: Record<string, (request: Request, env: Env, ...args: s
     if (!(await isAdminRequest(request, env))) return errorResponse('Unauthorized', 401);
     if (!env.USERS_DB) return errorResponse('Moderation DB unavailable', 500);
     try {
-      const wsJson = await env.WORKSPACES.get(`workspace:${id}`);
-      if (!wsJson) return errorResponse('Workspace not found', 404);
-      const workspace: Workspace = JSON.parse(wsJson);
       let body: { internalNotes?: unknown } = {};
       try {
         body = (await request.json()) as typeof body;
@@ -1482,9 +1632,11 @@ export const apiHandlers: Record<string, (request: Request, env: Env, ...args: s
       }
       const notes = typeof body.internalNotes === 'string' ? body.internalNotes : '';
 
-      workspace.flagged = true;
-      workspace.isPublic = false;
-      await env.WORKSPACES.put(`workspace:${id}`, JSON.stringify(workspace));
+      const workspace = await patchWorkspaceRecord(env, id, (record) => {
+        record.flagged = true;
+        record.isPublic = false;
+      });
+      if (!workspace) return errorResponse('Workspace not found', 404);
       await addToFlaggedWorkspaces(env, id);
       await unpublishFromIndex(env, id);
       await removeFromFeatured(env, id);
@@ -1493,7 +1645,7 @@ export const apiHandlers: Record<string, (request: Request, env: Env, ...args: s
         workspaceId: id,
         state: 'flagged',
         byUserId: adminId,
-        codeHash: workspace.contentHash,
+        codeHash: (await storedFilesOf(workspace)).hash,
         internalNotes: notes || null,
       });
       return jsonResponse({ ok: true, flagged: true });
@@ -1508,12 +1660,11 @@ export const apiHandlers: Record<string, (request: Request, env: Env, ...args: s
     if (!(await isAdminRequest(request, env))) return errorResponse('Unauthorized', 401);
     if (!env.USERS_DB) return errorResponse('Moderation DB unavailable', 500);
     try {
-      const wsJson = await env.WORKSPACES.get(`workspace:${id}`);
-      if (!wsJson) return errorResponse('Workspace not found', 404);
-      const workspace: Workspace = JSON.parse(wsJson);
-      workspace.flagged = false;
-      workspace.isPublic = false;
-      await env.WORKSPACES.put(`workspace:${id}`, JSON.stringify(workspace));
+      const workspace = await patchWorkspaceRecord(env, id, (record) => {
+        record.flagged = false;
+        record.isPublic = false;
+      });
+      if (!workspace) return errorResponse('Workspace not found', 404);
       await removeFromFlaggedWorkspaces(env, id);
       // Defense-in-depth: ensure no stale public/featured entries.
       await unpublishFromIndex(env, id);
@@ -1535,7 +1686,7 @@ export const apiHandlers: Record<string, (request: Request, env: Env, ...args: s
         workspaceId: id,
         state: 'rejected',
         byUserId: adminId,
-        codeHash: workspace.contentHash,
+        codeHash: (await storedFilesOf(workspace)).hash,
         internalNotes: 'unflagged → rejected',
       });
       return jsonResponse({ ok: true, flagged: false });
@@ -1554,24 +1705,32 @@ export const apiHandlers: Record<string, (request: Request, env: Env, ...args: s
     if (!(await isAdminRequest(request, env))) return errorResponse('Unauthorized', 401);
     if (!env.USERS_DB) return errorResponse('Moderation DB unavailable', 500);
     try {
-      const wsJson = await env.WORKSPACES.get(`workspace:${id}`);
-      if (!wsJson) return errorResponse('Workspace not found', 404);
-      const workspace: Workspace = JSON.parse(wsJson);
-      if (!workspace.code || !workspace.code.trim()) {
+      const current = await readWorkspaceRecord(env, id);
+      if (!current) return errorResponse('Workspace not found', 404);
+      const main = await mainText(env, id, await storedFilesOf(current));
+      if (!main || !main.trim()) {
         return errorResponse('Workspace has no code to re-review', 400);
       }
-      workspace.isPublic = false;
-      await env.WORKSPACES.put(`workspace:${id}`, JSON.stringify(workspace));
+      const workspace = await patchWorkspaceRecord(env, id, (record) => {
+        record.isPublic = false;
+      });
+      if (!workspace) return errorResponse('Workspace not found', 404);
+      const stored = await storedFilesOf(workspace);
       await unpublishFromIndex(env, id);
       await removeFromFeatured(env, id);
+      // What's frozen is the record as just re-read; a save that landed since
+      // the check above may have emptied it.
+      const frozenMain = await mainText(env, id, stored);
+      if (!frozenMain || !frozenMain.trim()) return errorResponse('Workspace has no code to re-review', 400);
       const submittedAt = new Date().toISOString();
-      await pushReviewQueue(env, makeQueueEntry(workspace, submittedAt));
+      await materialize(env, id, stored);
+      await pushReviewQueue(env, makeQueueEntry(workspace, stored, submittedAt));
       const adminId = await resolveAdminUserId(request, env);
       await appendState(env.USERS_DB, {
         workspaceId: id,
         state: 'pending',
         byUserId: adminId,
-        codeHash: workspace.contentHash,
+        codeHash: stored.hash,
         internalNotes: 'admin requeued for review',
       });
       return jsonResponse({ ok: true, publicationState: 'pending', submittedAt });
@@ -1770,6 +1929,9 @@ export async function handleApiRequest(request: Request, env: Env, apiPath: stri
     if (method === 'PUT') return apiHandlers.updateWorkspace(request, env, id);
     if (method === 'DELETE') return apiHandlers.deleteWorkspace(request, env, id);
   }
+
+  const fileMatch = apiPath.match(/^\/workspace\/([^/]+)\/file\/([^/]+)$/);
+  if (fileMatch && method === 'GET') return apiHandlers.getWorkspaceFile(request, env, fileMatch[1], fileMatch[2]);
 
   const copyMatch = apiPath.match(/^\/workspace\/([^/]+)\/copy$/);
   if (copyMatch && method === 'POST') return apiHandlers.copyWorkspace(request, env, copyMatch[1]);

@@ -136,6 +136,15 @@ interface QueueEntry {
   [key: string]: unknown;
 }
 
+/**
+ * Since phase 2, a record may hold `files` (a manifest; the text is in R2,
+ * project-docs/modules/48-storage-design-v2.md) instead of `code`. This script
+ * reads and writes only `code`, so it refuses such a record rather than write
+ * a `code` beside its files that nothing would read.
+ */
+const HOLDS_FILES =
+  'holds files in R2 (the phase 2 shape); this script reads only the one `code` string, so it leaves the record alone';
+
 type Outcome = 'migrated' | 'unchanged' | 'review' | 'skipped-concurrent-write' | 'error';
 
 interface Ctx {
@@ -179,6 +188,7 @@ async function migrateWorkspace(ctx: Ctx, key: string): Promise<Outcome> {
   } catch (e) {
     return record(ctx, key, 'error', { detail: `JSON parse failed: ${(e as Error).message}` });
   }
+  if (ws.files !== undefined) return record(ctx, key, 'error', { detail: HOLDS_FILES });
   const out = await migrateSource(ws.code ?? '', ctx.oldLib, key);
   const done = fromOutcome(ctx, key, out);
   if (done || out.kind !== 'renamed') return done ?? 'error';
@@ -203,6 +213,7 @@ async function migrateApproval(ctx: Ctx, key: string): Promise<Outcome> {
   } catch (e) {
     return record(ctx, key, 'error', { detail: `JSON parse failed: ${(e as Error).message}` });
   }
+  if (approval.files !== undefined) return record(ctx, key, 'error', { detail: HOLDS_FILES });
   const out = await migrateSource(approval.code ?? '', ctx.oldLib, key);
   const done = fromOutcome(ctx, key, out);
   if (done || out.kind !== 'renamed') return done ?? 'error';
@@ -229,6 +240,10 @@ async function migrateQueue(ctx: Ctx, key: string): Promise<Outcome> {
   const review: string[] = [];
   let changed = 0;
   for (const entry of entries) {
+    if (entry.files !== undefined) {
+      review.push(`${entry.workspaceId}: ${HOLDS_FILES}`);
+      continue;
+    }
     const out = await migrateSource(entry.code ?? '', ctx.oldLib, `${key}~${entry.workspaceId}`);
     if (out.kind === 'renamed') {
       entry.code = out.text;

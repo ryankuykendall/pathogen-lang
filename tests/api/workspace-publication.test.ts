@@ -34,7 +34,18 @@ import {
   writeApproval,
 } from '../../website/api/moderation';
 import type { Env, Workspace, WorkspaceApproval } from '../../website/api/types';
+import { readStoredFiles } from '../../website/api/workspace-files';
 import { MemoryD1, MemoryKV } from '../auth/helpers';
+
+/** A queue entry for a workspace record, freezing its files as the API does. */
+async function entryFor(ws: Workspace, submittedAt: string) {
+  return makeQueueEntry(ws, await readStoredFiles(ws, ws.contentHash), submittedAt);
+}
+
+/** The files a one-program workspace from before phase 2 holds. */
+async function filesOfCode(code: string) {
+  return (await readStoredFiles({ code }, undefined)).manifest.files;
+}
 
 function makeEnv(): { env: Env; kv: MemoryKV; db: MemoryD1 } {
   const kv = new MemoryKV();
@@ -115,35 +126,38 @@ describe('state machine (append-only)', () => {
 });
 
 describe('review queue (frozen submission snapshot)', () => {
-  it('pushReviewQueue stores the snapshot; admin reads the frozen code even if the live workspace later changes', async () => {
+  it('pushReviewQueue stores the snapshot; admin reads the frozen files even if the live workspace later changes', async () => {
     const { env, kv } = makeEnv();
     const ws = makeWorkspace({ code: 'CODE_V1', contentHash: 'v1hash' });
-    const entry = makeQueueEntry(ws, '2026-05-13T10:00:00.000Z');
-    await pushReviewQueue(env, entry);
+    const v1 = await readStoredFiles(ws, ws.contentHash);
+    await pushReviewQueue(env, makeQueueEntry(ws, v1, '2026-05-13T10:00:00.000Z'));
 
     // Owner saves a different version *after* submitting.
     const wsV2 = { ...ws, code: 'CODE_V2', contentHash: 'v2hash', updatedAt: '2026-05-13T11:00:00.000Z' };
     await kv.put(`workspace:${ws.id}`, JSON.stringify(wsV2));
 
+    // The entry is a frozen manifest with today's hash, and no code.
     const fromQueue = await getReviewQueueEntry(env, ws.id);
-    expect(fromQueue?.code).toBe('CODE_V1');
-    expect(fromQueue?.codeHash).toBe('v1hash');
+    expect(fromQueue?.files).toEqual(await filesOfCode('CODE_V1'));
+    expect([fromQueue?.entryPoints, fromQueue?.folders]).toEqual([['main.pathogen'], []]);
+    expect(fromQueue?.codeHash).toBe(v1.hash);
+    expect(fromQueue).not.toHaveProperty('code');
   });
 
   it('pushReviewQueue de-dupes by workspaceId (latest submission wins)', async () => {
     const { env } = makeEnv();
     const ws = makeWorkspace();
-    await pushReviewQueue(env, makeQueueEntry({ ...ws, code: 'first' }, '2026-05-13T10:00:00.000Z'));
-    await pushReviewQueue(env, makeQueueEntry({ ...ws, code: 'second' }, '2026-05-13T10:05:00.000Z'));
+    await pushReviewQueue(env, await entryFor({ ...ws, code: 'first' }, '2026-05-13T10:00:00.000Z'));
+    await pushReviewQueue(env, await entryFor({ ...ws, code: 'second' }, '2026-05-13T10:05:00.000Z'));
     const queue = await listReviewQueue(env);
     expect(queue).toHaveLength(1);
-    expect(queue[0].code).toBe('second');
+    expect(queue[0].files).toEqual(await filesOfCode('second'));
   });
 
   it('removeFromReviewQueue drops the entry for that workspace only', async () => {
     const { env } = makeEnv();
-    await pushReviewQueue(env, makeQueueEntry(makeWorkspace({ id: 'a' }), 't1'));
-    await pushReviewQueue(env, makeQueueEntry(makeWorkspace({ id: 'b' }), 't2'));
+    await pushReviewQueue(env, await entryFor(makeWorkspace({ id: 'a' }), 't1'));
+    await pushReviewQueue(env, await entryFor(makeWorkspace({ id: 'b' }), 't2'));
     await removeFromReviewQueue(env, 'a');
     const queue = await listReviewQueue(env);
     expect(queue.map((e) => e.workspaceId)).toEqual(['b']);
@@ -342,17 +356,18 @@ describe('re-review queue (Phase 3)', () => {
   it('pushRereviewQueue is idempotent on workspaceId — re-edits refresh the entry', async () => {
     const { env } = makeEnv();
     const ws = makeWorkspace();
-    await pushRereviewQueue(env, makeQueueEntry({ ...ws, code: 'edit1', contentHash: 'h1' }, 't1'));
-    await pushRereviewQueue(env, makeQueueEntry({ ...ws, code: 'edit2', contentHash: 'h2' }, 't2'));
+    await pushRereviewQueue(env, await entryFor({ ...ws, code: 'edit1', contentHash: 'h1' }, 't1'));
+    const edit2 = { ...ws, code: 'edit2', contentHash: 'h2' };
+    await pushRereviewQueue(env, await entryFor(edit2, 't2'));
     const queue = await listRereviewQueue(env);
     expect(queue).toHaveLength(1);
-    expect(queue[0].code).toBe('edit2');
-    expect(queue[0].codeHash).toBe('h2');
+    expect(queue[0].files).toEqual(await filesOfCode('edit2'));
+    expect(queue[0].codeHash).toBe((await readStoredFiles(edit2, edit2.contentHash)).hash);
   });
 
   it('getRereviewQueueEntry returns null for workspaces not in the queue', async () => {
     const { env } = makeEnv();
-    await pushRereviewQueue(env, makeQueueEntry(makeWorkspace({ id: 'in-queue' }), 't1'));
+    await pushRereviewQueue(env, await entryFor(makeWorkspace({ id: 'in-queue' }), 't1'));
     expect(await getRereviewQueueEntry(env, 'in-queue')).toBeTruthy();
     expect(await getRereviewQueueEntry(env, 'not-in-queue')).toBeNull();
   });

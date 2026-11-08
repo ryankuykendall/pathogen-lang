@@ -14,23 +14,23 @@
 //     hypothesis raised in the workspaces-page bug report)
 //   - DELETE down to zero workspaces leaves a clean empty-list response
 //
-// We do not exercise R2 / D1 here — those bindings stay as `undefined`/empty
-// because the listing + create + delete paths never touch them.
+// D1 isn't exercised here. R2 is an in-memory bucket: since phase 2 a
+// workspace's files live there (files/{id}/{sha256}), so create and delete
+// touch it.
 
 import { describe, expect, it } from 'vitest';
 
+import { MemoryR2 } from './memory-r2';
 import { handleApiRequest } from '../../website/api/router';
-import type { Env } from '../../website/api/types';
 import { MemoryKV } from '../auth/helpers';
+
+import type { Env } from '../../website/api/types';
 
 function makeEnv(): Env {
   const kv = new MemoryKV();
-  // D1 is unused for the anon workspace paths. THUMBNAILS only needs a
-  // no-op `delete`: deleteWorkspace cascades a `THUMBNAILS.delete` for the
-  // approval.svg blob, which always exists as a binding in production.
   return {
     WORKSPACES: kv as unknown as Env['WORKSPACES'],
-    THUMBNAILS: { delete: async () => {} } as unknown as Env['THUMBNAILS'],
+    THUMBNAILS: new MemoryR2(),
     USERS_DB: undefined as unknown as Env['USERS_DB'],
   } as Env;
 }

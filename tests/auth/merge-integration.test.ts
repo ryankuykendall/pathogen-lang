@@ -15,11 +15,13 @@
 
 import { describe, expect, it } from 'vitest';
 
-import { handleApiRequest } from '../../website/api/router';
-import type { Env } from '../../website/api/types';
-import { storeCode } from '../../website/auth/otp';
-import type { AuthEnv } from '../../website/auth/types';
 import { MemoryD1, MemoryKV } from './helpers';
+import { handleApiRequest } from '../../website/api/router';
+import { storeCode } from '../../website/auth/otp';
+import { MemoryR2 } from '../api/memory-r2';
+
+import type { Env } from '../../website/api/types';
+import type { AuthEnv } from '../../website/auth/types';
 
 interface TestEnv extends Env {
   // Mirror the AuthEnv shape so the auth handlers (called via
@@ -35,7 +37,9 @@ function makeEnv(): { env: TestEnv; kv: MemoryKV; db: MemoryD1 } {
   const db = new MemoryD1();
   const env = {
     WORKSPACES: kv as unknown as Env['WORKSPACES'],
-    THUMBNAILS: {} as unknown as Env['THUMBNAILS'],
+    // A workspace's files live in R2 (files/{id}/{sha256}), keyed by the
+    // workspace, so claiming one moves nothing there.
+    THUMBNAILS: new MemoryR2(),
     USERS_DB: db as unknown as Env['USERS_DB'],
     AUTH_DEV_LOG_OTP: '1',
     PRODUCTION: '',

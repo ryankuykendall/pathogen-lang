@@ -32,6 +32,7 @@ import type {
 } from './types.js';
 import type { D1Database } from './types.js';
 import { readThumbMeta, slugify } from './utils.js';
+import type { StoredFiles } from './workspace-files.js';
 
 export const PUBLIC_INDEX_CAP = 100;
 export const FEATURED_CAP = 100;
@@ -507,14 +508,21 @@ export async function listApprovalsForUser(
   return approvals;
 }
 
-// ─── Build a queue entry (frozen snapshot of submitted code) ──────────
+// ─── Build a queue entry (frozen snapshot of submitted files) ─────────
 
-export function makeQueueEntry(workspace: Workspace, submittedAt: string): ReviewQueueEntry {
+/**
+ * Freeze what's being submitted: the workspace's manifest and its hash in
+ * today's rule. `files` comes from readStoredFiles; the caller materializes a
+ * record from before phase 2 first, so the manifest's one blob exists in R2.
+ */
+export function makeQueueEntry(workspace: Workspace, files: StoredFiles, submittedAt: string): ReviewQueueEntry {
   return {
     workspaceId: workspace.id,
     userId: workspace.userId,
-    code: workspace.code,
-    codeHash: workspace.contentHash,
+    files: files.manifest.files,
+    folders: files.manifest.folders,
+    entryPoints: files.manifest.entryPoints,
+    codeHash: files.hash,
     name: workspace.name,
     description: workspace.description || '',
     slug: slugify(workspace.name),
