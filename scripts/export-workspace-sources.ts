@@ -1,9 +1,10 @@
 /**
  * READ-ONLY: copy every stored Pathogen source out of the WORKSPACES KV
- * namespace into .pathogen files, so the semantics audit can compile them
+ * namespace (and, since phase 2, the files it names in the THUMBNAILS R2
+ * bucket) into .pathogen files, so the semantics audit can compile them
  * (decision 22 in project-docs/modules/05-phase-0a-audit.md: stored code is
  * checked before a breaking change is pushed). This script has no write path:
- * it only lists and gets keys.
+ * it only lists and gets keys and objects.
  *
  * Source lives in four key families (see migrate-style-opener-kv.ts):
  *   workspace:{id}, approval:{id}, queue:review, queue:rereview
@@ -49,6 +50,27 @@ function kvGet(flags: string[], key: string): string | null {
   }
 }
 
+/** Where a workspace's blobs are: local dev R2 keeps them under the preview bucket's name. */
+function r2Target(env: 'dev' | 'prod'): { bucket: string; flags: string[] } {
+  if (env === 'dev') {
+    return { bucket: 'svg-path-extended-thumbnails-preview', flags: ['--local', '--persist-to=../.wrangler/state'] };
+  }
+  return { bucket: 'svg-path-extended-thumbnails', flags: ['--remote'] };
+}
+
+/** An R2 object's text (a read: `wrangler r2 object get --pipe`), or null when it can't be read. */
+function r2Get(target: { bucket: string; flags: string[] }, key: string): string | null {
+  try {
+    return execFileSync(
+      'npx',
+      ['wrangler', 'r2', 'object', 'get', `${target.bucket}/${key}`, '--pipe', ...target.flags],
+      { cwd: API_DIR, encoding: 'utf-8', maxBuffer: 256 * 1024 * 1024, stdio: ['pipe', 'pipe', 'pipe'] },
+    );
+  } catch {
+    return null;
+  }
+}
+
 /** A key as a file name: `workspace:abc` → `workspace--abc`. */
 function fileName(key: string, suffix = ''): string {
   return `${key.replace(/[^A-Za-z0-9_-]+/g, '--')}${suffix}.pathogen`;
@@ -77,27 +99,61 @@ program
     mkdirSync(out, { recursive: true });
 
     // Since phase 2 a record may hold `files` (a manifest) with the text in R2
-    // (project-docs/modules/48-storage-design-v2.md). This script reads KV
-    // only, so such records are counted, not exported. TODO(storage step 7):
-    // read their .pathogen files from R2 so the audits see them.
-    const counts = { workspace: 0, approval: 0, queueEntries: 0, empty: 0, unreadable: 0, filesInR2: 0 };
+    // at files/{workspaceId}/{sha256} (project-docs/modules/48-storage-
+    // design-v2.md). Their .pathogen files are read from R2 (one get each)
+    // and written flat, as both readers of this folder expect: a record that
+    // is just main.pathogen as `<key>.pathogen`, as before; one with several
+    // files as `<key>--<path>.pathogen` each. (Imports between those don't
+    // resolve in a flat folder; the declaration checks don't need them to.)
+    const r2 = r2Target(env);
+    const counts = { workspace: 0, approval: 0, queueEntries: 0, empty: 0, unreadable: 0, fromR2: 0 };
+    const writeFiles = (key: string, workspaceId: string, files: unknown, suffix = ''): boolean => {
+      if (typeof files !== 'object' || files === null) return false;
+      const pathogen = Object.entries(files as Record<string, { sha256?: unknown }>).filter(
+        ([path, entry]) => path.endsWith('.pathogen') && typeof entry.sha256 === 'string',
+      );
+      const justMain = pathogen.length === 1 && pathogen[0][0] === 'main.pathogen';
+      if (pathogen.length === 0) console.log(`  no .pathogen files ${key}`);
+      // `a/b.pathogen` and `a-b.pathogen` flatten to the same name; the second
+      // gets its hash appended rather than overwriting the first.
+      const used = new Set<string>();
+      let wrote = false;
+      for (const [path, entry] of pathogen) {
+        const text = r2Get(r2, `files/${workspaceId}/${entry.sha256 as string}`);
+        if (text === null) {
+          counts.unreadable++;
+          console.log(`  unreadable ${key} ${path} (not in R2)`);
+          continue;
+        }
+        if (!text.trim()) {
+          counts.empty++;
+          continue;
+        }
+        let pathSuffix = justMain ? '' : `--${path.replace(/\.pathogen$/, '').replace(/[^A-Za-z0-9_-]+/g, '--')}`;
+        if (used.has(pathSuffix)) pathSuffix = `${pathSuffix}-${(entry.sha256 as string).slice(0, 8)}`;
+        used.add(pathSuffix);
+        writeFileSync(join(out, fileName(key, `${suffix}${pathSuffix}`)), text);
+        counts.fromR2++;
+        wrote = true;
+      }
+      return wrote;
+    };
     for (const prefix of ['workspace:', 'approval:']) {
       const keys = kvList(flags, prefix);
       console.log(`${prefix} ${keys.length} keys`);
       for (const key of keys) {
         const raw = kvGet(flags, key);
         let code: unknown;
-        let holdsFiles = false;
+        let parsed: { code?: unknown; files?: unknown; workspaceId?: unknown } | undefined;
         try {
-          const parsed = raw ? (JSON.parse(raw) as { code?: unknown; files?: unknown }) : undefined;
+          parsed = raw ? (JSON.parse(raw) as typeof parsed) : undefined;
           code = parsed?.code;
-          holdsFiles = parsed?.files !== undefined;
         } catch {
           code = undefined;
         }
-        if (holdsFiles) {
-          counts.filesInR2++;
-          console.log(`  files in R2, not exported ${key}`);
+        if (parsed?.files !== undefined) {
+          const workspaceId = prefix === 'workspace:' ? key.slice(prefix.length) : String(parsed.workspaceId ?? '');
+          if (writeFiles(key, workspaceId, parsed.files)) counts[prefix === 'workspace:' ? 'workspace' : 'approval']++;
           continue;
         }
         if (raw === null || code === undefined) {
@@ -126,8 +182,8 @@ program
       if (!Array.isArray(entries)) continue;
       entries.forEach((entry, i) => {
         if (entry.files !== undefined) {
-          counts.filesInR2++;
-          console.log(`  files in R2, not exported ${key} --${entry.workspaceId ?? i}`);
+          const wrote = writeFiles(key, entry.workspaceId ?? '', entry.files, `--${entry.workspaceId ?? i}`);
+          if (wrote) counts.queueEntries++;
           return;
         }
         if (typeof entry.code !== 'string' || !entry.code.trim()) return;
@@ -137,7 +193,7 @@ program
     }
     console.log(
       `\nwrote ${counts.workspace} workspaces, ${counts.approval} approvals, ${counts.queueEntries} queue entries to ${out}` +
-        ` (${counts.empty} empty, ${counts.unreadable} unreadable, ${counts.filesInR2} holding files in R2, not exported)`,
+        ` (${counts.fromR2} files read from R2; ${counts.empty} empty, ${counts.unreadable} unreadable)`,
     );
   });
 program.parse();

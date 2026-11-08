@@ -133,6 +133,35 @@ It stops on any manifest it can't parse, rather than skipping it. It deletes onl
 
 **Checked by hand** (`verify/verify-storage-step6-detail-page.ts`, against a restarted `npm run dev:stack`): a one-file workspace and one with several files, each approved through the API; the detail page shows the approved text, not an edit made after approval; `source.json` has `code` for the first, every file for both. Unit tests: `tests/api/approval-source-pages.test.ts`.
 
+## Step 7: the migration script (2026-11-08)
+
+- **`scripts/migrate-workspace-files-kv.ts`** moves every program saved before phase 2 into a blob at `files/{workspaceId}/{sha256}` and rewrites its record as a manifest, with the hash in today's rule and `rev` unchanged. It covers workspaces, approvals (the blob goes under the workspace), both review queues, and snapshots (`code.pathogen` gains a `manifest.json` and is kept). It runs as a dry run by default; `--write` needs `--backup-dir`, production needs `--confirm` (also for a dry run), and `--only <workspaceId>` limits it to one workspace.
+- **The transformation** is `scripts/lib/workspace-files-migration.ts`, built on the API's own reader and hash, so the migration can't compute a hash differently from the code that later compares it (note 48 §7). Every result is checked against that reader: the migrated record reads back as the same manifest and hash, and the blob's bytes hash to the name the manifest gives them.
+- **The re-review check** runs for every approval: whether a save of its workspace would queue a re-review must be the same before and after. Any change fails the run.
+- **Writes** go blob first, record second. Each record is re-read just before its write and skipped if it changed. A record that already holds files is left alone, since saves since the push convert records themselves. An approval or queue entry whose workspace record is missing is reported as an orphan and left alone: migrated, its detail page couldn't read its source.
+- **`export-workspace-sources.ts`** now reads the `.pathogen` files of records that hold files from R2, so the built-in name collision check and the semantics audit still see every program after the migration. The folder stays flat: `<key>.pathogen` for a one-file record, as before; `<key>--<path>.pathogen` for each file of a record with several.
+
+**Dev dry run** (all local dev data, read-only): 380 workspaces, 17 approvals and both queues would migrate (399 records), 0 errors, and every approval's re-review answer is unchanged. 1 orphan approval (its workspace is gone) would be left as it is.
+
+**Checked end to end** (`verify/verify-storage-step7-migration.ts`, against `npm run dev:stack`): it seeds records the way they were saved before phase 2 (an approved workspace unedited since approval; one edited since, with its re-review entry; a snapshot with `code.pathogen`), migrates each with `--only` (a dry run, the write, a dry run again that finds everything already migrated), then reads back through the API and the Pages worker. Results: the same code, an unchanged save skipped, the edited one still in re-review and the unedited one not, both detail pages and `source.json` showing the approved code, the snapshot's code unchanged. `verify/verify-storage-step7-export.ts` checks the export's R2 read. Unit tests: `tests/api/workspace-files-migration.test.ts`, including migrated records driven through the real API handlers.
+
+**Review** (a code review of step 7): no critical findings. Fixed:
+- A backup could be replaced by a later run with the same folder (after `--only`, or a retry), losing the original; an existing backup is now never overwritten.
+- An R2 read that failed for any reason counted as "not there", so a network error could have let the snapshot pass write a one-file manifest over a real one. Only R2's own "The specified key does not exist." now means absent; anything else is that snapshot's error.
+- A record with neither `code` nor `files` would have become an empty program; it's now reported as an error.
+- In the export, two paths that flatten to the same file name (`a/b.pathogen`, `a-b.pathogen`) no longer overwrite each other.
+
+Noted, not changed: the re-review check can only fail if records are paired wrongly, since each record's hash is already checked against the reader; it stays as a second check. KV has no compare-and-swap, so a save landing between the re-read and the put is overwritten: run the write at a quiet time.
+
+### At shipping, in this order
+
+1. **Push everything** (2b–2e). The API Worker deploys from GitHub Actions and the Pages worker from Cloudflare's GitHub integration, separately. Wait until **both** are live: an old Pages worker answers 500 for a migrated approval (found in step 6).
+2. **The style-opener follow-up run.** Memory says the production style-opener KV migration ran on 2026-09-04 and a follow-up run was due on 2026-09-06/07; nothing records whether it ran. `migrate-style-opener-kv.ts` refuses records that hold files, so if it's still owed, it has to run **before** this migration (or not at all, if you consider it settled).
+3. **The dry run on production** (`--env prod --confirm --report tmp/step7/prod-dry-run.json`): a production read, so only with your go-ahead. Check that it reports 0 errors, an unchanged re-review answer, and the orphans.
+4. **The write**, with `--backup-dir`, after your go-ahead on the dry run's report, at a quiet time (a save landing during a record's re-read→put would be overwritten).
+5. **The dry run again**: everything "already". Then the export and the collision check, as a smoke test of the R2 read.
+6. **Later:** the sweep script (step 8), and removing the old-shape reader once nothing old remains.
+
 ## Questions from building
 
 1. **Which Workers plan** is the Cloudflare account on? On Free, loads cap out near 40 files; on Paid, the 1,000-call budget is what applies.
@@ -144,3 +173,5 @@ It stops on any manifest it can't parse, rather than skipping it. It deletes onl
    Recommended: (a). A workspace that size is unlikely to be hand-made, and one request keeps a copy all-or-nothing.
 
    Since the step 3 review, a copy over 480 different files is refused with a message (option (c) at 480), so nothing fails silently whichever you choose. Under (a) that refusal can't happen.
+3. **The style-opener follow-up run** (see "At shipping", step 2): did it run after 2026-09-04, or is it settled without it?
+4. **The production migration**: the dry run and the write each need your go-ahead, at shipping time (after 2e). Nothing has touched production.
