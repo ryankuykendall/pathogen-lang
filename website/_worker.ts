@@ -15,6 +15,7 @@ import { findUserById, findUserByHandle } from './auth/users.js';
 import { computeUserFeatures } from './auth/features.js';
 import { findApprovalForUserAndSlug } from './api/moderation.js';
 import { readThumbMeta } from './api/utils.js';
+import { mainSourceText, readApprovalSource } from './approval-source.js';
 import { siteHeaderHtml } from '../playground/utils/site-header-template.js';
 import type {
   Env,
@@ -509,11 +510,25 @@ async function renderWorkspaceSourceJson(
       /* fall through */
     }
   }
+  // The approval's files, through the API Worker (approval-source.ts).
+  // `code` is the text of an approval that is just main.pathogen, which
+  // today's "Open as new workspace" form reads; `files`, `folders` and
+  // `entryPoints` say the whole workspace.
+  const source = await readApprovalSource(approval, apiBase(env));
+  if (!source) {
+    return new Response(JSON.stringify({ error: 'source-unavailable' }), {
+      status: 503,
+      headers: { 'Content-Type': 'application/json', 'Retry-After': '5' },
+    });
+  }
   return new Response(
     JSON.stringify({
       name: approval.name,
       description: approval.description || '',
-      code: approval.code,
+      ...(source.code !== undefined ? { code: source.code } : {}),
+      files: source.files,
+      folders: source.folders,
+      entryPoints: source.entryPoints,
       ownerHandle: handle,
       ownerDisplayName: user.display_name,
     }),
@@ -594,7 +609,13 @@ async function renderWorkspaceDetailPage(
   const approvedDate = new Date(approval.approvedAt).toLocaleDateString('en-US', {
     month: 'short', day: 'numeric', year: 'numeric',
   });
-  const lineCount = (approval.code ?? '').split('\n').length;
+  // The approved source, through the API Worker (approval-source.ts). The
+  // page shows the main program; an approval with several files gets its
+  // own view in 2e. When the source can't be read right now, the rest of
+  // the page still renders and the source panel says so.
+  const source = await readApprovalSource(approval, apiBase(env));
+  const sourceText = source ? mainSourceText(source) : null;
+  const lineCount = (sourceText ?? '').split('\n').length;
   const avatarInitial = initialOf(user.display_name).slice(0, 1);
 
   // Italicize the last word of the title — the editorial accent moment.
@@ -775,9 +796,14 @@ async function renderWorkspaceDetailPage(
       <details class="detail-source-disclosure">
         <summary>
           <span class="detail-source-title">View source</span>
-          <span class="detail-source-meta">Pathogen &middot; ${lineCount} lines</span>
+          <span class="detail-source-meta">${sourceText !== null ? `Pathogen &middot; ${lineCount} lines` : 'Unavailable right now'}</span>
         </summary>
-        <pre class="detail-source-code">${escapeHtml(approval.code)}</pre>
+        ${
+          // Without a <pre>, the toggle script below has nothing to highlight.
+          sourceText !== null
+            ? `<pre class="detail-source-code">${escapeHtml(sourceText)}</pre>`
+            : "<p>The source couldn't be loaded right now. Reload the page to try again.</p>"
+        }
       </details>
     </section>
 

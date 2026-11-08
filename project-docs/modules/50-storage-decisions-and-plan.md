@@ -123,6 +123,16 @@ Step 3 left queue entries without `code`, and the admin moderation screen compil
 
 It stops on any manifest it can't parse, rather than skipping it. It deletes only blobs older than a grace period, and reads the references after listing the blobs: every writer puts the blobs before the record or manifest that names them, so a sweep in that gap would otherwise delete a blob about to be named. Records and snapshots from before phase 2 name no blobs.
 
+## Step 6: the detail page and source.json (2026-11-08)
+
+- **`website/approval-source.ts`** reads an approved workspace's source for the Pages worker: an approval from before phase 2 from its own `code`, with no request; any other through the API Worker's `GET /approval-source/:id` (the Pages worker has no R2 binding). An error, an unreachable API, or an answer of the wrong shape gives null, with a logged warning.
+- **The detail page** (`/u/:handle/:slug`) shows the main program's text and line count, so a one-file approval renders as before. One with several files shows its main program; its own view (every file, by name) is a 2e design. When the source can't be read, the page still renders and its "View source" panel says the source couldn't be loaded, without the `<pre>` the highlighter would otherwise dress up.
+- **`source.json`** carries `files`, `folders` and `entryPoints`, and `code` for a one-file approval, which today's "Open as new workspace" form reads. When the source can't be read it answers 503 with `source-unavailable`, which the form already reports.
+
+**Found by the check:** before this step the detail page answered 500 for any approval saved since step 3 (`escapeHtml(approval.code)` on a missing `code`), as the step 4 review predicted. `wrangler pages dev` doesn't reload `_worker.js` after a rebuild, so checking a Pages worker change means restarting `dev:stack`.
+
+**Checked by hand** (`verify/verify-storage-step6-detail-page.ts`, against a restarted `npm run dev:stack`): a one-file workspace and one with several files, each approved through the API; the detail page shows the approved text, not an edit made after approval; `source.json` has `code` for the first, every file for both. Unit tests: `tests/api/approval-source-pages.test.ts`.
+
 ## Questions from building
 
 1. **Which Workers plan** is the Cloudflare account on? On Free, loads cap out near 40 files; on Paid, the 1,000-call budget is what applies.
