@@ -27,8 +27,9 @@ export interface R2Bucket {
   // R2 accepts up to 1000 keys per delete call; batching matters because a
   // Worker request has a subrequest budget (see deleteSnapshotsForWorkspace).
   delete(keys: string | string[]): Promise<void>;
-  // Optional in this type only so older test doubles needn't implement it;
-  // the real binding always has it.
+  // Optional in this type only so older test doubles needn't implement them;
+  // the real binding always has both.
+  head?(key: string): Promise<{ size: number } | null>;
   list?(options?: {
     prefix?: string;
     cursor?: string;
