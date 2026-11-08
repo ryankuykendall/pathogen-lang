@@ -156,7 +156,7 @@ Noted, not changed: the re-review check can only fail if records are paired wron
 ### At shipping, in this order
 
 1. **Push everything** (2b–2e). The API Worker deploys from GitHub Actions and the Pages worker from Cloudflare's GitHub integration, separately. Wait until **both** are live: an old Pages worker answers 500 for a migrated approval (found in step 6).
-2. **The style-opener follow-up run.** Memory says the production style-opener KV migration ran on 2026-09-04 and a follow-up run was due on 2026-09-06/07; nothing records whether it ran. `migrate-style-opener-kv.ts` refuses records that hold files, so if it's still owed, it has to run **before** this migration (or not at all, if you consider it settled).
+2. ~~**The style-opener follow-up run.**~~ Dropped: you consider it settled (question 3 below). A program still using the old `${` opener is fixed by hand if its owner returns to it.
 3. **The dry run on production** (`--env prod --confirm --report tmp/step7/prod-dry-run.json`): a production read, so only with your go-ahead. Check that it reports 0 errors, an unchanged re-review answer, and the orphans.
 4. **The write**, with `--backup-dir`, after your go-ahead on the dry run's report, at a quiet time (a save landing during a record's re-read→put would be overwritten).
 5. **The dry run again**: everything "already". Then the export and the collision check, as a smoke test of the R2 read.
@@ -208,6 +208,6 @@ On step 5 you asked whether a snapshot still keeps the SVG exactly as rendered. 
    Recommended: (a). A workspace that size is unlikely to be hand-made, and one request keeps a copy all-or-nothing.
 
    Since the step 3 review, a copy over 480 different files is refused with a message (option (c) at 480), so nothing fails silently whichever you choose. Under (a) that refusal can't happen. *Answered: settled by the 20-file cap.*
-3. **The style-opener follow-up run** (see "At shipping", step 2): did it run after 2026-09-04, or is it settled without it? *Still open.* In September, style blocks changed from opening with `${` to `#{`, and `migrate-style-opener-kv.ts` rewrote stored programs on production on 2026-09-04. A second pass was planned two days later, to catch saves from browser tabs still running the old site. A read-only dry run on production would show whether any record still uses the old opener. That needs your go-ahead.
+3. **The style-opener follow-up run** (see "At shipping", step 2): did it run after 2026-09-04, or is it settled without it? *Answered: settled. "I am not worried about the issue with the style opener...those older workspaces should be easy to update manually if users return to them." Step 2 of "At shipping" is dropped.* In September, style blocks changed from opening with `${` to `#{`, and `migrate-style-opener-kv.ts` rewrote stored programs on production on 2026-09-04. A second pass was planned two days later, to catch saves from browser tabs still running the old site. A read-only dry run on production would show whether any record still uses the old opener. That needs your go-ahead.
 4. **The production migration**: the dry run and the write each need your go-ahead, at shipping time (after 2e). Nothing has touched production.
 5. **The sweep** (step 8, above): build it now with the two-pass design, or after 2e ships? *Answered: after 2e ships.*
