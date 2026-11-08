@@ -61,6 +61,19 @@ This predates this change; phase 1a shipped it.
   - Tests in `tests/language-server-modules.test.ts` and `tests/vscode-preview-modules.test.ts`, then the two verify scripts.
 - **The `entryPoints` commit is kept local** until you choose: fix the gap first and push them together (recommended), or narrow the two docs sentences and push now.
 
+### The fix (your answer: "Fix it before pushing.")
+
+- **`resolveEditorModules`** reads `pathogen.json` for a document with imports. A broken one is the one load error, at the first import's path, with nothing loaded: the same stop as the CLI.
+- **The font paths** (the language server's `DiagnosticFonts`, the preview's `FontSession`) leave the message out for a document with imports, so it shows once. Whether to report it is part of their memo key.
+- **The preview** also watches `pathogen.json` on disk, so fixing it redraws a document that uses `import` or `@font`. The code review caught this: the preview's watcher was `**/*.pathogen` only.
+- **Tests:**
+  - `tests/node-editor-modules.test.ts`, `tests/vscode-preview-modules.test.ts`, `tests/vscode-font-session.test.ts` and `tests/language-server-fonts.test.ts`;
+  - two new cases in `verify-step6c-lsp.mjs`: the message once at the first import, also in a file with `@font`, and cleared when `pathogen.json` is fixed. 21/21 against the bundled server.
+  - `verify-step6d-preview.mjs`: 8/8.
+  - The full suite: 8,447 passed.
+- **Not covered by an automated test:** the preview's new watcher. `PreviewPanel` needs the real VS Code API, and nothing drives it headless; it was checked by reading and by compiling the extension.
+- **Code review:** no critical findings. One warning, the preview watcher, now fixed. The seven other points were confirmations.
+
 ## For the end of phase 2
 
 Gathered from notes 45 and 49:

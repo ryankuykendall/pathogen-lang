@@ -11,7 +11,8 @@ program-list sentence held back in note 46; docs/modules.md's intro line "A play
 one program for now", its In each tool Playground bullet, and its Errors row "No project folder
 (the playground)".
 Sources: mockups v1 to v6 and their reviews (project-docs/modules/39- to 46-).
-Marked [TO CONFIRM] in note 46: undo per file, clicking an error to open its file, limits, name characters.
+Marked [TO CONFIRM] in note 46: undo per file, clicking an error to open its file. Limits and name
+characters: decided in note 50.
 -->
 
 # Files in a Workspace
@@ -70,7 +71,8 @@ The **+** in the Files header opens a menu: New program, New library, New folder
 - A new library starts with `module;` and a comment. A new program starts like a new workspace.
 - The new file opens in a tab. The preview doesn't change. A new program goes at the end of the program list.
 - **New folder** makes an empty folder. It stays, empty, until you put files in it or delete it.
-- **Names** in a folder must differ by more than letter case: `Gears.pathogen` and `gears.pathogen` can't both exist, because they would be the same file in a folder on macOS or Windows. The name `pathogen.json` is reserved in every folder: in the CLI, a `pathogen.json` inside a folder makes that folder a project of its own, and its files' `../` imports stop working.
+- **Names** use letters `a`–`z` and `A`–`Z`, digits, `-`, `_` and `.`, and start with a letter or a digit: `gear-train_2.pathogen` works, `my gear.pathogen` doesn't. A name can be up to 100 characters, and a path up to 255.
+- Names in a folder must differ by more than letter case: `Gears.pathogen` and `gears.pathogen` can't both exist, because they would be the same file in a folder on macOS or Windows. The name `pathogen.json` is reserved in every folder: in the CLI, a `pathogen.json` inside a folder makes that folder a project of its own, and its files' `../` imports stop working.
 
 ## Uploading files
 
@@ -115,4 +117,11 @@ An error in a file other than the program the preview shows names that file and 
 
 ## Limits
 
-[TO DECIDE, note 48: the most files a workspace can hold, the largest file of each type, and the largest workspace; and which characters a name may use. Filled in once you approve them.]
+| | Limit |
+|---|---|
+| A `.pathogen` file | 1 MB |
+| Files in a workspace | 500 |
+| Folders inside folders | 8 deep |
+| A whole workspace | 50 MB |
+
+A save or an upload that would pass a limit is refused with a message that names it, before anything is lost. [When data files and fonts can be added: data files 5 MB each, fonts 20 MB each (note 50).]
