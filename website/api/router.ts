@@ -72,9 +72,10 @@ import {
   slugify,
   writeThumbMeta,
 } from './utils.js';
-import { copyFiles, deletePrefix, deleteWorkspaceFiles, fileKey, putText, readTexts } from './file-store.js';
-import { MAIN_FILE, fileKind, readStoredFiles } from './workspace-files.js';
+import { deletePrefix, deleteWorkspaceFiles, fileKey } from './file-store.js';
+import { readStoredFiles } from './workspace-files.js';
 import {
+  copyStoredFiles,
   filesFromBody,
   filesWithText,
   frozenSource,
@@ -85,14 +86,6 @@ import {
   setFiles,
   storedFilesOf,
 } from './workspace-store.js';
-
-/**
- * The most distinct files one copy takes: two R2 calls each (a read and a
- * write) plus a few KV calls must fit the 1,000 KV and R2 calls Cloudflare
- * allows one request. Note 50, "Questions from building", asks how larger
- * workspaces should copy.
- */
-const COPY_MAX_FILES = 480;
 
 /** A record as responses show it: never the legacy `code` field (the files say it), and today's hash. */
 function withoutLegacyCode(workspace: Workspace, hash: string): Omit<Workspace, 'code'> {
@@ -709,35 +702,13 @@ export const apiHandlers: Record<string, (request: Request, env: Env, ...args: s
       const newId = generateNanoId();
       const now = new Date().toISOString();
 
-      // The files are copied to the new workspace's prefix: two R2 calls each
-      // (a read and a write), so a copy must stay inside the request's call
-      // budget. The .pathogen texts read here also answer the request. Blobs
-      // are written before the record; a failure in between leaves blobs
-      // nothing names, which the sweep script removes.
+      // The files are copied to the new workspace's prefix, two R2 calls each,
+      // inside the request's call budget; the texts read also answer the
+      // request (copyStoredFiles).
       const stored = await storedFilesOf(original);
-      const hashes = [...new Set(Object.values(stored.manifest.files).map((f) => f.sha256))];
-      if (hashes.length > COPY_MAX_FILES) {
-        return errorResponse(
-          `This workspace has ${hashes.length} different files; a copy can take at most ${COPY_MAX_FILES} at once.`,
-          413,
-        );
-      }
-      const textHashes = new Set(
-        Object.entries(stored.manifest.files)
-          .filter(([path]) => fileKind(path) === 'pathogen')
-          .map(([, entry]) => entry.sha256),
-      );
-      const texts =
-        stored.legacyText !== null
-          ? new Map([[stored.manifest.files[MAIN_FILE].sha256, stored.legacyText]])
-          : await readTexts(env, id, textHashes);
-      await Promise.all([...texts.values()].map((text) => putText(env, newId, text)));
-      await copyFiles(
-        env,
-        id,
-        newId,
-        hashes.filter((sha256) => !texts.has(sha256)),
-      );
+      const copiedTexts = await copyStoredFiles(env, id, newId, stored);
+      if (!copiedTexts.ok) return errorResponse(copiedTexts.message, 413);
+      const texts = copiedTexts.value!;
       const copied = { ...stored, legacyText: null };
 
       const newWorkspace: Workspace = {

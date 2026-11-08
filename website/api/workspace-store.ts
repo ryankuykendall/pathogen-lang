@@ -8,7 +8,7 @@
 // working: a workspace that is just main.pathogen still reads and saves as
 // one `code` string.
 
-import { putText, readTexts, storedSize } from './file-store.js';
+import { copyFiles, putText, readTexts, storedSize } from './file-store.js';
 import {
   checkManifest,
   contentHashOf,
@@ -125,6 +125,56 @@ export async function frozenSource(env: Env, record: FrozenRecord, texts: 'all' 
   }
   const { contentHash, ...withText } = await filesWithText(env, record.workspaceId, stored);
   return { ...withText, codeHash: contentHash };
+}
+
+/**
+ * The most distinct files one copy takes: two R2 calls each (a read and a
+ * write) plus a few KV calls must fit the 1,000 KV and R2 calls Cloudflare
+ * allows one request. Note 50, "Questions from building", asks how larger
+ * workspaces should copy.
+ */
+export const COPY_MAX_FILES = 480;
+
+/**
+ * Copy files to another workspace's prefix: a duplicate, a fork, a workspace
+ * started from a snapshot. Each .pathogen text is read once and written; its
+ * text comes back (by sha256), so the caller can answer without reading it
+ * again. Other files are copied blob to blob. A record from before phase 2
+ * writes its text. Refused, before any call, above COPY_MAX_FILES. Blobs are
+ * written before the caller stores a manifest naming them; a failure in
+ * between leaves blobs nothing names, which the sweep script removes.
+ */
+export async function copyStoredFiles(
+  env: Env,
+  fromId: string,
+  toId: string,
+  files: StoredFiles,
+): Promise<Checked<Map<string, string>>> {
+  const { manifest } = files;
+  const hashes = [...new Set(Object.values(manifest.files).map((f) => f.sha256))];
+  if (hashes.length > COPY_MAX_FILES) {
+    return {
+      ok: false,
+      message: `This workspace has ${hashes.length} different files; a copy can take at most ${COPY_MAX_FILES} at once.`,
+    };
+  }
+  const textHashes = new Set(
+    Object.entries(manifest.files)
+      .filter(([path]) => fileKind(path) === 'pathogen')
+      .map(([, entry]) => entry.sha256),
+  );
+  const texts =
+    files.legacyText !== null
+      ? new Map([[manifest.files[MAIN_FILE].sha256, files.legacyText]])
+      : await readTexts(env, fromId, textHashes);
+  await Promise.all([...texts.values()].map((text) => putText(env, toId, text)));
+  await copyFiles(
+    env,
+    fromId,
+    toId,
+    hashes.filter((sha256) => !texts.has(sha256)),
+  );
+  return { ok: true, value: texts };
 }
 
 /** The text of the workspace's main program, or null when it has no programs. */

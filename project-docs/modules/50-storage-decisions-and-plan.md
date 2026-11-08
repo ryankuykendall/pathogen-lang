@@ -102,7 +102,26 @@ Step 3 left queue entries without `code`, and the admin moderation screen compil
 
 **Checked by hand** (`verify/verify-storage-step4-admin.ts`, against `npm run dev:stack`): the API freezes a workspace into the review queue; the served moderation screen lists it, compiles its thumbnail, and Approve sends an SVG compiled from the frozen text; the admin read and `/approval-source/:id` return that text. The script stands in for the sign-in only: it answers `GET /me` with an admin user and adds the dev API's admin token to `/admin/*` requests.
 
-**For 2e:** the moderation screen shows an entry with several files as having no source. It needs to load those files by hash and compile them with their imports. Autosave's dirty check still uses its own copy of the old hash, so after a change and an undo it sends one save the server skips; 2c moves it to the shared hash.
+**For 2e (step 4):** the moderation screen shows an entry with several files as having no source. It needs to load those files by hash and compile them with their imports. Autosave's dirty check still uses its own copy of the old hash, so after a change and an undo it sends one save the server skips; 2c moves it to the shared hash.
+
+## Step 5: snapshots as manifests (2026-11-08)
+
+- **A snapshot stores `snapshots/{ws}/{sid}/manifest.json`** (`files`, `folders`, `entryPoints`, `contentHash`) beside `image.svg` and `card.png`, in place of `code.pathogen`. Its code is the workspace's own blobs, so an unchanged file costs a snapshot nothing, and a later save can't change it (saves never delete).
+- **Creating one** takes today's playground's `code` file, unchanged, or a `files` field shaped like a save's body: each file as `{ text }`, or `{ sha256 }` for bytes the workspace already stores. Either way at most 1 MB of text is uploaded (`files` sent by hash cost nothing toward it). What a `files` snapshot leaves out defaults as a new workspace's would (`folders: []`, `entryPoints: ["main.pathogen"]` when there is one), never to the workspace's current ones. Everything is checked before anything is written. `code_bytes` is the total size of the snapshot's files.
+- **Reading one:** `GET /snapshot/:sid/code` serves the text of a snapshot that is just `main.pathogen` (what today's playground reads), and answers 409 for one with several files. New `GET /snapshot/:sid/files` returns every file with its text. A snapshot from before phase 2 still has its `code.pathogen` and reads as just `main.pathogen`; deleting it removes that file too.
+- **Starting a workspace from one** copies its files to the new workspace's prefix through the same code as a workspace copy (`copyStoredFiles`, moved from the router into `workspace-store.ts`): two R2 calls a file, refused over 480.
+- **A damaged manifest, or a file it names gone from storage,** answers 500 with a message that says which, on every read.
+
+**Review** (a code review of step 5): no critical findings. Fixed: a damaged manifest threw a bare server error; a `files` snapshot inherited the workspace's current entry points; the refusal tests didn't assert their messages. Added tests: a hash from another workspace is refused (by-hash files are looked up under the snapshot's own workspace only), `/files` is owner-only, a quota refusal writes nothing, the 480-file guard on starting a workspace, a damaged manifest, a missing file, the 1 MB cap for `files`.
+
+**Checked on the Worker runtime** (`verify/verify-storage-step5-snapshots.ts`, against `npm run dev:stack`; it writes one throwaway user and session to the local D1, as `scripts/seed-dev-users.ts` does): a `code` snapshot, a save of other code, the snapshot's code read back unchanged, a workspace started from it, and a `files` snapshot with one file by hash read through `/files`.
+
+**What the sweep (step 8) must read**, from the review, so no snapshot's file is ever swept. Per workspace prefix `files/{ws}/`, a blob is referenced when any of these names its hash:
+- the `workspace:{ws}` record;
+- every review and re-review queue entry, and the approval, for that workspace;
+- every `snapshots/{ws}/*/manifest.json` in R2, found by listing R2 (not D1), so a manifest with no row is still kept.
+
+It stops on any manifest it can't parse, rather than skipping it. It deletes only blobs older than a grace period, and reads the references after listing the blobs: every writer puts the blobs before the record or manifest that names them, so a sweep in that gap would otherwise delete a blob about to be named. Records and snapshots from before phase 2 name no blobs.
 
 ## Questions from building
 

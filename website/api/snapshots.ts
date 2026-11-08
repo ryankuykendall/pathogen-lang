@@ -6,7 +6,12 @@
 //   D1 `snapshots` (migrations/0003_snapshots.sql) — metadata, per-workspace
 //     sequence number `n`, and the per-account quota count.
 //   R2 `THUMBNAILS` bucket — snapshots/{workspaceId}/{snapshotId}/
-//     image.svg · code.pathogen · card.png
+//     image.svg · manifest.json · card.png
+//   The code is the workspace's own files (project-docs/modules/48-storage-
+//   design-v2.md §4): manifest.json names them by hash, and their bytes are
+//   blobs under files/{workspaceId}/, which saves never delete. An unchanged
+//   file costs a snapshot nothing. A snapshot saved before phase 2 has a
+//   code.pathogen instead, read as just main.pathogen.
 //
 // Access: every route needs a signed-in session (anonymous X-User-Id
 // workspaces can't take snapshots) and is owner-only. Snapshots are deleted
@@ -21,7 +26,11 @@
 
 import { getSessionUserId, readSessionTokenFromRequest } from '../auth/session.js';
 import type { Env, Workspace } from './types.js';
-import { errorResponse, generateNanoId, hashContent, jsonResponse, slugify } from './utils.js';
+import { errorResponse, generateNanoId, jsonResponse, slugify } from './utils.js';
+import { isJustMain, MAIN_FILE, readStoredFiles } from './workspace-files.js';
+import type { StoredFiles, WorkspaceManifest } from './workspace-files.js';
+import { readTexts } from './file-store.js';
+import { copyStoredFiles, filesFromBody, filesWithText, setFiles, storedFilesOf } from './workspace-store.js';
 
 export const SNAPSHOT_LIMITS = {
   /** Snapshots per account, across all workspaces. */
@@ -110,11 +119,75 @@ function toJson(row: SnapshotRow): SnapshotJson {
 
 const R2_FILES = {
   svg: { name: 'image.svg', contentType: 'image/svg+xml' },
-  code: { name: 'code.pathogen', contentType: 'text/plain; charset=utf-8' },
+  manifest: { name: 'manifest.json', contentType: 'application/json' },
   card: { name: 'card.png', contentType: 'image/png' },
+  /** Before phase 2, a snapshot's code. Read and deleted; never written now. */
+  code: { name: 'code.pathogen', contentType: 'text/plain; charset=utf-8' },
 } as const;
 type R2FileKind = keyof typeof R2_FILES;
 const R2_FILE_KINDS = Object.keys(R2_FILES) as R2FileKind[];
+
+/** What manifest.json holds: the workspace's files when the snapshot was taken. */
+interface SnapshotManifest extends WorkspaceManifest {
+  contentHash: string;
+}
+
+/** A snapshot whose saved code can't be read: its manifest is damaged, or a file it names is gone. */
+class SnapshotUnreadable extends Error {}
+
+function isStringArray(value: unknown): value is string[] {
+  return Array.isArray(value) && value.every((v) => typeof v === 'string');
+}
+
+/**
+ * A snapshot's code: its manifest (the files are the workspace's blobs), or
+ * for one saved before phase 2, its code.pathogen read as just main.pathogen.
+ * Null when neither is there; SnapshotUnreadable when the manifest is damaged.
+ */
+async function readSnapshotFiles(env: Env, workspaceId: string, snapshotId: string): Promise<StoredFiles | null> {
+  const manifestObject = await env.THUMBNAILS.get(r2Key(workspaceId, snapshotId, 'manifest'));
+  if (manifestObject) {
+    let saved: unknown;
+    try {
+      saved = JSON.parse(await new Response(manifestObject.body).text());
+    } catch {
+      throw new SnapshotUnreadable(`The saved files of snapshot ${snapshotId} are damaged (not JSON).`);
+    }
+    const ok =
+      isPlainObject(saved) &&
+      isPlainObject(saved.files) &&
+      isStringArray(saved.folders) &&
+      isStringArray(saved.entryPoints) &&
+      typeof saved.contentHash === 'string';
+    if (!ok) throw new SnapshotUnreadable(`The saved files of snapshot ${snapshotId} are damaged (not a manifest).`);
+    const manifest = saved as unknown as SnapshotManifest;
+    return {
+      manifest: { files: manifest.files, folders: manifest.folders, entryPoints: manifest.entryPoints },
+      hash: manifest.contentHash,
+      legacyText: null,
+    };
+  }
+  const codeObject = await env.THUMBNAILS.get(r2Key(workspaceId, snapshotId, 'code'));
+  if (!codeObject) return null;
+  return readStoredFiles({ code: await new Response(codeObject.body).text() }, undefined);
+}
+
+/**
+ * Run a read of a snapshot's code. A damaged manifest or a missing file
+ * comes back as a response that says so (500), not a bare server error.
+ */
+async function guardedRead<T>(snapshotId: string, read: () => Promise<T>): Promise<T | Response> {
+  try {
+    return await read();
+  } catch (err) {
+    const message = (err as Error).message;
+    if (err instanceof SnapshotUnreadable) return errorResponse(message, 500);
+    if (message.includes('is missing from storage')) {
+      return errorResponse(`A file snapshot ${snapshotId} names is missing from storage. ${message}`, 500);
+    }
+    throw err;
+  }
+}
 
 function workspacePrefix(workspaceId: string): string {
   return `snapshots/${workspaceId}/`;
@@ -302,7 +375,12 @@ function quotaReached(): Response {
 }
 
 export const snapshotHandlers = {
-  // POST /workspace/:id/snapshots — FormData { svg, code, card, meta(JSON) }.
+  // POST /workspace/:id/snapshots — FormData { svg, card, meta(JSON), and the
+  // code as either `code` (one program's text: today's playground) or
+  // `files` (JSON, as a save sends it: { files, folders?, entryPoints? },
+  // each file as { text } or, for bytes the workspace already stores,
+  // { sha256 }). Either way at most 1 MB of text is uploaded; files sent by
+  // hash cost nothing.
   async create(request: Request, env: Env, workspaceId: string): Promise<Response> {
     if (request.headers.get(SNAPSHOT_UPLOAD_HEADER) !== '1') return missingUploadHeader();
     const userId = await sessionUserId(request, env);
@@ -334,8 +412,12 @@ export const snapshotHandlers = {
 
     const svg = asFile(form.get('svg'));
     const code = asFile(form.get('code'));
+    const filesField = form.get('files');
     const card = asFile(form.get('card'));
-    if (!svg || !code || !card) return errorResponse('Missing svg, code or card', 400);
+    if (!svg || !card || (!code && filesField === null)) return errorResponse('Missing svg, code or card', 400);
+    if (code && filesField !== null) return errorResponse('Send the code as `code` or as `files`, not both', 400);
+    const filesText =
+      filesField === null ? null : typeof filesField === 'string' ? filesField : await filesField.text();
 
     if (svg.size > SNAPSHOT_LIMITS.svgBytes) {
       return tooLarge(
@@ -345,13 +427,34 @@ export const snapshotHandlers = {
         SNAPSHOT_LIMITS.svgBytes,
       );
     }
-    if (code.size > SNAPSHOT_LIMITS.codeBytes) {
+    const uploadedCodeBytes = code ? code.size : new TextEncoder().encode(filesText!).byteLength;
+    if (uploadedCodeBytes > SNAPSHOT_LIMITS.codeBytes) {
       return tooLarge(
         'snapshot-code-too-large',
-        `This program is ${formatMb(code.size)}. Snapshots can hold up to ${formatMb(SNAPSHOT_LIMITS.codeBytes)} of code.`,
-        code.size,
+        `This program is ${formatMb(uploadedCodeBytes)}. Snapshots can hold up to ${formatMb(SNAPSHOT_LIMITS.codeBytes)} of code.`,
+        uploadedCodeBytes,
         SNAPSHOT_LIMITS.codeBytes,
       );
+    }
+    let filesBody: Record<string, unknown> | null = null;
+    if (filesText !== null) {
+      let parsed: unknown;
+      try {
+        parsed = JSON.parse(filesText);
+      } catch {
+        return errorResponse('files is not valid JSON', 400);
+      }
+      if (!isPlainObject(parsed) || parsed.files === undefined) {
+        return errorResponse('files must be a JSON object with a `files` field', 400);
+      }
+      // A snapshot stands alone: what it doesn't say defaults the way a new
+      // workspace's would, never to what the workspace holds now.
+      filesBody = {
+        files: parsed.files,
+        folders: parsed.folders ?? [],
+        entryPoints:
+          parsed.entryPoints ?? (isPlainObject(parsed.files) && MAIN_FILE in parsed.files ? [MAIN_FILE] : []),
+      };
     }
     if (card.size > SNAPSHOT_LIMITS.cardBytes) return errorResponse('Card image is too large', 413);
     if (!looksLikeSvg(await head(svg))) return errorResponse('svg is not an SVG document', 400);
@@ -393,14 +496,37 @@ export const snapshotHandlers = {
     }
     if ((used?.c ?? 0) >= SNAPSHOT_LIMITS.perUser) return quotaReached();
 
+    // The code becomes the workspace's blobs (new text is written; files
+    // sent by hash must already be stored) and a manifest naming them. It
+    // is checked like a save, and refused before anything is written. A
+    // workspace's text is never this snapshot's alone, so undoing a failed
+    // save below leaves those blobs; the sweep script removes them if
+    // nothing names them.
+    const change = await filesFromBody(
+      env,
+      workspaceId,
+      filesBody ?? { code: await code!.text() },
+      // `code` stands alone, whatever the workspace holds now; `files` may
+      // name the workspace's stored files by hash.
+      filesBody ? await storedFilesOf(workspace) : null,
+    );
+    if (!change.ok) return errorResponse(change.message, change.status ?? 400);
+    const frozen = change.value!;
+    const manifestJson: SnapshotManifest = { ...frozen.manifest, contentHash: frozen.hash };
+    const codeBytes = Object.values(frozen.manifest.files).reduce((sum, f) => sum + f.size, 0);
+
     // Files first, row second: a failed insert leaves files we can delete,
     // whereas a row without files would list a broken snapshot.
     const id = generateNanoId();
-    const files: Record<R2FileKind, File> = { svg, code, card };
+    const uploads: [R2FileKind, File | string][] = [
+      // The File itself: R2 reads it without another in-memory copy.
+      ['svg', svg],
+      ['manifest', JSON.stringify(manifestJson)],
+      ['card', card],
+    ];
     await Promise.all(
-      R2_FILE_KINDS.map((kind) =>
-        // The File itself: R2 reads it without another in-memory copy.
-        env.THUMBNAILS.put(r2Key(workspaceId, id, kind), files[kind], {
+      uploads.map(([kind, body]) =>
+        env.THUMBNAILS.put(r2Key(workspaceId, id, kind), body, {
           httpMetadata: { contentType: R2_FILES[kind].contentType },
         }),
       ),
@@ -435,7 +561,7 @@ export const snapshotHandlers = {
             parseFiniteOrNull(meta.height),
             background,
             svg.size,
-            code.size,
+            codeBytes,
             null,
             createdAt,
             userId,
@@ -502,28 +628,58 @@ export const snapshotHandlers = {
     return jsonResponse(toJson(found.row));
   },
 
-  // GET /snapshot/:sid/(svg|code|card) — the stored files.
+  // GET /snapshot/:sid/(svg|code|card) — the stored files. `code` is the
+  // text of a snapshot that is just main.pathogen (today's playground reads
+  // it); one with several files answers 409 and is read through /files.
   async getFile(request: Request, env: Env, snapshotId: string, kind: string): Promise<Response> {
-    if (!(kind in R2_FILES)) return errorResponse('Not found', 404);
+    if (kind !== 'svg' && kind !== 'code' && kind !== 'card') return errorResponse('Not found', 404);
     const found = await readOwnedSnapshot(request, env, snapshotId);
     if ('error' in found) return found.error;
-    const fileKind = kind as R2FileKind;
-    const object = await env.THUMBNAILS.get(r2Key(found.row.workspace_id, snapshotId, fileKind));
-    if (!object) return errorResponse('Snapshot file not found', 404);
+    const workspaceId = found.row.workspace_id;
 
     const headers: Record<string, string> = {
-      'Content-Type': R2_FILES[fileKind].contentType,
+      'Content-Type': R2_FILES[kind].contentType,
       // Owner-only content: never cache in shared caches. Files never change
       // after capture, so the owner's browser may keep them.
       'Cache-Control': 'private, max-age=86400',
       'X-Content-Type-Options': 'nosniff',
     };
-    if (fileKind === 'svg') {
+    if (kind === 'code') {
+      return guardedRead(snapshotId, async () => {
+        const files = await readSnapshotFiles(env, workspaceId, snapshotId);
+        if (!files) return errorResponse('Snapshot file not found', 404);
+        if (!isJustMain(files.manifest)) {
+          return errorResponse('This snapshot holds several files. Reload the page to see them.', 409);
+        }
+        if (files.legacyText !== null) return new Response(files.legacyText, { headers });
+        const { sha256 } = files.manifest.files[MAIN_FILE];
+        const text = (await readTexts(env, workspaceId, [sha256])).get(sha256) ?? '';
+        return new Response(text, { headers });
+      });
+    }
+
+    const object = await env.THUMBNAILS.get(r2Key(workspaceId, snapshotId, kind));
+    if (!object) return errorResponse('Snapshot file not found', 404);
+    if (kind === 'svg') {
       // User-derived SVG served from the API origin. The server does not
       // sanitize it, so block script execution if it's ever opened directly.
       headers['Content-Security-Policy'] = "script-src 'none'; sandbox";
     }
     return new Response(object.body, { headers });
+  },
+
+  // GET /snapshot/:sid/files — the snapshot's code as a load returns a
+  // workspace's: every file with its text, folders, entryPoints and the hash
+  // (and `code` for one that is just main.pathogen). One R2 read per
+  // distinct .pathogen file.
+  async getFiles(request: Request, env: Env, snapshotId: string): Promise<Response> {
+    const found = await readOwnedSnapshot(request, env, snapshotId);
+    if ('error' in found) return found.error;
+    return guardedRead(snapshotId, async () => {
+      const files = await readSnapshotFiles(env, found.row.workspace_id, snapshotId);
+      if (!files) return errorResponse('Snapshot file not found', 404);
+      return jsonResponse(await filesWithText(env, found.row.workspace_id, files));
+    });
   },
 
   // PUT /snapshot/:sid — { name?, note? }.
@@ -570,6 +726,8 @@ export const snapshotHandlers = {
   },
 
   // POST /snapshot/:sid/workspace — new workspace from the snapshot's code.
+  // Its files are copied to the new workspace's prefix, as a workspace copy
+  // does (two R2 calls a file, at most COPY_MAX_FILES).
   async startWorkspace(request: Request, env: Env, snapshotId: string): Promise<Response> {
     if (request.headers.get(SNAPSHOT_UPLOAD_HEADER) !== '1') return missingUploadHeader();
     const found = await readOwnedSnapshot(request, env, snapshotId);
@@ -577,14 +735,18 @@ export const snapshotHandlers = {
     const { row } = found;
     const source = await readWorkspace(env, row.workspace_id);
     if (!source) return errorResponse('Workspace not found', 404);
-    const object = await env.THUMBNAILS.get(r2Key(row.workspace_id, row.id, 'code'));
-    if (!object) return errorResponse('Snapshot code not found', 404);
-    const code = await new Response(object.body).text();
+    const files = await guardedRead(snapshotId, () => readSnapshotFiles(env, row.workspace_id, row.id));
+    if (files instanceof Response) return files;
+    if (!files) return errorResponse('Snapshot code not found', 404);
+    const id = generateNanoId();
+    const copied = await guardedRead(snapshotId, () => copyStoredFiles(env, row.workspace_id, id, files));
+    if (copied instanceof Response) return copied;
+    if (!copied.ok) return errorResponse(copied.message, 413);
 
     // "<workspace> — <snapshot name>", unless the snapshot name already
     // starts with the workspace name (the default "<workspace> #n").
     const name = source.name && !row.name.startsWith(source.name) ? `${source.name} — ${row.name}` : row.name;
-    const id = generateNanoId();
+    const stored: StoredFiles = { ...files, legacyText: null };
     const now = new Date().toISOString();
     const workspace: Workspace = {
       id,
@@ -592,23 +754,26 @@ export const snapshotHandlers = {
       userId: row.user_id,
       name,
       description: '',
-      code,
       isPublic: false,
       preferences: source.preferences ?? {},
       createdAt: now,
       updatedAt: now,
-      contentHash: await hashContent(code),
+      contentHash: stored.hash,
       rev: 0,
       thumbnailAt: null,
       manualThumbnailAt: null,
       autoThumbnailAt: null,
     };
+    setFiles(workspace, stored);
     await env.WORKSPACES.put(`workspace:${id}`, JSON.stringify(workspace));
     const idsJson = await env.WORKSPACES.get(`user:${row.user_id}:workspaces`);
     const ids: string[] = idsJson ? JSON.parse(idsJson) : [];
     ids.unshift(id);
     await env.WORKSPACES.put(`user:${row.user_id}:workspaces`, JSON.stringify(ids));
-    return jsonResponse({ ...workspace, publicationState: 'unpublished' }, 201);
+    return jsonResponse(
+      { ...workspace, ...(await filesWithText(env, id, stored, copied.value)), publicationState: 'unpublished' },
+      201,
+    );
   },
 };
 
@@ -625,6 +790,9 @@ export async function routeSnapshotRequest(request: Request, env: Env, apiPath: 
 
   const fileMatch = apiPath.match(/^\/snapshot\/([^/]+)\/(svg|code|card)$/);
   if (fileMatch && method === 'GET') return snapshotHandlers.getFile(request, env, fileMatch[1], fileMatch[2]);
+
+  const filesMatch = apiPath.match(/^\/snapshot\/([^/]+)\/files$/);
+  if (filesMatch && method === 'GET') return snapshotHandlers.getFiles(request, env, filesMatch[1]);
 
   const startMatch = apiPath.match(/^\/snapshot\/([^/]+)\/workspace$/);
   if (startMatch && method === 'POST') return snapshotHandlers.startWorkspace(request, env, startMatch[1]);

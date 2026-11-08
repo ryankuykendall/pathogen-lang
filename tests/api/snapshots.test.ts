@@ -22,6 +22,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 
 import { handleApiRequest } from '../../website/api/router';
 import { SNAPSHOT_LIMITS } from '../../website/api/snapshots';
+import { contentHashOf, entryForText } from '../../website/api/workspace-files';
 import type {
   D1Database,
   D1PreparedStatement,
@@ -316,9 +317,32 @@ describe.skipIf(!sqlite)('snapshots API', () => {
         codeBytes: new TextEncoder().encode(CODE).byteLength,
       });
       const prefix = `snapshots/${ws}/${body.snapshot.id}/`;
-      expect(ctx.r2.keys(prefix)).toEqual([`${prefix}card.png`, `${prefix}code.pathogen`, `${prefix}image.svg`]);
+      expect(ctx.r2.keys(prefix)).toEqual([`${prefix}card.png`, `${prefix}image.svg`, `${prefix}manifest.json`]);
       expect(ctx.r2.text(`${prefix}image.svg`)).toBe(SVG);
-      expect(ctx.r2.text(`${prefix}code.pathogen`)).toBe(CODE);
+      // The code is a manifest naming the workspace's blob, not a copy of its text.
+      const main = await entryForText(CODE);
+      const manifest = { files: { 'main.pathogen': main }, folders: [], entryPoints: ['main.pathogen'] };
+      expect(JSON.parse(ctx.r2.text(`${prefix}manifest.json`)!)).toEqual({
+        ...manifest,
+        contentHash: await contentHashOf(manifest),
+      });
+      expect(ctx.r2.text(`files/${ws}/${main.sha256}`)).toBe(CODE);
+    });
+
+    it('keeps the code that drew the image, not what the workspace holds now', async () => {
+      const drawn = 'define ViewBox(0, 0, 400, 400);\nrect(0, 0, 40, 40);\n';
+      const { snapshot } = (await (
+        await postSnapshot(ctx, alice, ws, snapshotForm({ code: drawn }))
+      ).json()) as SnapshotBody;
+      // The workspace saves different code afterwards; the snapshot's blob stays.
+      const save = await call(ctx, 'PUT', `/workspace/${ws}`, {
+        cookie: alice,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code: 'circle(1, 1, 1);' }),
+      });
+      expect(save.status).toBe(200);
+      const code = await call(ctx, 'GET', `/snapshot/${snapshot.id}/code`, { cookie: alice });
+      expect(await code.text()).toBe(drawn);
     });
 
     it('keeps a supplied name and note, and numbers the next snapshot #2', async () => {
@@ -415,6 +439,8 @@ describe.skipIf(!sqlite)('snapshots API', () => {
       const res = await postSnapshot(ctx, alice, ws);
       expect(res.status).toBe(409);
       expect(await res.json()).toMatchObject({ code: 'snapshot-quota-reached', limit: 500 });
+      // Refused before anything is written: no manifest, image or card.
+      expect(ctx.r2.keys('snapshots/')).toEqual([]);
 
       ctx.d1.db.prepare("DELETE FROM snapshots WHERE id = 'seed1'").run();
       expect((await postSnapshot(ctx, alice, ws)).status).toBe(201);
@@ -556,6 +582,265 @@ describe.skipIf(!sqlite)('snapshots API', () => {
     it('does not repeat the workspace name when the snapshot kept its default name', async () => {
       const { snapshot } = (await (await postSnapshot(ctx, alice, ws)).json()) as SnapshotBody;
       expect((await start(snapshot.id)).name).toBe('Scatter Rings #1');
+    });
+
+    it("copies the snapshot's files to the new workspace's own prefix", async () => {
+      const { snapshot } = (await (await postSnapshot(ctx, alice, ws)).json()) as SnapshotBody;
+      const created = await start(snapshot.id);
+      const { sha256 } = await entryForText(CODE);
+      expect(ctx.r2.text(`files/${created.id}/${sha256}`)).toBe(CODE);
+      const record = JSON.parse((await ctx.kv.get(`workspace:${created.id}`))!) as Workspace;
+      expect(record).not.toHaveProperty('code');
+      expect(record.files).toEqual({ 'main.pathogen': await entryForText(CODE) });
+    });
+  });
+
+  describe('snapshots of a workspace with several files', () => {
+    const GEARS = 'module;\nexport fn gear(r) {\n  circle(0, 0, r);\n}\n';
+    const MAIN = 'import { gear } from "./parts/gears.pathogen";\ngear(4);\n';
+
+    function filesForm(files: unknown): FormData {
+      const form = snapshotForm();
+      form.delete('code');
+      form.append('files', JSON.stringify(files));
+      return form;
+    }
+
+    it('takes `files` as a save sends them, naming stored files by hash, and reads back through /files', async () => {
+      // The workspace already stores gears.pathogen; main.pathogen is unsaved text.
+      const saved = await call(ctx, 'PUT', `/workspace/${ws}`, {
+        cookie: alice,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ files: { 'main.pathogen': { text: CODE }, 'parts/gears.pathogen': { text: GEARS } } }),
+      });
+      expect(saved.status).toBe(200);
+      const gears = await entryForText(GEARS);
+      const res = await postSnapshot(
+        ctx,
+        alice,
+        ws,
+        filesForm({ files: { 'main.pathogen': { text: MAIN }, 'parts/gears.pathogen': { sha256: gears.sha256 } } }),
+      );
+      expect(res.status).toBe(201);
+      const { snapshot } = (await res.json()) as SnapshotBody;
+      expect(snapshot.codeBytes).toBe(new TextEncoder().encode(MAIN).byteLength + gears.size);
+
+      const files = (await (await call(ctx, 'GET', `/snapshot/${snapshot.id}/files`, { cookie: alice })).json()) as {
+        files: Record<string, { text: string }>;
+        entryPoints: string[];
+      };
+      expect([files.files['main.pathogen'].text, files.files['parts/gears.pathogen'].text]).toEqual([MAIN, GEARS]);
+      expect(files.entryPoints).toEqual(['main.pathogen']);
+
+      // Today's playground reads `code`, which can't say several files.
+      const code = await call(ctx, 'GET', `/snapshot/${snapshot.id}/code`, { cookie: alice });
+      expect([code.status, ((await code.json()) as { error: string }).error]).toEqual([
+        409,
+        'This snapshot holds several files. Reload the page to see them.',
+      ]);
+
+      // Starting a workspace from it copies both files.
+      const started = await call(ctx, 'POST', `/snapshot/${snapshot.id}/workspace`, {
+        cookie: alice,
+        headers: { 'X-Pathogen-Snapshot': '1' },
+      });
+      const created = (await started.json()) as { id: string; files: Record<string, { text: string }> };
+      expect(created.files['parts/gears.pathogen'].text).toBe(GEARS);
+      expect(ctx.r2.text(`files/${created.id}/${gears.sha256}`)).toBe(GEARS);
+    });
+
+    const errorOf = async (res: Response): Promise<[number, string]> => [
+      res.status,
+      ((await res.json()) as { error: string }).error,
+    ];
+    const nothingStored = (): void => {
+      expect(ctx.r2.keys('snapshots/')).toEqual([]);
+      expect((ctx.d1.db.prepare('SELECT COUNT(*) AS c FROM snapshots').get() as { c: number }).c).toBe(0);
+    };
+
+    it('refuses a hash the workspace never stored, and a name the rules forbid, writing nothing', async () => {
+      const unknownSha = 'e'.repeat(64);
+      const unknown = await postSnapshot(
+        ctx,
+        alice,
+        ws,
+        filesForm({ files: { 'main.pathogen': { sha256: unknownSha } } }),
+      );
+      expect(await errorOf(unknown)).toEqual([
+        400,
+        `"main.pathogen" names a file this workspace doesn't have (sha256 ${unknownSha}). Send its text instead.`,
+      ]);
+      const badName = await postSnapshot(ctx, alice, ws, filesForm({ files: { 'my main.pathogen': { text: MAIN } } }));
+      expect(await errorOf(badName)).toEqual([
+        400,
+        '"my main.pathogen" can use only letters a–z and A–Z, digits, -, _ and ., and must start with a letter or a digit.',
+      ]);
+      nothingStored();
+    });
+
+    it("can't name another workspace's file by its hash", async () => {
+      const other = await createWorkspace(ctx, alice, 'Tide Lines');
+      const secret = 'define ViewBox(0, 0, 1, 1);\n// only in the other workspace\n';
+      await call(ctx, 'PUT', `/workspace/${other}`, {
+        cookie: alice,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code: secret }),
+      });
+      const { sha256 } = await entryForText(secret);
+      expect(ctx.r2.text(`files/${other}/${sha256}`)).toBe(secret);
+      const res = await postSnapshot(ctx, alice, ws, filesForm({ files: { 'main.pathogen': { sha256 } } }));
+      expect(await errorOf(res)).toEqual([
+        400,
+        `"main.pathogen" names a file this workspace doesn't have (sha256 ${sha256}). Send its text instead.`,
+      ]);
+      nothingStored();
+    });
+
+    it('refuses both `code` and `files`, `files` that is not a JSON object with files, and over 1 MB of text', async () => {
+      const both = snapshotForm();
+      both.append('files', JSON.stringify({ files: {} }));
+      expect(await errorOf(await postSnapshot(ctx, alice, ws, both))).toEqual([
+        400,
+        'Send the code as `code` or as `files`, not both',
+      ]);
+      expect(await errorOf(await postSnapshot(ctx, alice, ws, filesForm('not an object')))).toEqual([
+        400,
+        'files must be a JSON object with a `files` field',
+      ]);
+      const notJson = snapshotForm();
+      notJson.delete('code');
+      notJson.append('files', '{');
+      expect(await errorOf(await postSnapshot(ctx, alice, ws, notJson))).toEqual([400, 'files is not valid JSON']);
+      const big = await postSnapshot(
+        ctx,
+        alice,
+        ws,
+        filesForm({ files: { 'main.pathogen': { text: 'x'.repeat(SNAPSHOT_LIMITS.codeBytes) } } }),
+      );
+      expect(big.status).toBe(413);
+      expect(await big.json()).toMatchObject({ code: 'snapshot-code-too-large' });
+      nothingStored();
+    });
+
+    it("defaults what it leaves out as a new workspace would, not to the workspace's own entry points", async () => {
+      // The workspace's main is app.pathogen; the snapshot sends main.pathogen and no entryPoints.
+      await call(ctx, 'PUT', `/workspace/${ws}`, {
+        cookie: alice,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ files: { 'app.pathogen': { text: CODE } }, entryPoints: ['app.pathogen'] }),
+      });
+      const res = await postSnapshot(ctx, alice, ws, filesForm({ files: { 'main.pathogen': { text: MAIN } } }));
+      expect(res.status).toBe(201);
+      const { snapshot } = (await res.json()) as SnapshotBody;
+      const manifest = JSON.parse(ctx.r2.text(`snapshots/${ws}/${snapshot.id}/manifest.json`)!) as {
+        entryPoints: string[];
+        folders: string[];
+      };
+      expect([manifest.entryPoints, manifest.folders]).toEqual([['main.pathogen'], []]);
+    });
+
+    it('/files is owner-only, like every snapshot read', async () => {
+      const { snapshot } = (await (await postSnapshot(ctx, alice, ws)).json()) as SnapshotBody;
+      const bob = signIn(ctx, 'bob');
+      expect((await call(ctx, 'GET', `/snapshot/${snapshot.id}/files`, { cookie: bob })).status).toBe(404);
+      expect((await call(ctx, 'GET', `/snapshot/${snapshot.id}/files`)).status).toBe(401);
+    });
+
+    it('refuses to start a workspace from a snapshot with more files than one copy can take', async () => {
+      const many = Object.fromEntries(Array.from({ length: 481 }, (_, i) => [`f${i}.pathogen`, { text: `// ${i}` }]));
+      await call(ctx, 'PUT', `/workspace/${ws}`, {
+        cookie: alice,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ files: many, entryPoints: ['f0.pathogen'] }),
+      });
+      const byHash = Object.fromEntries(
+        await Promise.all(
+          Object.entries(many).map(async ([path, { text }]) => [path, { sha256: (await entryForText(text)).sha256 }]),
+        ),
+      );
+      const res = await postSnapshot(ctx, alice, ws, filesForm({ files: byHash, entryPoints: ['f0.pathogen'] }));
+      expect(res.status).toBe(201);
+      const { snapshot } = (await res.json()) as SnapshotBody;
+      const started = await call(ctx, 'POST', `/snapshot/${snapshot.id}/workspace`, {
+        cookie: alice,
+        headers: { 'X-Pathogen-Snapshot': '1' },
+      });
+      expect(await errorOf(started)).toEqual([
+        413,
+        'This workspace has 481 different files; a copy can take at most 480 at once.',
+      ]);
+      expect(JSON.parse((await ctx.kv.get('user:alice:workspaces'))!)).toEqual([ws]);
+    });
+  });
+
+  describe("a snapshot whose saved code can't be read", () => {
+    const errorOf = async (res: Response): Promise<[number, string]> => [
+      res.status,
+      ((await res.json()) as { error: string }).error,
+    ];
+    const start = async (id: string): Promise<Response> =>
+      call(ctx, 'POST', `/snapshot/${id}/workspace`, { cookie: alice, headers: { 'X-Pathogen-Snapshot': '1' } });
+
+    it('says its manifest is damaged, for every read', async () => {
+      for (const damaged of ['not json', '{}']) {
+        const { snapshot } = (await (await postSnapshot(ctx, alice, ws)).json()) as SnapshotBody;
+        await ctx.r2.put(`snapshots/${ws}/${snapshot.id}/manifest.json`, damaged);
+        const message = `The saved files of snapshot ${snapshot.id} are damaged (${damaged === '{}' ? 'not a manifest' : 'not JSON'}).`;
+        expect(await errorOf(await call(ctx, 'GET', `/snapshot/${snapshot.id}/code`, { cookie: alice }))).toEqual([
+          500,
+          message,
+        ]);
+        expect(await errorOf(await call(ctx, 'GET', `/snapshot/${snapshot.id}/files`, { cookie: alice }))).toEqual([
+          500,
+          message,
+        ]);
+        expect(await errorOf(await start(snapshot.id))).toEqual([500, message]);
+      }
+    });
+
+    it('says a file it names is missing from storage', async () => {
+      const { snapshot } = (await (await postSnapshot(ctx, alice, ws)).json()) as SnapshotBody;
+      const { sha256 } = await entryForText(CODE);
+      await ctx.r2.delete(`files/${ws}/${sha256}`);
+      const [status, error] = await errorOf(await call(ctx, 'GET', `/snapshot/${snapshot.id}/code`, { cookie: alice }));
+      expect(status).toBe(500);
+      expect(error).toBe(
+        `A file snapshot ${snapshot.id} names is missing from storage. File ${sha256} of workspace ${ws} is missing from storage`,
+      );
+      expect((await start(snapshot.id)).status).toBe(500);
+    });
+  });
+
+  describe('snapshots saved before phase 2 (a code.pathogen, no manifest)', () => {
+    async function seedLegacy(code: string): Promise<string> {
+      const { snapshot } = (await (await postSnapshot(ctx, alice, ws)).json()) as SnapshotBody;
+      const prefix = `snapshots/${ws}/${snapshot.id}/`;
+      await ctx.r2.delete(`${prefix}manifest.json`);
+      await ctx.r2.put(`${prefix}code.pathogen`, code);
+      return snapshot.id;
+    }
+
+    it('serve their code, and start a workspace that holds it', async () => {
+      const old = 'define ViewBox(0, 0, 400, 400);\n// before phase 2\n';
+      const id = await seedLegacy(old);
+      expect(await (await call(ctx, 'GET', `/snapshot/${id}/code`, { cookie: alice })).text()).toBe(old);
+      const files = (await (await call(ctx, 'GET', `/snapshot/${id}/files`, { cookie: alice })).json()) as {
+        code: string;
+      };
+      expect(files.code).toBe(old);
+      const started = await call(ctx, 'POST', `/snapshot/${id}/workspace`, {
+        cookie: alice,
+        headers: { 'X-Pathogen-Snapshot': '1' },
+      });
+      const created = (await started.json()) as { id: string; code: string };
+      expect(created.code).toBe(old);
+      expect(ctx.r2.text(`files/${created.id}/${(await entryForText(old)).sha256}`)).toBe(old);
+    });
+
+    it('delete their code.pathogen with them', async () => {
+      const id = await seedLegacy('// old');
+      await call(ctx, 'DELETE', `/snapshot/${id}`, { cookie: alice });
+      expect(ctx.r2.keys('snapshots/')).toEqual([]);
     });
   });
   describe('review hardening', () => {
