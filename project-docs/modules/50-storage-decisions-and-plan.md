@@ -54,3 +54,27 @@ Each part comes with its tests in `tests/api/`. The tests that pin today's recor
 8. **The sweep script** for unreferenced blobs: a dry run by default.
 
 The playground's side (the store, autosave, the editor) is 2c and 2d. The review screens, publishing and snapshot UI are 2e.
+
+## Found while building (2026-11-08)
+
+- **Review-queue entries keep a frozen manifest,** not nothing. A queue entry freezes what was submitted ("admins approve exactly what the user submitted, even if the live workspace is edited in the interim", `types.ts`). With `code` gone, it holds the submitted `files`, `folders` and `entryPoints`: about 100 bytes a file, still far from KV's 25 MiB cap. Approving copies that manifest into the approval. The sweep script counts queue entries as references too, so a pending submission's files are never deleted. This keeps the approved intent, a small queue; note 48 §6's "queue entries stop carrying code" stands.
+- **The per-request budget.** Cloudflare's limits page (read 2026-11-08):
+  - a Worker invocation may make at most 1,000 calls to KV and R2 together, on every plan;
+  - at most 6 at a time;
+  - all subrequests, 50 on Workers Free and 10,000 on Workers Paid.
+
+  What that means here:
+  - **Loading** a workspace at the 500-file limit is about 500 R2 reads plus a few KV reads: inside 1,000.
+  - **Saving** writes only the changed files. It never checks blobs the stored manifest already names, since saves never delete, so a save costs a handful of calls.
+  - **Copying** (duplicate, fork, restoring a snapshot) needs two calls per file. A workspace near 500 files would pass 1,000. That's a question for you (below).
+  - **On Workers Free,** the 50-subrequest cap would limit a load to about 40 files. Which plan the account is on decides whether the 500-file limit holds at all.
+
+## Questions from building
+
+1. **Which Workers plan** is the Cloudflare account on? On Free, loads cap out near 40 files; on Paid, the 1,000-call budget is what applies.
+2. **Copies of large workspaces.** Options:
+   - **(a)** lower the file limit to 400, so a copy stays inside one request (about 800 calls);
+   - **(b)** keep 500, and copy in several requests, with the playground asking for the next batch;
+   - **(c)** keep 500, and refuse to copy a workspace over about 450 files, with a message.
+
+   Recommended: (a). A workspace that size is unlikely to be hand-made, and one request keeps a copy all-or-nothing.
