@@ -120,7 +120,7 @@ An error in a file other than the program the preview shows names that file and 
 | | Limit |
 |---|---|
 | A `.pathogen` file | 1 MB |
-| Files in a workspace | 500 |
+| Files in a workspace | 20 |
 | Folders inside folders | 8 deep |
 | A whole workspace | 50 MB |
 

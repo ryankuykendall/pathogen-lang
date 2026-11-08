@@ -21,7 +21,7 @@
 | Deleting | Saves never delete blobs. Deleting a workspace deletes its prefix and its thumbnails. A sweep script, run by hand, removes blobs no manifest points to |
 | Hashes | One rule for every workspace, regenerated in the migration. The dry run checks that every approved, unedited workspace still matches its approval |
 | Names | Letters a–z and A–Z, digits, `-`, `_` and `.`, starting with a letter or digit; 100 characters a name, 255 a path; unique without case; `pathogen.json` reserved; no Windows reserved names |
-| Limits | `.pathogen` 1 MB a file; data files 5 MB; fonts 20 MB; 50 MB and 500 files a workspace; folders 8 deep. "A fine starting point" |
+| Limits | `.pathogen` 1 MB a file; data files 5 MB; fonts 20 MB; 50 MB and **20 files** a workspace (was 500; changed 2026-11-08, see "Your answers, second round"); folders 8 deep. "A fine starting point" |
 | Shipping | Committed locally, held until 2e is done, then shipped with the rest of phase 2 (note 48) |
 
 `docs/workspace-files.md` (not yet published) now states the names and limits.
@@ -160,7 +160,7 @@ Noted, not changed: the re-review check can only fail if records are paired wron
 3. **The dry run on production** (`--env prod --confirm --report tmp/step7/prod-dry-run.json`): a production read, so only with your go-ahead. Check that it reports 0 errors, an unchanged re-review answer, and the orphans.
 4. **The write**, with `--backup-dir`, after your go-ahead on the dry run's report, at a quiet time (a save landing during a record's re-read→put would be overwritten).
 5. **The dry run again**: everything "already". Then the export and the collision check, as a smoke test of the R2 read.
-6. **Later:** the sweep script (step 8), and removing the old-shape reader once nothing old remains.
+6. **Later:** the sweep (step 8, after 2e ships, as you decided), and removing the old-shape reader once nothing old remains.
 
 ## Step 8, the sweep: a proposal, not built (2026-11-08)
 
@@ -184,9 +184,22 @@ The sweep deletes data, and the simple design has a hole, so this is for you to 
 - **What remains:** a save could name a candidate by hash, or upload it again, in the moment between the sweep's re-read and its delete; R2 deletes aren't conditional. Then a load says the file is missing from storage, and the next save of that file's text writes it again. The window is milliseconds, and the tool is run by hand.
 - **Code it needs:** the R2 type gains list's `delimiter` and its `delimitedPrefixes`, and each object's `uploaded` (exact names checked against the binding's docs). The test bucket gains a clock.
 
+## Your answers, second round (2026-11-08), in your words
+
+1. **The Workers plan:** "I currently pay $5 per month. For the time being, let's cap a workspace to 20 files and see if we have users who bump up against this limit."
+   - $5 a month is Workers Paid, so the 1,000-call budget per request is what applies, not Free's 50 subrequests.
+   - **Done:** `LIMITS.files` is 20, and `docs/workspace-files.md` (not yet published) says so. At 20 files, a load is 20 R2 reads and a copy 40.
+   - The 480-file copy guard stays as a backstop, for if the limit is ever raised.
+   - The 50 MB workspace total can't be reached while workspaces hold only `.pathogen` files (20 at 1 MB). It comes into play with data files and fonts.
+2. **Copies of large workspaces:** "If we are capped at 20 files per workspace, this should not be an issue." Settled by the cap.
+3. **The style-opener follow-up run:** "Not sure what the style-opener is." Explained in the reply. Still open: see question 3 below.
+4. **The sweep:** "Let's wait until after 2e ships." It stays a proposal (step 8 above) until then.
+
+On step 5 you asked whether a snapshot still keeps the SVG exactly as rendered. It does: `image.svg` is stored byte for byte, as before, and the migration never touches it. Only the snapshot's source moved: from its own `code.pathogen` to a manifest naming the workspace's files, which saves never delete or change.
+
 ## Questions from building
 
-1. **Which Workers plan** is the Cloudflare account on? On Free, loads cap out near 40 files; on Paid, the 1,000-call budget is what applies.
+1. **Which Workers plan** is the Cloudflare account on? On Free, loads cap out near 40 files; on Paid, the 1,000-call budget is what applies. *Answered: Paid; a workspace is capped at 20 files.*
 2. **Copies of large workspaces.** Options:
    - **(a)** lower the file limit to 400, so a copy stays inside one request (about 800 calls);
    - **(b)** keep 500, and copy in several requests, with the playground asking for the next batch;
@@ -194,7 +207,7 @@ The sweep deletes data, and the simple design has a hole, so this is for you to 
 
    Recommended: (a). A workspace that size is unlikely to be hand-made, and one request keeps a copy all-or-nothing.
 
-   Since the step 3 review, a copy over 480 different files is refused with a message (option (c) at 480), so nothing fails silently whichever you choose. Under (a) that refusal can't happen.
-3. **The style-opener follow-up run** (see "At shipping", step 2): did it run after 2026-09-04, or is it settled without it?
+   Since the step 3 review, a copy over 480 different files is refused with a message (option (c) at 480), so nothing fails silently whichever you choose. Under (a) that refusal can't happen. *Answered: settled by the 20-file cap.*
+3. **The style-opener follow-up run** (see "At shipping", step 2): did it run after 2026-09-04, or is it settled without it? *Still open.* In September, style blocks changed from opening with `${` to `#{`, and `migrate-style-opener-kv.ts` rewrote stored programs on production on 2026-09-04. A second pass was planned two days later, to catch saves from browser tabs still running the old site. A read-only dry run on production would show whether any record still uses the old opener. That needs your go-ahead.
 4. **The production migration**: the dry run and the write each need your go-ahead, at shipping time (after 2e). Nothing has touched production.
-5. **The sweep** (step 8, above): build it now with the two-pass design, or after 2e ships?
+5. **The sweep** (step 8, above): build it now with the two-pass design, or after 2e ships? *Answered: after 2e ships.*

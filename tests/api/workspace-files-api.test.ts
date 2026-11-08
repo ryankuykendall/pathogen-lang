@@ -10,6 +10,7 @@ import { listRereviewQueue } from '../../website/api/moderation';
 import { handleApiRequest } from '../../website/api/router';
 import { hashContent } from '../../website/api/utils';
 import { contentHashOf, entryForText, readStoredFiles } from '../../website/api/workspace-files';
+import { COPY_MAX_FILES, copyStoredFiles } from '../../website/api/workspace-store';
 import { MemoryKV } from '../auth/helpers';
 
 import type { Env, KVNamespace } from '../../website/api/types';
@@ -143,15 +144,23 @@ describe('creating and loading a workspace with files', () => {
     expect((await call(env, 'GET', `/workspace/${id}`)).data.code).toBe('M 0 0');
   });
 
-  it('a load reads each .pathogen file once from R2: inside the 1,000-call budget at the 500-file limit', async () => {
+  it('a load reads each .pathogen file once from R2: 20 calls at the 20-file limit, and a 21st file is refused', async () => {
     const { env, r2 } = makeEnv();
-    const files = Object.fromEntries(Array.from({ length: 500 }, (_, i) => [`f${i}.pathogen`, { text: `// ${i}` }]));
-    const created = await call(env, 'POST', '/workspace', { name: 'Big', files, entryPoints: ['f0.pathogen'] });
+    const filesOf = (n: number) =>
+      Object.fromEntries(Array.from({ length: n }, (_, i) => [`f${i}.pathogen`, { text: `// ${i}` }]));
+    const body = (n: number) => ({ name: 'Big', files: filesOf(n), entryPoints: ['f0.pathogen'] });
+    const created = await call(env, 'POST', '/workspace', body(20));
     expect(created.status).toBe(201);
     r2.resetCalls();
     const loaded = await call(env, 'GET', `/workspace/${created.data.id as string}`);
     expect(loaded.status).toBe(200);
-    expect(r2.totalCalls()).toBe(500);
+    expect(r2.totalCalls()).toBe(20);
+
+    const tooMany = await call(env, 'POST', '/workspace', body(21));
+    expect([tooMany.status, tooMany.data.error]).toEqual([
+      400,
+      'A workspace can hold at most 20 files; this one has 21.',
+    ]);
   });
 
   it("refuses a name the rules don't allow, with the rule's message", async () => {
@@ -412,30 +421,29 @@ describe('deleting and copying', () => {
     expect(res.data.files).toEqual((await call(env, 'GET', `/workspace/${id}`)).data.files);
   });
 
-  it('a copy costs two R2 calls a file, the response included, and refuses more files than one request can copy', async () => {
+  it('a copy costs two R2 calls a file, the response included: 40 at the 20-file limit', async () => {
     const { env, r2 } = makeEnv();
-    const make = async (count: number): Promise<string> => {
-      const files = Object.fromEntries(
-        Array.from({ length: count }, (_, i) => [`f${i}.pathogen`, { text: `// ${i}` }]),
-      );
-      const res = await call(env, 'POST', '/workspace', { name: 'Big', files, entryPoints: ['f0.pathogen'] });
-      expect(res.status).toBe(201);
-      return res.data.id as string;
-    };
-    const fits = await make(480);
+    const files = Object.fromEntries(Array.from({ length: 20 }, (_, i) => [`f${i}.pathogen`, { text: `// ${i}` }]));
+    const res = await call(env, 'POST', '/workspace', { name: 'Big', files, entryPoints: ['f0.pathogen'] });
+    expect(res.status).toBe(201);
     r2.resetCalls();
-    const copied = await call(env, 'POST', `/workspace/${fits}/copy`, {});
+    const copied = await call(env, 'POST', `/workspace/${res.data.id as string}/copy`, {});
     expect(copied.status).toBe(201);
-    expect(r2.calls).toEqual({ get: 480, put: 480, head: 0, list: 0, delete: 0 });
-    expect(Object.keys(copied.data.files as object)).toHaveLength(480);
+    expect(r2.calls).toEqual({ get: 20, put: 20, head: 0, list: 0, delete: 0 });
+    expect(Object.keys(copied.data.files as object)).toHaveLength(20);
+  });
 
-    const tooMany = await make(481);
-    r2.resetCalls();
-    const refused = await call(env, 'POST', `/workspace/${tooMany}/copy`, {});
-    expect([refused.status, refused.data.error]).toEqual([
-      413,
-      'This workspace has 481 different files; a copy can take at most 480 at once.',
-    ]);
+  it('copyStoredFiles refuses, before any call, more files than one request can copy (a backstop if the limit is raised)', async () => {
+    const { env, r2 } = makeEnv();
+    const entries = await Promise.all(
+      Array.from({ length: COPY_MAX_FILES + 1 }, async (_, i) => [`f${i}.pathogen`, await entryForText(`// ${i}`)]),
+    );
+    const manifest = { files: Object.fromEntries(entries), folders: [], entryPoints: ['f0.pathogen'] };
+    const result = await copyStoredFiles(env, 'from', 'to', { manifest, hash: 'h', legacyText: null });
+    expect(result).toEqual({
+      ok: false,
+      message: `This workspace has ${COPY_MAX_FILES + 1} different files; a copy can take at most ${COPY_MAX_FILES} at once.`,
+    });
     expect(r2.totalCalls()).toBe(0);
   });
 

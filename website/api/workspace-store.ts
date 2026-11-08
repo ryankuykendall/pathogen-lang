@@ -130,8 +130,8 @@ export async function frozenSource(env: Env, record: FrozenRecord, texts: 'all' 
 /**
  * The most distinct files one copy takes: two R2 calls each (a read and a
  * write) plus a few KV calls must fit the 1,000 KV and R2 calls Cloudflare
- * allows one request. Note 50, "Questions from building", asks how larger
- * workspaces should copy.
+ * allows one request. With LIMITS.files at 20 no workspace comes near it;
+ * it's a backstop in case that limit is raised past it.
  */
 export const COPY_MAX_FILES = 480;
 

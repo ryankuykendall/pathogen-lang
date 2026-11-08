@@ -178,20 +178,20 @@ describe('checkManifest', () => {
     );
   });
 
-  it('at most 500 files', () => {
-    const files = Object.fromEntries(Array.from({ length: 501 }, (_, i) => [`f${i}.pathogen`, file()]));
-    expect(message({ files })).toBe('A workspace can hold at most 500 files; this one has 501.');
+  it('at most 20 files', () => {
+    const at = (n: number) => Object.fromEntries(Array.from({ length: n }, (_, i) => [`f${i}.pathogen`, file()]));
+    expect(message({ files: at(20) })).toBeNull();
+    expect(message({ files: at(21) })).toBe('A workspace can hold at most 20 files; this one has 21.');
   });
 
-  it('a .pathogen file is at most 1 MB, and the whole workspace at most 50 MB', () => {
+  it('a .pathogen file is at most 1 MB', () => {
     expect(message({ files: { 'a.pathogen': file(SHA_A, LIMITS.fileBytes.pathogen) } })).toBeNull();
     expect(message({ files: { 'a.pathogen': file(SHA_A, LIMITS.fileBytes.pathogen + 1) } })).toBe(
       '"a.pathogen" is larger than 1 MB, the most a file of its kind can be.',
     );
-    const files = Object.fromEntries(
-      Array.from({ length: 51 }, (_, i) => [`f${i}.pathogen`, file(SHA_A, 1024 * 1024)]),
-    );
-    expect(message({ files })).toBe('A workspace can hold at most 50 MB; this one holds 51 MB.');
+    // The 50 MB workspace total can't be reached while a workspace holds only
+    // .pathogen files (20 of at most 1 MB each); it comes into play with data
+    // files and fonts, after phase 2, and gets its test then.
   });
 });
 

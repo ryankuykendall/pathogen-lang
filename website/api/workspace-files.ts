@@ -29,7 +29,13 @@ const KIND_BY_EXTENSION: Record<string, FileKind> = {
 export const ALLOWED_KINDS: readonly FileKind[] = ['pathogen'];
 
 export const LIMITS = {
-  files: 500,
+  /**
+   * 20 to start (the user's call, 2026-11-08: "let's cap a workspace to 20
+   * files and see if we have users who bump up against this limit"). Note 50
+   * has the call budget for raising it: a load costs one R2 read a file and a
+   * copy two, inside 1,000 calls a request.
+   */
+  files: 20,
   /** Folders inside folders. */
   folderDepth: 8,
   nameLength: 100,

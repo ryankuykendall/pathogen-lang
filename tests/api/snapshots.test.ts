@@ -746,8 +746,8 @@ describe.skipIf(!sqlite)('snapshots API', () => {
       expect((await call(ctx, 'GET', `/snapshot/${snapshot.id}/files`)).status).toBe(401);
     });
 
-    it('refuses to start a workspace from a snapshot with more files than one copy can take', async () => {
-      const many = Object.fromEntries(Array.from({ length: 481 }, (_, i) => [`f${i}.pathogen`, { text: `// ${i}` }]));
+    it('a snapshot of a workspace at the 20-file limit, every file by hash, starts a workspace with all 20', async () => {
+      const many = Object.fromEntries(Array.from({ length: 20 }, (_, i) => [`f${i}.pathogen`, { text: `// ${i}` }]));
       await call(ctx, 'PUT', `/workspace/${ws}`, {
         cookie: alice,
         headers: { 'Content-Type': 'application/json' },
@@ -765,11 +765,10 @@ describe.skipIf(!sqlite)('snapshots API', () => {
         cookie: alice,
         headers: { 'X-Pathogen-Snapshot': '1' },
       });
-      expect(await errorOf(started)).toEqual([
-        413,
-        'This workspace has 481 different files; a copy can take at most 480 at once.',
-      ]);
-      expect(JSON.parse((await ctx.kv.get('user:alice:workspaces'))!)).toEqual([ws]);
+      expect(started.status).toBe(201);
+      const created = (await started.json()) as { files: Record<string, { text: string }> };
+      expect(Object.keys(created.files)).toHaveLength(20);
+      expect(created.files['f19.pathogen'].text).toBe('// 19');
     });
   });
 
