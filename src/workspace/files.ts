@@ -107,6 +107,15 @@ export function pathProblem(path: string, kind: 'file' | 'folder'): string | nul
   return null;
 }
 
+/**
+ * A workspace's pathogen.json, written from its entry points: the one way the
+ * file is written, so the playground shows and export (2g) writes the same
+ * bytes every time (docs/workspace-files.md "pathogen.json"). No programs is `{}`.
+ */
+export function projectFileText(entryPoints: readonly string[]): string {
+  return `${JSON.stringify(entryPoints.length > 0 ? { entryPoints } : {}, null, 2)}\n`;
+}
+
 /** The folders a file path sits in: "a/b/c.pathogen" → ["a", "a/b"]. */
 export function foldersOf(path: string): string[] {
   const segments = path.split('/');

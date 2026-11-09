@@ -110,6 +110,7 @@ export {
   MAIN_FILE as WORKSPACE_MAIN_FILE,
   nameProblem as workspaceNameProblem,
   pathProblem as workspacePathProblem,
+  projectFileText as workspaceProjectFileText,
 } from './workspace/files';
 export type { FileEntry as WorkspaceFileEntry, WorkspaceManifest } from './workspace/files';
 export {

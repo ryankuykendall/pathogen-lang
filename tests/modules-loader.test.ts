@@ -57,8 +57,8 @@ describe('planImports', () => {
     const source =
       '// a library\nimport { gear } from "./parts/gears.pathogen";\nimport * as kit from \'../kit.pathogen\';\nM 0 0';
     expect(planImports(source)).toEqual([
-      { written: './parts/gears.pathogen', line: 2, column: 22, from: 34, to: 58 },
-      { written: '../kit.pathogen', line: 3, column: 22, from: 81, to: 98 },
+      { written: './parts/gears.pathogen', line: 2, column: 22, from: 34, to: 58, statementFrom: 13 },
+      { written: '../kit.pathogen', line: 3, column: 22, from: 81, to: 98, statementFrom: 60 },
     ]);
   });
 

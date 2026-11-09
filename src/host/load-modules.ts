@@ -42,6 +42,12 @@ export interface PlannedImport {
   /** Document offsets of the path string, quotes included. */
   from: number;
   to: number;
+  /**
+   * Where the import statement starts (its `import`). The text from here to
+   * `from` is what it imports (`import { gear } from `), which tells two imports
+   * of one path apart.
+   */
+  statementFrom: number;
 }
 
 /**
@@ -64,6 +70,7 @@ export function planImports(source: string): PlannedImport[] {
       column: before[before.length - 1].length + 1,
       from: path.from,
       to: path.to,
+      statementFrom: node.from,
     });
   }
   return imports;

@@ -94,6 +94,27 @@ Each step: tests first; a storybook entry for each new component (the playground
 - Backlog: VS Code's rename hook (the second caller), and `@font` file paths once fonts can be added.
 - **Review** (no critical findings, no bug in the mapping). Fixed: a move path with a trailing slash, an empty, `.` or `..` part, or the top itself mapped to the wrong place silently, and is now refused; so are the same path moved twice and two files that would land on one path; `applyImportEdits` also checks the quotes around each edit and refuses overlapping edits. Added tests: a file and its import moved apart in one go, a `../../` result, an import that would climb above the top from the new place, edits given out of order. Left for step 2 as planned: `pathogen.json`'s entry for a moved program (`pathAfterMoves`), and the name rules for a new path.
 
+**Step 2, the workspace's edits** (2026-11-09). `playground/services/workspace-edits.ts`, pure: each plan reads a workspace passed in (in step 3, the open editors' live text) and returns a Change and its Undo, or why it can't be done.
+- Plans: `planNewFile` (program or library; `.pathogen` added; a slash makes folders), `planNewFolder`, `planRename` (the name only: a slash is refused with a pointer to Move to…, and the `.pathogen` isn't part of it), `planMove` (Move to… and dragging), `planDuplicate` (`keepBothName`: the number goes after the whole name, so a copy of `labels-2` is `labels-2-2` and a year is never read as a count), `planDelete` and `deleteSummary` (for the dialog), `planSetMain`, `entryPointsAfterEdit` (a program gaining or losing `module;`), `projectFileText`.
+- Import edits are kept as "the nth import written X becomes Y" and found again from the parse tree when applied. So Undo still lands after you've typed elsewhere in the file, and refuses (`StaleChangeError`, nothing changed) when the import itself was retyped. `importChangeOffsets` gives an editor each edit's place in the text it holds.
+- Every plan's result goes through the engine's `checkWorkspaceManifest`, so folders and the program list are the server's normal form and the autosave hash settles; names, letter case, depth and the 20 files are the server's own rules.
+- The first program a workspace gets is shown, from one place (`finish`).
+- `projectFileText(entryPoints)` is new in the engine (`src/workspace/files.ts`, `workspaceProjectFileText` in the bundle): the one writer of pathogen.json; what it writes reads back the same through the CLI's `parseProjectFile`.
+- Checked: `tests/playground-workspace-edits.test.ts` (52). Every plan that succeeds is also checked for the server's normal form and for an exact Undo. `tests/workspace-project-file-text.test.ts` (5).
+- **Review** (no critical findings; nothing writes into the wrong place under the documented flows). Fixed:
+  - Undo found an import by its path and its count among imports of that path. So an import of the same file typed above it made Undo revert yours and leave the original. Each import is now also matched on what it imports (`import { gear } from`), read from where the statement starts: `planImports` gives `statementFrom` now (engine). Tested with exactly that case.
+  - Deleting an empty folder said "and the 0 files in it".
+  - New program and New library checked the name's length without `.pathogen`; Rename already counted it. Both count it now.
+  - Dead code in `planDelete`.
+  - Added tests:
+    - several spellings of one import, a single-quoted one, and one still being typed;
+    - whole files after a rename;
+    - all-or-nothing, including a change that fails partway and a refused Undo;
+    - an empty folder deleted, a deep file deleted, folders moved in and out, a file moved into an empty folder;
+    - taken folder names, `a/b` folders, names over 100 characters, and more than 8 folders deep;
+    - Set as main on the main, a copy shown in a workspace with no programs, a 21st copy refused, and a plain delete message.
+  - Kept, with a comment: the file-limit message before the server's, which would count the 21st file ("this one has 21").
+
 **The v7 mockup round** (2026-11-09, commit `5c8f925`): note 53, `phase-2-mockups-v7/`. Five screens: no programs left, folders and moving, narrow screens, the mini-workspace, the ⋮ menu. It also draws what v6 left out (renaming a file, Move to…, dragging a file). Six questions await you; steps 4 and 9 wait for them.
 - *Answered 2026-11-09: all six agreed* (note 53, "Your answers"). What that adds to the steps:
   - step 2: each change can be undone (the toast's Undo); a rename takes a name only, no slash and no extension; Move to…; the first program in an empty workspace is shown;
