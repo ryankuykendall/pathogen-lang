@@ -213,9 +213,13 @@ export class LogEntry extends HTMLElement {
       partsHTML += `<button type="button" class="count" aria-expanded="false" aria-label="${label}" title="${label}">×${count}</button>`;
     }
 
-    // Add line prefix if present
+    // Add line prefix if present; an entry from a file the program imports
+    // names that file (docs/workspace-files.md "Errors in other files").
     if (logEntry.line !== null) {
-      partsHTML += `<span class="line">Line ${logEntry.line}:</span>`;
+      const at = logEntry.file ? `${this.escapeHtml(logEntry.file)} line` : 'Line';
+      partsHTML += `<span class="line">${at} ${logEntry.line}:</span>`;
+    } else if (logEntry.file) {
+      partsHTML += `<span class="line">${this.escapeHtml(logEntry.file)}:</span>`;
     }
 
     // Process each part

@@ -136,6 +136,14 @@ export const store = createStore({
   code: '',
   isModified: false,
 
+  // The workspace's files: see types/store.d.ts. Empty until a workspace
+  // loads; a page without one (a scratch link) is just its `code`.
+  workspaceFiles: {},
+  workspaceFolders: [] as string[],
+  workspaceEntryPoints: [] as string[],
+  openFile: 'main.pathogen',
+  shownProgram: null as string | null,
+
   // Compilation results
   pathData: '',
   logs: [],

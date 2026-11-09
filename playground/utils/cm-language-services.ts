@@ -21,6 +21,8 @@ import { makeSharedCompletionSource } from './cm-completion-bridge.js';
 import { hoverTooltipExtension } from './cm-hover-tooltip.js';
 import { errorHighlightExtension } from './cm-error-highlight.js';
 import { perfSpan } from './perf-marks.js';
+import { store } from '../state/store.js';
+import { languageServiceOptions } from '../services/workspace-modules.js';
 
 // ─── CodeMirror module shapes (dynamically imported from ESM CDN) ─────────────
 
@@ -190,7 +192,8 @@ function wireSignatureHelp(cm: CmModulesForLanguageServices): unknown[] {
     const { line, character } = offsetToPosition(source, head);
     const help = perfSpan('signature-help', () => {
       const doc = new StringTextDocumentCtor(source);
-      return getSignatureHelp(doc, { line, character });
+      // An imported fn shows its parameters too (services/workspace-modules.ts).
+      return getSignatureHelp(doc, { line, character }, languageServiceOptions());
     });
     if (!help || help.signatures.length === 0) return [];
 
@@ -451,7 +454,15 @@ function wireGoToDefinition(cm: CmModulesForLanguageServices): unknown {
       if (pos == null) return false;
       const source = view.state.doc.toString();
       const { line, character } = offsetToPosition(source, pos);
-      const def = getDefinition(new StringTextDocumentCtor(source), { line, character });
+      const doc = new StringTextDocumentCtor(source);
+      // With the open file's imports, an imported name's definition is in
+      // the file it comes from. Opening another file arrives with the tabs
+      // (2d); until then the jump goes where it went before: the name's
+      // import in this file.
+      const across = getDefinition(doc, { line, character }, languageServiceOptions());
+      const openFile = `/${store.get('openFile') as string}`;
+      const inThisFile = across && (!across.file || across.file === openFile);
+      const def = inThisFile ? across : getDefinition(doc, { line, character });
       if (!def) return false;
       const targetOffset = positionToOffset(source, def.range.start);
       ev.preventDefault();

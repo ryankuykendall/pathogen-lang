@@ -53,6 +53,102 @@ interface PendingRequest {
 }
 
 /**
+ * A compile of one program in a workspace (project-docs/modules/
+ * 51-phase-2c-plan.md, piece 4), passed as `options.workspace`: its imports
+ * are read from these files, on the main thread, before the request is posted.
+ */
+export interface WorkspaceCompileInput {
+  /** Workspace path (no leading slash) → text, the compiled program's included. */
+  files: ReadonlyMap<string, string>;
+  folders?: readonly string[];
+  /** The program compiled: a workspace path. */
+  entry: string;
+  /** How messages name the workspace. */
+  label: string;
+}
+
+/** One import that can't load (src/host/load-modules.ts ModuleLoadError). */
+interface LoadError {
+  message: string;
+  file: string;
+  line: number;
+  column: number;
+  importedFrom: { file: string; line: number; column: number }[];
+}
+
+/**
+ * Imports that can't load. The compile doesn't run, as in the CLI. The message
+ * puts an error in the compiled program at its line (`Line 2, col 22: …`), so
+ * the editor marks it, and one in another file under that file's name, then
+ * the imports that led there (docs/modules.md "Errors in other files").
+ */
+export class WorkspaceLoadError extends Error {
+  readonly loadErrors: readonly LoadError[];
+
+  constructor(loadErrors: readonly LoadError[]) {
+    super(loadErrors.map(describeLoadError).join('\n'));
+    this.name = 'WorkspaceLoadError';
+    this.loadErrors = loadErrors;
+  }
+}
+
+function describeLoadError(error: LoadError): string {
+  if (error.importedFrom.length === 0) return `Line ${error.line}, col ${error.column}: ${error.message}`;
+  const label = (path: string): string => path.replace(/^\/+/, '');
+  return [
+    `${label(error.file)} line ${error.line}, col ${error.column}: ${error.message}`,
+    ...error.importedFrom.map((site) => `  imported from ${label(site.file)} line ${site.line}`),
+  ].join('\n');
+}
+
+/** A file whose `@font` directives the compile loads: the program, then each file it imports. */
+export interface FontSourceFile {
+  source: string;
+  /** The file's workspace path; null for the program compiled. */
+  label: string | null;
+}
+
+/**
+ * Read the program's imports through an in-memory host over the workspace's
+ * files (window.PathogenLang.createMemoryProjectHost + resolveModules). Every
+ * file in the graph has its `@font` directives loaded too. Without the library
+ * (a sync fallback before it loads) the compile runs as one file.
+ */
+export async function resolveWorkspaceImports(
+  source: string,
+  workspace: WorkspaceCompileInput,
+): Promise<{ modules: unknown; fontFiles: FontSourceFile[] }> {
+  const lib = window.PathogenLang as
+    | {
+        createMemoryProjectHost?: (
+          files: ReadonlyMap<string, string>,
+          o: { label: string; folders?: readonly string[] },
+        ) => unknown;
+        resolveModules?: (
+          source: string,
+          o: { host: unknown; entry: string },
+        ) => Promise<{
+          graph: { files: Map<string, { source: string }>; order: string[] };
+          errors: LoadError[];
+        }>;
+      }
+    | undefined;
+  if (!lib?.createMemoryProjectHost || !lib.resolveModules) {
+    return { modules: undefined, fontFiles: [{ source, label: null }] };
+  }
+  const host = lib.createMemoryProjectHost(workspace.files, { label: workspace.label, folders: workspace.folders });
+  const { graph, errors } = await lib.resolveModules(source, { host, entry: `/${workspace.entry}` });
+  if (errors.length > 0) throw new WorkspaceLoadError(errors);
+  return {
+    modules: graph,
+    fontFiles: [
+      { source, label: null },
+      ...graph.order.map((path) => ({ source: graph.files.get(path)!.source, label: path.replace(/^\/+/, '') })),
+    ],
+  };
+}
+
+/**
  * One compiler worker plus its request bookkeeping. The worker is spawned
  * lazily on the first request and respawned after `cancelInFlight()` /
  * `terminate()`; nothing is lost on respawn because fonts travel with every
@@ -271,7 +367,20 @@ export class CompilerWorkerClient {
     isStale: ((id: number) => boolean) | undefined,
     options?: Record<string, unknown>,
   ): Promise<unknown> {
-    const { binaries, failures, substitutions, notices, sourceError } = await resolveFontsForSource(source);
+    // A workspace's program: its imports are read here, on the main thread,
+    // and posted as `modules` (the graph's Maps survive structured clone).
+    // Load errors stop the compile. Without a workspace, nothing changes.
+    let compileOptions = options;
+    let fontFiles: FontSourceFile[] = [{ source, label: null }];
+    const workspace = options?.workspace as WorkspaceCompileInput | undefined;
+    if (workspace) {
+      const rest: Record<string, unknown> = { ...options };
+      delete rest.workspace;
+      const resolved = await resolveWorkspaceImports(source, workspace);
+      compileOptions = resolved.modules ? { ...rest, modules: resolved.modules } : rest;
+      fontFiles = resolved.fontFiles;
+    }
+    const { binaries, failures, substitutions, notices, sourceError } = await resolveFontsForFiles(fontFiles);
     // A failed compile keeps this compile's font notices (a skipped file
     // path, a substituted weight): they explain errors such as "no fonts were
     // loaded", and the workspace shows them instead of clearing the banner.
@@ -287,7 +396,7 @@ export class CompilerWorkerClient {
     }
     const withSubsets = appendCachedSubsetEntries(binaries);
     const recompile = async (bins: FontBinaryEntry[]) =>
-      this.sendRequest(type, source, compilationId, isStale, options, bins);
+      this.sendRequest(type, source, compilationId, isStale, compileOptions, bins);
     try {
       const {
         first,
@@ -462,16 +571,23 @@ export async function fallbackSync(
  */
 export async function resolveFontsForSource(
   source: string,
+  /** The file's workspace path, for a file the compiled program imports; its mistakes are named by it. */
+  label: string | null = null,
 ): Promise<FontResolutionResult & { notices: string[]; sourceError?: string }> {
   const plan = planFontDirectivesViaLibrary(source);
   if (plan && plan.errors.length > 0) {
     // Every mistake, one per line, as the CLI and the VS Code preview list
     // them; the first leads with its position so the editor marks its line.
+    // One in an imported file says which file instead, so no line in the
+    // open file is marked for it.
+    const at = label === null ? 'Line' : `${label} line`;
     const sourceError = plan.errors
       .map((e) =>
         e.line !== undefined
-          ? `Line ${e.line}${e.column !== undefined ? `, col ${e.column}` : ''}: ${e.message}`
-          : e.message,
+          ? `${at} ${e.line}${e.column !== undefined ? `, col ${e.column}` : ''}: ${e.message}`
+          : label === null
+            ? e.message
+            : `${label}: ${e.message}`,
       )
       .join('\n');
     return { binaries: [], failures: [], substitutions: [], notices: [], sourceError };
@@ -544,6 +660,52 @@ export async function resolveFontsForSource(
     substitutions: resolved.substitutions,
     notices,
   });
+}
+
+/**
+ * The `@font` directives of every file a compile reads: the program, then the
+ * files it imports (a library may load a font for its fns). Each file is
+ * planned and fetched as `resolveFontsForSource` does one, and the results
+ * merge: the same family, weight and style loaded by two files is one binary.
+ * The first file with a mistake in its directives stops the compile, named by
+ * that file. One file compiles exactly as before.
+ *
+ * Exported for unit tests.
+ */
+export async function resolveFontsForFiles(
+  files: readonly FontSourceFile[],
+): Promise<FontResolutionResult & { notices: string[]; sourceError?: string }> {
+  if (files.length === 1) return resolveFontsForSource(files[0].source, files[0].label);
+  const results = await Promise.all(files.map((f) => resolveFontsForSource(f.source, f.label)));
+  const withError = results.find((r) => r.sourceError !== undefined);
+  if (withError) return { binaries: [], failures: [], substitutions: [], notices: [], sourceError: withError.sourceError };
+  const unique = <T>(items: T[], key: (item: T) => string): T[] => {
+    const seen = new Set<string>();
+    return items.filter((item) => {
+      const k = key(item);
+      if (seen.has(k)) return false;
+      seen.add(k);
+      return true;
+    });
+  };
+  return {
+    binaries: unique(
+      results.flatMap((r) => r.binaries),
+      (b) => `${b.family}|${b.weight}|${b.style}|${b.subsetUrl ?? ''}`,
+    ),
+    failures: unique(
+      results.flatMap((r) => r.failures),
+      (f) => `${f.family}|${f.weight}|${f.reason}`,
+    ),
+    substitutions: unique(
+      results.flatMap((r) => r.substitutions),
+      (s) => `${s.family}|${s.requested}|${s.used}`,
+    ),
+    notices: unique(
+      results.flatMap((r) => r.notices),
+      (n) => n,
+    ),
+  };
 }
 
 /**

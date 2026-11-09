@@ -22,6 +22,8 @@ export interface LogEntry {
   line: number | null;
   parts: LogPart[];
   severity?: 'warn';
+  /** The workspace path of the file that logged it, when that's a file the program imports. */
+  file?: string;
 }
 
 /** A group of warning log mirrors sharing a family (see the library's groupWarnLogEntries). */

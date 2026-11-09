@@ -1,6 +1,8 @@
 // CodeMirror 6 hover tooltip extension — shows language intelligence on hover
 // Uses the shared getHoverInfo from pathogen-lang language services.
 
+import { languageServiceOptions } from '../services/workspace-modules.js';
+
 /**
  * Minimal interface for the CodeMirror view module we need.
  * The actual module is loaded dynamically from ESM CDN.
@@ -53,7 +55,8 @@ export function hoverTooltipExtension(cmView: CmViewModule): unknown[] {
       const line = lineInfo.number - 1; // CM lines are 1-based, LS is 0-based
       const character = pos - lineInfo.from;
 
-      const info = getHoverInfo(doc, { line, character });
+      // With the open file's imports, an imported name hovers with its doc.
+      const info = getHoverInfo(doc, { line, character }, languageServiceOptions());
       if (!info) return null;
 
       // Calculate the start offset for tooltip positioning

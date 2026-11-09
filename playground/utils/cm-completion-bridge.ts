@@ -4,6 +4,8 @@
 // This replaces the bulk of codemirror-setup.ts's svgPathCompletions function
 // with the shared completion engine that's also used by the VS Code extension.
 
+import { languageServiceOptions } from '../services/workspace-modules.js';
+
 /** CodeMirror CompletionContext — the object passed to completion source functions. */
 interface CompletionContext {
   state: { doc: { toString: () => string } };
@@ -147,7 +149,9 @@ export function makeSharedCompletionSource(snippetFn?: CmSnippetFn) {
     const line = lines.length - 1;
     const character = lines[lines.length - 1].length;
 
-    const items = getCompletions(doc, { line, character });
+    // The open file's imports (services/workspace-modules.ts): names from
+    // the files it imports complete as in VS Code.
+    const items = getCompletions(doc, { line, character }, languageServiceOptions());
     if (items.length === 0) return null;
 
     // The `from` position controls which span of text CodeMirror's filter

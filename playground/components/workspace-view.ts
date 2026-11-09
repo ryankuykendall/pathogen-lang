@@ -25,6 +25,19 @@ import { SnapshotController } from '../services/snapshot-controller.js';
 import type { CaptureSnapshotDetail } from '../services/snapshot-controller.js';
 import tabCoordinator from '../services/tab-coordinator.js';
 import { getUserId } from '../services/user-id.js';
+import {
+  filesWithoutText,
+  MAIN_FILE,
+  programToShow,
+  workspaceFromAnswer,
+  workspaceNow,
+} from '../services/workspace-files.js';
+import {
+  currentOpenFileModules,
+  refreshOpenFileModules,
+  resetOpenFileModules,
+  watchOpenFileModules,
+} from '../services/workspace-modules.js';
 import { parseWorkspaceSlugId } from '../utils/router.js';
 import { applyURLState, loadFromURL } from '../utils/url-state.js';
 import { createCompileTicker } from '../utils/compile-ticker.js';
@@ -50,6 +63,7 @@ export class WorkspaceView extends HTMLElement {
   private _initGeneration = 0;
 
   private _routeUnsubscribe: (() => void) | null = null;
+  private _unwatchModules: (() => void) | null = null;
 
   private _loadingWorkspace = false;
 
@@ -153,6 +167,10 @@ export class WorkspaceView extends HTMLElement {
       this.handleRouteChange();
     });
 
+    // The open file's import graph for the language services and for
+    // placing errors, kept current as the workspace changes.
+    this._unwatchModules = watchOpenFileModules();
+
     // Check if we should initialize immediately (if already on workspace route)
     this.handleRouteChange();
   }
@@ -161,6 +179,8 @@ export class WorkspaceView extends HTMLElement {
     if (this._routeUnsubscribe) {
       this._routeUnsubscribe();
     }
+    this._unwatchModules?.();
+    this._unwatchModules = null;
     // Flush pending saves before leaving
     autosave.flush();
     // Close tab coordinator
@@ -419,7 +439,15 @@ export class WorkspaceView extends HTMLElement {
       renderedCode: null,
       snapshotCount: null,
       recentSnapshots: [],
+      // So do its files: a scratch link or a new workspace is just its `code`
+      // (services/workspace-files.ts), and a loaded workspace sets its own.
+      workspaceFiles: {},
+      workspaceFolders: [],
+      workspaceEntryPoints: [],
+      openFile: MAIN_FILE,
+      shownProgram: null,
     });
+    resetOpenFileModules();
     // Disarm pending size computes until this workspace's first successful
     // compile — see _sizeArmed.
     this._sizeArmed = false;
@@ -484,6 +512,10 @@ export class WorkspaceView extends HTMLElement {
     try {
       const workspace = (await workspaceApi.get(id)) as any;
       const userId = getUserId();
+      // Every file's text (or, from a server before phase 2, the one `code`),
+      // and the file the editor opens: the main.
+      const files = workspaceFromAnswer(workspace);
+      const openCode = files.workspaceFiles[files.openFile] ?? '';
 
       // Update store with workspace data
       store.update({
@@ -498,7 +530,9 @@ export class WorkspaceView extends HTMLElement {
         workspaceManualThumbnailAt: workspace.manualThumbnailAt ?? null,
         // Present for the owner only (null when unknown / D1 unavailable).
         snapshotCount: typeof workspace.snapshotCount === 'number' ? workspace.snapshotCount : null,
-        code: workspace.code,
+        code: openCode,
+        ...files,
+        shownProgram: null,
         currentFileName: workspace.name,
       });
 
@@ -515,15 +549,31 @@ export class WorkspaceView extends HTMLElement {
       }
 
       // Set editor code
-      this.editorPane.initialCode = workspace.code;
-      this.offerLegacyStyleOpenerMigration(workspace.code);
+      this.editorPane.initialCode = openCode;
+      this.offerLegacyStyleOpenerMigration(openCode);
 
       // Update URL with slug if not already present
       this.updateUrlWithSlug(workspace.id, workspace.slug);
 
+      // A file this playground can't hold as text (none can exist yet, see
+      // filesWithoutText) would be left out of every save, so the workspace
+      // isn't saved at all, and says why.
+      const withoutText = filesWithoutText(workspace);
+      if (withoutText.length > 0) {
+        this.showError(
+          `This workspace holds files this version of Pathogen Studio can't edit (${withoutText.join(', ')}), ` +
+            'so changes here aren’t saved. Reload the page to get the latest version.',
+        );
+      }
+
       // Initialize autosave if user owns this workspace
-      if (workspace.userId === userId) {
-        autosave.init(workspace.id, workspace.contentHash, workspace.rev ?? 0);
+      if (workspace.userId === userId && withoutText.length === 0) {
+        // Each file's hash as stored, so a save sends unchanged files by hash.
+        const savedShas: Record<string, string> = {};
+        for (const [path, file] of Object.entries((workspace.files ?? {}) as Record<string, { sha256?: string }>)) {
+          if (typeof file.sha256 === 'string') savedShas[path] = file.sha256;
+        }
+        autosave.init(workspace.id, workspace.contentHash, workspace.rev ?? 0, savedShas);
 
         // Start thumbnail auto-generation tracking
         thumbnailService.startAutoGeneration(workspace.id);
@@ -1095,7 +1145,12 @@ export class WorkspaceView extends HTMLElement {
   }
 
   async updatePreview(): Promise<void> {
-    const code = (store.get('code') as string) || this.editorPane.code;
+    // The program the preview shows (the main until the chip exists, 2d),
+    // with every file it imports, from the workspace as it stands.
+    const workspace = workspaceNow();
+    workspace.texts.set(workspace.openFile, (store.get('code') as string) || this.editorPane.code);
+    const shown = programToShow(workspace, store.get('shownProgram') as string | null);
+    const code = workspace.texts.get(shown) ?? '';
 
     // Increment compilation ID for staleness detection
     const compilationId = (store.get('compilationId') as number) + 1;
@@ -1125,7 +1180,15 @@ export class WorkspaceView extends HTMLElement {
     const compileStart = performance.now();
     try {
       const toFixed = store.get('toFixed') as number | null;
-      const compileOptions = toFixed != null ? { toFixed } : undefined;
+      const compileOptions = {
+        ...(toFixed != null ? { toFixed } : {}),
+        workspace: {
+          files: workspace.texts,
+          folders: workspace.folders,
+          entry: shown,
+          label: (store.get('workspaceName') as string | null) ?? 'this workspace',
+        },
+      };
       const result = (await perfSpanAsync('compile-roundtrip', async () =>
         editorCompiler.compileWithContext(code, compilationId, isStale, compileOptions),
       )) as any;
@@ -1209,9 +1272,13 @@ export class WorkspaceView extends HTMLElement {
       store.set('warnings', result.warnings || []);
       this.hideError();
       try {
+        // Only the open file's own warnings mark the editor: one from a file
+        // the program imports carries `file` and belongs to that file, and
+        // when the preview shows another program than the one being edited
+        // (2d) none of its warnings are in this file.
         this.editorPane.highlightWarnings(
-          (result.warnings || []).flatMap((w: { line?: number; column?: number }) =>
-            w.line != null ? [{ line: w.line, column: w.column ?? 1 }] : [],
+          (result.warnings || []).flatMap((w: { line?: number; column?: number; file?: string }) =>
+            w.line != null && !w.file && shown === workspace.openFile ? [{ line: w.line, column: w.column ?? 1 }] : [],
           ),
         );
       } catch (highlightErr) {
@@ -1283,6 +1350,15 @@ export class WorkspaceView extends HTMLElement {
       // The pane keeps the last good render (and its injected fonts) for
       // context — mark it stale so it can't be mistaken for current output.
       this.previewPane.setStale(true);
+      // The open file's graph, current, so the error lands on the right
+      // import or call (showError checks it matches; see workspace-modules).
+      // If it can't be built, showError falls back to the compile's message.
+      try {
+        await refreshOpenFileModules();
+      } catch (graphErr) {
+        console.warn('[workspace-modules] import graph not built:', graphErr);
+      }
+      if (isStale(compilationId)) return;
       const displayError = this.showError(e.message);
       this.consolePane.logs = [];
       // A failed compile invalidates any older font warning — don't stack a
@@ -1377,22 +1453,36 @@ export class WorkspaceView extends HTMLElement {
   }
 
   showError(message: string): string {
-    // Try structured diagnostics via getDiagnostics first
-    const { StringTextDocument, getDiagnostics } = window.PathogenLang;
-    if (getDiagnostics && StringTextDocument) {
+    // Try structured diagnostics via getDiagnostics first. A file with
+    // imports needs the workspace's graph (services/workspace-modules.ts), and
+    // only the one that matches the workspace now: without it, getDiagnostics
+    // would report the no-project-folder error instead of the real one, so
+    // the compile's own message is shown.
+    const { StringTextDocument, getDiagnostics, planImports } = window.PathogenLang;
+    const code = this.editorPane.code;
+    const modules = currentOpenFileModules();
+    const needsGraph = typeof planImports === 'function' && planImports(code).length > 0;
+    if (getDiagnostics && StringTextDocument && (modules || !needsGraph)) {
       try {
-        const code = this.editorPane.code;
         const diagnostics = perfSpan('get-diagnostics', () => {
           const doc = new StringTextDocument(code);
-          return getDiagnostics(doc);
+          return getDiagnostics(doc, modules ? { modules: modules.modules, loadErrors: modules.loadErrors } : {});
         });
         if (diagnostics.length > 0) {
-          // Format message: show each diagnostic on its own line
+          // Format message: show each diagnostic on its own line, and where
+          // an error in another file happened, that file and its line.
           const messages = diagnostics.map(
-            (d: { range: { start: { line: number; character: number } }; message: string }) => {
+            (d: {
+              range: { start: { line: number; character: number } };
+              message: string;
+              alsoIn?: { file: string; range: { start: { line: number } }; message: string };
+            }) => {
               const line = d.range.start.line + 1;
               const col = d.range.start.character + 1;
-              return `Line ${line}:${col} — ${d.message}`;
+              const where = d.alsoIn
+                ? `\n  in ${d.alsoIn.file.replace(/^\/+/, '')} line ${d.alsoIn.range.start.line + 1}: ${d.alsoIn.message}`
+                : '';
+              return `Line ${line}:${col} — ${d.message}${where}`;
             },
           );
           const displayMessage = messages.join('\n');
