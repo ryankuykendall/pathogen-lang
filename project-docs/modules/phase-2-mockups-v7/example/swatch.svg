@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 120" width="240" height="120">
+  <style><![CDATA[
+    @property --bg {
+      syntax: "<color>";
+      inherits: true;
+      initial-value: #d0d7f0;
+    }
+  ]]></style>
+
+  <path data-layer-name="panel" id="panel" d="M 20 20 l 200 0 l 0 80 l -200 0 z" fill="var(--bg, #d0d7f0)" stroke="none" stroke-width="2"/>
+  <path data-layer-name="rings" id="rings" d="M 34 60 a 16 16 0 1 1 32 0 a 16 16 0 1 1 -32 0 M 81 60 a 16 16 0 1 1 32 0 a 16 16 0 1 1 -32 0 M 128 60 a 16 16 0 1 1 32 0 a 16 16 0 1 1 -32 0 M 175 60 a 16 16 0 1 1 32 0 a 16 16 0 1 1 -32 0" fill="none" stroke="#1c1722" stroke-width="2"/>
+</svg>

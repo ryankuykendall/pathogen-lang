@@ -1,0 +1,24 @@
+// Four rings on a panel. The panel is the drawing's own --bg color;
+// around it is the canvas.
+define ViewBox(0, 0, 240, 120);
+
+let panel_color = Color(CSSVar('--bg', #d0d7f0));
+let panel = PathLayer('panel') #{
+  fill: panel_color;
+  stroke: none;
+};
+panel.apply {
+  rect(20, 20, 200, 80);
+}
+
+// Declared after the panel, so the rings are drawn on top of it.
+let rings = PathLayer('rings') #{
+  fill: none;
+  stroke: #1c1722;
+  stroke-width: 2;
+};
+rings.apply {
+  for (i in 0..3) {
+    circle(50 + i * 47, 60, 16);
+  }
+}
