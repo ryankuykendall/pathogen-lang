@@ -103,6 +103,29 @@ function manualSnippetApply(template: string) {
 }
 
 /**
+ * The path typed so far when the cursor is inside an import's quotes
+ * (`import { gear } from "./pa|`), else null. There the shared engine
+ * completes the workspace's libraries (completion.ts importCompletions), each
+ * item carrying the range of the typed path. `lineBefore` is the cursor's
+ * line up to the cursor.
+ */
+export function importPathBeforeCursor(lineBefore: string): string | null {
+  const match = /\bfrom\s*["']([^"'\n]*)$/.exec(lineBefore);
+  return match ? match[1] : null;
+}
+
+/** A language-services position as an offset into `source`. */
+function offsetOf(source: string, position: { line: number; character: number }): number {
+  let offset = 0;
+  for (let line = 0; line < position.line; line++) {
+    const end = source.indexOf('\n', offset);
+    if (end < 0) return source.length;
+    offset = end + 1;
+  }
+  return Math.min(offset + position.character, source.length);
+}
+
+/**
  * Create a CodeMirror completion source backed by the shared language-services
  * getCompletions function.
  *
@@ -140,7 +163,11 @@ export function makeSharedCompletionSource(snippetFn?: CmSnippetFn) {
     // We reject zero-length non-explicit matches so that punctuation keystrokes
     // (e.g. `;`) don't trigger the completion popup for no reason.
     const word = context.matchBefore(hyphenAware ? /[-\w]*/ : /[@&$#\w.]*/);
-    if (!word || (word.from === word.to && !context.explicit)) return null;
+    // Inside an import's quotes a path is being typed: `/` and `"` are part
+    // of it, so an empty word there still completes (the workspace's libraries).
+    const lineStart = source.lastIndexOf('\n', context.pos - 1) + 1;
+    const inImportPath = importPathBeforeCursor(source.slice(lineStart, context.pos)) !== null;
+    if (!inImportPath && (!word || (word.from === word.to && !context.explicit))) return null;
 
     const doc = new StringTextDocument(source);
 
@@ -154,14 +181,26 @@ export function makeSharedCompletionSource(snippetFn?: CmSnippetFn) {
     const items = getCompletions(doc, { line, character }, languageServiceOptions());
     if (items.length === 0) return null;
 
+    // An item with its own range (an import's path, `kind: 'file'`) replaces
+    // exactly that range: the whole path typed so far, slashes and dots
+    // included. Inside an import's quotes nothing else applies.
+    const ranged = items.find((item) => item.range);
+    if (inImportPath && !ranged) return null;
+
     // The `from` position controls which span of text CodeMirror's filter
     // matches option labels against. If the word the user is typing includes
     // a `.` (member access), the completion replaces only the text AFTER the
     // last dot — that's the member prefix — not the whole `object.prefix`.
     // Without this, CM6 would try to fuzzy-match option labels like `apply`
     // against `bg.` and filter them all out, leaving the popup empty.
-    const lastDot = word.text.lastIndexOf('.');
-    const from = lastDot >= 0 ? word.from + lastDot + 1 : word.from;
+    let from: number;
+    if (ranged?.range) {
+      from = offsetOf(source, ranged.range.start);
+    } else {
+      const typed = word!;
+      const lastDot = typed.text.lastIndexOf('.');
+      from = lastDot >= 0 ? typed.from + lastDot + 1 : typed.from;
+    }
 
     return {
       from,
@@ -178,7 +217,7 @@ export function makeSharedCompletionSource(snippetFn?: CmSnippetFn) {
             }
           : {}),
       })),
-      validFor: hyphenAware ? /^[-\w]*$/ : /^[@&$#\w.]*$/,
+      validFor: ranged ? /^[-\w./]*$/ : hyphenAware ? /^[-\w]*$/ : /^[@&$#\w.]*$/,
     };
   };
 }
@@ -205,6 +244,9 @@ function mapCompletionKind(kind: string): string {
       return 'constant';
     case 'snippet':
       return 'keyword';
+    case 'file':
+      // A library an import can name.
+      return 'namespace';
     default:
       return 'text';
   }

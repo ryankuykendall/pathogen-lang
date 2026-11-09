@@ -17,7 +17,7 @@
 //   3. Reference the wire-up from PLAYGROUND_WIRINGS so the parity test sees it.
 //   4. Include the returned extensions in buildLanguageExtensions()'s result.
 
-import { makeSharedCompletionSource } from './cm-completion-bridge.js';
+import { importPathBeforeCursor, makeSharedCompletionSource } from './cm-completion-bridge.js';
 import { hoverTooltipExtension } from './cm-hover-tooltip.js';
 import { errorHighlightExtension } from './cm-error-highlight.js';
 import { perfSpan } from './perf-marks.js';
@@ -67,7 +67,11 @@ interface CmAutocompleteModule {
 }
 
 interface CmEditorState {
-  doc: { sliceString: (from: number, to?: number) => string; toString: () => string };
+  doc: {
+    sliceString: (from: number, to?: number) => string;
+    toString: () => string;
+    lineAt: (pos: number) => { from: number };
+  };
   selection: { main: { head: number } };
   field: <T>(field: unknown) => T;
 }
@@ -112,6 +116,8 @@ export interface CmModulesForLanguageServices {
 // `:` triggers value-position suggestions inside style blocks
 // (stroke-linecap: → butt/round/square).
 const COMPLETION_TRIGGER_CHARS = new Set(['.', '$', '(', ',', ':']);
+/** Trigger completion only inside an import's path. */
+const IMPORT_PATH_TRIGGER_CHARS = new Set(['"', "'", '/']);
 
 function wireCompletionTriggers(cm: CmModulesForLanguageServices): unknown {
   return cm.view.EditorView.updateListener.of((update: CmViewUpdate) => {
@@ -122,6 +128,15 @@ function wireCompletionTriggers(cm: CmModulesForLanguageServices): unknown {
     const charBefore = update.state.doc.sliceString(head - 1, head);
     if (COMPLETION_TRIGGER_CHARS.has(charBefore)) {
       cm.autocomplete.startCompletion(update.view);
+      return;
+    }
+    // Opening an import's quotes, or a `/` in its path, lists the
+    // workspace's libraries (the bridge's importPathBeforeCursor).
+    if (IMPORT_PATH_TRIGGER_CHARS.has(charBefore)) {
+      const line = update.state.doc.lineAt(head);
+      if (importPathBeforeCursor(update.state.doc.sliceString(line.from, head)) !== null) {
+        cm.autocomplete.startCompletion(update.view);
+      }
     }
   });
 }

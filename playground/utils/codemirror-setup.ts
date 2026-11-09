@@ -856,6 +856,12 @@ export function svgPathCompletions(context: CompletionContext): CompletionResult
     return null;
   }
 
+  // Inside an import's path (`from "./pa`) the shared engine completes the
+  // workspace's libraries; keywords there would only bury them.
+  if (context.matchBefore(/\bfrom\s*["'][^"'\n]*$/)) {
+    return null;
+  }
+
   // Regular word completion
   const word = context.matchBefore(/\w*/);
   if (!word || (word.from === word.to && !context.explicit)) return null;

@@ -53,4 +53,12 @@ describe('legacy completion source defers on member access', () => {
     // `1.` ends in a digit, not `)` or `]` — the guard must not swallow it.
     expect(() => legacyLabels('M 1.')).not.toThrow();
   });
+
+  it.each([
+    ['right after the opening quote', 'import { gear } from "'],
+    ['a typed path', 'import { gear } from "./pa'],
+    ['a typed name in the path', "import { gear } from './parts/ge"],
+  ])("inside an import's path (%s): returns null so the workspace's libraries aren't buried", (_label, text) => {
+    expect(legacyLabels(text)).toBeNull();
+  });
 });

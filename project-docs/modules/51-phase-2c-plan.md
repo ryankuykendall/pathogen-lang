@@ -44,8 +44,13 @@
 
 Noted for 2d: the error path places errors against the open file's graph, which assumes the program shown is the open file; once the chip can show another program, errors must be placed against that program's graph.
 
-**Left in 2c:**
-- **Import-path completion:** completing `"./parts/…"` inside an import needs fixes in `cm-completion-bridge.ts` (it ignores `CompletionItem.range`, its word pattern stops at `/` and `"`, there's no `file` kind, and `"` and `/` aren't triggers; note 38).
+**Import-path completion** (2026-11-09, after your "go ahead with import-path completion"): inside an import's quotes the editor lists the workspace's libraries.
+- The bridge (`cm-completion-bridge.ts`) recognises the cursor inside an import's path (`importPathBeforeCursor`) and completes there with nothing typed yet. An item's own `range` sets what it replaces, the whole path typed so far, slashes and dots included. A library shows with the module icon (`file` → `namespace`).
+- Typing `"`, `'` or `/` in an import's path opens the list (`cm-language-services.ts`).
+- The older completion source returns nothing inside an import's path, so its keywords don't bury the libraries.
+- Checked: three cases in `tests/playground-workspace-files.test.ts` and three in `tests/playground-legacy-completion-deferral.test.ts`; in the browser, typing `import { gear as g } from "./` opens a list with `./parts/gears.pathogen` (`verify-2c-playground.ts`).
+
+**Left in 2c:** nothing of the code. For later:
 - **Go-to-definition into another file** needs "open this file at this position", which comes with the tabs (2d). Until then it jumps to the name's import, as before.
 - **Snapshots** of a workspace with several files keep only the shown program's text (`renderedCode`); 2e makes them carry every file.
 - **Messages** from the loader say "project folder" and "on disk", which reads oddly in a workspace; their workspace wording belongs to the docs round that publishes `docs/workspace-files.md`.
@@ -53,3 +58,4 @@ Noted for 2d: the error path places errors against the open file's graph, which 
 ## A question for you
 
 - **`@font` with a file path in a workspace** (note 46, and `docs/workspace-files.md` "Uploading files"): keep today's warning, which suggests a Google Fonts family (recommended until font files can be added), or give the CLI's error?
+  - *Answered 2026-11-09: "Keep the warning."* The code already does (`fileFontNotice`, for every file in the graph since piece 4); the `[TO DECIDE]` mark in `docs/workspace-files.md` is removed.

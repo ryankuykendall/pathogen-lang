@@ -198,6 +198,18 @@ try {
   });
   check('the server holds the edit, and the library unchanged', reloaded?.['parts/gears.pathogen']?.text === GEARS, reloaded);
 
+  // 3b. Typing an import's path in the editor lists the workspace's library.
+  await page.keyboard.down('Meta');
+  await page.keyboard.press('ArrowDown');
+  await page.keyboard.up('Meta');
+  await page.keyboard.type('\nimport { gear as g } from "./', { delay: 15 });
+  const popup = await waitFor('the import-path completion list', async () => {
+    const options = await deepTexts(page, '.cm-tooltip-autocomplete li');
+    return options.some((t) => t.includes('parts/gears.pathogen')) ? options : null;
+  });
+  check("typing an import's path lists the workspace's library", popup !== null, popup);
+  await page.keyboard.press('Escape');
+
   // 4. An error inside the library names it.
   const broken = await create('2c broken', { 'main.pathogen': MAIN, 'parts/gears.pathogen': BROKEN_GEARS });
   made.push(broken);

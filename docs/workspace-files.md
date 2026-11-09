@@ -81,7 +81,7 @@ The **+** in the Files header opens a menu: New program, New library, New folder
 - When a name is taken, a prompt beside the tree asks what to do: **Replace**, **Keep both** (the new file gets a number: `labels-2.pathogen`) or **Skip**. With several clashes, it offers to do the same for all.
 - A message lists what was added. Uploading one file opens it in a tab. New programs go at the end of the program list.
 - **Only `.pathogen` files** can be added for now. Anything else is left out, and the message says why.
-  - Font files can't be added yet. Use a Google Fonts family instead, such as `@font "Raleway" 700;` (see [`@font`](#path-blocks-font-directive)). An `@font` with a file path, such as `@font "./fonts/Raleway-Bold.ttf";` in a project from the CLI or VS Code, gets a warning that suggests the family, as it does in a workspace today. [TO DECIDE in 2c: today's warning (recommended, until font files can be added), or the CLI's error.]
+  - Font files can't be added yet. Use a Google Fonts family instead, such as `@font "Raleway" 700;` (see [`@font`](#path-blocks-font-directive)). An `@font` with a file path, such as `@font "./fonts/Raleway-Bold.ttf";` in a project from the CLI or VS Code, gets a warning that suggests the family, as it does in a workspace today.
   - A `pathogen.json` is left out too: the playground writes its own.
 
 ## Renaming, moving and deleting

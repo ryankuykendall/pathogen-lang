@@ -21,7 +21,7 @@ import {
   workspaceFromAnswer,
   workspaceTexts,
 } from '../playground/services/workspace-files.js';
-import { graphKey } from '../playground/services/workspace-modules.js';
+import { graphKey, refreshOpenFileModules } from '../playground/services/workspace-modules.js';
 import { store } from '../playground/state/store.js';
 
 // vitest hoists these above the imports.
@@ -253,6 +253,60 @@ describe('autosave', () => {
       'hash-of-B',
       'b'.repeat(64),
     ]);
+  });
+});
+
+describe('import-path completion (the editor bridge)', () => {
+  /** CodeMirror's CompletionContext, as much as the bridge reads, with the cursor at the end. */
+  const contextFor = (source: string, explicit = false) => ({
+    state: { doc: { toString: () => source } },
+    pos: source.length,
+    explicit,
+    matchBefore(regexp: RegExp) {
+      const match = new RegExp(`(?:${regexp.source})$`).exec(source);
+      return match ? { from: source.length - match[0].length, to: source.length, text: match[0] } : null;
+    },
+  });
+
+  beforeEach(async () => {
+    store.update({
+      workspaceFiles: { 'main.pathogen': MAIN, 'parts/gears.pathogen': GEARS, 'parts/cogs.pathogen': 'module;\n' },
+      workspaceFolders: [],
+      workspaceEntryPoints: ['main.pathogen'],
+      openFile: 'main.pathogen',
+      code: MAIN,
+    });
+    await refreshOpenFileModules();
+  });
+
+  it("lists the workspace's libraries inside an import's quotes, replacing the whole typed path", async () => {
+    const { sharedCompletionSource } = await import('../playground/utils/cm-completion-bridge.js');
+    const source = 'import { gear } from "./pa';
+    const result = sharedCompletionSource(contextFor(source))!;
+    expect(result.from).toBe(source.indexOf('./pa'));
+    expect(result.options.map((o) => [o.label, o.type]).sort()).toEqual([
+      ['./parts/cogs.pathogen', 'namespace'],
+      ['./parts/gears.pathogen', 'namespace'],
+    ]);
+    // Typing on keeps the list: slashes and dots are part of a path.
+    expect(result.validFor!.test('./parts/ge')).toBe(true);
+  });
+
+  it('opens with nothing typed yet, right after the opening quote', async () => {
+    const { sharedCompletionSource } = await import('../playground/utils/cm-completion-bridge.js');
+    const source = 'import { gear } from "';
+    const result = sharedCompletionSource(contextFor(source))!;
+    expect(result.from).toBe(source.length);
+    const labels = result.options.map((o) => o.label).sort((a, b) => a.localeCompare(b));
+    expect(labels).toEqual(['./parts/cogs.pathogen', './parts/gears.pathogen']);
+  });
+
+  it('knows when the cursor is inside an import path, and only then', async () => {
+    const { importPathBeforeCursor } = await import('../playground/utils/cm-completion-bridge.js');
+    expect(importPathBeforeCursor('import { gear } from "./parts/')).toBe('./parts/');
+    expect(importPathBeforeCursor("import { gear } from '")).toBe('');
+    expect(importPathBeforeCursor('let label = "from here')).toBeNull();
+    expect(importPathBeforeCursor('import { gear } from "./parts/gears.pathogen";')).toBeNull();
   });
 });
 
