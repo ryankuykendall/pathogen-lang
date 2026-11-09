@@ -3,6 +3,8 @@
 // the final response (Pages keeps the legacy wildcard for backwards
 // compatibility; the new API Worker uses an origin allowlist).
 
+import { shortContentHash } from '../../src/workspace/files.js';
+
 import type { Env, ThumbMeta, Workspace } from './types.js';
 
 const ALPHABET = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_~';
@@ -16,15 +18,9 @@ export function generateNanoId(size: number = 21): string {
   return id;
 }
 
-export async function hashContent(content: string): Promise<string> {
-  const encoder = new TextEncoder();
-  const data = encoder.encode(content);
-  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
-  return hashArray
-    .slice(0, 8)
-    .map((b) => b.toString(16).padStart(2, '0'))
-    .join('');
+/** SHA-256, its first 8 bytes in hex: the engine's one copy of the rule (src/workspace/files.ts). */
+export function hashContent(content: string): Promise<string> {
+  return shortContentHash(content);
 }
 
 export function slugify(text: string): string {

@@ -91,6 +91,24 @@ export {
 } from './host/paths';
 export { CONVENTIONAL_MAIN, parseProjectFile, PROJECT_FILE_NAME, projectMain } from './host/project';
 export type { ParsedProjectFile, ProjectEntry, ProjectFile, ProjectMain } from './host/project';
+// A project held in memory: the playground's workspace (note 51).
+export { createMemoryProjectHost } from './host/memory-host';
+export type { MemoryProjectOptions } from './host/memory-host';
+// A workspace's files: names, limits and the manifest hash, shared with the
+// API Worker (website/api/workspace-files.ts) so the two can't drift apart.
+// Prefixed here, since the browser bundle's names share one namespace.
+export {
+  checkManifest as checkWorkspaceManifest,
+  contentHashOf as workspaceContentHash,
+  entryForText as workspaceFileEntry,
+  fileKind as workspaceFileKind,
+  isJustMain as isJustMainWorkspace,
+  LIMITS as WORKSPACE_LIMITS,
+  MAIN_FILE as WORKSPACE_MAIN_FILE,
+  nameProblem as workspaceNameProblem,
+  pathProblem as workspacePathProblem,
+} from './workspace/files';
+export type { FileEntry as WorkspaceFileEntry, WorkspaceManifest } from './workspace/files';
 export {
   CURATED_GOOGLE_FONTS,
   curatedVariants,
