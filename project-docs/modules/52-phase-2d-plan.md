@@ -45,6 +45,15 @@
 
 Which program SVG, PNG and PDF export use stays with 2g (note 42). Snapshots carrying every file stay with 2e.
 
+## Your answers (2026-11-09), in your words
+
+1. The five [TO CONFIRM] items: "Yes" to each (per-file undo; a file's name in the error panel opens it at that line; moving a file fixes its own `./` and `../` imports; folders get Rename… and Delete…; Duplicate names the copy `gears-2.pathogen`). The marks are gone from `docs/workspace-files.md`.
+2. The v7 mockup round: "Yes, that would be ideal."
+3. Copy Code copies the file in the editor: "That is correct."
+4. Copy URL: "My inclination is to say let's drop copy URL from the menu. We should probably come up with a more robust sharing solution, but we can save that experience for another time."
+   - So **Copy URL leaves the workspace's menu**, for every workspace, in step 9. Links copied before still open (`?state=` loading stays). The docs page says so; a better way to share is on the backlog.
+   - This also ends the bug note 38 found: Copy URL read `route.params.id` where the route's parameter is `slugId`, so every copied link opened the new-workspace form.
+
 ## The steps
 
 Each step: tests first; a storybook entry for each new component (the playground's rule: the story is the component's spec); light and dark; a puppeteer check against `npm run dev:stack`; the full suite; a code review; a local commit.
@@ -71,7 +80,7 @@ Each step: tests first; a storybook entry for each new component (the playground
 6. **Uploads** (screen U): Upload files…, Upload folder…, drag and drop onto the tree with the folder under the pointer lit, the clash prompt (Replace, Keep both, Skip, the same for all), the unsupported-files message, the 20-file limit.
 7. **Errors and navigation:** a file's name in the error panel opens it at that line; Cmd-click on an imported name opens its file at the definition; red dots in the tree on the failing file and the program that ran into it.
 8. **Copy Debug Info (2h):** answer note 42's five questions with you first, then build.
-9. **The rest:** Copy Code and Copy URL as decided above; the empty preview (after the v7 mockup); the mini-workspace's Background and Grid (after its mockup); narrow screens (after the v7 mockup).
+9. **The rest:** Copy Code copies the file in the editor; Copy URL leaves the menu; the empty preview (after the v7 mockup); the mini-workspace's Background and Grid (after its mockup); narrow screens (after the v7 mockup).
 10. **The docs page:** remove the [TO CONFIRM] marks as they're settled, and run its content review again before it publishes with 2e.
 
 ## Risks

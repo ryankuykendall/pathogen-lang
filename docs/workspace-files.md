@@ -11,8 +11,9 @@ program-list sentence held back in note 46; docs/modules.md's intro line "A play
 one program for now", its In each tool Playground bullet, and its Errors row "No project folder
 (the playground)".
 Sources: mockups v1 to v6 and their reviews (project-docs/modules/39- to 46-).
-Marked [TO CONFIRM] in note 46: undo per file, clicking an error to open its file. Limits and name
-characters: decided in note 50.
+The [TO CONFIRM] items (undo per file, clicking an error to open its file, a moved file's own
+imports, folder Rename/Delete, Duplicate's naming) were confirmed 2026-11-09 (note 52). Limits and
+name characters: decided in note 50. Copy URL leaves the playground with this page (note 52).
 -->
 
 # Files in a Workspace
@@ -21,7 +22,7 @@ characters: decided in note 50.
 
 A workspace can hold several files: programs that draw, and libraries they import. It works like a project folder in the CLI or VS Code, with the same `import` paths and the same `pathogen.json`, so a workspace and a folder on your computer have the same shape.
 
-> **Not yet:** a workspace can't be downloaded as a project folder, or made from one; that comes in a later update. [TO DECIDE, note 41 #4: which program SVG, PNG and PDF export use.] [TO CONFIRM, note 38 Q12: share links (Copy URL) hold one file, so they're offered only for a workspace that is just `main.pathogen`.]
+> **Not yet:** a workspace can't be downloaded as a project folder, or made from one; that comes in a later update. [TO DECIDE, note 41 #4: which program SVG, PNG and PDF export use.] Sharing a workspace as a link isn't offered for now: **Copy URL** is gone from the workspace's menu, since a link could only hold one file. A link copied before still opens.
 
 > **What changed ([month] 2026):** A workspace you made before now holds one program, `main.pathogen`, with its code unchanged, and a `pathogen.json` beside it. It draws as before. [If the page publishes with 2e: Older snapshots restore the same way.]
 
@@ -35,7 +36,7 @@ A new workspace holds one program, `main.pathogen`, and `pathogen.json`, a proje
 - The tree shows each file's full name. Programs and libraries have different icons.
 - Click a file to open it in a tab. Tab labels leave out `.pathogen`. When two open files share a name, each tab adds its folder: `gears · parts` and `gears · demos`.
 - The breadcrumb names the open file with its folder: `parts/gears.pathogen`.
-- Each file keeps its own undo history while the workspace is open. [TO CONFIRM, note 46: undo per file.]
+- Each file keeps its own undo history while the workspace is open.
 
 ## Programs and libraries
 
@@ -88,10 +89,10 @@ The **+** in the Files header opens a menu: New program, New library, New folder
 
 - **Rename…** is in each file's menu. A name with a folder in it moves the file; so does dragging the file onto another folder in the tree.
 - Renaming or moving a file updates the `import` paths that name it in the workspace's other files, and its entry in `pathogen.json`.
-- Moving a file also updates its own `./` and `../` import paths, so they still reach the same files. [TO CONFIRM in 2d, recommended.]
-- A folder's menu also has **Rename…**, which moves everything in it, with the same updates, and **Delete…**, which deletes the folder and its files after asking. [TO CONFIRM in 2d, recommended; not drawn in the mockups.]
+- Moving a file also updates its own `./` and `../` import paths, so they still reach the same files.
+- A folder's menu also has **Rename…**, which moves everything in it, with the same updates, and **Delete…**, which deletes the folder and its files after asking.
 - **Delete…** asks before it deletes. The files that imported a deleted library show an error at their `import` line until you change them.
-- **Duplicate** makes a copy beside the file, named with a number as Keep both does: `gears-2.pathogen`. A copy of a program goes at the end of the program list. [TO CONFIRM in 2d.]
+- **Duplicate** makes a copy beside the file, named with a number as Keep both does: `gears-2.pathogen`. A copy of a program goes at the end of the program list.
 
 ## pathogen.json
 
@@ -113,7 +114,7 @@ Every workspace has a `pathogen.json` at the top: the same project file that the
 
 ## Errors in other files
 
-An error in a file other than the program the preview shows names that file and its line, in the error panel and in the console, as [Errors in other files](#modules-errors-in-other-files) shows for the CLI. Click the file's name to open it at that line. [TO CONFIRM, note 46: not drawn in the mockups.] Red dots in the tree mark the file where the error happened and the program that ran into it.
+An error in a file other than the program the preview shows names that file and its line, in the error panel and in the console, as [Errors in other files](#modules-errors-in-other-files) shows for the CLI. Click the file's name to open it at that line. Red dots in the tree mark the file where the error happened and the program that ran into it.
 
 ## Limits
 

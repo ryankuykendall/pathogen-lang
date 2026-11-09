@@ -10,6 +10,12 @@ Deferred work from the modules, data and files effort. Each entry says what it i
 - **Needs:** an index of every `.pathogen` file in the project folder. A start exists: the language server lists the project's modules for path completion (`listProjectModules`, `DocumentModules.listed`).
 - **From:** plan 12 decision 25 ("1b"). Put on the backlog by you on 2026-11-05 ("YES, let's add this to the backlog").
 
+### Sharing a workspace
+- **What:** a way to share a workspace with someone, every file of it, that replaces the old Copy URL.
+- **Today:** Copy URL put one program's code in the link (`?state=`), so it can't carry a workspace with several files; it leaves the menu in 2d. Links copied before still open. Publishing to Explore is the only way to share a workspace.
+- **Needs:** a design first. Some shapes: a share link to a read-only copy, served by the API with its files; or a fork link like the detail page's "Open as new workspace", for workspaces that aren't published.
+- **From:** your answer on 2026-11-09 (note 52): "let's drop copy URL from the menu. We should probably come up with a more robust sharing solution, but we can save that experience for another time."
+
 ## Language
 
 ### Default import of a drawing
