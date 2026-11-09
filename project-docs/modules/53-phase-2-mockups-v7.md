@@ -45,5 +45,5 @@
   - Move to… (and the rename line, if question 4 goes that way);
   - the thumbnail while nothing draws;
   - a short "On a phone" section.
-- **Step 2** (the workspace's edits, pure and tested) is under way, since it needs none of these answers. Each operation returns its inverse, so the toast's Undo is cheap whichever way question 3 goes.
+- **Step 2** (the workspace's edits, pure and tested) comes next, while you review: it needs none of these answers. Each operation will return its inverse, so the toast's Undo is cheap whichever way question 3 goes.
 - **Steps 4 and 9** (the tree, and the rest) wait for this review.
