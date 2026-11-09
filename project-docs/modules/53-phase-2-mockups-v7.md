@@ -37,6 +37,25 @@
    Recommended: yes.
 6. **The mini-workspace's Background and Grid stay with the embed** (W). Open in Playground carries the code, as today. Reset puts them back with the variables. They aren't remembered after you leave the page. Recommended: yes.
 
+## Your answers (2026-11-09), in your words
+
+1. The first program shown at once: "Agreed".
+2. The thumbnail kept, the "No programs" label, Export, Set Thumbnail and Make public waiting: "Agreed".
+3. Undo in the rename and move toast: "Agreed".
+4. "Agreed that it should just be the name (no path or file extension can be modified on rename.)" So the rename field holds the name alone. A slash in it is refused, with a hint to use Move to…. The `.pathogen` at the end isn't part of the field, as in New program's. Move to… and dragging are the ways to change a file's folder.
+5. Narrow screens: "Agreed".
+6. The mini-workspace's Background and Grid stay with the embed: "Agreed."
+
+**Folded into `docs/workspace-files.md`** (not yet published):
+- the first program in an empty workspace is the main and is shown;
+- the thumbnail, the label and the three waiting items;
+- Rename changes the name only; Move to… and dragging;
+- the toast's Undo, and why a file's own undo isn't enough;
+- a new "On a phone" section;
+- Copy Code copies the file in the editor (note 52).
+
+The mini-workspace isn't on that page: it lives in blog posts. Its two controls are recorded here, and in note 52's step 9.
+
 ## After your review
 
 - **The docs page** (`docs/workspace-files.md`): fold in the answers. That means:
