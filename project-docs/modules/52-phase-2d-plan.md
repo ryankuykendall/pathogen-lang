@@ -83,6 +83,17 @@ Each step: tests first; a storybook entry for each new component (the playground
 9. **The rest:** Copy Code copies the file in the editor; Copy URL leaves the menu; the empty preview (after the v7 mockup); the mini-workspace's Background and Grid (after its mockup); narrow screens (after the v7 mockup).
 10. **The docs page:** remove the [TO CONFIRM] marks as they're settled, and run its content review again before it publishes with 2e.
 
+## Built
+
+**Step 1, rewriting import paths** (2026-11-09). `src/host/move-imports.ts`, exported from the bundle:
+- `importEditsForMoves(files, moves)`: for files and moves by project path (a move names a file, or a folder and everything in it), the edits to the text between an import's quotes that keep it reaching the same file. Only imports that would otherwise stop reaching it change; one that still does keeps its spelling. Absolute paths stay absolute, quotes keep their style. Imports the loader would refuse (a path mistake, a path above the top, a string not closed yet) and anything that isn't an import (comments, strings, non-`.pathogen` files) are left alone. Every path maps against the names before any move, so a swap works; when a folder and a file in it both move, the file's own move wins.
+- `applyImportEdits(source, edits)`: makes them from the end back, and refuses edits made for another version of the text (each edit carries the path it replaces), so a stale edit can't land in the wrong place once open editors hold newer text (step 3).
+- `pathAfterMoves(path, moves)`: for step 2's file keys and entry points.
+- A mis-cased import (already an error) is left as written: when its target moves, its case-mismatch error becomes not-found. Pinned by a test.
+- Checked: `tests/host/move-imports.test.ts` (31). The round trip compiles each program through the memory host and the loader before and after a move: no load errors, the same files reached, the same drawing.
+- Backlog: VS Code's rename hook (the second caller), and `@font` file paths once fonts can be added.
+- **Review** (no critical findings, no bug in the mapping). Fixed: a move path with a trailing slash, an empty, `.` or `..` part, or the top itself mapped to the wrong place silently, and is now refused; so are the same path moved twice and two files that would land on one path; `applyImportEdits` also checks the quotes around each edit and refuses overlapping edits. Added tests: a file and its import moved apart in one go, a `../../` result, an import that would climb above the top from the new place, edits given out of order. Left for step 2 as planned: `pathogen.json`'s entry for a moved program (`pathAfterMoves`), and the name rules for a new path.
+
 ## Risks
 
 - **Autosave with several changing files** is where data can be lost. Step 3 starts with the tests for the 2c review's findings 1 and 3, and with a puppeteer check that edits two files, switches workspaces, and reloads.

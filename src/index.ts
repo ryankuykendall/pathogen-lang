@@ -91,6 +91,9 @@ export {
 } from './host/paths';
 export { CONVENTIONAL_MAIN, parseProjectFile, PROJECT_FILE_NAME, projectMain } from './host/project';
 export type { ParsedProjectFile, ProjectEntry, ProjectFile, ProjectMain } from './host/project';
+// Moving files: the import edits that keep every import reaching the same file.
+export { applyImportEdits, importEditsForMoves, pathAfterMoves } from './host/move-imports';
+export type { FileImportEdits, ImportPathEdit, PathMove } from './host/move-imports';
 // A project held in memory: the playground's workspace (note 51).
 export { createMemoryProjectHost } from './host/memory-host';
 export type { MemoryProjectOptions } from './host/memory-host';

@@ -10,6 +10,12 @@ Deferred work from the modules, data and files effort. Each entry says what it i
 - **Needs:** an index of every `.pathogen` file in the project folder. A start exists: the language server lists the project's modules for path completion (`listProjectModules`, `DocumentModules.listed`).
 - **From:** plan 12 decision 25 ("1b"). Put on the backlog by you on 2026-11-05 ("YES, let's add this to the backlog").
 
+### Imports follow a file renamed in VS Code
+- **What:** renaming or moving a `.pathogen` file in VS Code's explorer updates the imports that name it, and the moved file's own `./` and `../` imports, as the playground does (`docs/workspace-files.md` "Renaming, moving and deleting").
+- **Today:** the engine has the edits (`importEditsForMoves`, `src/host/move-imports.ts`, 2d step 1); only the playground calls it. In VS Code a rename leaves the imports as they were, and they show a not-found error.
+- **Needs:** the language server's `workspace/willRenameFiles` handler, reading every `.pathogen` file in the project folder (the same index as "Rename and find-references across files" above), and answering with a `WorkspaceEdit`.
+- **From:** 2d step 1 (note 52), 2026-11-09.
+
 ### Sharing a workspace
 - **What:** a way to share a workspace with someone, every file of it, that replaces the old Copy URL.
 - **Today:** Copy URL put one program's code in the link (`?state=`), so it can't carry a workspace with several files; it leaves the menu in 2d. Links copied before still open. Publishing to Explore is the only way to share a workspace.
@@ -37,6 +43,12 @@ Deferred work from the modules, data and files effort. Each entry says what it i
 ### Positions on every evaluator error
 - **What:** errors in the compiled file that have no line today get one, as errors in imported files already do.
 - **Why it waits:** it changes error text, so it needs its own audit (plan 12 amendments, "Step 3, positions").
+
+### `@font` file paths follow a moved file
+- **What:** when font files can be added to a workspace, moving a file updates its relative `@font "./fonts/…"` paths, and moving a font file updates the `@font` lines that name it, as moving a file does for imports.
+- **Today:** a workspace holds only `.pathogen` files, and an `@font` file path in a workspace gets a warning that suggests a Google Fonts family (note 51), so a move can't break one. `importEditsForMoves` (`src/host/move-imports.ts`) rewrites imports only.
+- **Needs:** the same edits over `planFontDirectives`' paths, in the same function, when fonts arrive (note 50's data files and fonts).
+- **From:** 2d step 1 (note 52), 2026-11-09.
 
 ## Bugs
 
