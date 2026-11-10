@@ -64,6 +64,7 @@ interface CmEditorState {
   };
   selection: { main: { head: number } };
   field<T>(field: unknown): T;
+  update: (spec: unknown) => { state: CmEditorState };
 }
 
 interface CmEditorView {
@@ -73,7 +74,18 @@ interface CmEditorView {
   hasFocus: boolean;
   focus(): void;
   destroy(): void;
+  scrollDOM: HTMLElement;
+  /** CodeMirror 6.23+: an effect that scrolls back to here when dispatched. */
+  scrollSnapshot?: () => unknown;
 }
+
+/** A file's editor state while another file is shown, with where it was scrolled to. */
+interface KeptFile {
+  state: CmEditorState;
+  scroll: { snapshot: unknown } | { top: number };
+}
+
+const DEFAULT_FILE = 'main.pathogen';
 
 interface CmTransaction {
   isUserEvent(type: string): boolean;
@@ -143,12 +155,24 @@ export class CodeEditorPane extends HTMLElement {
   private _pendingWarnings: Array<{ line: number; column: number }>;
   private _themeUnsubscribe: (() => void) | null;
 
+  // One editor state per file of the workspace (phase 2d, step 3): the file
+  // shown is the view's state; every other file opened since the workspace
+  // loaded keeps its state here, undo history included, so each file keeps
+  // its own undo while the workspace is open (docs/workspace-files.md). A
+  // workspace load forgets them all: every workspace has a main.pathogen,
+  // and another workspace's history must never come back.
+  private _activePath: string;
+
+  private _kept: Map<string, KeptFile>;
+
   constructor() {
     super();
     this.attachShadow({ mode: 'open' });
     this._editor = null;
     this._cmModules = null;
     this._initialCode = '';
+    this._activePath = DEFAULT_FILE;
+    this._kept = new Map();
     this._themeCompartment = null;
     this._errorHighlight = null;
     this._languageExtensions = null;
@@ -169,7 +193,7 @@ export class CodeEditorPane extends HTMLElement {
   }
 
   set initialCode(code: string) {
-    this._resetDocument(code);
+    this.resetFiles(this._activePath, code);
   }
 
   get code(): string {
@@ -177,32 +201,93 @@ export class CodeEditorPane extends HTMLElement {
   }
 
   set code(value: string) {
-    this._resetDocument(value);
+    this.resetFiles(this._activePath, value);
+  }
+
+  /** The file shown. */
+  get activePath(): string {
+    return this._activePath;
+  }
+
+  /** Put the keyboard in the editor (after a tab is clicked). */
+  focusEditor(): void {
+    this._editor?.focus();
   }
 
   /**
-   * Replace the document by installing a FRESH EditorState — never via a
-   * dispatch. A fresh state starts with an empty undo history, so Cmd+Z in
-   * the new document can never resurrect the previous one (a workspace
-   * switch used to leave "replace doc with old workspace" as an undoable
-   * step, and autosave then persisted the undo — real data loss). setState
-   * also produces no ViewUpdate, so programmatic loads do NOT fire the
-   * update listener: no `code-change` event, no store.set('code'/'isModified'),
-   * no autosave.onChange. Callers must write store('code') themselves.
+   * Start over with one file, `path` holding `text` (a workspace load, a
+   * scratch page): every kept file state is forgotten, and the new one is
+   * FRESH — never a dispatch. A fresh state starts with an empty undo
+   * history, so Cmd+Z in the new document can never resurrect the previous
+   * one (a workspace switch used to leave "replace doc with old workspace" as
+   * an undoable step, and autosave then persisted the undo — real data loss).
+   * setState also produces no ViewUpdate, so programmatic loads do NOT fire
+   * the update listener: no `code-change` event, no store.set('code'/
+   * 'isModified'), no autosave.onChange. Callers must write store('code')
+   * themselves.
    */
-  private _resetDocument(code: string): void {
-    this._initialCode = code;
+  resetFiles(path: string, text: string): void {
+    this._kept.clear();
+    this._activePath = path;
+    this._initialCode = text;
     if (!this._editor || !this._cmModules) {
       // CodeMirror not loaded yet — createEditor() will seed from _initialCode.
       return;
     }
     const hadFocus = this._editor.hasFocus;
-    const fresh = this._cmModules.state.EditorState.create({
-      doc: code,
-      extensions: this._buildExtensions(),
-    });
-    this._editor.setState(fresh);
+    this._editor.setState(this._newState(text));
+    this._clearMarks();
     if (hadFocus) this._editor.focus();
+  }
+
+  /**
+   * Show another file of the workspace: its kept state, with its undo history
+   * and scroll position, or a fresh one holding `text`. The file shown until
+   * now is kept. A kept state whose text isn't `text` (the workspace changed
+   * it meanwhile) is brought to it as one undoable step. Like resetFiles,
+   * nothing fires `code-change`: the caller updates the store. Error and
+   * warning marks are cleared; the caller places the new file's.
+   */
+  showFile(path: string, text: string): void {
+    if (path === this._activePath) return;
+    if (!this._editor || !this._cmModules) {
+      this._activePath = path;
+      this._initialCode = text;
+      return;
+    }
+    const view = this._editor;
+    this._kept.set(this._activePath, {
+      state: view.state,
+      scroll: view.scrollSnapshot ? { snapshot: view.scrollSnapshot() } : { top: view.scrollDOM.scrollTop },
+    });
+    const kept = this._kept.get(path);
+    this._kept.delete(path);
+    let state = kept?.state ?? this._newState(text);
+    const changed = state.doc.toString() !== text;
+    if (changed) state = state.update({ changes: { from: 0, to: state.doc.length, insert: text } }).state;
+    this._activePath = path;
+    view.setState(state);
+    // A kept state was made under the theme of its day.
+    this._updateEditorTheme();
+    this._clearMarks();
+    // Back where the file was scrolled to, unless its text changed meanwhile
+    // (a snapshot names positions in the old text).
+    if (kept && !changed && 'snapshot' in kept.scroll) view.dispatch({ effects: kept.scroll.snapshot });
+    else view.scrollDOM.scrollTop = kept && !changed && 'top' in kept.scroll ? kept.scroll.top : 0;
+  }
+
+  private _newState(text: string): CmEditorState {
+    return this._cmModules!.state.EditorState.create({
+      doc: text,
+      extensions: this._buildExtensions(),
+    }) as CmEditorState;
+  }
+
+  /** A file just shown starts without the marks of the one before; the next compile places its own. */
+  private _clearMarks(): void {
+    this._pendingError = null;
+    this._pendingWarnings = [];
+    if (this._editor && this._errorHighlight) this._errorHighlight.clearError(this._editor);
   }
 
   async loadCodeMirror(): Promise<void> {
@@ -237,13 +322,14 @@ export class CodeEditorPane extends HTMLElement {
 
   /**
    * The full extension set for an EditorState. Called for the initial state
-   * AND for every document reset (see _resetDocument) — a fresh state only
-   * keeps error highlighting and theme swapping working because two
-   * identities are stable across calls: `_languageExtensions` (built once —
-   * its error-highlight StateField/StateEffect handles) and
-   * `_themeCompartment` (the reconfigure target). Everything else is cheap
-   * to recreate, and a fresh `history()` per state is exactly what isolates
-   * undo across workspace switches.
+   * AND for every fresh one (resetFiles, and each file shown for the first
+   * time, showFile) — a fresh state only keeps error highlighting and theme
+   * swapping working because two identities are stable across calls:
+   * `_languageExtensions` (built once — its error-highlight
+   * StateField/StateEffect handles) and `_themeCompartment` (the reconfigure
+   * target). Everything else is cheap to recreate, and a fresh `history()`
+   * per state is exactly what isolates undo across workspace switches and
+   * keeps each file's undo its own.
    */
   private _buildExtensions(): unknown[] {
     const { view, commands, language, autocomplete } = this._cmModules!;
@@ -395,7 +481,7 @@ export class CodeEditorPane extends HTMLElement {
    */
   replaceDocument(text: string): void {
     if (!this._editor) {
-      this._resetDocument(text);
+      this._initialCode = text;
       return;
     }
     this._editor.dispatch({
@@ -464,6 +550,7 @@ export class CodeEditorPane extends HTMLElement {
     this.shadowRoot!.innerHTML = `
       <style>${styles}</style>
 
+      <slot name="tabs"></slot>
       <div id="editor-container"></div>
     `;
   }

@@ -142,6 +142,7 @@ export const store = createStore({
   workspaceFolders: [] as string[],
   workspaceEntryPoints: [] as string[],
   openFile: 'main.pathogen',
+  openFiles: ['main.pathogen'] as string[],
   shownProgram: null as string | null,
 
   // Compilation results

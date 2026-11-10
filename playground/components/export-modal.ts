@@ -183,6 +183,8 @@ interface WorkspaceState {
   workspaceName?: string;
   workspaceDescription?: string;
   code?: string;
+  /** The code that drew the preview being exported (the program shown). */
+  renderedCode?: string | null;
   [key: string]: unknown;
 }
 
@@ -397,7 +399,9 @@ class ExportModal extends HTMLElement {
       description: storeState.workspaceDescription || '',
       date: new Date().toISOString().slice(0, 10),
       creator: '',
-      code: storeState.code || '',
+      // The legend's code is the program that drew this picture, which
+      // needn't be the file open in the editor (a library in a tab).
+      code: storeState.renderedCode ?? storeState.code ?? '',
     };
 
     // Default snap size to match workspace grid

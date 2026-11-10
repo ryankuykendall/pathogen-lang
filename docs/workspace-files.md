@@ -38,8 +38,10 @@ A new workspace holds one program, `main.pathogen`, and `pathogen.json`, a proje
 - **Files**, beside Console in the breadcrumb, shows or hides the tree. Folders come first, then files.
 - The tree shows each file's full name. Programs and libraries have different icons.
 - Click a file to open it in a tab. Tab labels leave out `.pathogen`. When two open files share a name, each tab adds its folder: `gears · parts` and `gears · demos`.
+- A tab's **×** closes it, and so does a middle-click. The last open tab stays open.
+- The book at the right end of the tabs shows or hides the docs.
 - The breadcrumb names the open file with its folder: `parts/gears.pathogen`.
-- Each file keeps its own undo history while the workspace is open.
+- Each file keeps its own undo history while the workspace is open, even after its tab is closed.
 - **Copy Code** copies the file in the editor.
 
 ## Programs and libraries

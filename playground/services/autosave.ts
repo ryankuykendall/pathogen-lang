@@ -10,6 +10,8 @@ import type { WorkspaceTexts } from './workspace-files.js';
 // Autosave configuration
 const DEBOUNCE_MS = 5000; // 5 seconds after last change
 const MIN_INTERVAL_MS = 30000; // 30 seconds minimum between saves
+// Under the browsers' 64 KB cap on a keepalive request (fetch's keepalive).
+const KEEPALIVE_MAX_BYTES = 60_000;
 
 // Save status enum
 export const SaveStatus = {
@@ -57,6 +59,20 @@ function workspaceWith(code: string): WorkspaceTexts {
   return workspace;
 }
 
+/** What the server holds for a workspace as it was loaded: each file's hash and text, and its shape. */
+export interface SavedFiles {
+  /** Path → SHA-256, from the load's answer. */
+  shas?: Record<string, string>;
+  /** Path → text, as loaded. */
+  texts?: Record<string, string>;
+  /**
+   * True when the server holds just main.pathogen (or a server from before
+   * phase 2 answered one `code`): such a workspace saves `code`, which every
+   * server version takes. False when it holds more.
+   */
+  justMain?: boolean;
+}
+
 /**
  * The workspace's content hash, by the server's own rule (src/workspace/
  * files.ts, through the bundle), so an unchanged workspace compares equal to
@@ -93,10 +109,11 @@ class AutosaveManager {
   _debounceTimer: ReturnType<typeof setTimeout> | null;
   _lastSaveTime: number;
   _lastSavedHash: string | null;
-  _pendingCode: string | null;
-  // The workspace the pending edit belongs to, taken when the edit happened:
-  // a flush after a workspace switch must save this workspace's files, not
-  // the files the store holds by then (tests/playground-workspace-switch-autosave).
+  // The workspace as of the latest edit not yet saved, every file in it,
+  // taken when the edit happened: a flush after a workspace switch must save
+  // this workspace's files, not the files the store holds by then
+  // (tests/playground-workspace-switch-autosave). Null when nothing is
+  // pending. A save clears it only if no newer edit replaced it meanwhile.
   _pendingWorkspace: WorkspaceTexts | null;
   _isEnabled: boolean;
   // Optimistic concurrency: the code revision this client is editing from. Sent
@@ -110,16 +127,35 @@ class AutosaveManager {
   _pendingPreferences: unknown | null;
   // Flush promise tracking (Fix 1: duplication race condition)
   _flushPromise: Promise<void> | null;
-  // Each file's SHA-256 as the server last stored it: a save sends a file
-  // whose text matches by hash only (website/api: `{ sha256 }`).
+  // Each file's SHA-256 and text as the server last stored them: a save sends
+  // a file whose text is unchanged by hash only (website/api: `{ sha256 }`).
+  // The texts let the page-teardown save, which can't hash, tell which files
+  // changed.
   _savedShas: Map<string, string>;
+  _savedTexts: Map<string, string>;
+
+  // Whether the server holds just main.pathogen (see SavedFiles.justMain).
+  _serverJustMain: boolean;
+
+  // One request out at a time. Two of ours from the same revision would 409
+  // each other, and a 409 reads as another tab (the banner, and no more
+  // saving): each tab click blurs the editor and saves, so two quick clicks
+  // did it. Normal saves wait their turn in `_queue`, and for the request
+  // out (`_inFlight`). A page-teardown save can't wait: it goes at once.
+  _inFlight: { workspace: WorkspaceTexts; settled: Promise<void> } | null;
+
+  _queue: Promise<unknown>;
+
+  // Counts page-teardown saves. A normal save asked for before one went out
+  // doesn't send: the teardown save carried the latest edit. And a 409 on a
+  // request that crossed another of ours is the two of them, not another tab.
+  _teardowns: number;
 
   constructor() {
     this._workspaceId = null;
     this._debounceTimer = null;
     this._lastSaveTime = 0;
     this._lastSavedHash = null;
-    this._pendingCode = null;
     this._pendingWorkspace = null;
     this._isEnabled = false;
     this._baseRev = 0;
@@ -130,20 +166,21 @@ class AutosaveManager {
     this._pendingPreferences = null;
     this._flushPromise = null;
     this._savedShas = new Map();
+    this._savedTexts = new Map();
+    this._serverJustMain = true;
+    this._inFlight = null;
+    this._queue = Promise.resolve();
+    this._teardowns = 0;
   }
 
-  // Initialize autosave for a workspace. `savedShas` is each file's SHA-256
-  // as loaded (path → sha256), for a workspace with several files.
-  init(
-    workspaceId: string,
-    initialHash: string | null = null,
-    initialRev = 0,
-    savedShas: Record<string, string> = {},
-  ): void {
+  // Initialize autosave for a workspace, with what the server holds for it.
+  init(workspaceId: string, initialHash: string | null = null, initialRev = 0, saved: SavedFiles = {}): void {
     this.stop(); // Clean up any previous instance
     this._workspaceId = workspaceId;
     this._lastSavedHash = initialHash;
-    this._savedShas = new Map(Object.entries(savedShas));
+    this._savedShas = new Map(Object.entries(saved.shas ?? {}));
+    this._savedTexts = new Map(Object.entries(saved.texts ?? {}));
+    this._serverJustMain = saved.justMain ?? true;
     this._baseRev = initialRev;
     this._conflicted = false;
     this._lastSaveTime = Date.now();
@@ -167,46 +204,50 @@ class AutosaveManager {
       clearTimeout(this._preferencesTimer);
       this._preferencesTimer = null;
     }
-    this._pendingCode = null;
     this._pendingWorkspace = null;
     this._pendingPreferences = null;
+    // The next workspace's saves don't wait on this one's requests; theirs
+    // check the workspace id and leave the new one alone.
+    this._inFlight = null;
+    this._queue = Promise.resolve();
+  }
+
+  /** What a save sends now: the pending edit's workspace, else the store's. Taken synchronously. */
+  _workspaceToSave(): WorkspaceTexts {
+    return this._pendingWorkspace ?? workspaceNow();
   }
 
   /**
-   * The workspace a save of `code` belongs to: the one the pending edit was
-   * made in, when `code` is that edit, else the store's (a save with nothing
-   * pending, as before).
+   * Called after an edit: takes the workspace as it now stands (or, given the
+   * open file's text, the store's workspace with that text) and schedules a
+   * debounced save.
    */
-  _workspaceFor(code: string): WorkspaceTexts {
-    const pending = this._pendingWorkspace;
-    if (pending && pending.texts.get(pending.openFile) === code) return pending;
-    return workspaceWith(code);
-  }
-
-  // Called when code changes - triggers debounced save
-  onChange(code: string): void {
+  onChange(change: string | WorkspaceTexts = workspaceNow()): void {
     if (!this._isEnabled || !this._workspaceId) {
       return;
     }
 
-    this._pendingCode = code;
-    this._pendingWorkspace = workspaceWith(code);
+    this._pendingWorkspace = typeof change === 'string' ? workspaceWith(change) : change;
     store.set('saveStatus', SaveStatus.MODIFIED);
+    this._scheduleSave(DEBOUNCE_MS);
+  }
 
-    // Clear existing timer
-    if (this._debounceTimer) {
-      clearTimeout(this._debounceTimer);
-    }
-
-    // Set new debounce timer
+  /**
+   * One save timer at a time: replaces any scheduled one. The handle is
+   * cleared when it fires, so hasUnsavedChanges() doesn't read a timer that
+   * already ran as a save still to come.
+   */
+  _scheduleSave(delay: number): void {
+    if (this._debounceTimer) clearTimeout(this._debounceTimer);
     this._debounceTimer = setTimeout(() => {
+      this._debounceTimer = null;
       this._attemptSave();
-    }, DEBOUNCE_MS);
+    }, delay);
   }
 
   // Attempt to save (respects minimum interval)
   async _attemptSave(): Promise<void> {
-    if (!this._isEnabled || !this._workspaceId || this._pendingCode === null) {
+    if (!this._isEnabled || !this._workspaceId || this._pendingWorkspace === null) {
       return;
     }
 
@@ -223,48 +264,128 @@ class AutosaveManager {
     // Check minimum interval
     if (timeSinceLastSave < MIN_INTERVAL_MS) {
       // Reschedule for later
-      const delay = MIN_INTERVAL_MS - timeSinceLastSave + 100;
-      this._debounceTimer = setTimeout(() => {
-        this._attemptSave();
-      }, delay);
+      this._scheduleSave(MIN_INTERVAL_MS - timeSinceLastSave + 100);
       return;
     }
 
-    // Check if content actually changed (hash comparison)
-    const code = this._pendingCode;
-    const { hash: newHash, shas } = await workspaceHash(this._workspaceFor(code));
-
-    if (newHash === this._lastSavedHash) {
-      // Content unchanged, skip save
-      store.set('saveStatus', SaveStatus.SAVED);
-      return;
-    }
-
-    // Perform save
-    await this._doSave(code, newHash, shas);
+    await this._saveInTurn(this._pendingWorkspace, { unchangedIsSaved: true });
   }
 
   /**
-   * What a save sends: a workspace that is just main.pathogen as `code`,
-   * which every server version accepts; one with several files as `files`,
-   * each changed file's text and every other by its hash. Folders and entry
-   * points aren't sent: the server keeps them (they change in 2d).
+   * A normal save, in its turn: one request out at a time, so each goes out
+   * from the revision the one before it got. `requested` is what was asked to
+   * be saved, taken when it was asked (a flush at a workspace switch, before
+   * the next workspace's load replaces the store); an edit made while it
+   * waited is newer and is sent instead. Resolves false when it failed or
+   * couldn't be sent.
    */
-  _saveBody(code: string, shas: ReadonlyMap<string, string>): Record<string, unknown> {
-    const workspace = this._workspaceFor(code);
-    if (isJustMain(workspace)) return { code };
+  async _saveInTurn(requested: WorkspaceTexts, { unchangedIsSaved = false } = {}): Promise<boolean> {
+    const workspaceId = this._workspaceId;
+    const teardowns = this._teardowns;
+    const turn = this._queue.then(async (): Promise<boolean> => {
+      await this._requestSettled();
+      if (this._workspaceId !== workspaceId || this._conflicted) return false;
+      // A teardown save went out since this one was asked for, with the latest edit.
+      if (this._teardowns !== teardowns) return true;
+      const workspace = this._pendingWorkspace ?? requested;
+      const { hash, shas } = await workspaceHash(workspace);
+      // Another workspace loaded while hashing: this one is no longer bound.
+      if (this._workspaceId !== workspaceId) return false;
+      if (this._teardowns !== teardowns) return true;
+      if (hash === this._lastSavedHash) {
+        // Content unchanged, skip save
+        this._settle(workspace);
+        if (unchangedIsSaved) store.set('saveStatus', SaveStatus.SAVED);
+        return true;
+      }
+      await this._doSave(workspace, hash, shas);
+      return store.get('saveStatus') !== SaveStatus.ERROR;
+    });
+    this._queue = turn.catch(() => undefined);
+    return turn;
+  }
+
+  /**
+   * Until the request out now (if any) is answered. At most 20 s: the API has
+   * no timeout, and a request that never answers mustn't stop every save
+   * after it.
+   */
+  async _requestSettled(): Promise<void> {
+    const deadline = Date.now() + 20_000;
+    while (this._inFlight && Date.now() < deadline) {
+      const timeout: { id?: ReturnType<typeof setTimeout> } = {};
+      await Promise.race([
+        this._inFlight.settled,
+        new Promise<void>((resolve) => {
+          timeout.id = setTimeout(resolve, deadline - Date.now());
+        }),
+      ]);
+      clearTimeout(timeout.id);
+    }
+  }
+
+  /** Mark a request out; returns what to call once it's answered. */
+  _requestOut(workspace: WorkspaceTexts): () => void {
+    let answered: () => void = () => undefined;
+    const settled = new Promise<void>((resolve) => {
+      answered = resolve;
+    });
+    const request = { workspace, settled };
+    this._inFlight = request;
+    return () => {
+      if (this._inFlight === request) this._inFlight = null;
+      answered();
+    };
+  }
+
+  /** The pending edit is saved: forget it, unless a newer edit replaced it meanwhile. */
+  _settle(saved: WorkspaceTexts): void {
+    if (this._pendingWorkspace === saved) this._pendingWorkspace = null;
+  }
+
+  /**
+   * What a save sends. A workspace that is just main.pathogen, on the server
+   * too, goes as `code`, which every server version accepts. Any other goes
+   * as `files`, with its folders and program list: each file whose text the
+   * server doesn't hold goes as text, every other by its hash. `shas` are the
+   * files' hashes when the caller computed them; the page-teardown save
+   * can't, and compares texts instead.
+   */
+  _saveBody(workspace: WorkspaceTexts, shas: ReadonlyMap<string, string> = new Map()): Record<string, unknown> {
+    if (isJustMain(workspace) && this._serverJustMain) return { code: workspace.texts.get(MAIN_FILE) ?? '' };
     const files: Record<string, { text: string } | { sha256: string }> = {};
     for (const [path, text] of workspace.texts) {
-      const sha256 = shas.get(path);
-      files[path] = sha256 !== undefined && this._savedShas.get(path) === sha256 ? { sha256 } : { text };
+      const saved = this._savedShas.get(path);
+      const unchanged =
+        saved !== undefined && (shas.has(path) ? shas.get(path) === saved : this._savedTexts.get(path) === text);
+      files[path] = unchanged ? { sha256: saved } : { text };
     }
-    return { files };
+    return { files, folders: workspace.folders, entryPoints: workspace.entryPoints };
+  }
+
+  /** The server now holds exactly `workspace`: its texts, hashes (when known) and shape. */
+  _recordSaved(workspace: WorkspaceTexts, shas: ReadonlyMap<string, string>): void {
+    for (const path of [...this._savedTexts.keys()]) {
+      if (!workspace.texts.has(path)) this._savedTexts.delete(path);
+    }
+    for (const path of [...this._savedShas.keys()]) {
+      if (!workspace.texts.has(path)) this._savedShas.delete(path);
+    }
+    for (const [path, text] of workspace.texts) {
+      const sha256 = shas.get(path);
+      if (sha256 !== undefined) this._savedShas.set(path, sha256);
+      // A text sent without its hash known (the page-teardown save): its old
+      // hash no longer names it, so the next save sends it as text again.
+      else if (this._savedTexts.get(path) !== text) this._savedShas.delete(path);
+      this._savedTexts.set(path, text);
+    }
+    this._serverJustMain = isJustMain(workspace);
   }
 
   // Actually perform the save. The keepalive (page-teardown) flush does NOT
   // route through here — it dispatches its fetch synchronously in saveNow so the
   // request survives unload; this path is the normal awaited save.
-  async _doSave(code: string, hash: string, shas: ReadonlyMap<string, string> = new Map()): Promise<void> {
+  async _doSave(workspace: WorkspaceTexts, hash: string, shas: ReadonlyMap<string, string> = new Map()): Promise<void> {
     if (!this._isEnabled || !this._workspaceId) {
       return;
     }
@@ -278,14 +399,16 @@ class AutosaveManager {
     // while the request is out, its answer must not touch the new one's
     // state (its revision, saved hashes or status).
     const workspaceId = this._workspaceId;
+    const teardowns = this._teardowns;
+    const answered = this._requestOut(workspace);
     try {
       const result = (await workspaceApi.update(workspaceId, {
-        ...this._saveBody(code, shas),
+        ...this._saveBody(workspace, shas),
         baseRev: this._baseRev,
       })) as Record<string, unknown>;
       if (this._workspaceId !== workspaceId) return;
-      // The server now stores these bytes.
-      for (const [path, sha256] of shas) this._savedShas.set(path, sha256);
+      // The server now stores these files.
+      this._recordSaved(workspace, shas);
 
       // Advance our base revision from the server's authoritative value so the
       // next save's baseRev matches.
@@ -293,24 +416,19 @@ class AutosaveManager {
         this._baseRev = result.rev;
       }
 
+      // Saved (or, `skipped`, the server already held it): settle local state
+      // so we stop reporting "unsaved" (hasUnsavedChanges → beforeunload
+      // prompt) and don't re-send the same bytes. An edit made while this
+      // save was out stays pending, and its debounce saves it.
+      this._lastSaveTime = Date.now();
+      this._lastSavedHash = hash;
+      this._settle(workspace);
+      const status = this._pendingWorkspace ? SaveStatus.MODIFIED : SaveStatus.SAVED;
       if (result.skipped) {
-        // Server said content unchanged — settle local state so we stop
-        // reporting "unsaved" (hasUnsavedChanges → beforeunload prompt) and
-        // don't keep re-sending identical bytes on the next debounce.
-        this._lastSaveTime = Date.now();
-        this._lastSavedHash = hash;
-        this._pendingCode = null;
-        this._pendingWorkspace = null;
-        store.set('saveStatus', SaveStatus.SAVED);
+        store.set('saveStatus', status);
       } else {
-        // Save successful
-        this._lastSaveTime = Date.now();
-        this._lastSavedHash = hash;
-        this._pendingCode = null;
-        this._pendingWorkspace = null;
-
         (store as any).update({
-          saveStatus: SaveStatus.SAVED,
+          saveStatus: status,
           workspaceUpdatedAt: result.updatedAt,
         });
       }
@@ -321,11 +439,21 @@ class AutosaveManager {
         console.error('Autosave of the previous workspace failed:', err);
         return;
       }
+      // A page-teardown save went out while this one was: it carried this
+      // workspace or a newer one, and whichever of the two landed second got
+      // the 409. That's not another tab, and this older text mustn't be put
+      // back as pending: the teardown save's own answer settles what's saved.
+      if (this._teardowns !== teardowns) return;
+      // The failed workspace is still unsaved. A newer edit made while the
+      // request was out is newer than it, and stays the one to save: the
+      // retry must never send the older text over it.
+      this._pendingWorkspace ??= workspace;
+
       // 409 = another tab/window advanced this workspace. Retrying with our
       // stale baseRev would just 409 again, and force-saving would clobber the
-      // newer code — so surface the conflict and STOP autosaving. We keep
-      // _pendingCode so the user's local edits aren't lost; they reconcile by
-      // reloading (which re-inits autosave at the latest rev).
+      // newer code — so surface the conflict and STOP autosaving. The pending
+      // workspace is kept so the user's local edits aren't lost; they
+      // reconcile by reloading (which re-inits autosave at the latest rev).
       if (this._isConflictError(err)) {
         this._enterConflict();
         return;
@@ -337,11 +465,11 @@ class AutosaveManager {
         saveError: (err as Error).message,
       });
 
-      // Retry after interval
-      this._debounceTimer = setTimeout(() => {
-        this._pendingCode = code; // Restore pending code
-        this._attemptSave();
-      }, MIN_INTERVAL_MS);
+      // Retry after the interval, with whatever is pending then. Replaces a
+      // debounce an edit during the request scheduled: one timer, never two.
+      this._scheduleSave(MIN_INTERVAL_MS);
+    } finally {
+      answered();
     }
   }
 
@@ -423,10 +551,15 @@ class AutosaveManager {
       this._debounceTimer = null;
     }
 
-    const code = (this._pendingCode ?? store.get('code')) as string;
-    if (!code) {
+    // A page with nothing typed and nothing pending (the editor not loaded
+    // yet) has nothing to save.
+    if (!this._pendingWorkspace && !store.get('code')) {
       return true;
     }
+    // Taken now, synchronously: a flush at a workspace switch saves the
+    // workspace being left, even if the next one's load replaces the store
+    // before the save goes out.
+    const workspace = this._workspaceToSave();
 
     if (keepalive) {
       // Page-teardown path (beforeunload / visibilitychange→hidden). The fetch
@@ -438,6 +571,17 @@ class AutosaveManager {
       if (!this.hasUnsavedChanges() || this._conflicted) {
         return true;
       }
+      // A request out now already carries the latest edit: nothing more to
+      // send (a second one, from the same revision, would 409 against it).
+      const out = this._inFlight;
+      if (out && (this._pendingWorkspace === null || this._pendingWorkspace === out.workspace)) {
+        return true;
+      }
+      // Normal saves asked for before now don't send: this one carries the
+      // latest. If one of ours is out already, the two cross.
+      const teardown = ++this._teardowns;
+      const crossed = out !== null;
+      const answered = this._requestOut(workspace);
       // The fetch is dispatched synchronously here (before any await), so it
       // survives a real teardown. We still attach a continuation: when the page
       // SURVIVES (e.g. visibilitychange backgrounding, not a real unload) it
@@ -445,11 +589,17 @@ class AutosaveManager {
       // advance the server's rev while our _baseRev went stale, and the next
       // edit after returning to the tab would falsely 409. On a true unload the
       // continuation simply never runs (reload re-seeds _baseRev), which is fine.
-      const sentCode = code;
+      // The body compares texts, not hashes (no time to hash): every file
+      // edited since the last save goes as text.
       const sentFor = this._workspaceId;
+      const body = { ...this._saveBody(workspace), baseRev: this._baseRev };
+      // Browsers refuse a keepalive request over 64 KB outright. A bigger
+      // save goes as a plain request, which may still reach the server
+      // before the page goes; the leave prompt warns meanwhile.
+      const fits = new TextEncoder().encode(JSON.stringify(body)).length <= KEEPALIVE_MAX_BYTES;
       workspaceApi
-        .update(sentFor, { ...this._keepaliveBody(sentCode), baseRev: this._baseRev }, { keepalive: true })
-        .then((result) => {
+        .update(sentFor, body, { keepalive: fits })
+        .then(async (result) => {
           // Another workspace loaded meanwhile: this answer isn't about it.
           if (this._workspaceId !== sentFor) return;
           const rev = (result as { rev?: number } | null)?.rev;
@@ -457,19 +607,34 @@ class AutosaveManager {
             this._baseRev = rev;
             // Content is now persisted; settle local dirty state and the pill so
             // we don't re-warn/re-send when the tab is restored.
-            if (this._pendingCode === sentCode) {
-              this._pendingCode = null;
-              this._pendingWorkspace = null;
-            }
-            store.set('saveStatus', SaveStatus.SAVED);
+            this._recordSaved(workspace, new Map());
+            this._settle(workspace);
+            store.set('saveStatus', this._pendingWorkspace ? SaveStatus.MODIFIED : SaveStatus.SAVED);
+            // The page survived: hash what was sent, so the next save finds it
+            // unchanged and sends unchanged files by hash.
+            const { hash, shas } = await workspaceHash(workspace);
+            if (this._workspaceId !== sentFor) return;
+            this._lastSavedHash = hash;
+            this._recordSaved(workspace, shas);
           }
         })
         .catch((err) => {
           if (this._workspaceId !== sentFor) return;
+          // Our own two requests crossing (one of ours was out with this one,
+          // or a later teardown save went after it): the 409 is theirs, not
+          // another tab's. What this one carried stays pending until saved.
+          const ours = crossed || this._teardowns !== teardown;
           // Surface a conflict the same way the normal path does — otherwise a
           // visibilitychange 409 would silently halt autosave (no banner/pill).
-          if (this._isConflictError(err)) this._enterConflict();
-        });
+          if (this._isConflictError(err) && !ours) {
+            this._enterConflict();
+            return;
+          }
+          // The page survived (else this never runs): save it the normal way.
+          if (!this._isConflictError(err)) console.error('Autosave (page-teardown save) failed:', err);
+          if (this._pendingWorkspace) this._scheduleSave(DEBOUNCE_MS);
+        })
+        .finally(answered);
       return true;
     }
 
@@ -480,40 +645,17 @@ class AutosaveManager {
       return false;
     }
 
-    const { hash, shas } = await workspaceHash(this._workspaceFor(code));
-    if (hash === this._lastSavedHash) {
-      return true; // No changes to save
-    }
-
     // Force save regardless of interval
     this._lastSaveTime = 0;
-    await this._doSave(code, hash, shas);
-    return store.get('saveStatus') !== SaveStatus.ERROR;
+    return this._saveInTurn(workspace);
   }
 
-  /**
-   * The page-teardown save's body, built synchronously (no hashing: the fetch
-   * must leave before the document unloads). With several files, the open
-   * file goes as its text and the others by the hash last saved; in 2c the
-   * open file is the only one that changes.
-   */
-  _keepaliveBody(code: string): Record<string, unknown> {
-    const workspace = this._workspaceFor(code);
-    if (isJustMain(workspace)) return { code };
-    const files: Record<string, { text: string } | { sha256: string }> = {};
-    for (const [path, text] of workspace.texts) {
-      const saved = this._savedShas.get(path);
-      files[path] = path === workspace.openFile || saved === undefined ? { text } : { sha256: saved };
-    }
-    return { files };
-  }
-
-  // True when there is unsaved code (a pending edit, or the live store code
-  // differs from the last persisted hash). Used by the unload guard to decide
-  // whether to warn the user before they leave.
+  // True when there is unsaved code (a pending edit, a save scheduled, or a
+  // failed save). Used by the unload guard to decide whether to warn the user
+  // before they leave.
   hasUnsavedChanges(): boolean {
     if (!this._isEnabled || !this._workspaceId) return false;
-    if (this._pendingCode !== null) return true;
+    if (this._pendingWorkspace !== null) return true;
     if (this._debounceTimer !== null) return true;
     return store.get('saveStatus') === SaveStatus.ERROR;
   }

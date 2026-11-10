@@ -81,11 +81,6 @@ export class PlaygroundFooter extends HTMLElement {
         }),
       );
     });
-
-    // Docs button
-    root.querySelector('#docs-btn')!.addEventListener('click', () => {
-      this.dispatchEvent(new CustomEvent('open-docs', { bubbles: true, composed: true }));
-    });
   }
 
   dispatchStyleChange(): void {
@@ -218,34 +213,6 @@ export class PlaygroundFooter extends HTMLElement {
           background-color: var(--bg-secondary, #ffffff);
         }
 
-        .spacer {
-          flex: 1;
-        }
-
-        #docs-btn {
-          padding: 0.375rem 1rem;
-          border: 1px solid var(--border-color, #e2e8f0);
-          border-radius: var(--radius-md, 8px);
-          background: var(--bg-tertiary, #f0f1f2);
-          color: var(--text-primary, #1a1a2e);
-          cursor: pointer;
-          font-family: inherit;
-          font-size: 0.8125rem;
-          font-weight: 500;
-          transition: all var(--transition-base, 0.15s ease);
-        }
-
-        #docs-btn:hover {
-          background: var(--accent-subtle, rgba(16, 185, 129, 0.1));
-          border-color: var(--accent-color, #10b981);
-          color: var(--accent-color, #10b981);
-        }
-
-        #docs-btn:focus {
-          outline: none;
-          box-shadow: 0 0 0 3px var(--focus-ring, rgba(16, 185, 129, 0.4));
-        }
-
         @media (max-width: 768px) {
           :host {
             padding: 0.5rem 0.75rem;
@@ -302,10 +269,6 @@ export class PlaygroundFooter extends HTMLElement {
             <option value="4" ${state.toFixed === 4 ? 'selected' : ''}>4</option>
           </select>
         </div>
-
-        <div class="spacer"></div>
-
-        <button id="docs-btn">Docs</button>
       </div>
     `;
   }

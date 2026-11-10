@@ -8,6 +8,7 @@ import { defaultCode, examples } from '../utils/examples.js';
 import './code-editor-pane.js';
 import './console-pane.js';
 import './docs-panel.js';
+import './editor-tabs.js';
 import './inspector-panel.js';
 import './export-modal.js';
 import './playground-footer.js';
@@ -25,6 +26,7 @@ import { SnapshotController } from '../services/snapshot-controller.js';
 import type { CaptureSnapshotDetail } from '../services/snapshot-controller.js';
 import tabCoordinator from '../services/tab-coordinator.js';
 import { getUserId } from '../services/user-id.js';
+import { closeFile, openFile, tabItems } from '../services/open-files.js';
 import {
   filesWithoutText,
   MAIN_FILE,
@@ -32,12 +34,15 @@ import {
   workspaceFromAnswer,
   workspaceNow,
 } from '../services/workspace-files.js';
+import type { WorkspaceTexts } from '../services/workspace-files.js';
 import {
   currentOpenFileModules,
-  refreshOpenFileModules,
+  programModules,
   resetOpenFileModules,
   watchOpenFileModules,
 } from '../services/workspace-modules.js';
+import type { OpenFileModules } from '../services/workspace-modules.js';
+import type { EditorTabs } from './editor-tabs.js';
 import { parseWorkspaceSlugId } from '../utils/router.js';
 import { applyURLState, loadFromURL } from '../utils/url-state.js';
 import { createCompileTicker } from '../utils/compile-ticker.js';
@@ -64,6 +69,23 @@ export class WorkspaceView extends HTMLElement {
 
   private _routeUnsubscribe: (() => void) | null = null;
   private _unwatchModules: (() => void) | null = null;
+
+  // The editor's tabs: the store subscription that redraws them, the
+  // debounce for the open file's icon while typing, and each file's last
+  // `module;` reading by its text (isModuleSource parses the whole file).
+  private _tabsUnsubscribe: (() => void) | null = null;
+
+  private _tabsTimer: ReturnType<typeof setTimeout> | null = null;
+
+  private _libraryReadings = new Map<string, { text: string; library: boolean }>();
+
+  // What the last compile left to mark in the editor, so a file shown after
+  // it gets its marks without a recompile (only the chip changes what the
+  // preview shows). Null before the first compile of a workspace.
+  private _lastOutcome:
+    | { ok: true; warnings: { line?: number; column?: number; file?: string }[] }
+    | { ok: false; message: string }
+    | null = null;
 
   private _loadingWorkspace = false;
 
@@ -304,7 +326,9 @@ export class WorkspaceView extends HTMLElement {
 
   get editorPane(): HTMLElement & {
     code: string;
-    initialCode: string;
+    resetFiles: (path: string, text: string) => void;
+    showFile: (path: string, text: string) => void;
+    focusEditor: () => void;
     replaceDocument: (text: string) => void;
     highlightError: (line: number, col: number) => void;
     highlightErrors: (errors: { line: number; column: number }[]) => void;
@@ -312,6 +336,10 @@ export class WorkspaceView extends HTMLElement {
     clearError: () => void;
   } {
     return this.shadowRoot!.querySelector('code-editor-pane') as any;
+  }
+
+  get editorTabs(): EditorTabs | null {
+    return this.shadowRoot!.querySelector<EditorTabs>('editor-tabs');
   }
 
   get previewPane(): HTMLElement & {
@@ -445,8 +473,11 @@ export class WorkspaceView extends HTMLElement {
       workspaceFolders: [],
       workspaceEntryPoints: [],
       openFile: MAIN_FILE,
+      openFiles: [MAIN_FILE],
       shownProgram: null,
     });
+    this._lastOutcome = null;
+    this._libraryReadings.clear();
     resetOpenFileModules();
     // Disarm pending size computes until this workspace's first successful
     // compile — see _sizeArmed.
@@ -456,7 +487,7 @@ export class WorkspaceView extends HTMLElement {
     if (routeQuery.state) {
       const urlState = loadFromURL();
       const initialCode = applyURLState(urlState, store) || defaultCode;
-      this.editorPane.initialCode = initialCode;
+      this.editorPane.resetFiles(MAIN_FILE, initialCode);
       store.set('code', initialCode);
       this.offerLegacyStyleOpenerMigration(initialCode);
       // Don't initialize autosave for URL-state workspaces (they're not persisted)
@@ -475,7 +506,7 @@ export class WorkspaceView extends HTMLElement {
         gridSize: number;
         toFixed: number | null;
       } | null;
-      this.editorPane.initialCode = defaultCode;
+      this.editorPane.resetFiles(MAIN_FILE, defaultCode);
       store.update({
         code: defaultCode,
         currentFileName: null,
@@ -532,6 +563,7 @@ export class WorkspaceView extends HTMLElement {
         snapshotCount: typeof workspace.snapshotCount === 'number' ? workspace.snapshotCount : null,
         code: openCode,
         ...files,
+        openFiles: [files.openFile],
         shownProgram: null,
         currentFileName: workspace.name,
       });
@@ -548,8 +580,9 @@ export class WorkspaceView extends HTMLElement {
         });
       }
 
-      // Set editor code
-      this.editorPane.initialCode = openCode;
+      // The editor starts over with the file it opens on: no other file's
+      // state, and no undo history, from the workspace before.
+      this.editorPane.resetFiles(files.openFile, openCode);
       this.offerLegacyStyleOpenerMigration(openCode);
 
       // Update URL with slug if not already present
@@ -568,12 +601,24 @@ export class WorkspaceView extends HTMLElement {
 
       // Initialize autosave if user owns this workspace
       if (workspace.userId === userId && withoutText.length === 0) {
-        // Each file's hash as stored, so a save sends unchanged files by hash.
-        const savedShas: Record<string, string> = {};
+        // What the server holds: each file's hash and text, so a save sends
+        // unchanged files by hash, and whether it's just main.pathogen.
+        const shas: Record<string, string> = {};
         for (const [path, file] of Object.entries((workspace.files ?? {}) as Record<string, { sha256?: string }>)) {
-          if (typeof file.sha256 === 'string') savedShas[path] = file.sha256;
+          if (typeof file.sha256 === 'string') shas[path] = file.sha256;
         }
-        autosave.init(workspace.id, workspace.contentHash, workspace.rev ?? 0, savedShas);
+        const paths = Object.keys(files.workspaceFiles);
+        const justMain =
+          paths.length === 1 &&
+          paths[0] === MAIN_FILE &&
+          files.workspaceFolders.length === 0 &&
+          files.workspaceEntryPoints.length === 1 &&
+          files.workspaceEntryPoints[0] === MAIN_FILE;
+        autosave.init(workspace.id, workspace.contentHash, workspace.rev ?? 0, {
+          shas,
+          texts: files.workspaceFiles,
+          justMain,
+        });
 
         // Start thumbnail auto-generation tracking
         thumbnailService.startAutoGeneration(workspace.id);
@@ -602,7 +647,7 @@ export class WorkspaceView extends HTMLElement {
       }
 
       // Fall back to default code
-      this.editorPane.initialCode = defaultCode;
+      this.editorPane.resetFiles(MAIN_FILE, defaultCode);
       store.set('code', defaultCode);
     } finally {
       this._loadingWorkspace = false;
@@ -631,20 +676,53 @@ export class WorkspaceView extends HTMLElement {
       }
     });
 
-    // Code changes from editor
-    this.shadowRoot!.addEventListener('code-change', (e: Event) => {
+    // Code changes from editor. The editor has written the open file's text
+    // to the store (`code`) before it fires this.
+    this.shadowRoot!.addEventListener('code-change', () => {
       this.debouncedUpdate();
 
-      // Get code from event detail (more reliable than store timing)
-      const code = (e as CustomEvent<{ code?: string }>).detail?.code || (store.get('code') as string);
-
-      // Trigger autosave
-      autosave.onChange(code);
+      // Trigger autosave: the workspace as it now stands, every file in it.
+      const workspace = workspaceNow();
+      autosave.onChange(workspace);
 
       // Track content change for thumbnail auto-generation
-      // Use a simple hash of the code for comparison
-      thumbnailService.onContentChanged(this._simpleHash(code));
+      thumbnailService.onContentChanged(this._contentHash(workspace));
+
+      // The open file's icon follows `module;` as it's typed.
+      this._scheduleTabsRefresh();
     });
+
+    // The editor's tabs (services/open-files.ts). Only the program chip
+    // changes what the preview shows (docs/workspace-files.md), so showing
+    // another file doesn't recompile: its marks come from the last compile.
+    this.shadowRoot!.addEventListener('tab-select', (e: Event) => {
+      const { path, focusEditor } = (e as CustomEvent<{ path: string; focusEditor?: boolean }>).detail;
+      this.openFileInEditor(path);
+      if (focusEditor) this.editorPane.focusEditor();
+    });
+    this.shadowRoot!.addEventListener('tab-close', (e: Event) => {
+      const before = store.get('openFile');
+      closeFile(this.editorPane, (e as CustomEvent<{ path: string }>).detail.path);
+      if (store.get('openFile') !== before) this._afterFileShown();
+    });
+    // Open a file of the workspace in a tab, or switch to it: the one way in
+    // for the file tree, the program list and the error panel (2d, steps 4,
+    // 5 and 7).
+    this.shadowRoot!.addEventListener('open-file', (e: Event) => {
+      this.openFileInEditor((e as CustomEvent<{ path: string }>).detail.path);
+    });
+    this.shadowRoot!.addEventListener('toggle-docs', () => {
+      const docs = this.docsPanel as unknown as { toggle: () => void };
+      docs.toggle();
+    });
+    const markDocs = (open: boolean): void => {
+      const tabs = this.editorTabs;
+      if (tabs) tabs.docsOpen = open;
+    };
+    this.docsPanel.addEventListener('open', () => markDocs(true));
+    this.docsPanel.addEventListener('close', () => markDocs(false));
+    this._tabsUnsubscribe = store.subscribe(['openFiles', 'openFile', 'workspaceFiles'], () => this._refreshTabs());
+    this._refreshTabs();
 
     // Style changes from footer
     this.shadowRoot!.addEventListener('style-change', () => {
@@ -693,11 +771,6 @@ export class WorkspaceView extends HTMLElement {
       } else if (pane.removeCssVar) {
         pane.removeCssVar(varName);
       }
-    });
-
-    // Open docs
-    this.shadowRoot!.addEventListener('open-docs', () => {
-      this.docsPanel.open();
     });
 
     // Listen for events from app-header and app-breadcrumb (bubble up through DOM)
@@ -1003,6 +1076,10 @@ export class WorkspaceView extends HTMLElement {
   }
 
   cleanupEventListeners(): void {
+    this._tabsUnsubscribe?.();
+    this._tabsUnsubscribe = null;
+    if (this._tabsTimer) clearTimeout(this._tabsTimer);
+    this._tabsTimer = null;
     if (this._handleFormatDocument) document.removeEventListener('format-document', this._handleFormatDocument);
     if (this._handleCopyCode) document.removeEventListener('copy-code', this._handleCopyCode);
     if (this._handleCopySvg) document.removeEventListener('copy-svg', this._handleCopySvg);
@@ -1099,6 +1176,120 @@ export class WorkspaceView extends HTMLElement {
     } catch (err) {
       console.warn('Export size estimate failed:', err);
     }
+  }
+
+  /**
+   * Open a file of the workspace in the editor (a tab), or switch to its
+   * tab. The preview stays on the program it shows.
+   */
+  openFileInEditor(path: string): void {
+    const before = store.get('openFile');
+    if (!openFile(this.editorPane, path)) {
+      console.warn(`[open-files] "${path}" isn't a file of this workspace.`);
+      return;
+    }
+    if (store.get('openFile') !== before) this._afterFileShown();
+  }
+
+  /** The editor now shows another file: give it the last compile's marks. */
+  private _afterFileShown(): void {
+    const outcome = this._lastOutcome;
+    if (!outcome) return;
+    if (outcome.ok) {
+      this._markWarnings(outcome.warnings);
+      return;
+    }
+    // The error's graph is the shown program's: unchanged by a tab switch,
+    // but the open file's kept graph is for the file just left.
+    const compilationId = store.get('compilationId');
+    const shown = programToShow(workspaceNow(), store.get('shownProgram') as string | null);
+    this._modulesFor(shown)
+      .then((modules) => {
+        if (store.get('compilationId') !== compilationId || this._lastOutcome !== outcome) return;
+        this.showError(outcome.message, modules);
+      })
+      .catch((err: unknown) => console.warn('Placing the error in the file shown failed:', err));
+  }
+
+  /** The import graph of a program, for placing its errors; null if it can't be built. */
+  private async _modulesFor(
+    program: string,
+    workspace: WorkspaceTexts = workspaceNow(),
+  ): Promise<OpenFileModules | null> {
+    try {
+      return await programModules(program, workspace);
+    } catch (graphErr) {
+      console.warn('[workspace-modules] import graph not built:', graphErr);
+      return null;
+    }
+  }
+
+  /**
+   * Mark the last compile's warnings in the file the editor shows: the
+   * program's own (no `file`) when it's the program shown, and those from an
+   * imported file when that's the file open.
+   */
+  private _markWarnings(warnings: { line?: number; column?: number; file?: string }[]): void {
+    const workspace = workspaceNow();
+    const open = workspace.openFile;
+    const shown = programToShow(workspace, store.get('shownProgram') as string | null);
+    try {
+      this.editorPane.highlightWarnings(
+        warnings.flatMap((w) => {
+          const inOpen = w.file ? w.file.replace(/^\/+/, '') === open : shown === open;
+          return w.line != null && inOpen ? [{ line: w.line, column: w.column ?? 1 }] : [];
+        }),
+      );
+    } catch (highlightErr) {
+      // The squiggle is cosmetic. A decoration failure must never surface
+      // as a compile error or stop the layers/defs from reaching the store.
+      console.warn('Warning highlight failed:', highlightErr);
+    }
+  }
+
+  /** The tabs, from the store's open files, each with its icon. */
+  private _refreshTabs(): void {
+    const tabs = this.editorTabs;
+    if (!tabs) return;
+    const texts = workspaceNow().texts;
+    tabs.items = tabItems(
+      store.get('openFiles') as string[],
+      (path) => texts.get(path),
+      (path, text) => this._isLibrary(path, text),
+    );
+    tabs.active = store.get('openFile') as string;
+  }
+
+  /** While typing, the open file's icon follows `module;` a moment later. */
+  private _scheduleTabsRefresh(): void {
+    if (this._tabsTimer) clearTimeout(this._tabsTimer);
+    this._tabsTimer = setTimeout(() => {
+      this._tabsTimer = null;
+      this._refreshTabs();
+    }, 300);
+  }
+
+  /** Whether a file is a library (starts with `module;`), read once per text. */
+  private _isLibrary(path: string, text: string): boolean {
+    const read = this._libraryReadings.get(path);
+    if (read?.text === text) return read.library;
+    const isModuleSource = window.PathogenLang?.isModuleSource;
+    const library = typeof isModuleSource === 'function' ? isModuleSource(text) : false;
+    this._libraryReadings.set(path, { text, library });
+    return library;
+  }
+
+  /**
+   * A hash of the workspace's content, for the thumbnail's "changed since"
+   * check. A workspace that is just main.pathogen hashes its text as before,
+   * so the hashes thumbnails were stored with still match.
+   */
+  _contentHash(workspace: WorkspaceTexts): string {
+    if (workspace.texts.size === 1 && workspace.texts.has(MAIN_FILE)) {
+      return this._simpleHash(workspace.texts.get(MAIN_FILE) ?? '');
+    }
+    const files = [...workspace.texts].sort(([a], [b]) => (a < b ? -1 : 1));
+    return this._simpleHash(JSON.stringify(files));
   }
 
   copyCode(): void {
@@ -1271,21 +1462,8 @@ export class WorkspaceView extends HTMLElement {
       store.set('logs', logs);
       store.set('warnings', result.warnings || []);
       this.hideError();
-      try {
-        // Only the open file's own warnings mark the editor: one from a file
-        // the program imports carries `file` and belongs to that file, and
-        // when the preview shows another program than the one being edited
-        // (2d) none of its warnings are in this file.
-        this.editorPane.highlightWarnings(
-          (result.warnings || []).flatMap((w: { line?: number; column?: number; file?: string }) =>
-            w.line != null && !w.file && shown === workspace.openFile ? [{ line: w.line, column: w.column ?? 1 }] : [],
-          ),
-        );
-      } catch (highlightErr) {
-        // The squiggle is cosmetic. A decoration failure must never surface
-        // as a compile error or stop the layers/defs from reaching the store.
-        console.warn('Warning highlight failed:', highlightErr);
-      }
+      this._lastOutcome = { ok: true, warnings: result.warnings || [] };
+      this._markWarnings(this._lastOutcome.warnings);
       perfSpan('store-updates', () => {
         store.set('fontWarnings', [
           ...formatFontSubstitutions(result.fontSubstitutions || []),
@@ -1350,16 +1528,13 @@ export class WorkspaceView extends HTMLElement {
       // The pane keeps the last good render (and its injected fonts) for
       // context — mark it stale so it can't be mistaken for current output.
       this.previewPane.setStale(true);
-      // The open file's graph, current, so the error lands on the right
-      // import or call (showError checks it matches; see workspace-modules).
-      // If it can't be built, showError falls back to the compile's message.
-      try {
-        await refreshOpenFileModules();
-      } catch (graphErr) {
-        console.warn('[workspace-modules] import graph not built:', graphErr);
-      }
+      // The failed program's graph, so the error lands on the right import or
+      // call. If it can't be built, showError falls back to the compile's
+      // message.
+      const modules = await this._modulesFor(shown);
       if (isStale(compilationId)) return;
-      const displayError = this.showError(e.message);
+      this._lastOutcome = { ok: false, message: e.message };
+      const displayError = this.showError(e.message, modules);
       this.consolePane.logs = [];
       // A failed compile invalidates any older font warning — don't stack a
       // stale banner on top of an unrelated error — but THIS compile's font
@@ -1452,47 +1627,66 @@ export class WorkspaceView extends HTMLElement {
     );
   }
 
-  showError(message: string): string {
+  /**
+   * Show a compile error: in the error panel, and as marks in the file the
+   * editor shows. The error is the program's the preview shows, which may
+   * not be the file in the editor (a library, or another program, open in a
+   * tab). Its diagnostics are read from that program with its graph; the
+   * editor marks only lines of its own file: the program's, when it's the
+   * one shown, or the open file's, when the error happened in its code.
+   * `modules` is the program's graph (_modulesFor); left out, the open
+   * file's kept graph is used when it's the program, if it still matches.
+   */
+  showError(message: string, modules?: OpenFileModules | null): string {
     // Try structured diagnostics via getDiagnostics first. A file with
-    // imports needs the workspace's graph (services/workspace-modules.ts), and
-    // only the one that matches the workspace now: without it, getDiagnostics
-    // would report the no-project-folder error instead of the real one, so
-    // the compile's own message is shown.
-    const { StringTextDocument, getDiagnostics, planImports } = window.PathogenLang;
-    const code = this.editorPane.code;
-    const modules = currentOpenFileModules();
+    // imports needs the workspace's graph (services/workspace-modules.ts):
+    // without it, getDiagnostics would report the no-project-folder error
+    // instead of the real one, so the compile's own message is shown.
+    // (No library at all when it failed to load: just the message.)
+    const { StringTextDocument, getDiagnostics, planImports } = (window.PathogenLang ?? {}) as Partial<
+      Window['PathogenLang']
+    >;
+    const workspace = workspaceNow();
+    const open = workspace.openFile;
+    const shown = programToShow(workspace, store.get('shownProgram') as string | null);
+    const inEditor = shown === open;
+    const code = workspace.texts.get(shown) ?? '';
+    const graph = modules !== undefined ? modules : inEditor ? currentOpenFileModules(workspace) : null;
     const needsGraph = typeof planImports === 'function' && planImports(code).length > 0;
-    if (getDiagnostics && StringTextDocument && (modules || !needsGraph)) {
+    if (getDiagnostics && StringTextDocument && (graph || !needsGraph)) {
       try {
         const diagnostics = perfSpan('get-diagnostics', () => {
           const doc = new StringTextDocument(code);
-          return getDiagnostics(doc, modules ? { modules: modules.modules, loadErrors: modules.loadErrors } : {});
-        });
+          return getDiagnostics(doc, graph ? { modules: graph.modules, loadErrors: graph.loadErrors } : {});
+        }) as {
+          range: { start: { line: number; character: number } };
+          message: string;
+          alsoIn?: { file: string; range: { start: { line: number; character: number } }; message: string };
+        }[];
         if (diagnostics.length > 0) {
           // Format message: show each diagnostic on its own line, and where
-          // an error in another file happened, that file and its line.
-          const messages = diagnostics.map(
-            (d: {
-              range: { start: { line: number; character: number } };
-              message: string;
-              alsoIn?: { file: string; range: { start: { line: number } }; message: string };
-            }) => {
-              const line = d.range.start.line + 1;
-              const col = d.range.start.character + 1;
-              const where = d.alsoIn
-                ? `\n  in ${d.alsoIn.file.replace(/^\/+/, '')} line ${d.alsoIn.range.start.line + 1}: ${d.alsoIn.message}`
-                : '';
-              return `Line ${line}:${col} — ${d.message}${where}`;
-            },
-          );
+          // an error in another file happened, that file and its line. When
+          // the editor shows another file, each line names the program.
+          const messages = diagnostics.map((d) => {
+            const line = d.range.start.line + 1;
+            const col = d.range.start.character + 1;
+            const where = d.alsoIn
+              ? `\n  in ${d.alsoIn.file.replace(/^\/+/, '')} line ${d.alsoIn.range.start.line + 1}: ${d.alsoIn.message}`
+              : '';
+            return `${inEditor ? 'Line' : `${shown} line`} ${line}:${col} — ${d.message}${where}`;
+          });
           const displayMessage = messages.join('\n');
           this.errorPanel.show(displayMessage, diagnostics.length);
-          // Highlight all diagnostic locations in the editor (0-based → 1-based)
-          const errors = diagnostics.map((d: { range: { start: { line: number; character: number } } }) => ({
-            line: d.range.start.line + 1,
-            column: d.range.start.character + 1,
-          }));
-          this.editorPane.highlightErrors(errors);
+          // Mark the locations in the editor's file (0-based → 1-based).
+          const marks = diagnostics.flatMap((d) => {
+            if (inEditor) return [{ line: d.range.start.line + 1, column: d.range.start.character + 1 }];
+            const there = d.alsoIn;
+            return there?.file.replace(/^\/+/, '') === open
+              ? [{ line: there.range.start.line + 1, column: there.range.start.character + 1 }]
+              : [];
+          });
+          if (marks.length > 0) this.editorPane.highlightErrors(marks);
+          else this.editorPane.clearError();
           return displayMessage;
         }
       } catch {
@@ -1500,7 +1694,14 @@ export class WorkspaceView extends HTMLElement {
       }
     }
 
-    // Fallback: regex-based error location extraction
+    // Fallback: the compile's own message. Its line numbers are the shown
+    // program's, so they mark the editor only when it shows that program.
+    if (!inEditor) {
+      const named = /^(Line \d|Parse error)/.test(message) ? `${shown}: ${message}` : message;
+      this.errorPanel.show(named);
+      this.editorPane.clearError();
+      return named;
+    }
     this.errorPanel.show(message);
     const parseMatch = /Parse error at line (\d+), column (\d+)/.exec(message);
     if (parseMatch) {
@@ -1623,7 +1824,7 @@ export class WorkspaceView extends HTMLElement {
       </div>
 
       <playground-main>
-        <code-editor-pane></code-editor-pane>
+        <code-editor-pane><editor-tabs slot="tabs"></editor-tabs></code-editor-pane>
         <console-pane></console-pane>
         <svg-preview-pane></svg-preview-pane>
         <inspector-panel></inspector-panel>

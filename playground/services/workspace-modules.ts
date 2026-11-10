@@ -118,6 +118,24 @@ export function languageServiceOptions(): { modules?: ModuleGraph; projectFiles?
   return value ? { modules: value.modules, projectFiles: value.projectFiles } : {};
 }
 
+/**
+ * The import graph of a program of the workspace, for placing its compile's
+ * errors: the open file's (kept, as above) when it's the open file, else
+ * built for it now. The preview can show a program while you edit another
+ * file (a library, or another program), and its errors belong to its graph
+ * (project-docs/modules/51-phase-2c-plan.md, "Noted for 2d").
+ */
+export async function programModules(
+  path: string,
+  workspace: WorkspaceTexts = workspaceNow(),
+): Promise<OpenFileModules | null> {
+  if (path === workspace.openFile) return refreshOpenFileModules(workspace);
+  const l = lib();
+  if (!l) return null;
+  const label = (store.get('workspaceName') as string | null) ?? 'this workspace';
+  return build({ ...workspace, openFile: path }, l, label);
+}
+
 /** Forget the graph (a workspace switch). */
 export function resetOpenFileModules(): void {
   current = null;

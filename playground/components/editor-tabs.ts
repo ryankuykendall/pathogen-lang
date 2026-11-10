@@ -1,0 +1,210 @@
+// The tabs above the editor, one per open file (phase 2d, step 3;
+// docs/workspace-files.md "The file tree and tabs", mockup v6 screen O).
+//
+// A view only: workspace-view gives it `items` (services/open-files.ts
+// `tabItems`), the `active` file and whether the docs are open, and acts on
+// its events:
+//   tab-select  { path, focusEditor }  a tab clicked (focusEditor), or chosen
+//                                      with the arrow keys (the keyboard stays)
+//   tab-close   { path }               its ×, a middle-click, or Delete
+//   toggle-docs                        the Docs button at the right end
+// The last tab has no ×: the editor always shows a file.
+
+import type { TabItem } from '../services/open-files.js';
+import { FILE_ICONS } from '../utils/file-icons.js';
+import styles from './editor-tabs.css';
+
+const esc = (s: string): string =>
+  s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
+export class EditorTabs extends HTMLElement {
+  private _items: TabItem[] = [];
+
+  private _active = '';
+
+  private _docsOpen = false;
+
+  /** What the list was last drawn from, so an unchanged set never redraws (and keeps focus). */
+  private _drawn = '';
+
+  /** The tab last scrolled into view. */
+  private _scrolledTo = '';
+
+  constructor() {
+    super();
+    this.attachShadow({ mode: 'open' });
+  }
+
+  connectedCallback(): void {
+    this.shadowRoot!.innerHTML = `
+      <style>${styles}</style>
+      <div class="list" role="tablist" aria-label="Open files"></div>
+      <button class="docs" type="button" aria-label="Docs">${FILE_ICONS.book}</button>
+    `;
+    const list = this.shadowRoot!.querySelector('.list') as HTMLElement;
+    list.addEventListener('click', (e) => this._onClick(e));
+    list.addEventListener('auxclick', (e) => this._onAuxClick(e));
+    list.addEventListener('mousedown', (e) => {
+      // A middle-click closes; don't let it start an autoscroll.
+      if (e.button === 1) e.preventDefault();
+    });
+    list.addEventListener('keydown', (e) => this._onKeydown(e));
+    this.shadowRoot!.querySelector('.docs')!.addEventListener('click', () => this._emit('toggle-docs'));
+    this._drawn = '';
+    this._draw();
+  }
+
+  get items(): TabItem[] {
+    return this._items;
+  }
+
+  set items(items: TabItem[]) {
+    this._items = items;
+    this._draw();
+  }
+
+  get active(): string {
+    return this._active;
+  }
+
+  set active(path: string) {
+    this._active = path;
+    this._markActive();
+  }
+
+  get docsOpen(): boolean {
+    return this._docsOpen;
+  }
+
+  set docsOpen(open: boolean) {
+    this._docsOpen = open;
+    this._markDocs();
+  }
+
+  private get _list(): HTMLElement | null {
+    return this.shadowRoot?.querySelector('.list') ?? null;
+  }
+
+  private _tabs(): HTMLElement[] {
+    return [...(this._list?.querySelectorAll<HTMLElement>('[role="tab"]') ?? [])];
+  }
+
+  private _draw(): void {
+    const list = this._list;
+    if (!list) return;
+    const key = JSON.stringify(this._items);
+    if (key !== this._drawn) {
+      this._drawn = key;
+      this._scrolledTo = '';
+      const sole = this._items.length < 2;
+      list.innerHTML = this._items
+        .map((item) => {
+          const label = `${esc(item.name)}${item.hint !== null ? ` <span class="hint">· ${esc(item.hint)}</span>` : ''}`;
+          const lock =
+            item.kind === 'json'
+              ? `<span class="lock" title="Read-only: the playground writes this file">${FILE_ICONS.lock}</span>`
+              : '';
+          const close = sole
+            ? ''
+            : `<button class="close" type="button" tabindex="-1" aria-label="Close ${esc(item.path)}" title="Close">${FILE_ICONS.close}</button>`;
+          return `<div class="tab ${item.kind}${sole ? ' sole' : ''}" role="tab" data-path="${esc(item.path)}" title="${esc(item.path)}"><span class="icon">${FILE_ICONS[item.kind]}</span><span class="label">${label}</span>${lock}${close}</div>`;
+        })
+        .join('');
+    }
+    this._markActive();
+    this._markDocs();
+  }
+
+  private _markActive(): void {
+    let shown: HTMLElement | null = null;
+    for (const tab of this._tabs()) {
+      const selected = tab.dataset.path === this._active;
+      tab.setAttribute('aria-selected', String(selected));
+      tab.tabIndex = selected ? 0 : -1;
+      if (selected) shown = tab;
+    }
+    // Keep the shown tab in view when there are more tabs than fit, scrolling
+    // only the bar (scrollIntoView would also scroll the page on a phone).
+    const list = this._list;
+    if (shown && list && this._scrolledTo !== this._active) {
+      this._scrolledTo = this._active;
+      const left = shown.offsetLeft - list.offsetLeft;
+      if (left < list.scrollLeft) list.scrollLeft = left;
+      else if (left + shown.offsetWidth > list.scrollLeft + list.clientWidth) {
+        list.scrollLeft = left + shown.offsetWidth - list.clientWidth;
+      }
+    }
+  }
+
+  private _markDocs(): void {
+    const docs = this.shadowRoot?.querySelector('.docs');
+    if (!docs) return;
+    docs.setAttribute('aria-pressed', String(this._docsOpen));
+    docs.setAttribute('title', this._docsOpen ? 'Hide the docs' : 'Show the docs');
+  }
+
+  private _pathOf(target: EventTarget | null): string | null {
+    const tab = (target as HTMLElement | null)?.closest?.<HTMLElement>('[role="tab"]');
+    return tab?.dataset.path ?? null;
+  }
+
+  private _onClick(e: MouseEvent): void {
+    const path = this._pathOf(e.target);
+    if (path === null) return;
+    if ((e.target as HTMLElement).closest('.close')) {
+      e.stopPropagation();
+      this._close(path);
+      return;
+    }
+    // A click hands the keyboard back to the editor, as VS Code does.
+    this._emit('tab-select', { path, focusEditor: true });
+  }
+
+  private _onAuxClick(e: MouseEvent): void {
+    if (e.button !== 1) return;
+    const path = this._pathOf(e.target);
+    if (path !== null) {
+      e.preventDefault();
+      this._close(path);
+    }
+  }
+
+  private _onKeydown(e: KeyboardEvent): void {
+    const tabs = this._tabs();
+    const at = tabs.findIndex((tab) => tab === this.shadowRoot!.activeElement);
+    if (at < 0) return;
+    let to: number | null = null;
+    if (e.key === 'ArrowRight') to = (at + 1) % tabs.length;
+    else if (e.key === 'ArrowLeft') to = (at - 1 + tabs.length) % tabs.length;
+    else if (e.key === 'Home') to = 0;
+    else if (e.key === 'End') to = tabs.length - 1;
+    else if (e.key === 'Delete') {
+      e.preventDefault();
+      this._close(tabs[at].dataset.path!);
+      return;
+    } else if (e.key === 'Enter' || e.key === ' ') {
+      // Enter goes to the editor; the tab is already the shown one.
+      e.preventDefault();
+      this._emit('tab-select', { path: tabs[at].dataset.path!, focusEditor: true });
+      return;
+    }
+    if (to === null) return;
+    e.preventDefault();
+    // Arrow keys move and choose together (automatic activation): showing a
+    // file is cheap, and its state is kept. The keyboard stays in the tabs.
+    const path = tabs[to].dataset.path!;
+    this._emit('tab-select', { path, focusEditor: false });
+    tabs[to].focus();
+  }
+
+  private _close(path: string): void {
+    if (this._items.length < 2) return;
+    this._emit('tab-close', { path });
+  }
+
+  private _emit(name: string, detail?: { path: string; focusEditor?: boolean }): void {
+    this.dispatchEvent(new CustomEvent(name, { bubbles: true, composed: true, detail }));
+  }
+}
+
+customElements.define('editor-tabs', EditorTabs);

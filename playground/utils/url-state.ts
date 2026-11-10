@@ -1,7 +1,20 @@
 // URL state encoding/decoding for shareable workspace links
 // Uses query params with History API: /pathogen-lang/workspace/:id?state=...
 
+import { programToShow, workspaceTexts } from '../services/workspace-files.js';
 import { getCurrentRoute, navigateTo, routeUrl } from './router.js';
+
+/** The text of the program the state's preview shows (the store's state, from getAll()). */
+function shownCode(state: Record<string, unknown>): string {
+  const workspace = workspaceTexts({
+    workspaceFiles: (state.workspaceFiles as Record<string, string> | undefined) ?? {},
+    workspaceFolders: (state.workspaceFolders as string[] | undefined) ?? [],
+    workspaceEntryPoints: (state.workspaceEntryPoints as string[] | undefined) ?? [],
+    openFile: (state.openFile as string | undefined) ?? 'main.pathogen',
+    code: (state.code as string | undefined) ?? '',
+  });
+  return workspace.texts.get(programToShow(workspace, (state.shownProgram as string | null | undefined) ?? null)) ?? '';
+}
 
 interface URLState {
   code?: string;
@@ -28,7 +41,9 @@ interface Storelike {
 
 export function encodeState(state: Record<string, unknown>): string {
   const urlState: URLState = {
-    code: state.code as string,
+    // A link holds one program: the one the preview shows, not a library
+    // open in a tab. (Copy URL leaves the playground in phase 2d, step 9.)
+    code: shownCode(state),
     w: state.width as number,
     h: state.height as number,
     s: state.stroke as string,

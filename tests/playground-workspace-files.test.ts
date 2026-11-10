@@ -189,28 +189,34 @@ describe('autosave', () => {
     const gears = await engine.workspaceFileEntry(GEARS);
     const main = await engine.workspaceFileEntry(MAIN);
     autosave.init('ws-2', await serverHash(twoFiles.workspaceFiles, ['main.pathogen']), 5, {
-      'main.pathogen': main.sha256,
-      'parts/gears.pathogen': gears.sha256,
+      shas: { 'main.pathogen': main.sha256, 'parts/gears.pathogen': gears.sha256 },
+      texts: twoFiles.workspaceFiles,
+      justMain: false,
     });
     updateSpy.mockResolvedValueOnce({ rev: 6, updatedAt: 'now' });
     autosave.onChange(`${MAIN}gear(6);\n`);
     await autosave.saveNow();
     expect(updateSpy.mock.calls[0][1]).toEqual({
       files: { 'main.pathogen': { text: `${MAIN}gear(6);\n` }, 'parts/gears.pathogen': { sha256: gears.sha256 } },
+      folders: [],
+      entryPoints: ['main.pathogen'],
       baseRev: 5,
     });
   });
 
-  it('the page-teardown save sends the open file as text and the others by their saved hash, synchronously', async () => {
+  it('the page-teardown save sends the edited file as text and the others by their saved hash, synchronously', async () => {
     store.update({ ...twoFiles, code: MAIN });
     const gears = await engine.workspaceFileEntry(GEARS);
-    autosave.init('ws-3', null, 1, { 'parts/gears.pathogen': gears.sha256 });
+    const saved = { shas: { 'parts/gears.pathogen': gears.sha256 }, texts: { 'parts/gears.pathogen': GEARS } };
+    autosave.init('ws-3', null, 1, { ...saved, justMain: false });
     updateSpy.mockResolvedValueOnce({ rev: 2 });
     autosave.onChange('gear(1);');
     // Not awaited: the request must already be out when saveNow returns.
     const sent = autosave.saveNow({ keepalive: true });
     expect(updateSpy.mock.calls[0][1]).toEqual({
       files: { 'main.pathogen': { text: 'gear(1);' }, 'parts/gears.pathogen': { sha256: gears.sha256 } },
+      folders: [],
+      entryPoints: ['main.pathogen'],
       baseRev: 1,
     });
     expect(await sent).toBe(true);
@@ -219,13 +225,14 @@ describe('autosave', () => {
   it('records nothing as saved when the save fails, and forgets the edit’s workspace once it is saved', async () => {
     store.update({ ...twoFiles, code: MAIN });
     const gears = await engine.workspaceFileEntry(GEARS);
-    autosave.init('ws-4', null, 1, { 'parts/gears.pathogen': gears.sha256 });
+    const saved = { shas: { 'parts/gears.pathogen': gears.sha256 }, texts: { 'parts/gears.pathogen': GEARS } };
+    autosave.init('ws-4', null, 1, { ...saved, justMain: false });
     updateSpy.mockRejectedValueOnce(Object.assign(new Error('conflict'), { status: 409 }));
     autosave.onChange('gear(7);');
     await autosave.saveNow();
     expect(autosave._savedShas.has('main.pathogen')).toBe(false);
 
-    autosave.init('ws-5', null, 1, { 'parts/gears.pathogen': gears.sha256 });
+    autosave.init('ws-5', null, 1, { ...saved, justMain: false });
     updateSpy.mockResolvedValueOnce({ rev: 2 });
     autosave.onChange('gear(8);');
     await autosave.saveNow();
@@ -245,7 +252,7 @@ describe('autosave', () => {
     autosave.onChange('gear(1);');
     const saving = autosave.saveNow();
     await vi.waitFor(() => expect(updateSpy).toHaveBeenCalledTimes(1));
-    autosave.init('ws-B', 'hash-of-B', 7, { 'main.pathogen': 'b'.repeat(64) });
+    autosave.init('ws-B', 'hash-of-B', 7, { shas: { 'main.pathogen': 'b'.repeat(64) } });
     answer({ rev: 2, updatedAt: 'now' });
     await saving;
     expect([autosave._baseRev, autosave._lastSavedHash, autosave._savedShas.get('main.pathogen')]).toEqual([

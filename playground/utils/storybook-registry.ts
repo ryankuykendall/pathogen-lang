@@ -106,6 +106,85 @@ layer('hex').apply { circle(60, 100, 40) }`,
     },
   },
   {
+    id: 'editor-tabs',
+    name: 'Editor Tabs',
+    category: 'Editor',
+    description:
+      'The tabs above the editor, one per open file (docs/workspace-files.md). Labels leave out .pathogen; two open files with one name add their folder (gears · parts). Icons: program, library (module;), pathogen.json with a lock. Close ×, and middle-click, close a tab; the last tab stays. Docs at the right end. Arrow keys, Home and End move between tabs; Delete closes one.',
+    stories: [
+      // docsOpen in each: the storybook keeps a control's value from the story before.
+      { name: 'A new workspace (one tab)', props: { set: 'one', docsOpen: false } },
+      { name: 'Two files named gears', props: { set: 'gears', active: 'demos/gears.pathogen', docsOpen: false } },
+      { name: 'Docs open', props: { set: 'gears', active: 'main.pathogen', docsOpen: true } },
+      { name: 'pathogen.json open', props: { set: 'json', active: 'pathogen.json', docsOpen: false } },
+      {
+        name: 'More tabs than fit',
+        props: { set: 'many', active: 'shapes/star-9.pathogen', width: 520, docsOpen: false },
+      },
+    ],
+    controls: [{ name: 'docsOpen', type: 'toggle', label: 'Docs open', default: false }],
+    notes:
+      'Clicking a tab, its ×, or Docs here updates the story, as workspace-view does (tab-select, tab-close, toggle-docs).',
+    render: (container, props, controls) => {
+      const loaded = Promise.all([import('../components/editor-tabs.js'), import('../services/open-files.js')]);
+      loaded
+        .then(([, { tabItems, afterTabClosed }]) => {
+          const SETS: Record<string, Record<string, string>> = {
+            one: { 'main.pathogen': 'program' },
+            gears: {
+              'main.pathogen': 'program',
+              'parts/gears.pathogen': 'library',
+              'demos/gears.pathogen': 'program',
+              'parts/kit.pathogen': 'library',
+            },
+            json: { 'main.pathogen': 'program', 'parts/gears.pathogen': 'library', 'pathogen.json': 'json' },
+            many: Object.fromEntries([
+              ['main.pathogen', 'program'],
+              ...Array.from({ length: 11 }, (_, i) => [`shapes/star-${i}.pathogen`, i % 3 ? 'program' : 'library']),
+            ]),
+          };
+          const kinds = SETS[String(props.set)] ?? SETS.one;
+          let open = Object.keys(kinds);
+          const tabs = document.createElement('editor-tabs') as HTMLElement & {
+            items: unknown[];
+            active: string;
+            docsOpen: boolean;
+          };
+          if (props.width) tabs.style.width = `${Number(props.width)}px`;
+          tabs.style.border = '1px solid var(--border-color, #ddd)';
+          const apply = (): void => {
+            tabs.items = tabItems(
+              open,
+              () => '',
+              (path) => kinds[path] === 'library',
+            );
+          };
+          apply();
+          tabs.active = String(props.active ?? open[0]);
+          tabs.docsOpen = Boolean(props.docsOpen);
+          container.appendChild(tabs);
+
+          tabs.addEventListener('tab-select', (e) => {
+            tabs.active = (e as CustomEvent<{ path: string }>).detail.path;
+          });
+          tabs.addEventListener('tab-close', (e) => {
+            const next = afterTabClosed(open, tabs.active, (e as CustomEvent<{ path: string }>).detail.path);
+            if (!next) return;
+            open = next.openFiles;
+            apply();
+            tabs.active = next.active;
+          });
+          tabs.addEventListener('toggle-docs', () => {
+            tabs.docsOpen = !tabs.docsOpen;
+          });
+          controls.on('docsOpen', (v) => {
+            tabs.docsOpen = Boolean(v);
+          });
+        })
+        .catch((err: unknown) => console.error('Editor Tabs story failed to load:', err));
+    },
+  },
+  {
     id: 'svg-preview-pane',
     name: 'SVG Preview',
     category: 'Editor',

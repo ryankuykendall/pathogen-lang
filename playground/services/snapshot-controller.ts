@@ -26,6 +26,7 @@ import { store } from '../state/store.js';
 import { formatBytes } from '../utils/format-bytes.js';
 import { buildWorkspaceSlugId, navigateTo } from '../utils/router.js';
 import { snapshotApi, workspaceApi } from './api.js';
+import { shownProgramText } from './workspace-files.js';
 import {
   captureSnapshot,
   firstChangedLine,
@@ -182,7 +183,9 @@ export class SnapshotController {
       defaultName,
       name: defaultName,
       note: '',
-      staleLine: firstChangedLine(capture.code, (state.code as string) ?? ''),
+      // Edited since it drew? Against the program shown, which needn't be
+      // the file in the editor (a library, or another program, in a tab).
+      staleLine: firstChangedLine(capture.code, shownProgramText()),
       savedId: null,
       saving: false,
       generation: this._generation,

@@ -61,14 +61,17 @@ export interface StoreState {
 
   // The workspace's files (phase 2; project-docs/modules/51-phase-2c-plan.md).
   // `code` is the open file's live text; `workspaceFiles` holds every
-  // .pathogen file's text by workspace path (no leading slash) as loaded or
-  // saved, so its entry for the open file can lag `code`. Read them together
-  // through services/workspace-files.ts `workspaceNow()`.
+  // .pathogen file's text by workspace path (no leading slash): the open
+  // file's entry can lag `code`, every other file's is its latest (a tab
+  // switch writes the outgoing file's text here, services/open-files.ts).
+  // Read them together through services/workspace-files.ts `workspaceNow()`.
   workspaceFiles: Record<string, string>;
   workspaceFolders: string[];
   workspaceEntryPoints: string[];
   /** The file in the editor. */
   openFile: string;
+  /** The editor's tabs, in order; `openFile` is one of them. */
+  openFiles: string[];
   /** The program the preview shows; null means the main (the first entry point). */
   shownProgram: string | null;
 

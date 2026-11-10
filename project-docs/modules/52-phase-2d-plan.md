@@ -63,10 +63,11 @@ Each step: tests first; a storybook entry for each new component (the playground
 3. **Several open files.**
    - `code-editor-pane` keeps one `EditorState` per open file (its extensions are already built once and reused; note 38), so each file keeps its undo.
    - New **`editor-tabs`** component: labels without `.pathogen`, `gears · parts` when two open files share a name, close ×, Docs at the right end, no "+".
-   - The breadcrumb's **file crumb** (`demos/gears.pathogen`) and **Files** toggle.
+   - The breadcrumb's **file crumb** (`demos/gears.pathogen`). (*The **Files** toggle moved to step 4; see "Built".*)
    - The store: open files and the active one; `code` stays the active file's text.
    - **Autosave** sends every changed file, the folders and the entry points, and the page-teardown save keeps doing that without hashing. The 2c review's findings 1 and 3 become real here, so their tests come first.
-4. **The file tree** (new `file-tree` component; reuses `layers-panel`'s row styles and the kebab menus of `app-breadcrumb` and `landing-view`; no windowing at 20 files).
+3b. **The layout without a footer** (added in step 3; see "Built"): Background, Grid and Precision in the inspector's Canvas section; no footer, preview card or minimap; the editor and the preview run to the bottom (note 40, v6 screen O).
+4. **The file tree** (new `file-tree` component; reuses `layers-panel`'s row styles and the kebab menus of `app-breadcrumb` and `landing-view`; no windowing at 20 files), and the **Files** toggle beside Console that shows it.
    - Folders first, then files; icons for program, library, folder and `pathogen.json`; the `main` badge; the lock on `pathogen.json`; red dots.
    - The **+** menu (screen N) with its "where new files go" line, the inline name field, the taken-name state.
    - Each file's menu: Set as main, Rename…, Duplicate, Delete…; a folder's menu (after the v7 mockup).
@@ -75,7 +76,7 @@ Each step: tests first; a storybook entry for each new component (the playground
    - The chip sets the program shown; only it changes the preview.
    - Miniatures: each program compiled by the shared compiler, not the editor's, so they never cancel the editor's compile; redrawn after an edit to a file they use; a spinner until then.
    - The dot on programs that use the file you're editing; the red dot and the row's failure on one that fails.
-   - Errors placed against the shown program's graph (from 2c).
+   - Errors placed against the shown program's graph (from 2c). (*Done in step 3, which made it reachable.*)
    - The thumbnail stays the main's (note 38).
 6. **Uploads** (screen U): Upload files…, Upload folder…, drag and drop onto the tree with the folder under the pointer lit, the clash prompt (Replace, Keep both, Skip, the same for all), the unsupported-files message, the 20-file limit.
 7. **Errors and navigation:** a file's name in the error panel opens it at that line; Cmd-click on an imported name opens its file at the definition; red dots in the tree on the failing file and the program that ran into it.
@@ -114,6 +115,59 @@ Each step: tests first; a storybook entry for each new component (the playground
     - taken folder names, `a/b` folders, names over 100 characters, and more than 8 folders deep;
     - Set as main on the main, a copy shown in a workspace with no programs, a 21st copy refused, and a plain delete message.
   - Kept, with a comment: the file-limit message before the server's, which would count the 21st file ("this one has 21").
+
+**Step 3, several open files** (2026-11-10).
+- **Autosave** (`services/autosave.ts`) keeps the whole workspace as of the latest unsaved edit, every file in it, and a save sends each file the server doesn't hold as text, the rest by hash, with the folders and the program list. Tests first (`tests/playground-autosave-files.test.ts`, 17 with the review's). The concrete risks they cover:
+  - the page-teardown save sent only the open file as text, so an edit in another file went by its old hash and was lost. It now compares each file's text with what the server holds (`_savedTexts`), since it can't hash in time; one body builder serves both saves;
+  - a save cleared the pending edit even when you typed while it was out, and the debounced save then had nothing to send. It now clears it only if it's the snapshot that was sent;
+  - the retry after a failed save put the failed text back over a newer edit, and a lost second timer could send it after the newer one was saved. Now the retry sends whatever is pending, and there's one timer;
+  - a timer that had fired still counted as a save to come, so `hasUnsavedChanges()` stayed true after any debounced save (the "Leave site?" prompt and an extra teardown save);
+  - a save still hashing when another workspace loaded was sent under the new workspace's id;
+  - `code` or `files` now follows what the server holds, not the local shape: the server answers 409 to `code` over several files, which autosave reads as another tab, so deleting down to just main (step 4) would have stopped saving.
+- **Tabs** (`components/editor-tabs.ts`, storybook "Editor Tabs" with five stories): labels without `.pathogen`, a folder hint when open files share a name (as much of the folder as tells them apart, `/` at the top), program and library icons, pathogen.json with a lock (for step 4), ×, middle-click, arrow keys, Home, End and Delete, Docs at the right end. **The last tab has no ×**: the editor always shows a file (decided here; the docs page says so). A click hands focus back to the editor; the arrow keys keep it in the tabs.
+- **One editor state per file** (`code-editor-pane.ts`): a file's state is kept, undo history and scroll position included, from its first opening until the workspace changes, closed tab or not ("while the workspace is open"). A workspace load forgets every kept state, so another workspace's `main.pathogen` history can't come back. Switching never fires `code-change`, so it neither saves nor recompiles.
+- **The store**: `openFiles` (the tabs, in order). A tab switch writes the outgoing file's text into `workspaceFiles` (`services/open-files.ts`, tested with a fake editor: `tests/playground-open-files.test.ts`, 10). Files open through one `open-file` event, which the tree, the program list and the error panel will send (steps 4, 5, 7); nothing in the UI sends it yet.
+- **The file crumb**: `parts/` quiet, `gears.pathogen` as the current crumb.
+- **Docs** moved from the footer to the tabs bar.
+- **Errors with another file open**, pulled forward from step 5, since tabs make it reachable now: the error is the shown program's, read with that program's graph (`programModules`). The editor marks only its own file's lines: the program's when it's the one shown, or the open file's when the error happened in its code. The panel then names the program (`main.pathogen line 3:6 — …`). A library's own warnings mark it in its tab. Showing another file re-places the last compile's marks without recompiling.
+- **Other readers of `code`**, now that the open file needn't be the program shown:
+  - the snapshot's "edited since it drew" check compares against the program shown;
+  - the export legend's code is `renderedCode`, the code that drew the picture;
+  - the thumbnail's change hash covers every file (a just-main workspace hashes as before, so stored thumbnail hashes still match);
+  - Make public prechecks the main, whichever tab is open;
+  - Copy Code copies the file in the editor, as decided.
+- Checked: the jsdom tests above and `tests/playground-editor-tabs.test.ts` (8); the existing autosave tests updated for the new `init`; `verify/verify-2d-step3.ts` against `npm run dev:stack`, 25 checks. They cover:
+  - one tab and the crumb; the library's tab;
+  - undo per file, both ways;
+  - two `gears` told apart;
+  - the teardown save sending both edited files as text, and the server holding them after the reload;
+  - quick tab clicks after an edit (below);
+  - a workspace switch saving both, and the next workspace with no history from the last;
+  - the main's error marked in main and not in the library's tab;
+  - Docs.
+
+  Screenshots `verify/2d-step3-*.png`, light and dark.
+- **Review** (no critical findings). Fixed:
+  - **Two of our own saves out together, from the same revision, 409 each other**, and autosave reads a 409 as another tab: the banner, and no more saving. Each tab click blurs the editor and saves, so quick clicks after an edit did it. In the browser, the build without the fix sent four saves all from revision 1, showed the banner, and then lost the next workspace switch's edits.
+    - Now one request is out at a time: normal saves wait their turn, and send the newest edit when it comes.
+    - A teardown save takes over from a save still hashing, and sends nothing when the request already out carries the latest edit.
+    - When a teardown save with a newer edit crosses an older request, the 409 that one of them gets isn't a conflict. Whichever lands, the newer text is what's saved.
+    - A wait for a request that never answers ends after 20 s, so it can't stop every save after it.
+    - Tests: six in "one save out at a time", and the browser check above (`verify-2d-step3.ts` 5b).
+  - A teardown save over the browsers' 64 KB keepalive cap was refused outright and silently. It now goes as a plain request, and a failed teardown save is logged and retried if the page stays.
+  - Copy URL and Copy Debug Info carried the open file's text (a library, with a library open). They carry the program shown now (`shownProgramText`), tested.
+  - Opening a file the workspace no longer has changes nothing (`show` checks).
+- **Left for step 4, from the review:**
+  - A delete or rename must also prune the tabs (`openFiles`), the editor's kept states and the tab-icon cache. Otherwise a new file at a deleted file's path would bring back the old file's undo history.
+  - Every planned edit (rename, move, delete, new file, import rewrites) must call `autosave.onChange(workspaceNow())`.
+  - `flush()` stops autosave after its save, so an edit typed during a workspace switch's save is dropped, as before this step. The switch shows the next workspace's loading state; recorded, not changed.
+
+**Changes to the plan from step 3:**
+- **The Files toggle moves to step 4**, with the tree it shows: until then it would toggle nothing.
+- **A step 3b is added: the layout without a footer.** You decided it in the v2 review (note 40, "Decided") and v6's screen O draws it, but no step had it. What it covers: no footer (the viewBox display goes, since the source says it); Background, Grid and Precision in the inspector's Canvas section; no card around the preview; no minimap, so the fullscreen button takes the top-left corner; the editor and the preview run to the bottom. Step 5's chip sits beside the zoom controls at the bottom, so 3b comes before it. Docs already moved in step 3.
+- **For 2e:** Make public's precheck compiles the main alone, so a main that imports a file fails it. This was true since 2c, and publishing carries the workspace in 2e.
+- **For step 9:** Copy URL, until it goes, shares the open file's text. That matters only with a library open.
+- **For step 4:** the import rewrites of a rename reach files whose editor state is kept. The pane needs a way to apply changes to a kept state as one undo step (`state.update`), with `workspaceFiles` updated alongside.
 
 **The v7 mockup round** (2026-11-09, commit `5c8f925`): note 53, `phase-2-mockups-v7/`. Five screens: no programs left, folders and moving, narrow screens, the mini-workspace, the ⋮ menu. It also draws what v6 left out (renaming a file, Move to…, dragging a file). Six questions await you; steps 4 and 9 wait for them.
 - *Answered 2026-11-09: all six agreed* (note 53, "Your answers"). What that adds to the steps:

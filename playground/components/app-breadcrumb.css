@@ -98,6 +98,24 @@
   white-space: nowrap;
 }
 
+/* The open file, with its folder (docs/workspace-files.md): `parts/` quiet,
+   `gears.pathogen` as the current crumb. */
+.breadcrumb-file {
+  font-family: var(--font-mono, 'Inconsolata', monospace);
+  font-size: 0.84375rem;
+  font-weight: 600;
+  color: var(--text-primary, #1c1722);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 320px;
+}
+
+.breadcrumb-file .dir {
+  color: var(--text-tertiary, #9087a0);
+  font-weight: 500;
+}
+
 /* ---------- RIGHT zone — workspace controls cluster ---------- */
 .workspace-controls-wrapper {
   display: grid;
@@ -449,6 +467,10 @@
   }
   .workspace-size {
     display: none;
+  }
+  .breadcrumb-file {
+    font-size: 0.75rem;
+    max-width: 160px;
   }
   .workspace-controls-wrapper {
     justify-self: start;

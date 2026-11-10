@@ -60,7 +60,8 @@ describe('autosave optimistic concurrency', () => {
     expect(autosave._conflicted).toBe(true);
     expect(store.get('saveStatus')).toBe(SaveStatus.ERROR);
     expect(conflictEvents).toHaveLength(1);
-    expect(autosave._pendingCode).toBe('my-local-edit');
+    const pending = autosave._pendingWorkspace;
+    expect(pending?.texts.get(pending.openFile)).toBe('my-local-edit');
 
     // A further attempt must NOT fire another request (would 409 / clobber).
     const callsAfterConflict = updateSpy.mock.calls.length;

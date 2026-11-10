@@ -109,6 +109,16 @@ export function programToShow(workspace: WorkspaceTexts, chosen: string | null):
   return workspace.entryPoints.find((p) => workspace.texts.has(p)) ?? workspace.openFile;
 }
 
+/**
+ * The text of the program the preview shows, as it stands now. Not always
+ * the store's `code`, which is the file in the editor: a library, or another
+ * program, can be open in a tab.
+ */
+export function shownProgramText(): string {
+  const workspace = workspaceNow();
+  return workspace.texts.get(programToShow(workspace, store.get('shownProgram') as string | null)) ?? '';
+}
+
 /** The workspace now, from the store. */
 export function workspaceNow(): WorkspaceTexts {
   return workspaceTexts({

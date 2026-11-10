@@ -13,6 +13,7 @@
 
 import { workspaceApi } from '../services/api.js';
 import { getUserId } from '../services/user-id.js';
+import { programToShow, workspaceNow } from '../services/workspace-files.js';
 import { hasFeature, UserFeature } from '../services/auth.js';
 import type { CurrentUser } from '../services/auth.js';
 import {
@@ -52,6 +53,18 @@ interface BreadcrumbItem {
   id?: string | null;
   route: string | null;
   isCurrent: boolean;
+  /** The open file's workspace path: the workspace view's last crumb. */
+  file?: string;
+}
+
+const escHtml = (s: string): string =>
+  s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
+/** The file crumb: its folder quiet, its name as the current crumb. */
+function fileCrumbHtml(path: string): string {
+  const slash = path.lastIndexOf('/');
+  const dir = slash >= 0 ? `<span class="dir">${escHtml(path.slice(0, slash + 1))}</span>` : '';
+  return `<span class="breadcrumb-file" title="${escHtml(path)}">${dir}${escHtml(path.slice(slash + 1))}</span>`;
 }
 
 const viewConfig: Record<string, ViewConfig> = {
@@ -108,6 +121,7 @@ class AppBreadcrumb extends HTMLElement {
         'renderedCode',
         'snapshotCount',
         'snapshotsPage',
+        'openFile',
       ],
       () => this.render(),
     );
@@ -232,6 +246,11 @@ class AppBreadcrumb extends HTMLElement {
         }
 
         crumbs.push({ label, id, route: null, isCurrent: true });
+        // The file in the editor, with its folder: `parts/gears.pathogen`.
+        if (currentView === 'workspace') {
+          const file = store.get('openFile') as string;
+          crumbs.push({ label: file, route: null, isCurrent: true, file });
+        }
       }
     }
 
@@ -475,9 +494,11 @@ class AppBreadcrumb extends HTMLElement {
             <span class="breadcrumb-item">
               ${index > 0 ? '<span class="separator">/</span>' : ''}
               ${
-                crumb.isCurrent
-                  ? `<span class="breadcrumb-current ${crumb.route === null ? 'workspace-name' : ''}">${crumb.label}${crumb.id ? `<span class="workspace-id">(${crumb.id})</span>` : ''}</span>${sizeHtml}`
-                  : `<button class="breadcrumb-link" data-route="${crumb.route}">${crumb.label}</button>`
+                crumb.file !== undefined
+                  ? fileCrumbHtml(crumb.file)
+                  : crumb.isCurrent
+                    ? `<span class="breadcrumb-current ${crumb.route === null ? 'workspace-name' : ''}">${crumb.label}${crumb.id ? `<span class="workspace-id">(${crumb.id})</span>` : ''}</span>${sizeHtml}`
+                    : `<button class="breadcrumb-link" data-route="${crumb.route}">${crumb.label}</button>`
               }
             </span>
           `,
@@ -669,7 +690,11 @@ class AppBreadcrumb extends HTMLElement {
     // a Worker), so the client is the authority — and the toast tells
     // the user exactly why it was blocked.
     if (requestPublic) {
-      const code = (store.get('code') as string | undefined) ?? '';
+      // The main, whichever file the editor shows. (It's compiled alone: a
+      // main that imports files fails here until publishing carries the
+      // workspace, phase 2e.)
+      const workspace = workspaceNow();
+      const code = workspace.texts.get(programToShow(workspace, null)) ?? '';
       const precheck = await precheckCompile(code);
       if (!precheck.ok) {
         toastPublishBlocked(precheck);

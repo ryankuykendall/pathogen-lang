@@ -1,3 +1,4 @@
+import { shownProgramText } from '../services/workspace-files.js';
 import { store } from '../state/store.js';
 import type { CompileWarning, LayerOutput, LogEntry } from '../types/compiler.js';
 
@@ -14,7 +15,9 @@ export function buildDebugCapture(): string {
 
   const timestamp = new Date().toISOString();
   const workspace = state.workspaceName || 'unsaved';
-  const code = state.code || '';
+  // The program whose compile this reports (its error, layers and logs), not
+  // necessarily the file in the editor. Capturing the workspace is 2h's.
+  const code = shownProgramText() || state.code || '';
   const status = state.compilationStatus || 'idle';
   const rawError = state.compilationError || 'none';
   // Format multi-line errors as markdown list for proper rendering
