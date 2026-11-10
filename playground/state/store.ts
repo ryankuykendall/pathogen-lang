@@ -119,7 +119,7 @@ export const store = createStore({
 
   // Save status for autosave
   saveStatus: 'idle', // 'idle', 'modified', 'saving', 'saved', 'error'
-  saveError: null, // Error message if save failed
+  saveError: null as string | null, // Error message if save failed
   multiTabWarning: false, // True when same workspace is open in another tab
   fontWarnings: [], // Formatted font-weight substitution messages (see font-loader formatFontSubstitutions)
 
@@ -167,7 +167,7 @@ export const store = createStore({
 
   // Compilation status (for async worker)
   compilationStatus: 'idle', // 'idle', 'compiling', 'rendering', 'completed', 'error', 'cancelled'
-  compilationError: null,
+  compilationError: null as string | null,
   compilationId: 0, // Tracks current compilation for staleness detection
   // Whole-second quantized elapsed time of the in-flight compile. Ticked by
   // workspace-view's compile ticker (utils/compile-ticker.ts) during real

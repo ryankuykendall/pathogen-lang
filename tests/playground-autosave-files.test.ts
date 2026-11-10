@@ -411,12 +411,141 @@ describe('one save out at a time', () => {
     expect((updateSpy.mock.calls[2][1] as { baseRev: number }).baseRev).toBe(2);
   });
 
+  it('saves queued behind a slow one never send an older text over a newer one they saved', async () => {
+    await load('ws-18');
+    type(MAIN_EDITED);
+    let answerSlow: (value: unknown) => void = () => undefined;
+    updateSpy.mockReturnValueOnce(
+      new Promise((resolve) => {
+        answerSlow = resolve;
+      }),
+    );
+    const slow = autosave.saveNow();
+    await vi.waitFor(() => expect(updateSpy).toHaveBeenCalledTimes(1));
+    // Two tab clicks queue two saves, with an edit before each and one after.
+    type(`${MAIN_EDITED}// w1\n`);
+    const click1 = autosave.saveNow();
+    type(`${MAIN_EDITED}// w2\n`);
+    const click2 = autosave.saveNow();
+    const newest = `${MAIN_EDITED}// w3\n`;
+    type(newest);
+    updateSpy.mockResolvedValue({ rev: 9, updatedAt: 'now' });
+    answerSlow({ rev: 2, updatedAt: 'now' });
+    await Promise.all([slow, click1, click2]);
+    const sentMains = updateSpy.mock.calls.slice(1).map(mainOf);
+    expect(sentMains).toEqual([{ text: newest }]);
+    expect(autosave.hasUnsavedChanges()).toBe(false);
+  });
+
+  it('a save that had to go while another of ours was still out: its 409 is retried, not a conflict', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'Date'] });
+    await load('ws-19');
+    type(MAIN_EDITED);
+    // A request that never answers.
+    updateSpy.mockReturnValueOnce(
+      new Promise<never>(() => {
+        // never settles
+      }),
+    );
+    autosave.saveNow().catch(() => undefined);
+    await vi.waitFor(() => expect(updateSpy).toHaveBeenCalledTimes(1));
+    const newer = `${MAIN_EDITED}gear(9);\n`;
+    type(newer);
+    updateSpy.mockRejectedValueOnce(rejected409());
+    const second = autosave.saveNow();
+    // The wait for the first ends after 20 s; the second goes, crossing it.
+    await vi.advanceTimersByTimeAsync(21_000);
+    await vi.waitFor(() => expect(updateSpy).toHaveBeenCalledTimes(2));
+    await second;
+    expect([autosave._conflicted, autosave.hasUnsavedChanges()]).toEqual([false, true]);
+  });
+
+  it('the answer of a request from before a re-open of the same workspace leaves the new session alone', async () => {
+    await load('ws-20');
+    type(MAIN_EDITED);
+    let answerOld: (value: unknown) => void = () => undefined;
+    updateSpy.mockReturnValueOnce(
+      new Promise((resolve) => {
+        answerOld = resolve;
+      }),
+    );
+    const old = autosave.saveNow();
+    await vi.waitFor(() => expect(updateSpy).toHaveBeenCalledTimes(1));
+    // Left and opened again: the same id, at the revision a fresh load gave.
+    autosave.init('ws-20', 'hash-now', 7, { shas: {}, texts: {}, justMain: false });
+    answerOld({ rev: 2, updatedAt: 'now' });
+    await old;
+    expect([autosave._baseRev, autosave._lastSavedHash]).toEqual([7, 'hash-now']);
+  });
+
+  it('a workspace switch that a teardown save overtook, and that teardown save failed: the edit is saved before letting go', async () => {
+    await load('ws-22');
+    type(MAIN_EDITED);
+    let failTeardown: (reason: unknown) => void = () => undefined;
+    updateSpy.mockReturnValueOnce(
+      new Promise((_, reject) => {
+        failTeardown = reject;
+      }),
+    );
+    // The switch's save is asked for first (and is hashing) when the tab hides.
+    const flushing = autosave.flush();
+    await autosave.saveNow({ keepalive: true });
+    updateSpy.mockResolvedValueOnce({ rev: 2, updatedAt: 'now' });
+    failTeardown(new Error('network down'));
+    await flushing;
+    expect(updateSpy).toHaveBeenCalledTimes(2);
+    expect(updateSpy.mock.calls[0][2]).toEqual({ keepalive: true });
+    expect(mainOf(updateSpy.mock.calls[1])).toEqual({ text: MAIN_EDITED });
+  });
+
+  it('a workspace switch whose teardown save failed saves the edit before letting go', async () => {
+    await load('ws-21');
+    type(MAIN_EDITED);
+    let failTeardown: (reason: unknown) => void = () => undefined;
+    updateSpy.mockReturnValueOnce(
+      new Promise((_, reject) => {
+        failTeardown = reject;
+      }),
+    );
+    await autosave.saveNow({ keepalive: true });
+    updateSpy.mockResolvedValueOnce({ rev: 2, updatedAt: 'now' });
+    const flushing = autosave.flush();
+    failTeardown(new Error('network down'));
+    await flushing;
+    expect(updateSpy).toHaveBeenCalledTimes(2);
+    expect(mainOf(updateSpy.mock.calls[1])).toEqual({ text: MAIN_EDITED });
+  });
+
   it('a teardown save over the browsers’ 64 KB keepalive cap goes as a plain request', async () => {
     await load('ws-17');
     type(`${MAIN}// ${'x'.repeat(70_000)}\n`);
     updateSpy.mockResolvedValueOnce({ rev: 2 });
     await autosave.saveNow({ keepalive: true });
     expect(updateSpy.mock.calls[0][2]).toEqual({ keepalive: false });
+  });
+
+  it('a real conflict behind a crossing still shows: the retry alone gets the 409 too', async () => {
+    await load('ws-23');
+    type(MAIN_EDITED);
+    let answerOlder: (value: unknown) => void = () => undefined;
+    updateSpy.mockReturnValueOnce(
+      new Promise((resolve) => {
+        answerOlder = resolve;
+      }),
+    );
+    const older = autosave.saveNow();
+    await vi.waitFor(() => expect(updateSpy).toHaveBeenCalledTimes(1));
+    type(`${MAIN_EDITED}gear(9);\n`);
+    updateSpy.mockRejectedValueOnce(rejected409());
+    await autosave.saveNow({ keepalive: true });
+    answerOlder({ rev: 2, updatedAt: 'now' });
+    await older;
+    await later();
+    expect(autosave._conflicted).toBe(false);
+    // Another tab saved meanwhile: the retry, alone, is refused as well.
+    updateSpy.mockRejectedValueOnce(rejected409());
+    await autosave.saveNow();
+    expect(autosave._conflicted).toBe(true);
   });
 
   it('a 409 with no save of ours crossing it is still a conflict', async () => {

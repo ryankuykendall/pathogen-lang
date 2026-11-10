@@ -117,7 +117,7 @@ Each step: tests first; a storybook entry for each new component (the playground
   - Kept, with a comment: the file-limit message before the server's, which would count the 21st file ("this one has 21").
 
 **Step 3, several open files** (2026-11-10).
-- **Autosave** (`services/autosave.ts`) keeps the whole workspace as of the latest unsaved edit, every file in it, and a save sends each file the server doesn't hold as text, the rest by hash, with the folders and the program list. Tests first (`tests/playground-autosave-files.test.ts`, 17 with the review's). The concrete risks they cover:
+- **Autosave** (`services/autosave.ts`) keeps the whole workspace as of the latest unsaved edit, every file in it, and a save sends each file the server doesn't hold as text, the rest by hash, with the folders and the program list. Tests first (`tests/playground-autosave-files.test.ts`, 23 with both reviews'). The concrete risks they cover:
   - the page-teardown save sent only the open file as text, so an edit in another file went by its old hash and was lost. It now compares each file's text with what the server holds (`_savedTexts`), since it can't hash in time; one body builder serves both saves;
   - a save cleared the pending edit even when you typed while it was out, and the debounced save then had nothing to send. It now clears it only if it's the snapshot that was sent;
   - the retry after a failed save put the failed text back over a newer edit, and a lost second timer could send it after the newer one was saved. Now the retry sends whatever is pending, and there's one timer;
@@ -136,14 +136,15 @@ Each step: tests first; a storybook entry for each new component (the playground
   - the thumbnail's change hash covers every file (a just-main workspace hashes as before, so stored thumbnail hashes still match);
   - Make public prechecks the main, whichever tab is open;
   - Copy Code copies the file in the editor, as decided.
-- Checked: the jsdom tests above and `tests/playground-editor-tabs.test.ts` (8); the existing autosave tests updated for the new `init`; `verify/verify-2d-step3.ts` against `npm run dev:stack`, 25 checks. They cover:
+- Checked: the jsdom tests above and `tests/playground-editor-tabs.test.ts` (8); the existing autosave tests updated for the new `init`; `verify/verify-2d-step3.ts` against `npm run dev:stack`, 27 checks. They cover:
   - one tab and the crumb; the library's tab;
-  - undo per file, both ways;
+  - undo per file, both ways, and after a tab is closed with its × and reopened;
   - two `gears` told apart;
   - the teardown save sending both edited files as text, and the server holding them after the reload;
   - quick tab clicks after an edit (below);
   - a workspace switch saving both, and the next workspace with no history from the last;
   - the main's error marked in main and not in the library's tab;
+  - a long file back where it was scrolled to after a switch, and the other file at its top;
   - Docs.
 
   Screenshots `verify/2d-step3-*.png`, light and dark.
@@ -157,10 +158,25 @@ Each step: tests first; a storybook entry for each new component (the playground
   - A teardown save over the browsers' 64 KB keepalive cap was refused outright and silently. It now goes as a plain request, and a failed teardown save is logged and retried if the page stays.
   - Copy URL and Copy Debug Info carried the open file's text (a library, with a library open). They carry the program shown now (`shownProgramText`), tested.
   - Opening a file the workspace no longer has changes nothing (`show` checks).
+- **A second review, of the save serialization alone** (it came after the first). It found one more way to lose an edit: two saves queued behind a slow one, with an edit before each, where the first sent the newest edit and the second then sent its older one over it, and showed Saved. Fixed:
+  - **A turn sends only what's pending when its turn comes.** Every edit makes the workspace pending and only a save that lands clears it, so nothing pending means nothing unsaved. The pending copy is autosave's own, so a flush at a workspace switch still saves the workspace being left.
+  - **Every request out is tracked, not just the latest.** A teardown save crossing a normal one no longer hides it from the next turn, which waits for both.
+  - **The queue moves on once a request is out**, and the next turn waits for its answer. Before, a request that never answered held the queue past the 20 s cap.
+  - **A 409 on a request that went while another of ours was still out** (a wait that ran out) is retried once, alone, where a real conflict from another tab still shows.
+  - **Each init is its own session.** An answer from before the same workspace was left and opened again can't set the new session's revision.
+  - **A workspace switch waits for a teardown save that overtook its own save**, and saves again if that one failed, before letting go.
+  - **Smaller fixes:**
+    - a save that finds nothing left to send also cancels its debounce, so "unsaved" clears at once;
+    - a teardown save's own failure shows as an error;
+    - `_doSave` returns its own result instead of the store's status.
+  - Tests: six more in "one save out at a time" (23 in the file), including a real conflict behind a crossing still showing on the retry.
+  - The store's defaults now carry the declared types of `saveError` and `compilationError` (`string | null`), which also clears one of the playground's older type errors (8 → 7).
+- **The thumbnail's change hash** keeps each file's hash by its text, so a keystroke rehashes only the file being typed in.
 - **Left for step 4, from the review:**
   - A delete or rename must also prune the tabs (`openFiles`), the editor's kept states and the tab-icon cache. Otherwise a new file at a deleted file's path would bring back the old file's undo history.
   - Every planned edit (rename, move, delete, new file, import rewrites) must call `autosave.onChange(workspaceNow())`.
   - `flush()` stops autosave after its save, so an edit typed during a workspace switch's save is dropped, as before this step. The switch shows the next workspace's loading state; recorded, not changed.
+- **CHANGELOG:** phase 2's entry is written for the 2e push that ships it, covering 2b to 2e.
 
 **Changes to the plan from step 3:**
 - **The Files toggle moves to step 4**, with the tree it shows: until then it would toggle nothing.
@@ -178,6 +194,6 @@ Each step: tests first; a storybook entry for each new component (the playground
 
 ## Risks
 
-- **Autosave with several changing files** is where data can be lost. Step 3 starts with the tests for the 2c review's findings 1 and 3, and with a puppeteer check that edits two files, switches workspaces, and reloads.
+- **Autosave with several changing files** is where data can be lost. Step 3 starts with the tests for the 2c review's findings 1 and 3, and with a puppeteer check that edits two files, switches workspaces, and reloads. (*Done: what those tests cover is listed under "Built", step 3.*)
 - **Miniatures** compile every program. Large programs could slow the list; the plan is the shared compiler, two at a time, as the admin moderation thumbnails already do, and stale ones kept until redrawn.
 - **Import rewriting** changes code the user didn't type. It rewrites only import paths, through the parse tree, and each rename's edits are one undo step in each file it touches.

@@ -79,6 +79,9 @@ export class WorkspaceView extends HTMLElement {
 
   private _libraryReadings = new Map<string, { text: string; library: boolean }>();
 
+  // Each file's hash for the thumbnail's change check, by its text (_contentHash).
+  private _fileHashes = new Map<string, { text: string; hash: string }>();
+
   // What the last compile left to mark in the editor, so a file shown after
   // it gets its marks without a recompile (only the chip changes what the
   // preview shows). Null before the first compile of a workspace.
@@ -478,6 +481,7 @@ export class WorkspaceView extends HTMLElement {
     });
     this._lastOutcome = null;
     this._libraryReadings.clear();
+    this._fileHashes.clear();
     resetOpenFileModules();
     // Disarm pending size computes until this workspace's first successful
     // compile — see _sizeArmed.
@@ -1288,8 +1292,18 @@ export class WorkspaceView extends HTMLElement {
     if (workspace.texts.size === 1 && workspace.texts.has(MAIN_FILE)) {
       return this._simpleHash(workspace.texts.get(MAIN_FILE) ?? '');
     }
-    const files = [...workspace.texts].sort(([a], [b]) => (a < b ? -1 : 1));
-    return this._simpleHash(JSON.stringify(files));
+    // Each file's hash is kept by its text, so a keystroke rehashes only the
+    // file being typed in, not all twenty.
+    const parts: string[] = [];
+    for (const [path, text] of [...workspace.texts].sort(([a], [b]) => (a < b ? -1 : 1))) {
+      let kept = this._fileHashes.get(path);
+      if (kept?.text !== text) {
+        kept = { text, hash: this._simpleHash(text) };
+        this._fileHashes.set(path, kept);
+      }
+      parts.push(`${path}:${kept.hash}`);
+    }
+    return this._simpleHash(parts.join('\n'));
   }
 
   copyCode(): void {

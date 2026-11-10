@@ -103,6 +103,21 @@ function isJustMain(workspace: WorkspaceTexts): boolean {
   );
 }
 
+/** A save request out, and the promise its answer settles (success or not). */
+interface SaveRequest {
+  workspace: WorkspaceTexts;
+  settled: Promise<void>;
+}
+
+/** The workspace and session a save belongs to (see AutosaveManager._session). */
+interface SessionToken {
+  id: string | null;
+  session: number;
+}
+
+/** How long a turn waits for the requests still out before it sends anyway. */
+const REQUEST_WAIT_MS = 20_000;
+
 // Autosave manager class
 class AutosaveManager {
   _workspaceId: string | null;
@@ -140,9 +155,10 @@ class AutosaveManager {
   // One request out at a time. Two of ours from the same revision would 409
   // each other, and a 409 reads as another tab (the banner, and no more
   // saving): each tab click blurs the editor and saves, so two quick clicks
-  // did it. Normal saves wait their turn in `_queue`, and for the request
-  // out (`_inFlight`). A page-teardown save can't wait: it goes at once.
-  _inFlight: { workspace: WorkspaceTexts; settled: Promise<void> } | null;
+  // did it. Normal saves take turns (`_queue`); each turn waits for every
+  // request still out (`_requests`) before it sends. A page-teardown save
+  // can't wait: it goes at once.
+  _requests: Set<SaveRequest>;
 
   _queue: Promise<unknown>;
 
@@ -150,6 +166,16 @@ class AutosaveManager {
   // doesn't send: the teardown save carried the latest edit. And a 409 on a
   // request that crossed another of ours is the two of them, not another tab.
   _teardowns: number;
+
+  // A 409 on a request that went while another of ours was still out (a wait
+  // that ran out) is retried once, alone, where a real conflict shows; this
+  // says the retry was spent. Cleared by a save that lands.
+  _crossingRetried: boolean;
+
+  // Counts init()s and stop()s: an answer, a turn or a timer from an earlier
+  // session (even of the same workspace, left and opened again) leaves the
+  // session now alone.
+  _session: number;
 
   constructor() {
     this._workspaceId = null;
@@ -168,9 +194,21 @@ class AutosaveManager {
     this._savedShas = new Map();
     this._savedTexts = new Map();
     this._serverJustMain = true;
-    this._inFlight = null;
+    this._requests = new Set();
     this._queue = Promise.resolve();
     this._teardowns = 0;
+    this._crossingRetried = false;
+    this._session = 0;
+  }
+
+  /** Who a save belongs to: this workspace, in this session. */
+  _token(): SessionToken {
+    return { id: this._workspaceId, session: this._session };
+  }
+
+  /** Whether the session a save belongs to is still the one bound. */
+  _bound(token: SessionToken): boolean {
+    return this._isEnabled && this._workspaceId === token.id && this._session === token.session;
   }
 
   // Initialize autosave for a workspace, with what the server holds for it.
@@ -183,6 +221,7 @@ class AutosaveManager {
     this._serverJustMain = saved.justMain ?? true;
     this._baseRev = initialRev;
     this._conflicted = false;
+    this._crossingRetried = false;
     this._lastSaveTime = Date.now();
     this._isEnabled = true;
 
@@ -206,15 +245,11 @@ class AutosaveManager {
     }
     this._pendingWorkspace = null;
     this._pendingPreferences = null;
-    // The next workspace's saves don't wait on this one's requests; theirs
-    // check the workspace id and leave the new one alone.
-    this._inFlight = null;
+    // A new session: this one's turns and answers leave the next alone, and
+    // the next one's saves don't wait on this one's requests.
+    this._session++;
+    this._requests = new Set();
     this._queue = Promise.resolve();
-  }
-
-  /** What a save sends now: the pending edit's workspace, else the store's. Taken synchronously. */
-  _workspaceToSave(): WorkspaceTexts {
-    return this._pendingWorkspace ?? workspaceNow();
   }
 
   /**
@@ -268,29 +303,34 @@ class AutosaveManager {
       return;
     }
 
-    await this._saveInTurn(this._pendingWorkspace, { unchangedIsSaved: true });
+    await this._saveInTurn({ unchangedIsSaved: true });
   }
 
   /**
    * A normal save, in its turn: one request out at a time, so each goes out
-   * from the revision the one before it got. `requested` is what was asked to
-   * be saved, taken when it was asked (a flush at a workspace switch, before
-   * the next workspace's load replaces the store); an edit made while it
-   * waited is newer and is sent instead. Resolves false when it failed or
-   * couldn't be sent.
+   * from the revision the one before it got. It sends what's pending when its
+   * turn comes, the newest edit: every edit makes the workspace pending
+   * (onChange) and only a save that lands clears it, so with nothing pending
+   * there's nothing unsaved, and an older text must never be sent over what
+   * an earlier turn saved. The pending workspace is autosave's own, not the
+   * store's, so a flush at a workspace switch saves the workspace being left
+   * even once the next one's load has replaced the store. The queue moves on
+   * once the request is out; the next turn waits for its answer
+   * (`_requestsAnswered`). Resolves false when it failed or couldn't be sent.
    */
-  async _saveInTurn(requested: WorkspaceTexts, { unchangedIsSaved = false } = {}): Promise<boolean> {
-    const workspaceId = this._workspaceId;
+  async _saveInTurn({ unchangedIsSaved = false } = {}): Promise<boolean> {
+    const token = this._token();
     const teardowns = this._teardowns;
-    const turn = this._queue.then(async (): Promise<boolean> => {
-      await this._requestSettled();
-      if (this._workspaceId !== workspaceId || this._conflicted) return false;
+    const turn = this._queue.then(async (): Promise<boolean | { answer: Promise<boolean> }> => {
+      await this._requestsAnswered();
+      if (!this._bound(token) || this._conflicted) return false;
       // A teardown save went out since this one was asked for, with the latest edit.
       if (this._teardowns !== teardowns) return true;
-      const workspace = this._pendingWorkspace ?? requested;
+      const workspace = this._pendingWorkspace;
+      if (workspace === null) return true;
       const { hash, shas } = await workspaceHash(workspace);
-      // Another workspace loaded while hashing: this one is no longer bound.
-      if (this._workspaceId !== workspaceId) return false;
+      // Another workspace (or session) bound while hashing: not this one's to send.
+      if (!this._bound(token)) return false;
       if (this._teardowns !== teardowns) return true;
       if (hash === this._lastSavedHash) {
         // Content unchanged, skip save
@@ -298,24 +338,27 @@ class AutosaveManager {
         if (unchangedIsSaved) store.set('saveStatus', SaveStatus.SAVED);
         return true;
       }
-      await this._doSave(workspace, hash, shas);
-      return store.get('saveStatus') !== SaveStatus.ERROR;
+      // Wrapped, so the queue doesn't wait for the answer.
+      return { answer: this._doSave(workspace, hash, shas) };
     });
     this._queue = turn.catch(() => undefined);
-    return turn;
+    const outcome = await turn;
+    return typeof outcome === 'boolean' ? outcome : outcome.answer;
   }
 
   /**
-   * Until the request out now (if any) is answered. At most 20 s: the API has
-   * no timeout, and a request that never answers mustn't stop every save
-   * after it.
+   * Until every request out now is answered. At most REQUEST_WAIT_MS: the
+   * API has no timeout, and a request that never answers mustn't stop every
+   * save after it.
    */
-  async _requestSettled(): Promise<void> {
-    const deadline = Date.now() + 20_000;
-    while (this._inFlight && Date.now() < deadline) {
+  async _requestsAnswered(): Promise<void> {
+    const deadline = Date.now() + REQUEST_WAIT_MS;
+    while (this._requests.size > 0 && Date.now() < deadline) {
       const timeout: { id?: ReturnType<typeof setTimeout> } = {};
+      const answers: Promise<void>[] = [];
+      for (const request of this._requests) answers.push(request.settled);
       await Promise.race([
-        this._inFlight.settled,
+        Promise.all(answers),
         new Promise<void>((resolve) => {
           timeout.id = setTimeout(resolve, deadline - Date.now());
         }),
@@ -330,17 +373,26 @@ class AutosaveManager {
     const settled = new Promise<void>((resolve) => {
       answered = resolve;
     });
-    const request = { workspace, settled };
-    this._inFlight = request;
+    const request: SaveRequest = { workspace, settled };
+    const requests = this._requests;
+    requests.add(request);
     return () => {
-      if (this._inFlight === request) this._inFlight = null;
+      requests.delete(request);
       answered();
     };
   }
 
-  /** The pending edit is saved: forget it, unless a newer edit replaced it meanwhile. */
+  /**
+   * The pending edit is saved: forget it, unless a newer edit replaced it
+   * meanwhile, and the save its debounce would have made.
+   */
   _settle(saved: WorkspaceTexts): void {
-    if (this._pendingWorkspace === saved) this._pendingWorkspace = null;
+    if (this._pendingWorkspace !== saved) return;
+    this._pendingWorkspace = null;
+    if (this._debounceTimer) {
+      clearTimeout(this._debounceTimer);
+      this._debounceTimer = null;
+    }
   }
 
   /**
@@ -384,10 +436,16 @@ class AutosaveManager {
 
   // Actually perform the save. The keepalive (page-teardown) flush does NOT
   // route through here — it dispatches its fetch synchronously in saveNow so the
-  // request survives unload; this path is the normal awaited save.
-  async _doSave(workspace: WorkspaceTexts, hash: string, shas: ReadonlyMap<string, string> = new Map()): Promise<void> {
+  // request survives unload; this path is the normal awaited save. The request
+  // is out (in `_requests`) by the time this returns its promise. Resolves
+  // true when the save landed.
+  async _doSave(
+    workspace: WorkspaceTexts,
+    hash: string,
+    shas: ReadonlyMap<string, string> = new Map(),
+  ): Promise<boolean> {
     if (!this._isEnabled || !this._workspaceId) {
-      return;
+      return false;
     }
 
     store.update({
@@ -395,20 +453,25 @@ class AutosaveManager {
       saveError: null,
     });
 
-    // The workspace this save belongs to. If another workspace is loaded
-    // while the request is out, its answer must not touch the new one's
-    // state (its revision, saved hashes or status).
+    // The workspace and session this save belongs to. If another workspace
+    // is loaded (or this one opened again) while the request is out, its
+    // answer must not touch the new session's state (its revision, saved
+    // hashes or status).
+    const token = this._token();
     const workspaceId = this._workspaceId;
     const teardowns = this._teardowns;
+    // Another of ours still out: only after a wait for it ran out.
+    const crossing = this._requests.size > 0;
     const answered = this._requestOut(workspace);
     try {
       const result = (await workspaceApi.update(workspaceId, {
         ...this._saveBody(workspace, shas),
         baseRev: this._baseRev,
       })) as Record<string, unknown>;
-      if (this._workspaceId !== workspaceId) return;
+      if (!this._bound(token)) return false;
       // The server now stores these files.
       this._recordSaved(workspace, shas);
+      this._crossingRetried = false;
 
       // Advance our base revision from the server's authoritative value so the
       // next save's baseRev matches.
@@ -432,18 +495,24 @@ class AutosaveManager {
           workspaceUpdatedAt: result.updatedAt,
         });
       }
+      return true;
     } catch (err) {
-      // A save of the workspace that was open before a switch: its failure
-      // belongs to that workspace, not the one now open.
-      if (this._workspaceId !== workspaceId) {
+      // A save from before a switch (or a re-open): its failure belongs to
+      // that session, not the one now open.
+      if (!this._bound(token)) {
         console.error('Autosave of the previous workspace failed:', err);
-        return;
+        return false;
       }
       // A page-teardown save went out while this one was: it carried this
       // workspace or a newer one, and whichever of the two landed second got
       // the 409. That's not another tab, and this older text mustn't be put
       // back as pending: the teardown save's own answer settles what's saved.
-      if (this._teardowns !== teardowns) return;
+      if (this._teardowns !== teardowns) {
+        if (store.get('saveStatus') === SaveStatus.SAVING) {
+          store.set('saveStatus', this._pendingWorkspace ? SaveStatus.MODIFIED : SaveStatus.SAVED);
+        }
+        return false;
+      }
       // The failed workspace is still unsaved. A newer edit made while the
       // request was out is newer than it, and stays the one to save: the
       // retry must never send the older text over it.
@@ -454,9 +523,18 @@ class AutosaveManager {
       // newer code — so surface the conflict and STOP autosaving. The pending
       // workspace is kept so the user's local edits aren't lost; they
       // reconcile by reloading (which re-inits autosave at the latest rev).
+      // Except once, when this request went while another of ours was still
+      // out (a wait for it ran out): the 409 may be that one landing first.
+      // A retry alone, after it, shows which.
       if (this._isConflictError(err)) {
+        if (crossing && !this._crossingRetried) {
+          this._crossingRetried = true;
+          store.set('saveStatus', SaveStatus.MODIFIED);
+          this._scheduleSave(MIN_INTERVAL_MS);
+          return false;
+        }
         this._enterConflict();
-        return;
+        return false;
       }
 
       console.error('Autosave failed:', err);
@@ -468,6 +546,7 @@ class AutosaveManager {
       // Retry after the interval, with whatever is pending then. Replaces a
       // debounce an edit during the request scheduled: one timer, never two.
       this._scheduleSave(MIN_INTERVAL_MS);
+      return false;
     } finally {
       answered();
     }
@@ -506,8 +585,14 @@ class AutosaveManager {
         return;
       }
 
-      // Save pending code (saveNow checks hash, skips if unchanged)
+      // Save what's pending (saveNow checks hash, skips if unchanged).
+      const token = this._token();
       await this.saveNow();
+      // A page-teardown save that went out meanwhile carried the latest edit,
+      // and saveNow left it to that: wait for it, and save again if it failed,
+      // before letting go of this workspace.
+      await this._requestsAnswered();
+      if (this._bound(token) && this._pendingWorkspace && !this._conflicted) await this.saveNow();
 
       // Save pending preferences if timer was active
       if (this._preferencesTimer) {
@@ -551,15 +636,14 @@ class AutosaveManager {
       this._debounceTimer = null;
     }
 
-    // A page with nothing typed and nothing pending (the editor not loaded
-    // yet) has nothing to save.
-    if (!this._pendingWorkspace && !store.get('code')) {
+    // Only what's pending is unsaved: every edit makes the workspace pending
+    // (onChange), and only a save that lands clears it. It is autosave's own
+    // copy, so a flush at a workspace switch saves the workspace being left
+    // even once the next one's load has replaced the store.
+    const workspace = this._pendingWorkspace;
+    if (workspace === null) {
       return true;
     }
-    // Taken now, synchronously: a flush at a workspace switch saves the
-    // workspace being left, even if the next one's load replaces the store
-    // before the save goes out.
-    const workspace = this._workspaceToSave();
 
     if (keepalive) {
       // Page-teardown path (beforeunload / visibilitychange→hidden). The fetch
@@ -573,14 +657,15 @@ class AutosaveManager {
       }
       // A request out now already carries the latest edit: nothing more to
       // send (a second one, from the same revision, would 409 against it).
-      const out = this._inFlight;
-      if (out && (this._pendingWorkspace === null || this._pendingWorkspace === out.workspace)) {
+      const out = [...this._requests];
+      if (out.some((request) => request.workspace === workspace)) {
         return true;
       }
       // Normal saves asked for before now don't send: this one carries the
       // latest. If one of ours is out already, the two cross.
       const teardown = ++this._teardowns;
-      const crossed = out !== null;
+      const crossed = out.length > 0;
+      const token = this._token();
       const answered = this._requestOut(workspace);
       // The fetch is dispatched synchronously here (before any await), so it
       // survives a real teardown. We still attach a continuation: when the page
@@ -600,29 +685,32 @@ class AutosaveManager {
       workspaceApi
         .update(sentFor, body, { keepalive: fits })
         .then(async (result) => {
-          // Another workspace loaded meanwhile: this answer isn't about it.
-          if (this._workspaceId !== sentFor) return;
+          // Another workspace (or session) bound meanwhile: this answer isn't about it.
+          if (!this._bound(token)) return;
           const rev = (result as { rev?: number } | null)?.rev;
           if (typeof rev === 'number') {
             this._baseRev = rev;
+            this._crossingRetried = false;
             // Content is now persisted; settle local dirty state and the pill so
             // we don't re-warn/re-send when the tab is restored.
             this._recordSaved(workspace, new Map());
             this._settle(workspace);
             store.set('saveStatus', this._pendingWorkspace ? SaveStatus.MODIFIED : SaveStatus.SAVED);
             // The page survived: hash what was sent, so the next save finds it
-            // unchanged and sends unchanged files by hash.
+            // unchanged and sends unchanged files by hash. A normal save
+            // waits for this (`answered` runs in `finally`, after the hash).
             const { hash, shas } = await workspaceHash(workspace);
-            if (this._workspaceId !== sentFor) return;
+            if (!this._bound(token)) return;
             this._lastSavedHash = hash;
             this._recordSaved(workspace, shas);
           }
         })
-        .catch((err) => {
-          if (this._workspaceId !== sentFor) return;
+        .catch((err: unknown) => {
+          if (!this._bound(token)) return;
           // Our own two requests crossing (one of ours was out with this one,
           // or a later teardown save went after it): the 409 is theirs, not
-          // another tab's. What this one carried stays pending until saved.
+          // another tab's. What this one carried stays pending until saved,
+          // and a save alone, after, shows a real conflict.
           const ours = crossed || this._teardowns !== teardown;
           // Surface a conflict the same way the normal path does — otherwise a
           // visibilitychange 409 would silently halt autosave (no banner/pill).
@@ -631,7 +719,10 @@ class AutosaveManager {
             return;
           }
           // The page survived (else this never runs): save it the normal way.
-          if (!this._isConflictError(err)) console.error('Autosave (page-teardown save) failed:', err);
+          if (!this._isConflictError(err)) {
+            console.error('Autosave (page-teardown save) failed:', err);
+            store.update({ saveStatus: SaveStatus.ERROR, saveError: (err as Error).message });
+          }
           if (this._pendingWorkspace) this._scheduleSave(DEBOUNCE_MS);
         })
         .finally(answered);
@@ -647,7 +738,7 @@ class AutosaveManager {
 
     // Force save regardless of interval
     this._lastSaveTime = 0;
-    return this._saveInTurn(workspace);
+    return this._saveInTurn();
   }
 
   // True when there is unsaved code (a pending edit, a save scheduled, or a

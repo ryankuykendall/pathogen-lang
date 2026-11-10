@@ -136,6 +136,20 @@ async function mouseClickTab(page: Page, path: string): Promise<void> {
   await page.mouse.click(box.x, box.y);
 }
 
+async function mouseClickClose(page: Page, path: string): Promise<void> {
+  const box = (await page.evaluate(`(() => {
+    const r = window.__find('editor-tabs').shadowRoot.querySelector('[data-path="${path}"] .close').getBoundingClientRect();
+    return { x: r.x + r.width / 2, y: r.y + r.height / 2 };
+  })()`)) as { x: number; y: number };
+  await page.mouse.click(box.x, box.y);
+}
+
+async function editorScrollTop(page: Page): Promise<number> {
+  return (await page.evaluate(
+    `window.__find('code-editor-pane').shadowRoot.querySelector('.cm-scroller').scrollTop`,
+  )) as number;
+}
+
 async function focusEditorEnd(page: Page): Promise<void> {
   await page.evaluate(`window.__find('code-editor-pane').shadowRoot.querySelector('.cm-content').focus()`);
   await page.keyboard.down('Meta');
@@ -326,6 +340,32 @@ try {
     { revs, conflicted, saved: settledAfterClicks !== null },
   );
 
+  // 5c. A file keeps its undo after its tab is closed (docs/workspace-files.md).
+  await openFile(page, 'parts/gears.pathogen');
+  const gearsBefore = (await editorState(page)).code;
+  await focusEditorEnd(page);
+  await page.keyboard.type('// closed and reopened\n', { delay: 10 });
+  await mouseClickClose(page, 'parts/gears.pathogen');
+  state = await editorState(page);
+  const closed = !state.tabs.some((t) => t.path === 'parts/gears.pathogen');
+  await openFile(page, 'parts/gears.pathogen');
+  const reopened = (await editorState(page)).code;
+  await focusEditorEnd(page);
+  // CodeMirror keeps Enter as its own undo step: undo until the edit is gone
+  // (a fresh state, with no history, would change nothing at all).
+  let undos = 0;
+  while (undos < 6 && (await editorState(page)).code !== gearsBefore) {
+    await undo(page, 1);
+    undos++;
+  }
+  state = await editorState(page);
+  check(
+    'a closed tab’s file keeps its undo: reopened, Cmd-Z takes back the edit made before closing',
+    closed && reopened === `${gearsBefore}// closed and reopened\n` && state.code === gearsBefore,
+    { closed, reopened, undos, now: state.code },
+  );
+  await openFile(page, 'main.pathogen');
+
   // 6. A workspace switch saves the old workspace's edited files, and the next
   //    one starts with its own single tab and no undo history.
   const b = await create('2d other', { 'main.pathogen': OTHER });
@@ -367,6 +407,29 @@ try {
   await clickTab(page, 'main.pathogen');
   const back = await waitFor('the marks back in main', async () => ((await editorState(page)).errorLines > 0 ? true : null));
   check('back in main, its error is marked again', back !== null);
+
+  // 7b. Each file keeps where it was scrolled to.
+  const longMain = `define ViewBox(0, 0, 20, 20);\n${Array.from({ length: 240 }, (_, i) => `// line ${i + 2}`).join('\n')}\ncircle(10, 10, 5);\n`;
+  const d = await create('2d scroll', { 'main.pathogen': longMain, 'parts/gears.pathogen': GEARS });
+  made.push(d);
+  await open(page, d);
+  await page.evaluate(`(() => {
+    const s = window.__find('code-editor-pane').shadowRoot.querySelector('.cm-scroller');
+    s.scrollTop = s.scrollHeight;
+  })()`);
+  await new Promise((r) => setTimeout(r, 300));
+  const scrolledTo = await editorScrollTop(page);
+  await openFile(page, 'parts/gears.pathogen');
+  await new Promise((r) => setTimeout(r, 300));
+  const inGears = await editorScrollTop(page);
+  await openFile(page, 'main.pathogen');
+  await new Promise((r) => setTimeout(r, 300));
+  const backAt = await editorScrollTop(page);
+  check(
+    'switching away and back keeps where the file was scrolled to; the other file starts at its top',
+    scrolledTo > 1000 && Math.abs(backAt - scrolledTo) < 40 && inGears === 0,
+    { scrolledTo, inGears, backAt },
+  );
 
   // 8. Docs at the right end of the tabs.
   await page.evaluate(`window.__find('editor-tabs').shadowRoot.querySelector('.docs').click()`);
