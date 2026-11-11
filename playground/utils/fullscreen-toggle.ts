@@ -1,5 +1,6 @@
 // Shared fullscreen toggle behavior for SVG preview components
-// Adds a button next to the navigator minimap that toggles :host(.fullscreen)
+// Adds a button in the top-left corner (beside the navigator minimap, where
+// there is one) that toggles :host(.fullscreen)
 
 export const FULLSCREEN_EXPAND_ICON = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>`;
 
@@ -7,15 +8,17 @@ export const FULLSCREEN_COLLAPSE_ICON = `<svg viewBox="0 0 24 24" fill="none" st
 
 /**
  * Returns CSS rules for the fullscreen toggle button and :host(.fullscreen).
- * @param navWidth Navigator minimap width in px (120 for workspace, 100 for mini)
- * @param offset Navigator offset from edge in rem (1 for workspace, 0.5 for mini)
+ * @param navWidth Navigator minimap width in px (100 for the blog's mini-preview),
+ *   or 0 when there is no minimap (the workspace) and the button takes the corner
+ * @param offset Offset from the edges in rem (1 for workspace, 0.5 for mini)
  */
 export function fullscreenStyles(navWidth: number, offset: number): string {
+  const left = navWidth > 0 ? `calc(${offset}rem + ${navWidth}px + 0.5rem)` : `${offset}rem`;
   return `
     #fullscreen-toggle {
       position: absolute;
       top: ${offset}rem;
-      left: calc(${offset}rem + ${navWidth}px + 0.5rem);
+      left: ${left};
       width: 32px;
       height: 32px;
       padding: 0;

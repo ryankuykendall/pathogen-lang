@@ -1,8 +1,10 @@
 // Consolidated inspector panel — scrollable container with stacked sub-panels
 
+import type { CanvasPanel, CanvasSettings } from './canvas-panel.js';
 import type { LayersPanel } from './layers-panel.js';
 import type { PalettePanel } from './palette-panel.js';
 import type { CssvarPanel } from './cssvar-panel.js';
+import './canvas-panel.js';
 import './layers-panel.js';
 import './palette-panel.js';
 import './cssvar-panel.js';
@@ -34,6 +36,10 @@ export class InspectorPanel extends HTMLElement {
 
   private _pending: InspectorData | null = null;
 
+  // The Canvas section's values (only with the `canvas` attribute: the
+  // workspace's inspector). Kept here so values set before render still show.
+  private _canvasSettings: CanvasSettings | null = null;
+
   constructor() {
     super();
     this.attachShadow({ mode: 'open' });
@@ -42,6 +48,17 @@ export class InspectorPanel extends HTMLElement {
   connectedCallback(): void {
     this.render();
     this.setupEventListeners();
+  }
+
+  private get canvasPanel(): CanvasPanel | null {
+    return this.shadowRoot!.querySelector('canvas-panel');
+  }
+
+  /** Background, Grid and Precision for the Canvas section. Not deferred while closed: it's three rows. */
+  set canvasSettings(settings: CanvasSettings) {
+    this._canvasSettings = settings;
+    const panel = this.canvasPanel;
+    if (panel) panel.settings = settings;
   }
 
   private get layersPanel(): LayersPanel {
@@ -136,6 +153,9 @@ export class InspectorPanel extends HTMLElement {
     // Fresh child panels start empty — drop the identity cache so the next
     // setData forwards every field even if the store references are unchanged.
     this._last = {};
+    // The Canvas section is the workspace's (the `canvas` attribute); the
+    // mini-workspace and the detail page show layers only.
+    const canvas = this.hasAttribute('canvas') ? '<canvas-panel embedded></canvas-panel>' : '';
     this.shadowRoot!.innerHTML = `
       <style>${styles}</style>
 
@@ -144,6 +164,7 @@ export class InspectorPanel extends HTMLElement {
           <span>Inspector</span>
           <button class="close-btn" title="Close inspector">${CLOSE_ICON}</button>
         </div>
+        ${canvas}
         <layers-panel embedded></layers-panel>
         <palette-panel embedded></palette-panel>
         <cssvar-panel embedded></cssvar-panel>
@@ -153,6 +174,7 @@ export class InspectorPanel extends HTMLElement {
     const scroller = this.shadowRoot!.querySelector('.inspector') as HTMLElement;
     this.layersPanel.scrollHost = scroller;
     this.palettePanel.scrollHost = scroller;
+    if (this._canvasSettings && this.canvasPanel) this.canvasPanel.settings = this._canvasSettings;
   }
 }
 

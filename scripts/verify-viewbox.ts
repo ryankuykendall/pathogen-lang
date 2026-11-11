@@ -19,9 +19,12 @@ const findInShadowSrc = `
   };
 `;
 
+// The preview's background rect covers exactly the program's viewBox. The
+// live <svg> viewBox is that box plus the fit margin (playground/utils/
+// preview-fit.ts: 6% of the longer side on every side) while the view is at Fit.
 const probeSrc = `(() => {
   ${findInShadowSrc}
-  let preview_viewBox = null, preview_width = null, preview_height = null;
+  let preview_viewBox = null, preview_bg = null, preview_width = null, preview_height = null;
   let layer_paths = [];
   const previewPane = findInShadow('svg-preview-pane');
   if (previewPane) {
@@ -33,6 +36,8 @@ const probeSrc = `(() => {
       preview_width = svg.getAttribute('width');
       preview_height = svg.getAttribute('height');
     }
+    const bg = innerDoc && innerDoc.getElementById('preview-bg');
+    if (bg) preview_bg = ['x', 'y', 'width', 'height'].map((a) => bg.getAttribute(a)).join(' ');
     if (innerDoc) {
       const paths = innerDoc.querySelectorAll('#preview-layers path');
       layer_paths = Array.from(paths).map(p => ({
@@ -41,13 +46,7 @@ const probeSrc = `(() => {
       }));
     }
   }
-  const footer = findInShadow('playground-footer');
-  let footer_viewBox_display = null;
-  if (footer) {
-    const display = footer.shadowRoot && footer.shadowRoot.querySelector('#viewbox-display');
-    footer_viewBox_display = display ? display.textContent : null;
-  }
-  return { preview_viewBox, preview_width, preview_height, footer_viewBox_display, layer_paths };
+  return { preview_viewBox, preview_bg, preview_width, preview_height, layer_paths };
 })()`;
 
 async function probe(page: any): Promise<any> {
@@ -68,8 +67,8 @@ async function main(): Promise<void> {
       if (msg.type() === 'error') pageErrors.push(`console.error: ${msg.text()}`);
     });
 
-    console.log('→ Visiting /pathogen/workspace/new');
-    await page.goto('http://localhost:3000/pathogen/workspace/new', { waitUntil: 'networkidle2' });
+    console.log('→ Visiting /workspace/new');
+    await page.goto('http://localhost:3000/workspace/new', { waitUntil: 'networkidle2' });
     await new Promise((r) => setTimeout(r, 1500));
 
     // Submit the form (creates a workspace and navigates to /workspace/:id)
@@ -93,7 +92,7 @@ async function main(): Promise<void> {
     // produce layers? This isolates a bundle/library issue from a wiring issue.
     const directCompile = await page.evaluate(`(() => {
       const PL = window.PathogenLang;
-      const src = "define ViewBox(0, 0, 200, 200);\\ndefine default PathLayer('main-path-layer') \${\\n  fill: #bbb;\\n  stroke: #222;\\n  stroke-width: 1;\\n};\\n\\ncircle(100, 100, 40)\\n";
+      const src = "define ViewBox(0, 0, 200, 200);\\ndefine default PathLayer('main-path-layer') #{\\n  fill: #bbb;\\n  stroke: #222;\\n  stroke-width: 1;\\n};\\n\\ncircle(100, 100, 40);\\n";
       try {
         const r = PL.compileWithContext(src);
         return { layerCount: r.layers.length, layers: r.layers.map(l => ({ name: l.name, data: (l.data || '').slice(0, 60), type: l.type })), viewBox: r.viewBox };
@@ -104,36 +103,37 @@ async function main(): Promise<void> {
     console.log('→ Probing fresh workspace (boilerplate)');
     const fresh = await probe(page);
     console.log('  ', JSON.stringify(fresh, null, 2));
-    if (fresh.preview_viewBox !== '0 0 200 200') {
-      console.error(`  FAIL fresh preview viewBox: got "${fresh.preview_viewBox}"`);
+    if (fresh.preview_bg !== '0 0 200 200') {
+      console.error(`  FAIL fresh preview background: got "${fresh.preview_bg}"`);
       ok = false;
     } else {
-      console.log('  OK boilerplate preview viewBox = 0 0 200 200');
+      console.log('  OK boilerplate background covers 0 0 200 200');
     }
-    if (fresh.footer_viewBox_display !== '0 0 200 200') {
-      console.error(`  FAIL fresh footer: got "${fresh.footer_viewBox_display}"`);
+    if (fresh.preview_viewBox !== '-12 -12 224 224') {
+      console.error(`  FAIL fresh preview viewBox at Fit: got "${fresh.preview_viewBox}"`);
       ok = false;
     } else {
-      console.log('  OK footer reflects boilerplate viewBox');
+      console.log('  OK preview viewBox at Fit = -12 -12 224 224 (the box plus the fit margin)');
     }
-    const freshHasCircle = fresh.layer_paths.some((p: any) =>
-      p.layerName === 'main-path-layer' && p.d && p.d.length > 0,
-    );
-    if (!freshHasCircle) {
-      console.error(`  FAIL: boilerplate compile did not produce path layers — ${JSON.stringify(fresh.layer_paths)}`);
+    // The new-workspace boilerplate defines its layer and draws nothing yet.
+    const freshHasLayer = fresh.layer_paths.some((p: any) => p.layerName === 'main-path-layer');
+    if (!freshHasLayer) {
+      console.error(`  FAIL: boilerplate compile did not produce its layer — ${JSON.stringify(fresh.layer_paths)}`);
       ok = false;
     } else {
-      console.log('  OK boilerplate compile produced layer paths');
+      console.log('  OK boilerplate compile produced its layer');
     }
 
-    // Edit: change ViewBox to (10, 20, 500, 300).
+    // Edit: change ViewBox to (10, 20, 500, 300). The change goes through the
+    // CodeMirror view, as typing does: the pane's `code` setter loads text
+    // without compiling (it's for workspace loads).
     console.log('→ Editing ViewBox to (10, 20, 500, 300)');
     const editSrc = `(() => {
       ${findInShadowSrc}
-      const editor = findInShadow('code-editor-pane');
-      const newCode = "define ViewBox(10, 20, 500, 300);\\ndefine default PathLayer('main-path-layer') \${\\n  fill: #bbb;\\n  stroke: #222;\\n  stroke-width: 1;\\n};\\n\\ncircle(100, 100, 40);\\n";
-      editor.code = newCode;
-      return 'set code';
+      const view = findInShadow('code-editor-pane')._editor;
+      const newCode = "define ViewBox(10, 20, 500, 300);\\ndefine default PathLayer('main-path-layer') #{\\n  fill: #bbb;\\n  stroke: #222;\\n  stroke-width: 1;\\n};\\n\\ncircle(100, 100, 40);\\n";
+      view.dispatch({ changes: { from: 0, to: view.state.doc.length, insert: newCode } });
+      return 'edited';
     })()`;
     console.log('  ' + (await page.evaluate(editSrc)));
     await new Promise((r) => setTimeout(r, 6000));
@@ -141,17 +141,17 @@ async function main(): Promise<void> {
     console.log('→ Probing after edit');
     const after = await probe(page);
     console.log('  ', JSON.stringify(after, null, 2));
-    if (after.preview_viewBox !== '10 20 500 300') {
-      console.error(`  FAIL after preview viewBox: got "${after.preview_viewBox}"`);
+    if (after.preview_bg !== '10 20 500 300') {
+      console.error(`  FAIL after preview background: got "${after.preview_bg}"`);
       ok = false;
     } else {
-      console.log('  OK preview viewBox updated to "10 20 500 300"');
+      console.log('  OK background updated to "10 20 500 300"');
     }
-    if (after.footer_viewBox_display !== '10 20 500 300') {
-      console.error(`  FAIL after footer: got "${after.footer_viewBox_display}"`);
+    if (after.preview_viewBox !== '-20 -10 560 360') {
+      console.error(`  FAIL after preview viewBox at Fit: got "${after.preview_viewBox}"`);
       ok = false;
     } else {
-      console.log('  OK footer updated');
+      console.log('  OK preview viewBox at Fit = -20 -10 560 360');
     }
     if (after.preview_width !== '500' || after.preview_height !== '300') {
       console.error(`  FAIL after preview width/height: got ${after.preview_width}/${after.preview_height}`);

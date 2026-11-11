@@ -1,4 +1,5 @@
-// SVG Preview pane with zoom/pan controls and navigator
+// SVG Preview pane with zoom/pan controls. No card and no minimap: the pane
+// runs to its edges, and the fullscreen button takes the top-left corner.
 
 import type {
   CompileResult,
@@ -15,6 +16,8 @@ import { store } from '../state/store.js';
 import { decorateConicGradientsWithCanvasFallback } from '../utils/decorate-conic-gradients.js';
 import { attachFullscreenBehavior, fullscreenButtonHTML, fullscreenStyles } from '../utils/fullscreen-toggle.js';
 import { bootstrapPreviewIframe } from '../utils/preview-iframe.js';
+import { withFitMargin } from '../utils/preview-fit.js';
+import type { FitCanvas } from '../utils/preview-fit.js';
 import { usesRandomValues } from '../utils/uses-random.js';
 import { compilationStatusStyles, compilationStatusView } from '../utils/compilation-status.js';
 import type { FontBinaryEntry } from '../services/font-loader.js';
@@ -153,7 +156,7 @@ interface CssPropertyDef {
 export class SvgPreviewPane extends HTMLElement {
   // Shared pan/zoom controller (transform-during-gesture → bake-on-idle). Owns
   // the viewBox/transform; this component mirrors its state into the store and
-  // keeps the navigator/zoom chrome in sync. Created once the iframe SVG exists.
+  // keeps the zoom chrome in sync. Created once the iframe SVG exists.
   private panZoom: PanZoomController | null = null;
 
   // Guards the store mirror: true while we're writing the controller's view INTO
@@ -163,17 +166,6 @@ export class SvgPreviewPane extends HTMLElement {
 
   // Timer for the "⌘ + scroll to zoom" hint shown on un-modified wheel.
   private _scrollHintTimer: ReturnType<typeof setTimeout> | undefined;
-
-  // Navigator drag state
-  private isNavigatorDragging = false;
-
-  private navDragStartX = 0;
-
-  private navDragStartY = 0;
-
-  private navDragStartPanX = 0;
-
-  private navDragStartPanY = 0;
 
   // Fullscreen toggle
   private _cleanupFullscreen: (() => void) | null = null;
@@ -325,14 +317,23 @@ export class SvgPreviewPane extends HTMLElement {
     doc.addEventListener('pointercancel', clearGrab);
   }
 
-  /** Current canvas dims from the store (origin + size of the compiled SVG). */
-  private _panZoomCanvas(): { originX: number; originY: number; width: number; height: number } {
+  /** The compiled SVG's own origin and size: the program's viewBox. */
+  drawingCanvas(): FitCanvas {
     return {
       originX: (store.get('viewBoxOriginX') as number) ?? 0,
       originY: (store.get('viewBoxOriginY') as number) ?? 0,
       width: store.get('width') as number,
       height: store.get('height') as number,
     };
+  }
+
+  /**
+   * The canvas the controller fits: the drawing's canvas plus the fit margin
+   * (utils/preview-fit.ts), so Fit leaves room around the drawing while
+   * zoomed-in art runs to the pane's edges.
+   */
+  private _panZoomCanvas(): FitCanvas {
+    return withFitMargin(this.drawingCanvas());
   }
 
   /** Mirror a controller view-change into the store + zoom chrome (echo-guarded). */
@@ -343,11 +344,10 @@ export class SvgPreviewPane extends HTMLElement {
     this._refreshZoomChrome(v.zoom);
   }
 
-  /** Update the zoom % display, navigator viewport rect, and can-pan classes. */
+  /** Update the zoom % display and the can-pan classes. */
   private _refreshZoomChrome(zoomLevel: number): void {
     const pill = this.shadowRoot!.querySelector('pathogen-zoom-pill');
     if (pill) pill.zoom = zoomLevel;
-    this.updateNavigatorViewport();
     this.previewContainer.classList.toggle('can-pan', zoomLevel >= 0.5);
     if (this._iframeDoc) this._iframeDoc.body.classList.toggle('can-pan', zoomLevel >= 0.5);
   }
@@ -362,11 +362,11 @@ export class SvgPreviewPane extends HTMLElement {
       return unsubscribe;
     };
     // Content-affecting keys run the full (heavy) updateSvgStyles, which resets
-    // path styles, bg, grid and rebuilds the navigator minimap. zoomLevel/panX/
-    // panY are deliberately NOT here: pan/zoom is owned by the PanZoomController
-    // (cheap transform during gestures), and gets its own external-write-only
-    // subscription below. Routing pan/zoom through the heavy path would rebuild
-    // the navigator and re-style every path each frame — pure waste.
+    // path styles, bg and grid. zoomLevel/panX/panY are deliberately NOT here:
+    // pan/zoom is owned by the PanZoomController (cheap transform during
+    // gestures), and gets its own external-write-only subscription below.
+    // Routing pan/zoom through the heavy path would re-style every path each
+    // frame — pure waste.
     subscribe(
       [
         'width',
@@ -429,7 +429,6 @@ export class SvgPreviewPane extends HTMLElement {
     });
     subscribe('layerVisibility', () => {
       this.applyLayerVisibility();
-      this.updateNavigatorContent();
     });
     subscribe('defsVisibility', () => {
       this.applyLayerVisibility();
@@ -504,7 +503,6 @@ export class SvgPreviewPane extends HTMLElement {
   set pathData(value: string) {
     store.set('pathData', value || '');
     if (this.previewPath) this.previewPath.setAttribute('d', value || '');
-    this.updateNavigatorContent();
   }
 
   /**
@@ -524,11 +522,7 @@ export class SvgPreviewPane extends HTMLElement {
       // getBBox can throw if path is empty or invalid
     }
 
-    const renderTime = performance.now() - start;
-
-    this.updateNavigatorContent();
-
-    return renderTime;
+    return performance.now() - start;
   }
 
   /**
@@ -683,7 +677,6 @@ export class SvgPreviewPane extends HTMLElement {
     const renderTime = performance.now() - start;
 
     this.applyLayerVisibility();
-    this.updateNavigatorContent();
 
     return renderTime;
   }
@@ -793,8 +786,6 @@ export class SvgPreviewPane extends HTMLElement {
     const layersGroup = this._iframeDoc?.getElementById('preview-layers');
     if (layersGroup) layersGroup.innerHTML = '';
     store.set('pathData', '');
-    const navPaths = this.shadowRoot!.querySelector('#navigator-paths');
-    if (navPaths) navPaths.innerHTML = '';
     if (this.panZoom) this.panZoom.zoomToFit();
     else store.update({ zoomLevel: 1, panX: 0, panY: 0 });
   }
@@ -822,208 +813,6 @@ export class SvgPreviewPane extends HTMLElement {
   // directly. zoomFit survives as public API for clear().
   zoomFit(): void {
     this.panZoom?.zoomToFit();
-  }
-
-  // Navigator methods
-  updateNavigatorViewport(): void {
-    const width = store.get('width') as number;
-    const height = store.get('height') as number;
-    const zoomLevel = store.get('zoomLevel') as number;
-    const panX = store.get('panX') as number;
-    const panY = store.get('panY') as number;
-
-    const viewWidth = width / zoomLevel;
-    const viewHeight = height / zoomLevel;
-
-    const viewport = this.shadowRoot!.querySelector('#navigator-viewport') as SVGRectElement;
-    viewport.setAttribute('x', String(panX));
-    viewport.setAttribute('y', String(panY));
-    viewport.setAttribute('width', String(viewWidth));
-    viewport.setAttribute('height', String(viewHeight));
-  }
-
-  updateNavigatorContent(): void {
-    const navGroup = this.shadowRoot!.querySelector('#navigator-paths') as SVGGElement;
-    const navBg = this.shadowRoot!.querySelector('#navigator-bg') as SVGRectElement;
-    const navSvg = this.shadowRoot!.querySelector('#navigator-svg') as SVGSVGElement;
-    if (!navGroup || !navBg || !navSvg) return;
-    const SVG_NS = 'http://www.w3.org/2000/svg';
-
-    // Clear existing navigator content
-    navGroup.innerHTML = '';
-
-    // Build per-layer paths in the navigator. The source content lives in
-    // the sandboxed iframe document; same-origin sandbox lets us read it
-    // directly. Cloned attributes are written into the navigator SVG which
-    // remains in shadow DOM (non-user content).
-    const layersGroup = this._iframeDoc?.getElementById('preview-layers');
-    const visibleElements = layersGroup
-      ? Array.from(layersGroup.querySelectorAll('path, text, g')).filter((el) => {
-          let node = el as HTMLElement | null;
-          while (node && node !== layersGroup) {
-            if (node.style.display === 'none') return false;
-            node = node.parentElement;
-          }
-          return true;
-        })
-      : [];
-
-    // Only process leaf elements (path/text), skip <g> containers
-    const leafElements = visibleElements.filter((el) => el.tagName === 'path' || el.tagName === 'text');
-
-    // Compute minimum stroke-width that remains visible at navigator scale.
-    // The navigator is 120×120 CSS px; strokes in SVG-coordinate units get scaled
-    // down by Math.min(120/w, 120/h)*0.9, so sub-pixel dots (e.g. particle/attractor
-    // artwork) vanish.  Setting a floor of 1/scale keeps them at ~1 CSS px.
-    const canvasW = store.get('width') as number;
-    const canvasH = store.get('height') as number;
-    const navScale = Math.min(120 / canvasW, 120 / canvasH) * 0.9;
-    const minNavStroke = 1 / navScale;
-
-    if (leafElements.length > 0) {
-      for (const el of leafElements) {
-        if (el.tagName === 'path') {
-          const navPath = document.createElementNS(SVG_NS, 'path');
-          navPath.setAttribute('d', el.getAttribute('d') || '');
-          navPath.setAttribute('stroke', el.getAttribute('stroke') || DEFAULT_STROKE);
-          navPath.setAttribute(
-            'stroke-width',
-            String(Math.max(parseFloat(el.getAttribute('stroke-width') || '') || DEFAULT_STROKE_WIDTH, minNavStroke)),
-          );
-          navPath.setAttribute('fill', el.getAttribute('fill') || 'none');
-          // Accumulate transforms from ancestor <g> elements
-          const transforms: string[] = [];
-          let ancestor = el.parentElement;
-          while (ancestor && ancestor !== layersGroup) {
-            const t = ancestor.getAttribute('transform');
-            if (t) transforms.unshift(t);
-            ancestor = ancestor.parentElement;
-          }
-          const ownTransform = el.getAttribute('transform');
-          if (ownTransform) transforms.push(ownTransform);
-          if (transforms.length > 0) navPath.setAttribute('transform', transforms.join(' '));
-
-          for (const attr of [
-            'stroke-dasharray',
-            'stroke-linecap',
-            'stroke-linejoin',
-            'stroke-opacity',
-            'fill-opacity',
-            'opacity',
-            'fill-rule',
-          ]) {
-            const val = el.getAttribute(attr);
-            if (val) navPath.setAttribute(attr, val);
-          }
-          navGroup.appendChild(navPath);
-        } else if (el.tagName === 'text') {
-          // The source <text> lives in the iframe document; importNode brings
-          // it into the shadow-DOM document (same-origin sandbox makes this
-          // legal). cloneNode + appendChild would also work in most browsers
-          // but importNode is the spec-correct cross-document path.
-          const navText = document.importNode(el, true) as unknown as SVGTextElement;
-          navGroup.appendChild(navText);
-        }
-      }
-    } else {
-      // Fallback: single preview-path
-      const d = this.previewPath.getAttribute('d') || '';
-      if (d) {
-        const navPath = document.createElementNS(SVG_NS, 'path');
-        navPath.setAttribute('d', d);
-        navPath.setAttribute('stroke', DEFAULT_STROKE);
-        navPath.setAttribute('stroke-width', String(Math.max(DEFAULT_STROKE_WIDTH, minNavStroke)));
-        navPath.setAttribute('fill', 'none');
-        navGroup.appendChild(navPath);
-      }
-    }
-
-    const width = store.get('width') as number;
-    const height = store.get('height') as number;
-
-    const navWidth = 120;
-    const navHeight = 120;
-    const scale = Math.min(navWidth / width, navHeight / height) * 0.9;
-    const offsetX = (navWidth - width * scale) / 2;
-    const offsetY = (navHeight - height * scale) / 2;
-
-    const navViewBox = `${-offsetX / scale} ${-offsetY / scale} ${navWidth / scale} ${navHeight / scale}`;
-    navSvg.setAttribute('viewBox', navViewBox);
-    // The overlay (viewport rect) must share the content SVG's viewBox so the
-    // rect's canvas-unit coordinates line up with the rendered minimap.
-    const navOverlay = this.shadowRoot!.querySelector('#navigator-overlay');
-    if (navOverlay) navOverlay.setAttribute('viewBox', navViewBox);
-    navBg.setAttribute('fill', store.get('background') as string);
-    navBg.setAttribute('x', '0');
-    navBg.setAttribute('y', '0');
-    navBg.setAttribute('width', String(width));
-    navBg.setAttribute('height', String(height));
-
-    this.updateNavigatorViewport();
-  }
-
-  screenToNavigatorSVG(clientX: number, clientY: number): { x: number; y: number } {
-    const navSvg = this.shadowRoot!.querySelector('#navigator-svg') as SVGSVGElement;
-    const pt = navSvg.createSVGPoint();
-    pt.x = clientX;
-    pt.y = clientY;
-    const svgPt = pt.matrixTransform(navSvg.getScreenCTM()!.inverse());
-    return { x: svgPt.x, y: svgPt.y };
-  }
-
-  navigatorMouseDown(e: MouseEvent): void {
-    e.preventDefault();
-    const { x: svgX, y: svgY } = this.screenToNavigatorSVG(e.clientX, e.clientY);
-    const width = store.get('width') as number;
-    const height = store.get('height') as number;
-    const zoomLevel = store.get('zoomLevel') as number;
-    const panX = store.get('panX') as number;
-    const panY = store.get('panY') as number;
-
-    const viewWidth = width / zoomLevel;
-    const viewHeight = height / zoomLevel;
-    const inViewport = svgX >= panX && svgX <= panX + viewWidth && svgY >= panY && svgY <= panY + viewHeight;
-
-    if (inViewport) {
-      this.isNavigatorDragging = true;
-      this.navDragStartX = svgX;
-      this.navDragStartY = svgY;
-      this.navDragStartPanX = panX;
-      this.navDragStartPanY = panY;
-    } else {
-      // Click outside the viewport rect → recenter there (discrete jump).
-      this.panZoom?.setView({ panX: svgX - viewWidth / 2, panY: svgY - viewHeight / 2 }, { emit: true });
-    }
-  }
-
-  navigatorMouseMove(e: MouseEvent): void {
-    if (!this.isNavigatorDragging) return;
-
-    const { x: svgX, y: svgY } = this.screenToNavigatorSVG(e.clientX, e.clientY);
-
-    // Continuous drag → drive() (transform session + idle bake, like input).
-    this.panZoom?.drive({
-      panX: this.navDragStartPanX + (svgX - this.navDragStartX),
-      panY: this.navDragStartPanY + (svgY - this.navDragStartY),
-    });
-  }
-
-  navigatorMouseUp(): void {
-    this.isNavigatorDragging = false;
-    this.panZoom?.endGesture();
-  }
-
-  navigatorDoubleClick(e: MouseEvent): void {
-    e.preventDefault();
-    const { x: svgX, y: svgY } = this.screenToNavigatorSVG(e.clientX, e.clientY);
-    const width = store.get('width') as number;
-    const height = store.get('height') as number;
-    const zoomLevel = store.get('zoomLevel') as number;
-
-    const viewWidth = width / zoomLevel;
-    const viewHeight = height / zoomLevel;
-
-    this.panZoom?.setView({ panX: svgX - viewWidth / 2, panY: svgY - viewHeight / 2 }, { emit: true });
   }
 
   updateSvgStyles(): void {
@@ -1090,8 +879,6 @@ export class SvgPreviewPane extends HTMLElement {
       previewGrid.setAttribute('width', String(state.width));
       previewGrid.setAttribute('height', String(state.height));
     }
-
-    this.updateNavigatorContent();
   }
 
   setupEventListeners(): void {
@@ -1104,13 +891,6 @@ export class SvgPreviewPane extends HTMLElement {
     // outside the iframe, so a fast drag past the boundary can't get stuck.
     document.addEventListener('pointerup', () => this.panZoom?.endGesture());
     document.addEventListener('mouseup', () => this.panZoom?.endGesture());
-
-    // Navigator
-    const navSvg = this.shadowRoot!.querySelector('#navigator-svg') as SVGSVGElement;
-    navSvg.addEventListener('mousedown', (e: MouseEvent) => this.navigatorMouseDown(e));
-    navSvg.addEventListener('dblclick', (e: MouseEvent) => this.navigatorDoubleClick(e));
-    document.addEventListener('mousemove', (e: MouseEvent) => this.navigatorMouseMove(e));
-    document.addEventListener('mouseup', () => this.navigatorMouseUp());
 
     // Inspector toggle
     this.shadowRoot!.querySelector('#inspector-open-btn')?.addEventListener('click', () => {
@@ -1226,7 +1006,7 @@ export class SvgPreviewPane extends HTMLElement {
           flex-direction: column;
           align-items: center;
           justify-content: center;
-          padding: 1.5rem;
+          padding: 0;
           background: var(--bg-primary, #f8f9fa);
           min-width: 0;
           overflow: auto;
@@ -1236,18 +1016,17 @@ export class SvgPreviewPane extends HTMLElement {
         @media (max-width: 800px) {
           :host {
             min-height: 250px;
-            padding: 1rem;
           }
         }
 
+        /* No card: the preview fills the pane, so zoomed-in art runs to its
+           edges. At Fit the drawing keeps a margin (utils/preview-fit.ts). */
         #preview-container {
           position: relative;
           width: 100%;
           flex: 1;
           min-height: 0;
-          border-radius: var(--radius-lg, 12px);
           overflow: hidden;
-          box-shadow: var(--shadow-lg);
         }
 
         /* The compiled-SVG render surface lives inside the sandboxed iframe.
@@ -1325,49 +1104,6 @@ export class SvgPreviewPane extends HTMLElement {
           user-select: none;
         }
 
-        /* Navigator */
-        #zoom-navigator {
-          position: absolute;
-          top: 1rem;
-          left: 1rem;
-          width: 120px;
-          height: 120px;
-          background: var(--bg-elevated, #ffffff);
-          border: 1px solid var(--border-color, #e2e8f0);
-          border-radius: var(--radius-lg, 12px);
-          box-shadow: var(--shadow-lg);
-          overflow: hidden;
-          z-index: 10;
-        }
-
-        /* The content SVG (heavy: holds every path) and the viewport-rect
-           overlay are STACKED, not nested. Moving the viewport rect each pan
-           frame would otherwise invalidate and re-rasterize the whole content
-           SVG (its paths can carry tens of MB of path data). With the rect in a
-           separate overlay, panning only repaints the cheap overlay. */
-        #navigator-svg,
-        #navigator-overlay {
-          position: absolute;
-          inset: 0;
-          width: 100%;
-          height: 100%;
-        }
-        #navigator-svg {
-          /* Promote the heavy content SVG to its own compositor layer so the
-             overlay's per-frame rect repaint doesn't re-rasterize these paths.
-             Without this, both SVGs share one layer and the split above is moot. */
-          transform: translateZ(0);
-          backface-visibility: hidden;
-        }
-        #navigator-overlay {
-          pointer-events: none; /* drag detection stays on #navigator-svg below */
-        }
-
-        #navigator-viewport {
-          cursor: move;
-          fill: var(--accent-subtle, rgba(16, 185, 129, 0.15));
-        }
-
         /* Zoom control is the shared <pathogen-zoom-pill> (pan-zoom bundle);
          * it self-positions bottom-center and handles its own hover-fade.
          * Outer author rule beats the pill's :host opacity — always visible
@@ -1383,7 +1119,6 @@ export class SvgPreviewPane extends HTMLElement {
           align-items: center;
           justify-content: center;
           background: var(--bg-primary, #f8f9fa);
-          border-radius: var(--radius-lg, 12px);
           z-index: 5;
         }
 
@@ -1445,8 +1180,8 @@ export class SvgPreviewPane extends HTMLElement {
            to --accent-contrast for legibility on the fill (light 4.7:1, dark
            8.4:1); see the hover-colors .mw prototype in website/bbwp/.
            Fallback literals mirror theme.css light values. (Older chrome in
-           this file still carries stale #10b981 green fallbacks — spinner,
-           navigator viewport; see zoom-pill.ts:51.) The plain background
+           this file still carries a stale #10b981 green fallback — the
+           spinner; see zoom-pill.ts:51.) The plain background
            line is the no-color-mix() fallback: without it, dark theme would
            keep the base fill, which equals --accent-contrast — invisible
            icon on hover. */
@@ -1511,7 +1246,7 @@ export class SvgPreviewPane extends HTMLElement {
           display: grid;
         }
 
-        ${fullscreenStyles(120, 1)}
+        ${fullscreenStyles(0, 1)}
         ${compilationStatusStyles()}
 
         /* Fullscreen-only status chip + Cancel control, top-center (the
@@ -1553,16 +1288,6 @@ export class SvgPreviewPane extends HTMLElement {
           top: calc(0.75rem + 2rem + 0.5rem);
         }
       </style>
-
-      <div id="zoom-navigator">
-        <svg id="navigator-svg">
-          <rect id="navigator-bg" width="100%" height="100%"></rect>
-          <g id="navigator-paths"></g>
-        </svg>
-        <svg id="navigator-overlay">
-          <rect id="navigator-viewport" fill="none" stroke="var(--accent-color, #10b981)" stroke-width="1" vector-effect="non-scaling-stroke"></rect>
-        </svg>
-      </div>
 
       ${fullscreenButtonHTML()}
 

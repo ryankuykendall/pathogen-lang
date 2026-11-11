@@ -13,10 +13,10 @@ import {
 // Import components that will be demoed
 import '../app-breadcrumb.js';
 import '../app-header.js';
+import '../canvas-panel.js';
 import '../code-editor-pane.js';
 import '../console-pane.js';
 import '../docs-panel.js';
-import '../playground-footer.js';
 import '../playground-header.js';
 import '../shared/error-panel.js';
 import '../shared/copy-button.js';

@@ -66,12 +66,13 @@ Each step: tests first; a storybook entry for each new component (the playground
    - The breadcrumb's **file crumb** (`demos/gears.pathogen`). (*The **Files** toggle moved to step 4; see "Built".*)
    - The store: open files and the active one; `code` stays the active file's text.
    - **Autosave** sends every changed file, the folders and the entry points, and the page-teardown save keeps doing that without hashing. The 2c review's findings 1 and 3 become real here, so their tests come first.
-3b. **The layout without a footer** (added in step 3; see "Built"): Background, Grid and Precision in the inspector's Canvas section; no footer, preview card or minimap; the editor and the preview run to the bottom (note 40, v6 screen O).
+3b. **The layout without a footer** (added in step 3; built, see "Built"): Background, Grid and Precision in the inspector's Canvas section; no footer, preview card or minimap; the editor and the preview run to the bottom (note 40, v6 screen O).
 4. **The file tree** (new `file-tree` component; reuses `layers-panel`'s row styles and the kebab menus of `app-breadcrumb` and `landing-view`; no windowing at 20 files), and the **Files** toggle beside Console that shows it.
    - Folders first, then files; icons for program, library, folder and `pathogen.json`; the `main` badge; the lock on `pathogen.json`; red dots.
    - The **+** menu (screen N) with its "where new files go" line, the inline name field, the taken-name state.
    - Each file's menu: Set as main, Rename…, Duplicate, Delete…; a folder's menu (after the v7 mockup).
    - `pathogen.json` opens read-only, with its line on how to change the main (screen J).
+   - **No open file** (decided 2026-11-11): every tab can be closed, and the editor then shows an empty state with a starting point. Mockup first. Deleting the only open file reaches it too.
 5. **The program chip and list** (new `program-chip` and `program-list`; the popover reuses `snapshot-popover`'s anchoring).
    - The chip sets the program shown; only it changes the preview.
    - Miniatures: each program compiled by the shared compiler, not the editor's, so they never cancel the editor's compile; redrawn after an edit to a file they use; a spinner until then.
@@ -124,7 +125,7 @@ Each step: tests first; a storybook entry for each new component (the playground
   - a timer that had fired still counted as a save to come, so `hasUnsavedChanges()` stayed true after any debounced save (the "Leave site?" prompt and an extra teardown save);
   - a save still hashing when another workspace loaded was sent under the new workspace's id;
   - `code` or `files` now follows what the server holds, not the local shape: the server answers 409 to `code` over several files, which autosave reads as another tab, so deleting down to just main (step 4) would have stopped saving.
-- **Tabs** (`components/editor-tabs.ts`, storybook "Editor Tabs" with five stories): labels without `.pathogen`, a folder hint when open files share a name (as much of the folder as tells them apart, `/` at the top), program and library icons, pathogen.json with a lock (for step 4), ×, middle-click, arrow keys, Home, End and Delete, Docs at the right end. **The last tab has no ×**: the editor always shows a file (decided here; the docs page says so). A click hands focus back to the editor; the arrow keys keep it in the tabs.
+- **Tabs** (`components/editor-tabs.ts`, storybook "Editor Tabs" with five stories): labels without `.pathogen`, a folder hint when open files share a name (as much of the folder as tells them apart, `/` at the top), program and library icons, pathogen.json with a lock (for step 4), ×, middle-click, arrow keys, Home, End and Delete, Docs at the right end. **The last tab has no ×**: the editor always shows a file (decided here; the docs page says so). *(Changed 2026-11-11: every tab will close, with an empty state, in step 4. See "Your decision on the last tab".)* A click hands focus back to the editor; the arrow keys keep it in the tabs.
 - **One editor state per file** (`code-editor-pane.ts`): a file's state is kept, undo history and scroll position included, from its first opening until the workspace changes, closed tab or not ("while the workspace is open"). A workspace load forgets every kept state, so another workspace's `main.pathogen` history can't come back. Switching never fires `code-change`, so it neither saves nor recompiles.
 - **The store**: `openFiles` (the tabs, in order). A tab switch writes the outgoing file's text into `workspaceFiles` (`services/open-files.ts`, tested with a fake editor: `tests/playground-open-files.test.ts`, 10). Files open through one `open-file` event, which the tree, the program list and the error panel will send (steps 4, 5, 7); nothing in the UI sends it yet.
 - **The file crumb**: `parts/` quiet, `gears.pathogen` as the current crumb.
@@ -184,6 +185,50 @@ Each step: tests first; a storybook entry for each new component (the playground
 - **For 2e:** Make public's precheck compiles the main alone, so a main that imports a file fails it. This was true since 2c, and publishing carries the workspace in 2e.
 - **For step 9:** Copy URL, until it goes, shares the open file's text. That matters only with a library open.
 - **For step 4:** the import rewrites of a rename reach files whose editor state is kept. The pane needs a way to apply changes to a kept state as one undo step (`state.update`), with `workspaceFiles` updated alongside.
+
+**Your decision on the last tab** (2026-11-11), in your words: "I don't understand the concern around allowing a user to close all tabs. We could always come up with a zero-state design for no open tabs that provides a recommendation for a opening starting point."
+- There was no product reason for keeping a tab open. The reason was the code: it assumes one file is always open (the store's `openFile`, `workspaceNow()` laying the editor's text over that file, the file crumb, the error marks, Copy Code).
+- **Decided:** every tab can be closed. With none open, the editor shows an empty state that suggests where to start. It takes the v7 empty preview's shape: an icon, a heading, a line of text, one button.
+- **When:** step 4, with a mockup first. Deleting the only open file from the tree reaches the same state, and the tree is where the other starting points are.
+- Until then, the last tab keeps no × (`.sole`), and the docs page says "The last open tab stays open." Both change with step 4.
+
+**Step 3b, the layout without a footer** (2026-11-11). As v6's screen O draws it (approved in the v4 review).
+- **No footer.** `playground-footer.ts` is deleted. Its viewBox display goes, since the source says it.
+- **The inspector's Canvas section** (`components/canvas-panel.ts`, storybook "Canvas Section" with four stories) has Background (swatch and value), Grid (on/off, colour, size) and Precision. Each row's controls are the footer's.
+  - The section takes its values as a property and reports each change as a `canvas-change` event. It never reads the store. That way step 9's mini-workspace can give it its own values (Background and Grid, without Precision).
+  - `inspector-panel` shows it only with its `canvas` attribute. The workspace's inspector has it; the mini-workspace's and the detail page's don't.
+  - `workspace-view` writes the change to the store, recompiles for Precision, and saves the preferences with the same five fields as before.
+  - A value outside a select's list, from an older preference, gets an option of its own, so the select never shows a different value from the one in use.
+- **No card around the preview**: no padding, no rounded corners, no shadow. The preview fills its pane, so zoomed-in art runs to the pane's edges.
+- **Fit keeps a margin** (`utils/preview-fit.ts`): 6% of the drawing's longer side on every side, so at Fit the drawing doesn't touch the edges under the buttons. Only the live view sees it: the background and grid still cover just the viewBox, and export, snapshots, thumbnails and the crop dialog set their own viewBox. Fullscreen fits with the same margin.
+- **No minimap.** The fullscreen button takes the top-left corner, as far in as the inspector button on the right. Each content change no longer copies every path into the minimap; that copy was the cost noted in the minimap memory.
+- **The editor and the preview run to the bottom.**
+- **Elsewhere:**
+  - `docs/exporting.md` said "the workspace's footer **Precision** setting"; it now points to the inspector's Canvas section. That line joins step 10's docs review.
+  - `scripts/verify-viewbox.ts` read the footer. It now checks the background rect and the viewBox at Fit. It was stale in older ways too, now fixed: its URL, the `${` style opener, a missing `;`, and an edit through the editor's `code` setter, which loads text without compiling.
+  - `playground/CLAUDE.md`'s "Add workspace control" row names the Canvas section.
+  - The blog's mini-preview keeps its minimap, and its fullscreen button stays where it was.
+- **Checked:**
+  - `tests/playground-canvas-panel.test.ts` (15): the section's values and events, the inspector's opt-in, no minimap or card, the button's corner, the fit margin, Copy SVG's framing.
+  - `verify/verify-2d-step3b.ts` against `npm run dev:stack`, 21 checks:
+    - no footer or minimap; both panes reach the bottom; no card;
+    - the button's corner; the margin at Fit; edge to edge zoomed in; Copy SVG framed on the drawing;
+    - Canvas above Layers; each of the four controls changing the preview, Precision by a recompile;
+    - the server holding all four, and a reload showing them;
+    - the Canvas section in fullscreen's inspector, and at 700 px wide;
+    - the storybook, both themes.
+  - `scripts/verify-viewbox.ts` passes.
+  - Screenshots `verify/2d-step3b-*.png`, light and dark.
+  - The full suite: 8,729 passed.
+- **Review** (code-reviewer, no blockers):
+  - **Fixed: Copy SVG** (⋮ menu) copied the live `<svg>` as it stood, so at Fit its viewBox now carried the margin (`-12 -12 224 224` for a 200 × 200 drawing). It copies the drawing's own viewBox now (`drawingSvgMarkup` in `utils/preview-fit.ts`, the pane's `drawingCanvas()`), zoomed or not, as Export does. Before this step a zoomed-in copy carried the zoomed view; that changes too.
+  - **Fixed:** two leftover mentions, a storybook comment about "the navigator" and `style-change` as playground/CLAUDE.md's example event name (now `canvas-change`).
+  - **Accepted: older links with a zoom open a little differently.** Zoom and pan are now measured against the padded canvas, so a URL saved zoomed-in before this step restores about 12% wider and offset by the margin. A link at Fit opens at Fit, with the margin. "100%" on the zoom pill is 100% of the padded fit.
+  - **Accepted, as screen O draws it:** Background, Grid and Precision are seen only with the inspector open, which starts closed. Saved values still apply with it closed.
+  - **Not changed:** the section compares the colour inputs' `value` attribute, not their `value` property, before setting them. The reviewer suggested the property, for an owner that might refuse a change. The property reads the picker's inner value, which may be written differently, and a mismatch would reset an open picker on every sync. Today's owner always writes the store, so the attribute stays right.
+- **Seen, not changed:**
+  - At 700 px the inspector's bottom sheet keeps its 240 px column (as before). Narrow screens are step 9.
+  - `styles/preview.css` still has minimap rules, but nothing loads that file.
 
 **The v7 mockup round** (2026-11-09, commit `5c8f925`): note 53, `phase-2-mockups-v7/`. Five screens: no programs left, folders and moving, narrow screens, the mini-workspace, the ⋮ menu. It also draws what v6 left out (renaming a file, Move to…, dragging a file). Six questions await you; steps 4 and 9 wait for them.
 - *Answered 2026-11-09: all six agreed* (note 53, "Your answers"). What that adds to the steps:

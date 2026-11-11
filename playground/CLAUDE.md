@@ -44,7 +44,7 @@ Note: `workspace-view.ts` lives at `components/` root, not in `views/`.
 ### Events
 
 - All CustomEvents MUST use `{ bubbles: true, composed: true }` — without `composed`, events won't cross Shadow DOM boundaries
-- Event names: kebab-case (`code-change`, `style-change`, `open-export`)
+- Event names: kebab-case (`code-change`, `canvas-change`, `open-export`)
 - Document-level listeners for cross-component communication
 
 ### CSS & Theming
@@ -104,7 +104,7 @@ All three steps required — missing any one will silently fail:
 | ----------------------- | ----------------------------------------------------------------------------------------- |
 | Add view/route          | `utils/router.ts`, `components/views/`, `components/app-shell.ts`                         |
 | Add shared component    | `components/shared/`, `utils/storybook-registry.ts`                                       |
-| Add workspace control   | `components/playground-footer.ts`, `components/workspace-view.ts`                         |
+| Add workspace control   | `components/canvas-panel.ts` (the inspector's Canvas section), `components/workspace-view.ts` |
 | Modify SVG preview      | `components/svg-preview-pane.ts`                                                          |
 | Editor language features | `utils/cm-language-services.ts` (wiring), `utils/cm-completion-bridge.ts`, `utils/cm-hover-tooltip.ts`; the logic itself lives in `src/language-services/` |
 | Legacy editor completions | `utils/codemirror-setup.ts` (see "two sources" above)                                   |

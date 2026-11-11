@@ -1,6 +1,8 @@
 // Storybook component registry
 // Defines all components available in the storybook with their stories and controls
 
+import type { CanvasSettings } from '../components/canvas-panel.js';
+
 interface StoryControl {
   name: string;
   type: string;
@@ -188,7 +190,8 @@ layer('hex').apply { circle(60, 100, 40) }`,
     id: 'svg-preview-pane',
     name: 'SVG Preview',
     category: 'Editor',
-    description: 'SVG preview with zoom/pan controls and navigator',
+    description:
+      'SVG preview with zoom/pan controls. No card and no minimap: the fullscreen button sits top-left, and Fit leaves a margin around the drawing.',
     stories: [
       {
         name: 'Default',
@@ -214,7 +217,7 @@ layer('hex').apply { circle(60, 100, 40) }`,
         },
       },
       {
-        // Enter fullscreen (expand button next to the navigator) to see the
+        // Enter fullscreen (the expand button, top left) to see the
         // export + refresh chrome; refresh appears because usesRandom seeds
         // calledStdlibFunctions with 'randomRange'.
         name: 'Random program (fullscreen chrome)',
@@ -628,39 +631,81 @@ layer('hex').apply { circle(60, 100, 40) }`,
     },
   },
   {
-    id: 'playground-footer',
-    name: 'Playground Footer',
+    id: 'canvas-panel',
+    name: 'Canvas Section',
     category: 'Editor',
-    description: 'SVG styling controls (dimensions, stroke, fill, background, grid)',
+    description:
+      "The inspector's Canvas section: the preview's Background, Grid and Precision (they were the footer's). It shows the values it is given and reports each change as a canvas-change event; workspace-view writes the store and saves them with the workspace.",
     stories: [
-      {
-        name: 'Default',
-        props: {},
-      },
+      { name: 'A new workspace', props: { set: 'defaults' } },
+      { name: 'Grid off, precision 2', props: { set: 'rounded' } },
+      { name: 'A long background color', props: { set: 'long' } },
+      { name: 'In the inspector, above Layers', props: { set: 'defaults', inspector: true } },
     ],
     controls: [],
-    render: (container) => {
-      import('../state/store.js').then(({ store }) => {
-        // Reset store to defaults for clean demo
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (store as any).update({
-          width: 200,
-          height: 200,
-          stroke: '#000000',
-          strokeWidth: 2,
-          fillEnabled: false,
-          fill: '#3498db',
-          background: '#f5f5f5',
-          gridEnabled: true,
-          gridColor: '#cccccc',
-          gridSize: 20,
-        });
+    notes: 'Changing a control here updates the story, as workspace-view does (canvas-change).',
+    render: (container, props) => {
+      const loaded = Promise.all([import('../components/canvas-panel.js'), import('../components/inspector-panel.js')]);
+      loaded
+        .then(() => {
+          type Settings = CanvasSettings;
+          const SETS: Record<string, Settings> = {
+            defaults: { background: '#f5f5f5', gridEnabled: true, gridColor: '#cccccc', gridSize: 20, toFixed: null },
+            rounded: { background: '#ffffff', gridEnabled: false, gridColor: '#cccccc', gridSize: 50, toFixed: 2 },
+            long: {
+              background: 'oklch(92.4% 14.2% 84.6 / 0.85)',
+              gridEnabled: true,
+              gridColor: '#b8b0c4',
+              gridSize: 10,
+              toFixed: null,
+            },
+          };
+          let settings = SETS[String(props.set)] ?? SETS.defaults;
+          const frame = document.createElement('div');
+          frame.style.width = '240px';
+          frame.style.border = '1px solid var(--border-color, #ddd)';
+          frame.style.background = 'var(--bg-elevated, #fff)';
+          container.appendChild(frame);
 
-        const footer = document.createElement('playground-footer');
-        footer.style.width = '100%';
-        footer.style.border = '1px solid var(--border-color, #ddd)';
-        container.appendChild(footer);
-      });
+          let show: (s: Settings) => void;
+          if (props.inspector) {
+            frame.style.height = '300px';
+            const inspector = document.createElement('inspector-panel') as HTMLElement & {
+              canvasSettings: Settings;
+              setData: (data: Record<string, unknown>) => void;
+            };
+            inspector.setAttribute('canvas', '');
+            frame.appendChild(inspector);
+            inspector.setData({
+              layers: [
+                { name: 'main-path-layer', type: 'path', data: 'M 0 0', styles: { stroke: '#222' }, isDefault: true },
+              ],
+              masks: [],
+              clipPaths: [],
+              gradients: [],
+              cssProperties: [],
+              layerVisibility: {},
+              defsVisibility: {},
+            });
+            show = (s) => {
+              inspector.canvasSettings = s;
+            };
+          } else {
+            const panel = document.createElement('canvas-panel') as HTMLElement & { settings: Settings };
+            panel.setAttribute('embedded', '');
+            frame.appendChild(panel);
+            show = (s) => {
+              panel.settings = s;
+            };
+          }
+          show(settings);
+          frame.addEventListener('canvas-change', (e) => {
+            const { setting, value } = (e as CustomEvent<{ setting: keyof Settings; value: unknown }>).detail;
+            settings = { ...settings, [setting]: value };
+            show(settings);
+          });
+        })
+        .catch((err: unknown) => console.error('Canvas Section story failed to load:', err));
     },
   },
   {

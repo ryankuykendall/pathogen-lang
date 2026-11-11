@@ -11,7 +11,6 @@ import './docs-panel.js';
 import './editor-tabs.js';
 import './inspector-panel.js';
 import './export-modal.js';
-import './playground-footer.js';
 import './playground-main.js';
 import './svg-preview-pane.js';
 import './thumbnail-crop-modal.js';
@@ -42,12 +41,15 @@ import {
   watchOpenFileModules,
 } from '../services/workspace-modules.js';
 import type { OpenFileModules } from '../services/workspace-modules.js';
+import type { CanvasChangeDetail, CanvasSettings } from './canvas-panel.js';
 import type { EditorTabs } from './editor-tabs.js';
 import { parseWorkspaceSlugId } from '../utils/router.js';
 import { applyURLState, loadFromURL } from '../utils/url-state.js';
 import { createCompileTicker } from '../utils/compile-ticker.js';
 import { collectLayerNames, pruneVisibility } from '../utils/layer-visibility.js';
 import { installPerfObservers, perfSpan, perfSpanAsync } from '../utils/perf-marks.js';
+import { drawingSvgMarkup } from '../utils/preview-fit.js';
+import type { FitCanvas } from '../utils/preview-fit.js';
 import { computeDefaultExportSvgBytes } from '../utils/svg-export-size.js';
 import { ensureChromeFontRules, getChromeFontRulesIfReady } from '../utils/export-fonts.js';
 import { updateWorkspaceSlugUrl } from '../utils/workspace-slug-url.js';
@@ -78,6 +80,9 @@ export class WorkspaceView extends HTMLElement {
   private _tabsTimer: ReturnType<typeof setTimeout> | null = null;
 
   private _libraryReadings = new Map<string, { text: string; library: boolean }>();
+
+  // Feeds the inspector's Canvas section (Background, Grid, Precision) from the store.
+  private _canvasUnsubscribe: (() => void) | null = null;
 
   // Each file's hash for the thumbnail's change check, by its text (_contentHash).
   private _fileHashes = new Map<string, { text: string; hash: string }>();
@@ -354,6 +359,7 @@ export class WorkspaceView extends HTMLElement {
     setLayersWithTiming: (layers: unknown[], options: unknown) => number;
     setPathDataWithTiming: (path: string) => number;
     preview: SVGSVGElement | null;
+    drawingCanvas: () => FitCanvas;
   } {
     return this.shadowRoot!.querySelector('svg-preview-pane') as any;
   }
@@ -366,10 +372,26 @@ export class WorkspaceView extends HTMLElement {
     return this.shadowRoot!.querySelector('docs-panel') as any;
   }
 
-  get inspectorPanel(): HTMLElement & { setData: (data: Record<string, unknown>) => void; open: boolean } {
+  get inspectorPanel(): HTMLElement & {
+    setData: (data: Record<string, unknown>) => void;
+    open: boolean;
+    canvasSettings: CanvasSettings;
+  } {
     return this.shadowRoot!.querySelector('inspector-panel') as HTMLElement & {
       setData: (data: Record<string, unknown>) => void;
       open: boolean;
+      canvasSettings: CanvasSettings;
+    };
+  }
+
+  /** The workspace's Background, Grid and Precision: what the Canvas section shows and the preferences save. */
+  private _canvasSettings(): CanvasSettings {
+    return {
+      background: store.get('background') as string,
+      gridEnabled: store.get('gridEnabled') as boolean,
+      gridColor: store.get('gridColor') as string,
+      gridSize: store.get('gridSize') as number,
+      toFixed: store.get('toFixed') as number | null,
     };
   }
 
@@ -728,35 +750,20 @@ export class WorkspaceView extends HTMLElement {
     this._tabsUnsubscribe = store.subscribe(['openFiles', 'openFile', 'workspaceFiles'], () => this._refreshTabs());
     this._refreshTabs();
 
-    // Style changes from footer
-    this.shadowRoot!.addEventListener('style-change', () => {
-      this.previewPane.updateSvgStyles();
-
-      // Save preferences to backend (width/height now live in source via define ViewBox)
-      const preferences = {
-        background: store.get('background') as string,
-        gridEnabled: store.get('gridEnabled') as boolean,
-        gridColor: store.get('gridColor') as string,
-        gridSize: store.get('gridSize') as number,
-        toFixed: store.get('toFixed') as number | null,
-      };
-      autosave.onPreferencesChange(preferences);
+    // Background, Grid and Precision, from the inspector's Canvas section. The
+    // preview restyles itself when background or grid change in the store;
+    // Precision needs a recompile. Each change saves the workspace's
+    // preferences (width/height live in the source, via define ViewBox).
+    this.shadowRoot!.addEventListener('canvas-change', (e: Event) => {
+      const { setting, value } = (e as CustomEvent<CanvasChangeDetail>).detail;
+      store.set(setting, value);
+      if (setting === 'toFixed') this.updatePreview();
+      autosave.onPreferencesChange(this._canvasSettings());
     });
-
-    // Precision changes from footer (requires recompilation)
-    this.shadowRoot!.addEventListener('precision-change', () => {
-      this.updatePreview();
-
-      // Save preferences to backend (width/height now live in source via define ViewBox)
-      const preferences = {
-        background: store.get('background') as string,
-        gridEnabled: store.get('gridEnabled') as boolean,
-        gridColor: store.get('gridColor') as string,
-        gridSize: store.get('gridSize') as number,
-        toFixed: store.get('toFixed') as number | null,
-      };
-      autosave.onPreferencesChange(preferences);
+    this._canvasUnsubscribe = store.subscribe(['background', 'gridEnabled', 'gridColor', 'gridSize', 'toFixed'], () => {
+      this.inspectorPanel.canvasSettings = this._canvasSettings();
     });
+    this.inspectorPanel.canvasSettings = this._canvasSettings();
 
     // CSS variable overrides from inspector panel -> apply to SVG preview.
     // Phase 3 moved compiled SVG into a sandboxed iframe; setCssVar / removeCssVar
@@ -1082,6 +1089,8 @@ export class WorkspaceView extends HTMLElement {
   cleanupEventListeners(): void {
     this._tabsUnsubscribe?.();
     this._tabsUnsubscribe = null;
+    this._canvasUnsubscribe?.();
+    this._canvasUnsubscribe = null;
     if (this._tabsTimer) clearTimeout(this._tabsTimer);
     this._tabsTimer = null;
     if (this._handleFormatDocument) document.removeEventListener('format-document', this._handleFormatDocument);
@@ -1316,7 +1325,8 @@ export class WorkspaceView extends HTMLElement {
   copySvg(): void {
     const svgElement = this.previewPane.preview;
     if (svgElement) {
-      const svgString = svgElement.outerHTML;
+      // The drawing's own viewBox, as Export uses: not the fit margin or the zoom.
+      const svgString = drawingSvgMarkup(svgElement, this.previewPane.drawingCanvas());
       navigator.clipboard.writeText(svgString).catch((err: Error) => {
         console.error('Failed to copy SVG:', err);
       });
@@ -1841,7 +1851,7 @@ export class WorkspaceView extends HTMLElement {
         <code-editor-pane><editor-tabs slot="tabs"></editor-tabs></code-editor-pane>
         <console-pane></console-pane>
         <svg-preview-pane></svg-preview-pane>
-        <inspector-panel></inspector-panel>
+        <inspector-panel canvas></inspector-panel>
       </playground-main>
 
       <error-panel></error-panel>
@@ -1853,8 +1863,6 @@ export class WorkspaceView extends HTMLElement {
       <thumbnail-crop-modal></thumbnail-crop-modal>
 
       <edit-workspace-metadata-modal></edit-workspace-metadata-modal>
-
-      <playground-footer></playground-footer>
     `;
   }
 }
