@@ -67,7 +67,7 @@ Each step: tests first; a storybook entry for each new component (the playground
    - The store: open files and the active one; `code` stays the active file's text.
    - **Autosave** sends every changed file, the folders and the entry points, and the page-teardown save keeps doing that without hashing. The 2c review's findings 1 and 3 become real here, so their tests come first.
 3b. **The layout without a footer** (added in step 3; built, see "Built"): Background, Grid and Precision in the inspector's Canvas section; no footer, preview card or minimap; the editor and the preview run to the bottom (note 40, v6 screen O).
-4. **The file tree** (new `file-tree` component; reuses `layers-panel`'s row styles and the kebab menus of `app-breadcrumb` and `landing-view`; no windowing at 20 files), and the **Files** toggle beside Console that shows it.
+4. **The file tree** (new `file-tree` component; reuses `layers-panel`'s row styles and the kebab menus of `app-breadcrumb` and `landing-view`; no windowing at 20 files), and the **Files** toggle beside Console that shows it. (*Split into 4a to 4d, and dragging moved to step 6; see "Built".*)
    - Folders first, then files; icons for program, library, folder and `pathogen.json`; the `main` badge; the lock on `pathogen.json`; red dots.
    - The **+** menu (screen N) with its "where new files go" line, the inline name field, the taken-name state.
    - Each file's menu: Set as main, Rename…, Duplicate, Delete…; a folder's menu (after the v7 mockup).
@@ -229,6 +229,19 @@ Each step: tests first; a storybook entry for each new component (the playground
 - **Seen, not changed:**
   - At 700 px the inspector's bottom sheet keeps its 240 px column (as before). Narrow screens are step 9.
   - `styles/preview.css` still has minimap rules, but nothing loads that file.
+
+**Step 4, split into four commits** (2026-11-11). Most of it is drawn and approved (v6 screens O, N, E and J; v7 screen F), so it goes ahead while the one new screen is reviewed (note 54, mockups v8):
+- **4a, the tree, read-only:** the `file-tree` component, the Files toggle (shown by default, as every mockup draws it), opening a file from the tree, `pathogen.json` read-only with its lock and its line.
+- **4b, adding:** the + menu with its "where new files go" line, New program, New library, New folder, the name field and the taken-name state.
+- **4c, the menus:** Set as main, Rename…, Move to…, Duplicate, Delete…, and the toast's Undo. Tests first for:
+  - a delete prunes the file's tab, its kept editor state and its tab-icon entry, so a new file at a deleted file's path starts with no undo history;
+  - a rename or a move carries the file's kept state, undo and all, to the new path (the docs page: each file keeps its undo);
+  - every planned edit, the toast's Undo included, calls `autosave.onChange(workspaceNow())`;
+  - a later change to the workspace drops the toast's pending Undo;
+  - the import rewrites made in other files' kept states stay out of those files' own undo (`addToHistory` false), since Cmd-Z there would point an import back at a name that's gone (note 53, question 3). This replaces step 3's "as one undo step" note above.
+- **4d, no file open:** after your review of mockups v8. Before `openFile` can be empty, every reader of it and of the editor's text gets checked: `workspaceNow()`, autosave and the thumbnail hash, Copy Code, the compile debounce, the error marks, the file crumb, Format Document. The editor shows a real empty view, so typing can't land in a hidden document that saves over a file.
+- **Dragging a file onto a folder moves to step 6**, with dropping uploaded files: they share the folder that lights up under the pointer. Move to… (4c) covers moving until then.
+- **Not in step 4:** red dots (step 7), the chip and its list (step 5), uploads (step 6), narrow screens (step 9).
 
 **The v7 mockup round** (2026-11-09, commit `5c8f925`): note 53, `phase-2-mockups-v7/`. Five screens: no programs left, folders and moving, narrow screens, the mini-workspace, the ⋮ menu. It also draws what v6 left out (renaming a file, Move to…, dragging a file). Six questions await you; steps 4 and 9 wait for them.
 - *Answered 2026-11-09: all six agreed* (note 53, "Your answers"). What that adds to the steps:

@@ -1,0 +1,215 @@
+<!-- v8's parts. build.ts puts them into v7's built page (phase-2-mockups-v7/multi-file-mockup-v7.html,
+     read in place): the CSS at the end of its <style>, the harness buttons in place of v7's, the
+     section in place of v7's five, and the script in place of v7's screens table. The function
+     declarations in the script come after v7's, so they replace v7's functions of the same name. -->
+
+<!-- @@CSS -->
+  /* Files off: the tree's column goes */
+  .ws.no-files { grid-template-columns: minmax(0,1fr) minmax(0,1fr); }
+  .ws.no-files.with-insp { grid-template-columns: minmax(0,1fr) minmax(0,1fr) 240px; }
+
+  /* The editor with no file open: the empty preview's shape (v7, screen X) */
+  .ed-empty { position: relative; flex: 1; display: grid; place-items: center; padding: 24px; }
+  .ed-empty-in { max-width: 344px; text-align: center; color: var(--text-secondary); font-size: 13px; line-height: 1.5; }
+  .ed-empty-ic { width: 44px; height: 44px; margin: 0 auto 10px; border-radius: 12px; display: grid; place-items: center; background: var(--secondary-accent-subtle); color: var(--secondary-accent-text); }
+  .ed-empty-ic svg { width: 22px; height: 22px; }
+  .ed-empty h3 { margin: 0 0 6px; font-size: 15px; font-weight: 600; color: var(--text-primary); }
+  .ed-empty p { margin: 0 0 14px; }
+  .ed-empty p code { font-family: var(--font-mono); font-size: 12px; color: var(--text-primary); }
+  .ed-empty .acts { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+  .ed-empty .btn-p, .ed-empty .btn-g { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
+  .ed-empty .btn-p svg { width: 14px; height: 14px; }
+  .ed-empty small { display: block; margin-top: 10px; font-size: 11.5px; color: var(--text-tertiary); }
+
+  /* A menu item that waits for something */
+  .dd button.off { color: var(--text-tertiary); cursor: not-allowed; }
+
+<!-- @@NAV -->
+    <button data-s="nofile" aria-pressed="true">Z · No file open</button>
+
+<!-- @@SECTIONS -->
+<!-- ============ Z. NO FILE OPEN ============ -->
+<section class="screen active" id="s-nofile">
+  <div class="notes">
+    <h2>Z · No file open <span class="tag ask">new, for your review</span></h2>
+    <div class="cols">
+      <ul>
+        <li><b>Every tab can be closed</b> (your decision, 2026-11-11). With none open, the editor suggests where to start: the program the preview shows, with a button that opens it (state 1). The tabs bar stays, with Docs at its right end.</li>
+        <li><b>The button follows the preview</b> (state 2). With try-sizes chosen in the chip, it opens <code>try-sizes.pathogen</code>, the drawing you're looking at. <b>For your review</b> (question 1).</li>
+        <li><b>With the tree hidden</b> (state 3), a second button, Show files, brings it back.</li>
+        <li><b>Deleting the only open file</b> (state 4) gets here too. If it was the program shown, the preview goes back to the main (screen O), and the button follows it.</li>
+      </ul>
+      <ul>
+        <li><b>Nothing to draw</b> (states 5 and 6): only libraries, or no files at all. The preview already offers New program (v7, screen X), so the editor says where it is instead of offering a second one. <b>For your review</b> (question 2). With no files, the preview's line says the workspace is empty, not that every file is a library.</li>
+        <li><b>What needs a file</b> (states 7 and 8): the breadcrumb ends at the workspace, and Copy Code and Format Document are off and say why. Snapshot, Export and the rest are about the drawing, so they stay as they are.</li>
+        <li><b>Opening the workspace again</b> opens its main, as today: open tabs aren't remembered. So this screen only follows something you did.</li>
+        <li><b>Closing a tab keeps its undo</b> while the workspace is open (the docs page says so). The small line repeats it here, where you might wonder.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="statebar" id="st-nofile">
+    <span class="lbl">State</span>
+    <button data-st="closed" aria-pressed="true">The last tab closed</button>
+    <button data-st="other">Another program shown</button>
+    <button data-st="hidden">The tree hidden</button>
+    <button data-st="deleted">The only open file deleted</button>
+    <button data-st="libs">Only libraries</button>
+    <button data-st="none">No files</button>
+    <button data-st="menu">The ⋮ menu</button>
+    <button data-st="copy">Copy Code</button>
+  </div>
+  <div class="statedesc" id="sd-nofile"></div>
+  <div class="frame-out"><div class="window" id="w-nofile"></div></div>
+</section>
+
+<!-- @@SCRIPT -->
+/* ===================== v8 ===================== */
+/* Everything above this point is v7's page (v6's kit and v7's parts), unchanged. The
+   function declarations below replace v7's functions of the same name. */
+
+/* ---------- trees ---------- */
+Object.assign(TREES, {
+  /* demos/gears deleted: its folder stays, empty */
+  gearsDeleted: [{ folder: 'demos' }, { empty: true, d: 1 }, { folder: 'parts' }, ...PARTS, ...ROOT],
+  /* every file deleted: only pathogen.json is left */
+  none: [],
+});
+
+/* ---------- the breadcrumb: no file crumb, and Copy Code off, with no file open ---------- */
+function crumbbar(c) {
+  const err = c.chip === 'err', none = !!c.noPrograms;
+  const ws = ['My Gears', '(3-Gq8vR2mLpX_k-T4wNc)', c.noFiles ? '(1 KB)' : '(4 KB)'];
+  const why = c.noFiles ? 'Nothing draws: the workspace has no files' : 'Nothing draws: every file is a library';
+  const stat = none
+    ? `<span class="cstat none" title="${why}">No program</span>`
+    : `<span class="cstat ${err ? 'err' : 'ok'}">${err ? 'Error' : 'Ready'}</span>`;
+  const snapOff = err || none ? `disabled title="${none ? 'Add a program to take a snapshot' : 'Fix the error to take a snapshot'}"` : '';
+  const file = c.open ? `<span class="sep">/</span>${fileCrumb(c.open)}` : '';
+  const copy = c.open
+    ? `<button class="btn-s" title="Copy the code of ${esc(c.open === PJ ? PJ : `${c.open}.pathogen`)}, the file in the editor">Copy Code</button>`
+    : '<button class="btn-s" disabled title="No file open">Copy Code</button>';
+  const files = `<button class="btn-s ${c.filesHidden ? '' : 'active'}" title="${c.filesHidden ? 'Show' : 'Hide'} the workspace's files">Files</button>`;
+  return `<div class="crumbbar">
+    <nav class="crumbs"><span>Workspaces</span><span class="sep">/</span><span class="cur">${ws[0]}</span><span class="ws-id">${ws[1]}</span><span class="ws-size">${ws[2]}</span>${file}</nav>
+    <div class="controls">
+      <div class="cl">
+        ${stat}
+        <span class="split"><button class="btn-s" ${snapOff}>${I.camera}Snapshot</button><button class="btn-s"><span class="count">2</span> ›</button></span>
+        <span class="tbar">${files}<button class="btn-s">Console</button></span>
+        ${copy}
+      </div>
+      <div class="cr"><span class="save">Saved</span><button class="kebab ${c.kebabOpen ? 'on' : ''}" title="More actions">${I.kebab}</button></div>
+    </div></div>`;
+}
+
+/* ---------- the editor: an empty state when no file is open ---------- */
+const UNDO_LINE = 'Each file keeps its undo history while the workspace is open.';
+function edEmpty(c) {
+  let heading = 'No file open', text, acts = '', small = '';
+  if (c.noFiles) {
+    heading = 'No files yet';
+    text = 'This workspace is empty. Start a program with <b>New program</b> in the preview, or add your own files with the <b>+</b> in the Files header.';
+  } else if (c.noPrograms) {
+    text = 'Every file here is a library, so nothing draws yet. Click one in the tree to edit it, or start a program with <b>New program</b> in the preview.';
+  } else {
+    const shown = `${c.shown}.pathogen`;
+    text = `The preview shows <code>${esc(shown)}</code>. Open it to change the drawing, or ${c.filesHidden ? 'show the files to pick another' : 'click any file in the tree'}.`;
+    acts = `<div class="acts"><button class="btn-p">${I.prog}Open ${esc(shown)}</button>${c.filesHidden ? '<button class="btn-g">Show files</button>' : ''}</div>`;
+    if (!c.justDeleted) small = `<small>${UNDO_LINE}</small>`;
+  }
+  return `<div class="ed-empty"><div class="ed-empty-in">
+    <div class="ed-empty-ic">${I.code}</div>
+    <h3>${heading}</h3>
+    <p>${text}</p>
+    ${acts}${small}
+  </div></div>`;
+}
+function editor(c) {
+  if (!c.open) return `<div class="ed">${tabStrip(c)}${edEmpty(c)}</div>`;
+  const pj = c.open === PJ && !c.code;
+  const lines = pj ? ((c.entry && c.entry.length === 0) ? ['{}'] : pjLines(c)) : c.code ? SRC[c.code] : SRC[c.open];
+  const hl = pj ? jsonLineHtml : lineHtml;
+  const body = lines.map((l, i) => {
+    const n = i + 1, cls = ['cm-ln', n === c.active ? 'act' : '', (c.changed || []).includes(n) ? 'chg' : ''].join(' ');
+    return `<div class="${cls}"><span class="gn">${n}</span><span class="lt">${hl(l)}</span></div>`;
+  }).join('');
+  const ro = pj ? `<div class="ro-bar ${c.roHint ? 'hl' : ''}">${RO_LINE}</div>` : '';
+  return `<div class="ed">${tabStrip(c)}${ro}<div class="cm">${body}</div></div>`;
+}
+
+/* ---------- the preview: v7's empty preview, with its line for a workspace with no files ---------- */
+function previewBox(c) {
+  const insp = `<div class="chrome-r"><button class="r32 insp-tgl ${c.inspector ? 'on' : ''}" title="Toggle inspector">${I.layers}</button></div>`;
+  if (c.noPrograms) {
+    const why = c.noFiles
+      ? 'This workspace has no files yet. Add a program to see a drawing here.'
+      : 'Every file in this workspace is a library: it starts with <code>module;</code>, and a library doesn\'t draw. Add a program to see a drawing here.';
+    return `<div class="pv-box"><div class="pv-empty"><div class="pv-empty-in">
+      <div class="pv-empty-ic">${I.prog}</div>
+      <h3>No program to show</h3>
+      <p>${why}</p>
+      <button class="btn-p">${I.plus}New program</button>
+      <small>It goes at the top of the workspace, and it will be the main.</small>
+    </div></div>${insp}</div>`;
+  }
+  const key = progArt(c, c.shown);
+  const canvas = c.zoom ? `<div class="pv-canvas z">${art(key, { crop: c.zoom.crop })}</div>` : `<div class="pv-canvas">${art(key)}</div>`;
+  const many = programs(c).length > 1;
+  const bottom = many
+    ? `<div class="bgroup">${zoomPill(c)}<div style="position:relative">${pickChip(c)}${c.pickOpen ? pickList(c) : ''}</div></div>`
+    : `<div class="zoom-wrap">${zoomPill(c)}</div>`;
+  return `<div class="pv-box ${c.stale ? 'stale' : ''}">${canvas}
+    <button class="r32 pv-fs" title="Fullscreen">${I.expand}</button>
+    ${insp}${c.stale ? `<div class="stale-top">${STALE}</div>` : ''}${bottom}</div>`;
+}
+
+/* ---------- the ⋮ menu: Format Document waits for a file; Copy URL is gone (note 52) ---------- */
+function kebabMenu(c) {
+  if (!c.kebabOpen) return '';
+  const format = c.open
+    ? `<button>${I.format}<span>Format Document<small>The file in the editor</small></span></button>`
+    : `<button class="off" disabled>${I.format}<span>Format Document<small>No file open</small></span></button>`;
+  return `<div class="dd kmenu">
+    <button>${I.download}<span>Export</span></button>
+    ${format}
+    <button>${I.pencil}<span>Rename workspace</span></button>
+    <div class="div"></div>
+    <button>${I.copy}<span>Copy Workspace</span></button>
+    <button>${I.code}<span>Copy SVG</span></button>
+    <button>${I.bug}<span>Copy Debug Info</span></button>
+    <div class="div"></div>
+    <button>${I.image}<span>Set Thumbnail</span></button>
+    <div class="div"></div>
+    <button>${I.globe}<span>Make public</span></button>
+  </div>`;
+}
+
+/* ---------- the window: Files off takes the tree's column away ---------- */
+function workspace(c) {
+  const cls = ['ws', c.inspector ? 'with-insp' : '', c.filesHidden ? 'no-files' : ''].join(' ');
+  return `${topnav()}${crumbbar(c)}<div class="ws-wrap"><div class="${cls}">${c.filesHidden ? '' : filesPane(c)}${editor(c)}${preview(c)}${inspector(c)}${overlays(c)}</div>${errorPanel(c)}${docsPanel(c)}${dialog(c)}${kebabMenu(c)}</div>${toast(c)}`;
+}
+
+/* ---------- the screen and its states ---------- */
+const NONE_OPEN = { open: null, tabs: [] };
+const nothingOpen = o => C(Object.assign({}, NONE_OPEN, o));
+const SCREENS = {
+  nofile: { states: {
+    'closed': [nothingOpen({}),
+      'You closed <b>main</b>, the last tab. The preview still shows main.pathogen, and the editor offers to open it.'],
+    'other': [nothingOpen({ shown: 'try-sizes' }),
+      'The chip shows <b>try-sizes</b>, and you closed every tab. The button opens the program you\'re looking at.'],
+    'hidden': [nothingOpen({ filesHidden: true }),
+      '<b>Files</b> is off and no file is open. Show files brings the tree back; the button still opens the program shown.'],
+    'deleted': [nothingOpen({ tree: 'gearsDeleted', entry: ['main', 'try-sizes'], justDeleted: true, toast: { html: 'Deleted <code>demos/gears.pathogen</code>.' } }),
+      '<b>demos/gears.pathogen</b> was the only open file, and the program shown. You deleted it: its tab closed, and the preview went back to the main.'],
+    'libs': [nothingOpen({ tree: 'libsOnly', shown: null, entry: [], noPrograms: true }),
+      'Every file is a <b>library</b>, and no file is open. The preview offers New program (v7, screen X); the editor points to it instead of offering a second one.'],
+    'none': [nothingOpen({ tree: 'none', shown: null, entry: [], noPrograms: true, noFiles: true }),
+      'You deleted the <b>last file</b>. Only pathogen.json is left, as <code>{}</code>. The preview\'s line says the workspace is empty; New program is still where to start.'],
+    'menu': [nothingOpen({ kebabOpen: true }),
+      'The <b>⋮ menu</b> with no file open: Format Document is off and says why. Copy URL is gone (your 2d answer).'],
+    'copy': [nothingOpen({ tip: { at: 'right:96px;top:-2px', html: 'No file open: open one to copy its code' } }),
+      'Hovering <b>Copy Code</b>, which is off with no file open.'],
+  } },
+};
