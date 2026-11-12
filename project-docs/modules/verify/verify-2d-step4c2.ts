@@ -538,6 +538,58 @@ try {
     { open: s.open, rows: s.rows, field: s.field },
   );
 
+  // 12c. The editor's language services follow a move: its import graph (completion, hover,
+  //      go-to) is built from the file's new folder. Moves that change what `./` means:
+  //      demos/kit → the top while kept, then → parts/ while open.
+  const graphErrors = async (): Promise<number | null> =>
+    page.evaluate(`import('/services/workspace-modules.js').then((m) => {
+      const g = m.currentOpenFileModules();
+      return g ? g.loadErrors.length : null;
+    })`) as Promise<number | null>;
+  const settled = async (): Promise<number | null> => {
+    await pause(400);
+    return waitFor('the graph', async () => {
+      const n = await graphErrors();
+      return n === null ? null : { n };
+    }).then((r) => r?.n ?? null);
+  };
+  // The control: an import that reaches nothing shows as a load error.
+  await clickRow(page, 'demos/kit.pathogen');
+  await page.evaluate(`(() => {
+    const view = window.__find('code-editor-pane')._editor;
+    view.dispatch({ changes: { from: 'module;\\n'.length, insert: 'import { x } from "./nope.pathogen";\\n' } });
+  })()`);
+  const controlErrors = await settled();
+  await undoAll(page);
+  await clickRow(page, 'first.pathogen');
+  await rowMenu(page, 'demos/kit.pathogen');
+  await choose(page, 'move');
+  await clickIn(page, '[role="menuitem"][data-folder=""]');
+  await pause(600);
+  await clickRow(page, 'kit.pathogen');
+  const keptMoved = await settled();
+  s = await state(page);
+  const keptLine = lineOf(s.text, 'import { gear }');
+  await rowMenu(page, 'kit.pathogen');
+  await choose(page, 'move');
+  await clickIn(page, '[role="menuitem"][data-folder="parts"]');
+  await pause(600);
+  const openMoved = await settled();
+  s = await state(page);
+  await waitFor('the compile', async () => ((await storeGet(page, 'compilationStatus')) !== 'compiling' ? true : null));
+  const status = await storeGet(page, 'compilationStatus');
+  check(
+    'the editor’s import graph follows a moved file, kept or open (and sees a bad import)',
+    (controlErrors ?? 0) > 0 &&
+      keptMoved === 0 &&
+      keptLine === 'import { gear } from "./parts/cogs.pathogen";' &&
+      openMoved === 0 &&
+      s.open === 'parts/kit.pathogen' &&
+      lineOf(s.text, 'import { gear }') === 'import { gear } from "./cogs.pathogen";' &&
+      status !== 'error',
+    { controlErrors, keptMoved, keptLine, openMoved, open: s.open, line: lineOf(s.text, 'import { gear }'), status },
+  );
+
   // 13. Dark mode: Rename…'s field on a folder, and Move to….
   await setTheme(page, 'dark');
   await open(page, id);
@@ -550,7 +602,7 @@ try {
   await pause(200);
   s = await state(page);
   check('Escape leaves the name as it was, with the keyboard on the row', s.field === null && s.rows.includes('parts') && s.focusedRow === 'parts', { field: s.field, focused: s.focusedRow });
-  await rowMenu(page, 'demos/kit.pathogen');
+  await rowMenu(page, 'parts/kit.pathogen');
   await choose(page, 'move');
   await page.screenshot({ path: `${SHOTS}/2d-step4c2-move-to-dark.png` });
   await page.keyboard.press('Escape');

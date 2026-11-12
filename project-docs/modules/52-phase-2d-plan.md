@@ -395,7 +395,7 @@ Each step: tests first; a storybook entry for each new component (the playground
     - `tests/playground-editor-read-only.test.ts` (+4: `renameFiles`, `editFile` on a kept state, `editedLines`, `spanChange`);
     - `tests/playground-workspace-edits.test.ts` (+3: `renameHint`, `moveHint` wording; an Undo refused after an import alike was typed in);
     - `tests/playground-app-toast.test.ts` (3, new): the `signal`;
-  - `verify/verify-2d-step4c2.ts` against `npm run dev:stack`, 25 checks (28 after the review):
+  - `verify/verify-2d-step4c2.ts` against `npm run dev:stack`, 25 checks (29 after the review). The last one added: the editor's import graph (completion, hover, go-to) is rebuilt from a moved file's new folder, kept or open. It moves `kit` to the top and then into `parts/`, where `./` means something else, and shows no load errors. A control (an import of nothing) shows the check sees one:
     - the menus; Rename…'s field, selected, and its line; the renamed file's row, tab and keyboard; main's import rewritten and marked; the toast with Undo; the preview unchanged;
     - undoing everything in the open importer, a kept importer, and the renamed file itself: the typed text goes, the import stays at the new name, and the renamed file kept its history;
     - a folder's rename: its line, its tabs, two marked lines; the toast's Undo putting it all back;
