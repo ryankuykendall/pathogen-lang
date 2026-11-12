@@ -34,6 +34,7 @@ function outline(rows: TreeRow[]): string[] {
     const pad = '  '.repeat(r.level - 1);
     if (r.type === 'folder') return `${pad}${r.expanded ? 'v' : '>'} ${r.name}/`;
     if (r.type === 'empty') return `${pad}(empty)`;
+    if (r.type === 'input') return `${pad}[name field]`;
     if (r.type === 'project') return `${pad}${r.name} [lock]`;
     return `${pad}${r.name}${r.kind === 'library' ? ' [lib]' : ''}${r.main ? ' [main]' : ''}`;
   });
@@ -103,6 +104,27 @@ describe('the tree’s rows', () => {
     expect(asMain('main.pathogen')).toEqual([]);
     expect(asMain('try-sizes.pathogen')).toEqual(['try-sizes.pathogen [main]']);
     expect(asMain('demos/gears.pathogen')).toEqual(['  gears.pathogen [main]']);
+  });
+
+  it('puts the name field first in its folder, in place of "Empty", and outside the counts', () => {
+    const naming = (folder: string, folders: string[] = []) => {
+      const rows = treeRows(GEARS, folders, { collapsed: new Set(), main: null, naming: { folder, kind: 'library' } });
+      return outline(rows).map((line) => line.replace(/ \[lib\]/g, ''));
+    };
+    expect(naming('parts').slice(2, 7)).toEqual([
+      'v parts/',
+      '  [name field]',
+      '  gears.pathogen',
+      '  kit.pathogen',
+      '  labels.pathogen',
+    ]);
+    expect(naming('')[0]).toBe('[name field]');
+    expect(naming('examples', ['examples']).slice(2, 4)).toEqual(['v examples/', '  [name field]']);
+    const rows = treeRows(GEARS, [], { collapsed: new Set(), main: null, naming: { folder: '', kind: 'program' } });
+    const project = rows.find((r) => r.type === 'project')!;
+    expect([project.type === 'project' && project.posinset, project.type === 'project' && project.setsize]).toEqual([
+      5, 5,
+    ]);
   });
 
   it('counts each row among its siblings, for screen readers', () => {
@@ -280,5 +302,292 @@ describe('the file-tree component', () => {
     expect(tree.shadowRoot!.querySelector('.row.file .name')!.innerHTML).toBe(
       'a&lt;b&gt;<span class="ext">.pathogen</span>',
     );
+  });
+});
+
+// Step 4b (mockup v6 screen N): the "+" in the header, its menu, and the name
+// field. The tree asks workspace-view whether a name can be used (checkName,
+// the workspace's own rules) and reports a good one as `create-entry`.
+describe('adding files and folders', () => {
+  beforeAll(async () => {
+    await import('../playground/components/file-tree.js');
+  });
+
+  type Kind = 'program' | 'library' | 'folder';
+  let tree: FileTreeEl & { checkName: ((kind: Kind, folder: string, name: string) => string | null) | null };
+  interface Created {
+    kind: Kind;
+    folder: string;
+    name: string;
+    focusEditor: boolean;
+  }
+  let created: Created[];
+
+  beforeEach(() => {
+    document.body.innerHTML = '';
+    tree = document.createElement('file-tree');
+    document.body.appendChild(tree);
+    tree.files = GEARS;
+    tree.folders = [];
+    tree.main = 'main.pathogen';
+    tree.active = 'parts/gears.pathogen';
+    // The workspace's rules, as workspace-view answers them: gears is taken in parts/.
+    tree.checkName = (_kind, folder, name) => {
+      if (name === '') return "A name can't be empty.";
+      return folder === 'parts' && name === 'gears' ? 'parts/ already has gears.pathogen.' : null;
+    };
+    created = [];
+    tree.addEventListener('create-entry', (e) => created.push((e as Event & { detail: Created }).detail));
+  });
+
+  const $ = <T extends Element = HTMLElement>(sel: string) => tree.shadowRoot!.querySelector<T>(sel);
+  const plus = () => $<HTMLButtonElement>('.add')!;
+  const menu = () => $('[role="menu"]');
+  const focused = () => tree.shadowRoot!.activeElement as HTMLElement | null;
+  const key = (target: Element, k: string) => {
+    const init = { key: k, bubbles: true, composed: true, cancelable: true };
+    return target.dispatchEvent(new window.KeyboardEvent('keydown', init));
+  };
+  const choose = (label: string) =>
+    [...tree.shadowRoot!.querySelectorAll<HTMLElement>('[role="menuitem"]')]
+      .find((item) => item.querySelector('.label')!.textContent === label)!
+      .click();
+  const field = () => $<HTMLInputElement>('.row.input input');
+  const hint = () => $('.name-hint')!;
+  const typeName = (text: string) => {
+    field()!.value = text;
+    field()!.dispatchEvent(new window.Event('input', { bubbles: true }));
+  };
+
+  it('the + opens a menu that adds to the folder of the file in the editor', () => {
+    expect(['aria-label', 'aria-haspopup', 'aria-expanded'].map((a) => plus().getAttribute(a))).toEqual([
+      'Add a file or folder',
+      'menu',
+      'false',
+    ]);
+    plus().click();
+    expect([menu()!.hidden, plus().getAttribute('aria-expanded')]).toEqual([false, 'true']);
+    expect($('.menu-head')!.textContent).toBe('Add to parts/');
+    const items = [...tree.shadowRoot!.querySelectorAll('[role="menuitem"]')];
+    const labels = items.map((i) => {
+      const small = i.querySelector('small')?.textContent ?? '';
+      return [i.querySelector('.label')!.textContent, small];
+    });
+    expect(labels).toEqual([
+      ['New program', 'A file that draws'],
+      ['New library', 'Starts with module;'],
+      ['New folder', ''],
+    ]);
+    expect(focused()).toBe(items[0]);
+  });
+
+  it('adds to the folder clicked last, to the top, or, once another file opens, to its folder', () => {
+    tree.active = 'main.pathogen';
+    plus().click();
+    expect($('.menu-head')!.textContent).toBe('Add at the top');
+    key(focused()!, 'Escape');
+    tree.shadowRoot!.querySelector<HTMLElement>('[data-path="demos"]')!.click();
+    plus().click();
+    expect($('.menu-head')!.textContent).toBe('Add to demos/');
+    key(focused()!, 'Escape');
+    tree.active = 'parts/kit.pathogen';
+    plus().click();
+    expect($('.menu-head')!.textContent).toBe('Add to parts/');
+  });
+
+  it('moves with the arrow keys, and Escape closes it and returns to the +', () => {
+    plus().click();
+    key(focused()!, 'ArrowDown');
+    expect(focused()!.querySelector('.label')!.textContent).toBe('New library');
+    key(focused()!, 'End');
+    expect(focused()!.querySelector('.label')!.textContent).toBe('New folder');
+    key(focused()!, 'ArrowDown');
+    expect(focused()!.querySelector('.label')!.textContent).toBe('New program');
+    key(focused()!, 'Escape');
+    expect([menu()!.hidden, focused(), plus().getAttribute('aria-expanded')]).toEqual([true, plus(), 'false']);
+  });
+
+  it('closes on a click outside it', () => {
+    plus().click();
+    document.body.dispatchEvent(new window.Event('pointerdown', { bubbles: true, composed: true }));
+    expect(menu()!.hidden).toBe(true);
+  });
+
+  it('New library puts a name field first in the folder, with .pathogen and a hint', () => {
+    plus().click();
+    choose('New library');
+    expect(menu()!.hidden).toBe(true);
+    const order = [...tree.shadowRoot!.querySelectorAll<HTMLElement>('.list > .row')].map(
+      (r) => r.dataset.path ?? (r.classList.contains('input') ? '[field]' : ''),
+    );
+    expect(order.slice(2, 5)).toEqual(['parts', '[field]', 'parts/gears.pathogen']);
+    expect(focused()).toBe(field());
+    expect([field()!.getAttribute('aria-label'), $('.row.input .ext')!.textContent]).toEqual([
+      'New library name',
+      '.pathogen',
+    ]);
+    expect(hint().textContent).toBe('Starts with module; · Enter to create, Esc to cancel');
+    expect(field()!.getAttribute('aria-describedby')).toBe(hint().id);
+  });
+
+  it('a taken name is refused in place, and Enter does nothing; nor does an empty one', () => {
+    plus().click();
+    choose('New library');
+    typeName('gears');
+    expect([field()!.getAttribute('aria-invalid'), hint().textContent, hint().classList.contains('bad')]).toEqual([
+      'true',
+      'parts/ already has gears.pathogen.',
+      true,
+    ]);
+    key(field()!, 'Enter');
+    expect([created, !!field()]).toEqual([[], true]);
+    typeName('');
+    expect([field()!.getAttribute('aria-invalid'), hint().textContent]).toEqual([
+      'false',
+      'Starts with module; · Enter to create, Esc to cancel',
+    ]);
+    key(field()!, 'Enter');
+    expect([created, !!field()]).toEqual([[], true]);
+  });
+
+  it('Enter creates a good name, and the field goes', () => {
+    plus().click();
+    choose('New library');
+    typeName('ratchet');
+    expect(field()!.getAttribute('aria-invalid')).toBe('false');
+    key(field()!, 'Enter');
+    expect(created).toEqual([{ kind: 'library', folder: 'parts', name: 'ratchet', focusEditor: true }]);
+    expect(field()).toBeNull();
+  });
+
+  it('Esc cancels and returns to the +', () => {
+    plus().click();
+    choose('New program');
+    typeName('poster');
+    key(field()!, 'Escape');
+    expect([created, field(), focused()]).toEqual([[], null, plus()]);
+  });
+
+  it('leaving the field creates a good name, and drops an empty or taken one', () => {
+    plus().click();
+    choose('New program');
+    typeName('star');
+    field()!.dispatchEvent(new window.FocusEvent('blur'));
+    // Made by leaving the field: the keyboard goes where you went, not to the editor.
+    expect(created).toEqual([{ kind: 'program', folder: 'parts', name: 'star', focusEditor: false }]);
+    expect(field()).toBeNull();
+    plus().click();
+    choose('New program');
+    typeName('gears');
+    field()!.dispatchEvent(new window.FocusEvent('blur'));
+    expect([created.length, field()]).toEqual([1, null]);
+  });
+
+  it('a new folder’s field has no .pathogen; the new folder is where the + adds next', () => {
+    plus().click();
+    choose('New folder');
+    expect([field()!.getAttribute('aria-label'), $('.row.input .ext'), hint().textContent]).toEqual([
+      'New folder name',
+      null,
+      'Enter to create, Esc to cancel',
+    ]);
+    // workspace-view adds it as it handles the event; the tree then shows it, and the keyboard is on it.
+    tree.addEventListener('create-entry', () => {
+      tree.folders = ['parts/shapes'];
+    });
+    typeName('shapes');
+    key(field()!, 'Enter');
+    expect(created).toEqual([{ kind: 'folder', folder: 'parts', name: 'shapes', focusEditor: true }]);
+    expect(focused()?.dataset.path).toBe('parts/shapes');
+    plus().click();
+    expect($('.menu-head')!.textContent).toBe('Add to parts/shapes/');
+  });
+
+  it('the Enter that makes a folder doesn’t also fold it, when the folder appears at once', () => {
+    // workspace-view adds the folder while the Enter is still on its way up the tree.
+    tree.addEventListener('create-entry', (e) => {
+      const { folder, name } = (e as Event & { detail: { folder: string; name: string } }).detail;
+      tree.folders = [`${folder}/${name}`];
+    });
+    plus().click();
+    choose('New folder');
+    typeName('shapes');
+    key(field()!, 'Enter');
+    const shapes = tree.shadowRoot!.querySelector<HTMLElement>('[data-path="parts/shapes"]')!;
+    expect([shapes.getAttribute('aria-expanded'), focused()]).toEqual(['true', shapes]);
+    expect((shapes.nextElementSibling as HTMLElement).textContent).toBe('Empty');
+  });
+
+  it('a folder that couldn’t be made doesn’t take the keyboard when one like it appears later', () => {
+    // No one adds it here: workspace-view refused it, and a toast said why.
+    plus().click();
+    choose('New folder');
+    typeName('shapes');
+    key(field()!, 'Enter');
+    expect(created).toHaveLength(1);
+    tree.shadowRoot!.querySelector<HTMLElement>('[data-path="main.pathogen"]')!.focus();
+    tree.folders = ['parts/shapes'];
+    expect(focused()?.dataset.path).toBe('main.pathogen');
+  });
+
+  it('a folder gone while the menu was open: the field goes where the + adds now', () => {
+    plus().click();
+    expect($('.menu-head')!.textContent).toBe('Add to parts/');
+    // parts/ deleted meanwhile (and the file in the editor with it).
+    tree.files = GEARS.filter((f) => !f.path.startsWith('parts/'));
+    choose('New library');
+    expect(focused()).toBe(field());
+    typeName('ratchet');
+    key(field()!, 'Enter');
+    expect(created).toEqual([{ kind: 'library', folder: '', name: 'ratchet', focusEditor: true }]);
+  });
+
+  it('the keys the menu uses stay in it: its Escape reaches no one else', () => {
+    const outside: string[] = [];
+    const listen = (e: KeyboardEvent) => outside.push(e.key);
+    document.addEventListener('keydown', listen);
+    plus().click();
+    key(focused()!, 'ArrowDown');
+    key(focused()!, 'Escape');
+    document.removeEventListener('keydown', listen);
+    expect(outside).toEqual([]);
+  });
+
+  it('Tab from the menu closes it and goes on from the +', () => {
+    plus().click();
+    key(focused()!, 'Tab');
+    expect([menu()!.hidden, focused()]).toEqual([true, plus()]);
+  });
+
+  it('closes when the window resizes, and when the tree leaves the page', () => {
+    plus().click();
+    window.dispatchEvent(new window.Event('resize'));
+    expect(menu()!.hidden).toBe(true);
+    plus().click();
+    tree.remove();
+    document.body.appendChild(tree);
+    expect([menu()!.hidden, plus().getAttribute('aria-expanded')]).toEqual([true, 'false']);
+  });
+
+  it('a refused name is announced: the field’s line is a polite live region', () => {
+    plus().click();
+    choose('New library');
+    expect(hint().getAttribute('aria-live')).toBe('polite');
+  });
+
+  it('with no programs, a new program’s hint says it will be the main', () => {
+    tree.main = null;
+    plus().click();
+    choose('New program');
+    expect(hint().textContent).toBe('The only program, so it becomes the main · Enter to create, Esc to cancel');
+  });
+
+  it('naming in a folded folder unfolds it', () => {
+    tree.shadowRoot!.querySelector<HTMLElement>('[data-path="parts"]')!.click();
+    expect(tree.shadowRoot!.querySelector('[data-path="parts"]')!.getAttribute('aria-expanded')).toBe('false');
+    plus().click();
+    choose('New library');
+    expect(tree.shadowRoot!.querySelector('[data-path="parts"]')!.getAttribute('aria-expanded')).toBe('true');
+    expect(focused()).toBe(field());
   });
 });

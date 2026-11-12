@@ -23,6 +23,11 @@ export const FILE_ICONS = {
   folder: icon('<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>'),
   /** A folder's fold control: points down when open (the tree turns it for a folded one). */
   chevron: icon('<path d="m6 9 6 6 6-6"/>'),
+  /** The tree's + (add a file or folder), and New folder in its menu. */
+  plus: icon('<path d="M12 5v14M5 12h14"/>'),
+  folderPlus: icon(
+    '<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M12 10v6M9 13h6"/>',
+  ),
   /** The docs. */
   book: icon(
     '<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>',

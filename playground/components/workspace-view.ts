@@ -46,6 +46,10 @@ import type { OpenFileModules } from '../services/workspace-modules.js';
 import type { CanvasChangeDetail, CanvasSettings } from './canvas-panel.js';
 import type { EditorTabs } from './editor-tabs.js';
 import type { FileTree } from './file-tree.js';
+import { applyToWorkspace, workspaceState } from '../services/workspace-apply.js';
+import { planNewFile, planNewFolder } from '../services/workspace-edits.js';
+import type { Change } from '../services/workspace-edits.js';
+import type { NewEntryKind } from '../utils/file-tree-rows.js';
 import { parseWorkspaceSlugId } from '../utils/router.js';
 import { applyURLState, loadFromURL } from '../utils/url-state.js';
 import { createCompileTicker } from '../utils/compile-ticker.js';
@@ -767,6 +771,19 @@ export class WorkspaceView extends HTMLElement {
       () => this._refreshTree(),
     );
     this._refreshTree();
+    // The + in the tree (2d, step 4b): whether a typed name can be used, by the
+    // workspace's own rules (the plans of services/workspace-edits.ts), and
+    // making the new file or folder.
+    const tree = this.fileTree;
+    if (tree) tree.checkName = (kind, folder, name) => this._newEntryPlan(kind, folder, name).message ?? null;
+    this.shadowRoot!.addEventListener('create-entry', (e: Event) => {
+      const { kind, folder, name, focusEditor } = (
+        e as CustomEvent<{ kind: NewEntryKind; folder: string; name: string; focusEditor: boolean }>
+      ).detail;
+      const plan = this._newEntryPlan(kind, folder, name);
+      if (plan.change) this._applyWorkspaceChange(plan.change, { focusEditor });
+      else this._toastError('Couldn’t add it', plan.message ?? 'The workspace changed.');
+    });
 
     // Background, Grid and Precision, from the inspector's Canvas section. The
     // preview restyles itself when background or grid change in the store;
@@ -1313,6 +1330,43 @@ export class WorkspaceView extends HTMLElement {
     tree.folders = workspace.folders;
     tree.main = workspace.entryPoints[0] ?? null;
     tree.active = workspace.openFile;
+  }
+
+  /** New program, New library or New folder, planned on the workspace as it stands: the change, or why not. */
+  private _newEntryPlan(kind: NewEntryKind, folder: string, name: string): { change?: Change; message?: string } {
+    try {
+      const state = workspaceState();
+      const plan = kind === 'folder' ? planNewFolder(state, folder, name) : planNewFile(state, folder, name, kind);
+      return plan.ok ? { change: plan.change } : { message: plan.message };
+    } catch (err) {
+      return { message: err instanceof Error ? err.message : String(err) };
+    }
+  }
+
+  /**
+   * Make a planned change to the workspace (services/workspace-apply.ts), then
+   * what follows it: the file it names opens, with the keyboard in the editor
+   * unless `focusEditor` is false; the workspace saves; and the preview
+   * redraws when the change shows a program (a workspace's first). False,
+   * with a message, when the workspace changed since the plan.
+   */
+  private _applyWorkspaceChange(change: Change, options: { focusEditor?: boolean } = {}): boolean {
+    const result = applyToWorkspace(change);
+    if (!result.ok) {
+      this._toastError('Couldn’t make that change', result.message);
+      return false;
+    }
+    if (change.open !== undefined) {
+      this.openFileInEditor(change.open);
+      if (options.focusEditor !== false) this.editorPane.focusEditor();
+    }
+    autosave.onChange(workspaceNow());
+    if (change.show !== undefined) this.updatePreview();
+    return true;
+  }
+
+  private _toastError(title: string, message: string): void {
+    document.dispatchEvent(new CustomEvent('show-toast', { detail: { type: 'error', title, message } }));
   }
 
   /** While typing, the open file's icon follows `module;` a moment later, in the tabs and the tree. */

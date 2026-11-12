@@ -191,16 +191,19 @@ layer('hex').apply { circle(60, 100, 40) }`,
     name: 'File Tree',
     category: 'Editor',
     description:
-      "The workspace's files beside the editor (docs/workspace-files.md, mockup v6 screens O and J). Folders first, then files, each by name; .pathogen quiet; a library's box icon; the main's badge when it isn't main.pathogen; pathogen.json last, with a lock. Click a folder to fold it, a file to open it. One Tab stop: Up and Down move, Right and Left unfold and fold, Space opens a file, Enter opens it and goes to the editor.",
+      "The workspace's files beside the editor (docs/workspace-files.md, mockup v6 screens O, J and N). Folders first, then files, each by name; .pathogen quiet; a library's box icon; the main's badge when it isn't main.pathogen; pathogen.json last, with a lock. Click a folder to fold it, a file to open it. One Tab stop: Up and Down move, Right and Left unfold and fold, Space opens a file, Enter opens it and goes to the editor. The + adds a program, a library or a folder to the folder clicked last, else the folder of the file in the editor, else the top: a name field appears first in that folder; a taken name is refused in place; Enter creates, Esc cancels.",
     stories: [
       { name: 'A workspace with folders', props: { set: 'gears', active: 'demos/gears.pathogen' } },
       { name: 'A new workspace', props: { set: 'new', active: 'main.pathogen' } },
       { name: 'Another main, an empty folder', props: { set: 'otherMain', active: 'poster.pathogen' } },
       { name: 'pathogen.json open', props: { set: 'gears', active: 'pathogen.json' } },
       { name: 'Long names', props: { set: 'long', active: 'shapes/a-rather-long-name-for-a-star.pathogen' } },
+      { name: 'The + menu', props: { set: 'gears', active: 'parts/gears.pathogen', open: 'menu' } },
+      { name: 'A taken name', props: { set: 'gears', active: 'parts/gears.pathogen', open: 'taken' } },
     ],
     controls: [],
-    notes: 'Clicking a file here marks it, as workspace-view does when it opens the file (open-file).',
+    notes:
+      'Clicking a file here marks it, and a name accepted in the name field adds the file or folder, as workspace-view does (open-file, create-entry). Names are checked here the way the workspace checks them: a name taken in the folder, in any letter case, is refused.',
     render: (container, props) => {
       import('../components/file-tree.js')
         .then(() => {
@@ -232,12 +235,7 @@ layer('hex').apply { circle(60, 100, 40) }`,
             },
           };
           const set = SETS[String(props.set)] ?? SETS.gears;
-          const tree = document.createElement('file-tree') as HTMLElement & {
-            files: { path: string; kind: Kind }[];
-            folders: string[];
-            main: string | null;
-            active: string | null;
-          };
+          const tree = document.createElement('file-tree');
           tree.style.width = '248px';
           tree.style.height = '380px';
           tree.style.border = '1px solid var(--border-color, #ddd)';
@@ -246,9 +244,40 @@ layer('hex').apply { circle(60, 100, 40) }`,
           tree.folders = set.folders;
           tree.main = set.main;
           tree.active = String(props.active ?? set.main);
+          const join = (folder: string, name: string): string => (folder ? `${folder}/${name}` : name);
+          // A name taken in its folder, in any letter case, as the workspace's rules say.
+          tree.checkName = (kind, folder, name) => {
+            const path = join(folder, kind === 'folder' ? name : `${name}.pathogen`).toLowerCase();
+            const taken = [...tree.files.map((f) => f.path), ...tree.folders].some((p) => p.toLowerCase() === path);
+            if (!taken) return null;
+            const where = folder ? `${folder}/` : 'The top of the workspace';
+            const base = path.slice(path.lastIndexOf('/') + 1);
+            return `${where} already has ${base}${kind === 'folder' ? '/' : ''}.`;
+          };
           tree.addEventListener('open-file', (e) => {
             tree.active = (e as CustomEvent<{ path: string }>).detail.path;
           });
+          tree.addEventListener('create-entry', (e) => {
+            const { kind, folder, name } = (e as CustomEvent<{ kind: Kind | 'folder'; folder: string; name: string }>)
+              .detail;
+            if (kind === 'folder') tree.folders = [...tree.folders, join(folder, name)];
+            else {
+              const path = join(folder, `${name}.pathogen`);
+              tree.files = [...tree.files, { path, kind }];
+              tree.active = path;
+            }
+          });
+          // Two stories open the + menu, and one goes on to name a library that's taken.
+          if (props.open) {
+            const root = tree.shadowRoot!;
+            root.querySelector<HTMLButtonElement>('.add')!.click();
+            if (props.open === 'taken') {
+              root.querySelector<HTMLElement>('[data-kind="library"]')!.click();
+              const field = root.querySelector<HTMLInputElement>('.row.input input')!;
+              field.value = 'gears';
+              field.dispatchEvent(new Event('input', { bubbles: true }));
+            }
+          }
         })
         .catch((err: unknown) => console.error('File Tree story failed to load:', err));
     },

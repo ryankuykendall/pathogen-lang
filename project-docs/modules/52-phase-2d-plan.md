@@ -292,6 +292,44 @@ Each step: tests first; a storybook entry for each new component (the playground
   - Left as it is: Copy Code with `pathogen.json` open copies its text, since it copies the file in the editor; the tree works out its rows once per setter, at 20 files at most.
 - **For 4c:** an open `pathogen.json` must follow the entry points when Set as main or a rename changes them. Nothing changes them while it's open in 4a, so this waits for the edit that can.
 
+**Step 4b, adding files and folders** (2026-11-12). As v6's screen N draws it.
+- **The +** in the tree's header opens a menu: New program ("A file that draws"), New library ("Starts with `module;`"), New folder. **Upload files… and Upload folder… join it in step 6**, with the uploads themselves. The docs page already lists them; nothing ships before 2e.
+- **Its first line says where things go:** the folder you clicked last; else the folder of the file in the editor (opening another file resets it); else the top of the workspace.
+- **Keyboard:** Down or Enter on the + opens the menu with the first item focused. Up, Down, Home and End move. Escape closes it and returns to the +. Tab closes it. A click outside closes it.
+- **The name field** goes first in its folder, unfolding the folder and every folder it's in. `.pathogen` follows the typed name, since the input is sized to its text.
+  - Its line: "Starts with `module;` · Enter to create, Esc to cancel" for a library, "The only program, so it becomes the main · …" for a workspace's first program, and the keys alone otherwise.
+  - **The name is checked as you type, by the workspace's own rules:** workspace-view's `checkName` runs step 2's `planNewFile` and `planNewFolder` (a name taken in any letter case, bad characters, the 20-file limit). A refused name shows the plan's message in the field's line, and Enter does nothing; so does an empty one.
+  - Enter creates. Escape cancels and returns to the +. Leaving the field creates a good name and drops anything else, as VS Code does.
+- **Making it:** the tree reports `create-entry`. workspace-view plans it again on the workspace as it stands and makes it through **`services/workspace-apply.ts`**: every file, the folders and the program list in one store update, and the program to show when the plan says so (a workspace's first program). Then:
+  - the new file opens in a tab, with the keyboard in the editor; the preview doesn't change;
+  - a new folder takes the keyboard in the tree, so the + adds to it next;
+  - the workspace saves;
+  - the preview redraws when a program is shown.
+
+  4c's renames and moves go through the same `_applyWorkspaceChange`.
+- **A bug found on the way:** the Enter that makes a folder also folded it. workspace-view adds the folder while the keypress is still on its way up the tree, the new folder takes the keyboard at once, and the tree's own Enter (fold or unfold) then ran on it. The field's keys now stop at the field. A jsdom test adds the folder synchronously, as workspace-view does, to reproduce it.
+- **Checked:**
+  - tests:
+    - `tests/playground-file-tree.test.ts` (30): the field's place in the rows, the menu and its target, keys, a taken name, Enter, Esc, blur, folders, the first program, folding, the Enter bug;
+    - `tests/playground-workspace-apply.test.ts` (6): the typed text kept, a library, a program last in the list, a first program shown, a folder, a stale plan refused with nothing changed;
+  - `verify/verify-2d-step4b.ts` against `npm run dev:stack`, 26 checks:
+    - the menu, a taken name, Enter, the new tab and its first lines, the preview unchanged;
+    - a program last in the list, a folder kept empty with the keyboard on it, the + then adding to it, a slash making folders;
+    - Esc; the keyboard alone;
+    - the server holding the files and the program list in order; a reload;
+    - a first program shown and badged as the main; the 20-file limit; Gears taken as gears;
+    - the storybook in both themes;
+    - after the review, a redraw while a good name sits in the field (27 checks in all);
+  - screenshots `verify/2d-step4b-*.png`;
+  - the full suite: 8,785 passed.
+- **Review** (code-reviewer, no blockers). Fixed, each with a test:
+  - **A redraw while the field held a good name made the file.** Chrome blurs a focused element as it's removed, and the blur read as leaving the field. Any redraw did it, such as the icon refresh while typing elsewhere or a file arriving. The browser check confirmed Chrome's blur. The tree now ignores that blur while it redraws. jsdom doesn't blur on removal, so the browser check is the test.
+  - **A folder that couldn't be made kept its claim on the keyboard.** A folder with that path made later, by a rename or move in 4c, would have taken it. The claim now goes once the create-entry is handled and the folder isn't there.
+  - **A folder deleted while the menu was open** left the field unseen and naming stuck. The field now goes where the + adds now, and naming never stays on without a field.
+  - **The menu's keys bubbled:** its Escape could reach a dialog's or fullscreen's. They stop at the menu, as the field's do.
+  - Leaving the field to make a file no longer pulls the keyboard into the editor (`focusEditor` in the event). Tab from the menu goes on from the +. The menu closes on a resize and when the tree leaves the page. The field's line is a polite live region and changes only when what it says does, so a refusal is announced.
+  - Left as it is: the field and its line sit inside `role="tree"` without being tree items. Screen readers cope, and the field is labelled.
+
 **The v7 mockup round** (2026-11-09, commit `5c8f925`): note 53, `phase-2-mockups-v7/`. Five screens: no programs left, folders and moving, narrow screens, the mini-workspace, the ⋮ menu. It also draws what v6 left out (renaming a file, Move to…, dragging a file). Six questions await you; steps 4 and 9 wait for them.
 - *Answered 2026-11-09: all six agreed* (note 53, "Your answers"). What that adds to the steps:
   - step 2: each change can be undone (the toast's Undo); a rename takes a name only, no slash and no extension; Move to…; the first program in an empty workspace is shown;

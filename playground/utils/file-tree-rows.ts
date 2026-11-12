@@ -9,6 +9,9 @@ import { MAIN_FILE } from '../services/workspace-files.js';
 
 export type TreeFileKind = 'program' | 'library';
 
+/** What the + menu adds. */
+export type NewEntryKind = TreeFileKind | 'folder';
+
 /** A .pathogen file of the workspace, by its workspace path (no leading slash). */
 export interface TreeFile {
   path: string;
@@ -32,6 +35,8 @@ export type TreeRow =
   | (RowBase & { type: 'file'; kind: TreeFileKind; main: boolean })
   /** The line under an open folder that holds nothing. Not a tree item. */
   | { type: 'empty'; path: string; name: string; level: number }
+  /** The name field of New program, New library or New folder (step 4b): first in its folder. Not a tree item. */
+  | { type: 'input'; path: string; name: string; level: number; kind: NewEntryKind }
   /** pathogen.json: read-only, written from the entry points. */
   | (RowBase & { type: 'project' });
 
@@ -48,12 +53,19 @@ function byName(a: string, b: string): number {
  * them (the empty ones; the others come from the files' paths). A folder in
  * `collapsed` hides everything in it. `main` is the first entry point: it gets
  * a badge unless it's `main.pathogen`, which is the main by convention.
+ * `naming` puts the name field first in its folder ('' for the top), in place
+ * of an empty folder's "Empty" line.
  */
 export function treeRows(
   files: readonly TreeFile[],
   folders: readonly string[],
-  options: { collapsed: ReadonlySet<string>; main: string | null },
+  options: {
+    collapsed: ReadonlySet<string>;
+    main: string | null;
+    naming?: { folder: string; kind: NewEntryKind } | null;
+  },
 ): TreeRow[] {
+  const naming = options.naming ?? null;
   // Every folder, with the folders it's in.
   const allFolders = new Set<string>();
   const addFolder = (folder: string): void => {
@@ -78,6 +90,7 @@ export function treeRows(
     const dirs = [...(subfolders.get(folder) ?? [])].sort((a, b) => byName(baseOf(a), baseOf(b)));
     const leaves = [...(filesIn.get(folder) ?? [])].sort((a, b) => byName(baseOf(a.path), baseOf(b.path)));
     const setsize = dirs.length + leaves.length + extra;
+    if (naming?.folder === folder) rows.push({ type: 'input', path: folder, name: '', level, kind: naming.kind });
     let posinset = 0;
     for (const dir of dirs) {
       posinset += 1;
@@ -85,7 +98,7 @@ export function treeRows(
       const expanded = !options.collapsed.has(dir);
       rows.push({ type: 'folder', path: dir, name: baseOf(dir), level, posinset, setsize, expanded, empty });
       if (!expanded) continue;
-      if (empty) rows.push({ type: 'empty', path: dir, name: 'Empty', level: level + 1 });
+      if (empty && naming?.folder !== dir) rows.push({ type: 'empty', path: dir, name: 'Empty', level: level + 1 });
       else walk(dir, level + 1, 0);
     }
     for (const file of leaves) {
@@ -97,7 +110,7 @@ export function treeRows(
   };
   // The top level has one more item: pathogen.json, last.
   walk('', 1, 1);
-  const top = rows.filter((r) => r.type !== 'empty' && r.level === 1).length + 1;
+  const top = rows.filter((r) => r.type !== 'empty' && r.type !== 'input' && r.level === 1).length + 1;
   rows.push({ type: 'project', path: PROJECT_FILE, name: PROJECT_FILE, level: 1, posinset: top, setsize: top });
   return rows;
 }
