@@ -1,0 +1,166 @@
+<!-- v9's parts. build.ts puts them into v8's built page (phase-2-mockups-v8/multi-file-mockup-v8.html,
+     read in place): the CSS at the end of its <style>, the harness button in place of v8's, the
+     section in place of v8's, and the script in place of v8's screen table. The function
+     declarations in the script come after v8's, so they replace v8's functions of the same name. -->
+
+<!-- @@CSS -->
+  /* Option A: the editor says where New program is, with an arrow toward the preview */
+  .ed-point { display: inline-flex; align-items: center; gap: 6px; padding: 5px 11px; border-radius: 999px; background: var(--secondary-accent-subtle); color: var(--secondary-accent-text); font-size: 12px; font-weight: 600; }
+  .ed-point svg { width: 14px; height: 14px; }
+
+  /* The three options side by side, below the window */
+  .q2-side { max-width: 1280px; margin: -16px auto 40px; padding: 0 20px; }
+  .q2-side > h3 { color: var(--text-primary); font-size: 13px; margin: 0 0 4px; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; }
+  .q2-side > p { margin: 0 0 10px; font-size: 13px; color: var(--text-secondary); }
+  .q2-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+  .q2-card h4 { margin: 0 0 6px; font-size: 13px; font-weight: 600; color: var(--text-primary); display: flex; align-items: center; gap: 6px; }
+  .q2-ed { height: 290px; display: flex; border: 1px solid var(--border-color); border-radius: 10px; overflow: hidden; background: var(--cm-host-bg); }
+  .q2-ed .ed-empty { flex: 1; }
+  .q2-card .cap { margin: 6px 0 0; font-size: 12px; color: var(--text-secondary); }
+  .q2-card .cap b { color: var(--text-primary); font-weight: 600; }
+  .notes .why { margin: 8px 0 0; }
+
+<!-- @@NAV -->
+    <button data-s="nofile2" aria-pressed="true">Z · No file open, round 2</button>
+
+<!-- @@SECTIONS -->
+<!-- ============ Z, ROUND 2. NO FILE OPEN ============ -->
+<section class="screen active" id="s-nofile2">
+  <div class="notes">
+    <h2>Z · No file open, round 2 <span class="tag ask">question 2, for your review</span></h2>
+    <table class="cmp">
+      <tr><th></th><th>v8 (before)</th><th>v9 (now)</th></tr>
+      <tr><td>The editor's button</td><td>Opened the program the preview shows</td><td><b>Always opens the main</b>: your answer 1 (2026-11-12). States 1 and 2.</td></tr>
+      <tr><td>With no program at all</td><td>One way drawn: the editor points to the preview's New program</td><td><b>Three ways drawn</b>, A, B and C, so you can choose (question 2). States 3 to 8, and side by side below the window.</td></tr>
+    </table>
+    <div class="cols">
+      <div>
+        <h3>When question 2 comes up</h3>
+        <ul>
+          <li>Only when the workspace has <b>no program</b>: every file is a library, or there are no files at all. Then there's no main for the editor's button to open.</li>
+          <li>The preview already has a <b>New program</b> button then (v7, screen X, approved). The question is what the editor shows beside it.</li>
+        </ul>
+      </div>
+      <div>
+        <h3>Why A</h3>
+        <ul>
+          <li><b>One action, one place.</b> Two buttons that do the same thing (B) make people wonder how they differ.</li>
+          <li><b>Opening a library (C) doesn't help draw anything</b>, and any file in the tree already opens with a click.</li>
+        </ul>
+      </div>
+    </div>
+    <table class="cmp">
+      <tr><th>Option</th><th>The editor shows</th><th>New program buttons on screen</th><th>With no files at all</th></tr>
+      <tr><td>A <span class="tag rec">recommended</span></td><td>No button. Its text, and a pointer toward the preview, say where New program is.</td><td>One: the preview's</td><td>The same</td></tr>
+      <tr><td>B <span class="tag alt">alternative</span></td><td>Its own New program button, which does what the preview's does</td><td>Two, that do the same thing</td><td>The same</td></tr>
+      <tr><td>C <span class="tag alt">alternative</span></td><td>A button that opens the first file in the tree, a library</td><td>One: the preview's</td><td>Nothing to open, so it's A</td></tr>
+    </table>
+  </div>
+  <div class="statebar" id="st-nofile2">
+    <span class="lbl">State</span>
+    <button data-st="main" aria-pressed="true">1 · The main shown</button>
+    <button data-st="other">2 · Another program shown</button>
+    <button data-st="libs-a">3 · A, only libraries</button>
+    <button data-st="libs-b">4 · B, only libraries</button>
+    <button data-st="libs-c">5 · C, only libraries</button>
+    <button data-st="none-a">6 · A, no files</button>
+    <button data-st="none-b">7 · B, no files</button>
+    <button data-st="none-c">8 · C, no files</button>
+  </div>
+  <div class="statedesc" id="sd-nofile2"></div>
+  <div class="frame-out"><div class="window" id="w-nofile2"></div></div>
+  <div class="q2-side">
+    <h3>Side by side: the editor when every file is a library</h3>
+    <p>The preview beside it is the same in all three: No program to show, and its New program button (state 3 shows the whole window).</p>
+    <div class="q2-grid" id="q2-grid"></div>
+  </div>
+</section>
+
+<!-- @@SCRIPT -->
+/* ===================== v9 ===================== */
+/* Everything above this point is v8's page (v6's kit, v7's parts, v8's screen), unchanged. The
+   function declarations below replace v8's functions of the same name. */
+
+const ARROW_R = sv('<path d="M5 12h14"/><path d="m13 6 6 6-6 6"/>');
+/* The first file in a tree, as the tree lists it */
+const firstFile = c => (TREES[c.tree] || []).find(r => r.p)?.p;
+
+/* ---------- the editor with no file open: answer 1 (the main), and question 2's three ways ---------- */
+function edEmpty(c) {
+  let heading = 'No file open', text, acts = '', small = '', point = '';
+  if (c.noPrograms) {
+    const opt = c.q2 || 'a';
+    const what = c.noFiles ? 'This workspace is empty.' : 'Every file here is a library, so nothing draws yet.';
+    if (c.noFiles) heading = 'No files yet';
+    const first = c.noFiles ? null : firstFile(c);
+    if (opt === 'b') {
+      /* B: the editor's own New program, beside the preview's */
+      text = `${what} Start a program, or ${c.noFiles ? 'add your own files with the <b>+</b> in the Files header' : 'click a library in the tree to edit it'}.`;
+      acts = `<div class="acts"><button class="btn-p">${I.plus}New program</button></div>`;
+      small = '<small>It goes at the top of the workspace, and it will be the main.</small>';
+    } else if (opt === 'c' && first) {
+      /* C: open the first file in the tree */
+      text = `${what} Open one to edit it, or start a program with <b>New program</b> in the preview.`;
+      acts = `<div class="acts"><button class="btn-p">${I.lib}Open ${esc(first)}.pathogen</button></div>`;
+      small = `<small>${UNDO_LINE}</small>`;
+    } else {
+      /* A (and C with nothing to open): no button; a pointer toward the preview's New program */
+      text = `${what} ${c.noFiles ? 'Add your own files with the <b>+</b> in the Files header, or start a program in the preview.' : 'Click one in the tree to edit it, or start a program in the preview.'}`;
+      point = `<div class="ed-point">New program is in the preview ${ARROW_R}</div>`;
+    }
+  } else {
+    /* Answer 1: the button always opens the main, whatever the preview shows */
+    const main = `${primaryOf(c)}.pathogen`;
+    text = `The workspace's main is <code>${esc(main)}</code>. Open it, or ${c.filesHidden ? 'show the files to pick another' : 'click any file in the tree'}.`;
+    acts = `<div class="acts"><button class="btn-p">${I.prog}Open ${esc(main)}</button>${c.filesHidden ? '<button class="btn-g">Show files</button>' : ''}</div>`;
+    if (!c.justDeleted) small = `<small>${UNDO_LINE}</small>`;
+  }
+  return `<div class="ed-empty"><div class="ed-empty-in">
+    <div class="ed-empty-ic">${I.code}</div>
+    <h3>${heading}</h3>
+    <p>${text}</p>
+    ${acts}${point}${small}
+  </div></div>`;
+}
+
+/* ---------- the screen and its states ---------- */
+const NONE_OPEN = { open: null, tabs: [] };
+const nothingOpen = o => C(Object.assign({}, NONE_OPEN, o));
+const LIBS = { tree: 'libsOnly', shown: null, entry: [], noPrograms: true };
+const NONE = { tree: 'none', shown: null, entry: [], noPrograms: true, noFiles: true };
+const SCREENS = {
+  nofile2: { states: {
+    'main': [nothingOpen({}),
+      '<b>Answer 1.</b> You closed <b>main</b>, the last tab. The preview shows the main, and the editor offers to open it.'],
+    'other': [nothingOpen({ shown: 'try-sizes' }),
+      '<b>Answer 1.</b> The chip shows <b>try-sizes</b>, and you closed every tab. The button still opens the main, main.pathogen; try-sizes opens from the tree.'],
+    'libs-a': [nothingOpen(Object.assign({ q2: 'a' }, LIBS)),
+      '<b>A</b>, every file a library. One New program, in the preview. The editor has no button: its pointer says where New program is.'],
+    'libs-b': [nothingOpen(Object.assign({ q2: 'b' }, LIBS)),
+      '<b>B</b>, every file a library. The editor has its own New program too: two buttons on screen that do the same thing.'],
+    'libs-c': [nothingOpen(Object.assign({ q2: 'c' }, LIBS)),
+      '<b>C</b>, every file a library. The editor\'s button opens <b>parts/gears.pathogen</b>, the first file in the tree. New program stays in the preview.'],
+    'none-a': [nothingOpen(Object.assign({ q2: 'a' }, NONE)),
+      '<b>A</b>, no files at all. The editor points to the preview\'s New program, and to the <b>+</b> for your own files.'],
+    'none-b': [nothingOpen(Object.assign({ q2: 'b' }, NONE)),
+      '<b>B</b>, no files at all. Two New program buttons, the editor\'s and the preview\'s.'],
+    'none-c': [nothingOpen(Object.assign({ q2: 'c' }, NONE)),
+      '<b>C</b>, no files at all. There\'s no file for its button to open, so C looks like A here.'],
+  } },
+};
+
+/* ---------- the three ways side by side (after the page's own script has run) ---------- */
+setTimeout(() => {
+  const grid = document.getElementById('q2-grid');
+  if (!grid) return;
+  const cards = [
+    ['a', 'A · Points to the preview <span class="tag rec">recommended</span>', 'New program buttons on screen: <b>one</b>, the preview\'s.'],
+    ['b', 'B · Its own New program too', 'New program buttons on screen: <b>two</b>, this one and the preview\'s.'],
+    ['c', 'C · Opens the first file', 'New program buttons on screen: <b>one</b>, the preview\'s. The button opens a library.'],
+  ];
+  grid.innerHTML = cards.map(([q2, title, cap]) => `<div class="q2-card">
+      <h4>${title}</h4>
+      <div class="q2-ed">${edEmpty(nothingOpen(Object.assign({ q2 }, LIBS)))}</div>
+      <p class="cap">${cap}</p>
+    </div>`).join('');
+}, 0);

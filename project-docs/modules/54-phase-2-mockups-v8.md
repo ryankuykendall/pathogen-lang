@@ -45,6 +45,13 @@ Settled without a question, from what's already decided or built:
 - Was: "**Copy Code** copies the file in the editor."
   Now: "**Copy Code** copies the file in the editor. With no file open, it's off."
 
+## Your answers (2026-11-12), in your words
+
+"Answers: 1. Always main; 2. Can you mock-up this concept so that I can better understand what you are proposing? Then I can make a decision and we can proceed."
+
+- Question 1: **the button always opens the main**, not the program the preview shows.
+- Question 2: open. v9 draws the three ways side by side (note 55, `phase-2-mockups-v9/`).
+
 ## After your review
 
 - Fold the answers into the docs page (the two lines above).
