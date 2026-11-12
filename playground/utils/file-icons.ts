@@ -23,6 +23,14 @@ export const FILE_ICONS = {
   folder: icon('<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>'),
   /** A folder's fold control: points down when open (the tree turns it for a folded one). */
   chevron: icon('<path d="m6 9 6 6 6-6"/>'),
+  /** A row's own menu (⋮), and what it offers (step 4c). */
+  kebab:
+    '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" focusable="false"><circle cx="12" cy="5" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="12" cy="19" r="1.8"/></svg>',
+  star: icon('<path d="m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z"/>'),
+  copy: icon(
+    '<rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>',
+  ),
+  trash: icon('<path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/>'),
   /** The tree's + (add a file or folder), and New folder in its menu. */
   plus: icon('<path d="M12 5v14M5 12h14"/>'),
   folderPlus: icon(

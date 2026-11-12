@@ -47,8 +47,18 @@ import type { CanvasChangeDetail, CanvasSettings } from './canvas-panel.js';
 import type { EditorTabs } from './editor-tabs.js';
 import type { FileTree } from './file-tree.js';
 import { applyToWorkspace, workspaceState } from '../services/workspace-apply.js';
-import { planNewFile, planNewFolder } from '../services/workspace-edits.js';
-import type { Change } from '../services/workspace-edits.js';
+import {
+  deleteSummary,
+  planDelete,
+  planDuplicate,
+  planNewFile,
+  planNewFolder,
+  planSetMain,
+} from '../services/workspace-edits.js';
+import type { Change, Planned } from '../services/workspace-edits.js';
+import './shared/confirm-dialog.js';
+import type { ConfirmDialog } from './shared/confirm-dialog.js';
+import { deleteQuestion } from '../utils/delete-question.js';
 import type { NewEntryKind } from '../utils/file-tree-rows.js';
 import { parseWorkspaceSlugId } from '../utils/router.js';
 import { applyURLState, loadFromURL } from '../utils/url-state.js';
@@ -94,6 +104,9 @@ export class WorkspaceView extends HTMLElement {
 
   // Feeds the inspector's Canvas section (Background, Grid, Precision) from the store.
   private _canvasUnsubscribe: (() => void) | null = null;
+
+  // A question the workspace asked (Delete…), withdrawn if the view goes while it's open.
+  private _openDialog: ConfirmDialog | null = null;
 
   // Each file's hash for the thumbnail's change check, by its text (_contentHash).
   private _fileHashes = new Map<string, { text: string; hash: string }>();
@@ -347,6 +360,8 @@ export class WorkspaceView extends HTMLElement {
     code: string;
     resetFiles: (path: string, text: string) => void;
     showFile: (path: string, text: string) => void;
+    forgetFiles: (paths: string[]) => void;
+    refreshShown: (text: string) => void;
     focusEditor: () => void;
     replaceDocument: (text: string) => void;
     highlightError: (line: number, col: number) => void;
@@ -784,6 +799,20 @@ export class WorkspaceView extends HTMLElement {
       if (plan.change) this._applyWorkspaceChange(plan.change, { focusEditor });
       else this._toastError('Couldn’t add it', plan.message ?? 'The workspace changed.');
     });
+    // A row's own menu (2d, step 4c): Set as main, Duplicate, Delete….
+    this.shadowRoot!.addEventListener('file-action', (e: Event) => {
+      const { action, path } = (e as CustomEvent<{ action: string; path: string }>).detail;
+      if (action === 'delete') {
+        this._deleteEntry(path).catch((err: unknown) => console.warn('Delete failed:', err));
+      } else if (action === 'set-main') {
+        this._planAndApply('Couldn’t set the main', () => planSetMain(workspaceState(), path));
+      } else if (action === 'duplicate') {
+        const made = this._planAndApply('Couldn’t duplicate it', () => planDuplicate(workspaceState(), path));
+        // The copy doesn't open; the keyboard goes to it in the tree, so you see where it went.
+        const copy = made?.steps.find((step) => step.kind === 'add');
+        if (copy?.kind === 'add') this.fileTree?.focusRow(copy.path);
+      }
+    });
 
     // Background, Grid and Precision, from the inspector's Canvas section. The
     // preview restyles itself when background or grid change in the store;
@@ -1128,6 +1157,9 @@ export class WorkspaceView extends HTMLElement {
     this._treeUnsubscribe = null;
     this._canvasUnsubscribe?.();
     this._canvasUnsubscribe = null;
+    // A question still open when the view goes is withdrawn: it says no, and nothing is deleted.
+    this._openDialog?.cancel();
+    this._openDialog = null;
     if (this._tabsTimer) clearTimeout(this._tabsTimer);
     this._tabsTimer = null;
     if (this._handleFormatDocument) document.removeEventListener('format-document', this._handleFormatDocument);
@@ -1351,18 +1383,86 @@ export class WorkspaceView extends HTMLElement {
    * with a message, when the workspace changed since the plan.
    */
   private _applyWorkspaceChange(change: Change, options: { focusEditor?: boolean } = {}): boolean {
-    const result = applyToWorkspace(change);
+    const shownBefore = store.get('openFile');
+    const result = applyToWorkspace(change, this.editorPane);
     if (!result.ok) {
       this._toastError('Couldn’t make that change', result.message);
       return false;
     }
+    // A deleted file's readings go with it.
+    for (const path of result.removed) {
+      this._libraryReadings.delete(path);
+      this._fileHashes.delete(path);
+    }
+    // The editor shows another file now (the one shown was deleted): give it its marks.
+    if (store.get('openFile') !== shownBefore) this._afterFileShown();
     if (change.open !== undefined) {
       this.openFileInEditor(change.open);
       if (options.focusEditor !== false) this.editorPane.focusEditor();
     }
     autosave.onChange(workspaceNow());
-    if (change.show !== undefined) this.updatePreview();
+    // A program to show, or a file gone (it may be the program shown, or one it imports).
+    if (change.show !== undefined || result.removed.length > 0) this.updatePreview();
+    if (change.message) {
+      document.dispatchEvent(new CustomEvent('show-toast', { detail: { type: 'success', title: change.message } }));
+    }
     return true;
+  }
+
+  /** Plan a change on the workspace as it stands and make it, or say why it can't be made. The change made, or null. */
+  private _planAndApply(failTitle: string, plan: () => Planned): Change | null {
+    let planned: Planned;
+    try {
+      planned = plan();
+    } catch (err) {
+      planned = { ok: false, message: err instanceof Error ? err.message : String(err) };
+    }
+    if (!planned.ok) {
+      this._toastError(failTitle, planned.message);
+      return null;
+    }
+    return this._applyWorkspaceChange(planned.change, { focusEditor: false }) ? planned.change : null;
+  }
+
+  /**
+   * Delete… on a file or folder: ask first, naming the files that go and the
+   * files that import them (mockup v7 screen F); then delete, and put the
+   * keyboard on the row after it in the tree.
+   */
+  private async _deleteEntry(path: string): Promise<void> {
+    const state = workspaceState();
+    const isFolder = !(path in state.files);
+    const workspaceId = store.get('workspaceId');
+    let summary;
+    try {
+      summary = deleteSummary(state, path);
+    } catch (err) {
+      this._toastError('Couldn’t delete it', err instanceof Error ? err.message : String(err));
+      return;
+    }
+    const tree = this.fileTree;
+    const next = tree?.rowAfterRemoval(path) ?? null;
+    const dialog = document.createElement('confirm-dialog');
+    document.body.append(dialog);
+    this._openDialog = dialog;
+    const yes = await dialog.ask(deleteQuestion(path, isFolder, summary));
+    this._openDialog = null;
+    if (!yes) {
+      if (this.isConnected && !tree?.focusRow(path)) tree?.focusTabStop();
+      return;
+    }
+    // The page stayed open while the question was: delete only what it named. Another
+    // workspace now, or other files going or importing them, and nothing is deleted.
+    const now = store.get('workspaceId') === workspaceId ? deleteSummary(workspaceState(), path) : null;
+    if (!this.isConnected || JSON.stringify(now) !== JSON.stringify(summary)) {
+      this._toastError(
+        'Nothing was deleted',
+        'The workspace changed while the question was open. Choose Delete… again to see what goes now.',
+      );
+      return;
+    }
+    this._planAndApply('Couldn’t delete it', () => planDelete(workspaceState(), path));
+    if (next === null || !tree?.focusRow(next)) tree?.focusTabStop();
   }
 
   private _toastError(title: string, message: string): void {

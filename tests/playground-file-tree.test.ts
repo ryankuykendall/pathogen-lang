@@ -305,6 +305,165 @@ describe('the file-tree component', () => {
   });
 });
 
+// Step 4c (mockup v6 screen E, v7 screen F): each file's and folder's own menu,
+// from its ⋮, a right-click or the menu key. The tree reports a choice as
+// `file-action`; a folder's New items name the new file in that folder.
+describe('the row menus', () => {
+  beforeAll(async () => {
+    await import('../playground/components/file-tree.js');
+  });
+
+  let tree: FileTreeEl & {
+    checkName: (() => null) | null;
+    rowAfterRemoval: (path: string) => string | null;
+    focusRow: (path: string) => boolean;
+    focusTabStop: () => void;
+  };
+  let actions: { action: string; path: string }[];
+
+  beforeEach(() => {
+    document.body.innerHTML = '';
+    tree = document.createElement('file-tree') as typeof tree;
+    document.body.appendChild(tree);
+    tree.files = GEARS;
+    tree.folders = [];
+    tree.main = 'main.pathogen';
+    tree.active = 'main.pathogen';
+    tree.checkName = () => null;
+    actions = [];
+    tree.addEventListener('file-action', (e) =>
+      actions.push((e as Event & { detail: { action: string; path: string } }).detail),
+    );
+  });
+
+  const row = (path: string) => tree.shadowRoot!.querySelector<HTMLElement>(`[role="treeitem"][data-path="${path}"]`)!;
+  const dots = (path: string) => row(path).querySelector<HTMLButtonElement>('.row-menu');
+  const menu = () => tree.shadowRoot!.querySelector<HTMLElement>('[role="menu"]')!;
+  const labels = () =>
+    [...menu().querySelectorAll('[role="menuitem"] .label, [role="separator"]')].map((el) =>
+      el.getAttribute('role') === 'separator' ? '—' : el.textContent,
+    );
+  const choose = (label: string) =>
+    [...menu().querySelectorAll<HTMLElement>('[role="menuitem"]')]
+      .find((item) => item.querySelector('.label')!.textContent === label)!
+      .click();
+  const focused = () => tree.shadowRoot!.activeElement as HTMLElement | null;
+  const key = (target: Element, k: string) => {
+    const init = { key: k, bubbles: true, composed: true, cancelable: true };
+    return target.dispatchEvent(new window.KeyboardEvent('keydown', init));
+  };
+
+  it('files and folders have a ⋮; pathogen.json has its lock instead', () => {
+    expect(dots('parts/kit.pathogen')!.getAttribute('title')).toBe('More');
+    expect(dots('parts')).not.toBeNull();
+    expect(dots('pathogen.json')).toBeNull();
+  });
+
+  it('a program’s menu offers Set as main; the main’s and a library’s don’t', () => {
+    dots('try-sizes.pathogen')!.click();
+    expect(labels()).toEqual(['Set as main', '—', 'Duplicate', '—', 'Delete…']);
+    dots('main.pathogen')!.click();
+    expect(labels()).toEqual(['Duplicate', '—', 'Delete…']);
+    dots('parts/kit.pathogen')!.click();
+    expect(labels()).toEqual(['Duplicate', '—', 'Delete…']);
+  });
+
+  it('a folder’s menu adds to that folder, then Delete…', () => {
+    dots('demos')!.click();
+    expect(menu().querySelector('.menu-head')!.textContent).toBe('Add to demos/');
+    expect(labels()).toEqual(['New program', 'New library', 'New folder', '—', 'Delete…']);
+  });
+
+  it('the ⋮ shows it’s open, and a second click closes the menu', () => {
+    dots('parts/kit.pathogen')!.click();
+    expect([menu().hidden, dots('parts/kit.pathogen')!.classList.contains('on')]).toEqual([false, true]);
+    expect(row('parts/kit.pathogen').classList.contains('menu-open')).toBe(true);
+    dots('parts/kit.pathogen')!.click();
+    expect([menu().hidden, dots('parts/kit.pathogen')!.classList.contains('on')]).toEqual([true, false]);
+  });
+
+  it('a right-click, or the menu key, on a row opens its menu', () => {
+    const event = new window.MouseEvent('contextmenu', { bubbles: true, composed: true, cancelable: true });
+    row('try-sizes.pathogen').dispatchEvent(event);
+    expect([event.defaultPrevented, menu().hidden, labels()[0]]).toEqual([true, false, 'Set as main']);
+  });
+
+  it('choosing reports the action and the row; Escape returns to the row', () => {
+    dots('try-sizes.pathogen')!.click();
+    choose('Set as main');
+    dots('parts')!.click();
+    choose('Delete…');
+    expect(actions).toEqual([
+      { action: 'set-main', path: 'try-sizes.pathogen' },
+      { action: 'delete', path: 'parts' },
+    ]);
+    dots('parts/kit.pathogen')!.click();
+    key(focused()!, 'Escape');
+    expect([menu().hidden, focused()]).toEqual([true, row('parts/kit.pathogen')]);
+  });
+
+  it('opening a menu doesn’t open the file', () => {
+    const opened: unknown[] = [];
+    tree.addEventListener('open-file', (e) => opened.push(e));
+    dots('parts/kit.pathogen')!.click();
+    expect(opened).toEqual([]);
+  });
+
+  it('a folder’s New program names the file in that folder', () => {
+    tree.active = 'parts/gears.pathogen';
+    dots('demos')!.click();
+    choose('New program');
+    const order = [...tree.shadowRoot!.querySelectorAll<HTMLElement>('.list > .row')].map(
+      (r) => r.dataset.path ?? (r.classList.contains('input') ? '[field]' : ''),
+    );
+    expect(order.slice(0, 2)).toEqual(['demos', '[field]']);
+  });
+
+  it('Shift+F10 and the menu key open it from the keyboard (a Mac sends no contextmenu for them)', () => {
+    row('parts/kit.pathogen').focus();
+    const init = { key: 'F10', shiftKey: true, bubbles: true, cancelable: true };
+    const shiftF10 = new window.KeyboardEvent('keydown', init);
+    row('parts/kit.pathogen').dispatchEvent(shiftF10);
+    const opened = [shiftF10.defaultPrevented, menu().hidden, focused()?.getAttribute('role')];
+    expect(opened).toEqual([true, false, 'menuitem']);
+    // Where the browser also sends contextmenu for the same key, the menu stays open.
+    row('parts/kit.pathogen').dispatchEvent(new window.MouseEvent('contextmenu', { bubbles: true, cancelable: true }));
+    expect(menu().hidden).toBe(false);
+    key(focused()!, 'Escape');
+    key(row('parts'), 'ContextMenu');
+    expect(labels()[0]).toBe('New program');
+  });
+
+  it('the ⋮ adds nothing to a row’s name; the row says it has a menu', () => {
+    const hiddenDots = dots('parts/kit.pathogen')!.getAttribute('aria-hidden');
+    expect([hiddenDots, row('parts/kit.pathogen').getAttribute('aria-haspopup')]).toEqual(['true', 'menu']);
+    expect(row('pathogen.json').getAttribute('aria-haspopup')).toBeNull();
+  });
+
+  it('closes when the tree scrolls, and a redraw that takes its row leaves the keyboard in the tree', () => {
+    dots('parts/kit.pathogen')!.click();
+    tree.shadowRoot!.querySelector('.list')!.dispatchEvent(new window.Event('scroll'));
+    expect(menu().hidden).toBe(true);
+    dots('parts/kit.pathogen')!.click();
+    expect(focused()?.getAttribute('role')).toBe('menuitem');
+    tree.files = GEARS.filter((f) => f.path !== 'parts/kit.pathogen');
+    expect(menu().hidden).toBe(true);
+    expect(focused()?.getAttribute('role')).toBe('treeitem');
+  });
+
+  it('after a row goes, the keyboard can go to the row after it, else the one before', () => {
+    expect(tree.rowAfterRemoval('parts')).toBe('main.pathogen');
+    expect(tree.rowAfterRemoval('demos/gears.pathogen')).toBe('parts');
+    expect(tree.rowAfterRemoval('try-sizes.pathogen')).toBe('pathogen.json');
+    expect(tree.focusRow('parts')).toBe(true);
+    expect(focused()).toBe(row('parts'));
+    // A row that isn't there: false, and the keyboard goes to the tree's Tab stop instead.
+    expect(tree.focusRow('gone.pathogen')).toBe(false);
+    tree.focusTabStop();
+    expect(focused()?.tabIndex).toBe(0);
+  });
+});
+
 // Step 4b (mockup v6 screen N): the "+" in the header, its menu, and the name
 // field. The tree asks workspace-view whether a name can be used (checkName,
 // the workspace's own rules) and reports a good one as `create-entry`.
@@ -393,6 +552,13 @@ describe('adding files and folders', () => {
     tree.active = 'parts/kit.pathogen';
     plus().click();
     expect($('.menu-head')!.textContent).toBe('Add to parts/');
+  });
+
+  it('adds to the folder of the row you’re on, a file row too (mockup v6 screen N)', () => {
+    tree.active = 'main.pathogen';
+    tree.shadowRoot!.querySelector<HTMLElement>('[data-path="demos/gears.pathogen"]')!.focus();
+    plus().click();
+    expect($('.menu-head')!.textContent).toBe('Add to demos/');
   });
 
   it('moves with the arrow keys, and Escape closes it and returns to the +', () => {

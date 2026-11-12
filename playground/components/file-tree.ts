@@ -15,6 +15,12 @@
 //                   focusEditor }        accepted: Enter (focusEditor), or
 //                                        leaving the field (the keyboard stays
 //                                        where you went)
+//   file-action   { action, path }       a row's own menu (step 4c): set-main,
+//                                        duplicate or delete; workspace-view
+//                                        asks before a delete
+// Each file's and folder's ⋮, a right-click or the menu key opens its menu;
+// a folder's menu adds to that folder. rowAfterRemoval and focusRow let
+// workspace-view put the keyboard back in the tree after a dialog.
 // Folding is the tree's own: a folded folder stays folded while the tree lives.
 //
 // Keyboard (the WAI-ARIA tree pattern): one Tab stop; Up and Down move; Right
@@ -24,8 +30,9 @@
 // move; Escape closes it; Enter or Space chooses. The name field: Enter
 // creates, Escape cancels.
 //
-// Where the + adds: the folder you clicked last, else the folder of the file
-// in the editor (opening a file resets it), else the top of the workspace.
+// Where the + adds: the folder of the row you're on (clicked or reached with
+// the keyboard; a file row gives its folder), else the folder of the file in
+// the editor (opening a file resets the row), else the top of the workspace.
 
 import { FILE_ICONS } from '../utils/file-icons.js';
 import { treeRows } from '../utils/file-tree-rows.js';
@@ -44,12 +51,54 @@ const KEYS_HINT = 'Enter to create, Esc to cancel';
 /** Why a name can't be used (the message), or null when it can. */
 export type NameCheck = (kind: NewEntryKind, folder: string, name: string) => string | null;
 
-/** The + menu's items (Upload files… and Upload folder… join them in step 6). */
-const ADD_ITEMS: { kind: NewEntryKind; label: string; detail: string; icon: string }[] = [
-  { kind: 'program', label: 'New program', detail: 'A file that draws', icon: FILE_ICONS.program },
-  { kind: 'library', label: 'New library', detail: 'Starts with <code>module;</code>', icon: FILE_ICONS.library },
-  { kind: 'folder', label: 'New folder', detail: '', icon: FILE_ICONS.folderPlus },
+/** What a menu item does: name a new file or folder (the tree's own), or a file-action for workspace-view. */
+export type MenuAction = 'new-program' | 'new-library' | 'new-folder' | 'set-main' | 'duplicate' | 'delete';
+
+interface MenuItem {
+  action: MenuAction;
+  label: string;
+  /** A line under the label; may hold <code>. */
+  detail?: string;
+  icon: string;
+  danger?: boolean;
+}
+
+type MenuEntry = MenuItem | 'divider';
+
+const NEW_KIND: Partial<Record<MenuAction, NewEntryKind>> = {
+  'new-program': 'program',
+  'new-library': 'library',
+  'new-folder': 'folder',
+};
+
+/** The + menu's items, and a folder's menu's first ones (Upload files… and Upload folder… join them in step 6). */
+const ADD_ITEMS: MenuItem[] = [
+  { action: 'new-program', label: 'New program', detail: 'A file that draws', icon: FILE_ICONS.program },
+  { action: 'new-library', label: 'New library', detail: 'Starts with <code>module;</code>', icon: FILE_ICONS.library },
+  { action: 'new-folder', label: 'New folder', icon: FILE_ICONS.folderPlus },
 ];
+
+const SET_MAIN: MenuItem = {
+  action: 'set-main',
+  label: 'Set as main',
+  detail: 'Puts it first in pathogen.json. Thumbnails and publishing use the main',
+  icon: FILE_ICONS.star,
+};
+const DUPLICATE: MenuItem = { action: 'duplicate', label: 'Duplicate', icon: FILE_ICONS.copy };
+const DELETE_FILE: MenuItem = { action: 'delete', label: 'Delete…', icon: FILE_ICONS.trash, danger: true };
+const DELETE_FOLDER: MenuItem = { ...DELETE_FILE, detail: 'The folder and its files, after asking' };
+
+/** "Add to parts/" or "Add at the top": where a New item puts the file. */
+const addHead = (folder: string): string => (folder ? `Add to <code>${esc(folder)}/</code>` : 'Add at the top');
+
+function menuHtml(head: string | null, entries: MenuEntry[]): string {
+  const items = entries.map((entry) => {
+    if (entry === 'divider') return '<div class="menu-divider" role="separator"></div>';
+    const detail = entry.detail ? `<small>${entry.detail}</small>` : '';
+    return `<button type="button" role="menuitem" tabindex="-1" data-action="${entry.action}"${entry.danger ? ' class="danger"' : ''}><span class="icon">${entry.icon}</span><span><span class="label">${entry.label}</span>${detail}</span></button>`;
+  });
+  return `${head !== null ? `<div class="menu-head" role="presentation">${head}</div>` : ''}${items.join('')}`;
+}
 
 const FIELD_LABELS: Record<NewEntryKind, string> = {
   program: 'New program name',
@@ -75,15 +124,19 @@ function rowHtml(row: TreeRow): string {
     return `<div class="row input ${row.kind}" ${level}><span class="chev"></span><span class="icon">${icon}</span><span class="field"><input type="text" spellcheck="false" autocomplete="off" autocapitalize="off" aria-label="${FIELD_LABELS[row.kind]}" aria-describedby="name-hint" aria-invalid="false">${ext}</span></div><div class="name-hint" id="name-hint" aria-live="polite" ${level}></div>`;
   }
   const common = `role="treeitem" data-path="${esc(row.path)}" title="${esc(row.path)}" aria-level="${row.level}" aria-posinset="${row.posinset}" aria-setsize="${row.setsize}" tabindex="-1" ${level}`;
+  // A row's own menu (step 4c), for the pointer. The keyboard opens it from the row itself
+  // (Shift+F10 or the menu key), and the row says it has one (aria-haspopup), so the ⋮ stays
+  // out of the row's spoken name.
+  const dots = `<button class="row-menu" type="button" tabindex="-1" aria-hidden="true" title="More">${FILE_ICONS.kebab}</button>`;
   if (row.type === 'folder') {
     const label = row.empty ? ` aria-label="${esc(row.name)}, empty"` : '';
-    return `<div class="row folder${row.expanded ? '' : ' folded'}" ${common} aria-expanded="${row.expanded}"${label}><span class="chev">${FILE_ICONS.chevron}</span><span class="icon">${FILE_ICONS.folder}</span><span class="name">${esc(row.name)}</span></div>`;
+    return `<div class="row folder${row.expanded ? '' : ' folded'}" ${common} aria-haspopup="menu" aria-expanded="${row.expanded}"${label}><span class="chev">${FILE_ICONS.chevron}</span><span class="icon">${FILE_ICONS.folder}</span><span class="name">${esc(row.name)}</span>${dots}</div>`;
   }
   if (row.type === 'project') {
     return `<div class="row project" ${common}><span class="chev"></span><span class="icon">${FILE_ICONS.json}</span><span class="name">${nameHtml(row.name)}</span><span class="lock" title="${LOCK_TITLE}">${FILE_ICONS.lock}</span></div>`;
   }
   const badge = row.main ? `<span class="badge-main" title="${MAIN_BADGE_TITLE}">main</span>` : '';
-  return `<div class="row file ${row.kind}" ${common}><span class="chev"></span><span class="icon">${FILE_ICONS[row.kind]}</span><span class="name">${nameHtml(row.name)}</span>${badge}</div>`;
+  return `<div class="row file ${row.kind}" ${common} aria-haspopup="menu"><span class="chev"></span><span class="icon">${FILE_ICONS[row.kind]}</span><span class="name">${nameHtml(row.name)}</span>${badge}${dots}</div>`;
 }
 
 const parentOf = (path: string): string => (path.includes('/') ? path.slice(0, path.lastIndexOf('/')) : '');
@@ -126,6 +179,15 @@ export class FileTree extends HTMLElement {
 
   private _menuOpen = false;
 
+  /** The open menu: the button that opened it (the + or a row's ⋮), where the keyboard goes back to, its row, and the folder its New items add to. */
+  private _menuOpener: HTMLElement | null = null;
+
+  private _menuReturn: HTMLElement | null = null;
+
+  private _menuPath: string | null = null;
+
+  private _menuTarget = '';
+
   /** True while the rows' HTML is being replaced (see _draw). */
   private _redrawing = false;
 
@@ -134,7 +196,9 @@ export class FileTree extends HTMLElement {
 
   private readonly _onOutsidePointer = (e: Event): void => {
     const path = e.composedPath();
-    if (!path.includes(this._menu!) && !path.includes(this._addButton!)) this._closeMenu(false);
+    // The opener's own click toggles the menu; it isn't "outside".
+    if (path.includes(this._menu!) || (this._menuOpener && path.includes(this._menuOpener))) return;
+    this._closeMenu(false);
   };
 
   /** The menu is placed once, when it opens; a resize closes it rather than leave it floating. */
@@ -161,21 +225,28 @@ export class FileTree extends HTMLElement {
       const path = this._pathOf(e.target);
       if (path !== null) this._setFocusPath(path);
     });
+    // A right-click on a row (and, on most systems, the menu key or Shift+F10): its own menu.
+    // pathogen.json, the name field and the empty space below the rows have none, so the
+    // browser's own menu shows there.
+    list.addEventListener('contextmenu', (e) => {
+      const path = this._pathOf(e.target);
+      if (path === null || !this._item(path)?.querySelector('.row-menu')) return;
+      e.preventDefault();
+      this._openRowMenu(path);
+    });
     const add = this._addButton!;
-    add.addEventListener('click', () => (this._menuOpen ? this._closeMenu(true) : this._openMenu()));
+    add.addEventListener('click', () => (this._menuOpener === add ? this._closeMenu(true) : this._openAddMenu()));
     add.addEventListener('keydown', (e) => {
       if (e.key === 'ArrowDown' && !this._menuOpen) {
         e.preventDefault();
-        this._openMenu();
+        this._openAddMenu();
       }
     });
     const menu = this._menu!;
     menu.addEventListener('keydown', (e) => this._onMenuKeydown(e));
     menu.addEventListener('click', (e) => {
       const item = (e.target as HTMLElement).closest<HTMLElement>('[role="menuitem"]');
-      if (!item) return;
-      this._closeMenu(false);
-      this._startNaming(item.dataset.kind as NewEntryKind);
+      if (item) this._choose(item.dataset.action as MenuAction);
     });
     this._drawn = '';
     this._draw();
@@ -260,6 +331,8 @@ export class FileTree extends HTMLElement {
     const rows = treeRows(this._files, this._folders, { collapsed: this._collapsed, main: this._main, naming });
     this._rows = rows;
     const key = JSON.stringify(rows);
+    /** The keyboard was in a menu that this redraw closed: it goes to the tree's Tab stop. */
+    let focusStop = false;
     if (key !== this._drawn) {
       this._drawn = key;
       // The keyboard stays on its row across a redraw (a file added, a folder folded), or in the name field.
@@ -274,6 +347,22 @@ export class FileTree extends HTMLElement {
         this._redrawing = false;
       }
       this._hintShown = '';
+      // A row's menu: its ⋮ was just drawn again. Still there, the menu stays with it;
+      // gone, the menu closes, and the keyboard stays in the tree.
+      if (this._menuOpen && this._menuOpener && !this._menuOpener.isConnected) {
+        const row = this._menuPath !== null ? this._item(this._menuPath) : null;
+        const dots = row?.querySelector<HTMLElement>('.row-menu');
+        if (row && dots) {
+          this._menuOpener = dots;
+          this._menuReturn = row;
+          dots.classList.add('on');
+          row.classList.add('menu-open');
+        } else {
+          const hadFocus = this._menu!.contains(this.shadowRoot!.activeElement);
+          this._closeMenu(false);
+          focusStop = hadFocus;
+        }
+      }
       if (this._naming) {
         const field = this._field!;
         field.value = this._naming.value;
@@ -301,6 +390,7 @@ export class FileTree extends HTMLElement {
       }
     }
     this._mark();
+    if (focusStop) this.focusTabStop();
   }
 
   /** The file in the editor, and the one Tab stop. */
@@ -347,6 +437,13 @@ export class FileTree extends HTMLElement {
   private _onClick(e: MouseEvent): void {
     const path = this._pathOf(e.target);
     if (path === null) return;
+    // The ⋮ opens (or closes) the row's menu; it doesn't open the file or fold the folder.
+    const dots = (e.target as HTMLElement).closest<HTMLElement>('.row-menu');
+    if (dots) {
+      if (this._menuOpener === dots) this._closeMenu(true);
+      else this._openRowMenu(path);
+      return;
+    }
     this._setFocusPath(path);
     if (this._isFolder(path)) this._toggle(path);
     else this._open(path, false);
@@ -364,7 +461,17 @@ export class FileTree extends HTMLElement {
   }
 
   private _onKeydown(e: KeyboardEvent): void {
-    // Keys with a modifier are the browser's (Alt+Left and Cmd+Left are Back).
+    // The row's own menu from the keyboard: Shift+F10 or the menu key. A Mac sends no
+    // contextmenu event for either, so they're handled here.
+    if (e.key === 'ContextMenu' || (e.key === 'F10' && e.shiftKey && !e.altKey && !e.ctrlKey && !e.metaKey)) {
+      const path = this._pathOf(e.target);
+      if (path !== null && this._item(path)?.querySelector('.row-menu')) {
+        e.preventDefault();
+        this._openRowMenu(path);
+      }
+      return;
+    }
+    // Other keys with a modifier are the browser's (Alt+Left and Cmd+Left are Back).
     if (e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return;
     const current = this._focused();
     if (!current) return;
@@ -416,9 +523,14 @@ export class FileTree extends HTMLElement {
 
   // ---------- the + menu ----------
 
-  /** Where the + adds: the folder clicked last, else the folder of the file in the editor, else the top. */
+  /**
+   * Where the + adds: the folder of the row you're on (the folder itself, or a
+   * file's folder), else the folder of the file in the editor, else the top.
+   */
   private _target(): string {
-    if (this._focusPath !== null && this._isFolder(this._focusPath)) return this._focusPath;
+    const at = this._focusPath;
+    if (at !== null && this._isFolder(at)) return at;
+    if (at !== null && this._files.some((f) => f.path === at)) return parentOf(at);
     if (this._active !== null && this._files.some((f) => f.path === this._active)) return parentOf(this._active);
     return '';
   }
@@ -427,40 +539,156 @@ export class FileTree extends HTMLElement {
     return [...(this._menu?.querySelectorAll<HTMLElement>('[role="menuitem"]') ?? [])];
   }
 
-  private _openMenu(): void {
+  /**
+   * Show a menu. Fixed, so the tree's own edges never cut it off, at `place`;
+   * flipped above `flipAbove` when there's no room below. `opener` shows it's
+   * open; the keyboard goes back to `returnTo` when it closes.
+   */
+  private _showMenu(spec: {
+    opener: HTMLElement;
+    returnTo: HTMLElement;
+    head: string | null;
+    entries: MenuEntry[];
+    target: string;
+    path: string | null;
+    place: { left: number; top: number; width: number };
+    flipAbove: number;
+  }): void {
+    this._closeMenu(false);
     const menu = this._menu!;
-    const add = this._addButton!;
-    const target = this._target();
-    menu.innerHTML = `<div class="menu-head" role="presentation">${target ? `Add to <code>${esc(target)}/</code>` : 'Add at the top'}</div>${ADD_ITEMS.map(
-      (item) =>
-        `<button type="button" role="menuitem" tabindex="-1" data-kind="${item.kind}"><span class="icon">${item.icon}</span><span><span class="label">${item.label}</span>${item.detail ? `<small>${item.detail}</small>` : ''}</span></button>`,
-    ).join('')}`;
-    menu.dataset.target = target;
-    // Fixed, under the header, so it's never cut off by the tree's own edges.
-    const host = this.getBoundingClientRect();
-    const head = this.shadowRoot!.querySelector('.head')!.getBoundingClientRect();
-    menu.style.left = `${host.left + 8}px`;
-    menu.style.top = `${head.bottom + 2}px`;
-    menu.style.width = `${Math.max(200, Math.min(240, host.width - 16))}px`;
+    menu.innerHTML = menuHtml(spec.head, spec.entries);
+    this._menuTarget = spec.target;
+    this._menuPath = spec.path;
+    this._menuOpener = spec.opener;
+    this._menuReturn = spec.returnTo;
+    const width = Math.min(spec.place.width, window.innerWidth - 16);
+    menu.style.width = `${width}px`;
+    menu.style.left = `${Math.max(8, Math.min(spec.place.left, window.innerWidth - width - 8))}px`;
+    menu.style.top = `${spec.place.top}px`;
     menu.hidden = false;
+    const height = menu.getBoundingClientRect().height;
+    if (height > 0 && spec.place.top + height > window.innerHeight - 8) {
+      menu.style.top = `${Math.max(8, spec.flipAbove - height)}px`;
+    }
     this._menuOpen = true;
-    add.setAttribute('aria-expanded', 'true');
-    add.classList.add('on');
+    if (spec.opener.hasAttribute('aria-haspopup')) spec.opener.setAttribute('aria-expanded', 'true');
+    spec.opener.classList.add('on');
+    if (spec.path !== null) this._item(spec.path)?.classList.add('menu-open');
     document.addEventListener('pointerdown', this._onOutsidePointer, true);
     window.addEventListener('resize', this._onResize);
+    // It's placed once: a scroll of the tree or the page would leave it over the wrong row.
+    this._list?.addEventListener('scroll', this._onResize);
+    window.addEventListener('scroll', this._onResize, true);
     this._menuItems()[0]?.focus();
+  }
+
+  /** The +: New program, New library, New folder, where the + adds. */
+  private _openAddMenu(): void {
+    const add = this._addButton!;
+    const target = this._target();
+    const host = this.getBoundingClientRect();
+    const head = this.shadowRoot!.querySelector('.head')!.getBoundingClientRect();
+    this._showMenu({
+      opener: add,
+      returnTo: add,
+      head: addHead(target),
+      entries: ADD_ITEMS,
+      target,
+      path: null,
+      place: { left: host.left + 8, top: head.bottom + 2, width: Math.max(200, Math.min(240, host.width - 16)) },
+      flipAbove: head.top,
+    });
+  }
+
+  /**
+   * A row's own menu (mockup v6 screen E, v7 screen F). A program: Set as main
+   * (unless it is the main), Duplicate, Delete…. A library: Duplicate,
+   * Delete…. A folder: the + items for that folder, then Delete….
+   */
+  private _openRowMenu(path: string): void {
+    const row = this._item(path);
+    const dots = row?.querySelector<HTMLElement>('.row-menu');
+    if (!row || !dots) return;
+    // Already open for this row (the key and the browser's contextmenu both asked): leave it.
+    if (this._menuOpen && this._menuOpener === dots) return;
+    let head: string | null = null;
+    let entries: MenuEntry[];
+    if (row.classList.contains('folder')) {
+      head = addHead(path);
+      entries = [...ADD_ITEMS, 'divider', DELETE_FOLDER];
+    } else if (row.classList.contains('program') && path !== this._main) {
+      entries = [SET_MAIN, 'divider', DUPLICATE, 'divider', DELETE_FILE];
+    } else {
+      entries = [DUPLICATE, 'divider', DELETE_FILE];
+    }
+    const rowRect = row.getBoundingClientRect();
+    const dotsRect = dots.getBoundingClientRect();
+    this._setFocusPath(path);
+    this._showMenu({
+      opener: dots,
+      returnTo: row,
+      head,
+      entries,
+      target: row.classList.contains('folder') ? path : parentOf(path),
+      path,
+      place: { left: dotsRect.left - 4, top: rowRect.bottom - 2, width: 300 },
+      flipAbove: rowRect.top + 2,
+    });
+  }
+
+  /** A menu item chosen: name a new file or folder here, or ask workspace-view to act on the row. */
+  private _choose(action: MenuAction): void {
+    const target = this._menuTarget;
+    const path = this._menuPath;
+    const kind = NEW_KIND[action];
+    this._closeMenu(kind === undefined);
+    if (kind !== undefined) this._startNaming(kind, target);
+    else if (path !== null) {
+      this.dispatchEvent(new CustomEvent('file-action', { bubbles: true, composed: true, detail: { action, path } }));
+    }
   }
 
   private _closeMenu(returnFocus: boolean): void {
     if (!this._menuOpen) return;
     this._menuOpen = false;
     this._menu!.hidden = true;
-    const add = this._addButton!;
-    add.setAttribute('aria-expanded', 'false');
-    add.classList.remove('on');
+    const opener = this._menuOpener;
+    if (opener?.hasAttribute('aria-haspopup')) opener.setAttribute('aria-expanded', 'false');
+    opener?.classList.remove('on');
+    if (this._menuPath !== null) this._item(this._menuPath)?.classList.remove('menu-open');
     document.removeEventListener('pointerdown', this._onOutsidePointer, true);
     window.removeEventListener('resize', this._onResize);
-    if (returnFocus) add.focus();
+    this._list?.removeEventListener('scroll', this._onResize);
+    window.removeEventListener('scroll', this._onResize, true);
+    const back = this._menuReturn;
+    this._menuOpener = null;
+    this._menuReturn = null;
+    if (returnFocus && back?.isConnected) back.focus();
+  }
+
+  /** The row the keyboard can go to once `path` (and anything in it) is gone: the next row, else the one before. */
+  rowAfterRemoval(path: string): string | null {
+    const paths = this._items().map((el) => el.dataset.path!);
+    const at = paths.indexOf(path);
+    if (at < 0) return null;
+    const inside = (p: string): boolean => p === path || p.startsWith(`${path}/`);
+    const after = paths.slice(at + 1).find((p) => !inside(p));
+    return after ?? [...paths.slice(0, at)].reverse().find((p) => !inside(p)) ?? null;
+  }
+
+  /** Put the keyboard on a row (after a dialog that worked on the tree). False when the row isn't shown. */
+  focusRow(path: string): boolean {
+    const row = this._item(path);
+    if (!row) return false;
+    this._setFocusPath(path);
+    row.focus();
+    return true;
+  }
+
+  /** Put the keyboard on the tree's one Tab stop (when the row it was on has gone). */
+  focusTabStop(): void {
+    const items = this._items();
+    (items.find((el) => el.tabIndex === 0) ?? items[0])?.focus();
   }
 
   private _onMenuKeydown(e: KeyboardEvent): void {
@@ -510,10 +738,9 @@ export class FileTree extends HTMLElement {
     );
   }
 
-  private _startNaming(kind: NewEntryKind): void {
+  private _startNaming(kind: NewEntryKind, target: string): void {
     // The folder the menu named, unless it went while the menu was open.
-    let folder = this._menu!.dataset.target ?? this._target();
-    if (!this._folderExists(folder)) folder = this._target();
+    const folder = this._folderExists(target) ? target : this._target();
     // The folder, and every folder it's in, unfolds to show the field.
     for (let f = folder; f !== ''; f = parentOf(f)) this._collapsed.delete(f);
     this._naming = { kind, folder, value: '', error: null };

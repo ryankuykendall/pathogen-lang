@@ -200,6 +200,8 @@ layer('hex').apply { circle(60, 100, 40) }`,
       { name: 'Long names', props: { set: 'long', active: 'shapes/a-rather-long-name-for-a-star.pathogen' } },
       { name: 'The + menu', props: { set: 'gears', active: 'parts/gears.pathogen', open: 'menu' } },
       { name: 'A taken name', props: { set: 'gears', active: 'parts/gears.pathogen', open: 'taken' } },
+      { name: 'A program’s menu', props: { set: 'gears', active: 'main.pathogen', open: 'row:try-sizes.pathogen' } },
+      { name: 'A folder’s menu', props: { set: 'gears', active: 'main.pathogen', open: 'row:parts' } },
     ],
     controls: [],
     notes:
@@ -267,12 +269,16 @@ layer('hex').apply { circle(60, 100, 40) }`,
               tree.active = path;
             }
           });
-          // Two stories open the + menu, and one goes on to name a library that's taken.
-          if (props.open) {
+          // A row's menu here only closes when chosen: workspace-view is what acts on file-action.
+          // Two stories open the + menu, one goes on to name a library that's taken, and two open a row's menu.
+          const open = String(props.open ?? '');
+          if (open.startsWith('row:')) {
+            tree.shadowRoot!.querySelector<HTMLElement>(`[data-path="${open.slice(4)}"] .row-menu`)!.click();
+          } else if (open) {
             const root = tree.shadowRoot!;
             root.querySelector<HTMLButtonElement>('.add')!.click();
-            if (props.open === 'taken') {
-              root.querySelector<HTMLElement>('[data-kind="library"]')!.click();
+            if (open === 'taken') {
+              root.querySelector<HTMLElement>('[data-action="new-library"]')!.click();
               const field = root.querySelector<HTMLInputElement>('.row.input input')!;
               field.value = 'gears';
               field.dispatchEvent(new Event('input', { bubbles: true }));
@@ -280,6 +286,57 @@ layer('hex').apply { circle(60, 100, 40) }`,
           }
         })
         .catch((err: unknown) => console.error('File Tree story failed to load:', err));
+    },
+  },
+  {
+    id: 'confirm-dialog',
+    name: 'Confirm Dialog',
+    category: 'Editor',
+    description:
+      'What Delete… asks before it deletes (mockup v7 screen F): what goes, as a list, and what follows, in a box. Cancel has the first focus, so a stray Enter never confirms; Escape, × and Cancel all say no. In the playground it is modal (confirmDialog); here it is shown in place.',
+    stories: [
+      { name: 'Deleting a folder', props: { set: 'folder' } },
+      { name: 'Deleting a file others import', props: { set: 'file' } },
+      { name: 'Deleting an empty folder', props: { set: 'empty' } },
+    ],
+    controls: [],
+    notes: 'Answering shows the answer; Ask again brings the question back.',
+    render: (container, props) => {
+      Promise.all([import('../components/shared/confirm-dialog.js'), import('./delete-question.js')])
+        .then(([, { deleteQuestion }]) => {
+          const QUESTIONS = {
+            folder: deleteQuestion('parts', true, {
+              files: ['parts/gears.pathogen', 'parts/kit.pathogen', 'parts/labels.pathogen'],
+              importers: ['main.pathogen', 'demos/gears.pathogen', 'try-sizes.pathogen'],
+            }),
+            file: deleteQuestion('parts/kit.pathogen', false, {
+              files: ['parts/kit.pathogen'],
+              importers: ['main.pathogen'],
+            }),
+            empty: deleteQuestion('examples', true, { files: [], importers: [] }),
+          };
+          const question = QUESTIONS[String(props.set) as keyof typeof QUESTIONS] ?? QUESTIONS.folder;
+          const ask = (): void => {
+            container.innerHTML = '';
+            const dialog = document.createElement('confirm-dialog');
+            container.appendChild(dialog);
+            dialog
+              .ask(question, { modal: false })
+              .then((yes) => {
+                const said = document.createElement('p');
+                said.textContent = `Answered: ${yes ? question.confirmLabel : 'no'}. `;
+                const again = document.createElement('button');
+                again.type = 'button';
+                again.textContent = 'Ask again';
+                again.addEventListener('click', ask);
+                said.append(again);
+                container.appendChild(said);
+              })
+              .catch((err: unknown) => console.error(err));
+          };
+          ask();
+        })
+        .catch((err: unknown) => console.error('Confirm Dialog story failed to load:', err));
     },
   },
   {

@@ -330,6 +330,50 @@ Each step: tests first; a storybook entry for each new component (the playground
   - Leaving the field to make a file no longer pulls the keyboard into the editor (`focusEditor` in the event). Tab from the menu goes on from the +. The menu closes on a resize and when the tree leaves the page. The field's line is a polite live region and changes only when what it says does, so a refusal is announced.
   - Left as it is: the field and its line sit inside `role="tree"` without being tree items. Screen readers cope, and the field is labelled.
 
+**Step 4c, split in two.** 4c-1 is the row menus with Set as main, Duplicate and Delete…. 4c-2 is Rename…, Move to… and the toast's Undo, with import rewrites into the files open in the editor. Each is its own commit.
+
+**Step 4c-1, each file's and folder's own menu** (2026-11-12). As v6's screen E and v7's screen F draw it.
+- **The ⋮** on each file and folder row shows on hover, on the file in the editor, on the row with the keyboard, while its menu is open, and always on touch. A right-click, the menu key or Shift+F10 on a row opens the same menu. `pathogen.json` has its lock instead.
+  - A program: Set as main (not on the main itself), Duplicate, Delete….
+  - A library: Duplicate, Delete….
+  - A folder: New program, New library and New folder for that folder, then Delete….
+  - Rename… and Move to… come with 4c-2; Upload files… and Upload folder… with step 6.
+- **The menu machinery is shared with the +.** It knows the button that opened it (a second click on that button closes it), where the keyboard goes back to (the row, or the +), and which folder its New items add to. It flips above the row when there's no room below.
+- **Where the + adds** is now "the folder of the row you're on", as screen N says: a file row gives its folder. Before, only a folder row counted. The browser check found it: after a delete, the keyboard sat on a file in `parts/` while the + added at the top.
+- **Set as main** moves the badge, and `pathogen.json` follows if it's open. The preview doesn't change: `shownProgram: null` meant "the main", so it's pinned to the program shown first. The thumbnail is captured from the live preview, so it stays on the old main until reloaded: that's step 5's "the thumbnail stays the main's".
+- **Duplicate** makes the copy beside the file and puts the keyboard on it in the tree. It doesn't open, as step 2's plan has it.
+- **Delete… asks first**, in `components/shared/confirm-dialog.ts`: a native `<dialog>` shown modal, with Cancel focused and Escape saying no. The wording (`utils/delete-question.ts`) names the files that go and the files that import them, which will show an error at those imports, sorted as the tree sorts. After a delete, the keyboard goes to the row after it in the tree.
+- **`services/workspace-apply.ts` now knows the editor.** In one store update:
+  - a deleted file's tab closes, and the file in the editor becomes the tab to its right, else to its left, else the main, else the first file, else `pathogen.json`. That last is temporary until 4d's "No file open". The deleted text is never written back;
+  - its kept editor state, undo history and all, is forgotten (`forgetFiles`), so a new file with its name starts afresh;
+  - a deleted program that was shown sends the preview back to the main;
+  - `pathogen.json` in the editor follows the program list (`refreshShown`).
+
+  workspace-view then clears the deleted files' readings, places the marks for the file now shown, saves, recompiles when a file went or a program is shown, and shows the plan's message ("Deleted parts/kit.pathogen.").
+- **Checked:**
+  - tests:
+    - `tests/playground-workspace-apply.test.ts` (14), "a change and the editor" among them: the tab to the right, a new file's empty history, a folder's tabs, the main then `pathogen.json` when no tab is left, Set as main's pin, the shown program deleted, `pathogen.json` following;
+    - `tests/playground-file-tree.test.ts` (46): the row menus, the ⋮, a right-click, the focus going back, a folder's New, `rowAfterRemoval`, the file-row target;
+    - `tests/playground-confirm-dialog.test.ts` (4) and `tests/playground-delete-question.test.ts` (4);
+    - `tests/playground-editor-read-only.test.ts` (+2: `refreshShown`, `forgetFiles`);
+  - `verify/verify-2d-step4c1.ts` against `npm run dev:stack`, 19 checks:
+    - the ⋮ on hover; a right-click on a folder; a folder's New library;
+    - Set as main with `pathogen.json` open and the preview unchanged; Duplicate;
+    - Delete…'s question, then Escape; the delete and the main's error at its import; the message;
+    - a new file at the deleted path with nothing to undo; a folder's delete;
+    - the server holding the result; dark mode; the storybook;
+    - after the review: Shift+F10, and a question answered after the workspace changed (21 checks in all);
+  - screenshots `verify/2d-step4c1-*.png`;
+  - the full suite: 8,822 passed.
+- **Review** (code-reviewer, no blockers). It confirmed the delete's ordering: one store update, and the deleted file's kept state forgotten after the switch. A test now proves it: a subscriber never sees the deleted file. Fixed, each with a test:
+  - **A question answered after the workspace changed.** The modal dialog blocks clicks but not Back, a workspace switch, or a file arriving. Delete then planned again on whatever was there. Now the answer counts only if the workspace and the question's summary (the files that go and their importers) are unchanged; otherwise nothing is deleted, and a message says why. A dialog still open when the workspace view goes is withdrawn (`cancel()`).
+  - **Focus after a delete** falls back to the tree's Tab stop when the row it meant to land on has gone (`focusRow` returns whether it could; `focusTabStop`).
+  - **The row menu from the keyboard on a Mac.** A Mac sends no contextmenu for Shift+F10 or the menu key, so the tree handles both itself; a second request for the same menu leaves it open. The ⋮ is `aria-hidden`, so a row's spoken name is just its name, and the row says it has a menu (`aria-haspopup`).
+  - **The preview pin** applies only when there was a main to keep, and not when the program shown becomes the main.
+  - A deleted open file the tab list had lost still gives way to a tab (tested).
+  - The menu closes on a scroll of the tree or the page, and scrolls inside itself if it's taller than the window. A redraw keeps an open row menu with its row, or, if the row went, closes it and leaves the keyboard in the tree.
+  - The dialog test now stubs `showModal`, to check the modal path is the one taken.
+
 **The v7 mockup round** (2026-11-09, commit `5c8f925`): note 53, `phase-2-mockups-v7/`. Five screens: no programs left, folders and moving, narrow screens, the mini-workspace, the ⋮ menu. It also draws what v6 left out (renaming a file, Move to…, dragging a file). Six questions await you; steps 4 and 9 wait for them.
 - *Answered 2026-11-09: all six agreed* (note 53, "Your answers"). What that adds to the steps:
   - step 2: each change can be undone (the toast's Undo); a rename takes a name only, no slash and no extension; Move to…; the first program in an empty workspace is shown;

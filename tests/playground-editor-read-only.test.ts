@@ -124,6 +124,24 @@ describe('pathogen.json in the editor', () => {
     expect(extensions).not.toContain('history');
   });
 
+  it('follows the program list (refreshShown), and nothing else is refreshed that way', () => {
+    const pane = makePane() as Pane & { refreshShown: (text: string) => void };
+    pane.showFile('pathogen.json', '{}\n');
+    pane.refreshShown('{\n  "entryPoints": [\n    "main.pathogen"\n  ]\n}\n');
+    expect(pane.code).toBe('{\n  "entryPoints": [\n    "main.pathogen"\n  ]\n}\n');
+    pane.showFile('main.pathogen', 'M 0 0');
+    pane.refreshShown('nope');
+    expect(pane.code).toBe('M 0 0');
+  });
+
+  it('forgets a deleted file’s kept state, undo history and all (forgetFiles)', () => {
+    const pane = makePane() as Pane & { forgetFiles: (paths: string[]) => void; _kept: Map<string, unknown> };
+    pane._kept.set('parts/gears.pathogen', { state: 'gears' });
+    pane._kept.set('parts/kit.pathogen', { state: 'kit' });
+    pane.forgetFiles(['parts/gears.pathogen']);
+    expect([...pane._kept.keys()]).toEqual(['parts/kit.pathogen']);
+  });
+
   it('stops typing, lights its line for 2 seconds, and lets nothing through', () => {
     vi.useFakeTimers();
     const pane = makePane();

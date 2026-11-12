@@ -302,6 +302,25 @@ export class CodeEditorPane extends HTMLElement {
     else view.scrollDOM.scrollTop = kept && !changed && 'top' in kept.scroll ? kept.scroll.top : 0;
   }
 
+  /** Drop these files' kept states, undo history and all (they were deleted). */
+  forgetFiles(paths: readonly string[]): void {
+    for (const path of paths) this._kept.delete(path);
+  }
+
+  /**
+   * New text for the file shown, when it's read-only (pathogen.json, written
+   * from the entry points): no undo step, no code-change. Any other file is
+   * left alone: its text is the user's.
+   */
+  refreshShown(text: string): void {
+    if (!this.readOnly) return;
+    if (!this._editor) {
+      this._initialCode = text;
+      return;
+    }
+    this._editor.dispatch({ changes: { from: 0, to: this._editor.state.doc.length, insert: text } });
+  }
+
   private _newState(text: string, path: string): CmEditorState {
     return this._cmModules!.state.EditorState.create({
       doc: text,

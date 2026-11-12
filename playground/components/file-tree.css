@@ -74,6 +74,8 @@
 .menu {
   position: fixed;
   z-index: 60;
+  max-height: calc(100vh - 16px);
+  overflow-y: auto;
   box-sizing: border-box;
   padding: 6px;
   border: 1px solid var(--border-color, #e2e8f0);
@@ -149,6 +151,62 @@
 .menu small code {
   font-family: var(--font-mono, monospace);
   font-size: 11px;
+}
+
+.menu-divider {
+  height: 1px;
+  margin: 4px 6px;
+  background: var(--border-subtle, rgba(0, 0, 0, 0.06));
+}
+
+.menu [role='menuitem'].danger,
+.menu [role='menuitem'].danger .icon {
+  color: var(--error-color, #ef4444);
+}
+
+/* A row's own menu (step 4c): its ⋮ shows on hover, on the file in the editor, on the row with the keyboard, and while its menu is open. */
+.row-menu {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-sm, 4px);
+  background: none;
+  color: var(--text-secondary, #64748b);
+  cursor: pointer;
+  visibility: hidden;
+}
+
+.row-menu svg {
+  width: 15px;
+  height: 15px;
+}
+
+.row:hover .row-menu,
+.row.active .row-menu,
+.row:focus-visible .row-menu,
+.row.menu-open .row-menu {
+  visibility: visible;
+}
+
+.row-menu:hover,
+.row.menu-open .row-menu {
+  background: var(--active-bg, rgba(0, 0, 0, 0.08));
+  color: var(--text-primary, #1a1a2e);
+}
+
+.row.menu-open {
+  background: var(--hover-bg, rgba(0, 0, 0, 0.04));
+}
+
+/* Touch has no hover: every row's ⋮ shows. */
+@media (hover: none) {
+  .row-menu {
+    visibility: visible;
+  }
 }
 
 .row {

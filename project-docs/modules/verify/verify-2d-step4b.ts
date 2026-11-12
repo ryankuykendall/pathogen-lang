@@ -150,7 +150,8 @@ async function clickIn(page: Page, selector: string): Promise<void> {
 
 const clickRow = (page: Page, path: string): Promise<void> => clickIn(page, `[data-path="${path}"]`);
 const clickPlus = (page: Page): Promise<void> => clickIn(page, '.add');
-const choose = (page: Page, kind: string): Promise<void> => clickIn(page, `[role="menuitem"][data-kind="${kind}"]`);
+const choose = (page: Page, kind: string): Promise<void> =>
+  clickIn(page, `[role="menuitem"][data-action="new-${kind}"]`);
 
 async function typeName(page: Page, text: string): Promise<void> {
   await page.keyboard.type(text);
