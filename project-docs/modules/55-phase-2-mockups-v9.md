@@ -36,6 +36,12 @@ Why A:
 
 Below the window, the three editors stand side by side for the "only libraries" case.
 
+## Your answer (2026-11-12), in your words
+
+"I find all of the options a bit confusing because in some cases the preview pane has a call to action, and I think that all of the calls to action should be limited to the code editor zero-state. With that constraint in mind, please take another pass at the mock-ups."
+
+None of A, B or C: every call to action goes in the editor's zero-state, and the preview has none. v10 draws it (note 56, `phase-2-mockups-v10/`).
+
 ## After your choice
 
 - Fold both answers into `docs/workspace-files.md`, "The file tree and tabs" (note 54's drafted lines), with "the program the preview shows" now "the main":

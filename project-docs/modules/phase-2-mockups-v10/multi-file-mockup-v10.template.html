@@ -1,0 +1,140 @@
+<!-- v10's parts. build.ts puts them into v9's built page (phase-2-mockups-v9/multi-file-mockup-v9.html,
+     read in place): the CSS at the end of its <style>, the harness button in place of v9's, the
+     section in place of v9's, and the script in place of v9's screen table. The function
+     declarations in the script come after v9's, so they replace v9's functions of the same name. -->
+
+<!-- @@CSS -->
+  /* The empty preview has no button now: its text is the last thing in it */
+  .pv-empty p:last-child { margin-bottom: 0; }
+
+<!-- @@NAV -->
+    <button data-s="nofile3" aria-pressed="true">Z · No file open, round 3</button>
+
+<!-- @@SECTIONS -->
+<!-- ============ Z, ROUND 3. NO FILE OPEN ============ -->
+<section class="screen active" id="s-nofile3">
+  <div class="notes">
+    <h2>Z · No file open, round 3: buttons in the editor only <span class="tag ask">for your review</span></h2>
+    <table class="cmp">
+      <tr><th></th><th>v9 (before)</th><th>v10 (now)</th></tr>
+      <tr><td>Where you start something, when nothing draws</td><td>The preview's New program (v7, screen X), and the editor's option A, B or C</td><td><b>Only the editor's zero-state</b>: every button is there (your direction, 2026-11-12)</td></tr>
+      <tr><td>The empty preview</td><td>Why it's empty, and a New program button</td><td><b>Why it's empty, and where to start. No button</b></td></tr>
+      <tr><td>A library open, and no program (v7, screen X, state 1)</td><td>The preview's New program</td><td><b>The + in the Files header</b>, whose menu has New program. The preview says so (state 7)</td></tr>
+      <tr><td>The editor's button, with a main</td><td>Opens the main (your answer 1)</td><td>The same</td></tr>
+    </table>
+    <div class="cols">
+      <ul>
+        <li><b>The preview only shows.</b> It draws the program, or says why there's nothing to draw. It never has a button.</li>
+        <li><b>With a main</b> (states 1 to 3), the zero-state's button opens it, whatever the preview shows. With the tree hidden, Show files is beside it.</li>
+        <li><b>With no program</b> (states 4 and 6), the zero-state's button is <b>New program</b>, the only one on screen. That settles question 2: no second button in the preview, and no button that opens a library.</li>
+      </ul>
+      <ul>
+        <li><b>New program from the zero-state</b> (state 5) puts the name field in the tree, at the top level of the workspace, as the +'s New program does there, and the field says it will be the main. Enter opens it, and the preview shows it (v7, screen X, state 4, unchanged).</li>
+        <li><b>A library open, and no program</b> (state 7): a file is open, so there's no zero-state. Nothing new appears: the preview's text points to the <b>+</b> in the Files header, where New program already is. <b>For your review</b> (the question below).</li>
+        <li><b>Unchanged from v8:</b> the ⋮ menu and Copy Code with no file open (both off, saying why), and deleting the only open file.</li>
+      </ul>
+    </div>
+    <h3>One question (recommendation first)</h3>
+    <ul>
+      <li><b>State 7: the preview's text points to the + in the Files header.</b> Recommended: it keeps every button in the editor's zero-state, as you asked.
+        <ul><li>The other option: a line above the open library, like pathogen.json's read-only line, with New program in it. That's a button outside the zero-state, so it bends the rule.</li></ul>
+      </li>
+    </ul>
+  </div>
+  <div class="statebar" id="st-nofile3">
+    <span class="lbl">State</span>
+    <button data-st="closed" aria-pressed="true">1 · The last tab closed</button>
+    <button data-st="other">2 · Another program shown</button>
+    <button data-st="hidden">3 · The tree hidden</button>
+    <button data-st="libs">4 · Only libraries</button>
+    <button data-st="naming">5 · After New program</button>
+    <button data-st="none">6 · No files</button>
+    <button data-st="lib-open">7 · A library open, no program</button>
+  </div>
+  <div class="statedesc" id="sd-nofile3"></div>
+  <div class="frame-out"><div class="window" id="w-nofile3"></div></div>
+</section>
+
+<!-- @@SCRIPT -->
+/* ===================== v10 ===================== */
+/* Everything above this point is v9's page (v6's kit, v7's and v8's parts, v9's screen), unchanged.
+   The function declarations below replace v9's functions of the same name. */
+
+const NEW_PROGRAM_LINE = 'It goes at the top of the workspace, and it will be the main.';
+
+/* ---------- the editor with no file open: every button is here ---------- */
+function edEmpty(c) {
+  let heading = 'No file open', text, acts = '', small = '';
+  if (c.noPrograms) {
+    heading = c.noFiles ? 'No files yet' : 'No program yet';
+    text = c.noFiles
+      ? 'This workspace is empty. Start a program, or add your own files with the <b>+</b> in the Files header.'
+      : 'Every file here is a library, so nothing draws. Start a program, or click a library in the tree to edit it.';
+    acts = `<div class="acts"><button class="btn-p">${I.plus}New program</button></div>`;
+    small = `<small>${c.namingFromEditor ? 'Name it in the tree. Enter creates it; Esc cancels.' : NEW_PROGRAM_LINE}</small>`;
+  } else {
+    /* Answer 1: the button always opens the main, whatever the preview shows */
+    const main = `${primaryOf(c)}.pathogen`;
+    text = `The workspace's main is <code>${esc(main)}</code>. Open it, or ${c.filesHidden ? 'show the files to pick another' : 'click any file in the tree'}.`;
+    acts = `<div class="acts"><button class="btn-p">${I.prog}Open ${esc(main)}</button>${c.filesHidden ? '<button class="btn-g">Show files</button>' : ''}</div>`;
+    if (!c.justDeleted) small = `<small>${UNDO_LINE}</small>`;
+  }
+  return `<div class="ed-empty"><div class="ed-empty-in">
+    <div class="ed-empty-ic">${I.code}</div>
+    <h3>${heading}</h3>
+    <p>${text}</p>
+    ${acts}${small}
+  </div></div>`;
+}
+
+/* ---------- the preview: it only shows; with nothing to draw it says why, and where to start ---------- */
+function previewBox(c) {
+  const insp = `<div class="chrome-r"><button class="r32 insp-tgl ${c.inspector ? 'on' : ''}" title="Toggle inspector">${I.layers}</button></div>`;
+  if (c.noPrograms) {
+    const why = c.noFiles
+      ? 'This workspace has no files yet.'
+      : 'Every file in this workspace is a library: it starts with <code>module;</code>, and a library doesn\'t draw.';
+    const where = c.open
+      ? 'Add a program with the <b>+</b> in the Files header to see a drawing here.'
+      : 'Start a program in the editor to see a drawing here.';
+    return `<div class="pv-box"><div class="pv-empty"><div class="pv-empty-in">
+      <div class="pv-empty-ic">${I.prog}</div>
+      <h3>No program to show</h3>
+      <p>${why} ${where}</p>
+    </div></div>${insp}</div>`;
+  }
+  const key = progArt(c, c.shown);
+  const canvas = c.zoom ? `<div class="pv-canvas z">${art(key, { crop: c.zoom.crop })}</div>` : `<div class="pv-canvas">${art(key)}</div>`;
+  const many = programs(c).length > 1;
+  const bottom = many
+    ? `<div class="bgroup">${zoomPill(c)}<div style="position:relative">${pickChip(c)}${c.pickOpen ? pickList(c) : ''}</div></div>`
+    : `<div class="zoom-wrap">${zoomPill(c)}</div>`;
+  return `<div class="pv-box ${c.stale ? 'stale' : ''}">${canvas}
+    <button class="r32 pv-fs" title="Fullscreen">${I.expand}</button>
+    ${insp}${c.stale ? `<div class="stale-top">${STALE}</div>` : ''}${bottom}</div>`;
+}
+
+/* ---------- the screen and its states ---------- */
+const NONE_OPEN = { open: null, tabs: [] };
+const nothingOpen = o => C(Object.assign({}, NONE_OPEN, o));
+const LIBS = { tree: 'libsOnly', shown: null, entry: [], noPrograms: true };
+const NONE = { tree: 'none', shown: null, entry: [], noPrograms: true, noFiles: true };
+const LAST_PROGRAM_GONE = 'Deleted <code>try-sizes.pathogen</code>. It was the last program, so the preview is empty until you add one.';
+const SCREENS = {
+  nofile3: { states: {
+    'closed': [nothingOpen({}),
+      'You closed <b>main</b>, the last tab. The preview shows the main; the editor\'s button opens it.'],
+    'other': [nothingOpen({ shown: 'try-sizes' }),
+      'The chip shows <b>try-sizes</b>, and you closed every tab. The button still opens the main, main.pathogen (your answer 1); try-sizes opens from the tree.'],
+    'hidden': [nothingOpen({ filesHidden: true }),
+      '<b>Files</b> is off and no file is open. Show files, beside Open main.pathogen, brings the tree back.'],
+    'libs': [nothingOpen(Object.assign({}, LIBS)),
+      'Every file is a <b>library</b>, and no file is open. The editor\'s New program is the only button; the preview says why it\'s empty and points to the editor.'],
+    'naming': [nothingOpen(Object.assign({}, LIBS, { tree: 'libsNaming', namingFromEditor: true })),
+      'After the editor\'s <b>New program</b>: the name field in the tree, at the top level, as the + makes it. Its line says it will be the main; Enter opens it, and the preview shows it.'],
+    'none': [nothingOpen(Object.assign({}, NONE)),
+      'You deleted the <b>last file</b>. Only pathogen.json is left, as <code>{}</code>. The editor offers New program; the preview says the workspace is empty.'],
+    'lib-open': [C(Object.assign({}, LIBS, { open: 'parts/gears', tabs: ['parts/gears', 'parts/kit'], active: 1, toast: { html: LAST_PROGRAM_GONE } })),
+      'You deleted <b>try-sizes.pathogen</b>, the last program, with <b>gears</b> open. A file is open, so there\'s no zero-state: the preview\'s text points to the <b>+</b> in the Files header, whose menu has New program.'],
+  } },
+};
