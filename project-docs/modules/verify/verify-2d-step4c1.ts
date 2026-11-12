@@ -228,8 +228,10 @@ try {
   await rowMenu(page, 'try-sizes.pathogen');
   let s = await state(page);
   check(
-    'a program’s ⋮ shows on hover and opens Set as main, Duplicate, Delete…',
-    hidden === 'hidden' && s.menu.open && JSON.stringify(s.menu.items) === '["Set as main","Duplicate","Delete…"]',
+    'a program’s ⋮ shows on hover and opens Set as main, Duplicate, Delete… (with 4c-2’s Rename… and Move to…)',
+    hidden === 'hidden' &&
+      s.menu.open &&
+      JSON.stringify(s.menu.items) === '["Set as main","Rename…","Move to…","Duplicate","Delete…"]',
     { hidden, menu: s.menu },
   );
   await page.screenshot({ path: `${SHOTS}/2d-step4c1-row-menu-light.png` });
@@ -240,7 +242,9 @@ try {
   s = await state(page);
   check(
     'a right-click on a folder opens its menu',
-    s.menu.open && s.menu.head === 'Add to parts/' && JSON.stringify(s.menu.items) === '["New program","New library","New folder","Delete…"]',
+    s.menu.open &&
+      s.menu.head === 'Add to parts/' &&
+      JSON.stringify(s.menu.items) === '["New program","New library","New folder","Rename…","Move to…","Delete…"]',
     s.menu,
   );
   await page.screenshot({ path: `${SHOTS}/2d-step4c1-folder-menu-light.png` });
@@ -272,7 +276,11 @@ try {
   check('the preview still shows what it showed', (await drawn(page)) === before);
   await rowMenu(page, 'try-sizes.pathogen');
   s = await state(page);
-  check('the main’s own menu has no Set as main', JSON.stringify(s.menu.items) === '["Duplicate","Delete…"]', s.menu.items);
+  check(
+    'the main’s own menu has no Set as main',
+    JSON.stringify(s.menu.items) === '["Rename…","Move to…","Duplicate","Delete…"]',
+    s.menu.items,
+  );
   await page.keyboard.press('Escape');
 
   // 5. Duplicate: the copy beside it, at the end of the program list, the keyboard on it; nothing opens.
@@ -356,7 +364,11 @@ try {
   await page.keyboard.up('Shift');
   await new Promise((r) => setTimeout(r, 200));
   s = await state(page);
-  check('Shift+F10 on a row opens its menu', s.menu.open && JSON.stringify(s.menu.items) === '["Duplicate","Delete…"]', s.menu);
+  check(
+    'Shift+F10 on a row opens its menu',
+    s.menu.open && JSON.stringify(s.menu.items) === '["Rename…","Move to…","Duplicate","Delete…"]',
+    s.menu,
+  );
   await page.keyboard.press('Escape');
 
   // 8c. The workspace changes while Delete…'s question is open (here, a file that imports it
@@ -453,7 +465,8 @@ try {
       `[...window.__find('.story-tab').parentElement.querySelectorAll('.story-tab')].map((b) => b.textContent.trim())`,
     )) as string[];
     await page.screenshot({ path: `${SHOTS}/2d-step4c1-story-dialog-${theme}.png` });
-    check(`the storybook: nine tree stories and three dialog stories (${theme})`, treeStories.length === 9 && dialogStories.length === 3, { treeStories, dialogStories });
+    // Nine tree stories in 4c-1; 4c-2 added Renaming a folder and Move to….
+    check(`the storybook: eleven tree stories and three dialog stories (${theme})`, treeStories.length === 11 && dialogStories.length === 3, { treeStories, dialogStories });
   }
 
   check('no page errors', pageErrors.length === 0, pageErrors);

@@ -156,6 +156,12 @@
   background-color: rgba(250, 204, 21, 0.12);
 }
 
+/* An import a rename or a move rewrote (step 4c-2; mockup v7 screen F): a bar
+   beside the line, until the file's next edit. */
+#editor-container .cm-changed-line {
+  box-shadow: inset 3px 0 0 var(--secondary-accent, #9461c4);
+}
+
 /* Hover tooltip styles */
 .cm-hover-tooltip {
   font-family: var(--font-mono, monospace);

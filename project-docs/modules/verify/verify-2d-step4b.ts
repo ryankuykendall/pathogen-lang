@@ -464,7 +464,8 @@ try {
     const storyHint = (await page.evaluate(
       `window.__find('.story-tab').getRootNode().querySelector('file-tree').shadowRoot.querySelector('.name-hint')?.textContent`,
     )) as string;
-    check(`the storybook has the two new stories, and "A taken name" refuses it (${theme})`, names.length === 7 && storyHint === 'parts/ already has gears.pathogen.', { names, storyHint });
+    // Seven stories in 4b; 4c-1 and 4c-2 added four more after them.
+    check(`the storybook has the two new stories, and "A taken name" refuses it (${theme})`, names.length === 11 && names[5] === 'The + menu' && names[6] === 'A taken name' && storyHint === 'parts/ already has gears.pathogen.', { names, storyHint });
   }
 
   check('no page errors', pageErrors.length === 0, pageErrors);

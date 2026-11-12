@@ -45,15 +45,20 @@ import {
 import type { OpenFileModules } from '../services/workspace-modules.js';
 import type { CanvasChangeDetail, CanvasSettings } from './canvas-panel.js';
 import type { EditorTabs } from './editor-tabs.js';
-import type { FileTree } from './file-tree.js';
+import type { EntryCheck, FileTree } from './file-tree.js';
 import { applyToWorkspace, workspaceState } from '../services/workspace-apply.js';
 import {
   deleteSummary,
+  isFolder,
+  moveHint,
   planDelete,
   planDuplicate,
+  planMove,
   planNewFile,
   planNewFolder,
+  planRename,
   planSetMain,
+  renameHint,
 } from '../services/workspace-edits.js';
 import type { Change, Planned } from '../services/workspace-edits.js';
 import './shared/confirm-dialog.js';
@@ -71,6 +76,10 @@ import { computeDefaultExportSvgBytes } from '../utils/svg-export-size.js';
 import { ensureChromeFontRules, getChromeFontRulesIfReady } from '../utils/export-fonts.js';
 import { updateWorkspaceSlugUrl } from '../utils/workspace-slug-url.js';
 import './shared/error-panel.js';
+import type { ToastDetail } from './shared/app-toast.js';
+
+/** How long a toast with Undo stays: long enough to read the files it names and reach for Undo. */
+const UNDO_TOAST_MS = 9000;
 
 export class WorkspaceView extends HTMLElement {
   private _debounceTimer: ReturnType<typeof setTimeout> | null = null;
@@ -110,6 +119,15 @@ export class WorkspaceView extends HTMLElement {
 
   // Each file's hash for the thumbnail's change check, by its text (_contentHash).
   private _fileHashes = new Map<string, { text: string; hash: string }>();
+
+  // Counts the changes to the workspace's files and folders (add, delete,
+  // rename, move; not typing), so a toast's Undo knows whether its change is
+  // still the last one.
+  private _structureVersion = 0;
+
+  // Withdraws the toast whose Undo is on offer: the next change to the files
+  // and folders, another workspace, or the view going.
+  private _undoToast: AbortController | null = null;
 
   // What the last compile left to mark in the editor, so a file shown after
   // it gets its marks without a recompile (only the chip changes what the
@@ -362,6 +380,13 @@ export class WorkspaceView extends HTMLElement {
     showFile: (path: string, text: string) => void;
     forgetFiles: (paths: string[]) => void;
     refreshShown: (text: string) => void;
+    renameFiles: (moves: { from: string; to: string }[]) => void;
+    editFile: (
+      path: string,
+      edits: { from: number; to: number; insert: string }[],
+      before: string,
+      after: string,
+    ) => void;
     focusEditor: () => void;
     replaceDocument: (text: string) => void;
     highlightError: (line: number, col: number) => void;
@@ -534,6 +559,7 @@ export class WorkspaceView extends HTMLElement {
     this._lastOutcome = null;
     this._libraryReadings.clear();
     this._fileHashes.clear();
+    this._withdrawUndo();
     resetOpenFileModules();
     // Disarm pending size computes until this workspace's first successful
     // compile — see _sizeArmed.
@@ -603,6 +629,9 @@ export class WorkspaceView extends HTMLElement {
       // and the file the editor opens: the main.
       const files = workspaceFromAnswer(workspace);
       const openCode = files.workspaceFiles[files.openFile] ?? '';
+      // The files are replaced whole (a switch, or a reload of this one): no Undo applies to them.
+      this._structureVersion += 1;
+      this._withdrawUndo();
 
       // Update store with workspace data
       store.update({
@@ -781,6 +810,9 @@ export class WorkspaceView extends HTMLElement {
     this.docsPanel.addEventListener('close', () => markDocs(false));
     this._tabsUnsubscribe = store.subscribe(['openFiles', 'openFile', 'workspaceFiles'], () => this._refreshTabs());
     this._refreshTabs();
+    // Synchronous, unlike the inspector's: the tree's Rename… and Move to… check, as
+    // their event returns, whether the change was made (file-tree _dispatchMove), and
+    // put the row's folding and the keyboard back if it wasn't.
     this._treeUnsubscribe = store.subscribe(
       ['workspaceFiles', 'workspaceFolders', 'workspaceEntryPoints', 'openFile', 'filesOpen'],
       () => this._refreshTree(),
@@ -798,6 +830,28 @@ export class WorkspaceView extends HTMLElement {
       const plan = this._newEntryPlan(kind, folder, name);
       if (plan.change) this._applyWorkspaceChange(plan.change, { focusEditor });
       else this._toastError('Couldn’t add it', plan.message ?? 'The workspace changed.');
+    });
+    // Rename… and Move to… (2d, step 4c-2): what a name or a folder would do, by the
+    // plans; making it, with Undo in its toast.
+    if (tree) {
+      tree.checkRename = (path, name) =>
+        this._entryCheck(
+          () => planRename(workspaceState(), path, name),
+          (change) => renameHint(change, this._isFolderPath(path)),
+        );
+      tree.checkMove = (path, folder) =>
+        this._entryCheck(
+          () => planMove(workspaceState(), path, folder),
+          (change) => moveHint(change, path, folder, this._isFolderPath(path)),
+        );
+    }
+    this.shadowRoot!.addEventListener('rename-entry', (e: Event) => {
+      const { path, name } = (e as CustomEvent<{ path: string; name: string }>).detail;
+      this._planAndApply('Couldn’t rename it', () => planRename(workspaceState(), path, name), { offerUndo: true });
+    });
+    this.shadowRoot!.addEventListener('move-entry', (e: Event) => {
+      const { path, folder } = (e as CustomEvent<{ path: string; folder: string }>).detail;
+      this._planAndApply('Couldn’t move it', () => planMove(workspaceState(), path, folder), { offerUndo: true });
     });
     // A row's own menu (2d, step 4c): Set as main, Duplicate, Delete….
     this.shadowRoot!.addEventListener('file-action', (e: Event) => {
@@ -1160,6 +1214,7 @@ export class WorkspaceView extends HTMLElement {
     // A question still open when the view goes is withdrawn: it says no, and nothing is deleted.
     this._openDialog?.cancel();
     this._openDialog = null;
+    this._withdrawUndo();
     if (this._tabsTimer) clearTimeout(this._tabsTimer);
     this._tabsTimer = null;
     if (this._handleFormatDocument) document.removeEventListener('format-document', this._handleFormatDocument);
@@ -1379,38 +1434,79 @@ export class WorkspaceView extends HTMLElement {
    * Make a planned change to the workspace (services/workspace-apply.ts), then
    * what follows it: the file it names opens, with the keyboard in the editor
    * unless `focusEditor` is false; the workspace saves; and the preview
-   * redraws when the change shows a program (a workspace's first). False,
-   * with a message, when the workspace changed since the plan.
+   * redraws when the change shows a program, takes a file away, or moves one
+   * (an import's path changes). Its message is a toast, with Undo when `undo`
+   * is given. False, with a message (titled `failTitle`), when the workspace
+   * changed since the plan.
    */
-  private _applyWorkspaceChange(change: Change, options: { focusEditor?: boolean } = {}): boolean {
+  private _applyWorkspaceChange(
+    change: Change,
+    options: { focusEditor?: boolean; undo?: Change; failTitle?: string } = {},
+  ): boolean {
     const shownBefore = store.get('openFile');
     const result = applyToWorkspace(change, this.editorPane);
     if (!result.ok) {
-      this._toastError('Couldn’t make that change', result.message);
+      this._toastError(options.failTitle ?? 'Couldn’t make that change', result.message);
       return false;
     }
-    // A deleted file's readings go with it.
-    for (const path of result.removed) {
-      this._libraryReadings.delete(path);
-      this._fileHashes.delete(path);
+    this._structureVersion += 1;
+    this._withdrawUndo();
+    // The readings of a file deleted or moved go with its old path.
+    for (const cache of [this._libraryReadings, this._fileHashes]) {
+      for (const path of cache.keys()) if (!(path in result.state.files)) cache.delete(path);
     }
-    // The editor shows another file now (the one shown was deleted): give it its marks.
+    // The editor shows another file now (the one shown was deleted or renamed): give it its marks.
     if (store.get('openFile') !== shownBefore) this._afterFileShown();
     if (change.open !== undefined) {
       this.openFileInEditor(change.open);
       if (options.focusEditor !== false) this.editorPane.focusEditor();
     }
     autosave.onChange(workspaceNow());
-    // A program to show, or a file gone (it may be the program shown, or one it imports).
-    if (change.show !== undefined || result.removed.length > 0) this.updatePreview();
+    const moved = change.steps.some((step) => step.kind === 'move' || step.kind === 'imports');
+    if (change.show !== undefined || result.removed.length > 0 || moved) this.updatePreview();
     if (change.message) {
-      document.dispatchEvent(new CustomEvent('show-toast', { detail: { type: 'success', title: change.message } }));
+      const detail: ToastDetail = { type: 'success', title: change.message };
+      if (options.undo) {
+        const undo = options.undo;
+        const version = this._structureVersion;
+        const workspaceId = store.get('workspaceId');
+        detail.action = { label: 'Undo', onSelect: () => this._undoChange(undo, version, workspaceId) };
+        detail.duration = UNDO_TOAST_MS;
+        this._undoToast = new AbortController();
+        detail.signal = this._undoToast.signal;
+      }
+      document.dispatchEvent(new CustomEvent('show-toast', { detail }));
     }
     return true;
   }
 
+  /** Take back the Undo on offer (its toast goes). */
+  private _withdrawUndo(): void {
+    this._undoToast?.abort();
+    this._undoToast = null;
+  }
+
+  /**
+   * A toast's Undo (mockup v7 screen F, "After renaming"): the names, the
+   * imports and the tabs back together, as one change. Only while its change
+   * is the last one to the files and folders (a later one withdraws the
+   * toast; this check is the backstop); typing since doesn't count. An import
+   * retyped since can't be put back, and nothing changes.
+   */
+  private _undoChange(undo: Change, version: number, workspaceId: unknown): void {
+    if (!this.isConnected || this._structureVersion !== version || store.get('workspaceId') !== workspaceId) {
+      this._toastError(
+        'Nothing was undone',
+        'Files were added, deleted, renamed or moved since. Undo puts back only the last change.',
+      );
+      return;
+    }
+    const message = 'Undone. The names and the imports are as they were.';
+    this._applyWorkspaceChange({ ...undo, message }, { focusEditor: false, failTitle: 'Nothing was undone' });
+  }
+
   /** Plan a change on the workspace as it stands and make it, or say why it can't be made. The change made, or null. */
-  private _planAndApply(failTitle: string, plan: () => Planned): Change | null {
+  private _planAndApply(failTitle: string, plan: () => Planned, options: { offerUndo?: boolean } = {}): Change | null {
     let planned: Planned;
     try {
       planned = plan();
@@ -1421,7 +1517,26 @@ export class WorkspaceView extends HTMLElement {
       this._toastError(failTitle, planned.message);
       return null;
     }
-    return this._applyWorkspaceChange(planned.change, { focusEditor: false }) ? planned.change : null;
+    // Nothing to do (the same name, the folder it's in): nothing changes, and nothing is said.
+    if (planned.change.steps.length === 0) return null;
+    const undo = options.offerUndo ? planned.undo : undefined;
+    return this._applyWorkspaceChange(planned.change, { focusEditor: false, undo }) ? planned.change : null;
+  }
+
+  /** What a rename or a move would do, for the tree: the plan's refusal, or the line that says what changes. */
+  private _entryCheck(plan: () => Planned, hint: (change: Change) => string | undefined): EntryCheck {
+    try {
+      const planned = plan();
+      if (!planned.ok) return { message: planned.message };
+      return planned.change.steps.length === 0 ? {} : { hint: hint(planned.change) };
+    } catch (err) {
+      return { message: err instanceof Error ? err.message : String(err) };
+    }
+  }
+
+  /** Whether a path is one of the workspace's folders. */
+  private _isFolderPath(path: string): boolean {
+    return isFolder(workspaceState(), path);
   }
 
   /**

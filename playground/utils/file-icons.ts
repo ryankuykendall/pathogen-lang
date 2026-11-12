@@ -31,6 +31,12 @@ export const FILE_ICONS = {
     '<rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>',
   ),
   trash: icon('<path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/>'),
+  /** Rename…, Move to…, and Move to…'s top of the workspace (step 4c-2). */
+  pencil: icon('<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/>'),
+  move: icon(
+    '<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M10 13h6M13.5 10.5 16 13l-2.5 2.5"/>',
+  ),
+  home: icon('<path d="m3 11 9-7 9 7"/><path d="M5 10v10h14V10"/>'),
   /** The tree's + (add a file or folder), and New folder in its menu. */
   plus: icon('<path d="M12 5v14M5 12h14"/>'),
   folderPlus: icon(

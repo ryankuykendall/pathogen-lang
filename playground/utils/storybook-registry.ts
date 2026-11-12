@@ -191,7 +191,7 @@ layer('hex').apply { circle(60, 100, 40) }`,
     name: 'File Tree',
     category: 'Editor',
     description:
-      "The workspace's files beside the editor (docs/workspace-files.md, mockup v6 screens O, J and N). Folders first, then files, each by name; .pathogen quiet; a library's box icon; the main's badge when it isn't main.pathogen; pathogen.json last, with a lock. Click a folder to fold it, a file to open it. One Tab stop: Up and Down move, Right and Left unfold and fold, Space opens a file, Enter opens it and goes to the editor. The + adds a program, a library or a folder to the folder clicked last, else the folder of the file in the editor, else the top: a name field appears first in that folder; a taken name is refused in place; Enter creates, Esc cancels.",
+      "The workspace's files beside the editor (docs/workspace-files.md, mockup v6 screens O, J and N). Folders first, then files, each by name; .pathogen quiet; a library's box icon; the main's badge when it isn't main.pathogen; pathogen.json last, with a lock. Click a folder to fold it, a file to open it. One Tab stop: Up and Down move, Right and Left unfold and fold, Space opens a file, Enter opens it and goes to the editor. The + adds a program, a library or a folder to the folder clicked last, else the folder of the file in the editor, else the top: a name field appears first in that folder; a taken name is refused in place; Enter creates, Esc cancels. Each row's ⋮ (or a right-click, or Shift+F10) opens its menu: Rename… turns the row into a field holding its name, and Move to… lists the top and the folders, the one it's in marked.",
     stories: [
       { name: 'A workspace with folders', props: { set: 'gears', active: 'demos/gears.pathogen' } },
       { name: 'A new workspace', props: { set: 'new', active: 'main.pathogen' } },
@@ -202,10 +202,12 @@ layer('hex').apply { circle(60, 100, 40) }`,
       { name: 'A taken name', props: { set: 'gears', active: 'parts/gears.pathogen', open: 'taken' } },
       { name: 'A program’s menu', props: { set: 'gears', active: 'main.pathogen', open: 'row:try-sizes.pathogen' } },
       { name: 'A folder’s menu', props: { set: 'gears', active: 'main.pathogen', open: 'row:parts' } },
+      { name: 'Renaming a folder', props: { set: 'gears', active: 'main.pathogen', open: 'rename:parts' } },
+      { name: 'Move to…', props: { set: 'gears', active: 'main.pathogen', open: 'move:parts/kit.pathogen' } },
     ],
     controls: [],
     notes:
-      'Clicking a file here marks it, and a name accepted in the name field adds the file or folder, as workspace-view does (open-file, create-entry). Names are checked here the way the workspace checks them: a name taken in the folder, in any letter case, is refused.',
+      'Clicking a file here marks it, and a name accepted in the name field adds the file or folder, as workspace-view does (open-file, create-entry); Rename… and Move to… move the rows (rename-entry, move-entry). Names are checked here the way the workspace checks them: a name taken in the folder, in any letter case, is refused. The lines under Rename…’s field and at the foot of Move to… are workspace-view’s, from the plans: here they are samples, since a story has no imports to count.',
     render: (container, props) => {
       import('../components/file-tree.js')
         .then(() => {
@@ -269,11 +271,66 @@ layer('hex').apply { circle(60, 100, 40) }`,
               tree.active = path;
             }
           });
+          // Rename… and Move to…: a taken name is refused; the lines are samples (see the notes).
+          const isFolder = (path: string): boolean => !tree.files.some((f) => f.path === path);
+          const baseOf = (path: string): string => path.slice(path.lastIndexOf('/') + 1);
+          const parentOf = (path: string): string => (path.includes('/') ? path.slice(0, path.lastIndexOf('/')) : '');
+          /** Where Rename… puts `path` named `name` (a file keeps its .pathogen). */
+          const renamed = (path: string, name: string): string =>
+            join(parentOf(path), isFolder(path) ? name : `${name.replace(/\.pathogen$/i, '')}.pathogen`);
+          /** Why `to` can't be used: another file or folder has it, in any letter case. */
+          const taken = (to: string, self: string): string | undefined => {
+            const all = [...tree.files.map((f) => f.path), ...tree.folders];
+            if (!all.some((p) => p.toLowerCase() === to.toLowerCase() && p !== self)) return undefined;
+            const folder = parentOf(to);
+            return `${folder ? `${folder}/` : 'The top of the workspace'} already has ${baseOf(to)}.`;
+          };
+          tree.checkRename = (path, name) => {
+            const message = taken(renamed(path, name), path);
+            if (message) return { message };
+            const files = tree.files.filter((f) => f.path.startsWith(`${path}/`)).length;
+            const hint = isFolder(path)
+              ? `Moves its ${files} files, and updates the imports in 3 files`
+              : 'Updates the imports in 2 files';
+            return { hint };
+          };
+          tree.checkMove = (path, folder) => {
+            const message = taken(join(folder, baseOf(path)), path);
+            const dest = folder ? `${folder}/` : 'the top';
+            return message ? { message } : { hint: `Moving it to ${dest} updates the imports in main.pathogen.` };
+          };
+          const moveRows = (from: string, to: string): void => {
+            const follow = (p: string): string =>
+              p === from ? to : p.startsWith(`${from}/`) ? `${to}${p.slice(from.length)}` : p;
+            tree.files = tree.files.map((f) => ({ ...f, path: follow(f.path) }));
+            tree.folders = tree.folders.map(follow);
+            if (tree.active) tree.active = follow(tree.active);
+          };
+          tree.addEventListener('rename-entry', (e) => {
+            const { path, name } = (e as CustomEvent<{ path: string; name: string }>).detail;
+            moveRows(path, renamed(path, name));
+          });
+          tree.addEventListener('move-entry', (e) => {
+            const { path, folder } = (e as CustomEvent<{ path: string; folder: string }>).detail;
+            moveRows(path, join(folder, baseOf(path)));
+          });
           // A row's menu here only closes when chosen: workspace-view is what acts on file-action.
-          // Two stories open the + menu, one goes on to name a library that's taken, and two open a row's menu.
+          // Two stories open the + menu, one goes on to name a library that's taken, two open a
+          // row's menu, one renames a folder and one opens Move to….
           const open = String(props.open ?? '');
+          const chooseIn = (path: string, action: string): void => {
+            tree.shadowRoot!.querySelector<HTMLElement>(`[data-path="${path}"] .row-menu`)!.click();
+            tree.shadowRoot!.querySelector<HTMLElement>(`[data-action="${action}"]`)!.click();
+          };
           if (open.startsWith('row:')) {
             tree.shadowRoot!.querySelector<HTMLElement>(`[data-path="${open.slice(4)}"] .row-menu`)!.click();
+          } else if (open.startsWith('rename:')) {
+            chooseIn(open.slice(7), 'rename');
+            const field = tree.shadowRoot!.querySelector<HTMLInputElement>('.row.input input')!;
+            field.value = 'machines';
+            field.dispatchEvent(new Event('input', { bubbles: true }));
+          } else if (open.startsWith('move:')) {
+            chooseIn(open.slice(5), 'move');
           } else if (open) {
             const root = tree.shadowRoot!;
             root.querySelector<HTMLButtonElement>('.add')!.click();

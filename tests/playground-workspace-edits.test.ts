@@ -16,6 +16,7 @@ import {
   entryPointsAfterEdit,
   importChangeOffsets,
   keepBothName,
+  moveHint,
   planDelete,
   planDuplicate,
   planMove,
@@ -24,6 +25,7 @@ import {
   planRename,
   planSetMain,
   projectFileText,
+  renameHint,
   StaleChangeError,
 } from '../playground/services/workspace-edits.js';
 import { emptyBoilerplate } from '../playground/utils/examples.js';
@@ -268,6 +270,49 @@ describe('Move to…', () => {
   });
 });
 
+// The lines the tree shows before you choose (mockup v7 screen F, states 2, 5 and 6).
+describe('what a rename or a move says it will do', () => {
+  const change = (planned: Planned): Change => {
+    if (!planned.ok) throw new Error(planned.message);
+    return planned.change;
+  };
+
+  it('Rename…: the files a folder moves, and the files whose imports change', () => {
+    const state = gearsWorkspace();
+    expect(renameHint(change(planRename(state, 'parts', 'machines')), true)).toBe(
+      'Moves its 3 files, and updates the imports in 3 files',
+    );
+    expect(renameHint(change(planRename(state, 'parts/gears.pathogen', 'cogs')), false)).toBe(
+      'Updates the imports in 3 files',
+    );
+    // Nothing imports it, and it's a file: nothing to say.
+    expect(renameHint(change(planRename(state, 'try-sizes.pathogen', 'poster')), false)).toBeUndefined();
+    const spare = { ...state, folders: ['spare'] };
+    expect(renameHint(change(planRename(spare, 'demos', 'examples')), true)).toBe('Moves its file');
+  });
+
+  it('Move to…: the files whose imports change, a moved file’s own last', () => {
+    const state = gearsWorkspace();
+    expect(moveHint(change(planMove(state, 'parts/kit.pathogen', 'demos')), 'parts/kit.pathogen', 'demos', false)).toBe(
+      'Moving it to demos/ updates the imports in main.pathogen and try-sizes.pathogen, and kit.pathogen’s own.',
+    );
+    expect(moveHint(change(planMove(state, 'try-sizes.pathogen', 'demos')), 'try-sizes.pathogen', 'demos', false)).toBe(
+      'Moving it to demos/ updates try-sizes.pathogen’s own imports.',
+    );
+    const withSpare = { ...state, folders: ['spare'] };
+    expect(moveHint(change(planMove(withSpare, 'parts/labels.pathogen', '')), 'parts/labels.pathogen', '', false)).toBe(
+      'Moving it to the top updates the imports in demos/gears.pathogen.',
+    );
+    expect(moveHint(change(planMove(withSpare, 'demos', 'spare')), 'demos', 'spare', true)).toBe(
+      'Moving it to spare/ updates the imports in spare/demos/gears.pathogen.',
+    );
+    const lone = { files: { 'a.pathogen': 'M 0 0;\n' }, folders: ['b'], entryPoints: ['a.pathogen'] };
+    expect(moveHint(change(planMove(lone, 'a.pathogen', 'b')), 'a.pathogen', 'b', false)).toBe(
+      'Moving it to b/ changes no imports.',
+    );
+  });
+});
+
 describe('Undo (the toast after a rename or a move)', () => {
   it('still works after you typed elsewhere in a file whose imports it changed, and keeps what you typed', () => {
     const state = gearsWorkspace();
@@ -292,6 +337,20 @@ describe('Undo (the toast after a rename or a move)', () => {
     expect(() => applyChange(retyped, undo)).toThrow(
       'main.pathogen no longer imports "./parts/cogs.pathogen" where it did, so its imports were left as they are.',
     );
+  });
+
+  it('is refused when an import alike was typed in since: the one it counted to is another now', () => {
+    const state = gearsWorkspace();
+    const { after, undo } = made(state, planRename(state, 'parts/gears.pathogen', 'cogs'));
+    const line = 'import { gear } from "./parts/cogs.pathogen";\n';
+    const doubled = { ...after, files: { ...after.files, 'main.pathogen': `${line}${after.files['main.pathogen']}` } };
+    expect(() => applyChange(doubled, undo)).toThrow(
+      'main.pathogen no longer imports "./parts/cogs.pathogen" where it did, so its imports were left as they are.',
+    );
+    // An import of something else typed in since doesn't count.
+    const other = 'import { caption } from "./parts/labels.pathogen";\n';
+    const typed = { ...after, files: { ...after.files, 'main.pathogen': `${other}${after.files['main.pathogen']}` } };
+    expect(applyChange(typed, undo).files['main.pathogen']).toBe(`${other}${MAIN}`);
   });
 
   it('is refused when the program list changed since', () => {

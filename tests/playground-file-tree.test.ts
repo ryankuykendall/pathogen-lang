@@ -41,6 +41,33 @@ function outline(rows: TreeRow[]): string[] {
 }
 
 describe('the tree’s rows', () => {
+  it('Rename…’s field takes the place of the row it renames; a folder’s files stay under it', () => {
+    const rows = treeRows(GEARS, [], {
+      collapsed: new Set(),
+      main: 'main.pathogen',
+      naming: { folder: '', kind: 'folder', renaming: 'parts' },
+    });
+    expect(outline(rows).slice(2, 6)).toEqual([
+      '[name field]',
+      '  gears.pathogen [lib]',
+      '  kit.pathogen [lib]',
+      '  labels.pathogen [lib]',
+    ]);
+    const field = treeRows(GEARS, [], {
+      collapsed: new Set(),
+      main: 'main.pathogen',
+      naming: { folder: 'parts', kind: 'library', renaming: 'parts/kit.pathogen' },
+    }).find((r) => r.type === 'input');
+    expect(field).toEqual({
+      type: 'input',
+      path: 'parts/kit.pathogen',
+      name: 'kit.pathogen',
+      level: 2,
+      kind: 'library',
+      renaming: 'parts/kit.pathogen',
+    });
+  });
+
   it('folders first, then files, each by name; pathogen.json last at the top', () => {
     const rows = treeRows(GEARS, [], { collapsed: new Set(), main: 'main.pathogen' });
     expect(outline(rows)).toEqual([
@@ -361,17 +388,17 @@ describe('the row menus', () => {
 
   it('a program’s menu offers Set as main; the main’s and a library’s don’t', () => {
     dots('try-sizes.pathogen')!.click();
-    expect(labels()).toEqual(['Set as main', '—', 'Duplicate', '—', 'Delete…']);
+    expect(labels()).toEqual(['Set as main', '—', 'Rename…', 'Move to…', 'Duplicate', '—', 'Delete…']);
     dots('main.pathogen')!.click();
-    expect(labels()).toEqual(['Duplicate', '—', 'Delete…']);
+    expect(labels()).toEqual(['Rename…', 'Move to…', 'Duplicate', '—', 'Delete…']);
     dots('parts/kit.pathogen')!.click();
-    expect(labels()).toEqual(['Duplicate', '—', 'Delete…']);
+    expect(labels()).toEqual(['Rename…', 'Move to…', 'Duplicate', '—', 'Delete…']);
   });
 
-  it('a folder’s menu adds to that folder, then Delete…', () => {
+  it('a folder’s menu adds to that folder, then Rename…, Move to… and Delete…', () => {
     dots('demos')!.click();
     expect(menu().querySelector('.menu-head')!.textContent).toBe('Add to demos/');
-    expect(labels()).toEqual(['New program', 'New library', 'New folder', '—', 'Delete…']);
+    expect(labels()).toEqual(['New program', 'New library', 'New folder', '—', 'Rename…', 'Move to…', 'Delete…']);
   });
 
   it('the ⋮ shows it’s open, and a second click closes the menu', () => {
@@ -461,6 +488,245 @@ describe('the row menus', () => {
     expect(tree.focusRow('gone.pathogen')).toBe(false);
     tree.focusTabStop();
     expect(focused()?.tabIndex).toBe(0);
+  });
+});
+
+// Step 4c-2 (mockup v7 screen F): Rename… (the name only, in place) and Move to…
+// (a list of folders). The tree asks workspace-view what a name or a folder
+// would do (checkRename, checkMove: the plans' own answers) and reports the
+// choice as `rename-entry` or `move-entry`.
+describe('renaming and moving', () => {
+  beforeAll(async () => {
+    await import('../playground/components/file-tree.js');
+  });
+
+  interface Check {
+    message?: string;
+    hint?: string;
+  }
+  let tree: FileTreeEl & {
+    checkRename: ((path: string, name: string) => Check) | null;
+    checkMove: ((path: string, folder: string) => Check) | null;
+  };
+  let renamed: { path: string; name: string }[];
+  let moved: { path: string; folder: string }[];
+
+  beforeEach(() => {
+    document.body.innerHTML = '';
+    tree = document.createElement('file-tree');
+    document.body.appendChild(tree);
+    tree.files = GEARS;
+    tree.folders = ['examples'];
+    tree.main = 'main.pathogen';
+    tree.active = 'main.pathogen';
+    tree.checkRename = (path, name) =>
+      name === 'kit' && path === 'parts/gears.pathogen'
+        ? { message: 'parts/ already has kit.pathogen.' }
+        : {
+            hint:
+              path === 'parts'
+                ? 'Moves its 3 files, and updates the imports in 2 files'
+                : 'Updates the imports in 2 files',
+          };
+    tree.checkMove = (path, folder) =>
+      folder === 'demos' && path === 'parts/gears.pathogen'
+        ? { message: 'demos/ already has gears.pathogen.' }
+        : { hint: `Moving it to ${folder ? `${folder}/` : 'the top'} updates the imports in main.pathogen.` };
+    renamed = [];
+    moved = [];
+    tree.addEventListener('rename-entry', (e) =>
+      renamed.push((e as Event & { detail: { path: string; name: string } }).detail),
+    );
+    tree.addEventListener('move-entry', (e) =>
+      moved.push((e as Event & { detail: { path: string; folder: string } }).detail),
+    );
+  });
+
+  const $ = <T extends Element = HTMLElement>(sel: string) => tree.shadowRoot!.querySelector<T>(sel);
+  const dots = (path: string) => $(`[role="treeitem"][data-path="${path}"] .row-menu`)!;
+  const menu = () => $('[role="menu"]')!;
+  const choose = (label: string) =>
+    [...menu().querySelectorAll<HTMLElement>('[role="menuitem"]')]
+      .find((item) => item.querySelector('.label')!.textContent === label)!
+      .click();
+  const field = () => $<HTMLInputElement>('.row.input input');
+  const hint = () => $('.name-hint')!;
+  const focused = () => tree.shadowRoot!.activeElement as HTMLElement | null;
+  const key = (target: Element, k: string) => {
+    const init = { key: k, bubbles: true, composed: true, cancelable: true };
+    return target.dispatchEvent(new window.KeyboardEvent('keydown', init));
+  };
+  const typeName = (text: string) => {
+    field()!.value = text;
+    field()!.dispatchEvent(new window.Event('input', { bubbles: true }));
+  };
+
+  it('Rename… turns the row into a field holding its name, selected, with .pathogen after it', () => {
+    dots('parts/gears.pathogen').click();
+    choose('Rename…');
+    const rows = [...tree.shadowRoot!.querySelectorAll<HTMLElement>('.list > .row')].map(
+      (r) => r.dataset.path ?? (r.classList.contains('input') ? '[field]' : ''),
+    );
+    const at = rows.indexOf('[field]');
+    expect(rows.slice(at - 1, at + 2)).toEqual(['parts', '[field]', 'parts/kit.pathogen']);
+    expect(rows).not.toContain('parts/gears.pathogen');
+    expect([field()!.value, field()!.selectionStart, field()!.selectionEnd, focused()]).toEqual([
+      'gears',
+      0,
+      5,
+      field(),
+    ]);
+    expect([$('.row.input .ext')!.textContent, field()!.getAttribute('aria-label')]).toEqual([
+      '.pathogen',
+      'New name for gears.pathogen',
+    ]);
+    expect(hint().textContent).toBe('Updates the imports in 2 files · Enter to rename, Esc to cancel');
+  });
+
+  it('a taken name is refused in place; Enter renames a good one; the same name just closes the field', () => {
+    dots('parts/gears.pathogen').click();
+    choose('Rename…');
+    typeName('kit');
+    expect([field()!.getAttribute('aria-invalid'), hint().textContent]).toEqual([
+      'true',
+      'parts/ already has kit.pathogen.',
+    ]);
+    key(field()!, 'Enter');
+    expect(renamed).toEqual([]);
+    typeName('gears');
+    key(field()!, 'Enter');
+    expect([renamed, field()]).toEqual([[], null]);
+    dots('parts/gears.pathogen').click();
+    choose('Rename…');
+    typeName('cogs');
+    key(field()!, 'Enter');
+    expect(renamed).toEqual([{ path: 'parts/gears.pathogen', name: 'cogs' }]);
+  });
+
+  it('a folder’s field has no .pathogen, and its line counts the files it moves', () => {
+    dots('parts').click();
+    choose('Rename…');
+    expect([field()!.value, $('.row.input .ext'), hint().textContent]).toEqual([
+      'parts',
+      null,
+      'Moves its 3 files, and updates the imports in 2 files · Enter to rename, Esc to cancel',
+    ]);
+    // The folder's files stay listed under its field.
+    expect(tree.shadowRoot!.querySelector('[data-path="parts/kit.pathogen"]')).not.toBeNull();
+    key(field()!, 'Escape');
+    expect([field(), focused()?.dataset.path]).toEqual([null, 'parts']);
+  });
+
+  it('Move to… lists the top and every folder; the one it’s in can’t be chosen', () => {
+    dots('parts/kit.pathogen').click();
+    choose('Move to…');
+    expect(menu().querySelector('.menu-head')!.textContent).toBe('Move kit.pathogen to');
+    const items = [...menu().querySelectorAll<HTMLElement>('[role="menuitem"]')].map((i) => [
+      i.querySelector('.label')!.textContent,
+      i.getAttribute('aria-disabled') === 'true',
+      i.querySelector('small')?.textContent ?? '',
+    ]);
+    expect(items).toEqual([
+      ['The top of the workspace', false, ''],
+      ['demos/', false, ''],
+      ['examples/', false, ''],
+      ['parts/', true, 'It’s here now'],
+    ]);
+    // Its line says what the focused one would do.
+    expect(menu().querySelector('.menu-foot')!.textContent).toBe(
+      'Moving it to the top updates the imports in main.pathogen.',
+    );
+    key(focused()!, 'ArrowDown');
+    expect(menu().querySelector('.menu-foot')!.textContent).toBe(
+      'Moving it to demos/ updates the imports in main.pathogen.',
+    );
+  });
+
+  it('a folder can’t move into itself; a refused folder says why and can’t be chosen', () => {
+    dots('parts').click();
+    choose('Move to…');
+    const labels = [...menu().querySelectorAll('[role="menuitem"] .label')].map((l) => l.textContent);
+    expect(labels).toEqual(['The top of the workspace', 'demos/', 'examples/']);
+    expect(menu().querySelector('[role="menuitem"]')!.getAttribute('aria-disabled')).toBe('true');
+    key(focused()!, 'Escape');
+    dots('parts/gears.pathogen').click();
+    choose('Move to…');
+    const demos = [...menu().querySelectorAll<HTMLElement>('[role="menuitem"]')][1];
+    expect([demos.getAttribute('aria-disabled'), demos.querySelector('small')!.textContent]).toEqual([
+      'true',
+      'demos/ already has gears.pathogen.',
+    ]);
+    demos.click();
+    expect(moved).toEqual([]);
+  });
+
+  it('choosing a folder reports the move', () => {
+    dots('parts/kit.pathogen').click();
+    choose('Move to…');
+    choose('demos/');
+    expect([moved, menu().hidden]).toEqual([[{ path: 'parts/kit.pathogen', folder: 'demos' }], true]);
+  });
+
+  const folded = (path: string) => $(`[role="treeitem"][data-path="${path}"]`)!.getAttribute('aria-expanded');
+
+  it('a renamed folder keeps its folding, and the keyboard lands on it', () => {
+    // workspace-view applies the rename as the event is handled.
+    tree.addEventListener('rename-entry', () => {
+      tree.files = GEARS.map((f) => ({ ...f, path: f.path.replace(/^parts\//, 'machines/') }));
+    });
+    $('[data-path="parts"]')!.click();
+    expect(folded('parts')).toBe('false');
+    dots('parts').click();
+    choose('Rename…');
+    typeName('machines');
+    key(field()!, 'Enter');
+    expect([folded('machines'), focused()?.dataset.path, field()]).toEqual(['false', 'machines', null]);
+  });
+
+  it('a refused rename leaves the row where it was, with the keyboard on it', () => {
+    dots('parts/gears.pathogen').click();
+    choose('Rename…');
+    typeName('cogs');
+    key(field()!, 'Enter');
+    expect([renamed.length, focused()?.dataset.path]).toEqual([1, 'parts/gears.pathogen']);
+  });
+
+  it('a moved file takes the keyboard with it', () => {
+    tree.addEventListener('move-entry', () => {
+      tree.files = GEARS.map((f) => (f.path === 'parts/kit.pathogen' ? { ...f, path: 'demos/kit.pathogen' } : f));
+    });
+    dots('parts/kit.pathogen').click();
+    choose('Move to…');
+    choose('demos/');
+    expect(focused()?.dataset.path).toBe('demos/kit.pathogen');
+  });
+
+  it('left with a click, the rename waits until the click has landed (its row isn’t redrawn under the pointer)', async () => {
+    dots('parts/gears.pathogen').click();
+    choose('Rename…');
+    typeName('cogs');
+    window.dispatchEvent(new window.Event('pointerdown'));
+    field()!.blur();
+    expect(renamed).toEqual([]);
+    window.dispatchEvent(new window.Event('pointerup'));
+    expect(renamed).toEqual([]);
+    await new Promise((resolve) => {
+      setTimeout(resolve, 0);
+    });
+    expect(renamed).toEqual([{ path: 'parts/gears.pathogen', name: 'cogs' }]);
+    // Left with the keyboard (Tab), it renames at once.
+    dots('parts/kit.pathogen').click();
+    choose('Rename…');
+    typeName('box');
+    field()!.blur();
+    expect(renamed.at(-1)).toEqual({ path: 'parts/kit.pathogen', name: 'box' });
+  });
+
+  it('a row renamed or deleted elsewhere while its field is open takes the field with it', () => {
+    dots('parts/gears.pathogen').click();
+    choose('Rename…');
+    tree.files = GEARS.filter((f) => f.path !== 'parts/gears.pathogen');
+    expect(field()).toBeNull();
   });
 });
 

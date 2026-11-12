@@ -142,6 +142,100 @@ describe('pathogen.json in the editor', () => {
     expect([...pane._kept.keys()]).toEqual(['parts/kit.pathogen']);
   });
 
+  it('a renamed file keeps its state under its new name, the file shown too (renameFiles)', () => {
+    const pane = makePane() as Pane & {
+      renameFiles: (moves: { from: string; to: string }[]) => void;
+      _kept: Map<string, unknown>;
+      activePath: string;
+    };
+    pane.showFile('parts/gears.pathogen', 'module;');
+    pane._kept.set('parts/kit.pathogen', { state: 'kit' });
+    pane.renameFiles([
+      { from: 'parts/gears.pathogen', to: 'machines/gears.pathogen' },
+      { from: 'parts/kit.pathogen', to: 'machines/kit.pathogen' },
+    ]);
+    expect([pane.activePath, [...pane._kept.entries()]]).toEqual([
+      'machines/gears.pathogen',
+      [['machines/kit.pathogen', { state: 'kit' }]],
+    ]);
+  });
+
+  it('an import rewrite reaches a kept file outside its undo history (editFile)', () => {
+    const pane = makePane() as Pane & {
+      editFile: (
+        path: string,
+        edits: { from: number; to: number; insert: string }[],
+        before: string,
+        after: string,
+      ) => void;
+      _kept: Map<string, { state: unknown }>;
+      _cmModules: unknown;
+    };
+    const updates: unknown[] = [];
+    const keptState = (doc: string): unknown => ({
+      doc: { toString: () => doc, length: doc.length },
+      update: (spec: unknown) => {
+        updates.push(spec);
+        return { state: keptState('after') };
+      },
+    });
+    pane._cmModules = { state: { Transaction: { addToHistory: { of: (v: boolean) => ({ addToHistory: v }) } } } };
+    // (main.pathogen is the file shown; demo.pathogen is kept.)
+    pane._kept.set('demo.pathogen', { state: keptState('import "./a.pathogen";') });
+    pane.editFile(
+      'demo.pathogen',
+      [{ from: 8, to: 20, insert: './b.pathogen' }],
+      'import "./a.pathogen";',
+      'import "./b.pathogen";',
+    );
+    expect(updates).toEqual([
+      { changes: [{ from: 8, to: 20, insert: './b.pathogen' }], annotations: { addToHistory: false } },
+    ]);
+    // Text it wasn't made for changes only where it differs from the text after,
+    // so its undo history keeps its place (a whole-document replace would collapse it).
+    pane._kept.set('try.pathogen', { state: keptState('// note\nimport "./a.pathogen";\n') });
+    pane.editFile(
+      'try.pathogen',
+      [{ from: 8, to: 20, insert: './b.pathogen' }],
+      'import "./a.pathogen";\n',
+      '// note\nimport "./b.pathogen";\n',
+    );
+    expect(updates[1]).toEqual({
+      changes: [{ from: 18, to: 19, insert: 'b' }],
+      annotations: { addToHistory: false },
+    });
+  });
+
+  it('the one span where two texts differ (spanChange)', async () => {
+    const { spanChange } = await import('../playground/utils/cm-changed-lines.js');
+    expect(spanChange('abcXdef', 'abcYYdef')).toEqual({ from: 3, to: 4, insert: 'YY' });
+    expect(spanChange('aaa', 'aaaa')).toEqual({ from: 3, to: 3, insert: 'a' });
+    expect(spanChange('keep this', 'keep this')).toEqual({ from: 9, to: 9, insert: '' });
+    expect(spanChange('x', '')).toEqual({ from: 0, to: 1, insert: '' });
+    // Applied, each gives the text after.
+    for (const [doc, next] of [
+      ['abcXdef', 'abcYYdef'],
+      ['aaa', 'aaaa'],
+      ['import "./a.pathogen";', '// new\nimport "./b.pathogen";'],
+    ]) {
+      const { from, to, insert } = spanChange(doc, next);
+      expect(doc.slice(0, from) + insert + doc.slice(to)).toBe(next);
+    }
+  });
+
+  it('the lines an import rewrite touches, in the text after it (editedLines)', async () => {
+    const { editedLines } = await import('../playground/utils/cm-changed-lines.js');
+    const before =
+      '// gears\nimport { a } from "./parts/a.pathogen";\nimport * as k from "./parts/k.pathogen";\ngo();\n';
+    const after = before.replaceAll('./parts/', './machines/');
+    const edits = [...before.matchAll(/\.\/parts\/\w\.pathogen/g)].map((m) => ({
+      from: m.index,
+      to: m.index + m[0].length,
+      insert: m[0].replace('parts', 'machines'),
+    }));
+    expect(editedLines(after, edits)).toEqual([2, 3]);
+  });
+
   it('stops typing, lights its line for 2 seconds, and lets nothing through', () => {
     vi.useFakeTimers();
     const pane = makePane();

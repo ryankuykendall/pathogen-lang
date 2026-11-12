@@ -4,11 +4,17 @@
 // update, so no subscriber ever sees half a change: every file, the folders,
 // the program list, the program shown, and what the editor holds.
 //
+// - A file moved or renamed keeps its tab, its place among the tabs and its
+//   editor state, undo history and all; the program shown follows it.
+// - The imports rewritten in other files (and a moved file's own) reach the
+//   editor as small edits OUTSIDE each file's undo history: Cmd-Z in a file
+//   must never point an import back at a name that's gone (note 53, question
+//   3). The toast's Undo is what puts names and imports back together.
 // - A deleted file's tab closes. If it was the file in the editor, the tab to
 //   its right shows (else to its left; with no tab left, the main; with no
 //   file left, pathogen.json, until step 4d's "No file open"). Its text is
-//   never written back, and its editor state, undo history and all, is
-//   forgotten, so a new file with its name starts afresh.
+//   never written back, and its editor state is forgotten, so a new file with
+//   its name starts afresh.
 // - Setting the main leaves the preview on the program it shows (docs: "Setting
 //   the main doesn't change what the preview shows"): `shownProgram: null`
 //   means "the main", so it's pinned first. A deleted program shown goes back
@@ -20,11 +26,24 @@
 
 import { store } from '../state/store.js';
 import { withTabOpened } from './open-files.js';
-import { applyChange, PROJECT_FILE, projectFileText, StaleChangeError } from './workspace-edits.js';
+import {
+  applyChange,
+  importChangeOffsets,
+  PROJECT_FILE,
+  projectFileText,
+  StaleChangeError,
+} from './workspace-edits.js';
 import { programToShow, workspaceNow } from './workspace-files.js';
 
 import type { FileEditor } from './open-files.js';
 import type { Change, WorkspaceState } from './workspace-edits.js';
+
+/** One edit to a file's text: the editor applies it as it is, outside the undo history. */
+export interface TextEdit {
+  from: number;
+  to: number;
+  insert: string;
+}
 
 /** What a change needs from the editor. */
 export interface ChangeEditor extends FileEditor {
@@ -32,6 +51,15 @@ export interface ChangeEditor extends FileEditor {
   forgetFiles: (paths: string[]) => void;
   /** Put new text in the file shown, outside its undo history (pathogen.json, written from the entry points). */
   refreshShown: (text: string) => void;
+  /** Files moved or renamed, in order: their kept states and the file shown go with them. */
+  renameFiles: (moves: { from: string; to: string }[]) => void;
+  /**
+   * A file's import rewrites (by its path after the change), outside its undo
+   * history, without telling anyone (the store update says it all). `before`
+   * is the text the edits were made for; if the editor holds other text for
+   * the file, it takes `after` whole.
+   */
+  editFile: (path: string, edits: TextEdit[], before: string, after: string) => void;
 }
 
 export type ApplyResult = { ok: true; state: WorkspaceState; removed: string[] } | { ok: false; message: string };
@@ -54,12 +82,46 @@ const sameList = (a: readonly string[], b: readonly string[]): boolean =>
  * else to its left; with no tab left, the main, else the first file; with no
  * file left, pathogen.json (until step 4d's "No file open").
  */
-function survivor(openFiles: readonly string[], active: string, next: WorkspaceState, gone: Set<string>): string {
-  const at = openFiles.indexOf(active);
-  const right = openFiles.slice(at + 1).find((p) => !gone.has(p));
-  const left = [...openFiles.slice(0, Math.max(at, 0))].reverse().find((p) => !gone.has(p));
+function survivor(tabs: readonly string[], active: string, next: WorkspaceState, gone: (p: string) => boolean): string {
+  const at = tabs.indexOf(active);
+  const right = tabs.slice(at + 1).find((p) => !gone(p));
+  const left = [...tabs.slice(0, Math.max(at, 0))].reverse().find((p) => !gone(p));
   const main = next.entryPoints.find((p) => p in next.files);
   return right ?? left ?? main ?? Object.keys(next.files).sort()[0] ?? PROJECT_FILE;
+}
+
+/**
+ * The change, step by step: the workspace after it, its moves in order, and
+ * each import rewrite with the offsets in the text it was made for. A step's
+ * paths are the ones its workspace has at that point (an Undo's imports name
+ * the paths its moves just put back), so they're read as they come.
+ */
+function walk(before: WorkspaceState, change: Change) {
+  const moves: { at: number; from: string; to: string }[] = [];
+  const rewrites: { at: number; path: string; edits: TextEdit[]; before: string; after: string }[] = [];
+  let state = before;
+  change.steps.forEach((step, at) => {
+    const next = applyChange(state, { steps: [step], importsUpdated: [] });
+    if (step.kind === 'move') moves.push({ at, from: step.from, to: step.to });
+    if (step.kind === 'imports') {
+      const text = state.files[step.path];
+      rewrites.push({
+        at,
+        path: step.path,
+        edits: importChangeOffsets(text, step.path, step.changes),
+        before: text,
+        after: next.files[step.path],
+      });
+    }
+    state = next;
+  });
+  /** Where a path at step `at` ends up once the change is made. */
+  const follow = (path: string, at = -1): string => {
+    let p = path;
+    for (const move of moves) if (move.at > at && move.from === p) p = move.to;
+    return p;
+  };
+  return { next: state, moves, rewrites, follow };
 }
 
 /**
@@ -69,15 +131,18 @@ function survivor(openFiles: readonly string[], active: string, next: WorkspaceS
  */
 export function applyToWorkspace(change: Change, editor?: ChangeEditor): ApplyResult {
   const before = workspaceState();
-  let next: WorkspaceState;
+  let walked: ReturnType<typeof walk>;
   try {
-    next = applyChange(before, change);
+    walked = walk(before, change);
   } catch (err) {
     if (err instanceof StaleChangeError) return { ok: false, message: err.message };
     throw err;
   }
-  const removed = Object.keys(before.files).filter((p) => !(p in next.files));
+  const { next, moves, rewrites, follow } = walked;
+  // Deleted: gone, and not moved somewhere.
+  const removed = Object.keys(before.files).filter((p) => !(follow(p) in next.files));
   const gone = new Set(removed);
+  const isGone = (p: string): boolean => gone.has(p);
   const updates: Record<string, unknown> = {
     workspaceFiles: next.files,
     workspaceFolders: next.folders,
@@ -86,33 +151,48 @@ export function applyToWorkspace(change: Change, editor?: ChangeEditor): ApplyRe
 
   // The program shown.
   const shown = store.get('shownProgram') as string | null;
+  const oldMain = before.entryPoints[0];
   if (change.show !== undefined) updates.shownProgram = change.show;
   else if (shown !== null && gone.has(shown)) updates.shownProgram = null;
-  else if (shown === null && before.entryPoints.length > 0 && before.entryPoints[0] !== next.entryPoints[0]) {
-    // The main moves: keep the preview on what it shows now, if that's still
-    // here and isn't the new main anyway. (With no main before, there's
-    // nothing to keep: the preview follows the new one.)
-    const now = programToShow(workspaceNow(), null);
+  else if (shown !== null && follow(shown) !== shown) updates.shownProgram = follow(shown);
+  else if (shown === null && oldMain !== undefined && follow(oldMain) !== next.entryPoints[0]) {
+    // The main moves (not just its name): keep the preview on what it shows
+    // now, if that's still here and isn't the new main anyway. (With no main
+    // before, there's nothing to keep: the preview follows the new one.)
+    const now = follow(programToShow(workspaceNow(), null));
     if (now in next.files && now !== next.entryPoints[0]) updates.shownProgram = now;
+  }
+
+  // The editor: moved files' states go with them first, so nothing later
+  // shows a file by a path the editor doesn't know yet.
+  if (moves.length > 0) editor?.renameFiles(moves.map(({ from, to }) => ({ from, to })));
+  // Import rewrites, by each file's path after the change.
+  for (const rewrite of rewrites) {
+    editor?.editFile(follow(rewrite.path, rewrite.at), rewrite.edits, rewrite.before, rewrite.after);
   }
 
   // The tabs, and the file in the editor.
   const openFiles = store.get('openFiles') as string[];
   const active = store.get('openFile') as string;
-  let tabs = openFiles.filter((p) => !gone.has(p));
-  let shownFile = active;
-  if (gone.has(active)) {
-    shownFile = survivor(openFiles, active, next, gone);
+  // The tabs in order: each moved one by its new path, a deleted one (for now) by its old.
+  const tabs = openFiles.map((p) => (isGone(p) ? p : follow(p)));
+  let kept = tabs.filter((_, i) => !isGone(openFiles[i]));
+  let shownFile = isGone(active) ? active : follow(active);
+  if (isGone(active)) {
+    shownFile = survivor(tabs, active, next, isGone);
     const text = shownFile === PROJECT_FILE ? projectFileText(next.entryPoints) : next.files[shownFile];
     editor?.showFile(shownFile, text);
-    tabs = withTabOpened(tabs, shownFile);
-    updates.openFile = shownFile;
+    kept = withTabOpened(kept, shownFile);
     updates.code = text;
+  } else if (shownFile !== PROJECT_FILE && next.files[shownFile] !== (store.get('code') as string)) {
+    // The open file's own imports were rewritten (the editor has them already).
+    updates.code = next.files[shownFile];
   }
-  if (!sameList(tabs, openFiles)) updates.openFiles = tabs;
+  if (shownFile !== active) updates.openFile = shownFile;
+  if (!sameList(kept, openFiles)) updates.openFiles = kept;
 
   // pathogen.json in the editor follows the program list.
-  if (shownFile === PROJECT_FILE && !gone.has(active) && !sameList(before.entryPoints, next.entryPoints)) {
+  if (shownFile === PROJECT_FILE && !isGone(active) && !sameList(before.entryPoints, next.entryPoints)) {
     const text = projectFileText(next.entryPoints);
     editor?.refreshShown(text);
     updates.code = text;

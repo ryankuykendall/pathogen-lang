@@ -50,6 +50,12 @@ export interface ImportChange {
   /** What the import names, before its path, spaces collapsed: `import { gear } from`. */
   clause: string;
   nth: number;
+  /**
+   * How many imports alike (`written`, `clause`) the file had when planned. An
+   * Undo can come after typing: one alike added or removed would make `nth`
+   * name another import, so a different count refuses the change.
+   */
+  of?: number;
 }
 
 export type Step =
@@ -109,7 +115,8 @@ function allFolders(state: WorkspaceState): Set<string> {
   return out;
 }
 
-function isFolder(state: WorkspaceState, path: string): boolean {
+/** Whether `path` is one of the workspace's folders (an empty one, or one holding files). */
+export function isFolder(state: WorkspaceState, path: string): boolean {
   return allFolders(state).has(path);
 }
 
@@ -196,8 +203,9 @@ export function importChangeOffsets(
 ): { from: number; to: number; insert: string }[] {
   const imports = closedImports(text);
   const out = changes.map((change) => {
-    const imp = imports.filter((i) => i.written === change.written && i.clause === change.clause)[change.nth];
-    if (!imp) {
+    const alike = imports.filter((i) => i.written === change.written && i.clause === change.clause);
+    const imp = alike[change.nth];
+    if (!imp || (change.of !== undefined && alike.length !== change.of)) {
       throw new StaleChangeError(
         `${path} no longer imports "${change.written}" where it did, so its imports were left as they are.`,
       );
@@ -323,7 +331,8 @@ function invertSteps(steps: readonly Step[], before: WorkspaceState): Step[] {
           const index = pre.indexOf(alike[change.nth]);
           // Only the path changed, so the import keeps its place and its clause.
           const nth = alikeBefore(post, index, change.text, change.clause);
-          return { written: change.text, text: change.written, clause: change.clause, nth };
+          const of = post.filter((i) => i.written === change.text && i.clause === change.clause).length;
+          return { written: change.text, text: change.written, clause: change.clause, nth, of };
         });
         inverse = { kind: 'imports', path: step.path, changes };
         break;
@@ -466,7 +475,9 @@ function planMoves(
     const changes = file.edits.map((edit) => {
       const index = imports.findIndex((i) => i.from + 1 === edit.from);
       const { clause } = imports[index];
-      return { written: edit.written, text: edit.text, clause, nth: alikeBefore(imports, index, edit.written, clause) };
+      const nth = alikeBefore(imports, index, edit.written, clause);
+      const of = imports.filter((i) => i.written === edit.written && i.clause === clause).length;
+      return { written: edit.written, text: edit.text, clause, nth, of };
     });
     steps.push({ kind: 'imports', path, changes });
     importsUpdated.push(after(path));
@@ -487,6 +498,48 @@ function planMoves(
 const updatedTail = (updated: string[]): string =>
   updated.length > 0 ? `, and updated the imports in ${nameList(updated)}.` : '.';
 
+const fileWord = (n: number): string => (n === 1 ? '1 file' : `${n} files`);
+
+/**
+ * Rename…'s line under its field (mockup v7 screen F, states 2 and 5), for a
+ * planned rename: the files a folder's rename moves, and the files whose
+ * imports change. Undefined when no import changes and no file moves.
+ */
+export function renameHint(change: Change, isFolder: boolean): string | undefined {
+  const moved = change.steps.filter((s) => s.kind === 'move').length;
+  const updated = change.importsUpdated.length;
+  const imports = updated > 0 ? `the imports in ${fileWord(updated)}` : '';
+  if (isFolder && moved > 0) {
+    const files = `Moves its ${moved === 1 ? 'file' : `${moved} files`}`;
+    return imports ? `${files}, and updates ${imports}` : files;
+  }
+  return imports ? `Updates ${imports}` : undefined;
+}
+
+/**
+ * Move to…'s last line (mockup v7 screen F, state 6), for a planned move of
+ * `path` into `toFolder`: the files whose imports change, a moved file's own
+ * last.
+ */
+export function moveHint(change: Change, path: string, toFolder: string, isFolder: boolean): string {
+  const dest = toFolder ? `${toFolder}/` : 'the top';
+  const updated = change.importsUpdated;
+  if (updated.length === 0) return `Moving it to ${dest} changes no imports.`;
+  if (isFolder) return `Moving it to ${dest} updates the imports in ${nameList(updated)}.`;
+  const name = baseOf(path);
+  const to = join(toFolder, name);
+  const others = updated.filter((p) => p !== to);
+  if (others.length === 0) return `Moving it to ${dest} updates ${name}’s own imports.`;
+  const own = updated.includes(to) ? `, and ${name}’s own` : '';
+  return `Moving it to ${dest} updates the imports in ${nameList(others)}${own}.`;
+}
+
+/** Where Rename… puts a file or folder given the name `typed`: a file keeps its `.pathogen`, typed or not. */
+export function renamedPath(path: string, typed: string, folder: boolean): string {
+  const trimmed = typed.trim();
+  return join(parentOf(path), folder ? trimmed : `${stripExtension(trimmed)}${EXTENSION}`);
+}
+
 /**
  * Rename… on a file or a folder: the name only. Not the folder it's in (that's
  * Move to…), and not a file's `.pathogen`, which the field doesn't hold.
@@ -504,7 +557,7 @@ export function planRename(state: WorkspaceState, path: string, typed: string): 
   // The name as typed first ("can't be empty"), then whole, .pathogen and all (its length).
   const problem = lib().workspaceNameProblem(stem) ?? lib().workspaceNameProblem(name);
   if (problem) return refuse(problem);
-  const to = join(parentOf(path), name);
+  const to = renamedPath(path, typed, folder);
   if (to === path) return nothing();
   const taken = takenIn(state, parentOf(path), name, path);
   if (taken) return refuse(`${where(parentOf(path))} already has ${taken}.`);

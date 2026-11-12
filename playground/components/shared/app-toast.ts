@@ -3,7 +3,8 @@
 // Listens for `show-toast` document events. Each toast renders as a
 // stacked card in the top-right with optional thumbnail image, title,
 // message, type (success | error), and auto-dismiss timer. Clicking
-// the dismiss button or waiting `duration` ms removes it.
+// the dismiss button or waiting `duration` ms removes it, and so does
+// aborting its `signal`.
 //
 // Dispatch pattern:
 //   document.dispatchEvent(new CustomEvent('show-toast', {
@@ -21,6 +22,8 @@ export interface ToastDetail {
   duration?: number;
   /** Optional call-to-action; selecting it runs the handler and dismisses the toast. */
   action?: { label: string; onSelect: () => void };
+  /** Withdraws the toast early when aborted: an action that no longer applies (a file change's Undo after another change). */
+  signal?: AbortSignal;
 }
 
 const DEFAULT_DURATION = 4500;
@@ -178,6 +181,7 @@ export class AppToast extends HTMLElement {
   }
 
   show(opts: ToastDetail): void {
+    if (opts.signal?.aborted) return;
     const type: ToastType = opts.type ?? 'success';
     const duration = opts.duration ?? DEFAULT_DURATION;
     const id = `toast-${++toastSeq}`;
@@ -232,6 +236,7 @@ export class AppToast extends HTMLElement {
     toast.appendChild(dismiss);
 
     this.shadowRoot!.appendChild(toast);
+    opts.signal?.addEventListener('abort', () => this._dismiss(toast), { once: true });
 
     if (duration > 0) {
       setTimeout(() => this._dismiss(toast), duration);

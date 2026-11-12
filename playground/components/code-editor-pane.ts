@@ -9,6 +9,8 @@ import {
   type ErrorHighlightHandle,
 } from '../utils/cm-language-services.js';
 import { PROJECT_FILE } from '../services/workspace-edits.js';
+import { changedLinesExtension, editedLines, spanChange } from '../utils/cm-changed-lines.js';
+import type { ChangedLines } from '../utils/cm-changed-lines.js';
 import { colorPickerExtension } from '../utils/cm-color-picker.js';
 import { jsonLanguage } from '../utils/cm-json-language.js';
 import { FILE_ICONS } from '../utils/file-icons.js';
@@ -26,6 +28,7 @@ interface CmStateModule {
     create(config: unknown): unknown;
     readOnly: { of(value: boolean): unknown };
   };
+  Transaction: { addToHistory: { of: (value: boolean) => unknown } };
   StateField: {
     define<T>(spec: {
       create(state: unknown): T;
@@ -181,6 +184,12 @@ export class CodeEditorPane extends HTMLElement {
   /** Clears the read-only line's highlight and the tip, a moment after typing in pathogen.json. */
   private _readOnlyTimer: ReturnType<typeof setTimeout> | null = null;
 
+  /** The rewritten-import marks (4c-2): built once, shared by every file's state, like the error marks. */
+  private _changedLines: ChangedLines | null = null;
+
+  /** True while the pane makes an edit the workspace already knows of (an import rewrite): no code-change. */
+  private _quiet = false;
+
   constructor() {
     super();
     this.attachShadow({ mode: 'open' });
@@ -305,6 +314,65 @@ export class CodeEditorPane extends HTMLElement {
   /** Drop these files' kept states, undo history and all (they were deleted). */
   forgetFiles(paths: readonly string[]): void {
     for (const path of paths) this._kept.delete(path);
+  }
+
+  /** Files moved or renamed, in order: each keeps its state, undo history and all, under its new path. */
+  renameFiles(moves: readonly { from: string; to: string }[]): void {
+    for (const { from, to } of moves) {
+      if (this._activePath === from) this._activePath = to;
+      const kept = this._kept.get(from);
+      if (kept) {
+        this._kept.delete(from);
+        this._kept.set(to, kept);
+      }
+    }
+  }
+
+  /**
+   * A file's import rewrites (a rename or a move elsewhere): applied outside
+   * its undo history, so Cmd-Z there never points an import back at a name
+   * that's gone (the toast's Undo puts names and imports back together), and
+   * without a code-change (the workspace already has them). `edits` are for
+   * `before`, and the lines they touch are marked, in the file shown or when
+   * a kept file is shown again. A file holding other text (it shouldn't: the
+   * store has every edit) changes only where it differs from `after`, so its
+   * undo history keeps its place.
+   */
+  editFile(
+    path: string,
+    edits: readonly { from: number; to: number; insert: string }[],
+    before: string,
+    after: string,
+  ): void {
+    const transaction = (doc: string): Record<string, unknown> => {
+      const planned = doc === before;
+      const spec: Record<string, unknown> = {
+        changes: planned ? [...edits] : [spanChange(doc, after)],
+        annotations: this._cmModules!.state.Transaction.addToHistory.of(false),
+      };
+      if (planned && this._changedLines) spec.effects = this._changedLines.mark(editedLines(after, edits));
+      return spec;
+    };
+    if (path === this._activePath) {
+      if (!this._editor || !this._cmModules) {
+        this._initialCode = after;
+        return;
+      }
+      const doc = this._editor.state.doc.toString();
+      if (doc === after) return;
+      this._quiet = true;
+      try {
+        this._editor.dispatch(transaction(doc));
+      } finally {
+        this._quiet = false;
+      }
+      return;
+    }
+    const kept = this._kept.get(path);
+    if (!kept || !this._cmModules) return;
+    const doc = kept.state.doc.toString();
+    if (doc === after) return;
+    kept.state = kept.state.update(transaction(doc)).state;
   }
 
   /**
@@ -453,7 +521,7 @@ export class CodeEditorPane extends HTMLElement {
     const { view, commands, language, autocomplete } = this._cmModules!;
 
     const updateExtension = view.EditorView.updateListener.of((update: CmViewUpdate) => {
-      if (update.docChanged) {
+      if (update.docChanged && !this._quiet) {
         store.set('isModified', true);
         store.set('code', this._editor!.state.doc.toString());
         this.dispatchEvent(
@@ -516,6 +584,7 @@ export class CodeEditorPane extends HTMLElement {
         },
       ]),
       ...this._languageExtensions!.extensions,
+      ...(this._changedLines?.extension ?? []),
       updateExtension,
       blurExtension,
       view.EditorView.lineWrapping,
@@ -552,6 +621,7 @@ export class CodeEditorPane extends HTMLElement {
       svgPathCompletions,
     );
     this._errorHighlight = this._languageExtensions.errorHighlight;
+    this._changedLines = changedLinesExtension(state as never, view as never);
 
     const editorState = this._newState(this._initialCode, this._activePath);
 

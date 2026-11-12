@@ -35,8 +35,12 @@ export type TreeRow =
   | (RowBase & { type: 'file'; kind: TreeFileKind; main: boolean })
   /** The line under an open folder that holds nothing. Not a tree item. */
   | { type: 'empty'; path: string; name: string; level: number }
-  /** The name field of New program, New library or New folder (step 4b): first in its folder. Not a tree item. */
-  | { type: 'input'; path: string; name: string; level: number; kind: NewEntryKind }
+  /**
+   * The name field of New program, New library or New folder (step 4b): first
+   * in its folder. Or Rename…'s (step 4c-2): in place of the row it renames,
+   * `renaming` its path and `name` its name. Not a tree item.
+   */
+  | { type: 'input'; path: string; name: string; level: number; kind: NewEntryKind; renaming?: string }
   /** pathogen.json: read-only, written from the entry points. */
   | (RowBase & { type: 'project' });
 
@@ -54,7 +58,8 @@ function byName(a: string, b: string): number {
  * `collapsed` hides everything in it. `main` is the first entry point: it gets
  * a badge unless it's `main.pathogen`, which is the main by convention.
  * `naming` puts the name field first in its folder ('' for the top), in place
- * of an empty folder's "Empty" line.
+ * of an empty folder's "Empty" line; with `renaming`, in place of that row (a
+ * folder's files stay under it).
  */
 export function treeRows(
   files: readonly TreeFile[],
@@ -62,10 +67,19 @@ export function treeRows(
   options: {
     collapsed: ReadonlySet<string>;
     main: string | null;
-    naming?: { folder: string; kind: NewEntryKind } | null;
+    naming?: { folder: string; kind: NewEntryKind; renaming?: string } | null;
   },
 ): TreeRow[] {
-  const naming = options.naming ?? null;
+  const renaming = options.naming?.renaming ?? null;
+  const naming = renaming === null ? (options.naming ?? null) : null;
+  const renameField = (path: string, level: number, kind: NewEntryKind): TreeRow => ({
+    type: 'input',
+    path,
+    name: baseOf(path),
+    level,
+    kind,
+    renaming: path,
+  });
   // Every folder, with the folders it's in.
   const allFolders = new Set<string>();
   const addFolder = (folder: string): void => {
@@ -86,7 +100,7 @@ export function treeRows(
   }
 
   const rows: TreeRow[] = [];
-  const walk = (folder: string, level: number, extra: number): void => {
+  const walk = (folder: string, level: number, extra: number): number => {
     const dirs = [...(subfolders.get(folder) ?? [])].sort((a, b) => byName(baseOf(a), baseOf(b)));
     const leaves = [...(filesIn.get(folder) ?? [])].sort((a, b) => byName(baseOf(a.path), baseOf(b.path)));
     const setsize = dirs.length + leaves.length + extra;
@@ -96,21 +110,26 @@ export function treeRows(
       posinset += 1;
       const empty = (subfolders.get(dir) ?? []).length === 0 && (filesIn.get(dir) ?? []).length === 0;
       const expanded = !options.collapsed.has(dir);
-      rows.push({ type: 'folder', path: dir, name: baseOf(dir), level, posinset, setsize, expanded, empty });
+      if (dir === renaming) rows.push(renameField(dir, level, 'folder'));
+      else rows.push({ type: 'folder', path: dir, name: baseOf(dir), level, posinset, setsize, expanded, empty });
       if (!expanded) continue;
       if (empty && naming?.folder !== dir) rows.push({ type: 'empty', path: dir, name: 'Empty', level: level + 1 });
       else walk(dir, level + 1, 0);
     }
     for (const file of leaves) {
       posinset += 1;
+      if (file.path === renaming) {
+        rows.push(renameField(file.path, level, file.kind));
+        continue;
+      }
       const main = file.path === options.main && file.path !== MAIN_FILE;
       const name = baseOf(file.path);
       rows.push({ type: 'file', path: file.path, name, level, posinset, setsize, kind: file.kind, main });
     }
+    return setsize;
   };
   // The top level has one more item: pathogen.json, last.
-  walk('', 1, 1);
-  const top = rows.filter((r) => r.type !== 'empty' && r.type !== 'input' && r.level === 1).length + 1;
+  const top = walk('', 1, 1);
   rows.push({ type: 'project', path: PROJECT_FILE, name: PROJECT_FILE, level: 1, posinset: top, setsize: top });
   return rows;
 }

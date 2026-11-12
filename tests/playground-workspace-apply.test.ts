@@ -12,8 +12,10 @@ import { applyToWorkspace, workspaceState } from '../playground/services/workspa
 import {
   planDelete,
   planDuplicate,
+  planMove,
   planNewFile,
   planNewFolder,
+  planRename,
   planSetMain,
   PROJECT_FILE,
 } from '../playground/services/workspace-edits.js';
@@ -129,6 +131,33 @@ class FakeEditor {
   forgotten: string[] = [];
 
   refreshed: string[] = [];
+
+  renamed: { from: string; to: string }[] = [];
+
+  /** Each file's import rewrites, as the editor is given them: by the file's path after the change. */
+  edited: { path: string; edits: { from: number; to: number; insert: string }[]; before: string; after: string }[] = [];
+
+  renameFiles = (moves: { from: string; to: string }[]): void => {
+    for (const { from, to } of moves) {
+      if (this.shown === from) this.shown = to;
+      const text = this.kept.get(from);
+      if (text !== undefined) {
+        this.kept.delete(from);
+        this.kept.set(to, text);
+      }
+    }
+    this.renamed.push(...moves);
+  };
+
+  editFile = (
+    path: string,
+    edits: { from: number; to: number; insert: string }[],
+    before: string,
+    after: string,
+  ): void => {
+    this.edited.push({ path, edits, before, after });
+    if (this.kept.has(path)) this.kept.set(path, after);
+  };
 
   showFile = (path: string): void => {
     this.kept.set(this.shown, store.get('code') as string);
@@ -271,6 +300,71 @@ describe('a change and the editor', () => {
     applyToWorkspace(planned(planDelete(workspaceState(), 'main.pathogen')), editor);
     expect([store.get('workspaceEntryPoints'), store.get('shownProgram')]).toEqual([['try.pathogen'], null]);
     expect(programToShow(workspaceNow(), null)).toBe('try.pathogen');
+  });
+
+  // 4c-2: a rename or a move is not a delete.
+  it('renaming the open file keeps its tab, its place among the tabs and its editor state', () => {
+    applyToWorkspace(planned(planRename(workspaceState(), 'parts/gears.pathogen', 'cogs')), editor);
+    expect([store.get('openFile'), store.get('openFiles'), store.get('code')]).toEqual([
+      'parts/cogs.pathogen',
+      ['main.pathogen', 'parts/cogs.pathogen', 'parts/kit.pathogen'],
+      GEARS,
+    ]);
+    expect([editor.renamed, editor.forgotten, editor.shown]).toEqual([
+      [{ from: 'parts/gears.pathogen', to: 'parts/cogs.pathogen' }],
+      [],
+      'parts/cogs.pathogen',
+    ]);
+  });
+
+  it('the files that import it are rewritten in the editor too, as small edits, by their paths after', () => {
+    applyToWorkspace(planned(planRename(workspaceState(), 'parts/gears.pathogen', 'cogs')), editor);
+    const main = 'import { gear } from "./parts/cogs.pathogen";\ngear(10);\n';
+    expect((store.get('workspaceFiles') as Record<string, string>)['main.pathogen']).toBe(main);
+    const from = MAIN.indexOf('./parts/gears.pathogen');
+    expect(editor.edited).toEqual([
+      {
+        path: 'main.pathogen',
+        edits: [{ from, to: from + './parts/gears.pathogen'.length, insert: './parts/cogs.pathogen' }],
+        before: MAIN,
+        after: main,
+      },
+    ]);
+  });
+
+  it('with an importer open, the store’s code follows its rewritten import', () => {
+    store.update({ openFile: 'main.pathogen', code: MAIN });
+    editor.shown = 'main.pathogen';
+    applyToWorkspace(planned(planRename(workspaceState(), 'parts', 'machines')), editor);
+    expect(store.get('code')).toBe('import { gear } from "./machines/gears.pathogen";\ngear(10);\n');
+    expect(store.get('openFiles')).toEqual(['main.pathogen', 'machines/gears.pathogen', 'machines/kit.pathogen']);
+  });
+
+  it('the program shown, renamed, stays the program shown; the main, renamed, stays the main', () => {
+    store.set('shownProgram', 'try.pathogen');
+    applyToWorkspace(planned(planRename(workspaceState(), 'try.pathogen', 'poster')), editor);
+    expect(store.get('shownProgram')).toBe('poster.pathogen');
+    store.set('shownProgram', null);
+    applyToWorkspace(planned(planRename(workspaceState(), 'main.pathogen', 'first')), editor);
+    expect([store.get('shownProgram'), (store.get('workspaceEntryPoints') as string[])[0]]).toEqual([
+      null,
+      'first.pathogen',
+    ]);
+  });
+
+  it('a move’s Undo puts the names, the imports and the tabs back', () => {
+    const before = { files: store.get('workspaceFiles'), tabs: store.get('openFiles'), open: store.get('openFile') };
+    const plan = planMove(workspaceState(), 'parts/gears.pathogen', '');
+    if (!plan.ok) throw new Error(plan.message);
+    applyToWorkspace(plan.change, editor);
+    expect(store.get('openFile')).toBe('gears.pathogen');
+    applyToWorkspace(plan.undo, editor);
+    expect([store.get('workspaceFiles'), store.get('openFiles'), store.get('openFile')]).toEqual([
+      { ...(before.files as object), 'parts/gears.pathogen': GEARS },
+      before.tabs,
+      before.open,
+    ]);
+    expect(editor.forgotten).toEqual([]);
   });
 
   it('pathogen.json in the editor follows the program list', () => {
