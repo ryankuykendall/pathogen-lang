@@ -34,6 +34,12 @@ The mockup is in `phase-2-mockups-v10/`:
 1. **State 7: the preview's text points to the + in the Files header.** Recommended: it keeps every button in the editor's zero-state, as you asked.
    - The other option: a line above the open library, like pathogen.json's read-only line, with New program in it. That's a button outside the zero-state, so it bends the rule.
 
+## Your critique (2026-11-12), in your words
+
+"Let's get rid of the text 'Each file keeps its undo history while the workspace is open'...I don't think that the zero-state is the appropriate place for this information; In #4 'Only libraries' I see a something in the preview pane...preview pane should not have a zero state...(same goes for 5, 6, 7)...Let's take another pass at this and try to consolidate all of the zero state messaging into the code editor zero-state for this release. If we change our minds at a later point, we can always circle back and re-introduce these concepts."
+
+The preview has no zero-state at all, and the undo line goes. v11 draws it (note 57, `phase-2-mockups-v11/`).
+
 ## After your review
 
 - `docs/workspace-files.md`, "The file tree and tabs": with every tab closed, the editor offers to open the main (or, with no program, New program), and any file in the tree opens too. Opening the workspace again opens its main. Copy Code is off with no file open.
