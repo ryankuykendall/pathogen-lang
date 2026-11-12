@@ -7,7 +7,7 @@
 // (project-docs/modules/verify/verify-2d-step3.ts); here a fake keeps each
 // file's text the way it keeps each file's state.
 
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 import {
   afterTabClosed,
@@ -17,7 +17,13 @@ import {
   tabLabels,
   withTabOpened,
 } from '../playground/services/open-files.js';
-import { workspaceNow } from '../playground/services/workspace-files.js';
+import { PROJECT_FILE } from '../playground/services/workspace-edits.js';
+import {
+  isWorkspaceFile,
+  programToShow,
+  withOpenFileText,
+  workspaceNow,
+} from '../playground/services/workspace-files.js';
 import { store } from '../playground/state/store.js';
 
 import type { FileEditor } from '../playground/services/open-files.js';
@@ -187,5 +193,86 @@ describe('switching tabs (the store)', () => {
     expect([store.get('openFile'), store.get('openFiles')]).toEqual(['parts/kit.pathogen', ['parts/kit.pathogen']]);
     closeFile(editor, 'parts/kit.pathogen');
     expect(store.get('openFiles')).toEqual(['parts/kit.pathogen']);
+  });
+});
+
+// pathogen.json (2d, step 4a; docs/workspace-files.md "pathogen.json", mockup
+// v6 screen J): it opens from the tree like any file, read-only, its text
+// written from the entry points. It isn't one of the workspace's files: no
+// save, compile or import graph may ever see it.
+describe('pathogen.json in the editor', () => {
+  const FILES = {
+    'main.pathogen': 'M 0 0',
+    'try.pathogen': 'M 5 5',
+    'parts/gears.pathogen': 'module;\nexport const n = 1;\n',
+  };
+  let editor: FakeEditor;
+
+  beforeAll(async () => {
+    (window as unknown as { PathogenLang: unknown }).PathogenLang = await import('../src');
+  });
+
+  beforeEach(() => {
+    store.update({
+      workspaceFiles: { ...FILES },
+      workspaceFolders: [],
+      workspaceEntryPoints: ['try.pathogen', 'main.pathogen'],
+      openFile: 'main.pathogen',
+      openFiles: ['main.pathogen'],
+      code: FILES['main.pathogen'],
+      shownProgram: null,
+    });
+    editor = new FakeEditor();
+    editor.showFile('main.pathogen', FILES['main.pathogen']);
+  });
+
+  it('opens with its text written from the entry points, the outgoing file’s edit kept', () => {
+    type('M 1 1');
+    expect(openFile(editor, PROJECT_FILE)).toBe(true);
+    const json = '{\n  "entryPoints": [\n    "try.pathogen",\n    "main.pathogen"\n  ]\n}\n';
+    expect([store.get('openFile'), store.get('code'), store.get('openFiles')]).toEqual([
+      PROJECT_FILE,
+      json,
+      ['main.pathogen', PROJECT_FILE],
+    ]);
+    expect(editor.kept.get(PROJECT_FILE)).toBe(json);
+    expect(store.get('workspaceFiles')).toEqual({ ...FILES, 'main.pathogen': 'M 1 1' });
+  });
+
+  it('is never one of the workspace’s files, open or left', () => {
+    openFile(editor, PROJECT_FILE);
+    expect(Object.fromEntries(workspaceNow().texts)).toEqual(FILES);
+    expect(workspaceNow().openFile).toBe(PROJECT_FILE);
+    openFile(editor, 'parts/gears.pathogen');
+    expect(Object.keys(store.get('workspaceFiles') as object).sort()).toEqual(Object.keys(FILES).sort());
+    expect(Object.fromEntries(workspaceNow().texts)).toEqual(FILES);
+  });
+
+  it('laying the editor’s text over the workspace never makes it a file (autosave, the preview)', () => {
+    openFile(editor, PROJECT_FILE);
+    expect(isWorkspaceFile(PROJECT_FILE)).toBe(false);
+    const laid = withOpenFileText(workspaceNow(), store.get('code') as string);
+    expect(Object.fromEntries(laid.texts)).toEqual(FILES);
+    openFile(editor, 'main.pathogen');
+    expect(withOpenFileText(workspaceNow(), 'M 3 3').texts.get('main.pathogen')).toBe('M 3 3');
+  });
+
+  it('is `{}` with no programs, and the preview still shows a file of the workspace', () => {
+    store.set('workspaceEntryPoints', []);
+    openFile(editor, PROJECT_FILE);
+    expect(store.get('code')).toBe('{}\n');
+    expect(programToShow(workspaceNow(), null)).toBe('main.pathogen');
+    expect(programToShow(workspaceNow(), PROJECT_FILE)).toBe('main.pathogen');
+  });
+
+  it('closes like any tab, and its neighbour comes back with its text', () => {
+    type('M 2 2');
+    openFile(editor, PROJECT_FILE);
+    closeFile(editor, PROJECT_FILE);
+    expect([store.get('openFile'), store.get('code'), store.get('openFiles')]).toEqual([
+      'main.pathogen',
+      'M 2 2',
+      ['main.pathogen'],
+    ]);
   });
 });

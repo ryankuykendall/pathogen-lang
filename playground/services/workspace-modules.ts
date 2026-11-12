@@ -13,7 +13,7 @@
 // rebuilding per keystroke would re-analyze every file).
 
 import { store } from '../state/store.js';
-import { workspaceNow } from './workspace-files.js';
+import { isWorkspaceFile, workspaceNow } from './workspace-files.js';
 
 import type { WorkspaceTexts } from './workspace-files.js';
 
@@ -76,6 +76,8 @@ export async function refreshOpenFileModules(
 ): Promise<OpenFileModules | null> {
   const l = lib();
   if (!l) return null;
+  // pathogen.json in the editor has no imports: keep the last graph rather than build one for it.
+  if (!isWorkspaceFile(workspace.openFile)) return current?.value ?? null;
   const key = graphKey(workspace, l.planImports);
   if (current?.key === key) return current.value;
   if (building?.key === key) return building.done;

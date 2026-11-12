@@ -6,6 +6,7 @@
 // open file's entry in `workspaceFiles` lagging behind `code` never matters.
 
 import { store } from '../state/store.js';
+import { PROJECT_FILE } from './workspace-edits.js';
 
 export const MAIN_FILE = 'main.pathogen';
 
@@ -77,6 +78,24 @@ export function fileToOpen(files: Record<string, string>, entryPoints: readonly 
   return Object.keys(files).sort()[0] ?? MAIN_FILE;
 }
 
+/**
+ * Whether a path in the editor is one of the workspace's files. pathogen.json
+ * isn't: it opens read-only, written from the entry points, and nothing that
+ * saves, compiles or reads imports may ever see it.
+ */
+export function isWorkspaceFile(path: string): boolean {
+  return path !== PROJECT_FILE;
+}
+
+/**
+ * `workspace` with `text` as its open file's: the one way to lay the editor's
+ * text over a workspace, so pathogen.json in the editor never becomes a file.
+ */
+export function withOpenFileText(workspace: WorkspaceTexts, text: string): WorkspaceTexts {
+  if (isWorkspaceFile(workspace.openFile)) workspace.texts.set(workspace.openFile, text);
+  return workspace;
+}
+
 /** The workspace from the store's fields: the open file's text is the editor's. */
 export function workspaceTexts(state: {
   workspaceFiles: Record<string, string>;
@@ -85,28 +104,33 @@ export function workspaceTexts(state: {
   openFile: string;
   code: string;
 }): WorkspaceTexts {
-  const texts = new Map(Object.entries(state.workspaceFiles));
-  texts.set(state.openFile, state.code);
   // No workspace loaded (a scratch link, a new workspace): just its code, as
   // its one program.
   const loaded = Object.keys(state.workspaceFiles).length > 0;
-  return {
-    texts,
-    folders: state.workspaceFolders,
-    entryPoints: loaded ? state.workspaceEntryPoints : [state.openFile],
-    openFile: state.openFile,
-  };
+  return withOpenFileText(
+    {
+      texts: new Map(Object.entries(state.workspaceFiles)),
+      folders: state.workspaceFolders,
+      entryPoints: loaded ? state.workspaceEntryPoints : [state.openFile],
+      openFile: state.openFile,
+    },
+    state.code,
+  );
 }
 
 /**
  * The program the preview shows: the one chosen (the chip, in 2d), else the
- * main, else the open file. A chosen program that no longer exists falls back
- * to the main (docs/workspace-files.md: "If the program shown is deleted, the
- * preview goes back to the main").
+ * main, else the open file, else the first file. A chosen program that no
+ * longer exists falls back to the main (docs/workspace-files.md: "If the
+ * program shown is deleted, the preview goes back to the main"). Always one
+ * of the workspace's files when it has any: never pathogen.json.
  */
 export function programToShow(workspace: WorkspaceTexts, chosen: string | null): string {
   if (chosen !== null && workspace.texts.has(chosen)) return chosen;
-  return workspace.entryPoints.find((p) => workspace.texts.has(p)) ?? workspace.openFile;
+  const main = workspace.entryPoints.find((p) => workspace.texts.has(p));
+  if (main !== undefined) return main;
+  if (workspace.texts.has(workspace.openFile)) return workspace.openFile;
+  return [...workspace.texts.keys()].sort()[0] ?? workspace.openFile;
 }
 
 /**

@@ -113,6 +113,9 @@ class AppBreadcrumb extends HTMLElement {
         'workspaceOwnerId',
         'currentUser',
         'consoleOpen',
+        'filesOpen',
+        // Files shows only for a workspace's files (a scratch link has none).
+        'workspaceFiles',
         'saveStatus',
         'saveError',
         'compilationStatus',
@@ -462,6 +465,11 @@ class AppBreadcrumb extends HTMLElement {
     const config = viewConfig[currentView] || viewConfig.landing;
     const isWorkspaceView = currentView === 'workspace';
     const consoleOpen = store.get('consoleOpen') as boolean;
+    const filesOpen = store.get('filesOpen') as boolean;
+    const hasFiles = Object.keys(store.get('workspaceFiles') as Record<string, string>).length > 0;
+    const filesToggle = hasFiles
+      ? `<button id="files-toggle" class="toggle-btn ${filesOpen ? 'active' : ''}" aria-pressed="${filesOpen}" title="${filesOpen ? 'Hide' : 'Show'} the workspace’s files">Files</button>`
+      : '';
 
     const calledStdlib = (store.get('calledStdlibFunctions') || []) as string[];
     const usesRandom = usesRandomValues(calledStdlib);
@@ -529,7 +537,8 @@ class AppBreadcrumb extends HTMLElement {
               }
               ${this.getSnapshotButtonHtml()}
               <div class="toggle-bar">
-                <button id="console-toggle" class="toggle-btn ${consoleOpen ? 'active' : ''}" title="Show console output">Console</button>
+                ${filesToggle}
+                <button id="console-toggle" class="toggle-btn ${consoleOpen ? 'active' : ''}" aria-pressed="${consoleOpen}" title="Show console output">Console</button>
               </div>
               <button id="copy-code" class="secondary-btn" title="Copy code to clipboard">
                 Copy Code
@@ -560,6 +569,11 @@ class AppBreadcrumb extends HTMLElement {
         const path = (link as HTMLElement).dataset.route!;
         this.dispatchEvent(new CustomEvent('navigate', { bubbles: true, composed: true, detail: { path } }));
       });
+    });
+
+    // Files: the tree beside the editor (workspace-view follows the store).
+    this.shadowRoot!.querySelector('#files-toggle')?.addEventListener('click', () => {
+      store.set('filesOpen', !store.get('filesOpen'));
     });
 
     // Console toggle

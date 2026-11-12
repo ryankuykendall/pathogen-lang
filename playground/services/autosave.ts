@@ -2,7 +2,7 @@
 // Cost-conscious: debounce + minimum interval + content hashing
 
 import { workspaceApi } from './api.js';
-import { MAIN_FILE, workspaceNow } from './workspace-files.js';
+import { isWorkspaceFile, MAIN_FILE, withOpenFileText, workspaceNow } from './workspace-files.js';
 import { store } from '../state/store.js';
 
 import type { WorkspaceTexts } from './workspace-files.js';
@@ -52,11 +52,9 @@ function hashLib(): HashLib | null {
     : null;
 }
 
-/** The workspace with the open file's text as `code`. */
+/** The workspace with the open file's text as `code` (pathogen.json in the editor is never a file). */
 function workspaceWith(code: string): WorkspaceTexts {
-  const workspace = workspaceNow();
-  workspace.texts.set(workspace.openFile, code);
-  return workspace;
+  return withOpenFileText(workspaceNow(), code);
 }
 
 /** What the server holds for a workspace as it was loaded: each file's hash and text, and its shape. */
@@ -81,7 +79,11 @@ export interface SavedFiles {
  */
 async function workspaceHash(workspace: WorkspaceTexts): Promise<{ hash: string; shas: Map<string, string> }> {
   const lib = hashLib();
-  if (!lib) return { hash: await legacyHash(workspace.texts.get(workspace.openFile) ?? ''), shas: new Map() };
+  if (!lib) {
+    // Without the library, a one-file workspace's hash: its open file's, or the main's when that's pathogen.json.
+    const file = isWorkspaceFile(workspace.openFile) ? workspace.openFile : MAIN_FILE;
+    return { hash: await legacyHash(workspace.texts.get(file) ?? ''), shas: new Map() };
+  }
   const files: Record<string, { sha256: string; size: number }> = {};
   for (const [path, text] of workspace.texts) files[path] = await lib.workspaceFileEntry(text);
   const hash = await lib.workspaceContentHash({

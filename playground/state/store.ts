@@ -200,6 +200,8 @@ export const store = createStore({
   consoleOpen: false,
   docsOpen: false,
   inspectorOpen: false,
+  // The file tree: shown until Files hides it (2d, step 4a; every mockup draws it shown).
+  filesOpen: true,
 
   // File state
   currentFileName: null,

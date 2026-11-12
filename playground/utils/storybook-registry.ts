@@ -187,6 +187,73 @@ layer('hex').apply { circle(60, 100, 40) }`,
     },
   },
   {
+    id: 'file-tree',
+    name: 'File Tree',
+    category: 'Editor',
+    description:
+      "The workspace's files beside the editor (docs/workspace-files.md, mockup v6 screens O and J). Folders first, then files, each by name; .pathogen quiet; a library's box icon; the main's badge when it isn't main.pathogen; pathogen.json last, with a lock. Click a folder to fold it, a file to open it. One Tab stop: Up and Down move, Right and Left unfold and fold, Space opens a file, Enter opens it and goes to the editor.",
+    stories: [
+      { name: 'A workspace with folders', props: { set: 'gears', active: 'demos/gears.pathogen' } },
+      { name: 'A new workspace', props: { set: 'new', active: 'main.pathogen' } },
+      { name: 'Another main, an empty folder', props: { set: 'otherMain', active: 'poster.pathogen' } },
+      { name: 'pathogen.json open', props: { set: 'gears', active: 'pathogen.json' } },
+      { name: 'Long names', props: { set: 'long', active: 'shapes/a-rather-long-name-for-a-star.pathogen' } },
+    ],
+    controls: [],
+    notes: 'Clicking a file here marks it, as workspace-view does when it opens the file (open-file).',
+    render: (container, props) => {
+      import('../components/file-tree.js')
+        .then(() => {
+          type Kind = 'program' | 'library';
+          const GEARS: [string, Kind][] = [
+            ['main.pathogen', 'program'],
+            ['try-sizes.pathogen', 'program'],
+            ['demos/gears.pathogen', 'program'],
+            ['parts/gears.pathogen', 'library'],
+            ['parts/kit.pathogen', 'library'],
+            ['parts/labels.pathogen', 'library'],
+          ];
+          const SETS: Record<string, { files: [string, Kind][]; folders: string[]; main: string }> = {
+            gears: { files: GEARS, folders: [], main: 'main.pathogen' },
+            new: { files: [['main.pathogen', 'program']], folders: [], main: 'main.pathogen' },
+            otherMain: {
+              files: [...GEARS.filter(([p]) => p !== 'main.pathogen'), ['poster.pathogen', 'program']],
+              folders: ['examples'],
+              main: 'poster.pathogen',
+            },
+            long: {
+              files: [
+                ['main.pathogen', 'program'],
+                ['shapes/a-rather-long-name-for-a-star.pathogen', 'program'],
+                ['shapes/round/and-another-long-library-name.pathogen', 'library'],
+              ],
+              folders: [],
+              main: 'main.pathogen',
+            },
+          };
+          const set = SETS[String(props.set)] ?? SETS.gears;
+          const tree = document.createElement('file-tree') as HTMLElement & {
+            files: { path: string; kind: Kind }[];
+            folders: string[];
+            main: string | null;
+            active: string | null;
+          };
+          tree.style.width = '248px';
+          tree.style.height = '380px';
+          tree.style.border = '1px solid var(--border-color, #ddd)';
+          container.appendChild(tree);
+          tree.files = set.files.map(([path, kind]) => ({ path, kind }));
+          tree.folders = set.folders;
+          tree.main = set.main;
+          tree.active = String(props.active ?? set.main);
+          tree.addEventListener('open-file', (e) => {
+            tree.active = (e as CustomEvent<{ path: string }>).detail.path;
+          });
+        })
+        .catch((err: unknown) => console.error('File Tree story failed to load:', err));
+    },
+  },
+  {
     id: 'svg-preview-pane',
     name: 'SVG Preview',
     category: 'Editor',

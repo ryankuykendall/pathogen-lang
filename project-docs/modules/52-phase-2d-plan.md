@@ -243,6 +243,55 @@ Each step: tests first; a storybook entry for each new component (the playground
 - **Dragging a file onto a folder moves to step 6**, with dropping uploaded files: they share the folder that lights up under the pointer. Move to… (4c) covers moving until then.
 - **Not in step 4:** red dots (step 7), the chip and its list (step 5), uploads (step 6), narrow screens (step 9).
 
+**Step 4a, the tree, read-only** (2026-11-11). As v6's screens O and J draw it.
+- **`components/file-tree.ts`** (storybook "File Tree", five stories). A view: workspace-view gives it the files (each a program or a library), the folders, the main and the file in the editor, and opens what it asks for (`open-file`). The rows come from `utils/file-tree-rows.ts`, which is pure:
+  - folders first, then files, each by name, letter case aside and numbers by value (`a2` before `a10`);
+  - an empty folder shows "Empty" under it, and says "empty" to a screen reader;
+  - `pathogen.json` is last at the top level, with its lock;
+  - the main's badge, unless the main is `main.pathogen`.
+- **The keyboard:** the WAI-ARIA tree pattern, with one Tab stop.
+  - Up and Down move between rows. Right unfolds a folder, then goes into it. Left folds it, or goes to the row's folder.
+  - Space opens a file and the keyboard stays in the tree. Enter opens it and moves the keyboard to the editor.
+  - A redraw (a folder folded, a file added) keeps the keyboard on its row.
+- **Files** sits before Console in the breadcrumb (`aria-pressed`; Console has it too now). The tree is shown at first (`filesOpen`, not remembered across a reload, like the other panes). A scratch link has no workspace files, so it shows neither Files nor the tree.
+- **The layout:** the tree is 248 px wide, left of the editor, with its header level with the tabs bar. Hidden, it takes no room and no Tab stop. Below 800 px it sits above the editor at up to 30% of the window's height, until step 9's drawer.
+- **`pathogen.json` opens read-only**, its text written from the entry points (`projectFileText`).
+  - **It's never one of the workspace's files:**
+    - `workspaceNow()` leaves it out, and so does `updatePreview`;
+    - leaving its tab writes nothing back;
+    - `programToShow` never returns it.
+
+    So no save, compile or import graph sees it. The browser check confirms the saves and the server.
+  - **The editor:**
+    - its own state, read-only, with JSON colours (`utils/cm-json-language.ts`, a small tokenizer behind CodeMirror's StreamLanguage, not a second CDN package);
+    - none of Pathogen's language services, so no diagnostics on JSON, and no update listener;
+    - typing is stopped at `beforeinput`; it lights up the line above the editor and shows "Read-only. Set as main changes this list" at the cursor for 2 seconds;
+    - Format Document and Convert all (`replaceDocument`) leave it alone.
+  - **A bug found and fixed on the way:** CodeMirror's autocomplete leaves a timer running after the editor switches files. Typing in a program and opening `pathogen.json` at once made that timer read a field the JSON state doesn't have, and it threw "Field is not present in this state". Two Pathogen files share that field, which is why step 3 never saw it. The JSON state now has an inert autocompletion (no sources, no activation on typing), so the timer finds the field and does nothing. `tmp/2d-step4/probe-field.ts` reproduced it at 0 and 50 ms, and with signature help open.
+- **Checked:**
+  - tests:
+    - `tests/playground-file-tree.test.ts` (16): order, folding, counts, badge, events, keyboard, modifier keys, focus, escaping;
+    - `tests/playground-editor-read-only.test.ts` (4): the pane with stand-in CodeMirror modules: read-only only for `pathogen.json`, its line, no replace or format, the state it's built from (the inert autocompletion among it), typing stopped;
+    - `tests/playground-cm-json.test.ts` (2);
+    - `tests/app-breadcrumb-files-toggle.test.ts` (3);
+    - `tests/playground-open-files.test.ts`, five more for `pathogen.json`;
+  - `verify/verify-2d-step4a.ts` against `npm run dev:stack`, 34 checks:
+    - the tree's place, order, Empty row, the marked file, and its header against the tabs bar;
+    - a click opens a tab and leaves the preview; folding; Down and Enter;
+    - `pathogen.json`: its text, its line, its tab's lock, its colours in light and dark, no marks, typing, an input method's composition, `aria-readonly`, Format Document;
+    - a save that sends the files but not `pathogen.json`, and the server holding them;
+    - Files off and on; a reload; 700 px; a scratch link; the storybook in both themes;
+  - screenshots `verify/2d-step4a-*.png`;
+  - the full suite: 8,759 passed.
+- **Review** (code-reviewer, no blockers). Fixed:
+  - **One rule for laying the editor's text over the workspace.** Autosave's `workspaceWith` still added the open file's text unguarded. No caller can reach it with `pathogen.json` open today, but the next one could. `withOpenFileText` and `isWorkspaceFile` in `services/workspace-files.ts` are now the one place, used by `workspaceNow()`, autosave, `updatePreview`, the tab switch and the import graph. Autosave's no-library hash reads the main when `pathogen.json` is open.
+  - **The tree left keys with a modifier alone.** Alt+Left and Cmd+Left are the browser's Back; the tree had taken them.
+  - **The read-only editor had no unit test,** only the browser check. It has one now, with the "Field is not present" fix pinned.
+  - `aria-readonly` on the text box; the tip kept inside the pane at the right edge; no import graph built while `pathogen.json` is open.
+  - **Composition from an input method** can't be cancelled at `beforeinput`. The browser check shows CodeMirror's read-only state stops it. `tmp/2d-step4/probe-ime.ts` is the control: the same input does reach `main.pathogen`.
+  - Left as it is: Copy Code with `pathogen.json` open copies its text, since it copies the file in the editor; the tree works out its rows once per setter, at 20 files at most.
+- **For 4c:** an open `pathogen.json` must follow the entry points when Set as main or a rename changes them. Nothing changes them while it's open in 4a, so this waits for the edit that can.
+
 **The v7 mockup round** (2026-11-09, commit `5c8f925`): note 53, `phase-2-mockups-v7/`. Five screens: no programs left, folders and moving, narrow screens, the mini-workspace, the ⋮ menu. It also draws what v6 left out (renaming a file, Move to…, dragging a file). Six questions await you; steps 4 and 9 wait for them.
 - *Answered 2026-11-09: all six agreed* (note 53, "Your answers"). What that adds to the steps:
   - step 2: each change can be undone (the toast's Undo); a rename takes a name only, no slash and no extension; Move to…; the first program in an empty workspace is shown;

@@ -7,6 +7,8 @@
 // text (services/workspace-files.ts reads the two together).
 
 import { store } from '../state/store.js';
+import { PROJECT_FILE, projectFileText } from './workspace-edits.js';
+import { isWorkspaceFile } from './workspace-files.js';
 
 /** What a tab's icon shows. */
 export type TabKind = 'program' | 'library' | 'json';
@@ -105,16 +107,21 @@ export function tabItems(
 /**
  * Show `path` in the editor and make it the open file, its tab added to
  * `openFiles`. False, changing nothing, when the workspace has no such file.
+ * pathogen.json opens read-only (the editor sees to that), its text written
+ * from the entry points; it isn't one of the workspace's files, so leaving it
+ * writes nothing back (docs/workspace-files.md "pathogen.json").
  */
 function show(editor: FileEditor, path: string, openFiles: readonly string[]): boolean {
   const files = store.get('workspaceFiles') as Record<string, string>;
   const current = store.get('openFile') as string;
-  if (!Object.hasOwn(files, path)) return false;
-  const text = files[path];
+  let text: string;
+  if (path === PROJECT_FILE) text = projectFileText(store.get('workspaceEntryPoints') as string[]);
+  else if (Object.hasOwn(files, path)) text = files[path];
+  else return false;
   editor.showFile(path, text);
   store.update({
     // The outgoing file's live text, so the store keeps every file's latest.
-    workspaceFiles: { ...files, [current]: store.get('code') as string },
+    workspaceFiles: isWorkspaceFile(current) ? { ...files, [current]: store.get('code') as string } : files,
     openFile: path,
     openFiles: withTabOpened(openFiles, path),
     code: text,

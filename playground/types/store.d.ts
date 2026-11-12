@@ -124,6 +124,8 @@ export interface StoreState {
   consoleOpen: boolean;
   docsOpen: boolean;
   inspectorOpen: boolean;
+  /** The file tree, beside the editor; Files in the breadcrumb toggles it. */
+  filesOpen: boolean;
 
   // File state
   currentFileName: string | null;

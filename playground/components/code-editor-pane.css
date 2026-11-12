@@ -46,6 +46,71 @@
   overflow: auto;
 }
 
+/* pathogen.json's line above the editor (2d, step 4a; mockup v6, screen J).
+   Typing in the file lights it up, and the tip says the same at the cursor. */
+.read-only-note {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  font-family: var(--font-sans, system-ui, sans-serif);
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--text-secondary, #64748b);
+  background: var(--bg-primary, #fff);
+  border-bottom: 1px solid var(--border-color, #e2e8f0);
+  transition: background-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.read-only-note[hidden],
+.read-only-tip[hidden] {
+  display: none;
+}
+
+.read-only-note svg {
+  width: 14px;
+  height: 14px;
+  flex: none;
+  color: var(--text-tertiary, #9087a0);
+}
+
+.read-only-note b {
+  color: var(--text-primary, #1a1a2e);
+  font-weight: 600;
+}
+
+.read-only-note.hl {
+  background: var(--secondary-accent-subtle, rgba(148, 97, 196, 0.16));
+  color: var(--secondary-accent-text, #5e3590);
+  box-shadow: inset 3px 0 0 var(--secondary-accent, #9461c4);
+}
+
+.read-only-note.hl svg,
+.read-only-note.hl b {
+  color: var(--secondary-accent-text, #5e3590);
+}
+
+.read-only-tip {
+  position: absolute;
+  z-index: 20;
+  padding: 6px 9px;
+  border-radius: var(--radius-sm, 6px);
+  background: var(--text-primary, #1c1722);
+  color: var(--bg-primary, #f6e9da);
+  box-shadow: var(--shadow-lg, 0 8px 24px rgba(0, 0, 0, 0.18));
+  font-family: var(--font-sans, system-ui, sans-serif);
+  font-size: 12px;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .read-only-note {
+    transition: none;
+  }
+}
+
 /* CodeMirror base styles */
 #editor-container .cm-editor {
   height: 100%;

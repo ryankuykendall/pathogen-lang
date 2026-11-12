@@ -42,6 +42,27 @@ export class PlaygroundMain extends HTMLElement {
           }
         }
 
+        /* The file tree, left of the editor (2d, step 4a). Files in the
+           breadcrumb toggles .open; closed, it takes no room and no Tab stop. */
+        ::slotted(file-tree) {
+          flex: 0 0 0;
+          min-width: 0;
+          overflow: hidden;
+          visibility: hidden;
+          transition:
+            flex-basis 0.2s ease,
+            visibility 0s linear 0.2s;
+        }
+
+        ::slotted(file-tree.open) {
+          flex: 0 0 248px;
+          visibility: visible;
+          border-right: 1px solid var(--border-color, #ddd);
+          transition:
+            flex-basis 0.2s ease,
+            visibility 0s;
+        }
+
         ::slotted(code-editor-pane) {
           flex: 1;
           min-width: 0;
@@ -87,7 +108,27 @@ export class PlaygroundMain extends HTMLElement {
           flex: 3;
         }
 
+        @media (prefers-reduced-motion: reduce) {
+          ::slotted(file-tree),
+          ::slotted(file-tree.open) {
+            transition: none;
+          }
+        }
+
         @media (max-width: 800px) {
+          /* Until step 9's drawer: the tree stacks above the editor, its height capped. */
+          ::slotted(file-tree) {
+            display: none;
+          }
+
+          ::slotted(file-tree.open) {
+            display: flex;
+            flex: 0 0 auto;
+            max-height: 30vh;
+            border-right: none;
+            border-bottom: 1px solid var(--border-color, #ddd);
+          }
+
           ::slotted(code-editor-pane) {
             border-right: none;
             border-bottom: 1px solid var(--border-color, #ddd);

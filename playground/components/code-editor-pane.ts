@@ -8,7 +8,10 @@ import {
   runRename,
   type ErrorHighlightHandle,
 } from '../utils/cm-language-services.js';
+import { PROJECT_FILE } from '../services/workspace-edits.js';
 import { colorPickerExtension } from '../utils/cm-color-picker.js';
+import { jsonLanguage } from '../utils/cm-json-language.js';
+import { FILE_ICONS } from '../utils/file-icons.js';
 import { styleRefRecolorExtension } from '../utils/cm-style-ref-recolor.js';
 import { textLayerEditorExtension } from '../utils/cm-textlayer-editor.js';
 import { svgPathCompletions } from '../utils/codemirror-setup.js';
@@ -37,6 +40,7 @@ interface CmViewModule {
     new (config: unknown): CmEditorView;
     lineWrapping: unknown;
     editable: { of(value: boolean): unknown };
+    contentAttributes: { of: (attrs: Record<string, string>) => unknown };
     scrollIntoView(pos: number, options?: unknown): unknown;
     updateListener: { of(fn: (update: CmViewUpdate) => void): unknown };
     domEventHandlers(handlers: Record<string, (...args: unknown[]) => boolean | void>): unknown;
@@ -75,6 +79,7 @@ interface CmEditorView {
   focus(): void;
   destroy(): void;
   scrollDOM: HTMLElement;
+  coordsAtPos: (pos: number) => { left: number; top: number; bottom: number } | null;
   /** CodeMirror 6.23+: an effect that scrolls back to here when dispatched. */
   scrollSnapshot?: () => unknown;
 }
@@ -86,6 +91,13 @@ interface KeptFile {
 }
 
 const DEFAULT_FILE = 'main.pathogen';
+
+/** pathogen.json's line above the editor (mockup v6, screen J). */
+const READ_ONLY_NOTE =
+  '<b>Read-only.</b> The playground writes this file from your workspace. To change the main, use Set as main on a program.';
+/** What the tip at the cursor says when you type in it. */
+const READ_ONLY_TIP = 'Read-only. Set as main changes this list';
+const READ_ONLY_HINT_MS = 2000;
 
 interface CmTransaction {
   isUserEvent(type: string): boolean;
@@ -114,6 +126,7 @@ interface CmLanguageModule {
   indentOnInput(): unknown;
   bracketMatching(): unknown;
   syntaxTree(state: unknown): unknown;
+  StreamLanguage: Parameters<typeof jsonLanguage>[0]['StreamLanguage'];
 }
 
 interface CmAutocompleteModule {
@@ -165,6 +178,9 @@ export class CodeEditorPane extends HTMLElement {
 
   private _kept: Map<string, KeptFile>;
 
+  /** Clears the read-only line's highlight and the tip, a moment after typing in pathogen.json. */
+  private _readOnlyTimer: ReturnType<typeof setTimeout> | null = null;
+
   constructor() {
     super();
     this.attachShadow({ mode: 'open' });
@@ -190,6 +206,8 @@ export class CodeEditorPane extends HTMLElement {
     if (this._themeUnsubscribe) {
       this._themeUnsubscribe();
     }
+    if (this._readOnlyTimer) clearTimeout(this._readOnlyTimer);
+    this._readOnlyTimer = null;
   }
 
   set initialCode(code: string) {
@@ -207,6 +225,11 @@ export class CodeEditorPane extends HTMLElement {
   /** The file shown. */
   get activePath(): string {
     return this._activePath;
+  }
+
+  /** Whether the file shown can't be typed in: pathogen.json, which the playground writes. */
+  get readOnly(): boolean {
+    return this._activePath === PROJECT_FILE;
   }
 
   /** Put the keyboard in the editor (after a tab is clicked). */
@@ -230,12 +253,13 @@ export class CodeEditorPane extends HTMLElement {
     this._kept.clear();
     this._activePath = path;
     this._initialCode = text;
+    this._syncReadOnly();
     if (!this._editor || !this._cmModules) {
       // CodeMirror not loaded yet — createEditor() will seed from _initialCode.
       return;
     }
     const hadFocus = this._editor.hasFocus;
-    this._editor.setState(this._newState(text));
+    this._editor.setState(this._newState(text, path));
     this._clearMarks();
     if (hadFocus) this._editor.focus();
   }
@@ -253,6 +277,7 @@ export class CodeEditorPane extends HTMLElement {
     if (!this._editor || !this._cmModules) {
       this._activePath = path;
       this._initialCode = text;
+      this._syncReadOnly();
       return;
     }
     const view = this._editor;
@@ -262,10 +287,11 @@ export class CodeEditorPane extends HTMLElement {
     });
     const kept = this._kept.get(path);
     this._kept.delete(path);
-    let state = kept?.state ?? this._newState(text);
+    let state = kept?.state ?? this._newState(text, path);
     const changed = state.doc.toString() !== text;
     if (changed) state = state.update({ changes: { from: 0, to: state.doc.length, insert: text } }).state;
     this._activePath = path;
+    this._syncReadOnly();
     view.setState(state);
     // A kept state was made under the theme of its day.
     this._updateEditorTheme();
@@ -276,11 +302,84 @@ export class CodeEditorPane extends HTMLElement {
     else view.scrollDOM.scrollTop = kept && !changed && 'top' in kept.scroll ? kept.scroll.top : 0;
   }
 
-  private _newState(text: string): CmEditorState {
+  private _newState(text: string, path: string): CmEditorState {
     return this._cmModules!.state.EditorState.create({
       doc: text,
-      extensions: this._buildExtensions(),
+      extensions: path === PROJECT_FILE ? this._readOnlyExtensions() : this._buildExtensions(),
     }) as CmEditorState;
+  }
+
+  /**
+   * pathogen.json's state: JSON highlighting and read-only, with none of
+   * Pathogen's language services (its diagnostics would flag JSON as errors)
+   * and no update listener: no edit of it ever reaches the store, a save or a
+   * compile. You can still move, select and copy. Typing lights up the line
+   * above the editor and shows the tip at the cursor (mockup v6, screen J).
+   */
+  private _readOnlyExtensions(): unknown[] {
+    const { state, view, commands, language, autocomplete } = this._cmModules!;
+    return [
+      state.EditorState.readOnly.of(true),
+      // No completions here. But a completion still pending in the file just
+      // left (autocomplete's own timer) runs against this state when it fires,
+      // and reads autocomplete's field: an inert autocompletion keeps that
+      // field present, so it finds nothing to do instead of throwing.
+      autocomplete.autocompletion({ override: [], activateOnTyping: false }),
+      view.lineNumbers(),
+      view.highlightActiveLineGutter(),
+      view.highlightSpecialChars(),
+      view.drawSelection(),
+      view.highlightActiveLine(),
+      this._themeCompartment!.of(this._getThemeExtensions()),
+      jsonLanguage(language),
+      view.keymap.of(commands.defaultKeymap),
+      view.EditorView.lineWrapping,
+      // A screen reader hears that the text box is read-only, not only the line above it.
+      view.EditorView.contentAttributes.of({ 'aria-readonly': 'true' }),
+      view.EditorView.domEventHandlers({
+        // Every typed or pasted change, Enter and Backspace included, arrives as beforeinput.
+        beforeinput: (event: unknown) => {
+          (event as Event).preventDefault();
+          this._readOnlyAttempt();
+          return true;
+        },
+      }),
+    ];
+  }
+
+  /** The read-only line shows with pathogen.json, and only then. */
+  private _syncReadOnly(): void {
+    const note = this.shadowRoot?.querySelector<HTMLElement>('.read-only-note');
+    if (note) note.hidden = !this.readOnly;
+    if (!this.readOnly) this._clearReadOnlyHint();
+  }
+
+  /** Typing in pathogen.json: say why nothing happens, on the line and at the cursor. */
+  private _readOnlyAttempt(): void {
+    const note = this.shadowRoot?.querySelector<HTMLElement>('.read-only-note');
+    const tip = this.shadowRoot?.querySelector<HTMLElement>('.read-only-tip');
+    note?.classList.add('hl');
+    const view = this._editor;
+    const at = view?.coordsAtPos(view.state.selection.main.head);
+    if (tip && at) {
+      const host = this.getBoundingClientRect();
+      tip.textContent = READ_ONLY_TIP;
+      tip.hidden = false;
+      // Under the cursor, kept inside the pane at both edges.
+      const right = Math.max(8, host.width - tip.offsetWidth - 8);
+      tip.style.left = `${Math.min(Math.max(8, at.left - host.left), right)}px`;
+      tip.style.top = `${at.bottom - host.top + 6}px`;
+    }
+    if (this._readOnlyTimer) clearTimeout(this._readOnlyTimer);
+    this._readOnlyTimer = setTimeout(() => this._clearReadOnlyHint(), READ_ONLY_HINT_MS);
+  }
+
+  private _clearReadOnlyHint(): void {
+    if (this._readOnlyTimer) clearTimeout(this._readOnlyTimer);
+    this._readOnlyTimer = null;
+    this.shadowRoot?.querySelector('.read-only-note')?.classList.remove('hl');
+    const tip = this.shadowRoot?.querySelector<HTMLElement>('.read-only-tip');
+    if (tip) tip.hidden = true;
   }
 
   /** A file just shown starts without the marks of the one before; the next compile places its own. */
@@ -435,10 +534,7 @@ export class CodeEditorPane extends HTMLElement {
     );
     this._errorHighlight = this._languageExtensions.errorHighlight;
 
-    const editorState = state.EditorState.create({
-      doc: this._initialCode,
-      extensions: this._buildExtensions(),
-    });
+    const editorState = this._newState(this._initialCode, this._activePath);
 
     this._editor = new view.EditorView({
       state: editorState,
@@ -480,6 +576,8 @@ export class CodeEditorPane extends HTMLElement {
    * recompile all follow exactly as they do for typed edits.
    */
   replaceDocument(text: string): void {
+    // pathogen.json is the playground's to write.
+    if (this.readOnly) return;
     if (!this._editor) {
       this._initialCode = text;
       return;
@@ -489,9 +587,9 @@ export class CodeEditorPane extends HTMLElement {
     });
   }
 
-  /** Format the current document via the shared language-services formatter. */
+  /** Format the current document via the shared language-services formatter (not pathogen.json). */
   formatDocument(): void {
-    if (!this._editor) return;
+    if (!this._editor || this.readOnly) return;
     runFormatDocument(this._editor);
   }
 
@@ -551,8 +649,11 @@ export class CodeEditorPane extends HTMLElement {
       <style>${styles}</style>
 
       <slot name="tabs"></slot>
+      <div class="read-only-note" role="note" hidden>${FILE_ICONS.lock}<span>${READ_ONLY_NOTE}</span></div>
       <div id="editor-container"></div>
+      <div class="read-only-tip" role="status" hidden></div>
     `;
+    this._syncReadOnly();
   }
 }
 

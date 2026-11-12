@@ -9,6 +9,7 @@ import './code-editor-pane.js';
 import './console-pane.js';
 import './docs-panel.js';
 import './editor-tabs.js';
+import './file-tree.js';
 import './inspector-panel.js';
 import './export-modal.js';
 import './playground-main.js';
@@ -30,6 +31,7 @@ import {
   filesWithoutText,
   MAIN_FILE,
   programToShow,
+  withOpenFileText,
   workspaceFromAnswer,
   workspaceNow,
 } from '../services/workspace-files.js';
@@ -43,6 +45,7 @@ import {
 import type { OpenFileModules } from '../services/workspace-modules.js';
 import type { CanvasChangeDetail, CanvasSettings } from './canvas-panel.js';
 import type { EditorTabs } from './editor-tabs.js';
+import type { FileTree } from './file-tree.js';
 import { parseWorkspaceSlugId } from '../utils/router.js';
 import { applyURLState, loadFromURL } from '../utils/url-state.js';
 import { createCompileTicker } from '../utils/compile-ticker.js';
@@ -76,6 +79,10 @@ export class WorkspaceView extends HTMLElement {
   // debounce for the open file's icon while typing, and each file's last
   // `module;` reading by its text (isModuleSource parses the whole file).
   private _tabsUnsubscribe: (() => void) | null = null;
+
+  // The file tree's store subscription (2d, step 4a). The debounce below
+  // redraws the tree with the tabs, so its icon follows `module;` too.
+  private _treeUnsubscribe: (() => void) | null = null;
 
   private _tabsTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -348,6 +355,10 @@ export class WorkspaceView extends HTMLElement {
 
   get editorTabs(): EditorTabs | null {
     return this.shadowRoot!.querySelector<EditorTabs>('editor-tabs');
+  }
+
+  get fileTree(): FileTree | null {
+    return this.shadowRoot!.querySelector<FileTree>('file-tree');
   }
 
   get previewPane(): HTMLElement & {
@@ -733,9 +744,11 @@ export class WorkspaceView extends HTMLElement {
     });
     // Open a file of the workspace in a tab, or switch to it: the one way in
     // for the file tree, the program list and the error panel (2d, steps 4,
-    // 5 and 7).
+    // 5 and 7). `focusEditor` hands the keyboard to the editor (Enter in the tree).
     this.shadowRoot!.addEventListener('open-file', (e: Event) => {
-      this.openFileInEditor((e as CustomEvent<{ path: string }>).detail.path);
+      const { path, focusEditor } = (e as CustomEvent<{ path: string; focusEditor?: boolean }>).detail;
+      this.openFileInEditor(path);
+      if (focusEditor && store.get('openFile') === path) this.editorPane.focusEditor();
     });
     this.shadowRoot!.addEventListener('toggle-docs', () => {
       const docs = this.docsPanel as unknown as { toggle: () => void };
@@ -749,6 +762,11 @@ export class WorkspaceView extends HTMLElement {
     this.docsPanel.addEventListener('close', () => markDocs(false));
     this._tabsUnsubscribe = store.subscribe(['openFiles', 'openFile', 'workspaceFiles'], () => this._refreshTabs());
     this._refreshTabs();
+    this._treeUnsubscribe = store.subscribe(
+      ['workspaceFiles', 'workspaceFolders', 'workspaceEntryPoints', 'openFile', 'filesOpen'],
+      () => this._refreshTree(),
+    );
+    this._refreshTree();
 
     // Background, Grid and Precision, from the inspector's Canvas section. The
     // preview restyles itself when background or grid change in the store;
@@ -1089,6 +1107,8 @@ export class WorkspaceView extends HTMLElement {
   cleanupEventListeners(): void {
     this._tabsUnsubscribe?.();
     this._tabsUnsubscribe = null;
+    this._treeUnsubscribe?.();
+    this._treeUnsubscribe = null;
     this._canvasUnsubscribe?.();
     this._canvasUnsubscribe = null;
     if (this._tabsTimer) clearTimeout(this._tabsTimer);
@@ -1273,12 +1293,35 @@ export class WorkspaceView extends HTMLElement {
     tabs.active = store.get('openFile') as string;
   }
 
-  /** While typing, the open file's icon follows `module;` a moment later. */
+  /**
+   * The file tree (2d, step 4a): the workspace's files, each with its kind,
+   * its folders, the main and the file in the editor. Shown while Files is on,
+   * for a workspace's files only (a scratch link has none).
+   */
+  private _refreshTree(): void {
+    const tree = this.fileTree;
+    if (!tree) return;
+    const hasFiles = Object.keys(store.get('workspaceFiles') as Record<string, string>).length > 0;
+    const open = hasFiles && (store.get('filesOpen') as boolean);
+    tree.classList.toggle('open', open);
+    if (!open) return;
+    const workspace = workspaceNow();
+    tree.files = [...workspace.texts].map(([path, text]) => ({
+      path,
+      kind: this._isLibrary(path, text) ? 'library' : 'program',
+    }));
+    tree.folders = workspace.folders;
+    tree.main = workspace.entryPoints[0] ?? null;
+    tree.active = workspace.openFile;
+  }
+
+  /** While typing, the open file's icon follows `module;` a moment later, in the tabs and the tree. */
   private _scheduleTabsRefresh(): void {
     if (this._tabsTimer) clearTimeout(this._tabsTimer);
     this._tabsTimer = setTimeout(() => {
       this._tabsTimer = null;
       this._refreshTabs();
+      this._refreshTree();
     }, 300);
   }
 
@@ -1362,8 +1405,7 @@ export class WorkspaceView extends HTMLElement {
   async updatePreview(): Promise<void> {
     // The program the preview shows (the main until the chip exists, 2d),
     // with every file it imports, from the workspace as it stands.
-    const workspace = workspaceNow();
-    workspace.texts.set(workspace.openFile, (store.get('code') as string) || this.editorPane.code);
+    const workspace = withOpenFileText(workspaceNow(), (store.get('code') as string) || this.editorPane.code);
     const shown = programToShow(workspace, store.get('shownProgram') as string | null);
     const code = workspace.texts.get(shown) ?? '';
 
@@ -1848,6 +1890,7 @@ export class WorkspaceView extends HTMLElement {
       </div>
 
       <playground-main>
+        <file-tree></file-tree>
         <code-editor-pane><editor-tabs slot="tabs"></editor-tabs></code-editor-pane>
         <console-pane></console-pane>
         <svg-preview-pane></svg-preview-pane>
