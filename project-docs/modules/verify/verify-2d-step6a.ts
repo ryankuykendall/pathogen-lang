@@ -57,7 +57,8 @@ const springs = fixture('pick/springs.pathogen', SPRINGS);
 const labels = fixture('pick/labels.pathogen', LABELS_NEW);
 const cities = fixture('pick/cities.csv', 'a,b\n1,2\n');
 const font = fixture('pick/Raleway-Bold.ttf', Buffer.from([0, 1, 0, 0, 0, 16]));
-const badName = fixture('pick/my gear.pathogen', SPRINGS);
+// A module, so the program list stays as the checks below expect; its name has a space (fitted: my-gear).
+const badName = fixture('pick/my gear.pathogen', 'module;\n\nexport const gear = 1;\n');
 const kitNew = fixture('replace/kit.pathogen', KIT_NEW);
 const BOM = String.fromCharCode(0xfeff);
 const crlf = fixture('crlf/windows.pathogen', `${BOM}define ViewBox(0, 0, 200, 100);\r\ncircle(10, 10, 5);\r\n`);
@@ -306,24 +307,26 @@ try {
     `[...${TREE}.querySelectorAll('.row.flash')].map((r) => r.dataset.path)`,
   )) as string[];
   check(
-    'Keep both: springs and labels-2 go in; the toast says so, with Undo, and lists the three left out with why',
+    'Keep both: springs, labels-2 and my-gear (its name fitted) go in; the toast says so, with Undo, the name changed and the two left out with why',
     'parts/springs.pathogen' in f &&
       f['parts/labels-2.pathogen'] === LABELS_NEW &&
       f['parts/labels.pathogen'] === FILES['parts/labels.pathogen'] &&
-      toast?.title === 'Added 2 files to parts/: springs.pathogen and labels-2.pathogen.' &&
-      toast.message === 'Not added:' &&
+      'parts/my-gear.pathogen' in f &&
+      toast?.title === 'Added 3 files to parts/: springs.pathogen, labels-2.pathogen and my-gear.pathogen.' &&
+      toast.message === 'Some names were changed to fit the name rules, and some files weren’t added:' &&
       toast.undo &&
       JSON.stringify(toast.items) ===
         JSON.stringify([
+          'my gear.pathogen → my-gear.pathogen',
           'cities.csv: workspaces hold .pathogen files for now; data files come later.',
           'Raleway-Bold.ttf: the playground can\'t load font files yet. Use the Google Fonts family instead: @font "Raleway" 700;',
-          'my gear.pathogen: can use only letters a–z and A–Z, digits, -, _ and ., and must start with a letter or a digit.',
         ]),
     { toast, files: Object.keys(f) },
   );
   check(
-    'the new rows flash; nothing opened (two files); springs (a program) is last in the list; the preview unchanged',
-    JSON.stringify(flashing.sort()) === JSON.stringify(['parts/labels-2.pathogen', 'parts/springs.pathogen']) &&
+    'the new rows flash; nothing opened (three files); springs (a program) is last in the list; the preview unchanged',
+    JSON.stringify(flashing.sort()) ===
+      JSON.stringify(['parts/labels-2.pathogen', 'parts/my-gear.pathogen', 'parts/springs.pathogen']) &&
       (await openPath(page)) === 'parts/gears.pathogen' &&
       JSON.stringify(await storeGet(page, 'workspaceEntryPoints')) ===
         JSON.stringify(['main.pathogen', 'try-sizes.pathogen', 'parts/springs.pathogen']) &&

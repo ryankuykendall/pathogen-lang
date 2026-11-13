@@ -612,6 +612,18 @@ Each step: tests first; a storybook entry for each new component (the playground
   - A pick or a drop before the workspace has loaded says so. The question's Keep both name is numbered from the new file's name, as the plan numbers it. `fontSuggestion` reads hyphenated families. A test pins the main replaced with a module, and one a later Keep both's numbering.
   - Not changed, with reasons: `dragleave` in Safari (its `relatedTarget` is null) may let the light flicker between rows, and the next `dragover` lights it again; `flash` redraws the tree once per upload.
 - **Proposals 1 to 8 above, and the one change from the mockup, await your answer.**
+- *Answered 2026-11-13:*
+  1. **Changed: "Can we rename it to make it compliant (replacing spaces or other unsupported characters with a dash?)"** Built (`fittedName`):
+     - a run of characters a name can't have becomes one dash (`my gear` → `my-gear`), and accents are dropped (`über` → `uber`);
+     - the name starts with a letter or a digit; one Windows reserves gets `-1`; it's cut to 100 characters, its extension kept; a name with nothing left is `file` (or `folder`);
+     - folders' names too.
+     
+     The candidate keeps `renamedFrom`. The toast lists each name changed (`my gear.pathogen → my-gear.pathogen`) above the files left out, under "Some names were changed to fit the name rules:". A changed name can clash like any other. Two files whose changed names meet: the second is left out, saying so.
+  2. "That's fine, although it would be beneficial to log how often this happens at some point." The app has no usage counting, so it's on the backlog: `backlog.md`, "Count how often a workspace hits the 20-file limit".
+  3. to 6. and 8. "Yes."
+  7. **Changed: "I would like to add it if we can (unless something prevents it.)"** A dropped folder's empty folders now go in (`pickedFromDrop` returns them; a folder holding only dot-files counts as empty), names fitted and case merged, through `planUpload`'s `emptyFolders`. The message says so ("…, and the empty folder shapes/round/."), and Undo takes them out. **Upload folder… can't**: the browser's folder picker lists only files.
+  9. (the mockup change: everything goes in after the last question) "Not sure I understand the scenario you are describing here...Can you tell me more?" Explained; it awaits the answer.
+  - The docs' "Uploading files" now says all of this. A focused content review checked it.
 
 **The v7 mockup round** (2026-11-09, commit `5c8f925`): note 53, `phase-2-mockups-v7/`. Five screens: no programs left, folders and moving, narrow screens, the mini-workspace, the ⋮ menu. It also draws what v6 left out (renaming a file, Move to…, dragging a file). Six questions await you; steps 4 and 9 wait for them.
 - *Answered 2026-11-09: all six agreed* (note 53, "Your answers"). What that adds to the steps:

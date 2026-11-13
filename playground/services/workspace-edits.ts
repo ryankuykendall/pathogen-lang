@@ -629,17 +629,22 @@ function namesFor(paths: string[]): string {
 }
 
 /** What an upload's toast says: what was added, and where, and what was replaced. */
-function uploadMessage(folder: string, added: string[], replaced: string[]): string {
+function uploadMessage(folder: string, added: string[], replaced: string[], emptyFolders: string[] = []): string {
   const inFolder = (p: string): string => (folder && p.startsWith(`${folder}/`) ? p.slice(folder.length + 1) : p);
+  const where = folder ? ` to ${folder}/` : '';
   const parts: string[] = [];
   if (added.length > 0) {
     const names = added.map(inFolder);
-    const where = folder ? ` to ${folder}/` : '';
     parts.push(
       added.length > 1 && added.length <= 4
         ? `Added ${added.length} files${where}: ${nameList(names)}`
         : `Added ${namesFor(names)}${where}`,
     );
+  }
+  if (emptyFolders.length > 0) {
+    const names = emptyFolders.map((f) => `${inFolder(f)}/`);
+    const what = emptyFolders.length === 1 ? `the empty folder ${names[0]}` : `${emptyFolders.length} empty folders`;
+    parts.push(parts.length > 0 ? what : `Added ${what}${where}`);
   }
   if (replaced.length > 0) {
     parts.push(`${parts.length > 0 ? 'replaced' : 'Replaced'} ${namesFor(replaced.map(inFolder))}`);
@@ -658,8 +663,15 @@ function uploadMessage(folder: string, added: string[], replaced: string[]): str
  * refuses the whole upload, before anything is added (docs "Limits").
  * `folder` is where they were put, for the message.
  */
-export function planUpload(state: WorkspaceState, entries: readonly UploadEntry[], folder: string): Planned {
-  if (entries.length === 0) return nothing();
+export function planUpload(
+  state: WorkspaceState,
+  entries: readonly UploadEntry[],
+  folder: string,
+  emptyFolders: readonly string[] = [],
+): Planned {
+  // A dropped folder's empty folders go in as they are; one there already, or holding a file by now, adds nothing.
+  const newFolders = emptyFolders.filter((f) => !isFolder(state, f));
+  if (entries.length === 0 && newFolders.length === 0) return nothing();
   let working: WorkspaceState = state;
   const steps: Step[] = [];
   const added: string[] = [];
@@ -693,10 +705,15 @@ export function planUpload(state: WorkspaceState, entries: readonly UploadEntry[
     );
   }
   const all = [...added, ...replaced];
-  return finish(state, steps, state.folders, entryPoints, {
-    message: uploadMessage(folder, added, replaced),
+  return finish(state, steps, [...state.folders, ...newFolders], entryPoints, {
+    message: uploadMessage(folder, added, replaced, newFolders),
     ...(all.length === 1 ? { open: all[0] } : {}),
   });
+}
+
+/** The files an upload's change added or replaced, in the order of its entries (one add step each). */
+export function uploadedPaths(change: Change): string[] {
+  return change.steps.flatMap((step) => (step.kind === 'add' ? [step.path] : []));
 }
 
 /** What Delete… asks about: the files that go, and the files left that import them. */

@@ -22,8 +22,8 @@ import { workspaceApi } from '../services/api.js';
 import { autosave, SaveStatus } from '../services/autosave.js';
 import compilerWorker, { editorCompiler, programsCompiler } from '../services/compiler-worker.js';
 import { ProgramDrawings } from '../services/program-drawings.js';
-import { leftOutLines, MAX_PICKED, pickedFromDrop, sortUpload, textOf } from '../services/uploads.js';
-import type { CapturedDrop, LeftOut, PickedFile } from '../services/uploads.js';
+import { leftOutLines, linesHeading, MAX_PICKED, pickedFromDrop, sortUpload, textOf } from '../services/uploads.js';
+import type { CapturedDrop, LeftOut, PickedFile, Renamed } from '../services/uploads.js';
 import type { ClashChoice } from './clash-prompt.js';
 import { formatFontSubstitutions } from '../services/font-loader.js';
 import thumbnailService from '../services/thumbnail-service.js';
@@ -74,6 +74,7 @@ import {
   planSetMain,
   planUpload,
   renameHint,
+  uploadedPaths,
 } from '../services/workspace-edits.js';
 import type { Change, Planned, UploadEntry } from '../services/workspace-edits.js';
 import './shared/confirm-dialog.js';
@@ -1039,13 +1040,14 @@ export class WorkspaceView extends HTMLElement {
         e as CustomEvent<{ folder: string; picked: PickedFile[]; truncated?: boolean }>
       ).detail;
       const session = this._drawings.session;
-      this._upload(folder, picked, truncated ?? false, session).catch((err: unknown) => this._uploadFailed(err));
+      // (A picked folder's empty folders never reach the page: the browser lists only files.)
+      this._upload(folder, picked, [], truncated ?? false, session).catch((err: unknown) => this._uploadFailed(err));
     });
     this.shadowRoot!.addEventListener('upload-drop', (e: Event) => {
       const { folder, drop } = (e as CustomEvent<{ folder: string; drop: CapturedDrop }>).detail;
       const session = this._drawings.session;
       pickedFromDrop(drop)
-        .then(async ({ picked, truncated }) => this._upload(folder, picked, truncated, session))
+        .then(async ({ picked, folders, truncated }) => this._upload(folder, picked, folders, truncated, session))
         .catch((err: unknown) => this._uploadFailed(err));
     });
 
@@ -1833,7 +1835,13 @@ export class WorkspaceView extends HTMLElement {
    * Another workspace meanwhile drops it. Nothing is added when nothing can
    * be, or when the upload would pass the file limit.
    */
-  private async _upload(folder: string, picked: PickedFile[], truncated: boolean, session: number): Promise<void> {
+  private async _upload(
+    folder: string,
+    picked: PickedFile[],
+    emptyFolders: string[],
+    truncated: boolean,
+    session: number,
+  ): Promise<void> {
     // Another workspace since the files were picked or dropped (a folder's walk takes a while): it gets nothing.
     const stale = (): boolean => this._drawings.session !== session || !this.isConnected;
     if (stale()) return;
@@ -1841,7 +1849,7 @@ export class WorkspaceView extends HTMLElement {
       this._toastError('Nothing was added', 'Files can be added once the workspace has loaded.');
       return;
     }
-    const sorted = sortUpload(workspaceState(), folder, picked);
+    const sorted = sortUpload(workspaceState(), folder, picked, emptyFolders);
     const leftOut: LeftOut[] = [...sorted.leftOut];
     if (truncated) {
       leftOut.unshift({
@@ -1861,7 +1869,7 @@ export class WorkspaceView extends HTMLElement {
       );
       return;
     }
-    const ready: { path: string; text: string; clashesWith: string | null }[] = [];
+    const ready: { path: string; text: string; clashesWith: string | null; renamedFrom: string | null }[] = [];
     for (const candidate of sorted.candidates) {
       let read: ReturnType<typeof textOf>;
       try {
@@ -1870,7 +1878,14 @@ export class WorkspaceView extends HTMLElement {
         read = { problem: "couldn't be read." };
       }
       if ('problem' in read) leftOut.push({ name: candidate.file.path, reason: read.problem });
-      else ready.push({ path: candidate.path, text: read.text, clashesWith: candidate.clashesWith });
+      else {
+        ready.push({
+          path: candidate.path,
+          text: read.text,
+          clashesWith: candidate.clashesWith,
+          renamedFrom: candidate.renamedFrom,
+        });
+      }
     }
     if (stale()) return;
     // Each taken name, in turn, beside its row (or all at once: "Do the same for the others").
@@ -1903,34 +1918,45 @@ export class WorkspaceView extends HTMLElement {
       choices.set(clash.path, answer.choice);
       if (answer.forAll) forAll = answer.choice;
     }
-    const entries: UploadEntry[] = ready
-      .filter((r) => choices.get(r.path) !== 'skip')
-      .map((r) => ({
-        path: r.path,
-        text: r.text,
-        whenTaken: choices.get(r.path) === 'replace' ? 'replace' : 'keep-both',
-      }));
-    const lines = leftOutLines(leftOut);
-    if (entries.length === 0) {
+    const going = ready.filter((r) => choices.get(r.path) !== 'skip');
+    const entries: UploadEntry[] = going.map((r) => ({
+      path: r.path,
+      text: r.text,
+      whenTaken: choices.get(r.path) === 'replace' ? 'replace' : 'keep-both',
+    }));
+    const folders = sorted.folders.map((f) => f.path);
+    if (entries.length === 0 && folders.length === 0) {
+      const lines = leftOutLines(leftOut);
       if (lines.length > 0) this._toastError('Nothing was added', 'Not added:', lines);
       this.fileTree?.focusTabStop();
       return;
     }
-    const planned = planUpload(workspaceState(), entries, folder);
+    const planned = planUpload(workspaceState(), entries, folder, folders);
     if (!planned.ok) {
-      this._toastError('Nothing was added', planned.message, lines);
+      this._toastError('Nothing was added', planned.message, leftOutLines(leftOut));
       return;
     }
+    // The names changed to fit the rules (your answer, 2026-11-13), each to where it went (Keep both may have numbered it).
+    const arrived = uploadedPaths(planned.change);
+    // Named as they were picked: from the folder they were dropped or picked into.
+    const inFolder = (p: string): string => (folder && p.startsWith(`${folder}/`) ? p.slice(folder.length + 1) : p);
+    const renamed: Renamed[] = [
+      ...going.flatMap((r, i) => (r.renamedFrom !== null ? [{ from: r.renamedFrom, to: inFolder(arrived[i]) }] : [])),
+      ...sorted.folders.flatMap((f) =>
+        f.renamedFrom !== null ? [{ from: f.renamedFrom, to: `${inFolder(f.path)}/` }] : [],
+      ),
+    ];
+    const lines = leftOutLines(leftOut, renamed);
+    const heading = linesHeading(renamed.length, leftOut.length);
     const made = this._applyWorkspaceChange(planned.change, {
       undo: planned.undo,
       focusEditor: false,
       failTitle: 'Nothing was added',
       undoMessage: 'Undone. The files are as they were before the upload.',
-      ...(lines.length > 0 ? { toastMessage: 'Not added:', toastItems: lines } : {}),
+      ...(heading !== null ? { toastMessage: heading, toastItems: lines } : {}),
     });
     if (!made) return;
-    const arrived = planned.change.steps.flatMap((step) => (step.kind === 'add' ? [step.path] : []));
-    this.fileTree?.flash(arrived);
+    this.fileTree?.flash([...arrived, ...folders]);
   }
 
   private _uploadFailed(err: unknown): void {

@@ -29,6 +29,10 @@ Decided 2026-11-13: a file with `module;` is a "module" everywhere in the UI and
 "library" (the keyword's own name; note 52).
 Agreed 2026-11-13 (note 52, step 5b): the dot shows only while the file you're editing isn't the
 program shown (the mockup's rule); a blank tile says why on hover ("Too detailed to draw this small").
+Answered 2026-11-13 (note 52, step 6a): a name that doesn't fit is changed to fit (dashes, accents
+dropped); the limit refuses a whole upload; files over 1 MB or not text are left out; dot-files
+without a mention; the upload's message has Undo; Esc skips; a dropped folder's empty folders are
+kept; a folder differing only in case goes into the one there.
 -->
 
 # Files in a Workspace
@@ -101,11 +105,18 @@ The **+** in the Files header opens a menu: New program, New module, New folder,
 
 - **Upload files…** opens your system's file picker for `.pathogen` files. **Upload folder…** picks a folder and keeps the folders inside it: `shapes/round/dot.pathogen` arrives as `shapes/round/dot.pathogen`. Browsers can pick several files or one folder, but not both at once, so there are two items.
 - You can also drag files and folders from your computer onto the tree. The folder under the pointer lights up, and that's where they go. Dropping on a file puts them in its folder; dropping on empty space puts them at the top.
-- When a name is taken, a prompt beside the tree asks what to do: **Replace**, **Keep both** (the new file gets a number: `labels-2.pathogen`) or **Skip**. With several clashes, it offers to do the same for all.
-- A message lists what was added. Uploading one file opens it in a tab. New programs go at the end of the program list.
+- A dropped folder keeps its empty folders. Upload folder… keeps only the folders that hold files, because the browser hands over only files.
+- A folder that differs from one already there only in letter case joins it: uploading `Parts/` where `parts/` is adds its files to `parts/`. A file that differs only in case counts as a taken name.
 - **Only `.pathogen` files** can be added for now. Anything else is left out, and the message says why.
   - Font files can't be added yet. Use a Google Fonts family instead, such as `@font "Raleway" 700;` (see [`@font`](#path-blocks-font-directive)). An `@font` with a file path, such as `@font "./fonts/Raleway-Bold.ttf";` in a project from the CLI or VS Code, gets a warning that suggests the family, as it does in a workspace today.
-  - A `pathogen.json` is left out too: the playground writes its own.
+  - A `pathogen.json` is left out: the playground writes its own.
+- A `.pathogen` file over 1 MB, or one that isn't text, is left out, and the message says why.
+- Files and folders whose names start with a dot, such as `.DS_Store`, are left out without a mention.
+- An upload that would take the workspace past 20 files adds nothing ([Limits](#workspace-files-limits)). Replaced files don't count.
+- A file or folder name that breaks the [name rules](#workspace-files-adding-files-and-folders) is changed to fit them: each run of spaces or other characters they don't allow becomes one dash, and letters lose their accents. `my gear.pathogen` arrives as `my-gear.pathogen`, and `über.pathogen` as `uber.pathogen`.
+- When a name is taken, a prompt beside the tree asks what to do: **Replace**, **Keep both** (the new file gets a number: `labels-2.pathogen`) or **Skip**. With several clashes, it offers to do the same for all. Esc skips that file.
+- A message lists what was added, any name that was changed, and what was left out. Its **Undo** takes out what the upload added and puts back what it replaced.
+- Uploading one file opens it in a tab. New programs go at the end of the program list.
 
 ## Renaming, moving and deleting
 
@@ -158,4 +169,4 @@ An error in a file other than the program the preview shows names that file and 
 | Folders inside folders | 8 deep |
 | A whole workspace | 50 MB |
 
-A save or an upload that would pass a limit is refused with a message that names it, before anything is lost. [When data files and fonts can be added: data files 5 MB each, fonts 20 MB each (note 50).]
+A save that would pass a limit is refused with a message that names it, before anything is lost. An upload leaves out files over 1 MB or more than 8 folders deep, and adds nothing if it would take the workspace past 20 files or 50 MB. [When data files and fonts can be added: data files 5 MB each, fonts 20 MB each (note 50).]

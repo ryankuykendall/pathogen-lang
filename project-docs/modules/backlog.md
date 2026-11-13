@@ -30,6 +30,12 @@ Deferred work from the modules, data and files effort. Each entry says what it i
 - **Needs:** a queue keyed by workspace and content hash (a newer hash replaces a waiting job for the same workspace; one job at a time, as now); the job takes its files from the saved workspace or a snapshot of the store, never the editor; the multi-file compile (`compileAs` with the workspace's files and its main); the hero and the square crop drawn from the same SVG string; the manual Set Thumbnail (with its crop) as a job with a higher priority. Then the preview-tied paths, the `thumbnail-auto-generate` event and `_thumbnailWait`'s "Show the main first" can go. Step 5b's miniature compiles (`programsCompiler`) are the same shape, so the two may share the worker and the drawing code.
 - **From:** your note on the 5a report, 2026-11-13: "our current system for generating thumbnails is too tightly coupled to the current state of the app/workspace. It seems like we should have a generally available service inside of our app that allows a job to be enqueued to generate a thumbnail (or other sizes of rasterized preview) regardless of how user behavior or interactions change the state of the workspace."
 
+### Count how often a workspace hits the 20-file limit
+- **What:** a count of the uploads (and New program, New module, Duplicate) refused because the workspace would pass 20 files, so the limit can be raised when people bump into it (note 50: the limit was set "to see if we have users who bump up against this limit").
+- **Today:** the refusal is a toast ("A workspace can hold at most 20 files: this one has 18, and the upload would make 23.") and nothing is recorded. The app has no usage counting of any kind.
+- **Needs:** a small way to count events: a counter the API Worker keeps (a D1 table or a KV counter, per day, no user data), and a call from the playground when the limit refuses something. A privacy note in the docs if anything about a user is kept.
+- **From:** your answer on step 6a, 2026-11-13: "That's fine, although it would be beneficial to log how often this happens at some point."
+
 ## Language
 
 ### Default import of a drawing

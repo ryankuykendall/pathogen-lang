@@ -10,15 +10,17 @@ import { beforeAll, describe, expect, it } from 'vitest';
 
 import {
   captureDrop,
+  fittedName,
   fontSuggestion,
   leftOutLines,
+  linesHeading,
   MAX_PICKED,
   pickedFromDrop,
   pickedFromInput,
   sortUpload,
   textOf,
 } from '../playground/services/uploads.js';
-import { applyChange, planUpload } from '../playground/services/workspace-edits.js';
+import { applyChange, planUpload, uploadedPaths } from '../playground/services/workspace-edits.js';
 
 import type { DroppedEntry, PickedFile } from '../playground/services/uploads.js';
 import type { WorkspaceState } from '../playground/services/workspace-edits.js';
@@ -87,7 +89,6 @@ describe('sortUpload: where each file goes', () => {
       picked('notes'),
       picked('pathogen.json'),
       picked('shapes/pathogen.json'),
-      picked('my gear.pathogen'),
       picked('big.pathogen', PROGRAM, 1024 * 1024 + 1),
     ]);
     expect(sorted.candidates.map((c) => c.path)).toEqual(['springs.pathogen']);
@@ -103,11 +104,39 @@ describe('sortUpload: where each file goes', () => {
         reason: 'the playground writes this file itself. To change the main, use Set as main on a program.',
       },
       { name: 'shapes/pathogen.json', reason: 'inside a folder, it would make that folder a project of its own.' },
-      {
-        name: 'my gear.pathogen',
-        reason: 'can use only letters a–z and A–Z, digits, -, _ and ., and must start with a letter or a digit.',
-      },
       { name: 'big.pathogen', reason: 'larger than 1 MB, the most a .pathogen file can be.' },
+    ]);
+  });
+
+  it('a name the workspace can’t use is changed to fit, folders’ names too, and says what it was (your answer 1)', () => {
+    const sorted = sortUpload(state(), 'parts', [
+      picked('my gear.pathogen'),
+      picked('My Shapes/über star.pathogen'),
+      picked('fine.pathogen'),
+    ]);
+    expect(sorted.candidates.map((c) => [c.path, c.renamedFrom])).toEqual([
+      ['parts/my-gear.pathogen', 'my gear.pathogen'],
+      ['parts/My-Shapes/uber-star.pathogen', 'My Shapes/über star.pathogen'],
+      ['parts/fine.pathogen', null],
+    ]);
+    expect(sorted.leftOut).toEqual([]);
+  });
+
+  it('a changed name can clash, like any other: with a file there, or with another file of the upload', () => {
+    const sorted = sortUpload(state(), 'parts', [
+      picked('labels .pathogen'),
+      picked('a b.pathogen'),
+      picked('a-b.pathogen'),
+    ]);
+    expect(sorted.candidates.map((c) => [c.path, c.clashesWith])).toEqual([
+      ['parts/labels.pathogen', 'parts/labels.pathogen'],
+      ['parts/a-b.pathogen', null],
+    ]);
+    expect(sorted.leftOut).toEqual([
+      {
+        name: 'a-b.pathogen',
+        reason: 'would have the same name as a b.pathogen (a-b.pathogen), once names are changed to fit the rules.',
+      },
     ]);
   });
 
@@ -158,6 +187,126 @@ describe('sortUpload: where each file goes', () => {
   it('too deep a folder is left out with the workspace’s own message', () => {
     const deep = `${Array.from({ length: 9 }, (_, i) => `f${i}`).join('/')}/x.pathogen`;
     expect(sortUpload(state(), '', [picked(deep)]).leftOut[0].reason).toBe('is more than 8 folders deep.');
+  });
+});
+
+describe('fittedName: a name changed to fit the rules (your answer 1)', () => {
+  it('spaces and other characters a name can’t hold become one dash; accents go; the extension stays', () => {
+    expect(fittedName('my gear.pathogen', true)).toBe('my-gear.pathogen');
+    expect(fittedName('a  b & c!.pathogen', true)).toBe('a-b-c.pathogen');
+    expect(fittedName('über straße.pathogen', true)).toBe('uber-stra-e.pathogen');
+    expect(fittedName('Café Menu', false)).toBe('Cafe-Menu');
+    expect(fittedName('fine_name-2.pathogen', true)).toBe('fine_name-2.pathogen');
+  });
+
+  it('it starts with a letter or a digit; nothing left becomes file (or folder); a name Windows reserves gets -1', () => {
+    expect(fittedName('_private.pathogen', true)).toBe('private.pathogen');
+    expect(fittedName('-- draft --.pathogen', true)).toBe('draft.pathogen');
+    expect(fittedName('日本.pathogen', true)).toBe('file.pathogen');
+    expect(fittedName('???', false)).toBe('folder');
+    expect(fittedName('con.pathogen', true)).toBe('con-1.pathogen');
+    expect(fittedName('NUL', false)).toBe('NUL-1');
+  });
+
+  it('cut to the length a name can have, the extension kept', () => {
+    const long = fittedName(`${'a'.repeat(120)}.pathogen`, true);
+    expect([long.length, long.endsWith('.pathogen')]).toEqual([100, true]);
+  });
+
+  it('every fitted name passes the workspace’s own rule', async () => {
+    const { workspaceNameProblem } = await import('../src');
+    for (const name of [
+      'my gear.pathogen',
+      '日本.pathogen',
+      '-- x --.pathogen',
+      'con.pathogen',
+      `${'é'.repeat(150)}.pathogen`,
+    ]) {
+      expect(workspaceNameProblem(fittedName(name, true))).toBeNull();
+    }
+  });
+});
+
+describe('empty folders (your answer 7)', () => {
+  it('a dropped folder’s empty folders go in, names fitted, case merged, ones already there left alone', () => {
+    const sorted = sortUpload(
+      state(),
+      '',
+      [picked('shapes/star.pathogen')],
+      ['shapes/round', 'Shapes/Empty One', 'empty', 'EMPTY/inner', '.cache'],
+    );
+    expect(sorted.folders).toEqual([
+      { path: 'shapes/round', renamedFrom: null },
+      { path: 'shapes/Empty-One', renamedFrom: 'Shapes/Empty One/' },
+      { path: 'empty/inner', renamedFrom: null },
+    ]);
+  });
+
+  it('a folder where a file has its name is left out, with why', () => {
+    const sorted = sortUpload(state(), '', [], ['main.pathogen/inner']);
+    expect([sorted.folders, sorted.leftOut]).toEqual([
+      [],
+      [{ name: 'main.pathogen/inner/', reason: "main.pathogen is a file, so it can't hold a folder." }],
+    ]);
+  });
+
+  it('the drop walk finds them (a folder holding only dot-files counts as empty)', async () => {
+    const dir = (name: string, children: DroppedEntry[]): DroppedEntry => ({
+      name,
+      isFile: false,
+      isDirectory: true,
+      createReader: () => {
+        let done = false;
+        return {
+          readEntries: (ok) => {
+            ok(done ? [] : children);
+            done = true;
+          },
+        };
+      },
+    });
+    const file = (name: string): DroppedEntry => ({
+      name,
+      isFile: true,
+      isDirectory: false,
+      file: (ok) => ok(new File([PROGRAM], name)),
+    });
+    const shapes = dir('shapes', [file('star.pathogen'), dir('round', []), dir('kept', [file('.DS_Store')])]);
+    const { picked: files, folders } = await pickedFromDrop({ entries: [shapes], files: [null] });
+    expect([files.map((f) => f.path), folders]).toEqual([['shapes/star.pathogen'], ['shapes/round', 'shapes/kept']]);
+  });
+
+  it('planUpload adds them with the files, says so, and the Undo takes them out', () => {
+    const planned = planUpload(state(), [{ path: 'shapes/star.pathogen', text: PROGRAM, whenTaken: 'keep-both' }], '', [
+      'shapes/round',
+    ]);
+    if (!planned.ok) throw new Error(planned.message);
+    const after = applyChange(state(), planned.change);
+    expect([after.folders, planned.change.message]).toEqual([
+      ['empty', 'shapes/round'],
+      'Added shapes/star.pathogen, and the empty folder shapes/round/.',
+    ]);
+    expect(applyChange(after, planned.undo)).toEqual(state());
+    const only = planUpload(state(), [], 'parts', ['parts/a', 'parts/b']);
+    expect(only.ok && only.change.message).toBe('Added 2 empty folders to parts/.');
+  });
+
+  it('uploadedPaths: the files added or replaced, in the order of the entries', () => {
+    const planned = planUpload(
+      state(),
+      [
+        { path: 'parts/labels.pathogen', text: LABELS, whenTaken: 'keep-both' },
+        { path: 'parts/kit.pathogen', text: LABELS, whenTaken: 'keep-both' },
+        { path: 'try-sizes.pathogen', text: PROGRAM, whenTaken: 'replace' },
+      ],
+      'parts',
+    );
+    if (!planned.ok) throw new Error(planned.message);
+    expect(uploadedPaths(planned.change)).toEqual([
+      'parts/labels-2.pathogen',
+      'parts/kit.pathogen',
+      'try-sizes.pathogen',
+    ]);
   });
 });
 
@@ -283,7 +432,18 @@ describe('picked files', () => {
 describe('leftOutLines', () => {
   it('each name and why, then how many more past the limit', () => {
     const out = Array.from({ length: 8 }, (_, i) => ({ name: `f${i}.csv`, reason: 'no.' }));
-    expect(leftOutLines(out, 3)).toEqual(['f0.csv: no.', 'f1.csv: no.', 'f2.csv: no.', '…and 5 more.']);
+    expect(leftOutLines(out, [], 3)).toEqual(['f0.csv: no.', 'f1.csv: no.', 'f2.csv: no.', '…and 5 more.']);
+    // Names changed come first, as "from → to".
+    expect(leftOutLines(out.slice(0, 1), [{ from: 'my gear.pathogen', to: 'my-gear.pathogen' }])).toEqual([
+      'my gear.pathogen → my-gear.pathogen',
+      'f0.csv: no.',
+    ]);
+    expect([linesHeading(1, 1), linesHeading(1, 0), linesHeading(0, 2), linesHeading(0, 0)]).toEqual([
+      'Some names were changed to fit the name rules, and some files weren’t added:',
+      'Some names were changed to fit the name rules:',
+      'Not added:',
+      null,
+    ]);
   });
 });
 

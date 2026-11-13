@@ -41,11 +41,22 @@ export interface UploadCandidate {
   file: PickedFile;
   /** The file already there with this name, in any letter case; null when there's none. */
   clashesWith: string | null;
+  /** Its path as picked, when a name in it was changed to fit the name rules; else null. */
+  renamedFrom: string | null;
 }
 
-/** What to do with the files picked: the ones that can go in, and the ones left out. */
+/** An empty folder of a dropped folder, that goes in as it is (step 6a, your answer 7). */
+export interface UploadFolder {
+  /** Where it goes: a workspace path. */
+  path: string;
+  /** As picked, when a name in it was changed to fit; else null. */
+  renamedFrom: string | null;
+}
+
+/** What to do with the files picked: the ones that can go in, the empty folders, and the ones left out. */
 export interface SortedUpload {
   candidates: UploadCandidate[];
+  folders: UploadFolder[];
   leftOut: LeftOut[];
 }
 
@@ -69,6 +80,34 @@ function foldersOf(state: WorkspaceState): string[] {
 
 /** A rule's message without the name it starts with: `"my gear.pathogen" can use only…` → `can use only…`. */
 const withoutName = (message: string): string => message.replace(/^"[^"]*"\s*/, '');
+
+/** The accents NFD splits off a letter (U+0300 to U+036F), written without an escape in the source. */
+const ACCENTS = new RegExp(`[${String.fromCharCode(0x300)}-${String.fromCharCode(0x36f)}]`, 'g');
+const WINDOWS_RESERVED = /^(con|prn|aux|nul|com[1-9]|lpt[1-9])$/i;
+
+/**
+ * A name made to fit the workspace's name rules (your answer, 2026-11-13: "replacing
+ * spaces or other unsupported characters with a dash"): accents dropped
+ * (`über` → `uber`); any other run of characters a name can't hold becomes one
+ * dash (`my gear` → `my-gear`); it starts with a letter or a digit; a name
+ * Windows reserves gets `-1`; it's cut to the length a name can have. A file's
+ * extension is kept. A name with nothing left becomes `file` (or `folder`).
+ */
+export function fittedName(name: string, isFile: boolean): string {
+  const limit = lib().WORKSPACE_LIMITS.nameLength;
+  const dot = isFile ? name.lastIndexOf('.') : -1;
+  const ext = dot > 0 ? name.slice(dot) : '';
+  let stem = (dot > 0 ? name.slice(0, dot) : name).normalize('NFD').replace(ACCENTS, '');
+  stem = stem
+    .replace(/[^A-Za-z0-9._-]+/g, '-')
+    .replace(/-{2,}/g, '-')
+    .replace(/^[^A-Za-z0-9]+/, '')
+    .replace(/-+$/, '');
+  if (stem === '') stem = isFile ? 'file' : 'folder';
+  if (WINDOWS_RESERVED.test(stem)) stem = `${stem}-1`;
+  if (stem.length + ext.length > limit) stem = stem.slice(0, limit - ext.length).replace(/[-.]+$/, '');
+  return `${stem}${ext}`;
+}
 
 const WEIGHTS: Record<string, number> = {
   thin: 100,
@@ -123,21 +162,59 @@ function kindReason(name: string, folder: string): string {
 
 /**
  * Sort the files picked for `folder` ('' is the top): where each goes, which
- * clash with a file already there, and which are left out and why. Files and
- * folders whose names start with a dot (`.DS_Store`, `.git/`) are the
- * computer's, and are left out without a word. A folder whose name differs
- * from one already there only in letter case goes into that one.
+ * clash with a file already there, and which are left out and why; and the
+ * empty folders of a dropped folder (`emptyFolders`, paths as picked).
+ * - Files and folders whose names start with a dot (`.DS_Store`, `.git/`) are
+ *   the computer's, and are left out without a word.
+ * - A name the workspace can't use is changed to fit (fittedName), and the
+ *   candidate says what it was (`renamedFrom`).
+ * - A folder whose name differs from one already there (or one this upload
+ *   makes) only in letter case goes into that one.
  */
-export function sortUpload(state: WorkspaceState, folder: string, picked: readonly PickedFile[]): SortedUpload {
+export function sortUpload(
+  state: WorkspaceState,
+  folder: string,
+  picked: readonly PickedFile[],
+  emptyFolders: readonly string[] = [],
+): SortedUpload {
   const limits = lib().WORKSPACE_LIMITS;
   const existingFolders = foldersOf(state);
   const folderSpelling = new Map(existingFolders.map((f) => [f.toLowerCase(), f]));
   const fileSpelling = new Map(Object.keys(state.files).map((p) => [p.toLowerCase(), p]));
   const candidates: UploadCandidate[] = [];
+  const folders: UploadFolder[] = [];
   const leftOut: LeftOut[] = [];
-  const taken = new Map<string, string>();
+  /** The files this upload takes so far, by their path in lower case: as picked, and whether renamed to fit. */
+  const taken = new Map<string, { picked: string; renamed: boolean }>();
   /** The files this upload adds so far, by their path in lower case. */
   const newFiles = new Map<string, string>();
+
+  /**
+   * Where a picked path's folders go, each name made to fit and spelled as the
+   * workspace (or this upload, so far) already spells it; and the file it runs
+   * into on the way, if any (a file can't hold a folder).
+   */
+  const placeFolders = (segments: readonly string[]): { at: string; changed: boolean; blocked: string | null } => {
+    let at = folder;
+    let changed = false;
+    let blocked: string | null = null;
+    for (const segment of segments) {
+      const fitted = fittedName(segment, false);
+      if (fitted !== segment) changed = true;
+      const next = join(at, fitted);
+      at = folderSpelling.get(next.toLowerCase()) ?? next;
+      const file = fileSpelling.get(at.toLowerCase()) ?? newFiles.get(at.toLowerCase());
+      if (file !== undefined) blocked = file;
+    }
+    return { at, changed, blocked };
+  };
+  /** The folders this upload makes are spelled this way from now on. */
+  const remember = (at: string): void => {
+    for (let f = at; f !== '' && f !== folder; f = parentOf(f)) {
+      if (!folderSpelling.has(f.toLowerCase())) folderSpelling.set(f.toLowerCase(), f);
+    }
+  };
+
   for (const file of picked) {
     const segments = file.path.split('/').filter((s) => s !== '');
     if (segments.length === 0 || segments.some((s) => s.startsWith('.'))) continue;
@@ -145,29 +222,17 @@ export function sortUpload(state: WorkspaceState, folder: string, picked: readon
     const leave = (reason: string): void => {
       leftOut.push({ name: file.path, reason });
     };
-    // Where it goes, each folder on the way spelled as the workspace (or this upload, so far) already spells it.
-    let at = folder;
-    let blocked: string | null = null;
-    for (const segment of segments.slice(0, -1)) {
-      const next = join(at, segment);
-      at = folderSpelling.get(next.toLowerCase()) ?? next;
-      const file = fileSpelling.get(at.toLowerCase()) ?? newFiles.get(at.toLowerCase());
-      if (file !== undefined) blocked = file;
-    }
+    const { at, changed, blocked } = placeFolders(segments.slice(0, -1));
     if (lib().workspaceFileKind(name) !== 'pathogen') {
       leave(kindReason(name, at));
-      continue;
-    }
-    const nameProblem = segments.map((s) => lib().workspaceNameProblem(s)).find((p) => p !== null);
-    if (nameProblem) {
-      leave(withoutName(nameProblem));
       continue;
     }
     if (blocked !== null) {
       leave(`${blocked} is a file, so it can't hold a folder.`);
       continue;
     }
-    const path = join(at, name);
+    const fitted = fittedName(name, true);
+    const path = join(at, fitted);
     const pathProblem = lib().workspacePathProblem(path, 'file');
     if (pathProblem) {
       leave(withoutName(pathProblem));
@@ -177,25 +242,51 @@ export function sortUpload(state: WorkspaceState, folder: string, picked: readon
       leave(`larger than ${limits.fileBytes.pathogen / (1024 * 1024)} MB, the most a .pathogen file can be.`);
       continue;
     }
+    const renamed = changed || fitted !== name;
     const key = path.toLowerCase();
     const twin = taken.get(key);
     if (twin !== undefined) {
-      leave(`differs from ${twin} only in letter case, and both can't be in one folder.`);
+      leave(
+        renamed || twin.renamed
+          ? `would have the same name as ${twin.picked} (${fitted}), once names are changed to fit the rules.`
+          : `differs from ${twin.picked} only in letter case, and both can't be in one folder.`,
+      );
       continue;
     }
     if (folderSpelling.has(key)) {
       leave(`${folderSpelling.get(key)}/ is a folder with that name.`);
       continue;
     }
-    taken.set(key, file.path);
+    taken.set(key, { picked: file.path, renamed });
     newFiles.set(key, path);
-    // Its folders are spelled this way from now on, for the files after it.
-    for (let f = at; f !== '' && f !== folder; f = parentOf(f)) {
-      if (!folderSpelling.has(f.toLowerCase())) folderSpelling.set(f.toLowerCase(), f);
-    }
-    candidates.push({ path, file, clashesWith: fileSpelling.get(key) ?? null });
+    remember(at);
+    candidates.push({
+      path,
+      file,
+      clashesWith: fileSpelling.get(key) ?? null,
+      renamedFrom: renamed ? file.path : null,
+    });
   }
-  return { candidates, leftOut };
+
+  // A dropped folder's empty folders, after the files (whose folders they may share).
+  for (const picked of emptyFolders) {
+    const segments = picked.split('/').filter((s) => s !== '');
+    if (segments.length === 0 || segments.some((s) => s.startsWith('.'))) continue;
+    const { at, changed, blocked } = placeFolders(segments);
+    if (blocked !== null) {
+      leftOut.push({ name: `${picked}/`, reason: `${blocked} is a file, so it can't hold a folder.` });
+      continue;
+    }
+    if (folderSpelling.has(at.toLowerCase())) continue;
+    const problem = lib().workspacePathProblem(at, 'folder');
+    if (problem) {
+      leftOut.push({ name: `${picked}/`, reason: withoutName(problem) });
+      continue;
+    }
+    remember(at);
+    folders.push({ path: at, renamedFrom: changed ? `${picked}/` : null });
+  }
+  return { candidates, folders, leftOut };
 }
 
 const BOM = 0xfeff;
@@ -266,8 +357,12 @@ export function captureDrop(data: DataTransfer): CapturedDrop {
  * over in batches: read until an empty one). Folders whose names start with a
  * dot aren't walked. `truncated` when the drop held more than MAX_PICKED files.
  */
-export async function pickedFromDrop(drop: CapturedDrop): Promise<{ picked: PickedFile[]; truncated: boolean }> {
+export async function pickedFromDrop(
+  drop: CapturedDrop,
+): Promise<{ picked: PickedFile[]; folders: string[]; truncated: boolean }> {
   const picked: PickedFile[] = [];
+  /** The folders with nothing in them (dot-files aside): they go in as they are (your answer 7). */
+  const folders: string[] = [];
   let truncated = false;
   const fileOf = async (entry: DroppedEntry): Promise<File> =>
     new Promise((resolve, reject) => entry.file!(resolve, reject));
@@ -284,7 +379,9 @@ export async function pickedFromDrop(drop: CapturedDrop): Promise<{ picked: Pick
     if (truncated || entry.name.startsWith('.')) return;
     const path = join(prefix, entry.name);
     if (entry.isDirectory) {
-      for (const child of await childrenOf(entry)) await walk(child, path);
+      const children = (await childrenOf(entry)).filter((child) => !child.name.startsWith('.'));
+      if (children.length === 0) folders.push(path);
+      for (const child of children) await walk(child, path);
       return;
     }
     if (picked.length >= MAX_PICKED) {
@@ -302,12 +399,31 @@ export async function pickedFromDrop(drop: CapturedDrop): Promise<{ picked: Pick
       if (file) picked.push({ path: file.name, size: file.size, read: async () => file.arrayBuffer() });
     }
   }
-  return { picked, truncated };
+  return { picked, folders, truncated };
 }
 
-/** The toast's lines for the files left out: each name and why, at most `max`, then how many more. */
-export function leftOutLines(leftOut: readonly LeftOut[], max = 6): string[] {
-  const lines = leftOut.slice(0, max).map((l) => `${l.name}: ${l.reason}`);
-  if (leftOut.length > max) lines.push(`…and ${leftOut.length - max} more.`);
+/** A name changed to fit the rules: from what was picked, to where it went. */
+export interface Renamed {
+  from: string;
+  to: string;
+}
+
+/**
+ * The toast's lines: each name changed to fit the rules (`my gear.pathogen →
+ * my-gear.pathogen`), then each file left out and why, at most `max` in all,
+ * then how many more.
+ */
+export function leftOutLines(leftOut: readonly LeftOut[], renamed: readonly Renamed[] = [], max = 6): string[] {
+  const all = [...renamed.map((r) => `${r.from} → ${r.to}`), ...leftOut.map((l) => `${l.name}: ${l.reason}`)];
+  const lines = all.slice(0, max);
+  if (all.length > max) lines.push(`…and ${all.length - max} more.`);
   return lines;
+}
+
+/** What the toast says above its lines: names changed, files left out, or both. */
+export function linesHeading(renamed: number, leftOut: number): string | null {
+  if (renamed > 0 && leftOut > 0) return 'Some names were changed to fit the name rules, and some files weren’t added:';
+  if (renamed > 0) return 'Some names were changed to fit the name rules:';
+  if (leftOut > 0) return 'Not added:';
+  return null;
 }
