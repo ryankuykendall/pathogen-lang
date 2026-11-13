@@ -23,6 +23,8 @@ preview has no zero-state of its own; Copy Code and Format Document wait for a f
 Approved 2026-11-12 (note 52): the Undo sentence under "Renaming, moving and deleting" (the
 import rewrites stay out of each file's undo history, as built in 4c-2), and the status with no
 program reads "No programs", as the Workspaces page does.
+Agreed 2026-11-13 (note 52, step 5a): the program shown becoming a library sends the preview back
+to the main; Set Thumbnail's reasons "Show the main first" and "The main is a library now".
 -->
 
 # Files in a Workspace
@@ -62,10 +64,11 @@ The workspace's **main** is the program it opens on and the one its thumbnail sh
 
 - **Set as main**, in a program's menu in the tree, makes it the main. A main that isn't `main.pathogen` has a `main` badge in the tree and in the program list (the chip's list, [below](#workspace-files-the-preview-and-the-program-list)).
 - Setting the main doesn't change what the preview shows.
+- The thumbnail is taken from the preview, so **Set Thumbnail** works while the preview shows the main. With another program shown, it's off and says "Show the main first".
 - Renaming the main keeps it the main.
 - **Deleting the main** makes the next program in `pathogen.json`'s list the main, and a message says which. After a Set as main, that's the program that was the main before.
 - **Deleting the last program** leaves the workspace with no main. The preview is empty until you add a program, the status in the breadcrumb reads "No programs", and `pathogen.json` becomes `{}`. The workspace's thumbnail keeps its last drawing, and your Workspaces page marks it "No programs". Export, Set Thumbnail and Make public wait until it has a program again.
-- **Adding `module;` to the main** makes it a library, which can't draw. It stays the main, and the program list shows an error on it, until you take `module;` out or set another program as main. Adding `module;` to any other program takes it out of the program list and out of `pathogen.json`. Take `module;` out again and it goes back, at the end.
+- **Adding `module;` to the main** makes it a library, which can't draw. It stays the main, and the program list shows an error on it, until you take `module;` out or set another program as main. Meanwhile Set Thumbnail is off and says "The main is a library now". Adding `module;` to any other program takes it out of the program list and out of `pathogen.json`. Take `module;` out again and it goes back, at the end.
 
 ## The preview and the program list
 
@@ -75,7 +78,7 @@ With more than one program, a chip beside the zoom controls names the program th
 - Editing a file redraws every program that uses it. In the list, a dot marks the programs that use the file you're editing.
 - Hover a program in the list and click **Open in the editor** to open its file without changing the preview.
 - When another program has an error, the chip shows a red dot, and that program says in the list where it failed.
-- If the program shown is deleted, the preview goes back to the main.
+- If the program shown is deleted, or becomes a library, the preview goes back to the main.
 
 ## Adding files and folders
 

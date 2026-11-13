@@ -1728,7 +1728,8 @@ export class WorkspaceView extends HTMLElement {
    * lost it goes back at the end, and the main stays. Made as a change, so
    * autosave sends the list, an open pathogen.json follows, and the toast's
    * Undo, planned on the old list, is withdrawn. The program shown, once it's a
-   * library, hands the preview back to the main (note 52, step 5a: proposed).
+   * library, hands the preview back to the main (note 52, step 5a; agreed
+   * 2026-11-13).
    */
   private _followProgramList(): void {
     const edited = [...this._editedSinceList];
@@ -1784,7 +1785,9 @@ export class WorkspaceView extends HTMLElement {
   /**
    * Why the thumbnail can't be taken now, as Set Thumbnail says it, or null
    * when it can. It's always the main's drawing (note 38), taken from the
-   * preview, so the preview must hold the main's drawing.
+   * preview, so the preview must hold the main's drawing. The wording was
+   * agreed 2026-11-13 (note 52). The backlog's render queue would let the
+   * thumbnail be drawn without the preview, and the last reason go.
    */
   private _thumbnailWait(main: string | null, mainIsLibrary: boolean): string | null {
     if (main === null) return 'Add a program first';
