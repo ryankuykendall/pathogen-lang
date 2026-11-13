@@ -192,7 +192,7 @@ layer('hex').apply { circle(60, 100, 40) }`,
     name: 'File Tree',
     category: 'Editor',
     description:
-      "The workspace's files beside the editor (docs/workspace-files.md, mockup v6 screens O, J and N). Folders first, then files, each by name; .pathogen quiet; a module's box icon; the main's badge when it isn't main.pathogen; pathogen.json last, with a lock. Click a folder to fold it, a file to open it. One Tab stop: Up and Down move, Right and Left unfold and fold, Space opens a file, Enter opens it and goes to the editor. The + adds a program, a module or a folder to the folder clicked last, else the folder of the file in the editor, else the top: a name field appears first in that folder; a taken name is refused in place; Enter creates, Esc cancels. Each row's ⋮ (or a right-click, or Shift+F10) opens its menu: Rename… turns the row into a field holding its name, and Move to… lists the top and the folders, the one it's in marked.",
+      "The workspace's files beside the editor (docs/workspace-files.md, mockup v6 screens O, J and N). Folders first, then files, each by name; .pathogen quiet; a module's box icon; the main's badge when it isn't main.pathogen; pathogen.json last, with a lock. Click a folder to fold it, a file to open it. One Tab stop: Up and Down move, Right and Left unfold and fold, Space opens a file, Enter opens it and goes to the editor. The + adds a program, a module or a folder to the folder clicked last, else the folder of the file in the editor, else the top: a name field appears first in that folder; a taken name is refused in place; Enter creates, Esc cancels. Each row's ⋮ (or a right-click, or Shift+F10) opens its menu: Rename… turns the row into a field holding its name, and Move to… lists the top and the folders, the one it's in marked. A file or folder dragged onto a folder (or empty space, for the top) moves there: the row dims, the folder lights up, and the label by the pointer says what the move changes, or why it can't go there.",
     stories: [
       { name: 'A workspace with folders', props: { set: 'gears', active: 'demos/gears.pathogen' } },
       { name: 'A new workspace', props: { set: 'new', active: 'main.pathogen' } },
@@ -205,6 +205,14 @@ layer('hex').apply { circle(60, 100, 40) }`,
       { name: 'A folder’s menu', props: { set: 'gears', active: 'main.pathogen', open: 'row:parts' } },
       { name: 'Renaming a folder', props: { set: 'gears', active: 'main.pathogen', open: 'rename:parts' } },
       { name: 'Move to…', props: { set: 'gears', active: 'main.pathogen', open: 'move:parts/kit.pathogen' } },
+      {
+        name: 'Dragging a file',
+        props: { set: 'gears', active: 'main.pathogen', open: 'drag:parts/kit.pathogen>demos' },
+      },
+      {
+        name: 'Dragging where it can’t go',
+        props: { set: 'gears', active: 'main.pathogen', open: 'drag:parts/gears.pathogen>demos' },
+      },
     ],
     controls: [],
     notes:
@@ -298,7 +306,11 @@ layer('hex').apply { circle(60, 100, 40) }`,
           tree.checkMove = (path, folder) => {
             const message = taken(join(folder, baseOf(path)), path);
             const dest = folder ? `${folder}/` : 'the top';
-            return message ? { message } : { hint: `Moving it to ${dest} updates the imports in main.pathogen.` };
+            if (message) return { message };
+            return {
+              hint: `Moving it to ${dest} updates the imports in main.pathogen.`,
+              label: `Move to ${dest} · updates the imports in 1 file`,
+            };
           };
           const moveRows = (from: string, to: string): void => {
             const follow = (p: string): string =>
@@ -332,6 +344,23 @@ layer('hex').apply { circle(60, 100, 40) }`,
             field.dispatchEvent(new Event('input', { bubbles: true }));
           } else if (open.startsWith('move:')) {
             chooseIn(open.slice(5), 'move');
+          } else if (open.startsWith('drag:')) {
+            // A drag held over a row ('drag:from>onto'), as the browser sends it (step 6b). The
+            // browser's own drag image (the chip) isn't drawn: only a real drag shows it.
+            const [from, onto] = open.slice(5).split('>');
+            const row = (path: string): HTMLElement =>
+              tree.shadowRoot!.querySelector<HTMLElement>(`[data-path="${path}"]`)!;
+            const box = row(onto).getBoundingClientRect();
+            const init: DragEventInit = {
+              bubbles: true,
+              composed: true,
+              cancelable: true,
+              dataTransfer: new DataTransfer(),
+              clientX: box.left + 70,
+              clientY: box.top + box.height / 2,
+            };
+            row(from).dispatchEvent(new DragEvent('dragstart', init));
+            row(onto).dispatchEvent(new DragEvent('dragover', init));
           } else if (open) {
             const root = tree.shadowRoot!;
             root.querySelector<HTMLButtonElement>('.add')!.click();

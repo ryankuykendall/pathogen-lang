@@ -27,9 +27,13 @@
 //                                        computer, taken while the drop lasted
 //                                        (services/uploads.ts captureDrop)
 // During a drop, the folder under the pointer lights up, with a label by the
-// pointer ("Drop to add to parts/"): a file row means its folder, empty space
-// or pathogen.json the top. askClash places the upload's question beside a
-// row and waits for the answer; flash marks new rows for a moment.
+// pointer ("Drop 2 items to add to parts/"): a file row means its folder, empty
+// space or pathogen.json the top. askClash places the upload's question beside
+// a row and waits for the answer; flash marks new rows for a moment.
+// A file or folder row dragged within the tree (step 6b) is a move-entry for
+// the folder it's dropped on, by the same rule: the row dims, the folder lights
+// up, and the label says what the move changes (checkMove's `label`), or why it
+// can't go there. The folder it's in, and a folder into itself, don't light.
 // Each file's and folder's ⋮, a right-click or the menu key opens its menu;
 // a folder's menu adds to that folder. rowAfterRemoval and focusRow let
 // workspace-view put the keyboard back in the tree after a dialog.
@@ -73,11 +77,19 @@ const FLASH_MS = 1600;
 /** Why a name can't be used (the message), or null when it can. */
 export type NameCheck = (kind: NewEntryKind, folder: string, name: string) => string | null;
 
-/** What a rename or a move would do: why it can't (`message`), or what it changes (`hint`). */
+/**
+ * What a rename or a move would do: why it can't (`message`), or what it
+ * changes (`hint`, Move to…'s last line; `label`, by the pointer while a row
+ * is dragged).
+ */
 export interface EntryCheck {
   message?: string;
   hint?: string;
+  label?: string;
 }
+
+/** What a drag within the tree carries: the dragged row's path (step 6b). */
+const MOVE_TYPE = 'application/x-pathogen-path';
 
 /**
  * What a menu item does: name a new file or folder, rename, or open Move to…
@@ -227,13 +239,13 @@ function rowHtml(row: TreeRow): string {
   const dots = `<button class="row-menu" type="button" tabindex="-1" aria-hidden="true" title="More">${FILE_ICONS.kebab}</button>`;
   if (row.type === 'folder') {
     const label = row.empty ? ` aria-label="${esc(row.name)}, empty"` : '';
-    return `<div class="row folder${row.expanded ? '' : ' folded'}" ${common} aria-haspopup="menu" aria-expanded="${row.expanded}"${label}><span class="chev">${FILE_ICONS.chevron}</span><span class="icon">${FILE_ICONS.folder}</span><span class="name">${esc(row.name)}</span>${dots}</div>`;
+    return `<div class="row folder${row.expanded ? '' : ' folded'}" ${common} draggable="true" aria-haspopup="menu" aria-expanded="${row.expanded}"${label}><span class="chev">${FILE_ICONS.chevron}</span><span class="icon">${FILE_ICONS.folder}</span><span class="name">${esc(row.name)}</span>${dots}</div>`;
   }
   if (row.type === 'project') {
     return `<div class="row project" ${common}><span class="chev"></span><span class="icon">${FILE_ICONS.json}</span><span class="name">${nameHtml(row.name)}</span><span class="lock" title="${LOCK_TITLE}">${FILE_ICONS.lock}</span></div>`;
   }
   const badge = row.main ? `<span class="badge-main" title="${MAIN_BADGE_TITLE}">main</span>` : '';
-  return `<div class="row file ${row.kind}" ${common} aria-haspopup="menu"><span class="chev"></span><span class="icon">${FILE_ICONS[row.kind]}</span><span class="name">${nameHtml(row.name)}</span>${badge}${dots}</div>`;
+  return `<div class="row file ${row.kind}" ${common} draggable="true" aria-haspopup="menu"><span class="chev"></span><span class="icon">${FILE_ICONS[row.kind]}</span><span class="name">${nameHtml(row.name)}</span>${badge}${dots}</div>`;
 }
 
 const parentOf = (path: string): string => (path.includes('/') ? path.slice(0, path.lastIndexOf('/')) : '');
@@ -312,6 +324,12 @@ export class FileTree extends HTMLElement {
   /** The folder lit while files are dragged over the tree ('' the top); null when none is. */
   private _dropFolder: string | null = null;
 
+  /** The row being dragged within the tree (step 6b), until the browser ends the drag. */
+  private _dragPath: string | null = null;
+
+  /** What dropping the dragged row on each folder would do, asked once per folder; null where it isn't offered. */
+  private readonly _dragChecks = new Map<string, EntryCheck | null>();
+
   /** New rows marked for a moment (flash). */
   private readonly _flashing = new Set<string>();
 
@@ -339,6 +357,9 @@ export class FileTree extends HTMLElement {
 
   private readonly _onPointerDown = (): void => {
     this._pointerDown = true;
+    // No press happens during a drag: a drag whose end the tree never heard (its row gone
+    // from the page in a browser that then sends no dragend) is over.
+    if (this._dragPath !== null) this._endMove();
   };
 
   private readonly _onPointerUp = (): void => {
@@ -363,6 +384,7 @@ export class FileTree extends HTMLElement {
       <input class="pick-files" type="file" multiple accept=".pathogen" hidden tabindex="-1">
       <input class="pick-folder" type="file" webkitdirectory hidden tabindex="-1">
       <div class="drop-label" aria-hidden="true" hidden></div>
+      <div class="drag-chip" aria-hidden="true" hidden></div>
       <clash-prompt></clash-prompt>
     `;
     // Upload files… and Upload folder…: the picker's files, for the folder the menu was opened for.
@@ -383,6 +405,8 @@ export class FileTree extends HTMLElement {
     });
     this.addEventListener('drop', (e) => this._onDrop(e));
     const list = this._list!;
+    // A row dragged within the tree (step 6b) moves it.
+    list.addEventListener('dragstart', (e) => this._onDragStart(e));
     list.addEventListener('click', (e) => this._onClick(e));
     list.addEventListener('dblclick', (e) => this._onDoubleClick(e));
     list.addEventListener('keydown', (e) => this._onKeydown(e));
@@ -428,7 +452,7 @@ export class FileTree extends HTMLElement {
 
   disconnectedCallback(): void {
     this._closeMenu(false);
-    this._endDrop();
+    this._endMove();
     if (this._flashTimer) clearTimeout(this._flashTimer);
     this._flashTimer = null;
     this._flashing.clear();
@@ -535,6 +559,13 @@ export class FileTree extends HTMLElement {
       // New rows: a drop in progress lights them again at the next dragover.
       this._dropFolder = null;
       this._hintShown = '';
+      // The workspace changed during a drag: what a move would do is asked again; a dragged
+      // file or folder that's gone ends the drag.
+      this._dragChecks.clear();
+      if (this._dragPath !== null && !this._exists(this._dragPath)) {
+        this._dragPath = null;
+        this._hideLabel();
+      }
       // A row's menu: its ⋮ was just drawn again. Still there, the menu stays with it;
       // gone, the menu closes, and the keyboard stays in the tree.
       if (this._menuOpen && this._menuOpener && !this._menuOpener.isConnected) {
@@ -586,6 +617,7 @@ export class FileTree extends HTMLElement {
     const items = this._items();
     for (const el of items) {
       el.classList.toggle('flash', this._flashing.has(el.dataset.path!));
+      el.classList.toggle('dragging', el.dataset.path === this._dragPath);
       if (el.classList.contains('folder')) continue;
       const selected = el.dataset.path === this._active;
       el.setAttribute('aria-selected', String(selected));
@@ -1194,19 +1226,135 @@ export class FileTree extends HTMLElement {
     return this._isFolder(path) ? path : parentOf(path);
   }
 
-  /** Files dragged from the computer over the tree: light the folder they'd go to, and say so by the pointer. */
+  /**
+   * Files dragged from the computer over the tree: light the folder they'd go
+   * to, and say so by the pointer, with how many items (your answer,
+   * 2026-11-13). The browser gives the count but not the names until the drop;
+   * a folder is one item. A row dragged within the tree is a move (step 6b).
+   */
   private _onDragOver(e: DragEvent): void {
-    if (!e.dataTransfer || !Array.from(e.dataTransfer.types).includes('Files')) return;
+    if (!e.dataTransfer) return;
+    const types = Array.from(e.dataTransfer.types);
+    if (types.includes(MOVE_TYPE)) {
+      this._onMoveOver(e);
+      return;
+    }
+    if (!types.includes('Files')) return;
     e.preventDefault();
     e.dataTransfer.dropEffect = 'copy';
     // Heard on the tree itself, whose target is retargeted to it: the row is the event's first stop.
     const folder = this.dropFolderAt(e.composedPath()[0] ?? null);
     this._showDrop(folder);
+    const count = Array.from(e.dataTransfer.items ?? []).filter((item) => item.kind === 'file').length;
+    const what = count === 0 ? '' : ` ${count} ${count === 1 ? 'item' : 'items'}`;
+    this._showLabel(e, `Drop${what} to add ${folder ? `to ${folder}/` : 'at the top'}`, false);
+  }
+
+  /** The label by the pointer: where a drop goes, or (refused) why a dragged row can't go there. */
+  private _showLabel(e: DragEvent, text: string, refused: boolean): void {
     const label = this.shadowRoot!.querySelector<HTMLElement>('.drop-label')!;
-    label.textContent = folder ? `Drop to add to ${folder}/` : 'Drop to add at the top';
+    // Dragover comes many times a second: the text is written only when it changes.
+    if (label.textContent !== text) label.textContent = text;
+    label.classList.toggle('refused', refused);
     label.style.left = `${e.clientX + 14}px`;
     label.style.top = `${e.clientY + 18}px`;
     label.hidden = false;
+  }
+
+  private _hideLabel(): void {
+    const label = this.shadowRoot?.querySelector<HTMLElement>('.drop-label');
+    if (label) label.hidden = true;
+  }
+
+  /**
+   * A row dragged within the tree (step 6b; mockup v7 screen F, state 7): the
+   * row dims, it carries its path, and the image is a chip with its icon and
+   * name. Not while a name is being typed: that field is finished first.
+   */
+  private _onDragStart(e: DragEvent): void {
+    const path = this._pathOf(e.target);
+    if (path === null || !e.dataTransfer) return;
+    if (this._naming || path === 'pathogen.json') {
+      e.preventDefault();
+      return;
+    }
+    this._closeMenu(false);
+    this._dragPath = path;
+    this._dragChecks.clear();
+    // Only this type: with text/plain too, a drop on the editor would paste the path.
+    e.dataTransfer.setData(MOVE_TYPE, path);
+    e.dataTransfer.effectAllowed = 'move';
+    const row = this._item(path)!;
+    const chip = this.shadowRoot!.querySelector<HTMLElement>('.drag-chip')!;
+    const icon = row.querySelector('.icon')?.innerHTML ?? '';
+    const folder = this._isFolder(path);
+    chip.dataset.kind = folder ? 'folder' : row.classList.contains('library') ? 'library' : 'program';
+    chip.innerHTML = `<span class="icon">${icon}</span><span class="name">${esc(baseOf(path))}${folder ? '/' : ''}</span>`;
+    // Shown under the pointer for the moment the browser takes its picture, then hidden.
+    chip.style.left = `${e.clientX - 10}px`;
+    chip.style.top = `${e.clientY - 12}px`;
+    chip.hidden = false;
+    e.dataTransfer.setDragImage(chip, 10, 12);
+    setTimeout(() => {
+      chip.hidden = true;
+    }, 0);
+    // The drag ends on the row it began on, even once that row has been drawn again (and is
+    // out of the page, where the tree no longer hears it): so it's heard on the row itself.
+    row.addEventListener('dragend', () => this._endMove(), { once: true });
+    this._mark();
+  }
+
+  /**
+   * What dropping the dragged row on `folder` would do: null where it isn't
+   * offered (the folder it's in, or a folder into itself), else workspace-view's
+   * check, asked once per folder (a plan reads every file's imports).
+   */
+  private _moveCheck(path: string, folder: string): EntryCheck | null {
+    if (folder === parentOf(path)) return null;
+    if (this._isFolder(path) && (folder === path || folder.startsWith(`${path}/`))) return null;
+    if (!this._dragChecks.has(folder)) this._dragChecks.set(folder, this.checkMove?.(path, folder) ?? {});
+    return this._dragChecks.get(folder)!;
+  }
+
+  /** The dragged row over the tree: light the folder it would move to, and say what the move changes; or say why it can't. */
+  private _onMoveOver(e: DragEvent): void {
+    const path = this._dragPath;
+    // A row dragged from another window's tree: not this workspace's.
+    if (path === null) return;
+    const folder = this.dropFolderAt(e.composedPath()[0] ?? null);
+    const check = this._moveCheck(path, folder);
+    if (check === null || check.message) {
+      this._showDrop(null);
+      if (check?.message) this._showLabel(e, check.message, true);
+      else this._hideLabel();
+      return;
+    }
+    e.preventDefault();
+    e.dataTransfer!.dropEffect = 'move';
+    this._showDrop(folder);
+    this._showLabel(e, check.label ?? `Move to ${folder ? `${folder}/` : 'the top'}`, false);
+  }
+
+  /** The dragged row dropped: Move to… for the folder under the pointer, if it can go there. */
+  private _onMoveDrop(e: DragEvent): void {
+    const path = this._dragPath;
+    if (path === null || e.dataTransfer?.getData(MOVE_TYPE) !== path) return;
+    const folder = this.dropFolderAt(e.composedPath()[0] ?? null);
+    const check = this._moveCheck(path, folder);
+    // The drag is over once dropped: its end (dragend) only tidies up after this.
+    this._endMove();
+    if (check === null || check.message) return;
+    e.preventDefault();
+    this._moveEntry(path, folder);
+  }
+
+  /** The drag is over (dropped, or Esc): the lights and the label go, and the row undims. */
+  private _endMove(): void {
+    this._endDrop();
+    if (this._dragPath === null) return;
+    this._dragPath = null;
+    this._dragChecks.clear();
+    this._mark();
   }
 
   /** Light the folder a drop would go to, and the rows in it; the whole list for the top. */
@@ -1223,13 +1371,17 @@ export class FileTree extends HTMLElement {
 
   private _endDrop(): void {
     this._showDrop(null);
-    const label = this.shadowRoot?.querySelector<HTMLElement>('.drop-label');
-    if (label) label.hidden = true;
+    this._hideLabel();
   }
 
   /** Files dropped: what the drop holds is taken now (the browser empties it once the event ends), and read by workspace-view. */
   private _onDrop(e: DragEvent): void {
-    if (!e.dataTransfer || !Array.from(e.dataTransfer.types).includes('Files')) return;
+    if (!e.dataTransfer) return;
+    if (Array.from(e.dataTransfer.types).includes(MOVE_TYPE)) {
+      this._onMoveDrop(e);
+      return;
+    }
+    if (!Array.from(e.dataTransfer.types).includes('Files')) return;
     e.preventDefault();
     const folder = this.dropFolderAt(e.composedPath()[0] ?? null);
     this._endDrop();
@@ -1291,6 +1443,8 @@ export class FileTree extends HTMLElement {
       p === from ? to : p.startsWith(`${from}/`) ? `${to}${p.slice(from.length)}` : p;
     this._collapsed.clear();
     for (const p of collapsed) this._collapsed.add(follow(p));
+    // Moved into a folded folder (dragged onto it, or Move to…): it opens, so the row shows where it went.
+    for (let f = parentOf(to); f !== ''; f = parentOf(f)) this._collapsed.delete(f);
     if (this._focusPath !== null) this._focusPath = follow(this._focusPath);
     if (keepKeyboard) this._pendingFocus = to;
     // workspace-view makes the change as the event is handled, and gives the tree its new

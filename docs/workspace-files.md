@@ -33,6 +33,8 @@ Answered 2026-11-13 (note 52, step 6a): a name that doesn't fit is changed to fi
 dropped); the limit refuses a whole upload; files over 1 MB or not text are left out; dot-files
 without a mention; the upload's message has Undo; Esc skips; a dropped folder's empty folders are
 kept; a folder differing only in case goes into the one there.
+Answered 2026-11-13 (note 52, step 6b): the upload's label counts what's dragged (the browser hides
+the names until the drop); a whole upload goes in after the last question ("This is fine").
 -->
 
 # Files in a Workspace
@@ -104,7 +106,7 @@ The **+** in the Files header opens a menu: New program, New module, New folder,
 ## Uploading files
 
 - **Upload files…** opens your system's file picker for `.pathogen` files. **Upload folder…** picks a folder and keeps the folders inside it: `shapes/round/dot.pathogen` arrives as `shapes/round/dot.pathogen`. Browsers can pick several files or one folder, but not both at once, so there are two items.
-- You can also drag files and folders from your computer onto the tree. The folder under the pointer lights up, and that's where they go. Dropping on a file puts them in its folder; dropping on empty space puts them at the top.
+- You can also drag files and folders from your computer onto the tree: onto a folder to add them there, onto a file to add them to its folder, or onto empty space to add them at the top. The folder they'll go into lights up (the whole tree, for the top), and a label by the pointer counts what you're dragging, a folder as one item: `Drop 2 items to add to parts/`.
 - A dropped folder keeps its empty folders. Upload folder… keeps only the folders that hold files, because the browser hands over only files.
 - A folder that differs from one already there only in letter case joins it: uploading `Parts/` where `parts/` is adds its files to `parts/`. A file that differs only in case counts as a taken name.
 - **Only `.pathogen` files** can be added for now. Anything else is left out, and the message says why.
@@ -121,7 +123,9 @@ The **+** in the Files header opens a menu: New program, New module, New folder,
 ## Renaming, moving and deleting
 
 - **Rename…** is in each file's and each folder's menu. It changes the name only: not the folder it's in, and not the `.pathogen` at the end.
-- **Move to…**, in the same menus, moves a file or a folder to another folder or to the top of the workspace. Dragging it onto a folder in the tree does the same.
+- **Move to…**, in the same menus, moves a file or a folder to another folder or to the top of the workspace.
+- You can also drag a file or a folder within the tree: onto a folder to move it there, onto a file to move it to that file's folder, or onto empty space to move it to the top. The folder it'll go into lights up (the whole tree, for the top), and a label says what the move changes: `Move to demos/ · updates the imports in 2 files`.
+- Over the folder it's already in, nothing lights up and there's no label. Where it can't go, such as a folder that already has something of the same name, nothing lights up and the label says why. Esc cancels the drag.
 - Renaming or moving a file updates the `import` paths that name it in the workspace's other files, and its entry in `pathogen.json`.
 - Moving a file also updates its own `./` and `../` import paths, so they still reach the same files.
 - Renaming or moving a folder moves everything in it, with the same updates.

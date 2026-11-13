@@ -471,8 +471,9 @@ try {
     label: ${TREE}.querySelector('.drop-label').hidden ? null : ${TREE}.querySelector('.drop-label').textContent,
   })`)) as { folder: boolean; inside: boolean; label: string | null };
   check(
-    'files dragged over a file in parts/ light parts/ and its rows; the label says "Drop to add to parts/"',
-    lit.folder && lit.inside && lit.label === 'Drop to add to parts/',
+    // With the count since 6b (your answer, 2026-11-13).
+    'files dragged over a file in parts/ light parts/ and its rows; the label says "Drop 1 item to add to parts/"',
+    lit.folder && lit.inside && lit.label === 'Drop 1 item to add to parts/',
     lit,
   );
   await page.screenshot({ path: `${SHOTS}/2d-step6a-drop-light.png` });

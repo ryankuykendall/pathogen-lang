@@ -618,7 +618,12 @@ try {
     const stories = (await page.evaluate(
       `[...window.__find('.story-tab').parentElement.querySelectorAll('.story-tab')].map((b) => b.textContent.trim())`,
     )) as string[];
-    check(`the storybook has eleven tree stories (${theme})`, stories.length === 11 && stories.includes('Move to…'), stories);
+    // Thirteen since 6b's two drag stories (verify-2d-step6b.ts checks those).
+    check(
+      `the storybook has thirteen tree stories (${theme})`,
+      stories.length === 13 && stories.includes('Move to…'),
+      stories,
+    );
     for (const [index, name] of [['9', 'rename'], ['10', 'move']]) {
       await page.evaluate(`window.__find('.story-tab[data-story="${index}"]')?.click()`);
       await pause(500);

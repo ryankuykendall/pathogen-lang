@@ -549,6 +549,18 @@ export function moveHint(change: Change, path: string, toFolder: string, isFolde
   return `Moving it to ${dest} updates the imports in ${nameList(others)}${own}.`;
 }
 
+/**
+ * The label by the pointer while a file or folder is dragged onto `toFolder`
+ * (step 6b; mockup v7 screen F, state 7): the files whose imports change,
+ * counted, a moved file's own included. Move to… names them (moveHint).
+ */
+export function moveLabel(change: Change, toFolder: string): string {
+  const dest = toFolder ? `${toFolder}/` : 'the top';
+  const count = change.importsUpdated.length;
+  if (count === 0) return `Move to ${dest} · no imports change`;
+  return `Move to ${dest} · updates the imports in ${count} ${count === 1 ? 'file' : 'files'}`;
+}
+
 /** Where Rename… puts a file or folder given the name `typed`: a file keeps its `.pathogen`, typed or not. */
 export function renamedPath(path: string, typed: string, folder: boolean): string {
   const trimmed = typed.trim();

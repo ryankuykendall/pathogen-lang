@@ -17,6 +17,7 @@ import {
   importChangeOffsets,
   keepBothName,
   moveHint,
+  moveLabel,
   pathAfterChange,
   planDelete,
   planDuplicate,
@@ -331,6 +332,23 @@ describe('what a rename or a move says it will do', () => {
     expect(moveHint(change(planMove(lone, 'a.pathogen', 'b')), 'a.pathogen', 'b', false)).toBe(
       'Moving it to b/ changes no imports.',
     );
+  });
+
+  it('dragging: the label by the pointer counts the files whose imports change, the moved file’s own included (step 6b)', () => {
+    const state = gearsWorkspace();
+    // main, try-sizes and kit's own: the three files moveHint names.
+    expect(moveLabel(change(planMove(state, 'parts/kit.pathogen', 'demos')), 'demos')).toBe(
+      'Move to demos/ · updates the imports in 3 files',
+    );
+    expect(moveLabel(change(planMove(state, 'try-sizes.pathogen', 'demos')), 'demos')).toBe(
+      'Move to demos/ · updates the imports in 1 file',
+    );
+    const lone = {
+      files: { 'a.pathogen': 'M 0 0;\n', 'b/c.pathogen': 'M 0 0;\n' },
+      folders: ['b'],
+      entryPoints: ['a.pathogen'],
+    };
+    expect(moveLabel(change(planMove(lone, 'b/c.pathogen', '')), '')).toBe('Move to the top · no imports change');
   });
 });
 

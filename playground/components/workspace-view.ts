@@ -64,6 +64,7 @@ import {
   isFolder,
   keepBothName,
   moveHint,
+  moveLabel,
   pathAfterChange,
   planDelete,
   planDuplicate,
@@ -1003,12 +1004,16 @@ export class WorkspaceView extends HTMLElement {
       tree.checkRename = (path, name) =>
         this._entryCheck(
           () => planRename(workspaceState(), path, name),
-          (change) => renameHint(change, this._isFolderPath(path)),
+          (change) => ({ hint: renameHint(change, this._isFolderPath(path)) }),
         );
+      // Move to…'s last line (hint), and the label by the pointer while dragging (step 6b).
       tree.checkMove = (path, folder) =>
         this._entryCheck(
           () => planMove(workspaceState(), path, folder),
-          (change) => moveHint(change, path, folder, this._isFolderPath(path)),
+          (change) => ({
+            hint: moveHint(change, path, folder, this._isFolderPath(path)),
+            label: moveLabel(change, folder),
+          }),
         );
     }
     this.shadowRoot!.addEventListener('rename-entry', (e: Event) => {
@@ -1765,11 +1770,11 @@ export class WorkspaceView extends HTMLElement {
   }
 
   /** What a rename or a move would do, for the tree: the plan's refusal, or the line that says what changes. */
-  private _entryCheck(plan: () => Planned, hint: (change: Change) => string | undefined): EntryCheck {
+  private _entryCheck(plan: () => Planned, describe: (change: Change) => EntryCheck): EntryCheck {
     try {
       const planned = plan();
       if (!planned.ok) return { message: planned.message };
-      return planned.change.steps.length === 0 ? {} : { hint: hint(planned.change) };
+      return planned.change.steps.length === 0 ? {} : describe(planned.change);
     } catch (err) {
       return { message: err instanceof Error ? err.message : String(err) };
     }

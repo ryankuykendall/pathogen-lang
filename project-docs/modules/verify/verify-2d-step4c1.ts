@@ -467,7 +467,8 @@ try {
     )) as string[];
     await page.screenshot({ path: `${SHOTS}/2d-step4c1-story-dialog-${theme}.png` });
     // Nine tree stories in 4c-1; 4c-2 added Renaming a folder and Move to….
-    check(`the storybook: eleven tree stories and three dialog stories (${theme})`, treeStories.length === 11 && dialogStories.length === 3, { treeStories, dialogStories });
+    // Thirteen tree stories since 6b's two drag stories.
+    check(`the storybook: thirteen tree stories and three dialog stories (${theme})`, treeStories.length === 13 && dialogStories.length === 3, { treeStories, dialogStories });
   }
 
   check('no page errors', pageErrors.length === 0, pageErrors);

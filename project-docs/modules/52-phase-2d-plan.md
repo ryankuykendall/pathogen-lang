@@ -622,8 +622,42 @@ Each step: tests first; a storybook entry for each new component (the playground
   2. "That's fine, although it would be beneficial to log how often this happens at some point." The app has no usage counting, so it's on the backlog: `backlog.md`, "Count how often a workspace hits the 20-file limit".
   3. to 6. and 8. "Yes."
   7. **Changed: "I would like to add it if we can (unless something prevents it.)"** A dropped folder's empty folders now go in (`pickedFromDrop` returns them; a folder holding only dot-files counts as empty), names fitted and case merged, through `planUpload`'s `emptyFolders`. The message says so ("…, and the empty folder shapes/round/."), and Undo takes them out. **Upload folder… can't**: the browser's folder picker lists only files.
-  9. (the mockup change: everything goes in after the last question) "Not sure I understand the scenario you are describing here...Can you tell me more?" Explained; it awaits the answer.
+  9. (the mockup change: everything goes in after the last question) "Not sure I understand the scenario you are describing here...Can you tell me more?" Explained (an example: springs waits for the labels question, then both go in as one change, one toast, one Undo, one limit check). Then: **"This is fine."**
+  - The drag label: the browser hides dragged files' names, so v6's list can't be drawn. Asked whether it should give the count instead: **"Sure."** Built in 6b's commit ("Drop 2 items to add to parts/"; a dragged folder is one item).
   - The docs' "Uploading files" now says all of this. A focused content review checked it.
+
+**Step 6b, dragging within the tree** (2026-11-13, "Then step 6b … A: Yes!"). As the plan above says (mockup v7 screen F, state 7), and these details:
+- **The tree** (`file-tree.ts`):
+  - File and folder rows are draggable; pathogen.json isn't. No drag starts while a name is being typed.
+  - **The drag:**
+    - It carries the row's path as its own type (`application/x-pathogen-path`), and nothing else, so a drop on the editor pastes nothing.
+    - The row dims (`_mark`, so a redraw keeps it), and the drag's image is a chip with the row's icon and name.
+    - The drag's end is heard on the row itself, so a row drawn again during the drag still ends it.
+  - **Over a folder:** the same rule as an upload's drop (`dropFolderAt`). The folder it's in, and a folder into itself or one inside it, don't light and have no label.
+    - Elsewhere it asks workspace-view's `checkMove`, once per folder per drag. The answers are asked again when the workspace changes during the drag.
+    - Where it can go: the folder lights, with `moveLabel` by the pointer ("Move to demos/ · updates the imports in 2 files", the files counted, the moved file's own included).
+    - Where it can't: no light, and the reason in a quieter label ("parts/ already has gears.pathogen.").
+  - **Dropped:** the same `move-entry` as Move to…, so the same plan, toast and Undo. The drag is over at its drop.
+  - A drag whose end was never heard is over at the next press. A row from another window's tree is left alone.
+- **A moved row's folders open** (`_dispatchMove`), so it shows where it went and keeps the keyboard. This is new for Move to… too.
+- **The upload label counts** (your answer above): "Drop 2 items to add to parts/". A folder is one item. A browser that doesn't say gives the label without a count.
+- `moveLabel` (`workspace-edits.ts`); `checkMove` gives `hint` and `label` (`_entryCheck` takes a describe function); the storybook's "Dragging a file" and "Dragging where it can't go" hold a drag in place.
+- **Checked:**
+  - tests:
+    - `tests/playground-file-tree.test.ts` (+21: the drag, the light, the label, refusals, the folder it's in, into itself, the top, the drop, a second drop, a folded folder opening, Esc, a redraw, the workspace changing, the dragged file gone, a lost end, leaving the tree, another window, typing a name, files during a drag, the upload count);
+    - `tests/playground-workspace-edits.test.ts` (+1, `moveLabel`).
+  - `verify/verify-2d-step6b.ts` against `npm run dev:stack`, 22 checks: a real drag (dragstart, dragover and dragend from the browser), with the drop sent in the page because headless Chrome doesn't deliver one reliably.
+    - kit onto demos/: the label, the move, its imports, the toast, Undo, the server;
+    - the folder it's in; a refusal; a folder, and not into itself; the top; a second drop; a folded folder;
+    - the editor; the upload count; dark; the storybook.
+    - The check's header lists headless Chrome's drag quirks and how it works around them; `verify/probe-2d-step6b-drag.ts` shows them. One is that it ignores Esc during a drag, so Esc is checked by the unit tests.
+  - `verify-2d-step4a`, `4b`, `4c1`, `4c2`, `4d`, `5a`, `5b` and `6a` still pass (`4b`, `4c1` and `4c2` with thirteen tree stories; `6a` with the counted label).
+- **Review** (code-reviewer: no critical issues). Fixed:
+  - the per-folder answers could go stale if the workspace changed mid-drag;
+  - a drag whose end was lost (Firefox may send no `dragend` for a row gone from the page) left a row dimmed;
+  - a drop test that didn't check its contract;
+  - the label's text written on every dragover.
+- **The docs:** "Uploading files" (the count) and "Renaming, moving and deleting" (dragging), with a focused content review (no blockers; its rewrites applied: the drop targets listed first, the long bullet split, the folder it's in named).
 
 **The v7 mockup round** (2026-11-09, commit `5c8f925`): note 53, `phase-2-mockups-v7/`. Five screens: no programs left, folders and moving, narrow screens, the mini-workspace, the ⋮ menu. It also draws what v6 left out (renaming a file, Move to…, dragging a file). Six questions await you; steps 4 and 9 wait for them.
 - *Answered 2026-11-09: all six agreed* (note 53, "Your answers"). What that adds to the steps:

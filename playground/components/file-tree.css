@@ -494,6 +494,48 @@
   display: none;
 }
 
+/* A dragged row that can't go where it is (step 6b): the label says why, without the accent. */
+.drop-label.refused {
+  border-color: var(--border-color, #d4d4d8);
+  color: var(--text-secondary, #52525b);
+  font-weight: 500;
+}
+
+/* A row dragged within the tree (step 6b; mockup v7 screen F, state 7): dimmed while it moves. */
+.row.dragging {
+  opacity: 0.45;
+}
+
+/* The drag's image: the row's icon and name, shown only while the browser takes its picture. */
+.drag-chip {
+  position: fixed;
+  z-index: var(--z-popover, 300);
+  pointer-events: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px 3px 7px;
+  border-radius: 6px;
+  border: 1px solid var(--border-color, #d4d4d8);
+  background: var(--bg-elevated, #fff);
+  font-family: var(--font-sans, system-ui, sans-serif);
+  font-size: 12.5px;
+  color: var(--text-primary, #18181b);
+  white-space: nowrap;
+}
+
+.drag-chip[hidden] {
+  display: none;
+}
+
+.drag-chip[data-kind='library'] .icon {
+  color: var(--secondary-accent, #9461c4);
+}
+
+.drag-chip[data-kind='folder'] .icon {
+  color: var(--text-tertiary, #9087a0);
+}
+
 /* New rows, for a moment after an upload. */
 .row.flash {
   animation: row-flash 1.6s ease-out;

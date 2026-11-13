@@ -1166,6 +1166,16 @@ describe('uploads', () => {
     expect([row('demos').classList.contains('drop'), $('.drop-label')!.hidden]).toEqual([false, true]);
   });
 
+  it('the label counts what’s dragged, a folder as one item; a browser that doesn’t say gets no count (your answer, 2026-11-13)', () => {
+    const two = [new File(['M 0 0'], 'springs.pathogen'), new File(['M 0 0'], 'labels.pathogen')];
+    fileDrag('dragover', row('parts/kit.pathogen'), two);
+    expect($('.drop-label')!.textContent).toBe('Drop 2 items to add to parts/');
+    fileDrag('dragover', $('.list')!, two.slice(0, 1));
+    expect($('.drop-label')!.textContent).toBe('Drop 1 item to add at the top');
+    fileDrag('dragover', row('demos'));
+    expect($('.drop-label')!.textContent).toBe('Drop to add to demos/');
+  });
+
   it('a drag that isn’t files (text from the editor) is left alone', () => {
     const event = new window.Event('dragover', { bubbles: true, cancelable: true }) as DragEvent;
     Object.defineProperty(event, 'dataTransfer', { value: { types: ['text/plain'] } });
@@ -1205,5 +1215,295 @@ describe('uploads', () => {
     });
     tree.cancelAsk();
     expect(await withdrawn).toBeNull();
+  });
+});
+
+describe('dragging within the tree (step 6b; mockup v7 screen F, state 7)', () => {
+  beforeAll(async () => {
+    await import('../playground/components/file-tree.js');
+  });
+
+  const MOVE_TYPE = 'application/x-pathogen-path';
+  interface Check {
+    message?: string;
+    hint?: string;
+    label?: string;
+  }
+  let tree: FileTreeEl & { checkMove: ((path: string, folder: string) => Check) | null };
+  let moved: { path: string; folder: string }[];
+  let asked: string[];
+
+  beforeEach(() => {
+    document.body.innerHTML = '';
+    tree = document.createElement('file-tree');
+    document.body.appendChild(tree);
+    tree.files = GEARS;
+    tree.folders = ['empty'];
+    tree.main = 'main.pathogen';
+    tree.active = 'main.pathogen';
+    moved = [];
+    asked = [];
+    tree.checkMove = (path, folder) => {
+      asked.push(`${path} → ${folder}`);
+      if (folder === 'demos' && path === 'parts/gears.pathogen') {
+        return { message: 'demos/ already has gears.pathogen.' };
+      }
+      const dest = folder ? `${folder}/` : 'the top';
+      return { hint: `Moving it to ${dest} updates…`, label: `Move to ${dest} · updates the imports in 2 files` };
+    };
+    tree.addEventListener('move-entry', (e) =>
+      moved.push((e as Event & { detail: { path: string; folder: string } }).detail),
+    );
+  });
+
+  const $ = <T extends Element = HTMLElement>(sel: string) => tree.shadowRoot!.querySelector<T>(sel);
+  const row = (path: string) => $(`[data-path="${path}"]`)!;
+  const lit = () => [...tree.shadowRoot!.querySelectorAll<HTMLElement>('.row.drop')].map((r) => r.dataset.path);
+  const label = () => $('.drop-label')!;
+
+  /** What the browser's DataTransfer holds for a drag that starts in the page. */
+  function dragData() {
+    const data = new Map<string, string>();
+    const images: { el: Element; x: number; y: number }[] = [];
+    return {
+      images,
+      get types() {
+        return [...data.keys()];
+      },
+      items: [],
+      effectAllowed: 'uninitialized',
+      dropEffect: 'none',
+      setData: (type: string, value: string) => {
+        data.set(type, value);
+      },
+      getData: (type: string) => data.get(type) ?? '',
+      setDragImage: (el: Element, x: number, y: number) => {
+        images.push({ el, x, y });
+      },
+    };
+  }
+  type Data = ReturnType<typeof dragData>;
+  const fire = (type: string, target: Element, data: Data | { types: string[] }) => {
+    const event = new window.Event(type, { bubbles: true, composed: true, cancelable: true }) as DragEvent;
+    Object.defineProperties(event, { dataTransfer: { value: data }, clientX: { value: 40 }, clientY: { value: 60 } });
+    target.dispatchEvent(event);
+    return event;
+  };
+  const start = (path: string) => {
+    const data = dragData();
+    fire('dragstart', row(path), data);
+    return data;
+  };
+
+  it('files and folders can be dragged; pathogen.json can’t', () => {
+    expect([row('parts/kit.pathogen'), row('parts'), row('pathogen.json')].map((r) => r.draggable)).toEqual([
+      true,
+      true,
+      false,
+    ]);
+  });
+
+  it('a drag carries the row’s path; the row dims; the image is a chip with its icon and name', () => {
+    const data = start('parts/kit.pathogen');
+    expect([data.getData(MOVE_TYPE), data.effectAllowed]).toEqual(['parts/kit.pathogen', 'move']);
+    expect(row('parts/kit.pathogen').classList.contains('dragging')).toBe(true);
+    expect(data.images.map((i) => [i.el.className, i.el.textContent])).toEqual([['drag-chip', 'kit.pathogen']]);
+    expect(data.images[0].el.querySelector('svg')).not.toBeNull();
+    // A folder's chip says it's a folder.
+    expect(start('parts').images.map((i) => i.el.textContent)).toEqual(['parts/']);
+  });
+
+  it('over another folder: it lights up, the label says what the move changes, asked once per folder', () => {
+    const data = start('parts/kit.pathogen');
+    const over = fire('dragover', row('demos'), data);
+    fire('dragover', row('demos'), data);
+    fire('dragover', row('demos/gears.pathogen'), data);
+    expect([over.defaultPrevented, data.dropEffect, lit()]).toEqual([true, 'move', ['demos']]);
+    expect(row('demos/gears.pathogen').classList.contains('in-drop')).toBe(true);
+    expect([label().hidden, label().textContent, label().classList.contains('refused')]).toEqual([
+      false,
+      'Move to demos/ · updates the imports in 2 files',
+      false,
+    ]);
+    expect(asked).toEqual(['parts/kit.pathogen → demos']);
+  });
+
+  it('empty space or pathogen.json means the top: the whole list lights up', () => {
+    const data = start('parts/kit.pathogen');
+    fire('dragover', $('.list')!, data);
+    expect([$('.list')!.classList.contains('drop-top'), label().textContent]).toEqual([
+      true,
+      'Move to the top · updates the imports in 2 files',
+    ]);
+    fire('dragover', row('pathogen.json'), data);
+    expect($('.list')!.classList.contains('drop-top')).toBe(true);
+  });
+
+  it('the folder it’s in already, or a folder into itself or one inside it: nothing lights, no label, nothing asked', () => {
+    let data = start('parts/kit.pathogen');
+    const home = fire('dragover', row('parts/gears.pathogen'), data);
+    fire('dragover', row('parts'), data);
+    expect([home.defaultPrevented, lit(), label().hidden]).toEqual([false, [], true]);
+    fire('dragend', row('parts/kit.pathogen'), data);
+    tree.folders = ['empty', 'parts/inner'];
+    data = start('parts');
+    for (const target of [row('parts'), row('parts/kit.pathogen'), row('parts/inner')]) {
+      expect(fire('dragover', target, data).defaultPrevented).toBe(false);
+    }
+    // At the top already: the top doesn't light either.
+    fire('dragover', $('.list')!, data);
+    expect([lit(), $('.list')!.classList.contains('drop-top'), label().hidden, asked]).toEqual([[], false, true, []]);
+  });
+
+  it('where it can’t go: nothing lights, and the label says why', () => {
+    const data = start('parts/gears.pathogen');
+    const over = fire('dragover', row('demos'), data);
+    expect([
+      over.defaultPrevented,
+      lit(),
+      label().hidden,
+      label().textContent,
+      label().classList.contains('refused'),
+    ]).toEqual([false, [], false, 'demos/ already has gears.pathogen.', true]);
+  });
+
+  it('dropped: move-entry for that folder; the drag is over at once: lights out, label gone, the row undimmed', () => {
+    const source = row('parts/kit.pathogen');
+    const data = start('parts/kit.pathogen');
+    fire('dragover', row('demos'), data);
+    const dropped = fire('drop', row('demos/gears.pathogen'), data);
+    expect([dropped.defaultPrevented, moved]).toEqual([true, [{ path: 'parts/kit.pathogen', folder: 'demos' }]]);
+    // Nothing moved here (no workspace-view), so the tree drew its rows again.
+    expect([lit(), label().hidden, row('parts/kit.pathogen').classList.contains('dragging')]).toEqual([
+      [],
+      true,
+      false,
+    ]);
+    // The browser's dragend, on the row the drag began on, then changes nothing.
+    fire('dragend', source, data);
+    expect(row('parts/kit.pathogen').classList.contains('dragging')).toBe(false);
+  });
+
+  it('the workspace changing during a drag: what a move would do is asked again', () => {
+    const data = start('parts/kit.pathogen');
+    fire('dragover', row('demos'), data);
+    tree.files = [...GEARS, { path: 'demos/springs.pathogen', kind: 'program' }];
+    fire('dragover', row('demos'), data);
+    expect(asked).toEqual(['parts/kit.pathogen → demos', 'parts/kit.pathogen → demos']);
+  });
+
+  it('the dragged file gone during the drag (deleted elsewhere): the drag ends, and nothing lights', () => {
+    const data = start('parts/kit.pathogen');
+    fire('dragover', row('demos'), data);
+    tree.files = GEARS.filter((f) => f.path !== 'parts/kit.pathogen');
+    const over = fire('dragover', row('demos'), data);
+    expect([over.defaultPrevented, lit(), label().hidden]).toEqual([false, [], true]);
+  });
+
+  it('a drag whose end was never heard is over at the next press: the row undims', () => {
+    start('parts/kit.pathogen');
+    window.dispatchEvent(new window.Event('pointerdown'));
+    expect(row('parts/kit.pathogen').classList.contains('dragging')).toBe(false);
+    // And a row from another window's tree is then left alone, as with no drag here.
+    expect(fire('dragover', row('demos'), { types: [MOVE_TYPE] }).defaultPrevented).toBe(false);
+  });
+
+  it('leaving the tree: the lights and the label go; the drag goes on', () => {
+    const data = start('parts/kit.pathogen');
+    fire('dragover', row('demos'), data);
+    const leave = new window.Event('dragleave', { bubbles: true, composed: true }) as DragEvent;
+    Object.defineProperty(leave, 'relatedTarget', { value: document.body });
+    tree.dispatchEvent(leave);
+    expect([lit(), label().hidden, row('parts/kit.pathogen').classList.contains('dragging')]).toEqual([[], true, true]);
+    fire('dragover', row('demos'), data);
+    expect(lit()).toEqual(['demos']);
+  });
+
+  it('from a refused folder to the folder it’s in: the reason goes', () => {
+    const data = start('parts/gears.pathogen');
+    fire('dragover', row('demos'), data);
+    expect(label().hidden).toBe(false);
+    fire('dragover', row('parts/kit.pathogen'), data);
+    expect([label().hidden, lit()]).toEqual([true, []]);
+  });
+
+  it('files from the computer while a row drag is held still go the upload’s way', () => {
+    start('parts/kit.pathogen');
+    const over = new window.Event('dragover', { bubbles: true, composed: true, cancelable: true }) as DragEvent;
+    Object.defineProperties(over, {
+      dataTransfer: { value: { types: ['Files'], items: [], dropEffect: 'none' } },
+      clientX: { value: 40 },
+      clientY: { value: 60 },
+    });
+    row('demos').dispatchEvent(over);
+    expect([over.defaultPrevented, label().textContent, asked]).toEqual([true, 'Drop to add to demos/', []]);
+  });
+
+  it('dropped on a folded folder: it opens, so the moved row shows, and the row takes the keyboard', () => {
+    // As workspace-view does: the move is made while the event is handled.
+    tree.addEventListener('move-entry', (e) => {
+      const { path, folder } = (e as Event & { detail: { path: string; folder: string } }).detail;
+      const to = `${folder}/${path.slice(path.lastIndexOf('/') + 1)}`;
+      tree.files = GEARS.map((f) => (f.path === path ? { ...f, path: to } : f));
+    });
+    row('demos').click();
+    expect(row('demos').getAttribute('aria-expanded')).toBe('false');
+    const data = start('parts/kit.pathogen');
+    fire('dragover', row('demos'), data);
+    fire('drop', row('demos'), data);
+    const focused = tree.shadowRoot!.activeElement as HTMLElement | null;
+    expect([row('demos').getAttribute('aria-expanded'), focused?.dataset.path]).toEqual(['true', 'demos/kit.pathogen']);
+  });
+
+  it('the drag is over at its drop: a second drop in the same drag moves nothing', () => {
+    const data = start('parts/kit.pathogen');
+    fire('dragover', row('demos'), data);
+    fire('drop', row('demos'), data);
+    fire('drop', row('demos'), data);
+    expect(moved).toEqual([{ path: 'parts/kit.pathogen', folder: 'demos' }]);
+  });
+
+  it('dropped where it can’t go, or where it is already: nothing moves', () => {
+    let data = start('parts/gears.pathogen');
+    fire('drop', row('demos'), data);
+    data = start('parts/kit.pathogen');
+    fire('drop', row('parts/labels.pathogen'), data);
+    expect(moved).toEqual([]);
+  });
+
+  it('Esc (the browser ends the drag without a drop): nothing moves, the lights go out, the row undims', () => {
+    const data = start('parts/kit.pathogen');
+    fire('dragover', row('demos'), data);
+    fire('dragend', row('parts/kit.pathogen'), data);
+    expect([moved, lit(), label().hidden, row('parts/kit.pathogen').classList.contains('dragging')]).toEqual([
+      [],
+      [],
+      true,
+      false,
+    ]);
+  });
+
+  it('the drag’s end is heard even when the row was drawn again during the drag', () => {
+    const data = start('parts/kit.pathogen');
+    const source = row('parts/kit.pathogen');
+    tree.files = [...GEARS, { path: 'parts/springs.pathogen', kind: 'program' }];
+    expect(row('parts/kit.pathogen').classList.contains('dragging')).toBe(true);
+    // The browser ends the drag on the row it began on, now out of the page.
+    fire('dragend', source, data);
+    expect(row('parts/kit.pathogen').classList.contains('dragging')).toBe(false);
+  });
+
+  it('a row dragged in from another window’s tree is left alone', () => {
+    const over = fire('dragover', row('demos'), { types: [MOVE_TYPE] });
+    expect([over.defaultPrevented, lit()]).toEqual([false, []]);
+  });
+
+  it('nothing is dragged while a name is being typed', () => {
+    $<HTMLButtonElement>('.add')!.click();
+    [...tree.shadowRoot!.querySelectorAll<HTMLElement>('[role="menuitem"]')]
+      .find((item) => item.querySelector('.label')!.textContent === 'New program')!
+      .click();
+    const event = fire('dragstart', row('parts/kit.pathogen'), dragData());
+    expect(event.defaultPrevented).toBe(true);
   });
 });
