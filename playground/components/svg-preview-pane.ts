@@ -1112,6 +1112,40 @@ export class SvgPreviewPane extends HTMLElement {
           opacity: 1;
         }
 
+        /* The zoom controls and the program chip (2d step 5a; mockup v6
+         * screen G), centred together at the bottom. The pill places itself
+         * when it's alone; here the group places it. */
+        #bottom-group {
+          position: absolute;
+          bottom: 0.75rem;
+          left: 0;
+          right: 0;
+          z-index: 10;
+          box-sizing: border-box;
+          padding: 0 0.5rem;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          gap: 8px;
+          pointer-events: none;
+        }
+
+        #bottom-group pathogen-zoom-pill,
+        #bottom-group ::slotted(*) {
+          pointer-events: auto;
+        }
+
+        /* In a narrow preview the chip gives way (its name shortens), not the pill. */
+        #bottom-group ::slotted(*) {
+          min-width: 0;
+        }
+
+        #bottom-group pathogen-zoom-pill {
+          position: static;
+          transform: none;
+          flex: none;
+        }
+
         #loading-overlay {
           display: none;
           position: absolute;
@@ -1300,7 +1334,10 @@ export class SvgPreviewPane extends HTMLElement {
 
       <snapshot-tray id="snapshot-tray"></snapshot-tray>
 
-      <pathogen-zoom-pill></pathogen-zoom-pill>
+      <div id="bottom-group">
+        <pathogen-zoom-pill></pathogen-zoom-pill>
+        <slot name="program-chip"></slot>
+      </div>
 
       <div id="preview-container">
         <!-- The sandboxed iframe is created programmatically in _setupIframe

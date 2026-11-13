@@ -152,6 +152,8 @@ export const store = createStore({
   openFile: firstOpenFile(),
   openFiles: ['main.pathogen'] as string[],
   shownProgram: null as string | null,
+  // Why the thumbnail waits (step 5a): see types/store.d.ts.
+  thumbnailWait: null as string | null,
 
   // Compilation results
   pathData: '',

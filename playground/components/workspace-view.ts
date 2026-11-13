@@ -13,6 +13,7 @@ import './file-tree.js';
 import './inspector-panel.js';
 import './export-modal.js';
 import './playground-main.js';
+import './program-chip.js';
 import './svg-preview-pane.js';
 import './thumbnail-crop-modal.js';
 import './edit-workspace-metadata-modal.js';
@@ -30,6 +31,7 @@ import { closeFile, lastTabStays, openFile, tabItems } from '../services/open-fi
 import {
   filesWithoutText,
   holdsWorkspace,
+  isWorkspaceFile,
   MAIN_FILE,
   mainOf,
   openFileNow,
@@ -38,6 +40,7 @@ import {
   workspaceFromAnswer,
   workspaceNow,
 } from '../services/workspace-files.js';
+import { chipAlert, programItems, programListChange, programsOf } from '../services/program-list.js';
 import type { WorkspaceTexts } from '../services/workspace-files.js';
 import {
   currentOpenFileModules,
@@ -50,11 +53,13 @@ import type { CanvasChangeDetail, CanvasSettings } from './canvas-panel.js';
 import type { EditorTabs } from './editor-tabs.js';
 import type { EntryCheck, FileTree } from './file-tree.js';
 import type { ZeroStateAction } from './editor-zero-state.js';
+import type { ProgramChip } from './program-chip.js';
 import { applyToWorkspace, workspaceState } from '../services/workspace-apply.js';
 import {
   deleteSummary,
   isFolder,
   moveHint,
+  pathAfterChange,
   planDelete,
   planDuplicate,
   planMove,
@@ -132,6 +137,15 @@ export class WorkspaceView extends HTMLElement {
   // Withdraws the toast whose Undo is on offer: the next change to the files
   // and folders, another workspace, or the view going.
   private _undoToast: AbortController | null = null;
+
+  // The program chip (2d, step 5a): its store subscription; the files typed
+  // in since pathogen.json's list was last checked for `module;`; and the
+  // program whose drawing the preview holds, since the thumbnail is the main's.
+  private _programsUnsubscribe: (() => void) | null = null;
+
+  private _editedSinceList = new Set<string>();
+
+  private _renderedProgram: string | null = null;
 
   // What the last compile left to mark in the editor, so a file shown after
   // it gets its marks without a recompile (only the chip changes what the
@@ -296,7 +310,9 @@ export class WorkspaceView extends HTMLElement {
           // ahead of initialize() is safe — initialize() awaits the flush
           // before touching autosave state. (If the flush's network save
           // fails, the pending edit is dropped — same preexisting behavior
-          // as leaving the workspace view.)
+          // as leaving the workspace view.) A `module;` typed in the last
+          // moment changes pathogen.json's list first, so the flush sends it.
+          this._followProgramList();
           autosave.flush();
           // Refresh the outgoing workspace's thumbnail if its content
           // changed this visit. Must be called synchronously here:
@@ -327,6 +343,7 @@ export class WorkspaceView extends HTMLElement {
         // discard the user's in-memory edits (the `?state=` branch re-decodes
         // the URL's original code).
         const hadArmedAutosave = autosave.isEnabled && autosave.workspaceId === this._currentWorkspaceId;
+        this._followProgramList();
         autosave.flush();
         tabCoordinator.close();
         store.set('multiTabWarning', false);
@@ -363,6 +380,13 @@ export class WorkspaceView extends HTMLElement {
   private _generateThumbnailFor(wsId: string | null | undefined): void {
     if (!wsId) return;
     if (store.get('workspaceOwnerId') !== getUserId()) return;
+    // The thumbnail is the main's drawing (note 38). With another program in
+    // the preview, or no program to draw, it waits. In this visit, the main
+    // back in the preview asks again (updatePreview: retryWhenIdle). Leaving
+    // the workspace while it waits drops it: the next edit with the main
+    // shown makes it due again.
+    const { main, mainIsLibrary } = this._mainNow();
+    if (this._thumbnailWait(main, mainIsLibrary) !== null) return;
     thumbnailService
       .generateIfDirty(wsId, () => this.previewPane?.preview ?? null, store.getAll())
       .then((result: unknown) => {
@@ -409,6 +433,10 @@ export class WorkspaceView extends HTMLElement {
 
   get fileTree(): FileTree | null {
     return this.shadowRoot!.querySelector<FileTree>('file-tree');
+  }
+
+  get programChip(): ProgramChip | null {
+    return this.shadowRoot!.querySelector<ProgramChip>('program-chip');
   }
 
   get previewPane(): HTMLElement & {
@@ -533,6 +561,10 @@ export class WorkspaceView extends HTMLElement {
     this.previewPane.clear();
     this.previewPane.showLoading();
     this._snapshots.resetForWorkspace();
+    // The preview holds no program's drawing now, and the chip's list is the last workspace's.
+    this._renderedProgram = null;
+    this._editedSinceList.clear();
+    this.programChip?.close();
 
     // With no file open, the editor shows the previous workspace's zero-state.
     const wasNone = openFileNow() === null;
@@ -786,7 +818,10 @@ export class WorkspaceView extends HTMLElement {
       // Track content change for thumbnail auto-generation
       thumbnailService.onContentChanged(this._contentHash(workspace));
 
-      // The open file's icon follows `module;` as it's typed.
+      // The open file's icon follows `module;` as it's typed, and so does
+      // pathogen.json's list of programs (step 5a).
+      const open = openFileNow();
+      if (isWorkspaceFile(open)) this._editedSinceList.add(open);
       this._scheduleTabsRefresh();
     });
 
@@ -855,6 +890,19 @@ export class WorkspaceView extends HTMLElement {
     );
     this._refreshTree();
     this._refreshZeroState();
+    // The program chip (2d, step 5a; mockup v6 screen G): the one way to change
+    // what the preview shows. Its Open in the editor is an `open-file`, above.
+    this.shadowRoot!.addEventListener('show-program', (e: Event) => {
+      const { path } = (e as CustomEvent<{ path: string }>).detail;
+      if (path === programToShow(workspaceNow(), store.get('shownProgram') as string | null)) return;
+      store.set('shownProgram', path);
+      this.updatePreview();
+    });
+    this._programsUnsubscribe = store.subscribe(
+      ['workspaceId', 'workspaceFiles', 'workspaceEntryPoints', 'shownProgram', 'openFile'],
+      () => this._refreshPrograms(),
+    );
+    this._refreshPrograms();
     // The + in the tree (2d, step 4b): whether a typed name can be used, by the
     // workspace's own rules (the plans of services/workspace-edits.ts), and
     // making the new file or folder.
@@ -986,6 +1034,8 @@ export class WorkspaceView extends HTMLElement {
       const detail = (e as CustomEvent).detail;
       this._isPreviewFullscreen = detail.fullscreen;
       this.updateInspectorOverlay();
+      // The chip's list was sized for the preview as it was.
+      this.programChip?.close();
     };
     document.addEventListener('fullscreen-change', this._handleFullscreenChange);
 
@@ -994,6 +1044,8 @@ export class WorkspaceView extends HTMLElement {
       if (store.get('currentView') !== 'workspace') return;
 
       if (e.key === 'Escape') {
+        // The program chip's open list takes Escape for itself (it closes, nothing else does).
+        if (this.programChip?.isOpen) return;
         // Close inspector overlay first when both fullscreen + inspector are active
         if (this._isPreviewFullscreen && (store.get('inspectorOpen') as boolean)) {
           e.stopPropagation();
@@ -1062,6 +1114,9 @@ export class WorkspaceView extends HTMLElement {
 
     // Set thumbnail (crop modal)
     this._handleSetThumbnail = (): void => {
+      // The menu item is off while the preview doesn't hold the main's drawing; this is its backstop.
+      const { main, mainIsLibrary } = this._mainNow();
+      if (this._thumbnailWait(main, mainIsLibrary) !== null) return;
       if (store.get('currentView') === 'workspace') {
         const svgElement = this.previewPane.preview;
         if (svgElement) {
@@ -1115,6 +1170,7 @@ export class WorkspaceView extends HTMLElement {
     // there are still-unsaved changes so they can't silently lose work.
     this._handleBeforeUnload = (e: BeforeUnloadEvent): void => {
       if (store.get('currentView') === 'workspace' && this._currentWorkspaceId) {
+        this._followProgramList();
         const unsaved = autosave.hasUnsavedChanges();
         autosave.saveNow({ keepalive: true });
         this._generateThumbnailFor(this._currentWorkspaceId);
@@ -1246,6 +1302,9 @@ export class WorkspaceView extends HTMLElement {
     this._tabsUnsubscribe = null;
     this._treeUnsubscribe?.();
     this._treeUnsubscribe = null;
+    this._programsUnsubscribe?.();
+    this._programsUnsubscribe = null;
+    this.programChip?.close();
     this._canvasUnsubscribe?.();
     this._canvasUnsubscribe = null;
     // A question still open when the view goes is withdrawn: it says no, and nothing is deleted.
@@ -1511,6 +1570,10 @@ export class WorkspaceView extends HTMLElement {
     }
     this._structureVersion += 1;
     this._withdrawUndo();
+    // The program whose drawing the preview holds, and the files typed in since
+    // pathogen.json's list was checked, by their paths after the change.
+    if (this._renderedProgram !== null) this._renderedProgram = pathAfterChange(this._renderedProgram, change);
+    this._editedSinceList = new Set([...this._editedSinceList].map((path) => pathAfterChange(path, change)));
     // The readings of a file deleted or moved go with its old path.
     for (const cache of [this._libraryReadings, this._fileHashes]) {
       for (const path of cache.keys()) if (!(path in result.state.files)) cache.delete(path);
@@ -1644,14 +1707,90 @@ export class WorkspaceView extends HTMLElement {
     document.dispatchEvent(new CustomEvent('show-toast', { detail: { type: 'error', title, message } }));
   }
 
-  /** While typing, the open file's icon follows `module;` a moment later, in the tabs and the tree. */
+  /**
+   * While typing, the open file's icon follows `module;` a moment later, in
+   * the tabs and the tree, and so do pathogen.json's list and the program chip.
+   */
   private _scheduleTabsRefresh(): void {
     if (this._tabsTimer) clearTimeout(this._tabsTimer);
     this._tabsTimer = setTimeout(() => {
       this._tabsTimer = null;
       this._refreshTabs();
       this._refreshTree();
+      this._followProgramList();
+      this._refreshPrograms();
     }, 300);
+  }
+
+  /**
+   * pathogen.json's list after typing (docs/workspace-files.md "The main",
+   * mockup v6 screen E): a program that gained `module;` leaves it, one that
+   * lost it goes back at the end, and the main stays. Made as a change, so
+   * autosave sends the list, an open pathogen.json follows, and the toast's
+   * Undo, planned on the old list, is withdrawn. The program shown, once it's a
+   * library, hands the preview back to the main (note 52, step 5a: proposed).
+   */
+  private _followProgramList(): void {
+    const edited = [...this._editedSinceList];
+    this._editedSinceList.clear();
+    if (edited.length === 0 || !holdsWorkspace()) return;
+    const change = programListChange(workspaceState(), edited);
+    if (change === null) return;
+    const shown = store.get('shownProgram') as string | null;
+    if (!this._applyWorkspaceChange(change, { focusEditor: false })) return;
+    const listed = store.get('workspaceEntryPoints') as string[];
+    const text = shown === null ? undefined : workspaceNow().texts.get(shown);
+    if (shown !== null && text !== undefined && !listed.includes(shown) && this._isLibrary(shown, text)) {
+      store.set('shownProgram', null);
+      this.updatePreview();
+    }
+  }
+
+  /**
+   * The program chip (2d, step 5a; mockup v6 screen G): in a saved workspace
+   * with two programs or more, the programs in the list's order, the one
+   * shown, and its red dot. And whether the thumbnail can be taken now, which
+   * Set Thumbnail shows.
+   */
+  private _refreshPrograms(): void {
+    const workspace = workspaceNow();
+    const { main, mainIsLibrary } = this._mainNow(workspace);
+    store.set('thumbnailWait', this._thumbnailWait(main, mainIsLibrary));
+    const chip = this.programChip;
+    if (!chip) return;
+    const programs = holdsWorkspace()
+      ? programsOf(workspace.texts, workspace.entryPoints, (path, text) => this._isLibrary(path, text))
+      : [];
+    if (programs.length < 2) {
+      chip.close();
+      chip.hidden = true;
+      return;
+    }
+    const shown = programToShow(workspace, store.get('shownProgram') as string | null);
+    const items = programItems(programs, { main, mainIsLibrary });
+    chip.items = items;
+    chip.shown = shown;
+    chip.editing = workspace.openFile;
+    chip.alert = chipAlert(items, shown);
+    chip.hidden = false;
+  }
+
+  /** The workspace's main (its first program still there), and whether `module;` has made it a library. */
+  private _mainNow(workspace: WorkspaceTexts = workspaceNow()): { main: string | null; mainIsLibrary: boolean } {
+    const main = workspace.entryPoints.find((p) => workspace.texts.has(p)) ?? null;
+    return { main, mainIsLibrary: main !== null && this._isLibrary(main, workspace.texts.get(main) ?? '') };
+  }
+
+  /**
+   * Why the thumbnail can't be taken now, as Set Thumbnail says it, or null
+   * when it can. It's always the main's drawing (note 38), taken from the
+   * preview, so the preview must hold the main's drawing.
+   */
+  private _thumbnailWait(main: string | null, mainIsLibrary: boolean): string | null {
+    if (main === null) return 'Add a program first';
+    if (mainIsLibrary) return 'The main is a library now';
+    if (this._renderedProgram !== main) return 'Show the main first';
+    return null;
   }
 
   /** Whether a file is a library (starts with `module;`), read once per text. */
@@ -1734,8 +1873,8 @@ export class WorkspaceView extends HTMLElement {
   }
 
   async updatePreview(): Promise<void> {
-    // The program the preview shows (the main until the chip exists, 2d),
-    // with every file it imports, from the workspace as it stands.
+    // The program the preview shows (the main, or the one chosen in the
+    // program chip), with every file it imports, from the workspace as it stands.
     const workspace = withOpenFileText(workspaceNow(), (store.get('code') as string) || this.editorPane.code);
     const shown = programToShow(workspace, store.get('shownProgram') as string | null);
     const code = workspace.texts.get(shown) ?? '';
@@ -1895,6 +2034,13 @@ export class WorkspaceView extends HTMLElement {
           renderedCode: code,
         });
       });
+      // And the program it is: the thumbnail is taken only from the main's
+      // drawing. The main back after another program: a thumbnail refused
+      // meanwhile is asked for again, after the next idle stretch.
+      const before = this._renderedProgram;
+      this._renderedProgram = shown;
+      if (before !== null && before !== shown && shown === this._mainNow().main) thumbnailService.retryWhenIdle();
+      this._refreshPrograms();
 
       // Refresh the breadcrumb's export-size estimate (runs at idle, after
       // the preview iframe has the new content).
@@ -2224,7 +2370,7 @@ export class WorkspaceView extends HTMLElement {
         <file-tree></file-tree>
         <code-editor-pane><editor-tabs slot="tabs"></editor-tabs></code-editor-pane>
         <console-pane></console-pane>
-        <svg-preview-pane></svg-preview-pane>
+        <svg-preview-pane><program-chip slot="program-chip" hidden></program-chip></svg-preview-pane>
         <inspector-panel canvas></inspector-panel>
       </playground-main>
 

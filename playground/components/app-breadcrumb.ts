@@ -125,6 +125,7 @@ class AppBreadcrumb extends HTMLElement {
         'snapshotCount',
         'snapshotsPage',
         'openFile',
+        'thumbnailWait',
       ],
       () => this.render(),
     );
@@ -412,8 +413,14 @@ class AppBreadcrumb extends HTMLElement {
     );
     menuItems.push('<div class="menu-divider"></div>');
     if (hasWorkspace) {
+      // The thumbnail is the main's drawing: with another program in the
+      // preview, or none to draw, it waits, and says why (2d, step 5a; v7).
+      const wait = store.get('thumbnailWait') as string | null;
+      const thumbnailIcon = materialIcon('image', { size: 16, className: 'menu-icon' });
       menuItems.push(
-        `<button data-action="set-thumbnail">${materialIcon('image', { size: 16, className: 'menu-icon' })}<span>Set Thumbnail</span></button>`,
+        wait === null
+          ? `<button data-action="set-thumbnail">${thumbnailIcon}<span>Set Thumbnail</span></button>`
+          : `<button data-action="set-thumbnail" disabled>${thumbnailIcon}<span>Set Thumbnail<small>${escHtml(wait)}</small></span></button>`,
       );
     }
     // Publish toggle reflects the moderation state machine. 'rejected' is

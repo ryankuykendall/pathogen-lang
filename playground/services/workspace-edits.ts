@@ -81,6 +81,21 @@ export interface Change {
 
 export type Planned = { ok: true; change: Change; undo: Change } | { ok: false; message: string };
 
+/**
+ * Where `path` is once `change` is made: through its moves, in order, a
+ * folder's move carrying what's in it. A path no move touches stays as it is
+ * (deleted or not: the caller checks).
+ */
+export function pathAfterChange(path: string, change: Change): string {
+  let at = path;
+  for (const step of change.steps) {
+    if (step.kind !== 'move') continue;
+    if (at === step.from) at = step.to;
+    else if (at.startsWith(`${step.from}/`)) at = step.to + at.slice(step.from.length);
+  }
+  return at;
+}
+
 /** A change made for another version of the workspace. Nothing is changed. */
 export class StaleChangeError extends Error {
   constructor(message: string) {

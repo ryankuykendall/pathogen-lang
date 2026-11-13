@@ -17,6 +17,7 @@ import {
   importChangeOffsets,
   keepBothName,
   moveHint,
+  pathAfterChange,
   planDelete,
   planDuplicate,
   planMove,
@@ -253,6 +254,26 @@ describe('Move to…', () => {
     const { after } = made(state, planMove(state, 'demos/gears.pathogen', ''));
     expect(after.folders).toEqual(['demos']);
     expect(after.entryPoints).toEqual(['main.pathogen', 'gears.pathogen', 'try-sizes.pathogen']);
+  });
+
+  it('where a file is after a change (pathAfterChange): moved, moved with its folder, renamed, or unmoved', () => {
+    const state = gearsWorkspace();
+    const file = made(state, planMove(state, 'parts/kit.pathogen', 'demos')).change;
+    const folder = made(state, planMove(state, 'parts', 'demos')).change;
+    const renamed = made(state, planRename(state, 'try-sizes.pathogen', 'sizes')).change;
+    expect([
+      pathAfterChange('parts/kit.pathogen', file),
+      pathAfterChange('main.pathogen', file),
+      pathAfterChange('parts/gears.pathogen', folder),
+      pathAfterChange('partsy.pathogen', folder),
+      pathAfterChange('try-sizes.pathogen', renamed),
+    ]).toEqual([
+      'demos/kit.pathogen',
+      'main.pathogen',
+      'demos/parts/gears.pathogen',
+      'partsy.pathogen',
+      'sizes.pathogen',
+    ]);
   });
 
   it('refuses moving a folder into itself, a place that is no folder, and a name taken there', () => {

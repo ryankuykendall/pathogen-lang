@@ -2,7 +2,7 @@
 // (project-docs/modules/phase-2-mockups-v6): a program, a library,
 // pathogen.json, and the controls around them. Inline SVG strings, so they
 // render inside any shadow root and take the text colour (`currentColor`).
-// The tabs (2d step 3) and the file tree (step 4a) use them; the program list will too.
+// The tabs (2d step 3), the file tree (step 4a) and the program chip (step 5a) use them.
 
 const icon = (body: string): string =>
   `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">${body}</svg>`;
@@ -47,6 +47,13 @@ export const FILE_ICONS = {
     '<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>',
   ),
   close: icon('<path d="M18 6 6 18M6 6l12 12"/>'),
-  /** The editor's zero-state (step 4d): no file open. */
+  /** The editor's zero-state (step 4d): no file open; the program list's Open in the editor (step 5a). */
   code: icon('<path d="m16 18 6-6-6-6M8 6l-6 6 6 6"/>'),
+  /** The program chip's caret: its list opens upward (step 5a). */
+  chevronUp: icon('<path d="m6 15 6-6 6 6"/>'),
+  /** The program list's check on the program shown. */
+  check: icon('<path d="M20 6 9 17l-5-5"/>'),
 } as const;
+
+/** The `main` badge's title, in the file tree and the program list (mockup v6). */
+export const MAIN_BADGE_TITLE = 'The main: first in pathogen.json’s entryPoints. Thumbnails and publishing use it';

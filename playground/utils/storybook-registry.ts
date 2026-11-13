@@ -2,6 +2,7 @@
 // Defines all components available in the storybook with their stories and controls
 
 import type { CanvasSettings } from '../components/canvas-panel.js';
+import type { ProgramItem } from '../services/program-list.js';
 
 interface StoryControl {
   name: string;
@@ -377,6 +378,116 @@ layer('hex').apply { circle(60, 100, 40) }`,
           };
         })
         .catch((err: unknown) => console.error('Editor Zero-State story failed to load:', err));
+    },
+  },
+  {
+    id: 'program-chip',
+    name: 'Program Chip',
+    category: 'Editor',
+    description:
+      'Beside the zoom controls, the program the preview shows (mockup v6 screen G). Its list opens upward: each program with its miniature, name and path, a check on the one shown, and Open in the editor on hover. It is the one way to change what the preview shows. The dot marks the programs that use the file you are editing; a program redrawing spins; one that failed says where, and lights the chip.',
+    stories: [
+      { name: 'Closed', props: { set: 'closed' } },
+      { name: 'Open', props: { set: 'open' } },
+      { name: 'Editing a library', props: { set: 'library' } },
+      { name: 'Another program broke', props: { set: 'error' } },
+      { name: 'The main is a library', props: { set: 'main-library' } },
+      { name: 'Two programs called gears', props: { set: 'same-name' } },
+    ],
+    controls: [],
+    notes:
+      'workspace-view gives it the rows (services/program-list.ts), the program shown, the file being edited and the red dot, and acts on show-program and open-file. The miniatures here are stand-ins; in the playground they come with step 5b. Here a row only moves the check.',
+    render: (container, props) => {
+      Promise.all([import('../components/program-chip.js'), import('../services/program-list.js')])
+        .then(([, { chipAlert, LIBRARY_MAIN }]) => {
+          type Row = ProgramItem;
+          // Stand-in miniatures: circles, as the gears draw at that size.
+          const art = (circles: [number, number, number][]): string =>
+            `data:image/svg+xml,${encodeURIComponent(
+              `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 100"><g fill="none" stroke="#1c1722" stroke-width="4">${circles
+                .map(
+                  ([x, y, r]) => `<circle cx="${x}" cy="${y}" r="${r}"/><circle cx="${x}" cy="${y}" r="${r * 0.3}"/>`,
+                )
+                .join('')}</g></svg>`,
+            )}`;
+          const row = (path: string, extra: Partial<Row> = {}): Row => ({
+            path,
+            name: path.slice(path.lastIndexOf('/') + 1).replace(/\.pathogen$/, ''),
+            hint: null,
+            badge: false,
+            error: null,
+            uses: null,
+            updating: false,
+            miniature: null,
+            ...extra,
+          });
+          const MAIN = art([
+            [55, 50, 40],
+            [150, 50, 28],
+          ]);
+          const GEARS = art([
+            [40, 50, 22],
+            [100, 50, 22],
+            [160, 50, 22],
+          ]);
+          const TRY = art([
+            [60, 50, 12],
+            [140, 50, 30],
+          ]);
+          const set = String(props.set ?? 'closed');
+          let items: Row[] = [
+            row('main.pathogen', { miniature: MAIN }),
+            row('demos/gears.pathogen', { miniature: GEARS }),
+            row('try-sizes.pathogen', { miniature: TRY }),
+          ];
+          let shown = 'main.pathogen';
+          let editing: string | null = 'main.pathogen';
+          if (set === 'library') {
+            editing = 'parts/gears.pathogen';
+            items = items.map((r) => ({ ...r, uses: 'import', updating: r.path !== shown }));
+          } else if (set === 'error') {
+            items = items.map((r) =>
+              r.path === 'try-sizes.pathogen' ? { ...r, error: 'Error in parts/gears.pathogen line 9' } : r,
+            );
+          } else if (set === 'main-library') {
+            items = items.map((r) => (r.path === 'main.pathogen' ? { ...r, error: LIBRARY_MAIN, uses: 'self' } : r));
+          } else if (set === 'same-name') {
+            items = [
+              row('try-sizes.pathogen', { miniature: TRY, badge: true }),
+              row('demos/gears.pathogen', { miniature: GEARS, hint: 'demos' }),
+              row('parts/gears.pathogen', { miniature: MAIN, hint: 'parts' }),
+            ];
+            shown = 'parts/gears.pathogen';
+          }
+          // A preview's lower part: the chip sits centred at the bottom, its list opening upward.
+          const stage = document.createElement('div');
+          stage.style.cssText =
+            'position:relative;height:440px;overflow:hidden;border:1px solid var(--border-color, #ddd);border-radius:8px;background:var(--bg-primary, #f8f9fa);';
+          const bar = document.createElement('div');
+          bar.style.cssText = 'position:absolute;bottom:12px;left:0;right:0;display:flex;justify-content:center;';
+          const chip = document.createElement('program-chip');
+          bar.appendChild(chip);
+          stage.appendChild(bar);
+          container.appendChild(stage);
+          const draw = (): void => {
+            chip.items = items;
+            chip.shown = shown;
+            chip.editing = editing;
+            chip.alert = chipAlert(items, shown);
+          };
+          draw();
+          chip.addEventListener('show-program', (e) => {
+            shown = (e as CustomEvent<{ path: string }>).detail.path;
+            draw();
+          });
+          // Opened as a mouse would (a click with no pointer counts as the keyboard's).
+          if (set !== 'closed') {
+            chip
+              .shadowRoot!.querySelector('.pick')!
+              .dispatchEvent(new MouseEvent('click', { bubbles: true, detail: 1 }));
+          }
+        })
+        .catch((err: unknown) => console.error('Program Chip story failed to load:', err));
     },
   },
   {

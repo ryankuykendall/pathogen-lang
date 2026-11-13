@@ -40,7 +40,7 @@
 // the editor (opening a file resets the row), else the top of the workspace.
 
 import { renamedPath } from '../services/workspace-edits.js';
-import { FILE_ICONS } from '../utils/file-icons.js';
+import { FILE_ICONS, MAIN_BADGE_TITLE } from '../utils/file-icons.js';
 import { treeRows } from '../utils/file-tree-rows.js';
 import styles from './file-tree.css';
 
@@ -49,7 +49,6 @@ import type { NewEntryKind, TreeFile, TreeRow } from '../utils/file-tree-rows.js
 const esc = (s: string): string =>
   s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
-const MAIN_BADGE_TITLE = 'The main: first in pathogen.json’s entryPoints. Thumbnails and publishing use it';
 const LOCK_TITLE = 'Read-only: the playground writes this file';
 const ADD_LABEL = 'Add a file or folder';
 const KEYS_HINT = 'Enter to create, Esc to cancel';

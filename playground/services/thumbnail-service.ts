@@ -382,8 +382,11 @@ function setThumbnailContentHash(hash: string | null): void {
  */
 function onContentChanged(contentHash: string): void {
   _latestContentHash = contentHash;
+  _armIdleTimer();
+}
 
-  // Reset idle timer
+/** (Re)start the idle timer: after IDLE_TIMEOUT_MS without a change, try auto-generation. */
+function _armIdleTimer(): void {
   if (_idleTimer) {
     clearTimeout(_idleTimer);
   }
@@ -392,6 +395,16 @@ function onContentChanged(contentHash: string): void {
     _idleTimer = null;
     _tryAutoGenerate();
   }, IDLE_TIMEOUT_MS);
+}
+
+/**
+ * Try again after the next idle stretch, if a thumbnail is due. The playground
+ * calls this when the preview shows the main again (2d, step 5a): a thumbnail
+ * due while another program was shown was refused, since it's the main's
+ * drawing. Nothing happens when none is due.
+ */
+function retryWhenIdle(): void {
+  if (_workspaceId && _isDirty()) _armIdleTimer();
 }
 
 /**
@@ -482,6 +495,7 @@ export default {
   stopAutoGeneration,
   setThumbnailContentHash,
   onContentChanged,
+  retryWhenIdle,
   generateIfDirty,
   isGenerating,
 };

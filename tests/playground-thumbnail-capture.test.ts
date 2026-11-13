@@ -109,3 +109,40 @@ describe('buildRenderSnapshots (synchronous thumbnail/hero capture)', () => {
     expect(heroSvgString).not.toContain('grid-pattern');
   });
 });
+
+// 2d, step 5a: the thumbnail is the main's drawing, so the playground refuses
+// one asked for while another program is in the preview. When the main is back,
+// retryWhenIdle asks again after the next idle stretch, but only if one is due.
+describe('retryWhenIdle', () => {
+  it('asks again after the idle stretch when a thumbnail is due, and never when none is', async () => {
+    vi.useFakeTimers();
+    try {
+      const { default: thumbnailService } = await import('../playground/services/thumbnail-service.js');
+      const asked: string[] = [];
+      const listen = (e: Event) => asked.push((e as Event & { detail: { workspaceId: string } }).detail.workspaceId);
+      document.addEventListener('thumbnail-auto-generate', listen);
+      const idle = 5 * 60 * 1000;
+
+      thumbnailService.startAutoGeneration('ws-1');
+      thumbnailService.setThumbnailContentHash('saved');
+      // Nothing changed since the thumbnail: nothing is due.
+      thumbnailService.retryWhenIdle();
+      vi.advanceTimersByTime(idle + 1);
+      expect(asked).toEqual([]);
+
+      // An edit: due, asked after the idle stretch (and refused, say: another program was shown).
+      thumbnailService.onContentChanged('edited');
+      vi.advanceTimersByTime(idle + 1);
+      expect(asked).toEqual(['ws-1']);
+      // The main back in the preview: asked again after the next idle stretch.
+      thumbnailService.retryWhenIdle();
+      vi.advanceTimersByTime(idle + 1);
+      expect(asked).toEqual(['ws-1', 'ws-1']);
+
+      document.removeEventListener('thumbnail-auto-generate', listen);
+      thumbnailService.stopAutoGeneration();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+});

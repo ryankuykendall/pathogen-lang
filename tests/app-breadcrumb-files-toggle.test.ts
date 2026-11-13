@@ -77,4 +77,21 @@ describe('the Files toggle', () => {
     ]);
     store.update({ openFile: 'main.pathogen', openFiles: ['main.pathogen'] });
   });
+
+  // Step 5a: the thumbnail is the main's drawing, taken from the preview. While
+  // the preview holds another program's (or none), Set Thumbnail waits, and says
+  // why under its name, as mockup v7 draws it for a workspace with no program.
+  it('Set Thumbnail waits while the preview doesn’t hold the main’s drawing, and says why', async () => {
+    const { store, el } = await mount({ 'main.pathogen': 'M 0 0', 'b.pathogen': 'M 1 1' });
+    const item = () => el.shadowRoot!.querySelector<HTMLButtonElement>('[data-action="set-thumbnail"]')!;
+    store.set('thumbnailWait', null);
+    expect([item().disabled, item().querySelector('small')]).toEqual([false, null]);
+    store.set('thumbnailWait', 'Show the main first');
+    expect([item().disabled, item().textContent, item().querySelector('small')!.textContent]).toEqual([
+      true,
+      'Set ThumbnailShow the main first',
+      'Show the main first',
+    ]);
+    store.set('thumbnailWait', null);
+  });
 });

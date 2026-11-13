@@ -78,6 +78,12 @@ export interface StoreState {
   openFiles: string[];
   /** The program the preview shows; null means the main (the first entry point). */
   shownProgram: string | null;
+  /**
+   * Why the workspace's thumbnail can't be taken now, as Set Thumbnail says it
+   * ("Show the main first"), or null when it can (2d, step 5a). It's always the
+   * main's drawing, and it's taken from the preview. Set by workspace-view.
+   */
+  thumbnailWait: string | null;
 
   // Compilation results
   pathData: string;
