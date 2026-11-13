@@ -12,6 +12,7 @@ import { groupWarnLogEntries, WARNING_GROUP_INSTANCE_LIMIT } from '../src/evalua
 
 interface LogEntryLike {
   line: number | null;
+  file?: string;
   severity?: 'warn';
   parts: { type: 'string'; value: string }[];
 }
@@ -109,5 +110,49 @@ describe('console-pane warning grouping', () => {
     );
     expect(rows(el)).toHaveLength(4);
     expect(rows(el)[0].shadowRoot!.querySelector('.count')).toBeNull();
+  });
+});
+
+// Step 7 (docs/workspace-files.md "Errors in other files"): in a workspace,
+// an entry's place opens that file at that line. An entry from another file
+// names it; one without a file is the program's whose logs these are.
+describe('console-pane: an entry’s place opens its file (step 7)', () => {
+  beforeAll(async () => {
+    (globalThis as { __PATHOGEN_API_BASE__?: string }).__PATHOGEN_API_BASE__ = 'http://localhost:8787';
+    await import('../playground/components/console-pane.ts');
+  });
+
+  afterEach(() => {
+    document.body.innerHTML = '';
+  });
+
+  const fromGears = { line: 9, file: 'parts/gears.pathogen', parts: [{ type: 'string' as const, value: 'teeth' }] };
+
+  it('with the program set, each place is a link: another file’s, and the program’s own line', () => {
+    const opened: unknown[] = [];
+    document.addEventListener('open-file', (e) => opened.push((e as Event & { detail: unknown }).detail));
+    const el = mount([fromGears, plain(3, 'here')]) as ConsolePaneLike & { program: string | null };
+    el.program = 'try-sizes.pathogen';
+    const links = rows(el).map((r) => r.shadowRoot!.querySelector<HTMLButtonElement>('button.line'));
+    expect(links.map((b) => b?.textContent)).toEqual(['parts/gears.pathogen line 9:', 'Line 3:']);
+    // Each says which file it opens, "Line 3:" included.
+    expect(links.map((b) => b?.getAttribute('aria-label'))).toEqual([
+      'Open parts/gears.pathogen at line 9',
+      'Open try-sizes.pathogen at line 3',
+    ]);
+    for (const b of links) b!.click();
+    expect(opened).toEqual([
+      { path: 'parts/gears.pathogen', line: 9, focusEditor: true },
+      { path: 'try-sizes.pathogen', line: 3, focusEditor: true },
+    ]);
+  });
+
+  it('without a program (a scratch link), the places are words, as before', () => {
+    const el = mount([fromGears, plain(3, 'here')]);
+    expect(rows(el).map((r) => r.shadowRoot!.querySelector('button.line'))).toEqual([null, null]);
+    expect(rows(el).map((r) => r.shadowRoot!.querySelector('.line')!.textContent)).toEqual([
+      'parts/gears.pathogen line 9:',
+      'Line 3:',
+    ]);
   });
 });

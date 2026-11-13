@@ -68,7 +68,7 @@ interface CmEditorState {
     length: number;
     toString(): string;
     lines: number;
-    line(n: number): { from: number };
+    line: (n: number) => { from: number; length: number };
     sliceString(from: number, to?: number): string;
   };
   selection: { main: { head: number } };
@@ -171,6 +171,9 @@ export class CodeEditorPane extends HTMLElement {
   private _languageExtensions: ReturnType<typeof buildLanguageExtensions> | null;
 
   private _pendingError: { line: number; column: number } | null;
+
+  /** A line to go to once the editor has loaded (revealPosition before it had). */
+  private _pendingReveal: { line: number; column: number } | null = null;
   private _pendingWarnings: Array<{ line: number; column: number }>;
   private _themeUnsubscribe: (() => void) | null;
 
@@ -750,6 +753,10 @@ export class CodeEditorPane extends HTMLElement {
     // Apply any error or warning highlight that arrived before the editor was ready
     this._applyPendingError();
     if (this._pendingWarnings.length > 0) this.highlightWarnings(this._pendingWarnings);
+    // And a link to a line followed before it was ready (step 7).
+    const reveal = this._pendingReveal;
+    this._pendingReveal = null;
+    if (reveal) this.revealPosition(reveal.line, reveal.column);
 
     this.dispatchEvent(
       new CustomEvent('editor-ready', {
@@ -789,6 +796,29 @@ export class CodeEditorPane extends HTMLElement {
   formatDocument(): void {
     if (!this._editor || this.readOnly || this._activePath === null) return;
     runFormatDocument(this._editor);
+  }
+
+  /**
+   * Put the cursor at `line` and `column` (1-based) in the file shown, with
+   * the line in the middle of the editor (an error panel's or a console's
+   * link, Cmd-click: 2d, step 7). A line past the end goes to the last one, a
+   * column past the line's end to its end: the file may have changed since.
+   */
+  revealPosition(line: number, column = 1): void {
+    if (this._activePath === null || !Number.isFinite(line) || !Number.isFinite(column)) return;
+    if (!this._editor || !this._cmModules) {
+      // Not loaded yet (CodeMirror comes from a CDN): done once it is.
+      this._pendingReveal = { line, column };
+      return;
+    }
+    const doc = this._editor.state.doc;
+    const at = doc.line(Math.max(1, Math.min(Math.floor(line), doc.lines)));
+    const pos = at.from + Math.max(0, Math.min(Math.floor(column) - 1, at.length));
+    this._editor.dispatch({
+      selection: { anchor: pos },
+      effects: this._cmModules.view.EditorView.scrollIntoView(pos, { y: 'center' }),
+      userEvent: 'select',
+    });
   }
 
   // Marks need a file: with none open there's nothing to mark (a file shown

@@ -168,6 +168,47 @@ describe('pathogen.json in the editor', () => {
     ]);
   });
 
+  it('puts the cursor at a line and column, the line centred; past the end, at the last line or the line’s end (revealPosition, step 7)', () => {
+    const pane = makePane() as Pane & {
+      revealPosition: (line: number, column?: number) => void;
+      _editor: unknown;
+      _cmModules: unknown;
+      _activePath: string | null;
+    };
+    // Three lines: "line one\n" (0–8), "line two\n" (9–17), "end" (18–20).
+    const starts = [0, 9, 18];
+    const lengths = [8, 8, 3];
+    const sent: unknown[] = [];
+    pane._activePath = 'parts/gears.pathogen';
+    pane._cmModules = { view: { EditorView: { scrollIntoView: (pos: number, o: unknown) => ({ scrollTo: pos, o }) } } };
+    pane._editor = {
+      state: { doc: { lines: 3, line: (n: number) => ({ from: starts[n - 1], length: lengths[n - 1] }) } },
+      dispatch: (tr: unknown) => sent.push(tr),
+    };
+    pane.revealPosition(2, 4);
+    pane.revealPosition(99, 1);
+    pane.revealPosition(1, 50);
+    pane.revealPosition(2);
+    expect(sent.map((tr) => (tr as { selection: { anchor: number } }).selection.anchor)).toEqual([12, 18, 8, 9]);
+    expect((sent[0] as { effects: unknown }).effects).toEqual({ scrollTo: 12, o: { y: 'center' } });
+    // No file open (the zero-state): nothing happens.
+    pane._activePath = null;
+    pane.revealPosition(1, 1);
+    expect(sent).toHaveLength(4);
+  });
+
+  it('a line asked for before the editor has loaded waits for it (revealPosition, step 7)', () => {
+    const pane = makePane() as Pane & {
+      revealPosition: (line: number, column?: number) => void;
+      _activePath: string | null;
+      _pendingReveal: unknown;
+    };
+    pane._activePath = 'parts/gears.pathogen';
+    pane.revealPosition(5, 3);
+    pane.revealPosition(Number.NaN, 1);
+    expect(pane._pendingReveal).toEqual({ line: 5, column: 3 });
+  });
+
   it('a renamed file keeps its state under its new name, the file shown too (renameFiles)', () => {
     const pane = makePane() as Pane & {
       renameFiles: (moves: { from: string; to: string }[]) => void;

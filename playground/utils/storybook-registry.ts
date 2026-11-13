@@ -963,7 +963,8 @@ layer('hex').apply { circle(60, 100, 40) }`,
     id: 'error-panel',
     name: 'Error Panel',
     category: 'Editor',
-    description: 'Error message display banner',
+    description:
+      "A compile's errors over the editor's foot (docs/workspace-files.md \"Errors in other files\", mockup v6 screen E, state 4): each error under the name of the file where it happened, then the steps that led there from the program. The file's name, \"Line N\" and each step are links that open that file at that line (open-file). The playground's own note, about a main that's a module, has its own heading and a link (error-panel-action). A plain message, such as a workspace that didn't load, shows as before.",
     stories: [
       {
         name: 'With Error',
@@ -980,20 +981,74 @@ layer('hex').apply { circle(60, 100, 40) }`,
         name: 'Hidden',
         props: { message: '' },
       },
+      { name: 'An error in another file', props: { sections: 'other' } },
+      { name: 'Errors in two files', props: { sections: 'two' } },
+      { name: 'The main is a module', props: { sections: 'main' } },
     ],
     controls: [
       { name: 'message', type: 'text', label: 'Error Message', default: 'SyntaxError: Unexpected token at line 5' },
     ],
+    notes:
+      'The links here say what they would open in the console (open-file); in a workspace, workspace-view opens the file at that line.',
     render: (container, props, controls) => {
-      const errorPanel = document.createElement('error-panel');
+      const errorPanel = document.createElement('error-panel') as unknown as HTMLElement & {
+        message: unknown;
+        showSections: (sections: unknown[], count: number) => void;
+      };
       errorPanel.style.width = '100%';
+      // In the story, the panel sits in the page's flow rather than over an editor.
+      errorPanel.style.position = 'static';
       if (props.message) {
-        (errorPanel as unknown as { message: unknown }).message = props.message;
+        errorPanel.message = props.message;
       }
       container.appendChild(errorPanel);
+      errorPanel.addEventListener('open-file', (e) => console.log('open-file', (e as CustomEvent).detail));
+      errorPanel.addEventListener('error-panel-action', (e) =>
+        console.log('error-panel-action', (e as CustomEvent).detail),
+      );
+      const gears = {
+        heading: 'parts/gears.pathogen',
+        file: 'parts/gears.pathogen',
+        errors: [
+          {
+            line: 9,
+            column: 3,
+            text: 'assertion failed: a gear needs at least 3 teeth',
+            steps: [
+              { kind: 'called from', file: 'parts/kit.pathogen', line: 6 },
+              { kind: 'called from', file: 'try-sizes.pathogen', line: 4 },
+            ],
+          },
+        ],
+      };
+      const own = {
+        heading: 'main.pathogen',
+        file: 'main.pathogen',
+        errors: [
+          {
+            line: 6,
+            column: 1,
+            text: "A module has no drawing, so it can't define a ViewBox. The program that imports it sets the ViewBox.",
+            steps: [],
+          },
+        ],
+      };
+      const theMain = {
+        heading: 'The main',
+        file: null,
+        errors: [],
+        note: [
+          "A module can't draw as the main. Take out module;, or ",
+          { text: 'set another program as main', action: 'set-main' },
+          '.',
+        ],
+      };
+      if (props.sections === 'other') errorPanel.showSections([gears], 1);
+      if (props.sections === 'two') errorPanel.showSections([own, gears], 2);
+      if (props.sections === 'main') errorPanel.showSections([own, theMain], 1);
 
       controls.on('message', (value) => {
-        (errorPanel as unknown as { message: unknown }).message = value;
+        errorPanel.message = value;
       });
     },
   },

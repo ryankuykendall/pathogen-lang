@@ -399,10 +399,11 @@ try {
   await openFile(page, 'parts/gears.pathogen');
   await new Promise((r) => setTimeout(r, 800));
   state = await editorState(page);
-  const panel = await page.evaluate(`window.__find('error-panel')?.shadowRoot?.textContent ?? ''`);
+  // Since step 7 the panel puts each error under its file's name: "main.pathogen", then "Line 3: …".
+  const panel = await page.evaluate(`window.__find('error-panel')?.message ?? ''`);
   check(
     "with the library open, nothing is marked in it, and the panel names the main's line",
-    state.errorLines === 0 && String(panel).includes('main.pathogen line 3'),
+    state.errorLines === 0 && String(panel).startsWith('main.pathogen\nLine 3'),
     { errorLines: state.errorLines, panel: String(panel).slice(0, 300) },
   );
   await clickTab(page, 'main.pathogen');

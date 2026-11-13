@@ -93,6 +93,9 @@ import { computeDefaultExportSvgBytes } from '../utils/svg-export-size.js';
 import { ensureChromeFontRules, getChromeFontRulesIfReady } from '../utils/export-fonts.js';
 import { updateWorkspaceSlugUrl } from '../utils/workspace-slug-url.js';
 import './shared/error-panel.js';
+import type { ErrorPanel, ErrorPanelSection } from './shared/error-panel.js';
+import { errorMarks, errorText, readDiagnostics, readMessage } from '../services/error-place.js';
+import type { DiagnosticLike, ErrorReading } from '../services/error-place.js';
 import type { ToastDetail } from './shared/app-toast.js';
 import type { CompileResult } from '../types/compiler.js';
 
@@ -155,6 +158,19 @@ export class WorkspaceView extends HTMLElement {
   private _editedSinceList = new Set<string>();
 
   private _renderedProgram: string | null = null;
+
+  /**
+   * The shown program's last failure, read (2d, step 7): the error panel
+   * shows it, and each file the editor opens gets its own marks from it.
+   * Null after a compile that worked.
+   */
+  private _failure: { program: string; readings: ErrorReading[] } | null = null;
+
+  /** A plain message in the panel (a workspace that didn't load), until a compile replaces it. */
+  private _panelMessage: string | null = null;
+
+  /** Keeps the error panel over the editor as the editor's size changes (step 7). */
+  private _panelPlacer: ResizeObserver | null = null;
 
   // Every program in the chip's list, drawn small (2d, step 5b): the programs
   // not shown compile in the background on their own worker; the program
@@ -314,8 +330,39 @@ export class WorkspaceView extends HTMLElement {
     document.addEventListener('dragover', this._onStrayDrop, true);
     document.addEventListener('drop', this._onStrayDrop, true);
 
+    // The error panel sits over the editor, not the file tree (mockup v6
+    // screen E), wherever the editor is: Files on or off, the window resized,
+    // the divider moved (2d, step 7).
+    if (typeof ResizeObserver !== 'undefined') {
+      this._panelPlacer?.disconnect();
+      this._panelPlacer = new ResizeObserver(() => this._placeErrorPanel());
+      this._panelPlacer.observe(this.editorPane);
+    }
+
     // Check if we should initialize immediately (if already on workspace route)
     this.handleRouteChange();
+  }
+
+  /**
+   * Put the error panel over the editor's foot: 12 px in from its sides and
+   * its bottom, wherever the editor is (below 800 px the panes stack, and the
+   * editor isn't at the bottom). Again each time the panel shows.
+   */
+  private _placeErrorPanel(): void {
+    const panel = this.errorPanel;
+    const editor = this.editorPane;
+    if (!panel || !editor) return;
+    const at = editor.getBoundingClientRect();
+    const within = (panel.offsetParent ?? this).getBoundingClientRect();
+    if (at.width === 0) {
+      panel.style.left = '';
+      panel.style.width = '';
+      panel.style.bottom = '';
+      return;
+    }
+    panel.style.left = `${at.left - within.left + 12}px`;
+    panel.style.width = `${Math.max(240, at.width - 24)}px`;
+    panel.style.bottom = `${within.bottom - at.bottom + 12}px`;
   }
 
   /** A file dragged or dropped anywhere but the file tree: nothing happens (see connectedCallback). Only while a workspace shows. */
@@ -331,6 +378,8 @@ export class WorkspaceView extends HTMLElement {
   disconnectedCallback(): void {
     document.removeEventListener('dragover', this._onStrayDrop, true);
     document.removeEventListener('drop', this._onStrayDrop, true);
+    this._panelPlacer?.disconnect();
+    this._panelPlacer = null;
     if (this._routeUnsubscribe) {
       this._routeUnsubscribe();
     }
@@ -471,6 +520,7 @@ export class WorkspaceView extends HTMLElement {
 
   get editorPane(): HTMLElement & {
     code: string;
+    revealPosition: (line: number, column?: number) => void;
     resetFiles: (path: string | null, text: string) => void;
     showFile: (path: string, text: string) => void;
     showNone: () => void;
@@ -521,7 +571,12 @@ export class WorkspaceView extends HTMLElement {
     return this.shadowRoot!.querySelector('svg-preview-pane') as any;
   }
 
-  get consolePane(): HTMLElement & { open: () => void; toggle: () => void; logs: unknown[] } {
+  get consolePane(): HTMLElement & {
+    open: () => void;
+    toggle: () => void;
+    logs: unknown[];
+    program: string | null;
+  } {
     return this.shadowRoot!.querySelector('console-pane') as any;
   }
 
@@ -552,12 +607,8 @@ export class WorkspaceView extends HTMLElement {
     };
   }
 
-  get errorPanel(): HTMLElement & {
-    show: (message: string) => void;
-    hide: () => void;
-    showFeedback: (message: string) => void;
-  } {
-    return this.shadowRoot!.querySelector('error-panel') as any;
+  get errorPanel(): ErrorPanel {
+    return this.shadowRoot!.querySelector('error-panel') as ErrorPanel;
   }
 
   get exportModal(): HTMLElement & { open: (svgElement: SVGElement, state: unknown) => void } {
@@ -580,7 +631,7 @@ export class WorkspaceView extends HTMLElement {
       } else if (Date.now() - start < maxWait) {
         setTimeout(check, 50);
       } else {
-        this.showError('Failed to load pathogen-lang library');
+        this.showMessage('Failed to load pathogen-lang library');
       }
     };
     check();
@@ -638,6 +689,10 @@ export class WorkspaceView extends HTMLElement {
     this._programsToDrawCache = null;
     this._drawings.reset();
     this.fileTree?.cancelAsk();
+    // The last workspace's errors and messages are its own (step 7).
+    this._failure = null;
+    this._panelMessage = null;
+    this.errorPanel?.hide();
 
     // With no file open, the editor shows the previous workspace's zero-state.
     const wasNone = openFileNow() === null;
@@ -796,7 +851,7 @@ export class WorkspaceView extends HTMLElement {
       // isn't saved at all, and says why.
       const withoutText = filesWithoutText(workspace);
       if (withoutText.length > 0) {
-        this.showError(
+        this.showMessage(
           `This workspace holds files this version of Pathogen Studio can't edit (${withoutText.join(', ')}), ` +
             'so changes here aren’t saved. Reload the page to get the latest version.',
         );
@@ -842,11 +897,11 @@ export class WorkspaceView extends HTMLElement {
     } catch (err: any) {
       console.error('Failed to load workspace:', err);
       if (err.status === 404) {
-        this.showError('Workspace not found');
+        this.showMessage('Workspace not found');
       } else if (err.status === 403) {
-        this.showError('You do not have access to this workspace');
+        this.showMessage('You do not have access to this workspace');
       } else {
-        this.showError(`Failed to load workspace: ${err.message}`);
+        this.showMessage(`Failed to load workspace: ${err.message}`);
       }
 
       // Fall back to default code
@@ -871,13 +926,8 @@ export class WorkspaceView extends HTMLElement {
       this._updateFontWarningBanner();
     });
 
-    // Re-apply compilation error when editor finishes loading
-    this.shadowRoot!.addEventListener('editor-ready', () => {
-      const error = store.get('compilationError') as string | null;
-      if (error) {
-        this.showError(error);
-      }
-    });
+    // The editor has loaded: the last failure's marks, in the file it shows.
+    this.shadowRoot!.addEventListener('editor-ready', () => this._markOpenFile());
 
     // Code changes from editor. The editor has written the open file's text
     // to the store (`code`) before it fires this.
@@ -934,12 +984,28 @@ export class WorkspaceView extends HTMLElement {
       }
     });
     // Open a file of the workspace in a tab, or switch to it: the one way in
-    // for the file tree, the program list and the error panel (2d, steps 4,
-    // 5 and 7). `focusEditor` hands the keyboard to the editor (Enter in the tree).
+    // for the file tree, the program list, the error panel, the console and
+    // Cmd-click (2d, steps 4, 5 and 7). `focusEditor` hands the keyboard to the
+    // editor (Enter in the tree); `line` and `column` put the cursor there,
+    // the line in the middle. A file gone since opens nothing.
     this.shadowRoot!.addEventListener('open-file', (e: Event) => {
-      const { path, focusEditor } = (e as CustomEvent<{ path: string; focusEditor?: boolean }>).detail;
-      this.openFileInEditor(path);
-      if (focusEditor && openFileNow() === path) this.editorPane.focusEditor();
+      const { path, focusEditor, line, column } = (
+        e as CustomEvent<{ path: string; focusEditor?: boolean; line?: number; column?: number }>
+      ).detail;
+      if (openFileNow() !== path) this.openFileInEditor(path);
+      if (openFileNow() !== path) {
+        // A link to a file renamed or deleted since it was shown says so, rather than doing nothing.
+        if (holdsWorkspace() && !workspaceNow().texts.has(path)) {
+          this._toastError('Couldn’t open it', `${path} isn’t in the workspace now.`);
+        }
+        return;
+      }
+      if (line !== undefined) this.editorPane.revealPosition(line, column ?? 1);
+      if (focusEditor) this.editorPane.focusEditor();
+    });
+    // The error panel's note: "set another program as main" (step 7).
+    this.shadowRoot!.addEventListener('error-panel-action', (e: Event) => {
+      if ((e as CustomEvent<{ action: string }>).detail.action === 'set-main') this._offerSetMain();
     });
     this.shadowRoot!.addEventListener('toggle-docs', () => {
       const docs = this.docsPanel as unknown as { toggle: () => void };
@@ -971,6 +1037,9 @@ export class WorkspaceView extends HTMLElement {
       const { path } = (e as CustomEvent<{ path: string }>).detail;
       if (path === programToShow(workspaceNow(), store.get('shownProgram') as string | null)) return;
       store.set('shownProgram', path);
+      // The last program's errors aren't this one's: the panel (through the store's subscription
+      // below) and the marks drop them now, not when this compile comes back (step 7).
+      this.editorPane.clearError();
       this.updatePreview();
     });
     this._programsUnsubscribe = store.subscribe(
@@ -1535,16 +1604,8 @@ export class WorkspaceView extends HTMLElement {
       this._markWarnings(outcome.warnings);
       return;
     }
-    // The error's graph is the shown program's: unchanged by a tab switch,
-    // but the open file's kept graph is for the file just left.
-    const compilationId = store.get('compilationId');
-    const shown = programToShow(workspaceNow(), store.get('shownProgram') as string | null);
-    this._modulesFor(shown)
-      .then((modules) => {
-        if (store.get('compilationId') !== compilationId || this._lastOutcome !== outcome) return;
-        this.showError(outcome.message, modules);
-      })
-      .catch((err: unknown) => console.warn('Placing the error in the file shown failed:', err));
+    // The failure was read once (step 7): the new file's own marks come from it.
+    this._markOpenFile();
   }
 
   /** The import graph of a program, for placing its errors; null if it can't be built. */
@@ -2021,6 +2082,8 @@ export class WorkspaceView extends HTMLElement {
     const workspace = workspaceNow();
     const { main, mainIsLibrary } = this._mainNow(workspace);
     store.set('thumbnailWait', this._thumbnailWait(main, mainIsLibrary));
+    // The error panel's note about a main that's a module follows the main (step 7).
+    this._renderErrors();
     const chip = this.programChip;
     if (!chip) return;
     const programs = this._programsOf(workspace);
@@ -2285,6 +2348,9 @@ export class WorkspaceView extends HTMLElement {
       // Gradient rasterization notices (Canvas 2D fallback, failed renders)
       // join the compiler's own log entries so they show in the console pane.
       const logs = [...(result.logs || []), ...gpuGradientService.takeNotices()];
+      // In a workspace, each entry's place opens its file there (step 7): one
+      // without a file is the shown program's.
+      this.consolePane.program = holdsWorkspace() ? shown : null;
       this.consolePane.logs = logs;
       store.set('logs', logs);
       store.set('warnings', result.warnings || []);
@@ -2478,87 +2544,162 @@ export class WorkspaceView extends HTMLElement {
    * file's kept graph is used when it's the program, if it still matches.
    */
   showError(message: string, modules?: OpenFileModules | null): string {
-    // Try structured diagnostics via getDiagnostics first. A file with
-    // imports needs the workspace's graph (services/workspace-modules.ts):
-    // without it, getDiagnostics would report the no-project-folder error
-    // instead of the real one, so the compile's own message is shown.
-    // (No library at all when it failed to load: just the message.)
+    const workspace = workspaceNow();
+    const shown = programToShow(workspace, store.get('shownProgram') as string | null);
+    let readings = this._readFailure(message, shown, workspace, modules);
+    if (readings.length === 0) {
+      readings = [
+        { file: shown, line: null, column: null, text: 'The program failed to compile.', steps: [], site: null },
+      ];
+    }
+    this._failure = { program: shown, readings };
+    this._panelMessage = null;
+    this._renderErrors();
+    this._markOpenFile();
+    return errorText(this._failure.readings);
+  }
+
+  /**
+   * Read the shown program's failure (services/error-place.ts): from its
+   * diagnostics when they can be had, which also say where the program reaches
+   * an error in another file; else from the compile's own message. A program
+   * with imports needs its graph (services/workspace-modules.ts): without it,
+   * getDiagnostics would report the no-project-folder error instead of the
+   * real one. `modules` is the program's graph (_modulesFor); left out, the
+   * open file's kept graph is used when it's the program.
+   */
+  private _readFailure(
+    message: string,
+    shown: string,
+    workspace: WorkspaceTexts,
+    modules: OpenFileModules | null | undefined,
+  ): ErrorReading[] {
     const { StringTextDocument, getDiagnostics, planImports } = (window.PathogenLang ?? {}) as Partial<
       Window['PathogenLang']
     >;
-    const workspace = workspaceNow();
-    const open = workspace.openFile;
-    const shown = programToShow(workspace, store.get('shownProgram') as string | null);
-    const inEditor = shown === open;
     const code = workspace.texts.get(shown) ?? '';
-    const graph = modules !== undefined ? modules : inEditor ? currentOpenFileModules(workspace) : null;
+    let graph = modules ?? null;
+    if (modules === undefined && shown === workspace.openFile) graph = currentOpenFileModules(workspace);
     const needsGraph = typeof planImports === 'function' && planImports(code).length > 0;
     if (getDiagnostics && StringTextDocument && (graph || !needsGraph)) {
       try {
         const diagnostics = perfSpan('get-diagnostics', () => {
           const doc = new StringTextDocument(code);
           return getDiagnostics(doc, graph ? { modules: graph.modules, loadErrors: graph.loadErrors } : {});
-        }) as {
-          range: { start: { line: number; character: number } };
-          message: string;
-          alsoIn?: { file: string; range: { start: { line: number; character: number } }; message: string };
-        }[];
-        if (diagnostics.length > 0) {
-          // Format message: show each diagnostic on its own line, and where
-          // an error in another file happened, that file and its line. When
-          // the editor shows another file, each line names the program.
-          const messages = diagnostics.map((d) => {
-            const line = d.range.start.line + 1;
-            const col = d.range.start.character + 1;
-            const where = d.alsoIn
-              ? `\n  in ${d.alsoIn.file.replace(/^\/+/, '')} line ${d.alsoIn.range.start.line + 1}: ${d.alsoIn.message}`
-              : '';
-            return `${inEditor ? 'Line' : `${shown} line`} ${line}:${col} — ${d.message}${where}`;
-          });
-          const displayMessage = messages.join('\n');
-          this.errorPanel.show(displayMessage, diagnostics.length);
-          // Mark the locations in the editor's file (0-based → 1-based).
-          const marks = diagnostics.flatMap((d) => {
-            if (inEditor) return [{ line: d.range.start.line + 1, column: d.range.start.character + 1 }];
-            const there = d.alsoIn;
-            return there?.file.replace(/^\/+/, '') === open
-              ? [{ line: there.range.start.line + 1, column: there.range.start.character + 1 }]
-              : [];
-          });
-          if (marks.length > 0) this.editorPane.highlightErrors(marks);
-          else this.editorPane.clearError();
-          return displayMessage;
-        }
+        }) as DiagnosticLike[];
+        if (diagnostics.length > 0) return readDiagnostics(diagnostics, shown);
       } catch {
-        // Fall through to regex-based parsing
+        // The compile's own message, below.
       }
     }
-
-    // Fallback: the compile's own message. Its line numbers are the shown
-    // program's, so they mark the editor only when it shows that program.
-    if (!inEditor) {
-      const named = /^(Line \d|Parse error)/.test(message) ? `${shown}: ${message}` : message;
-      this.errorPanel.show(named);
-      this.editorPane.clearError();
-      return named;
-    }
-    this.errorPanel.show(message);
-    const parseMatch = /Parse error at line (\d+), column (\d+)/.exec(message);
-    if (parseMatch) {
-      this.editorPane.highlightError(parseInt(parseMatch[1], 10), parseInt(parseMatch[2], 10));
-      return message;
-    }
-    const runtimeMatch = /^Line (\d+)(?:, col (\d+))?: /.exec(message);
-    if (runtimeMatch) {
-      const line = parseInt(runtimeMatch[1], 10);
-      const col = runtimeMatch[2] ? parseInt(runtimeMatch[2], 10) : 1;
-      this.editorPane.highlightError(line, col);
-    }
-    return message;
+    return readMessage(message, shown);
   }
 
+  /**
+   * The error panel (2d, step 7; mockup v6 screen E, state 4): the shown
+   * program's failure, each error under the name of the file where it
+   * happened, then the playground's own note about a main that's a module.
+   * A plain message stays until a compile replaces it.
+   */
+  private _renderErrors(): void {
+    const panel = this.errorPanel;
+    if (!panel) return;
+    const failure = this._shownFailure();
+    const sections: ErrorPanelSection[] = [];
+    // A scratch link is one file: its errors need no file's name.
+    const named = holdsWorkspace();
+    for (const r of failure?.readings ?? []) {
+      let section = sections.find((s) => s.file === r.file);
+      if (!section) {
+        section = { heading: named ? r.file : '', file: r.file, errors: [] };
+        sections.push(section);
+      }
+      section.errors.push({ line: r.line, column: r.column, text: r.text, steps: r.steps });
+    }
+    const note = this._mainNote();
+    if (note) sections.push(note);
+    // With nothing else to show, a plain message (a workspace that didn't load) shows until another loads.
+    if (sections.length === 0 && this._panelMessage !== null) {
+      if (panel.message !== this._panelMessage) panel.show(this._panelMessage);
+    } else {
+      panel.showSections(sections, failure?.readings.length ?? 0);
+    }
+    if (panel.classList.contains('visible')) this._placeErrorPanel();
+  }
+
+  /**
+   * The last failure, while it's the failure of the program the preview shows:
+   * the chip may have shown another since, whose compile hasn't come back yet.
+   */
+  private _shownFailure(): { program: string; readings: ErrorReading[] } | null {
+    const failure = this._failure;
+    if (!failure) return null;
+    return failure.program === programToShow(workspaceNow(), store.get('shownProgram') as string | null)
+      ? failure
+      : null;
+  }
+
+  /**
+   * The playground's own note while the preview shows a main that's a module
+   * (step 7; v6 screen E, state 4, in the row's words: "can't draw as the
+   * main"). Read from the programs-to-draw list, which leaves such a main out
+   * and is kept between keystrokes, so no file is parsed for it.
+   */
+  private _mainNote(): ErrorPanelSection | null {
+    if (!holdsWorkspace()) return null;
+    const workspace = workspaceNow();
+    const main = workspace.entryPoints.find((p) => workspace.texts.has(p)) ?? null;
+    if (main === null || this._programsToDraw().includes(main)) return null;
+    if (programToShow(workspace, store.get('shownProgram') as string | null) !== main) return null;
+    const others = this._programsToDraw().length > 0;
+    return {
+      heading: 'The main',
+      file: null,
+      errors: [],
+      note: others
+        ? [
+            "A module can't draw as the main. Take out module;, or ",
+            { text: 'set another program as main', action: 'set-main' },
+            '.',
+          ]
+        : ["A module can't draw as the main. Take out module; so it draws, or add a program."],
+    };
+  }
+
+  /** The note's link: Files shown, and the next program's menu open on Set as main. */
+  private _offerSetMain(): void {
+    const next = this._programsToDraw()[0];
+    if (next === undefined) return;
+    store.set('filesOpen', true);
+    this.fileTree?.openMenu(next);
+  }
+
+  /** The file open in the editor gets the marks the last failure leaves in it (none when it worked). */
+  private _markOpenFile(): void {
+    const open = openFileNow();
+    const failure = this._shownFailure();
+    if (open === null || !failure) return;
+    const marks = errorMarks(failure.readings, open, failure.program);
+    if (marks.length > 0) this.editorPane.highlightErrors(marks);
+    else this.editorPane.clearError();
+  }
+
+  /**
+   * A plain message (a workspace that didn't load, one that can't be saved):
+   * no file, no marks. It stays until another workspace loads, behind a
+   * compile's errors while there are some.
+   */
+  showMessage(message: string): void {
+    this._failure = null;
+    this._panelMessage = message;
+    this._renderErrors();
+    this.editorPane.clearError();
+  }
+
+  /** The compile worked: its errors go (a plain message, or the main's note, may stay). */
   hideError(): void {
-    this.errorPanel.hide();
+    this._failure = null;
+    this._renderErrors();
     this.editorPane.clearError();
   }
 

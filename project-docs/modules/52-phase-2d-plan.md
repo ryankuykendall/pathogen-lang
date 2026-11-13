@@ -659,6 +659,87 @@ Each step: tests first; a storybook entry for each new component (the playground
   - the label's text written on every dragover.
 - **The docs:** "Uploading files" (the count) and "Renaming, moving and deleting" (dragging), with a focused content review (no blockers; its rewrites applied: the drop targets listed first, the long bullet split, the folder it's in named).
 
+**Step 7, errors and navigation: the plan** (2026-11-13, "Let's move onto step 7").
+
+**The design.**
+- Mockup v6 screen E, state 4: the error panel with each part under a small heading (the file's name; "The main"), and the playground's own note about a main that's a module, with a link.
+- Mockup v6 screen G, state 5: a red dot on the icon of the file where a program failed and on the program, for a program not shown too.
+
+**The contract:** docs/workspace-files.md "Errors in other files".
+
+Three commits, each with tests first, a storybook entry where there's a component, a browser check and a code review.
+- **7a, the error panel, and opening a file at a line.**
+  - **One reading of a failure** (`services/error-place.ts`, extended): the file where it happened, its line and column, its words, and the steps back to the program ("called from main.pathogen line 4", "imported from …"). It reads diagnostics first: `alsoIn`; else the message's first line, which names the other file for an error in that file's own code (no `alsoIn` then); else the program's own line. Without diagnostics, it reads the compile's message. The chip's rows, the panel and the tree's dots all read it, and a test pins that they agree.
+  - **The panel** shows it under the name of the file where it happened. The name, "Line N" and each step back are links (buttons): they open that file at that line, with the cursor there, the line centred, its mark, and the keyboard in the editor. The message no longer shows twice (today the `alsoIn` lines repeat it). A plain message, such as a workspace that didn't load, shows as before. Copy Debug Info and `compilationError` keep a plain-text copy.
+  - **`open-file` gains `line` and `column`.** A line past the file's end goes to its last line; a file gone since does nothing.
+  - **An error's marks follow it:** the reading is kept, and a file opened afterwards shows its own marks (today only the file open when the error came is marked).
+  - **The main as a module:** the playground's own note, under "The main", whether or not the compile failed (a module of exports compiles, and draws nothing). It shows while the preview shows the main.
+- **7b, Cmd-click on an imported name** opens its file at the definition, through `open-file`. Today it jumps to the name's import line in the same file. The graph can lag an edit, so the position is clamped.
+- **7c, red dots in the tree**, on the file where a program failed and on that program, for every program (the shown one's compile and step 5b's background compiles), and on a main that's a module. They're toggled on the rows like `dragging`, never by redrawing the tree. A rename or move takes a dot with its file. Each dot has a tooltip, and the row's spoken name says so.
+
+**Proposed, not in the docs or the mockups (to confirm with you):**
+1. **Every error grouped and linked.** v6 draws the panel only for the main-as-a-module case; the grouping, the links on "Line N" and on each "called from" step are proposed.
+2. **The console's links:** an entry from another file names it ("parts/gears.pathogen line 9:"), and that becomes a link; so does "Line 9:" on the shown program's entries.
+3. **The note's words:** "A module can't draw as the main. Take out module;, or set another program as main." This is the row's wording ("can't draw as the main"), not v6's "A library can't be the main".
+4. **The note's link, "set another program as main":** it shows Files and opens the next program's menu with Set as main focused. With no other program there's no link: "Take out module; so it draws, or add a program."
+5. **The dots' tooltips:**
+   - on the failing file, "try-sizes.pathogen fails here, line 9";
+   - on the program, its row's words, "Error in parts/gears.pathogen line 9";
+   - on a module main, "A module now, so it can't draw as the main".
+6. **Cmd-click on an import's path** (`"./parts/gears.pathogen"`) opens that file at its top, if `getDefinition` gives no place there (checked in 7b).
+
+**Not in step 7:** Copy Debug Info (step 8); narrow screens (step 9); docs/modules.md's playground lines (they change in the publishing push, as the comment at the top of docs/workspace-files.md says).
+
+**Step 7a, the error panel and opening a file at a line** (2026-11-13). Built as the plan says, with proposals 1 to 4 built as written. Details:
+- **`services/error-place.ts`**:
+  - `readMessage` and `readDiagnostics` give `ErrorReading[]`: file, line, column, words, steps, and site.
+  - An error starts only on a line that names a place, so extra lines of words stay with their error.
+  - A file's name has no spaces, so "Cannot import foo.pathogen line 3" isn't read as a place.
+  - `errorMarks(readings, openFile, program)` gives the marks for whichever file is open.
+  - `errorText` gives the plain words, for `compilationError` and Copy Debug Info.
+  - `errorPlace` (the chip's rows) now reads through `readMessage`. A test pins that the rows and the panel agree, on the real engine's failures.
+- **`error-panel.ts`**:
+  - `showSections`: built from DOM nodes (text through `textContent` and `append`).
+  - The links are buttons named for screen readers ("Open parts/gears.pathogen at line 5").
+  - The same errors again redraw nothing, so a focused link keeps the keyboard.
+  - `show(message)` stays for plain messages. The storybook has three new stories.
+- **The console:** `console-pane.program` (the program shown, in a workspace) makes each entry's place a button.
+- **`code-editor-pane.revealPosition(line, column)`:**
+  - clamps to the file;
+  - waits for the editor if it hasn't loaded;
+  - ignores a position that isn't a number.
+- **`file-tree.openMenu(path)`** opens a row's menu from outside the tree (the note's link).
+- **workspace-view:**
+  - `showError` reads the failure once and keeps it (`_failure`). The panel and the marks come from it: a tab switch marks from the reading, no longer re-running getDiagnostics on the main thread.
+  - The failure shows only while its program is the one shown. The chip showing another drops it at once.
+  - Plain messages (`showMessage`: a workspace not found, one that can't be saved) stay until another workspace loads, behind a compile's errors. Before, the next compile wiped them.
+  - `open-file` takes `line` and `column`. A file gone since gets a toast ("parts/gone.pathogen isn't in the workspace now.").
+  - The main as a module: `_mainNote`, read from the programs-to-draw list (no parse while typing; 5b's typing check still counts 0).
+  - **The panel sits over the editor** (v6 screen E), 12 px in, kept there by a ResizeObserver. Before, it sat at the window's left edge, half the width, over the file tree.
+- **Checked:**
+  - tests:
+    - `tests/playground-error-place.test.ts` (+14);
+    - `tests/playground-error-panel.test.ts` (10, new);
+    - `tests/playground-console-grouping.test.ts` (+2);
+    - `tests/playground-editor-read-only.test.ts` (+2);
+    - `tests/playground-file-tree.test.ts` (+1).
+  - `verify/verify-2d-step7a.ts` against `npm run dev:stack`, 25 checks:
+    - the panel and its place; real clicks on the line, the step and the heading; Enter;
+    - a file gone (the toast); the chip showing another program;
+    - the console's two kinds of links; the main as a module of exports (the note, with a compile that worked), and its link to Set as main;
+    - a scratch link; "Workspace not found" staying; dark; the storybook.
+  - `verify-2d-step3` and `verify-2c-playground` (the panel's words), `4d`, `5a` and `5b` still pass (`3` with its expectation in the panel's new form).
+- **Review** (code-reviewer: no critical issues). Fixed:
+  - a failure kept after the chip showed another program;
+  - plain messages wiped by the next compile;
+  - a message's extra lines read as more errors;
+  - a too-loose file pattern;
+  - a link to a gone file doing nothing;
+  - links named only "Line 4";
+  - a link before the editor loaded;
+  - an empty message.
+- **The docs** (focused content review: no blockers; applied): "Errors in other files" shows the panel as a text block and says what each link opens; Cmd+click is the last bullet; "Adding `module;` to the main" is split into what happens, quoting the note.
+
 **The v7 mockup round** (2026-11-09, commit `5c8f925`): note 53, `phase-2-mockups-v7/`. Five screens: no programs left, folders and moving, narrow screens, the mini-workspace, the ⋮ menu. It also draws what v6 left out (renaming a file, Move to…, dragging a file). Six questions await you; steps 4 and 9 wait for them.
 - *Answered 2026-11-09: all six agreed* (note 53, "Your answers"). What that adds to the steps:
   - step 2: each change can be undone (the toast's Undo); a rename takes a name only, no slash and no extension; Move to…; the first program in an empty workspace is shown;

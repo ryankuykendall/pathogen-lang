@@ -8,10 +8,21 @@ import type { LogEntry as LogEntryData, LogGroup, LogPart } from '../../types/co
  */
 export const INSTANCE_LIMIT_FALLBACK = 200;
 
+/** Text for an attribute's quotes. */
+const attr = (s: string): string =>
+  s.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
 export class LogEntry extends HTMLElement {
   private _data: LogEntryData | null;
   /** Set when this row stands for a family of warning mirrors (count > 1). */
   private _group: LogGroup | null;
+
+  /**
+   * The file a place without its own file belongs to (the program whose logs
+   * these are), in a workspace (2d, step 7). Set, the place is a link that
+   * opens its file at its line; null (a scratch link), it's words.
+   */
+  private _program: string | null = null;
 
   constructor() {
     super();
@@ -19,6 +30,15 @@ export class LogEntry extends HTMLElement {
     this._data = null;
     this._group = null;
     this.shadowRoot!.addEventListener('click', (e: Event) => this.handleToggle(e));
+  }
+
+  set program(path: string | null) {
+    this._program = path;
+    this.render();
+  }
+
+  get program(): string | null {
+    return this._program;
   }
 
   connectedCallback(): void {
@@ -182,6 +202,17 @@ export class LogEntry extends HTMLElement {
 
   handleToggle(e: Event): void {
     const target = e.target as HTMLElement;
+    const place = target.closest<HTMLElement>('button.line');
+    if (place && this._data) {
+      // Open the file at this line (docs/workspace-files.md "Errors in other files").
+      const detail: { path: string; line?: number; focusEditor: boolean } = {
+        path: this._data.file ?? this._program ?? '',
+        focusEditor: true,
+      };
+      if (this._data.line !== null) detail.line = this._data.line;
+      this.dispatchEvent(new CustomEvent('open-file', { bubbles: true, composed: true, detail }));
+      return;
+    }
     if (target.closest('.count')) {
       this.toggleInstances();
       return;
@@ -214,12 +245,22 @@ export class LogEntry extends HTMLElement {
     }
 
     // Add line prefix if present; an entry from a file the program imports
-    // names that file (docs/workspace-files.md "Errors in other files").
-    if (logEntry.line !== null) {
-      const at = logEntry.file ? `${this.escapeHtml(logEntry.file)} line` : 'Line';
-      partsHTML += `<span class="line">${at} ${logEntry.line}:</span>`;
-    } else if (logEntry.file) {
-      partsHTML += `<span class="line">${this.escapeHtml(logEntry.file)}:</span>`;
+    // names that file (docs/workspace-files.md "Errors in other files"). In a
+    // workspace it's a link that opens the file there (step 7).
+    const place =
+      logEntry.line !== null
+        ? `${logEntry.file ? `${this.escapeHtml(logEntry.file)} line` : 'Line'} ${logEntry.line}:`
+        : logEntry.file
+          ? `${this.escapeHtml(logEntry.file)}:`
+          : '';
+    if (place) {
+      if (this._program !== null) {
+        const file = logEntry.file ?? this._program;
+        const label = attr(logEntry.line !== null ? `Open ${file} at line ${logEntry.line}` : `Open ${file}`);
+        partsHTML += `<button type="button" class="line" title="${label}" aria-label="${label}">${place}</button>`;
+      } else {
+        partsHTML += `<span class="line">${place}</span>`;
+      }
     }
 
     // Process each part
@@ -320,6 +361,29 @@ export class LogEntry extends HTMLElement {
           display: block;
           margin-bottom: 4px;
           font-size: 0.7rem;
+        }
+
+        /* In a workspace, the place opens its file there (2d, step 7). */
+        button.line {
+          padding: 0;
+          border: 0;
+          background: none;
+          font-family: inherit;
+          text-align: left;
+          text-decoration: underline;
+          text-decoration-color: color-mix(in srgb, currentColor 40%, transparent);
+          text-underline-offset: 2px;
+          cursor: pointer;
+        }
+
+        button.line:hover {
+          text-decoration-color: currentColor;
+        }
+
+        button.line:focus-visible {
+          outline: 2px solid currentColor;
+          outline-offset: 1px;
+          border-radius: 2px;
         }
 
         .string {

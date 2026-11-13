@@ -401,6 +401,19 @@ describe('the row menus', () => {
     expect(labels()).toEqual(['Rename…', 'Move to…', 'Duplicate', '—', 'Delete…']);
   });
 
+  it('openMenu: a program’s menu opens from outside the tree, its folder unfolded, the keyboard on Set as main (step 7)', () => {
+    row('demos').click();
+    expect(row('demos').getAttribute('aria-expanded')).toBe('false');
+    (tree as unknown as { openMenu: (path: string) => void }).openMenu('demos/gears.pathogen');
+    expect([
+      row('demos').getAttribute('aria-expanded'),
+      labels()[0],
+      focused()?.querySelector('.label')?.textContent,
+    ]).toEqual(['true', 'Set as main', 'Set as main']);
+    choose('Set as main');
+    expect(actions).toEqual([{ action: 'set-main', path: 'demos/gears.pathogen' }]);
+  });
+
   it('a folder’s menu adds to that folder, then Rename…, Move to… and Delete…', () => {
     dots('demos')!.click();
     expect(menu().querySelector('.menu-head')!.textContent).toBe('Add to demos/');

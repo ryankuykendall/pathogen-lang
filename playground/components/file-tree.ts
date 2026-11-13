@@ -849,6 +849,18 @@ export class FileTree extends HTMLElement {
     this._showRowMenu(path, row, dots, `${baseOf(path)}${this._isFolder(path) ? '/' : ''}`, head, entries);
   }
 
+  /**
+   * Open `path`'s own menu, as its ⋮ does, its folders opened so it shows:
+   * the error panel's "set another program as main" (2d, step 7), where the
+   * keyboard lands on Set as main, a program's first item.
+   */
+  openMenu(path: string): void {
+    for (let f = parentOf(path); f !== ''; f = parentOf(f)) this._collapsed.delete(f);
+    this._draw();
+    this._item(path)?.scrollIntoView?.({ block: 'nearest' });
+    this._openRowMenu(path);
+  }
+
   /** Show a menu under a row, from its ⋮. */
   private _showRowMenu(
     path: string,

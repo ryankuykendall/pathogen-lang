@@ -8,6 +8,19 @@ export class ConsolePane extends HTMLElement {
   private _logs: LogEntryData[];
   private _isOpen: boolean;
 
+  /** The program the logs came from, in a workspace: each entry's place then opens its file (2d, step 7). */
+  private _program: string | null = null;
+
+  set program(path: string | null) {
+    if (path === this._program) return;
+    this._program = path;
+    this.updateContent();
+  }
+
+  get program(): string | null {
+    return this._program;
+  }
+
   constructor() {
     super();
     this.attachShadow({ mode: 'open' });
@@ -89,7 +102,9 @@ export class ConsolePane extends HTMLElement {
         const entry = document.createElement('log-entry') as HTMLElement & {
           data: LogEntryData;
           group: LogGroup | null;
+          program: string | null;
         };
+        entry.program = this._program;
         if (row.kind === 'group') {
           entry.data = row.first;
           entry.group = row.count > 1 ? { count: row.count, instances: row.instances } : null;

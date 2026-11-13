@@ -78,7 +78,12 @@ The workspace's **main** is the program it opens on and the one its thumbnail sh
 - Renaming the main keeps it the main.
 - **Deleting the main** makes the next program in `pathogen.json`'s list the main, and a message says which. After a Set as main, that's the program that was the main before.
 - **Deleting the last program** leaves the workspace with no main. The preview is empty until you add a program, the status in the breadcrumb reads "No programs", and `pathogen.json` becomes `{}`. The workspace's thumbnail keeps its last drawing, and your Workspaces page marks it "No programs". Export, Set Thumbnail and Make public wait until it has a program again.
-- **Adding `module;` to the main** makes it a module, which can't draw. It stays the main, and the program list shows an error on it, until you take `module;` out or set another program as main. Meanwhile Set Thumbnail is off and says "The main is a module now". Adding `module;` to any other program takes it out of the program list and out of `pathogen.json`. Take `module;` out again and it goes back, at the end.
+- **Adding `module;` to the main** makes it a module, which can't draw. It stays the main until you take `module;` out or set another program as main. Until then:
+  - The preview, which shows the main, is empty.
+  - The error panel says why, under "The main": "A module can't draw as the main. Take out module;, or set another program as main." The link opens the menu of the next program in `pathogen.json`'s list, at **Set as main**. With no other program, there's no link, and the note suggests adding one.
+  - The main has a red dot in the tree and in the program list, and the chip has one too.
+  - Set Thumbnail is off and says "The main is a module now".
+- Adding `module;` to any other program takes it out of the program list and out of `pathogen.json`. Take `module;` out again and it goes back, at the end.
 
 ## The preview and the program list
 
@@ -162,7 +167,18 @@ On a screen narrower than 800 pixels, such as a phone's, the editor sits above t
 
 ## Errors in other files
 
-An error in a file other than the program the preview shows names that file and its line, in the error panel and in the console, as [Errors in other files](#modules-errors-in-other-files) shows for the CLI. Click the file's name to open it at that line. Red dots in the tree mark the file where the error happened and the program that ran into it.
+An error in a file other than the program the preview shows names that file and its line, as the CLI does ([Modules](#modules-errors-in-other-files)). In the error panel, each error sits under the name of the file where it happened, followed by each call that led there from the program:
+
+```text
+parts/gears.pathogen
+Line 5: assertion failed: a gear needs at least 3 teeth
+  called from main.pathogen line 4
+```
+
+- Click the file's name, `Line 5` or a `called from` line to open that file at that line. The line is marked: where the error happened, or the call that led there.
+- In the console, a `log()` or a warning from another file starts with its place, such as `parts/gears.pathogen line 9:`. Click the place to open the file there.
+- A red dot in the tree marks the file where an error happened, and another marks the program that ran into it. That covers every program, not only the one the preview shows. Hover a dot to see where the program failed.
+- **Cmd+click** (Ctrl+click on Windows and Linux) a name you imported to open the file it comes from, at its declaration.
 
 ## Limits
 
