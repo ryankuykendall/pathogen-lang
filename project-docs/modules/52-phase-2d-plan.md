@@ -538,6 +538,9 @@ Each step: tests first; a storybook entry for each new component (the playground
   - **A compile the editor started before a switch** could mark the next workspace ready. `updatePreview` now passes the session it started in.
   - **A program deleted during its graph read** no longer gets a row made for it. A compile's in-flight mark can't be cleared by an older run's.
   - The layout key is worked out once per look at the rows.
+  - **Typing** (found after the commit, `cfb7f9c`; fixed in the next). 5b read which files are programs on every keystroke, and reading `module;` (`isModuleSource`) is a whole-file Lezer parse: 1 to 2.5 ms on the largest programs here (a 588-line blog sample, `verify/step5b-probes/probe-is-module-cost.ts`). That held in a one-program workspace too, with no chip shown.
+    - Now the list is kept between keystrokes (`_programsToDrawCache`). Only the paths that can change it drop it: the tabs' refresh 300 ms after typing (which reads `module;` for the icons anyway), the store subscription (files, the list, the open file), a workspace load, and an applied change.
+    - The browser check types 28 keystrokes into the 588-line program and counts workspace-view's uncached readings: none, alone or with the chip. The control in the same run, with the list read on every call as 5b first did, counts 28.
   - Not changed, with reasons:
     - `withBackground` puts the rect after the first `>` of the root tag. `generateSvg`'s root tag holds only xmlns, viewBox, width and height (commented).
     - The drawing kept from each editor compile is a bounded walk, stopped at the limit.

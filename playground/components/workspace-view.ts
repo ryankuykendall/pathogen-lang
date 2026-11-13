@@ -152,6 +152,9 @@ export class WorkspaceView extends HTMLElement {
   // Every program in the chip's list, drawn small (2d, step 5b): the programs
   // not shown compile in the background on their own worker; the program
   // shown takes its row from the editor's compile (updatePreview).
+  // _programsToDraw's list, kept between keystrokes; null to read it again.
+  private _programsToDrawCache: string[] | null = null;
+
   private readonly _drawings = new ProgramDrawings({
     workspace: () => workspaceNow(),
     programs: () => this._programsToDraw(),
@@ -605,6 +608,7 @@ export class WorkspaceView extends HTMLElement {
     this._editedSinceList.clear();
     this.programChip?.close();
     // Its programs' drawings too: a compile in flight is stopped, and the miniatures released.
+    this._programsToDrawCache = null;
     this._drawings.reset();
 
     // With no file open, the editor shows the previous workspace's zero-state.
@@ -944,6 +948,8 @@ export class WorkspaceView extends HTMLElement {
     this._programsUnsubscribe = store.subscribe(
       ['workspaceId', 'workspaceFiles', 'workspaceEntryPoints', 'shownProgram', 'openFile'],
       () => {
+        // The files, the list, the workspace, or the file open changed: which files are programs may have too.
+        this._programsToDrawCache = null;
         this._drawings.edited();
         this._refreshPrograms();
       },
@@ -1623,6 +1629,7 @@ export class WorkspaceView extends HTMLElement {
     if (this._renderedProgram !== null) this._renderedProgram = pathAfterChange(this._renderedProgram, change);
     this._editedSinceList = new Set([...this._editedSinceList].map((path) => pathAfterChange(path, change)));
     // And the programs' drawings, before a renamed one's row would be forgotten (a microtask later).
+    this._programsToDrawCache = null;
     this._drawings.follow(change);
     // The readings of a file deleted or moved go with its old path.
     for (const cache of [this._libraryReadings, this._fileHashes]) {
@@ -1765,6 +1772,8 @@ export class WorkspaceView extends HTMLElement {
     if (this._tabsTimer) clearTimeout(this._tabsTimer);
     this._tabsTimer = setTimeout(() => {
       this._tabsTimer = null;
+      // `module;` typed or taken out changes which files are programs: read again now.
+      this._programsToDrawCache = null;
       this._refreshTabs();
       this._refreshTree();
       this._followProgramList();
@@ -1831,12 +1840,21 @@ export class WorkspaceView extends HTMLElement {
     return programsOf(workspace.texts, workspace.entryPoints, (path, text) => this._isLibrary(path, text));
   }
 
-  /** The programs to draw small: the chip's, but a main that's a module, which draws nothing, left out. */
+  /**
+   * The programs to draw small: the chip's, but a main that's a module, which
+   * draws nothing, left out. Kept between keystrokes: reading `module;` parses
+   * a whole file (1 to 2.5 ms for a 550-line program), and only a debounced
+   * path can change which files are programs (the tabs' refresh after typing,
+   * a change to the files or the list, another workspace), which drop it.
+   */
   private _programsToDraw(): string[] {
-    const workspace = workspaceNow();
-    const { main, mainIsLibrary } = this._mainNow(workspace);
-    const programs = this._programsOf(workspace);
-    return mainIsLibrary ? programs.filter((p) => p !== main) : programs;
+    if (this._programsToDrawCache === null) {
+      const workspace = workspaceNow();
+      const { main, mainIsLibrary } = this._mainNow(workspace);
+      const programs = this._programsOf(workspace);
+      this._programsToDrawCache = mainIsLibrary ? programs.filter((p) => p !== main) : programs;
+    }
+    return this._programsToDrawCache;
   }
 
   /** The workspace's main (its first program still there), and whether `module;` has made it a library. */

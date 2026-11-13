@@ -17,6 +17,8 @@
 //   npm run dev:stack
 //   npx tsx project-docs/modules/verify/verify-2d-step5b.ts
 
+import { readFileSync } from 'node:fs';
+
 import puppeteer from 'puppeteer';
 
 import type { Page } from 'puppeteer';
@@ -564,6 +566,64 @@ try {
     );
     await p.close();
   }
+
+  // 13c. Typing: the `module;` reading (a whole-file parse, 1 to 2.5 ms on a big program) isn't
+  // run per keystroke. 30 keystrokes into a 588-line program, alone and with the chip; then the
+  // control, with the list of programs read again on every call, as 5b first had it.
+  const BIG = readFileSync('website/blog/samples/post16/radial-chart-complete.pathogen', 'utf8');
+  const bigOneId = await create('5b typing, one program', { 'main.pathogen': BIG }, ['main.pathogen']);
+  const bigTwoId = await create('5b typing, two programs', { 'main.pathogen': BIG, 'other.pathogen': LIGHT }, [
+    'main.pathogen',
+    'other.pathogen',
+  ]);
+  const typing = async (wsId: string, uncached: boolean): Promise<{ calls: number; stall: number; typed: boolean }> => {
+    const p = await newPage();
+    await open(p, wsId);
+    await pause(1500);
+    await waitFor('the editor', async () => p.evaluate(`!!${WV}.shadowRoot.querySelector('code-editor-pane')._editor`));
+    await p.evaluate(`(() => {
+      const pane = ${WV}.shadowRoot.querySelector('code-editor-pane');
+      pane.focusEditor();
+      pane._editor.dispatch({ selection: { anchor: pane._editor.state.doc.length } });
+      // The library global's exports are getters, so the reading is counted where workspace-view
+      // makes it: _isLibrary, when its kept reading doesn't match the text (a whole-file parse).
+      const wv = ${WV};
+      const proto = Object.getPrototypeOf(wv);
+      window.__moduleReads = 0;
+      wv._isLibrary = function (path, text) {
+        if (this._libraryReadings.get(path)?.text !== text) window.__moduleReads++;
+        return proto._isLibrary.call(this, path, text);
+      };
+      if (${uncached}) {
+        wv._programsToDraw = function () { this._programsToDrawCache = null; return proto._programsToDraw.call(this); };
+      }
+      window.__stall = { max: 0, total: 0 };
+    })()`);
+    await p.keyboard.type('\n// thirty keystrokes, typed', { delay: 30 });
+    const calls = (await p.evaluate(`window.__moduleReads`)) as number;
+    const stall = ((await p.evaluate(`window.__stall`)) as { max: number }).max;
+    const typed = (await p.evaluate(
+      `${WV}.shadowRoot.querySelector('code-editor-pane')._editor.state.doc.toString().endsWith('// thirty keystrokes, typed')`,
+    )) as boolean;
+    await p.close();
+    return { calls, stall, typed };
+  };
+  const one = await typing(bigOneId, false);
+  const two = await typing(bigTwoId, false);
+  const everyTime = await typing(bigTwoId, true);
+  console.log(
+    `  module; readings during 28 keystrokes: one program ${one.calls}, with the chip ${two.calls}; control (read every time) ${everyTime.calls}. Longest stall: ${one.stall.toFixed(0)}, ${two.stall.toFixed(0)}, ${everyTime.stall.toFixed(0)} ms`,
+  );
+  check(
+    'the control reads module; on every keystroke (the check can see it)',
+    everyTime.typed && everyTime.calls >= 25,
+    everyTime,
+  );
+  check(
+    'typing in a 588-line program reads module; at most twice, alone or with the chip',
+    one.typed && two.typed && one.calls <= 2 && two.calls <= 2,
+    { one, two },
+  );
 
   // 14. The storybook: the new story, light and dark.
   for (const theme of ['light', 'dark']) {
