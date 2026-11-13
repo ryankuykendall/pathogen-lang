@@ -343,7 +343,7 @@ try {
   check(
     'no program: "No program yet", why nothing draws, and New program',
     noProgram?.heading === 'No program yet' &&
-      noProgram.text === 'Every file here is a library, so nothing draws. Start a program, or click a library in the tree to edit it.' &&
+      noProgram.text === 'Every file here is a module, so nothing draws. Start a program, or click a module in the tree to edit it.' &&
       JSON.stringify(noProgram.buttons) === '["New program"]',
     noProgram,
   );

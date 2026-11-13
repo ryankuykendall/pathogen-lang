@@ -1,6 +1,6 @@
 // Phase 2d, step 4b (note 52): adding files and folders from the tree's "+"
 // (docs/workspace-files.md "Adding files and folders", mockup v6 screen N). In
-// the served playground: the menu says where things go; New library's name
+// the served playground: the menu says where things go; New module's name
 // field sits first in the folder, refuses a taken name in place, and Enter
 // creates the file, which opens in a tab without changing the preview; New
 // program joins the end of the program list; New folder is kept, and the +
@@ -32,7 +32,7 @@ const FILES: Record<string, string> = {
   'parts/gears.pathogen': GEARS_LIB,
   'parts/kit.pathogen': 'module;\n\nexport const size = 12;\n',
 };
-const NEW_LIBRARY = 'module;\n\n// A library. Export fns, consts and enums here;\n// other files import them.\n';
+const NEW_LIBRARY = 'module;\n\n// Export fns, consts and enums here, for other files to import.\n';
 
 let failures = 0;
 const check = (label: string, ok: boolean, detail?: unknown): void => {
@@ -212,23 +212,23 @@ try {
     'the + opens its menu for the folder of the file in the editor, the first item focused',
     s.menu.open &&
       s.menu.head === 'Add to parts/' &&
-      JSON.stringify(s.menu.items) === '["New program","New library","New folder"]' &&
+      JSON.stringify(s.menu.items) === '["New program","New module","New folder"]' &&
       s.menu.focused === 'New program',
     s.menu,
   );
   await page.screenshot({ path: `${SHOTS}/2d-step4b-menu-light.png` });
 
-  // 2. New library: the field first in parts/, then a taken name refused in place.
+  // 2. New module: the field first in parts/, then a taken name refused in place.
   await choose(page, 'library');
   s = await state(page);
   const partsAt = s.rows.indexOf('parts');
   check(
-    'New library puts a focused name field first in parts/, with .pathogen and its line',
+    'New module puts a focused name field first in parts/, with .pathogen and its line',
     !s.menu.open &&
       s.rows[partsAt + 1] === '[field]' &&
       !!s.field?.focused &&
       s.field.ext === '.pathogen' &&
-      s.hint === 'Starts with module; · Enter to create, Esc to cancel',
+      s.hint === 'Enter to create, Esc to cancel',
     s,
   );
   await typeName(page, 'gears');
@@ -366,7 +366,7 @@ try {
   await page.keyboard.press('Enter');
   await new Promise((r) => setTimeout(r, 500));
   s = await state(page);
-  check('…and Enter on New library, a name and Enter make it', s.open === 'lib/round/springs.pathogen', s.open);
+  check('…and Enter on New module, a name and Enter make it', s.open === 'lib/round/springs.pathogen', s.open);
 
   // 9. Saved: the server holds every file, the folders and the program list.
   await clickRow(page, 'main.pathogen');

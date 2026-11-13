@@ -7,7 +7,7 @@
 // workspace-view gives it what it says:
 //   main         the workspace's main (its first program still there), or null
 //   noFiles      the workspace has no files at all
-//   onlyLibraries every file is a library (with no main: why nothing draws)
+//   onlyLibraries every file is a module (with no main: why nothing draws)
 //   filesHidden  the tree is hidden (Files off)
 // and acts on what it asks for:
 //   zero-state-action { action: 'open-main' | 'new-program' | 'show-files' }
@@ -148,8 +148,8 @@ export class EditorZeroState extends HTMLElement {
           ? 'show the files to add your own'
           : 'add your own files with the <b>+</b> in the Files header';
       } else if (this._onlyLibraries) {
-        text = 'Every file here is a library, so nothing draws.';
-        rest = this._filesHidden ? 'show the files to edit a library' : 'click a library in the tree to edit it';
+        text = 'Every file here is a module, so nothing draws.';
+        rest = this._filesHidden ? 'show the files to edit a module' : 'click a module in the tree to edit it';
       } else {
         text = "There's no main yet, so nothing draws.";
         rest = this._filesHidden ? 'show the files to pick one' : 'click any file in the tree';

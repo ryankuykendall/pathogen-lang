@@ -2,9 +2,9 @@
 
 > **Prerequisites:** This page assumes you know how to write [functions](#syntax-functions), [`const`](#syntax-const) and [enums](#syntax-user-defined-enums), and how a program finds its [project folder](#projects-the-project-folder).
 
-As a program grows, it helps to split it into files. Modules let you keep the code you reach for again and again in a library file of its own, then use it from every program in your project. That code might be a fn that draws a gear, a table of standard sizes, or an enum of tooth counts. You write the library once, and a fix or an improvement to it reaches every drawing that uses it.
+As a program grows, it helps to split it into files. Modules let you keep the code you reach for again and again in a file of its own, then use it from every program in your project. That code might be a fn that draws a gear, a table of standard sizes, or an enum of tooth counts. You write it once, and a fix or an improvement to it reaches every drawing that uses it.
 
-A library starts with `module;` and offers its functions, constants and enums with `export`. A program brings in what it needs with `import`:
+A module starts with `module;` and offers its functions, constants and enums with `export`. A program brings in what it needs with `import`:
 
 ```pathogen
 // parts/gears.pathogen
@@ -36,13 +36,13 @@ Imports work in the CLI and in VS Code, where files sit side by side on disk. A 
 
 **Know these before you start:**
 
-- **A library starts with `module;`.** That line makes the file a module, and only a module can be imported. A file without it is a program, the kind that draws.
+- **`module;` makes a file a module.** Only a module can be imported. A file without that line is a program, the kind that draws.
 - **A module makes things; it doesn't draw.** Its top level declares fns, constants and enums, and builds values such as styles, path blocks and gradients. Whatever draws goes in an exported fn, which draws into your drawing when you call it.
 - **What you import is fixed.**
   - You can't give an imported name a new value.
   - You can't change an imported array, object or [Cycler](#stdlib-cycler). Copy it first (`[...sizes]`), or ask the file for a fn that makes a fresh one.
   - An exported fn can't change its own file's variables, or what's in them, once that file has loaded.
-- **A library is shared within its project.** An import can't reach outside the [project folder](#projects-the-project-folder), so a library serves the programs in one project. To use it in another project, copy its file into that project.
+- **A module is shared within its project.** An import can't reach outside the [project folder](#projects-the-project-folder), so to use a module in another project, copy its file into that project.
 - **Imports go first**, before any other statement, `@font` and `define` lines included. In a module, only the `module;` line comes before them.
 - **Ids from other files get a prefix.** A mask, gradient, marker or filter made in `parts/arrows.pathogen` with the id `arrowhead` has the id `parts-arrows--arrowhead` in your SVG (its path from the project folder, then the id), so two files can both use `arrowhead`.
 
@@ -296,7 +296,7 @@ Masks, clip paths, gradients, patterns, markers and filters each have an id in t
 
 An imported file's [`@font`](#path-blocks-font-directive) lines load as if they were in your file, and `./` paths in them start from the file they're written in.
 
-Fonts are shared across every file in the compile by family and weight. If two files both write `@font "Inter";`, they use one font, and any file can use a family that another file loads. That cuts both ways: a library that relies on your file's `@font` works when imported but not when compiled on its own, so give each file the `@font` lines it needs.
+Fonts are shared across every file in the compile by family and weight. If two files both write `@font "Inter";`, they use one font, and any file can use a family that another file loads. That cuts both ways: a module that relies on your file's `@font` works when imported but not when compiled on its own, so give each file the `@font` lines it needs.
 
 Two files that load *different* fonts as the same family and weight are an error that names both. For example, `./a/Inter.ttf` in one file and `./b/Inter.ttf` in another are both family `Inter` at weight 400, since a font file's family is its file name.
 

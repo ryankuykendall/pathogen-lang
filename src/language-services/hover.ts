@@ -110,7 +110,7 @@ export const PATH_COMMAND_SET = new Set(Object.keys(PATH_COMMAND_HOVER));
 
 /** Hover for the `module;` line (docs/modules.md "Exporting"). Not in KEYWORD_HOVER: `module` is also a name. */
 const MODULE_HEADER_HOVER =
-  "**module;** — Makes this file a module: a library other files can import\n```\nmodule;\n\nexport const toothDepth = 6;\nexport fn gear(center, radius, teeth) { ... }\n```\nIt must be the file's first statement. A module makes things but doesn't draw: path commands, layers, `define ViewBox` and reading `ctx` or `viewbox` are errors at its top level. Its exported fns draw into the drawing that calls them.";
+  "**module;** — Makes this file a module, which other files can import\n```\nmodule;\n\nexport const toothDepth = 6;\nexport fn gear(center, radius, teeth) { ... }\n```\nIt must be the file's first statement. A module makes things but doesn't draw: path commands, layers, `define ViewBox` and reading `ctx` or `viewbox` are errors at its top level. Its exported fns draw into the drawing that calls them.";
 
 /** Whether `offset` is in a `module;` line. The keyword is a token inside a rule node, so walk up. */
 function isInModuleHeader(source: string, offset: number): boolean {

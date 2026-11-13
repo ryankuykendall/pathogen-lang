@@ -28,8 +28,8 @@ export interface ProgramItem {
   miniature: string | null;
 }
 
-/** A main row's line once `module;` made it a library (mockup v6 screen E, state 4). */
-export const LIBRARY_MAIN = "A library now, so it can't be the main";
+/** A main row's line once it starts with `module;` (mockup v6 screen E, state 4; "module", not "library", since 2026-11-13). */
+export const MODULE_MAIN = "A module now, so it can't be the main";
 
 const byPath = (a: string, b: string): number => (a < b ? -1 : a > b ? 1 : 0);
 
@@ -60,7 +60,7 @@ export function programItems(
     name,
     hint,
     badge: path === main && path !== MAIN_FILE,
-    error: path === main && mainIsLibrary ? LIBRARY_MAIN : null,
+    error: path === main && mainIsLibrary ? MODULE_MAIN : null,
     uses: null,
     updating: false,
     miniature: null,
@@ -74,8 +74,8 @@ export function programItems(
  */
 export function chipAlert(items: readonly ProgramItem[], shown: string | null): string | null {
   if (items.some((item) => item.error !== null && item.path !== shown)) return 'Another program has an error';
-  const own = items.find((item) => item.path === shown && item.error === LIBRARY_MAIN);
-  return own ? `${own.path}: ${LIBRARY_MAIN}` : null;
+  const own = items.find((item) => item.path === shown && item.error === MODULE_MAIN);
+  return own ? `${own.path}: ${MODULE_MAIN}` : null;
 }
 
 /**

@@ -54,10 +54,10 @@ describe('the editor’s zero-state', () => {
     });
   });
 
-  it('only libraries: why nothing draws, and New program, the only button', () => {
+  it('only modules: why nothing draws, and New program, the only button', () => {
     expect(read(zeroState({ onlyLibraries: true }))).toEqual({
       heading: 'No program yet',
-      text: 'Every file here is a library, so nothing draws. Start a program, or click a library in the tree to edit it.',
+      text: 'Every file here is a module, so nothing draws. Start a program, or click a module in the tree to edit it.',
       buttons: [['New program', 'new-program']],
       small: 'It goes at the top of the workspace, and it will be the main.',
     });
@@ -75,7 +75,7 @@ describe('the editor’s zero-state', () => {
   it('no program and the tree hidden: New program and Show files', () => {
     const view = read(zeroState({ onlyLibraries: true, filesHidden: true }));
     expect([view.text, view.buttons]).toEqual([
-      'Every file here is a library, so nothing draws. Start a program, or show the files to edit a library.',
+      'Every file here is a module, so nothing draws. Start a program, or show the files to edit a module.',
       [
         ['New program', 'new-program'],
         ['Show files', 'show-files'],

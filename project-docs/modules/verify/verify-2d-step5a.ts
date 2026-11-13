@@ -409,9 +409,9 @@ try {
     'the main gains module;: still first, its row says why, the chip’s red dot says so, Set Thumbnail waits',
     c.rows[0]?.path === 'main.pathogen' &&
       c.rows[0].error &&
-      c.rows[0].sub === "A library now, so it can't be the main" &&
-      c.alert === "main.pathogen: A library now, so it can't be the main" &&
-      (await thumbItem())?.why === 'The main is a library now',
+      c.rows[0].sub === "A module now, so it can't be the main" &&
+      c.alert === "main.pathogen: A module now, so it can't be the main" &&
+      (await thumbItem())?.why === 'The main is a module now',
     { rows: c.rows, alert: c.alert, thumb: await thumbItem() },
   );
   await page.keyboard.press('Escape');

@@ -24,7 +24,7 @@ import { store } from '../playground/state/store.js';
 
 const MAIN = 'import { gear } from "./parts/gears.pathogen";\ngear(10);\n';
 const GEARS = 'module;\nexport fn gear(r) {\n  circle(0, 0, r);\n}\n';
-const NEW_LIBRARY = 'module;\n\n// A library. Export fns, consts and enums here;\n// other files import them.\n';
+const NEW_LIBRARY = 'module;\n\n// Export fns, consts and enums here, for other files to import.\n';
 
 beforeAll(async () => {
   (window as unknown as { PathogenLang: unknown }).PathogenLang = await import('../src');

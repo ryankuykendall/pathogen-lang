@@ -265,7 +265,7 @@ try {
   s = await state(page);
   check(
     'a folder’s menu: the + items, then Rename…, Move to…, Delete…',
-    JSON.stringify(s.menu.items) === '["New program","New library","New folder","Rename…","Move to…","Delete…"]',
+    JSON.stringify(s.menu.items) === '["New program","New module","New folder","Rename…","Move to…","Delete…"]',
     s.menu.items,
   );
   await page.keyboard.press('Escape');

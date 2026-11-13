@@ -113,7 +113,7 @@ layer('hex').apply { circle(60, 100, 40) }`,
     name: 'Editor Tabs',
     category: 'Editor',
     description:
-      'The tabs above the editor, one per open file (docs/workspace-files.md). Labels leave out .pathogen; two open files with one name add their folder (gears · parts). Icons: program, library (module;), pathogen.json with a lock. Close ×, and middle-click, close a tab; the last tab stays. Docs at the right end. Arrow keys, Home and End move between tabs; Delete closes one.',
+      'The tabs above the editor, one per open file (docs/workspace-files.md). Labels leave out .pathogen; two open files with one name add their folder (gears · parts). Icons: program, module (module;), pathogen.json with a lock. Close ×, and middle-click, close a tab; the last tab stays. Docs at the right end. Arrow keys, Home and End move between tabs; Delete closes one.',
     stories: [
       // docsOpen in each: the storybook keeps a control's value from the story before.
       { name: 'A new workspace (one tab)', props: { set: 'one', docsOpen: false } },
@@ -192,7 +192,7 @@ layer('hex').apply { circle(60, 100, 40) }`,
     name: 'File Tree',
     category: 'Editor',
     description:
-      "The workspace's files beside the editor (docs/workspace-files.md, mockup v6 screens O, J and N). Folders first, then files, each by name; .pathogen quiet; a library's box icon; the main's badge when it isn't main.pathogen; pathogen.json last, with a lock. Click a folder to fold it, a file to open it. One Tab stop: Up and Down move, Right and Left unfold and fold, Space opens a file, Enter opens it and goes to the editor. The + adds a program, a library or a folder to the folder clicked last, else the folder of the file in the editor, else the top: a name field appears first in that folder; a taken name is refused in place; Enter creates, Esc cancels. Each row's ⋮ (or a right-click, or Shift+F10) opens its menu: Rename… turns the row into a field holding its name, and Move to… lists the top and the folders, the one it's in marked.",
+      "The workspace's files beside the editor (docs/workspace-files.md, mockup v6 screens O, J and N). Folders first, then files, each by name; .pathogen quiet; a module's box icon; the main's badge when it isn't main.pathogen; pathogen.json last, with a lock. Click a folder to fold it, a file to open it. One Tab stop: Up and Down move, Right and Left unfold and fold, Space opens a file, Enter opens it and goes to the editor. The + adds a program, a module or a folder to the folder clicked last, else the folder of the file in the editor, else the top: a name field appears first in that folder; a taken name is refused in place; Enter creates, Esc cancels. Each row's ⋮ (or a right-click, or Shift+F10) opens its menu: Rename… turns the row into a field holding its name, and Move to… lists the top and the folders, the one it's in marked.",
     stories: [
       { name: 'A workspace with folders', props: { set: 'gears', active: 'demos/gears.pathogen' } },
       { name: 'A new workspace', props: { set: 'new', active: 'main.pathogen' } },
@@ -355,7 +355,7 @@ layer('hex').apply { circle(60, 100, 40) }`,
     stories: [
       { name: 'With a main', props: { main: 'main.pathogen' } },
       { name: 'The tree hidden', props: { main: 'main.pathogen', filesHidden: true } },
-      { name: 'Only libraries', props: { main: '', onlyLibraries: true } },
+      { name: 'Only modules', props: { main: '', onlyLibraries: true } },
       { name: 'No files', props: { main: '', noFiles: true } },
       { name: 'No program, the tree hidden', props: { main: '', onlyLibraries: true, filesHidden: true } },
     ],
@@ -389,9 +389,9 @@ layer('hex').apply { circle(60, 100, 40) }`,
     stories: [
       { name: 'Closed', props: { set: 'closed' } },
       { name: 'Open', props: { set: 'open' } },
-      { name: 'Editing a library', props: { set: 'library' } },
+      { name: 'Editing a module', props: { set: 'library' } },
       { name: 'Another program broke', props: { set: 'error' } },
-      { name: 'The main is a library', props: { set: 'main-library' } },
+      { name: 'The main is a module', props: { set: 'main-library' } },
       { name: 'Two programs called gears', props: { set: 'same-name' } },
     ],
     controls: [],
@@ -399,7 +399,7 @@ layer('hex').apply { circle(60, 100, 40) }`,
       'workspace-view gives it the rows (services/program-list.ts), the program shown, the file being edited and the red dot, and acts on show-program and open-file. The miniatures here are stand-ins; in the playground they come with step 5b. Here a row only moves the check.',
     render: (container, props) => {
       Promise.all([import('../components/program-chip.js'), import('../services/program-list.js')])
-        .then(([, { chipAlert, LIBRARY_MAIN }]) => {
+        .then(([, { chipAlert, MODULE_MAIN }]) => {
           type Row = ProgramItem;
           // Stand-in miniatures: circles, as the gears draw at that size.
           const art = (circles: [number, number, number][]): string =>
@@ -450,7 +450,7 @@ layer('hex').apply { circle(60, 100, 40) }`,
               r.path === 'try-sizes.pathogen' ? { ...r, error: 'Error in parts/gears.pathogen line 9' } : r,
             );
           } else if (set === 'main-library') {
-            items = items.map((r) => (r.path === 'main.pathogen' ? { ...r, error: LIBRARY_MAIN, uses: 'self' } : r));
+            items = items.map((r) => (r.path === 'main.pathogen' ? { ...r, error: MODULE_MAIN, uses: 'self' } : r));
           } else if (set === 'same-name') {
             items = [
               row('try-sizes.pathogen', { miniature: TRY, badge: true }),

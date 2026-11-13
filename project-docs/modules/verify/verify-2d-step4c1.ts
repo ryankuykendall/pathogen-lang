@@ -2,7 +2,7 @@
 // screen E, v7 screen F). In the served playground: the ⋮ shows on hover and
 // opens the row's menu, and so does a right-click; Set as main moves the main
 // (its badge, pathogen.json open in the editor following) and leaves the
-// preview alone; Duplicate makes the copy beside it; a folder's New library
+// preview alone; Duplicate makes the copy beside it; a folder's New module
 // names it in that folder; Delete… asks first (the files and their importers,
 // Cancel focused, Escape cancels), then deletes: the tab closes, the editor
 // shows a neighbour, an import of it breaks, and a new file with its name
@@ -34,7 +34,7 @@ const FILES: Record<string, string> = {
   'parts/kit.pathogen': 'module;\n\nexport const size = 12;\n',
 };
 const ENTRY = ['main.pathogen', 'demos/gears.pathogen', 'try-sizes.pathogen'];
-const NEW_LIBRARY = 'module;\n\n// A library. Export fns, consts and enums here;\n// other files import them.\n';
+const NEW_LIBRARY = 'module;\n\n// Export fns, consts and enums here, for other files to import.\n';
 
 let failures = 0;
 const check = (label: string, ok: boolean, detail?: unknown): void => {
@@ -244,18 +244,18 @@ try {
     'a right-click on a folder opens its menu',
     s.menu.open &&
       s.menu.head === 'Add to parts/' &&
-      JSON.stringify(s.menu.items) === '["New program","New library","New folder","Rename…","Move to…","Delete…"]',
+      JSON.stringify(s.menu.items) === '["New program","New module","New folder","Rename…","Move to…","Delete…"]',
     s.menu,
   );
   await page.screenshot({ path: `${SHOTS}/2d-step4c1-folder-menu-light.png` });
 
-  // 3. Its New library names it in parts/.
+  // 3. Its New module names it in parts/.
   await choose(page, 'new-library');
   await page.keyboard.type('springs');
   await page.keyboard.press('Enter');
   await new Promise((r) => setTimeout(r, 500));
   s = await state(page);
-  check('the folder’s New library makes parts/springs.pathogen', s.open === 'parts/springs.pathogen' && s.text === NEW_LIBRARY, s.open);
+  check('the folder’s New module makes parts/springs.pathogen', s.open === 'parts/springs.pathogen' && s.text === NEW_LIBRARY, s.open);
 
   // 4. Set as main, with pathogen.json open: the badge moves, the JSON follows, the preview stays.
   await clickRow(page, 'pathogen.json');

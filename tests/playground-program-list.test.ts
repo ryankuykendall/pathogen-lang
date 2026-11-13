@@ -10,7 +10,7 @@ import { beforeAll, describe, expect, it } from 'vitest';
 
 import {
   chipAlert,
-  LIBRARY_MAIN,
+  MODULE_MAIN,
   programItems,
   programListChange,
   programsOf,
@@ -87,10 +87,10 @@ describe('the rows', () => {
 
   it('a main that’s become a library says so (screen E, state 4)', () => {
     const [main, other] = programItems(['main.pathogen', 'b.pathogen'], { main: 'main.pathogen', mainIsLibrary: true });
-    expect([main.error, other.error, LIBRARY_MAIN]).toEqual([
-      LIBRARY_MAIN,
+    expect([main.error, other.error, MODULE_MAIN]).toEqual([
+      MODULE_MAIN,
       null,
-      "A library now, so it can't be the main",
+      "A module now, so it can't be the main",
     ]);
   });
 });
@@ -114,8 +114,8 @@ describe("the chip's red dot", () => {
   });
 
   it('the main as a library lights it even while shown, and says why', () => {
-    expect(chipAlert([item('main.pathogen', LIBRARY_MAIN), item('b', null)], 'main.pathogen')).toBe(
-      `main.pathogen: ${LIBRARY_MAIN}`,
+    expect(chipAlert([item('main.pathogen', MODULE_MAIN), item('b', null)], 'main.pathogen')).toBe(
+      `main.pathogen: ${MODULE_MAIN}`,
     );
   });
 });

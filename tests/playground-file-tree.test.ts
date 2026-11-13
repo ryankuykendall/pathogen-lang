@@ -398,7 +398,7 @@ describe('the row menus', () => {
   it('a folder’s menu adds to that folder, then Rename…, Move to… and Delete…', () => {
     dots('demos')!.click();
     expect(menu().querySelector('.menu-head')!.textContent).toBe('Add to demos/');
-    expect(labels()).toEqual(['New program', 'New library', 'New folder', '—', 'Rename…', 'Move to…', 'Delete…']);
+    expect(labels()).toEqual(['New program', 'New module', 'New folder', '—', 'Rename…', 'Move to…', 'Delete…']);
   });
 
   it('the ⋮ shows it’s open, and a second click closes the menu', () => {
@@ -808,7 +808,7 @@ describe('adding files and folders', () => {
     });
     expect(labels).toEqual([
       ['New program', 'A file that draws'],
-      ['New library', 'Starts with module;'],
+      ['New module', ''],
       ['New folder', ''],
     ]);
     expect(focused()).toBe(items[0]);
@@ -838,7 +838,7 @@ describe('adding files and folders', () => {
   it('moves with the arrow keys, and Escape closes it and returns to the +', () => {
     plus().click();
     key(focused()!, 'ArrowDown');
-    expect(focused()!.querySelector('.label')!.textContent).toBe('New library');
+    expect(focused()!.querySelector('.label')!.textContent).toBe('New module');
     key(focused()!, 'End');
     expect(focused()!.querySelector('.label')!.textContent).toBe('New folder');
     key(focused()!, 'ArrowDown');
@@ -853,9 +853,9 @@ describe('adding files and folders', () => {
     expect(menu()!.hidden).toBe(true);
   });
 
-  it('New library puts a name field first in the folder, with .pathogen and a hint', () => {
+  it('New module puts a name field first in the folder, with .pathogen and a hint', () => {
     plus().click();
-    choose('New library');
+    choose('New module');
     expect(menu()!.hidden).toBe(true);
     const order = [...tree.shadowRoot!.querySelectorAll<HTMLElement>('.list > .row')].map(
       (r) => r.dataset.path ?? (r.classList.contains('input') ? '[field]' : ''),
@@ -863,16 +863,16 @@ describe('adding files and folders', () => {
     expect(order.slice(2, 5)).toEqual(['parts', '[field]', 'parts/gears.pathogen']);
     expect(focused()).toBe(field());
     expect([field()!.getAttribute('aria-label'), $('.row.input .ext')!.textContent]).toEqual([
-      'New library name',
+      'New module name',
       '.pathogen',
     ]);
-    expect(hint().textContent).toBe('Starts with module; · Enter to create, Esc to cancel');
+    expect(hint().textContent).toBe('Enter to create, Esc to cancel');
     expect(field()!.getAttribute('aria-describedby')).toBe(hint().id);
   });
 
   it('a taken name is refused in place, and Enter does nothing; nor does an empty one', () => {
     plus().click();
-    choose('New library');
+    choose('New module');
     typeName('gears');
     expect([field()!.getAttribute('aria-invalid'), hint().textContent, hint().classList.contains('bad')]).toEqual([
       'true',
@@ -884,7 +884,7 @@ describe('adding files and folders', () => {
     typeName('');
     expect([field()!.getAttribute('aria-invalid'), hint().textContent]).toEqual([
       'false',
-      'Starts with module; · Enter to create, Esc to cancel',
+      'Enter to create, Esc to cancel',
     ]);
     key(field()!, 'Enter');
     expect([created, !!field()]).toEqual([[], true]);
@@ -892,7 +892,7 @@ describe('adding files and folders', () => {
 
   it('Enter creates a good name, and the field goes', () => {
     plus().click();
-    choose('New library');
+    choose('New module');
     typeName('ratchet');
     expect(field()!.getAttribute('aria-invalid')).toBe('false');
     key(field()!, 'Enter');
@@ -975,7 +975,7 @@ describe('adding files and folders', () => {
     expect($('.menu-head')!.textContent).toBe('Add to parts/');
     // parts/ deleted meanwhile (and the file in the editor with it).
     tree.files = GEARS.filter((f) => !f.path.startsWith('parts/'));
-    choose('New library');
+    choose('New module');
     expect(focused()).toBe(field());
     typeName('ratchet');
     key(field()!, 'Enter');
@@ -1011,7 +1011,7 @@ describe('adding files and folders', () => {
 
   it('a refused name is announced: the field’s line is a polite live region', () => {
     plus().click();
-    choose('New library');
+    choose('New module');
     expect(hint().getAttribute('aria-live')).toBe('polite');
   });
 
@@ -1026,7 +1026,7 @@ describe('adding files and folders', () => {
     tree.shadowRoot!.querySelector<HTMLElement>('[data-path="parts"]')!.click();
     expect(tree.shadowRoot!.querySelector('[data-path="parts"]')!.getAttribute('aria-expanded')).toBe('false');
     plus().click();
-    choose('New library');
+    choose('New module');
     expect(tree.shadowRoot!.querySelector('[data-path="parts"]')!.getAttribute('aria-expanded')).toBe('true');
     expect(focused()).toBe(field());
   });

@@ -1538,7 +1538,7 @@ export class WorkspaceView extends HTMLElement {
     tree.active = workspace.openFile;
   }
 
-  /** New program, New library or New folder, planned on the workspace as it stands: the change, or why not. */
+  /** New program, New module or New folder, planned on the workspace as it stands: the change, or why not. */
   private _newEntryPlan(kind: NewEntryKind, folder: string, name: string): { change?: Change; message?: string } {
     try {
       const state = workspaceState();
@@ -1791,7 +1791,7 @@ export class WorkspaceView extends HTMLElement {
    */
   private _thumbnailWait(main: string | null, mainIsLibrary: boolean): string | null {
     if (main === null) return 'Add a program first';
-    if (mainIsLibrary) return 'The main is a library now';
+    if (mainIsLibrary) return 'The main is a module now';
     if (this._renderedProgram !== main) return 'Show the main first';
     return null;
   }

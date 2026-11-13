@@ -85,7 +85,7 @@ function made(state: WorkspaceState, planned: Planned): { after: WorkspaceState;
 
 const refusal = (planned: Planned): string => (planned.ok ? '(made)' : planned.message);
 
-describe('New program, New library', () => {
+describe('New program, New module', () => {
   it('a new library starts with module; and stays out of the program list; it opens in a tab', () => {
     const state = gearsWorkspace();
     const { after, change } = made(state, planNewFile(state, 'parts', 'ratchet', 'library'));
@@ -461,9 +461,7 @@ describe('Set as main, and module; in the program list', () => {
     const state = gearsWorkspace();
     const { after } = made(state, planSetMain(state, 'try-sizes.pathogen'));
     expect(after.entryPoints).toEqual(['try-sizes.pathogen', 'main.pathogen', 'demos/gears.pathogen']);
-    expect(refusal(planSetMain(state, 'parts/kit.pathogen'))).toBe(
-      "A library can't be the main: it starts with module;.",
-    );
+    expect(refusal(planSetMain(state, 'parts/kit.pathogen'))).toBe("A module can't be the main.");
   });
 
   it('a program gaining module; leaves the list; losing it, it goes back at the end; the main stays first', () => {

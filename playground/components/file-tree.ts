@@ -1,7 +1,7 @@
 // The file tree (phase 2d, steps 4a and 4b; docs/workspace-files.md "The file
 // tree and tabs" and "Adding files and folders", mockup v6 screens O, J and N):
 // the workspace's folders and files, pathogen.json last and read-only, and the
-// "+" that adds a program, a library or a folder. Files, beside Console in the
+// "+" that adds a program, a module or a folder. Files, beside Console in the
 // breadcrumb, shows or hides it.
 //
 // A view only: workspace-view gives it the workspace's `files` (each with its
@@ -97,7 +97,7 @@ const NEW_KIND: Partial<Record<MenuAction, NewEntryKind>> = {
 /** The + menu's items, and a folder's menu's first ones (Upload files… and Upload folder… join them in step 6). */
 const ADD_ITEMS: MenuItem[] = [
   { action: 'new-program', label: 'New program', detail: 'A file that draws', icon: FILE_ICONS.program },
-  { action: 'new-library', label: 'New library', detail: 'Starts with <code>module;</code>', icon: FILE_ICONS.library },
+  { action: 'new-library', label: 'New module', icon: FILE_ICONS.library },
   { action: 'new-folder', label: 'New folder', icon: FILE_ICONS.folderPlus },
 ];
 
@@ -155,7 +155,7 @@ function menuHtml(head: string | null, entries: MenuEntry[]): string {
 
 const FIELD_LABELS: Record<NewEntryKind, string> = {
   program: 'New program name',
-  library: 'New library name',
+  library: 'New module name',
   folder: 'New folder name',
 };
 
@@ -204,7 +204,6 @@ const stemOf = (name: string): string => (name.endsWith('.pathogen') ? name.slic
 
 /** The name field's line when nothing's wrong (mockup v6 screen N; v7 screen X for a first program). */
 function defaultHint(kind: NewEntryKind, firstProgram: boolean): string {
-  if (kind === 'library') return `Starts with <code>module;</code> · ${KEYS_HINT}`;
   if (kind === 'program' && firstProgram) return `The only program, so it becomes the main · ${KEYS_HINT}`;
   return KEYS_HINT;
 }
@@ -241,7 +240,7 @@ export class FileTree extends HTMLElement {
   private _pendingFocus: string | null = null;
 
   /**
-   * The name field, while New program, New library or New folder is being
+   * The name field, while New program, New module or New folder is being
    * named, or while Rename… renames `renaming` (whose name was `original`).
    */
   private _naming: {
@@ -695,7 +694,7 @@ export class FileTree extends HTMLElement {
     this._menuItems()[0]?.focus();
   }
 
-  /** The +: New program, New library, New folder, where the + adds. */
+  /** The +: New program, New module, New folder, where the + adds. */
   private _openAddMenu(): void {
     const add = this._addButton!;
     const target = this._target();
@@ -716,7 +715,7 @@ export class FileTree extends HTMLElement {
 
   /**
    * A row's own menu (mockup v6 screen E, v7 screen F). A program: Set as main
-   * (unless it is the main), Rename…, Move to…, Duplicate, Delete…. A library:
+   * (unless it is the main), Rename…, Move to…, Duplicate, Delete…. A module:
    * the same without Set as main. A folder: the + items for that folder, then
    * Rename…, Move to… and Delete….
    */

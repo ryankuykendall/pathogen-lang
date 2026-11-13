@@ -106,8 +106,8 @@ export class StaleChangeError extends Error {
 
 export const PROJECT_FILE = 'pathogen.json';
 const EXTENSION = '.pathogen';
-/** What New library starts with (mockups v5, example/new-library.pathogen). */
-const NEW_LIBRARY = 'module;\n\n// A library. Export fns, consts and enums here;\n// other files import them.\n';
+/** What New module starts with (mockups v5, example/new-library.pathogen; "module", not "library", since 2026-11-13). */
+const NEW_LIBRARY = 'module;\n\n// Export fns, consts and enums here, for other files to import.\n';
 
 // ---------- paths ----------
 
@@ -416,7 +416,7 @@ function checkFileCount(state: WorkspaceState, adding: number): string | null {
 }
 
 /**
- * New program or New library (docs/workspace-files.md "Adding files and
+ * New program or New module (docs/workspace-files.md "Adding files and
  * folders"). `typed` is the name field's text: `.pathogen` is added, and a
  * slash makes folders (`shapes/star` in `parts/` is `parts/shapes/star.pathogen`).
  */
@@ -657,7 +657,7 @@ export function planDelete(state: WorkspaceState, path: string): Planned {
 /** Set as main: the program goes to the front of the list; the others keep their order. */
 export function planSetMain(state: WorkspaceState, path: string): Planned {
   if (!(path in state.files)) return refuse(`${path} isn't a file in the workspace.`);
-  if (isLibrary(state.files[path])) return refuse("A library can't be the main: it starts with module;.");
+  if (isLibrary(state.files[path])) return refuse("A module can't be the main.");
   if (state.entryPoints[0] === path) return nothing();
   return finish(state, [], state.folders, [path, ...state.entryPoints.filter((p) => p !== path)], {});
 }
