@@ -30,4 +30,5 @@ Now: "The preview is empty until you add a program, the status in the breadcrumb
 ## For the user and for later steps
 
 - **"No program" against "No programs":** the breadcrumb status (v11) and the Workspaces card label (v7, note 53) differ by one letter, two sentences apart on this page. Both are approved strings; whether to align them is the user's call. Asked in the step 4d report.
+  - *Answered 2026-11-12: "'No programs' should be fine."* The page now says the status reads "No programs", like the card. Step 9 builds it with that text.
 - **Step 9:** the "No program" status isn't built yet. When it is, its hover text must not say "every file is a library" in a workspace with no files: the mockup's tooltip does in state 6.

@@ -20,6 +20,9 @@ changes the name only, and Move to… moves; "On a phone".
 The mockups v8 to v11 answers (2026-11-12, notes 54 to 57) are folded in: every tab can close; with
 none open, the editor's zero-state opens the main (or offers New program with no program); the
 preview has no zero-state of its own; Copy Code and Format Document wait for a file.
+Approved 2026-11-12 (note 52): the Undo sentence under "Renaming, moving and deleting" (the
+import rewrites stay out of each file's undo history, as built in 4c-2), and the status with no
+program reads "No programs", as the Workspaces page does.
 -->
 
 # Files in a Workspace
@@ -61,7 +64,7 @@ The workspace's **main** is the program it opens on and the one its thumbnail sh
 - Setting the main doesn't change what the preview shows.
 - Renaming the main keeps it the main.
 - **Deleting the main** makes the next program in `pathogen.json`'s list the main, and a message says which. After a Set as main, that's the program that was the main before.
-- **Deleting the last program** leaves the workspace with no main. The preview is empty until you add a program, the status in the breadcrumb reads "No program", and `pathogen.json` becomes `{}`. The workspace's thumbnail keeps its last drawing, and your Workspaces page marks it "No programs". Export, Set Thumbnail and Make public wait until it has a program again.
+- **Deleting the last program** leaves the workspace with no main. The preview is empty until you add a program, the status in the breadcrumb reads "No programs", and `pathogen.json` becomes `{}`. The workspace's thumbnail keeps its last drawing, and your Workspaces page marks it "No programs". Export, Set Thumbnail and Make public wait until it has a program again.
 - **Adding `module;` to the main** makes it a library, which can't draw. It stays the main, and the program list shows an error on it, until you take `module;` out or set another program as main. Adding `module;` to any other program takes it out of the program list and out of `pathogen.json`. Take `module;` out again and it goes back, at the end.
 
 ## The preview and the program list
@@ -103,7 +106,7 @@ The **+** in the Files header opens a menu: New program, New library, New folder
 - Renaming or moving a file updates the `import` paths that name it in the workspace's other files, and its entry in `pathogen.json`.
 - Moving a file also updates its own `./` and `../` import paths, so they still reach the same files.
 - Renaming or moving a folder moves everything in it, with the same updates.
-- After a rename or a move, a message names the files whose imports changed. Its **Undo** puts the names and the imports back together. Undo in one file's editor undoes only that file's edits, so it would point an import back at a name that's gone.
+- After a rename or a move, a message names the files whose imports changed. Its **Undo** puts the names and the imports back together. The import paths a rename or a move changes aren't part of any file's own undo history, so undoing in a file never points an import back at a name that's gone.
 - **Delete…** asks before it deletes. A folder's Delete… deletes the folder and the files in it. The files that imported a deleted library show an error at their `import` line until you change them.
 - **Duplicate** makes a copy beside the file, named with a number as Keep both does: `gears-2.pathogen`. A copy of a program goes at the end of the program list.
 
