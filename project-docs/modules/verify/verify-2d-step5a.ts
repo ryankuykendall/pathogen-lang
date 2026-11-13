@@ -530,7 +530,8 @@ try {
       return rows.scrollHeight <= rows.clientHeight + 1;
     })()`)) as boolean;
     check(`in the story, the list shows its three programs without scrolling (${theme})`, rowsFit);
-    check(`the storybook: six chip stories (${theme})`, stories.length === 6, stories);
+    // Six since 5a; 5b adds its own after them.
+    check(`the storybook: six chip stories (${theme})`, stories.length >= 6, stories);
   }
 
   check('no page errors', pageErrors.length === 0, pageErrors);

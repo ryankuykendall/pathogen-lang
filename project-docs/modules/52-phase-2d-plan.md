@@ -485,6 +485,64 @@ Each step: tests first; a storybook entry for each new component (the playground
   - **Module, not library** (2026-11-13, the user: "I would like change our use of 'library' to 'module' in our UI text and documentation for the sake of consistency. This diminishes our need for explainer text"). The playground says New module (its "Starts with `module;`" lines gone from the + menu and the name field), "A module now, so it can't draw as the main" (the user's choice, after the review noted that "can't be the main" contradicted the docs' "it stays the main"), "The main is a module now", "Every file here is a module, so nothing draws", and "A module can't be the main."; a new module starts with `// Export fns, consts and enums here, for other files to import.`; the hover on `module;` says "a module, which other files can import". docs/modules.md and docs/workspace-files.md say "module" (content review: `reviews/module-not-library-docs-review.md`). Code identifiers (`isLibrary`, `onlyLibraries`, the `'library'` tab and row kinds) are unchanged. The mockups keep their old words, as a record.
   - **And a follow-up from the same answer:** a thumbnail shouldn't depend on what the preview shows. "We should have a generally available service inside of our app that allows a job to be enqueued to generate a thumbnail (or other sizes of rasterized preview) regardless of how user behavior or interactions change the state of the workspace." On the backlog: `backlog.md`, "A render queue for thumbnails, not tied to the preview".
 
+**Step 5b, every program drawn** (2026-11-13, "proceed to 5b"). As the plan above says, with these details and three changes to it:
+- **`services/program-drawings.ts`** (new): `ProgramDrawings`, owned by workspace-view, with everything outside it injected (the compiler, the import graph, the engine, blob URLs, the store), so the tests drive it with fakes.
+  - The programs not shown compile on **`programsCompiler`**, a third client in `compiler-worker.ts`. The worker starts with the first such compile, so a workspace with one program has none (browser check).
+  - They compile one at a time, in the list's order:
+    - after a load, once the program shown has compiled;
+    - after an edit, 800 ms after the typing stops.
+  - **Only the programs whose files changed.** Each row remembers the texts it was drawn from: its own, and those of every file its imports reach (read with `programModules`, the error panel's graph). An edit marks those rows at once (the spinner) and leaves the others alone.
+    - When a compile fails, or an import is missing, every path is remembered too, so a file that appears redraws it.
+    - The browser check: an edit to kit redraws try-sizes only.
+  - **A newer edit stops the compile in flight**, only once the typing stops and only if that compile's files changed. Each stop ends and restarts the worker, so it's never per keystroke.
+  - Nothing starts while the editor's own compile runs. One already running is left to finish, on its own worker.
+- **The miniature** is the engine's `generateSvg` of the compile (the CLI's drawing), on the workspace's canvas colour (a rect over the drawing's box), as an `<img>` of a blob URL. No script runs and nothing is fetched. The security contract is the compiler's (`docs/security.md`), and this is the compiler's own output.
+  - Made only while the list is open, one per task (the event `program-list-open`, new on the chip). A closed list costs no drawing.
+  - A compile keeps a lean drawing (no records or commands) until then. A drawing over about 250,000 characters is never drawn: a blank tile, no error.
+  - A new canvas colour re-wraps the same SVG with no compile.
+  - URLs are released when replaced, when their program goes (deleted, or a module now), and at a workspace switch (browser check: `fetch` of the old URL fails).
+- **The dot** (`usesOf` in `services/program-list.ts`): on the file you're editing ("The file you're editing") and on the programs whose imports reach it ("Uses X, the file you're editing"). It shows only while the file you're editing isn't the program shown, as the mockup's states draw it; then the preview already says what you're editing.
+- **The chip's red dot** lights for another program's error, as in 5a. A row's "Error in X line N" keeps "line N" together when it wraps.
+- **A rename follows** (`follow(change)` in `_applyWorkspaceChange`). The row keeps its miniature, with no compile when no text it was drawn from changed (browser check). Forgetting a program that left waits a microtask, since the change's store update arrives before `follow`.
+- **Changes to the plan, with reasons:**
+  1. **Where a row says it failed is read from the compile's own message** (`services/error-place.ts`, pure, with tests on the engine's real messages), not from `getDiagnostics`. The probe (`verify/step5b-probes/probe-programs.ts`) showed two things:
+     - `getDiagnostics` runs the evaluator again (its source is `pathogen-evaluator`), on the main thread, which the programs compiled in the background must never do.
+     - For a parse error in an imported module it gives only the import line, with no `alsoIn`, while the message names the module and its line ("parts/gears.pathogen line 3, col 14: Missing ';'").
+     
+     The program shown's row reads its message the same way, so no two rows can disagree. A message with no position (a font that won't load) says "Error in X".
+  2. **The program shown's miniature comes from the editor's compile result**, drawn with `generateSvg` like the others, not from the preview's SVG. It's one drawing path for every row, so they look alike. It's still made only while the list is open.
+  3. **The dot's rule** above (only while the file you're editing isn't the program shown) comes from the mockup's states, which the plan didn't spell out.
+- **Probes** (`verify/step5b-probes/probe-programs.ts`; the message forms are pinned by `tests/playground-error-place.test.ts`):
+  - the graph's file keys carry a leading `/`, and the entry isn't among them;
+  - `generateSvg` draws a structured-cloned result, a ConicGradient included (as wedge paths, as the CLI does);
+  - mesh, freeform and topo gradients become their average colour;
+  - text stays `<text>`, which in an `<img>` uses a system font (the preview's web fonts can't reach it). That's fine at 64 × 40.
+- **Checked:**
+  - tests:
+    - `tests/playground-program-drawings.test.ts` (30, new);
+    - `tests/playground-error-place.test.ts` (7, new);
+    - `tests/playground-program-list.test.ts` (+4: drawn rows, `usesOf`);
+    - `tests/playground-program-chip.test.ts` (+2: `program-list-open`, "line N" kept together);
+  - `verify/verify-2d-step5b.ts` against `npm run dev:stack`, 32 checks:
+    - no second worker with one program; nothing drawn while the list is closed; each row's own drawing on the canvas colour;
+    - edits to gears and to kit (the spinners, the dots, which programs redraw, the compiles counted); an error in kit (the row, the red dot) and fixed;
+    - try-sizes' own dot; the program shown's own error;
+    - a rename (no compile), a delete and a switch (URLs released);
+    - the editor's compile cancelled during a load;
+    - main-thread stalls while a heavy program (40,000 segments) not shown compiles, list closed and open, against a control: none over 30 ms, and a 150 ms busy task as the measure's own control;
+    - light, dark, the storybook (a seventh story, "Just opened: the others drawing");
+  - after the review's fixes, `verify-2d-step3.ts` (27), `3b` (21), `4a` (34), `4b` (27), `4c1` (21), `4c2` (29), `4d` (24) and `5a` (28) still pass (5a's story count is now "six or more").
+- **Review** (code-reviewer: request changes; one critical). Fixed:
+  - **A workspace switch during a graph read left the background run marked as running**, so the next workspace's programs spun until an edit. The run's mark now belongs to its session. A unit test fails without the fix (control run) and passes with it.
+  - **Cancel on the editor's compile** left the programs not shown waiting (they wait while it runs). Cancel now lets them go on (`resume`). Unit test and browser check.
+  - **A compile the editor started before a switch** could mark the next workspace ready. `updatePreview` now passes the session it started in.
+  - **A program deleted during its graph read** no longer gets a row made for it. A compile's in-flight mark can't be cleared by an older run's.
+  - The layout key is worked out once per look at the rows.
+  - Not changed, with reasons:
+    - `withBackground` puts the rect after the first `>` of the root tag. `generateSvg`'s root tag holds only xmlns, viewBox, width and height (commented).
+    - The drawing kept from each editor compile is a bounded walk, stopped at the limit.
+    - `programsCompiler` is a module singleton, ended when the workspace view goes, as `editorCompiler` is.
+
 **The v7 mockup round** (2026-11-09, commit `5c8f925`): note 53, `phase-2-mockups-v7/`. Five screens: no programs left, folders and moving, narrow screens, the mini-workspace, the ⋮ menu. It also draws what v6 left out (renaming a file, Move to…, dragging a file). Six questions await you; steps 4 and 9 wait for them.
 - *Answered 2026-11-09: all six agreed* (note 53, "Your answers"). What that adds to the steps:
   - step 2: each change can be undone (the toast's Undo); a rename takes a name only, no slash and no extension; Move to…; the first program in an empty workspace is shown;

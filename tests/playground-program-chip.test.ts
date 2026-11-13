@@ -129,6 +129,20 @@ describe('the list', () => {
     expect(openOf(chip, 'demos/gears.pathogen').title).toBe('Open demos/gears.pathogen in the editor');
   });
 
+  it('says when it opens, once, so the miniatures are drawn then (step 5b)', () => {
+    const chip = mount(ROWS);
+    let opened = 0;
+    const count = (): void => void opened++;
+    document.addEventListener('program-list-open', count);
+    button(chip).click();
+    chip.items = [...ROWS];
+    expect(opened).toBe(1);
+    button(chip).click();
+    button(chip).click();
+    expect(opened).toBe(2);
+    document.removeEventListener('program-list-open', count);
+  });
+
   it('a row with an error says why in place of its path', () => {
     const chip = mount([row('main.pathogen', { error: "A module now, so it can't draw as the main" }), row('b.pathogen')]);
     button(chip).click();
@@ -138,6 +152,13 @@ describe('the list', () => {
       first.querySelector('.e')!.textContent,
       first.querySelector('.p'),
     ]).toEqual([true, "A module now, so it can't draw as the main", null]);
+  });
+
+  it('a row’s "Error in … line N" keeps "line N" together when it wraps', () => {
+    const chip = mount([row('main.pathogen'), row('b.pathogen', { error: 'Error in parts/kit.pathogen line 6' })]);
+    button(chip).click();
+    const nbsp = String.fromCharCode(160);
+    expect(rows(chip)[1].querySelector('.e')!.textContent).toBe(`Error in parts/kit.pathogen line${nbsp}6`);
   });
 
   it('the dot, the spinner and the miniature (step 5b’s rows)', () => {

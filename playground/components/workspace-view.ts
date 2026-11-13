@@ -20,7 +20,8 @@ import './edit-workspace-metadata-modal.js';
 import gpuGradientService from '../gpu/gradient-service.js';
 import { workspaceApi } from '../services/api.js';
 import { autosave, SaveStatus } from '../services/autosave.js';
-import compilerWorker, { editorCompiler } from '../services/compiler-worker.js';
+import compilerWorker, { editorCompiler, programsCompiler } from '../services/compiler-worker.js';
+import { ProgramDrawings } from '../services/program-drawings.js';
 import { formatFontSubstitutions } from '../services/font-loader.js';
 import thumbnailService from '../services/thumbnail-service.js';
 import { SnapshotController } from '../services/snapshot-controller.js';
@@ -86,6 +87,7 @@ import { ensureChromeFontRules, getChromeFontRulesIfReady } from '../utils/expor
 import { updateWorkspaceSlugUrl } from '../utils/workspace-slug-url.js';
 import './shared/error-panel.js';
 import type { ToastDetail } from './shared/app-toast.js';
+import type { CompileResult } from '../types/compiler.js';
 
 /** How long a toast with Undo stays: long enough to read the files it names and reach for Undo. */
 const UNDO_TOAST_MS = 9000;
@@ -146,6 +148,41 @@ export class WorkspaceView extends HTMLElement {
   private _editedSinceList = new Set<string>();
 
   private _renderedProgram: string | null = null;
+
+  // Every program in the chip's list, drawn small (2d, step 5b): the programs
+  // not shown compile in the background on their own worker; the program
+  // shown takes its row from the editor's compile (updatePreview).
+  private readonly _drawings = new ProgramDrawings({
+    workspace: () => workspaceNow(),
+    programs: () => this._programsToDraw(),
+    shown: () => programToShow(workspaceNow(), store.get('shownProgram') as string | null),
+    busy: () => store.get('compilationStatus') === 'compiling',
+    listOpen: () => this.programChip?.isOpen ?? false,
+    background: () => (store.get('background') as string | null) || '#f5f5f5',
+    graph: async (program, workspace) => {
+      const graph = await programModules(program, workspace);
+      if (!graph) return null;
+      const files = [...graph.modules.files.keys()].map((key) => key.replace(/^\/+/, ''));
+      return { files, complete: graph.loadErrors.length === 0 };
+    },
+    compile: async (program, workspace) =>
+      (await programsCompiler.compile(workspace.texts.get(program) ?? '', 0, undefined, {
+        workspace: {
+          files: workspace.texts,
+          folders: workspace.folders,
+          entry: program,
+          label: (store.get('workspaceName') as string | null) ?? 'this workspace',
+        },
+      })) as CompileResult,
+    cancel: () => {
+      programsCompiler.cancelInFlight('superseded');
+    },
+    generate: (drawing) =>
+      window.PathogenLang.generateSvg(drawing as unknown as Parameters<Window['PathogenLang']['generateSvg']>[0]),
+    url: (svg) => URL.createObjectURL(new Blob([svg], { type: 'image/svg+xml' })),
+    revoke: (url) => URL.revokeObjectURL(url),
+    changed: () => this._refreshPrograms(),
+  });
 
   // What the last compile left to mark in the editor, so a file shown after
   // it gets its marks without a recompile (only the chip changes what the
@@ -280,7 +317,9 @@ export class WorkspaceView extends HTMLElement {
     // Stop the compile clock, then terminate both compiler workers (the
     // editor's own and the shared one other views use)
     this._compileTicker.stop();
+    this._drawings.reset();
     editorCompiler.terminate();
+    programsCompiler.terminate();
     compilerWorker.terminateWorker();
     // Release GPU texture cache
     gpuGradientService.clearCache();
@@ -565,6 +604,8 @@ export class WorkspaceView extends HTMLElement {
     this._renderedProgram = null;
     this._editedSinceList.clear();
     this.programChip?.close();
+    // Its programs' drawings too: a compile in flight is stopped, and the miniatures released.
+    this._drawings.reset();
 
     // With no file open, the editor shows the previous workspace's zero-state.
     const wasNone = openFileNow() === null;
@@ -823,6 +864,8 @@ export class WorkspaceView extends HTMLElement {
       const open = openFileNow();
       if (isWorkspaceFile(open)) this._editedSinceList.add(open);
       this._scheduleTabsRefresh();
+      // The programs that use the file spin now, and redraw once the typing stops (step 5b).
+      this._drawings.edited();
     });
 
     // The editor's tabs (services/open-files.ts). Only the program chip
@@ -900,9 +943,14 @@ export class WorkspaceView extends HTMLElement {
     });
     this._programsUnsubscribe = store.subscribe(
       ['workspaceId', 'workspaceFiles', 'workspaceEntryPoints', 'shownProgram', 'openFile'],
-      () => this._refreshPrograms(),
+      () => {
+        this._drawings.edited();
+        this._refreshPrograms();
+      },
     );
     this._refreshPrograms();
+    // The miniatures are drawn only while the list is open (step 5b).
+    this.shadowRoot!.addEventListener('program-list-open', () => this._drawings.listOpened());
     // The + in the tree (2d, step 4b): whether a typed name can be used, by the
     // workspace's own rules (the plans of services/workspace-edits.ts), and
     // making the new file or folder.
@@ -1574,6 +1622,8 @@ export class WorkspaceView extends HTMLElement {
     // pathogen.json's list was checked, by their paths after the change.
     if (this._renderedProgram !== null) this._renderedProgram = pathAfterChange(this._renderedProgram, change);
     this._editedSinceList = new Set([...this._editedSinceList].map((path) => pathAfterChange(path, change)));
+    // And the programs' drawings, before a renamed one's row would be forgotten (a microtask later).
+    this._drawings.follow(change);
     // The readings of a file deleted or moved go with its old path.
     for (const cache of [this._libraryReadings, this._fileHashes]) {
       for (const path of cache.keys()) if (!(path in result.state.files)) cache.delete(path);
@@ -1749,9 +1799,9 @@ export class WorkspaceView extends HTMLElement {
 
   /**
    * The program chip (2d, step 5a; mockup v6 screen G): in a saved workspace
-   * with two programs or more, the programs in the list's order, the one
-   * shown, and its red dot. And whether the thumbnail can be taken now, which
-   * Set Thumbnail shows.
+   * with two programs or more, the programs in the list's order, each with
+   * its drawing (step 5b), the one shown, and its red dot. And whether the
+   * thumbnail can be taken now, which Set Thumbnail shows.
    */
   private _refreshPrograms(): void {
     const workspace = workspaceNow();
@@ -1759,21 +1809,34 @@ export class WorkspaceView extends HTMLElement {
     store.set('thumbnailWait', this._thumbnailWait(main, mainIsLibrary));
     const chip = this.programChip;
     if (!chip) return;
-    const programs = holdsWorkspace()
-      ? programsOf(workspace.texts, workspace.entryPoints, (path, text) => this._isLibrary(path, text))
-      : [];
+    const programs = this._programsOf(workspace);
     if (programs.length < 2) {
       chip.close();
       chip.hidden = true;
       return;
     }
     const shown = programToShow(workspace, store.get('shownProgram') as string | null);
-    const items = programItems(programs, { main, mainIsLibrary });
+    const rows = this._drawings.rows();
+    const items = programItems(programs, { main, mainIsLibrary }, { rows, editing: workspace.openFile, shown });
     chip.items = items;
     chip.shown = shown;
     chip.editing = workspace.openFile;
     chip.alert = chipAlert(items, shown);
     chip.hidden = false;
+  }
+
+  /** The chip's programs: in a saved workspace, pathogen.json's order, the main first even as a module. */
+  private _programsOf(workspace: WorkspaceTexts): string[] {
+    if (!holdsWorkspace()) return [];
+    return programsOf(workspace.texts, workspace.entryPoints, (path, text) => this._isLibrary(path, text));
+  }
+
+  /** The programs to draw small: the chip's, but a main that's a module, which draws nothing, left out. */
+  private _programsToDraw(): string[] {
+    const workspace = workspaceNow();
+    const { main, mainIsLibrary } = this._mainNow(workspace);
+    const programs = this._programsOf(workspace);
+    return mainIsLibrary ? programs.filter((p) => p !== main) : programs;
   }
 
   /** The workspace's main (its first program still there), and whether `module;` has made it a library. */
@@ -1881,6 +1944,8 @@ export class WorkspaceView extends HTMLElement {
     const workspace = withOpenFileText(workspaceNow(), (store.get('code') as string) || this.editorPane.code);
     const shown = programToShow(workspace, store.get('shownProgram') as string | null);
     const code = workspace.texts.get(shown) ?? '';
+    // The program list's drawings take this compile only if no other workspace has loaded since.
+    const drawingsSession = this._drawings.session;
 
     // Increment compilation ID for staleness detection
     const compilationId = (store.get('compilationId') as number) + 1;
@@ -2043,6 +2108,8 @@ export class WorkspaceView extends HTMLElement {
       const before = this._renderedProgram;
       this._renderedProgram = shown;
       if (before !== null && before !== shown && shown === this._mainNow().main) thumbnailService.retryWhenIdle();
+      // Its row in the chip's list takes this drawing; the programs not shown may draw now (step 5b).
+      this._drawings.shownDrawn(shown, workspace, { result: result as CompileResult }, drawingsSession);
       this._refreshPrograms();
 
       // Refresh the breadcrumb's export-size estimate (runs at idle, after
@@ -2099,6 +2166,8 @@ export class WorkspaceView extends HTMLElement {
         compilationStatus: 'error',
         compilationError: displayError,
       });
+      // Its row in the chip's list says where it failed (step 5b).
+      this._drawings.shownDrawn(shown, workspace, { message: String(e?.message ?? e) }, drawingsSession);
     }
   }
 
@@ -2123,6 +2192,8 @@ export class WorkspaceView extends HTMLElement {
     });
     this.previewPane.hideLoading();
     this.previewPane.setStale(true);
+    // The programs not shown wait while the editor compiles; with no result coming, they go on (step 5b).
+    this._drawings.resume();
 
     // Auto-hide the cancelled status after a brief moment, like 'completed'
     setTimeout(() => {

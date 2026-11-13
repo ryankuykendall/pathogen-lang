@@ -438,6 +438,15 @@ export const sharedCompiler = new CompilerWorkerClient({ label: 'shared' });
  */
 export const editorCompiler = new CompilerWorkerClient({ label: 'editor' });
 
+/**
+ * The compiler for the programs the preview doesn't show, drawn small in the
+ * program chip's list (2d, step 5b; services/program-drawings.ts). Its own
+ * worker, so stopping a compile there (an edit to that program) never rejects
+ * the editor's compile or the publish precheck. It starts with the first such
+ * compile, so only a workspace with two programs or more has one.
+ */
+export const programsCompiler = new CompilerWorkerClient({ label: 'programs' });
+
 /** @see CompilerWorkerClient.compile — on the shared instance. */
 export async function compile(
   source: string,

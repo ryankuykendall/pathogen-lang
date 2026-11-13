@@ -393,10 +393,11 @@ layer('hex').apply { circle(60, 100, 40) }`,
       { name: 'Another program broke', props: { set: 'error' } },
       { name: 'The main is a module', props: { set: 'main-library' } },
       { name: 'Two programs called gears', props: { set: 'same-name' } },
+      { name: 'Just opened: the others drawing', props: { set: 'loading' } },
     ],
     controls: [],
     notes:
-      'workspace-view gives it the rows (services/program-list.ts), the program shown, the file being edited and the red dot, and acts on show-program and open-file. The miniatures here are stand-ins; in the playground they come with step 5b. Here a row only moves the check.',
+      'workspace-view gives it the rows (services/program-list.ts, with each program’s drawing from services/program-drawings.ts), the program shown, the file being edited and the red dot, and acts on show-program and open-file. It says program-list-open when its list opens, which is when the miniatures are drawn. The miniatures here are stand-ins; in the playground each is the program’s own drawing on the canvas colour. Here a row only moves the check.',
     render: (container, props) => {
       Promise.all([import('../components/program-chip.js'), import('../services/program-list.js')])
         .then(([, { chipAlert, MODULE_MAIN }]) => {
@@ -458,6 +459,9 @@ layer('hex').apply { circle(60, 100, 40) }`,
               row('parts/gears.pathogen', { miniature: MAIN, hint: 'parts' }),
             ];
             shown = 'parts/gears.pathogen';
+          } else if (set === 'loading') {
+            // Just after a load: the program shown has drawn; the others spin on blank tiles until theirs compile.
+            items = items.map((r) => (r.path === shown ? r : { ...r, miniature: null, updating: true }));
           }
           // A preview's lower part: the chip sits centred at the bottom, its list opening upward.
           const stage = document.createElement('div');

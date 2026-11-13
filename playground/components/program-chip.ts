@@ -239,8 +239,11 @@ export class ProgramChip extends HTMLElement {
     const img = item.miniature !== null ? `<img src="${esc(item.miniature)}" alt="">` : '';
     const spin = item.updating ? '<span class="spin" role="img" aria-label="Updating" title="Updating"></span>' : '';
     const bad = item.error !== null ? '<span class="mbad" aria-hidden="true">!</span>' : '';
+    // "line 9" stays together when an error wraps (step 5b's "Error in … line N").
     const sub =
-      item.error !== null ? `<span class="e">${esc(item.error)}</span>` : `<span class="p">${esc(item.path)}</span>`;
+      item.error !== null
+        ? `<span class="e">${esc(item.error).replace(/ (\d+)$/, '&nbsp;$1')}</span>`
+        : `<span class="p">${esc(item.path)}</span>`;
     const openLabel = `Open ${esc(item.path)} in the editor`;
     const check = on ? `<span class="chk" role="img" aria-label="Shown" title="Shown">${FILE_ICONS.check}</span>` : '';
     return `<div class="${classes}" data-path="${esc(item.path)}">
@@ -271,6 +274,8 @@ export class ProgramChip extends HTMLElement {
       document.addEventListener('keydown', this._onEscape, true);
       window.addEventListener('resize', this._onResize);
       this._fit();
+      // The miniatures are drawn only while the list is open (step 5b).
+      this.dispatchEvent(new CustomEvent('program-list-open', { bubbles: true, composed: true }));
     }
     if (withKeyboard) this._focusRow(this._items.findIndex((i) => i.path === this._shown));
   }

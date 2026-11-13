@@ -14,6 +14,7 @@ import {
   programItems,
   programListChange,
   programsOf,
+  usesOf,
 } from '../playground/services/program-list.js';
 
 import type { WorkspaceState } from '../playground/services/workspace-edits.js';
@@ -92,6 +93,47 @@ describe('the rows', () => {
       null,
       "A module now, so it can't draw as the main",
     ]);
+  });
+
+  it('with their drawings (step 5b): error, miniature and spinner from each one’s row', () => {
+    const rows = new Map([
+      ['main.pathogen', { error: null, miniature: 'blob:1', updating: false, files: ['parts/gears.pathogen'] }],
+      ['try-sizes.pathogen', { error: 'Error in parts/gears.pathogen line 9', miniature: 'blob:2', updating: true, files: [] }],
+    ]);
+    const items = programItems(
+      ['main.pathogen', 'try-sizes.pathogen', 'new.pathogen'],
+      { main: 'main.pathogen', mainIsLibrary: false },
+      { rows, editing: 'parts/gears.pathogen', shown: 'main.pathogen' },
+    );
+    expect(items.map(({ error, miniature, updating, uses }) => [error, miniature, updating, uses])).toEqual([
+      [null, 'blob:1', false, 'import'],
+      ['Error in parts/gears.pathogen line 9', 'blob:2', true, null],
+      [null, null, false, null],
+    ]);
+  });
+
+  it('a main that’s a module keeps its own line over a drawing’s error', () => {
+    const rows = new Map([['main.pathogen', { error: 'Error in main.pathogen line 1', miniature: null, updating: false, files: [] }]]);
+    const [main] = programItems(['main.pathogen'], { main: 'main.pathogen', mainIsLibrary: true }, { rows, editing: null, shown: null });
+    expect(main.error).toBe(MODULE_MAIN);
+  });
+});
+
+describe('the dot (usesOf)', () => {
+  const GEARS_PATH = 'parts/gears.pathogen';
+
+  it('the file you’re editing, and the programs whose imports reach it', () => {
+    expect(usesOf('try-sizes.pathogen', null, 'try-sizes.pathogen', 'main.pathogen')).toBe('self');
+    expect(usesOf('main.pathogen', [GEARS_PATH], GEARS_PATH, 'main.pathogen')).toBe('import');
+    expect(usesOf('demos/gears.pathogen', [GEARS_PATH], GEARS_PATH, 'main.pathogen')).toBe('import');
+    expect(usesOf('try-sizes.pathogen', ['parts/kit.pathogen'], GEARS_PATH, 'main.pathogen')).toBeNull();
+    // Imports not read yet: no dot.
+    expect(usesOf('try-sizes.pathogen', null, GEARS_PATH, 'main.pathogen')).toBeNull();
+  });
+
+  it('none while you edit the program shown, or with no file open', () => {
+    expect(usesOf('main.pathogen', [GEARS_PATH], 'main.pathogen', 'main.pathogen')).toBeNull();
+    expect(usesOf('main.pathogen', [GEARS_PATH], null, 'main.pathogen')).toBeNull();
   });
 });
 

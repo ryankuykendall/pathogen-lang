@@ -54,21 +54,50 @@ export function programsOf(
   return [...kept, ...unlisted];
 }
 
-/** Each program's row, as the chip draws it. */
+/**
+ * The dot (mockup v6 screen G): on the file you're editing ('self') and on
+ * the programs whose imports reach it ('import'), from their `files`. Only
+ * while the file you're editing isn't the program shown, as the mockup's
+ * states draw it: then the preview already says what you're editing.
+ */
+export function usesOf(
+  path: string,
+  files: readonly string[] | null,
+  editing: string | null,
+  shown: string | null,
+): 'self' | 'import' | null {
+  if (editing === null || editing === shown) return null;
+  if (path === editing) return 'self';
+  return files?.includes(editing) ? 'import' : null;
+}
+
+/** A program's drawing, as services/program-drawings.ts has it (step 5b). */
+export interface DrawnRow {
+  error: string | null;
+  miniature: string | null;
+  updating: boolean;
+  files: readonly string[] | null;
+}
+
+/** Each program's row, as the chip draws it, with its drawing when `drawn` is given (step 5b). */
 export function programItems(
   programs: readonly string[],
   { main, mainIsLibrary }: { main: string | null; mainIsLibrary: boolean },
+  drawn?: { rows: ReadonlyMap<string, DrawnRow>; editing: string | null; shown: string | null },
 ): ProgramItem[] {
-  return tabLabels(programs).map(({ path, name, hint }) => ({
-    path,
-    name,
-    hint,
-    badge: path === main && path !== MAIN_FILE,
-    error: path === main && mainIsLibrary ? MODULE_MAIN : null,
-    uses: null,
-    updating: false,
-    miniature: null,
-  }));
+  return tabLabels(programs).map(({ path, name, hint }) => {
+    const row = drawn?.rows.get(path);
+    return {
+      path,
+      name,
+      hint,
+      badge: path === main && path !== MAIN_FILE,
+      error: path === main && mainIsLibrary ? MODULE_MAIN : (row?.error ?? null),
+      uses: drawn ? usesOf(path, row?.files ?? null, drawn.editing, drawn.shown) : null,
+      updating: row?.updating ?? false,
+      miniature: row?.miniature ?? null,
+    };
+  });
 }
 
 /**
