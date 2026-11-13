@@ -740,6 +740,14 @@ Three commits, each with tests first, a storybook entry where there's a componen
   - an empty message.
 - **The docs** (focused content review: no blockers; applied): "Errors in other files" shows the panel as a text block and says what each link opens; Cmd+click is the last bullet; "Adding `module;` to the main" is split into what happens, quoting the note.
 
+**Step 7b, Cmd+click across files** (2026-11-13). Cmd+click (Ctrl+click) on a name imported from another file opens that file at its declaration, through `open-file`. Before, it jumped to the name's import in the same file.
+- `utils/definition-target.ts` (`otherFileDefinition`) turns `getDefinition`'s project path and range into the file to open and where. A name declared in the file open still jumps within it. `cm-language-services.ts` sends `open-file` from the editor and keeps CodeMirror from starting a selection.
+- **Proposal 6 comes from the engine:** `getDefinition` already gives a file's top for a click on an import's path, and for a namespace's name.
+- **Checked:**
+  - `tests/playground-go-to-definition.test.ts` (4, new; the real engine's getDefinition with the graph the playground builds): an imported fn at its call and in its import, a namespace's member, the namespace, the import's path, a local name;
+  - `verify/verify-2d-step7b.ts` (6, real clicks with Meta held): the call, `g.size`, the path, a local name, a click without Cmd.
+- The code review comes with 7c's (one review over both commits).
+
 **The v7 mockup round** (2026-11-09, commit `5c8f925`): note 53, `phase-2-mockups-v7/`. Five screens: no programs left, folders and moving, narrow screens, the mini-workspace, the ⋮ menu. It also draws what v6 left out (renaming a file, Move to…, dragging a file). Six questions await you; steps 4 and 9 wait for them.
 - *Answered 2026-11-09: all six agreed* (note 53, "Your answers"). What that adds to the steps:
   - step 2: each change can be undone (the toast's Undo); a rename takes a name only, no slash and no extension; Move to…; the first program in an empty workspace is shown;

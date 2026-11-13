@@ -18,6 +18,7 @@
 //   4. Include the returned extensions in buildLanguageExtensions()'s result.
 
 import { importPathBeforeCursor, makeSharedCompletionSource } from './cm-completion-bridge.js';
+import { otherFileDefinition } from './definition-target.js';
 import { hoverTooltipExtension } from './cm-hover-tooltip.js';
 import { errorHighlightExtension } from './cm-error-highlight.js';
 import { perfSpan } from './perf-marks.js';
@@ -464,6 +465,7 @@ function wireGoToDefinition(cm: CmModulesForLanguageServices): unknown {
         };
         posAtCoords: (coords: { x: number; y: number }) => number | null;
         dispatch: (tr: unknown) => void;
+        dom: HTMLElement;
       };
       const pos = view.posAtCoords({ x: ev.clientX, y: ev.clientY });
       if (pos == null) return false;
@@ -471,13 +473,20 @@ function wireGoToDefinition(cm: CmModulesForLanguageServices): unknown {
       const { line, character } = offsetToPosition(source, pos);
       const doc = new StringTextDocumentCtor(source);
       // With the open file's imports, an imported name's definition is in
-      // the file it comes from. Opening another file arrives with the tabs
-      // (2d); until then the jump goes where it went before: the name's
-      // import in this file.
+      // the file it comes from: that file opens there (2d, step 7b), as the
+      // tree and the error panel open files (`open-file`, which workspace-view
+      // acts on; the line is clamped there, since the graph may lag an edit).
       const across = getDefinition(doc, { line, character }, languageServiceOptions());
+      const other = otherFileDefinition(across, openFileNow());
+      if (other) {
+        ev.preventDefault();
+        view.dom.dispatchEvent(
+          new CustomEvent('open-file', { bubbles: true, composed: true, detail: { ...other, focusEditor: true } }),
+        );
+        return true;
+      }
       // (A click in the editor means a file is open: the zero-state has no view.)
-      const openFile = `/${openFileNow() ?? ''}`;
-      const inThisFile = across && (!across.file || across.file === openFile);
+      const inThisFile = across && (!across.file || across.file === `/${openFileNow() ?? ''}`);
       const def = inThisFile ? across : getDefinition(doc, { line, character });
       if (!def) return false;
       const targetOffset = positionToOffset(source, def.range.start);
