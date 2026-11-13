@@ -14,5 +14,5 @@ Changed: docs/modules.md (published; lines 5, 7, 39, 45, 299), docs/workspace-fi
 | 1.4 | modules.md L45 said the same thing twice (before this change too) | nit | Fixed: "…so to use a module in another project, copy its file into that project." |
 | 2 | Any module-sense "library" left | — | None |
 | 3 | "Modules aren't listed." says enough? | nit | Kept: the section and "The main" already say the list holds programs |
-| 4.1 | workspace-files.md says the main "stays the main", while its row says "A module now, so it can't be the main" | nit | Not changed: the row's wording is mockup v6's, approved. Raised with the user |
+| 4.1 | workspace-files.md says the main "stays the main", while its row says "A module now, so it can't be the main" | nit | Raised with the user, who chose (2026-11-13): "Change it to \"can't draw as the main\"". The row now says "A module now, so it can't draw as the main" |
 | 4.2 | modules.md L299 "not when compiled on its own" is vague (older than this change) | nit | Not changed: out of scope |

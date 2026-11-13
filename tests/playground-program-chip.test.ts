@@ -130,14 +130,14 @@ describe('the list', () => {
   });
 
   it('a row with an error says why in place of its path', () => {
-    const chip = mount([row('main.pathogen', { error: "A module now, so it can't be the main" }), row('b.pathogen')]);
+    const chip = mount([row('main.pathogen', { error: "A module now, so it can't draw as the main" }), row('b.pathogen')]);
     button(chip).click();
     const first = rows(chip)[0];
     expect([
       first.classList.contains('err'),
       first.querySelector('.e')!.textContent,
       first.querySelector('.p'),
-    ]).toEqual([true, "A module now, so it can't be the main", null]);
+    ]).toEqual([true, "A module now, so it can't draw as the main", null]);
   });
 
   it('the dot, the spinner and the miniature (step 5b’s rows)', () => {

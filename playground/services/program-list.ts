@@ -28,8 +28,12 @@ export interface ProgramItem {
   miniature: string | null;
 }
 
-/** A main row's line once it starts with `module;` (mockup v6 screen E, state 4; "module", not "library", since 2026-11-13). */
-export const MODULE_MAIN = "A module now, so it can't be the main";
+/**
+ * A main row's line once it starts with `module;` (mockup v6 screen E, state 4;
+ * "module", not "library", and "can't draw as the main", since 2026-11-13: it
+ * stays the main until you choose another, so it doesn't say it can't be one).
+ */
+export const MODULE_MAIN = "A module now, so it can't draw as the main";
 
 const byPath = (a: string, b: string): number => (a < b ? -1 : a > b ? 1 : 0);
 

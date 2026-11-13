@@ -90,7 +90,7 @@ describe('the rows', () => {
     expect([main.error, other.error, MODULE_MAIN]).toEqual([
       MODULE_MAIN,
       null,
-      "A module now, so it can't be the main",
+      "A module now, so it can't draw as the main",
     ]);
   });
 });
