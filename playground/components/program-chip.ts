@@ -247,7 +247,7 @@ export class ProgramChip extends HTMLElement {
     const openLabel = `Open ${esc(item.path)} in the editor`;
     const check = on ? `<span class="chk" role="img" aria-label="Shown" title="Shown">${FILE_ICONS.check}</span>` : '';
     return `<div class="${classes}" data-path="${esc(item.path)}">
-      <button class="show" type="button" tabindex="-1"${on ? ' aria-current="true"' : ''}><span class="tile">${img}${spin}${bad}</span><span class="t"><span class="n">${dot}<span class="nm">${nameHtml(item)}</span>${badge}</span>${sub}</span></button>
+      <button class="show" type="button" tabindex="-1"${on ? ' aria-current="true"' : ''}><span class="tile"${item.tileNote ? ` title="${esc(item.tileNote)}"` : ''}>${img}${spin}${bad}</span><span class="t"><span class="n">${dot}<span class="nm">${nameHtml(item)}</span>${badge}</span>${sub}</span></button>
       <span class="r"><button class="open" type="button" tabindex="-1" title="${openLabel}" aria-label="${openLabel}">${FILE_ICONS.code}</button>${check}</span>
     </div>`;
   }

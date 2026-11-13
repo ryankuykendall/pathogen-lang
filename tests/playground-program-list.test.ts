@@ -14,6 +14,7 @@ import {
   programItems,
   programListChange,
   programsOf,
+  TOO_DETAILED,
   usesOf,
 } from '../playground/services/program-list.js';
 
@@ -98,7 +99,10 @@ describe('the rows', () => {
   it('with their drawings (step 5b): error, miniature and spinner from each one’s row', () => {
     const rows = new Map([
       ['main.pathogen', { error: null, miniature: 'blob:1', updating: false, files: ['parts/gears.pathogen'] }],
-      ['try-sizes.pathogen', { error: 'Error in parts/gears.pathogen line 9', miniature: 'blob:2', updating: true, files: [] }],
+      [
+        'try-sizes.pathogen',
+        { error: 'Error in parts/gears.pathogen line 9', miniature: 'blob:2', updating: true, files: [] },
+      ],
     ]);
     const items = programItems(
       ['main.pathogen', 'try-sizes.pathogen', 'new.pathogen'],
@@ -112,9 +116,29 @@ describe('the rows', () => {
     ]);
   });
 
+  it('a drawing too large to draw small: its tile says so on hover', () => {
+    const rows = new Map([
+      ['main.pathogen', { error: null, miniature: 'blob:1', updating: false, files: [] }],
+      ['huge.pathogen', { error: null, miniature: null, updating: false, files: [], tooLarge: true }],
+    ]);
+    const items = programItems(
+      ['main.pathogen', 'huge.pathogen'],
+      { main: 'main.pathogen', mainIsLibrary: false },
+      { rows, editing: null, shown: 'main.pathogen' },
+    );
+    expect(items.map((item) => item.tileNote)).toEqual([null, TOO_DETAILED]);
+    expect(TOO_DETAILED).toBe('Too detailed to draw this small');
+  });
+
   it('a main that’s a module keeps its own line over a drawing’s error', () => {
-    const rows = new Map([['main.pathogen', { error: 'Error in main.pathogen line 1', miniature: null, updating: false, files: [] }]]);
-    const [main] = programItems(['main.pathogen'], { main: 'main.pathogen', mainIsLibrary: true }, { rows, editing: null, shown: null });
+    const rows = new Map([
+      ['main.pathogen', { error: 'Error in main.pathogen line 1', miniature: null, updating: false, files: [] }],
+    ]);
+    const [main] = programItems(
+      ['main.pathogen'],
+      { main: 'main.pathogen', mainIsLibrary: true },
+      { rows, editing: null, shown: null },
+    );
     expect(main.error).toBe(MODULE_MAIN);
   });
 });

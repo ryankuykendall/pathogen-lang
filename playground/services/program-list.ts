@@ -26,7 +26,12 @@ export interface ProgramItem {
   updating: boolean;
   /** Its miniature's URL; null for a blank tile. Step 5b. */
   miniature: string | null;
+  /** Why its tile is blank, on hover (TOO_DETAILED); none otherwise. Step 5b. */
+  tileNote?: string | null;
 }
+
+/** A blank tile's hover text: the drawing is too large to draw small (agreed 2026-11-13, note 52). */
+export const TOO_DETAILED = 'Too detailed to draw this small';
 
 /**
  * A main row's line once it starts with `module;` (mockup v6 screen E, state 4;
@@ -77,6 +82,7 @@ export interface DrawnRow {
   miniature: string | null;
   updating: boolean;
   files: readonly string[] | null;
+  tooLarge?: boolean;
 }
 
 /** Each program's row, as the chip draws it, with its drawing when `drawn` is given (step 5b). */
@@ -96,6 +102,7 @@ export function programItems(
       uses: drawn ? usesOf(path, row?.files ?? null, drawn.editing, drawn.shown) : null,
       updating: row?.updating ?? false,
       miniature: row?.miniature ?? null,
+      tileNote: row?.tooLarge ? TOO_DETAILED : null,
     };
   });
 }

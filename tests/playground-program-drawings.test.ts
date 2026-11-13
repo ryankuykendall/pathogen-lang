@@ -472,7 +472,20 @@ describe('the miniatures', () => {
     await vi.advanceTimersByTimeAsync(100);
     await h.finish();
     const row = h.drawings.rows().get(GEARS_DEMO)!;
-    expect([row.miniature, row.error, row.updating, h.live.has(before)]).toEqual([null, null, false, false]);
+    expect([row.miniature, row.error, row.updating, row.tooLarge, h.live.has(before)]).toEqual([
+      null,
+      null,
+      false,
+      true,
+      false,
+    ]);
+    // Drawn small again once it's smaller.
+    await h.edit(GEARS_DEMO, 'demo: small again');
+    await vi.advanceTimersByTimeAsync(100);
+    await h.finish();
+    await tasks();
+    const again = h.drawings.rows().get(GEARS_DEMO)!;
+    expect([again.tooLarge, h.svgOf(again.miniature)?.includes('M demo: small again')]).toEqual([false, true]);
   });
 });
 

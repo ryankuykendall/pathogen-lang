@@ -179,6 +179,8 @@ interface Entry {
   box: DrawingBox;
   url: string | null;
   urlBackground: string | null;
+  /** Its last drawing was too large to draw small: the tile is blank on purpose. */
+  tooLarge: boolean;
 }
 
 /** One program's row, as ProgramDrawings has it. */
@@ -189,6 +191,8 @@ export interface ProgramDrawingRow {
   updating: boolean;
   /** The workspace files its imports reach; null before they're read. */
   files: readonly string[] | null;
+  /** Its drawing is too large to draw small, so its tile is blank (and says so on hover). */
+  tooLarge: boolean;
 }
 
 export interface ProgramDrawingsDeps {
@@ -262,6 +266,7 @@ export class ProgramDrawings {
         miniature: entry?.url ?? null,
         updating: path !== shown && this._stale(entry, workspace, layout),
         files: entry?.files ?? null,
+        tooLarge: entry?.tooLarge ?? false,
       });
     }
     return rows;
@@ -393,6 +398,7 @@ export class ProgramDrawings {
         box: DEFAULT_BOX,
         url: null,
         urlBackground: null,
+        tooLarge: false,
       };
       this._entries.set(path, entry);
     }
@@ -416,8 +422,9 @@ export class ProgramDrawings {
   }
 
   private _setDrawing(entry: Entry, drawing: Drawing | null): void {
+    entry.tooLarge = drawing === null;
     if (drawing === null) {
-      // Too large to draw small: a blank tile.
+      // Too large to draw small: a blank tile, which says so on hover.
       if (entry.url) this.deps.revoke(entry.url);
       entry.url = null;
       entry.svg = null;

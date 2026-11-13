@@ -123,6 +123,7 @@ interface Row {
   dot: string | null;
   img: string | null;
   loaded: boolean;
+  tileTitle: string | null;
 }
 
 async function rows(page: Page): Promise<Row[]> {
@@ -136,6 +137,7 @@ async function rows(page: Page): Promise<Row[]> {
       dot: row.querySelector('.udot')?.title ?? null,
       img: img?.getAttribute('src') ?? null,
       loaded: !!img && img.complete && img.naturalWidth > 0,
+      tileTitle: row.querySelector('.tile').getAttribute('title'),
     };
   })`) as Promise<Row[]>;
 }
@@ -542,6 +544,11 @@ try {
     'the heavy program: a blank tile, no error, no spinner (too large to draw small), while main’s miniature was made',
     heavyOpen.row?.img === null && heavyOpen.row.error === false && !heavyOpen.row.updating && !!heavyOpen.main?.loaded,
     { heavy: heavyOpen.row, main: heavyOpen.main },
+  );
+  check(
+    'its blank tile says why on hover: "Too detailed to draw this small"; main’s has no title',
+    heavyOpen.row?.tileTitle === 'Too detailed to draw this small' && heavyOpen.main?.tileTitle === null,
+    { heavy: heavyOpen.row?.tileTitle, main: heavyOpen.main?.tileTitle },
   );
   check(
     'no main-thread stall over 100 ms while the heavy program compiles, list closed or open',

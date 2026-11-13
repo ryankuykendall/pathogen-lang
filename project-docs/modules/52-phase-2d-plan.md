@@ -541,6 +541,11 @@ Each step: tests first; a storybook entry for each new component (the playground
   - **Typing** (found after the commit, `cfb7f9c`; fixed in the next). 5b read which files are programs on every keystroke, and reading `module;` (`isModuleSource`) is a whole-file Lezer parse: 1 to 2.5 ms on the largest programs here (a 588-line blog sample, `verify/step5b-probes/probe-is-module-cost.ts`). That held in a one-program workspace too, with no chip shown.
     - Now the list is kept between keystrokes (`_programsToDrawCache`). Only the paths that can change it drop it: the tabs' refresh 300 ms after typing (which reads `module;` for the icons anyway), the store subscription (files, the list, the open file), a workspace load, and an applied change.
     - The browser check types 28 keystrokes into the 588-line program and counts workspace-view's uncached readings: none, alone or with the chip. The control in the same run, with the list read on every call as 5b first did, counts 28.
+  - *Answered 2026-11-13, both "Yes":*
+    - **The dot's rule stays**, and the docs say so: "In the list, a dot before a name marks those programs, and the file itself if it's a program. While you're editing the program the preview shows, there are no dots: the preview already shows your edits."
+    - **A blank tile says why on hover:** "Too detailed to draw this small" (`TOO_DETAILED`, the row's `tileNote`). The docs: "When a program is too detailed for its small drawing, the drawing is left empty. Hover the empty drawing to see …". The question was "Fine, or should hovering the tile explain it?", and "Yes" was taken as the second.
+    - A focused content review of the two bullets: no blockers; its two rewrites applied, and its nit ("Only the chip changes which program the preview shows").
+    - Unit tests (the row's note, the tile's title, drawn small again once it's smaller) and a browser check (the heavy program's tile; main's has no title): `verify-2d-step5b.ts` 36.
   - Not changed, with reasons:
     - `withBackground` puts the rect after the first `>` of the root tag. `generateSvg`'s root tag holds only xmlns, viewBox, width and height (commented).
     - The drawing kept from each editor compile is a bounded walk, stopped at the limit.

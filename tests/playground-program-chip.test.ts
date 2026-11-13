@@ -144,7 +144,10 @@ describe('the list', () => {
   });
 
   it('a row with an error says why in place of its path', () => {
-    const chip = mount([row('main.pathogen', { error: "A module now, so it can't draw as the main" }), row('b.pathogen')]);
+    const chip = mount([
+      row('main.pathogen', { error: "A module now, so it can't draw as the main" }),
+      row('b.pathogen'),
+    ]);
     button(chip).click();
     const first = rows(chip)[0];
     expect([
@@ -152,6 +155,18 @@ describe('the list', () => {
       first.querySelector('.e')!.textContent,
       first.querySelector('.p'),
     ]).toEqual([true, "A module now, so it can't draw as the main", null]);
+  });
+
+  it('a blank tile with a note says why on hover; other tiles have no title', () => {
+    const chip = mount([
+      row('main.pathogen', { miniature: 'blob:main' }),
+      row('huge.pathogen', { tileNote: 'Too detailed to draw this small' }),
+    ]);
+    button(chip).click();
+    expect(rows(chip).map((r) => r.querySelector<HTMLElement>('.tile')!.getAttribute('title'))).toEqual([
+      null,
+      'Too detailed to draw this small',
+    ]);
   });
 
   it('a row’s "Error in … line N" keeps "line N" together when it wraps', () => {

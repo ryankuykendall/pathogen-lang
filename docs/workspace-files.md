@@ -27,6 +27,8 @@ Agreed 2026-11-13 (note 52, step 5a): the program shown becoming a module sends 
 to the main; Set Thumbnail's reasons "Show the main first" and "The main is a module now".
 Decided 2026-11-13: a file with `module;` is a "module" everywhere in the UI and docs, never a
 "library" (the keyword's own name; note 52).
+Agreed 2026-11-13 (note 52, step 5b): the dot shows only while the file you're editing isn't the
+program shown (the mockup's rule); a blank tile says why on hover ("Too detailed to draw this small").
 -->
 
 # Files in a Workspace
@@ -76,8 +78,9 @@ The workspace's **main** is the program it opens on and the one its thumbnail sh
 
 With more than one program, a chip beside the zoom controls names the program the preview shows. Click it for the **program list**: each program with a small drawing, its name and its path. A check marks the one shown. The main comes first, then the others in the order they were added.
 
-- **Only the chip changes what the preview shows.** Opening a file, editing a module or setting the main leaves the preview on the program you chose.
-- Editing a file redraws every program that uses it. In the list, a dot marks the programs that use the file you're editing.
+- **Only the chip changes which program the preview shows.** Opening a file, editing a module or setting the main leaves the preview on the program you chose.
+- Editing a file redraws every program that uses it. In the list, a dot before a name marks those programs, and the file itself if it's a program. While you're editing the program the preview shows, there are no dots: the preview already shows your edits.
+- When a program is too detailed for its small drawing, the drawing is left empty. Hover the empty drawing to see "Too detailed to draw this small". Choose the program to see it in the preview.
 - Hover a program in the list and click **Open in the editor** to open its file without changing the preview.
 - When another program has an error, the chip shows a red dot, and that program says in the list where it failed.
 - If the program shown is deleted, or becomes a module, the preview goes back to the main.
