@@ -52,6 +52,22 @@ describe('a toast with a signal', () => {
     expect(shown(el)).toEqual([]);
   });
 
+  it('lists its items as text under the message, a file’s odd name included (6a)', () => {
+    const el = toaster();
+    el.show({
+      title: 'Added springs.pathogen.',
+      message: 'Not added:',
+      items: ['cities.csv: workspaces hold .pathogen files for now.', '<img src=x onerror=alert(1)>.pathogen: no.'],
+      duration: 0,
+    });
+    const items = [...el.shadowRoot!.querySelectorAll('.items li')].map((li) => li.textContent);
+    expect(items).toEqual([
+      'cities.csv: workspaces hold .pathogen files for now.',
+      '<img src=x onerror=alert(1)>.pathogen: no.',
+    ]);
+    expect(el.shadowRoot!.querySelector('.items img')).toBeNull();
+  });
+
   it('its action runs once and the toast goes', () => {
     const el = toaster();
     const onSelect = vi.fn();

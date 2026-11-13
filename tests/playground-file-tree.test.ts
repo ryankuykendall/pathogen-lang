@@ -10,6 +10,12 @@ import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 import { treeRows } from '../playground/utils/file-tree-rows.js';
 
+// jsdom's file input can't pick a folder; a desktop browser's can, and the tree
+// shows Upload folder… only then (step 6a). Given here before the tree loads.
+if (!('webkitdirectory' in HTMLInputElement.prototype)) {
+  Object.defineProperty(HTMLInputElement.prototype, 'webkitdirectory', { value: false, writable: true });
+}
+
 import type { TreeFile, TreeRow } from '../playground/utils/file-tree-rows.js';
 
 type FileTreeEl = HTMLElement & {
@@ -398,7 +404,18 @@ describe('the row menus', () => {
   it('a folder’s menu adds to that folder, then Rename…, Move to… and Delete…', () => {
     dots('demos')!.click();
     expect(menu().querySelector('.menu-head')!.textContent).toBe('Add to demos/');
-    expect(labels()).toEqual(['New program', 'New module', 'New folder', '—', 'Rename…', 'Move to…', 'Delete…']);
+    expect(labels()).toEqual([
+      'New program',
+      'New module',
+      'New folder',
+      '—',
+      'Upload files…',
+      'Upload folder…',
+      '—',
+      'Rename…',
+      'Move to…',
+      'Delete…',
+    ]);
   });
 
   it('the ⋮ shows it’s open, and a second click closes the menu', () => {
@@ -810,6 +827,8 @@ describe('adding files and folders', () => {
       ['New program', 'A file that draws'],
       ['New module', ''],
       ['New folder', ''],
+      ['Upload files…', 'Or drop them on the tree'],
+      ['Upload folder…', 'Keeps the folders inside it'],
     ]);
     expect(focused()).toBe(items[0]);
   });
@@ -840,7 +859,7 @@ describe('adding files and folders', () => {
     key(focused()!, 'ArrowDown');
     expect(focused()!.querySelector('.label')!.textContent).toBe('New module');
     key(focused()!, 'End');
-    expect(focused()!.querySelector('.label')!.textContent).toBe('New folder');
+    expect(focused()!.querySelector('.label')!.textContent).toBe('Upload folder…');
     key(focused()!, 'ArrowDown');
     expect(focused()!.querySelector('.label')!.textContent).toBe('New program');
     key(focused()!, 'Escape');
@@ -1029,5 +1048,162 @@ describe('adding files and folders', () => {
     choose('New module');
     expect(tree.shadowRoot!.querySelector('[data-path="parts"]')!.getAttribute('aria-expanded')).toBe('true');
     expect(focused()).toBe(field());
+  });
+});
+
+// Step 6a (mockup v6 screen U): Upload files… and Upload folder… open the
+// browser's picker for the folder the menu was for; files dragged from the
+// computer light the folder they'd go to; a drop is taken at once; new rows
+// flash; the upload's question sits beside a row.
+describe('uploads', () => {
+  beforeAll(async () => {
+    await import('../playground/components/file-tree.js');
+  });
+
+  type TreeWithUploads = FileTreeEl & {
+    dropFolderAt: (target: EventTarget | null) => string;
+    flash: (paths: string[]) => void;
+    askClash: (existing: string, q: unknown) => Promise<unknown>;
+    cancelAsk: () => void;
+  };
+  let tree: TreeWithUploads;
+
+  beforeEach(() => {
+    document.body.innerHTML = '';
+    tree = document.createElement('file-tree') as TreeWithUploads;
+    document.body.appendChild(tree);
+    tree.files = GEARS;
+    tree.folders = ['empty'];
+    tree.main = 'main.pathogen';
+    tree.active = 'parts/gears.pathogen';
+  });
+
+  const $ = <T extends Element = HTMLElement>(sel: string) => tree.shadowRoot!.querySelector<T>(sel);
+  const row = (path: string) => $(`[data-path="${path}"]`)!;
+  const choose = (label: string) =>
+    [...tree.shadowRoot!.querySelectorAll<HTMLElement>('[role="menuitem"]')]
+      .find((item) => item.querySelector('.label')!.textContent === label)!
+      .click();
+
+  /** A drag event carrying files, as the browser sends one from the desktop. */
+  const fileDrag = (type: string, target: Element, files: File[] = []) => {
+    const data = {
+      types: ['Files'],
+      files,
+      items: files.map((file) => ({ kind: 'file', webkitGetAsEntry: () => null, getAsFile: () => file })),
+      dropEffect: 'none',
+    };
+    const event = new window.Event(type, { bubbles: true, composed: true, cancelable: true }) as DragEvent;
+    Object.defineProperties(event, { dataTransfer: { value: data }, clientX: { value: 40 }, clientY: { value: 60 } });
+    target.dispatchEvent(event);
+    return event;
+  };
+
+  it('Upload files… opens the picker for .pathogen files, and its files go to the folder the menu was for', () => {
+    const uploads: { folder: string; picked: { path: string }[] }[] = [];
+    tree.addEventListener('upload-files', (e) => uploads.push((e as CustomEvent).detail));
+    const input = $<HTMLInputElement>('.pick-files')!;
+    let opened = 0;
+    input.click = () => void opened++;
+    expect([input.multiple, input.accept]).toEqual([true, '.pathogen']);
+    $<HTMLButtonElement>('.add')!.click();
+    choose('Upload files…');
+    expect(opened).toBe(1);
+    Object.defineProperty(input, 'files', { value: [new File(['M 0 0'], 'springs.pathogen')], configurable: true });
+    input.dispatchEvent(new window.Event('change'));
+    expect(uploads.map((u) => [u.folder, u.picked.map((p) => p.path)])).toEqual([['parts', ['springs.pathogen']]]);
+  });
+
+  it('Upload folder… picks a folder, for the folder whose menu it was', () => {
+    const uploads: { folder: string }[] = [];
+    tree.addEventListener('upload-files', (e) => uploads.push((e as CustomEvent).detail));
+    const input = $<HTMLInputElement>('.pick-folder')!;
+    input.click = () => undefined;
+    expect(input.hasAttribute('webkitdirectory')).toBe(true);
+    row('demos').querySelector<HTMLElement>('.row-menu')!.click();
+    choose('Upload folder…');
+    const file = new File(['M 0 0'], 'dot.pathogen');
+    Object.defineProperty(file, 'webkitRelativePath', { value: 'shapes/dot.pathogen' });
+    Object.defineProperty(input, 'files', { value: [file], configurable: true });
+    input.dispatchEvent(new window.Event('change'));
+    expect(uploads.map((u) => u.folder)).toEqual(['demos']);
+  });
+
+  it('where a drop goes: a folder row’s own folder, a file row’s folder, the top for pathogen.json or empty space', () => {
+    expect(tree.dropFolderAt(row('demos'))).toBe('demos');
+    expect(tree.dropFolderAt(row('parts/kit.pathogen'))).toBe('parts');
+    expect(tree.dropFolderAt(row('main.pathogen'))).toBe('');
+    expect(tree.dropFolderAt(row('pathogen.json'))).toBe('');
+    expect(tree.dropFolderAt($('.list'))).toBe('');
+  });
+
+  it('files dragged over a folder light it and the rows in it, and the label says where they go', () => {
+    const over = fileDrag('dragover', row('parts/kit.pathogen'));
+    expect(over.defaultPrevented).toBe(true);
+    expect([row('parts').classList.contains('drop'), row('parts/gears.pathogen').classList.contains('in-drop')]).toEqual([
+      true,
+      true,
+    ]);
+    expect(row('demos').classList.contains('drop')).toBe(false);
+    const label = $('.drop-label')!;
+    expect([label.hidden, label.textContent]).toEqual([false, 'Drop to add to parts/']);
+    fileDrag('dragover', $('.list')!);
+    expect([row('parts').classList.contains('drop'), $('.list')!.classList.contains('drop-top'), label.textContent]).toEqual([
+      false,
+      true,
+      'Drop to add at the top',
+    ]);
+  });
+
+  it('a drop is taken at once, for the folder under the pointer, and the lights go out', () => {
+    const drops: { folder: string; drop: { files: File[] } }[] = [];
+    tree.addEventListener('upload-drop', (e) => drops.push((e as CustomEvent).detail));
+    const file = new File(['M 0 0'], 'springs.pathogen');
+    fileDrag('dragover', row('demos'));
+    const dropped = fileDrag('drop', row('demos/gears.pathogen'), [file]);
+    expect(dropped.defaultPrevented).toBe(true);
+    expect(drops.map((d) => [d.folder, d.drop.files])).toEqual([['demos', [file]]]);
+    expect([row('demos').classList.contains('drop'), $('.drop-label')!.hidden]).toEqual([false, true]);
+  });
+
+  it('a drag that isn’t files (text from the editor) is left alone', () => {
+    const event = new window.Event('dragover', { bubbles: true, cancelable: true }) as DragEvent;
+    Object.defineProperty(event, 'dataTransfer', { value: { types: ['text/plain'] } });
+    row('demos').dispatchEvent(event);
+    expect([event.defaultPrevented, row('demos').classList.contains('drop')]).toEqual([false, false]);
+  });
+
+  it('new rows flash for a moment, their folders opened, through a redraw', async () => {
+    row('parts').click();
+    expect(row('parts').getAttribute('aria-expanded')).toBe('false');
+    tree.files = [...GEARS, { path: 'parts/springs.pathogen', kind: 'program' }];
+    tree.flash(['parts/springs.pathogen']);
+    expect([row('parts').getAttribute('aria-expanded'), row('parts/springs.pathogen').classList.contains('flash')]).toEqual([
+      'true',
+      true,
+    ]);
+    tree.files = [...tree.files];
+    expect(row('parts/springs.pathogen').classList.contains('flash')).toBe(true);
+  });
+
+  it('the upload’s question sits beside the row of the file already there, and gives its answer', async () => {
+    const answer = tree.askClash('parts/labels.pathogen', {
+      name: 'labels.pathogen',
+      where: 'parts/',
+      keepBothName: 'labels-2.pathogen',
+      others: 0,
+    });
+    const prompt = $('clash-prompt')!;
+    expect(prompt.hidden).toBe(false);
+    prompt.shadowRoot!.querySelector<HTMLElement>('[data-choice="keep-both"]')!.click();
+    expect(await answer).toEqual({ choice: 'keep-both', forAll: false });
+    const withdrawn = tree.askClash('parts/labels.pathogen', {
+      name: 'labels.pathogen',
+      where: 'parts/',
+      keepBothName: 'labels-2.pathogen',
+      others: 0,
+    });
+    tree.cancelAsk();
+    expect(await withdrawn).toBeNull();
   });
 });

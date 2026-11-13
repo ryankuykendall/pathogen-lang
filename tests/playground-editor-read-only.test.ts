@@ -143,6 +143,31 @@ describe('pathogen.json in the editor', () => {
     expect([...pane._kept.keys()]).toEqual(['parts/kit.pathogen']);
   });
 
+  it('a file replaced whole (an upload’s Replace) starts afresh: kept one dropped, the one shown given a new state (replaceFiles, 6a)', () => {
+    const pane = makePane() as Pane & {
+      replaceFiles: (files: { path: string; text: string }[]) => void;
+      _kept: Map<string, unknown>;
+      _editor: unknown;
+      _cmModules: unknown;
+      _newState: (text: string, path: string) => unknown;
+    };
+    pane.showFile('parts/gears.pathogen', 'module; old');
+    pane._kept.set('parts/kit.pathogen', { state: 'kit' });
+    pane._kept.set('main.pathogen', { state: 'main' });
+    const set: unknown[] = [];
+    pane._cmModules = fakeModules;
+    pane._editor = { hasFocus: false, setState: (state: unknown) => set.push(state), state: {} };
+    pane._newState = (text: string, path: string) => ({ fresh: text, path });
+    pane.replaceFiles([
+      { path: 'parts/gears.pathogen', text: 'module; new' },
+      { path: 'parts/kit.pathogen', text: 'module; new kit' },
+    ]);
+    expect([set, [...pane._kept.keys()]]).toEqual([
+      [{ fresh: 'module; new', path: 'parts/gears.pathogen' }],
+      ['main.pathogen'],
+    ]);
+  });
+
   it('a renamed file keeps its state under its new name, the file shown too (renameFiles)', () => {
     const pane = makePane() as Pane & {
       renameFiles: (moves: { from: string; to: string }[]) => void;

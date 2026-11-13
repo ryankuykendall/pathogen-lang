@@ -546,6 +546,54 @@ layer('hex').apply { circle(60, 100, 40) }`,
     },
   },
   {
+    id: 'clash-prompt',
+    name: 'Clash Prompt',
+    category: 'Editor',
+    description:
+      'What an upload asks when a name is taken (mockup v6 screen U, state 2): Replace, Keep both (the new one numbered) or Skip, and, with more taken names, "Do the same for the others". The keyboard starts on Keep both, which loses nothing; Escape skips. In the playground the file tree places it beside the row of the file already there.',
+    stories: [
+      { name: 'One taken name', props: { others: 0 } },
+      { name: 'Three taken names', props: { others: 2 } },
+    ],
+    controls: [],
+    notes: 'Answering shows the answer; Ask again brings the question back.',
+    render: (container, props) => {
+      import('../components/clash-prompt.js')
+        .then(() => {
+          const ask = (): void => {
+            container.innerHTML = '';
+            // In place for the story: the playground fixes it beside a row of the tree.
+            const stage = document.createElement('div');
+            stage.style.cssText = 'position:relative;height:150px;';
+            const prompt = document.createElement('clash-prompt');
+            prompt.style.cssText = 'position:absolute;left:12px;top:8px;';
+            stage.appendChild(prompt);
+            container.appendChild(stage);
+            prompt
+              .ask({
+                name: 'labels.pathogen',
+                where: 'parts/',
+                keepBothName: 'labels-2.pathogen',
+                others: Number(props.others ?? 0),
+              })
+              .then((answer) => {
+                const said = document.createElement('p');
+                said.textContent = `Answered: ${answer ? `${answer.choice}${answer.forAll ? ', for all' : ''}` : 'withdrawn'}. `;
+                const again = document.createElement('button');
+                again.type = 'button';
+                again.textContent = 'Ask again';
+                again.addEventListener('click', ask);
+                said.append(again);
+                container.appendChild(said);
+              })
+              .catch((err: unknown) => console.error(err));
+          };
+          ask();
+        })
+        .catch((err: unknown) => console.error('Clash Prompt story failed to load:', err));
+    },
+  },
+  {
     id: 'svg-preview-pane',
     name: 'SVG Preview',
     category: 'Editor',
@@ -1333,6 +1381,20 @@ layer('hex').apply { circle(60, 100, 40) }`,
         name: 'Error',
         props: { type: 'error', title: 'Save failed', message: 'Network request returned 500.' },
       },
+      {
+        // An upload's toast (2d, step 6a; mockup v6 screen U, state 4): what went in, then what didn't and why.
+        name: 'With a list (an upload)',
+        props: {
+          type: 'success',
+          title: 'Added springs.pathogen.',
+          message: 'Not added:',
+          items: [
+            'cities.csv: workspaces hold .pathogen files for now; data files come later.',
+            'Raleway-Bold.ttf: the playground can\'t load font files yet. Use the Google Fonts family instead: @font "Raleway" 700;',
+          ],
+          action: 'Undo',
+        },
+      },
     ],
     controls: [
       { name: 'title', type: 'text', label: 'Title', default: 'Thumbnail set' },
@@ -1355,6 +1417,8 @@ layer('hex').apply { circle(60, 100, 40) }`,
           title: (props.title as string) || 'Thumbnail set',
           message: props.message as string | undefined,
           image: props.image as string | undefined,
+          items: props.items,
+          action: props.action ? { label: props.action as string, onSelect: () => undefined } : undefined,
           duration: 0,
         });
       };

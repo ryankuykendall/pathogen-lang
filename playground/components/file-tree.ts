@@ -20,6 +20,16 @@
 //                                        asks before a delete
 //   rename-entry  { path, name }         Rename…'s field accepted (step 4c-2)
 //   move-entry    { path, folder }       a folder chosen in Move to… ('' is the top)
+//   upload-files  { folder, picked,      files chosen with Upload files… or
+//                   truncated }          Upload folder… (step 6a); truncated
+//                                        when a folder held too many to read
+//   upload-drop   { folder, drop }       files or folders dropped from the
+//                                        computer, taken while the drop lasted
+//                                        (services/uploads.ts captureDrop)
+// During a drop, the folder under the pointer lights up, with a label by the
+// pointer ("Drop to add to parts/"): a file row means its folder, empty space
+// or pathogen.json the top. askClash places the upload's question beside a
+// row and waits for the answer; flash marks new rows for a moment.
 // Each file's and folder's ⋮, a right-click or the menu key opens its menu;
 // a folder's menu adds to that folder. rowAfterRemoval and focusRow let
 // workspace-view put the keyboard back in the tree after a dialog.
@@ -39,11 +49,14 @@
 // the keyboard; a file row gives its folder), else the folder of the file in
 // the editor (opening a file resets the row), else the top of the workspace.
 
+import { captureDrop, pickedFromInput } from '../services/uploads.js';
 import { renamedPath } from '../services/workspace-edits.js';
 import { FILE_ICONS, MAIN_BADGE_TITLE } from '../utils/file-icons.js';
 import { treeRows } from '../utils/file-tree-rows.js';
+import './clash-prompt.js';
 import styles from './file-tree.css';
 
+import type { ClashAnswer, ClashQuestion } from './clash-prompt.js';
 import type { NewEntryKind, TreeFile, TreeRow } from '../utils/file-tree-rows.js';
 
 const esc = (s: string): string =>
@@ -54,6 +67,8 @@ const ADD_LABEL = 'Add a file or folder';
 const KEYS_HINT = 'Enter to create, Esc to cancel';
 const RENAME_KEYS_HINT = 'Enter to rename, Esc to cancel';
 const HERE_NOW = 'It’s here now';
+/** How long new rows stay marked after an upload. */
+const FLASH_MS = 1600;
 
 /** Why a name can't be used (the message), or null when it can. */
 export type NameCheck = (kind: NewEntryKind, folder: string, name: string) => string | null;
@@ -69,7 +84,17 @@ export interface EntryCheck {
  * (the tree's own); move-here (Move to…'s folders); or a file-action for workspace-view.
  */
 export type MenuAction =
-  'new-program' | 'new-library' | 'new-folder' | 'set-main' | 'rename' | 'move' | 'move-here' | 'duplicate' | 'delete';
+  | 'new-program'
+  | 'new-library'
+  | 'new-folder'
+  | 'upload-files'
+  | 'upload-folder'
+  | 'set-main'
+  | 'rename'
+  | 'move'
+  | 'move-here'
+  | 'duplicate'
+  | 'delete';
 
 interface MenuItem {
   action: MenuAction;
@@ -94,11 +119,26 @@ const NEW_KIND: Partial<Record<MenuAction, NewEntryKind>> = {
   'new-folder': 'folder',
 };
 
-/** The + menu's items, and a folder's menu's first ones (Upload files… and Upload folder… join them in step 6). */
-const ADD_ITEMS: MenuItem[] = [
+/** Whether this browser's file picker can pick a folder (Upload folder… shows only then: docs "On a phone"). */
+const CAN_PICK_FOLDER = typeof HTMLInputElement !== 'undefined' && 'webkitdirectory' in HTMLInputElement.prototype;
+
+/** The + menu's items, and a folder's menu's first ones: the new files, then the uploads (step 6a; mockup v6 screen N). */
+const ADD_ITEMS: MenuEntry[] = [
   { action: 'new-program', label: 'New program', detail: 'A file that draws', icon: FILE_ICONS.program },
   { action: 'new-library', label: 'New module', icon: FILE_ICONS.library },
   { action: 'new-folder', label: 'New folder', icon: FILE_ICONS.folderPlus },
+  'divider',
+  { action: 'upload-files', label: 'Upload files…', detail: 'Or drop them on the tree', icon: FILE_ICONS.upload },
+  ...(CAN_PICK_FOLDER
+    ? [
+        {
+          action: 'upload-folder',
+          label: 'Upload folder…',
+          detail: 'Keeps the folders inside it',
+          icon: FILE_ICONS.folderUp,
+        } as MenuItem,
+      ]
+    : []),
 ];
 
 const SET_MAIN: MenuItem = {
@@ -266,6 +306,17 @@ export class FileTree extends HTMLElement {
   /** True while the rows' HTML is being replaced (see _draw). */
   private _redrawing = false;
 
+  /** The folder Upload files… or Upload folder… adds to, set as its picker opens. */
+  private _pickTarget = '';
+
+  /** The folder lit while files are dragged over the tree ('' the top); null when none is. */
+  private _dropFolder: string | null = null;
+
+  /** New rows marked for a moment (flash). */
+  private readonly _flashing = new Set<string>();
+
+  private _flashTimer: ReturnType<typeof setTimeout> | null = null;
+
   /** What the name field's line shows now, so typing that doesn't change it doesn't re-announce it. */
   private _hintShown = '';
 
@@ -309,7 +360,28 @@ export class FileTree extends HTMLElement {
       <div class="head"><span class="title" aria-hidden="true">Files</span><button class="add" type="button" aria-label="${ADD_LABEL}" title="${ADD_LABEL}" aria-haspopup="menu" aria-expanded="false" aria-controls="add-menu">${FILE_ICONS.plus}</button></div>
       <div class="list" role="tree" aria-label="Files"></div>
       <div class="menu" id="add-menu" role="menu" aria-label="Add" hidden></div>
+      <input class="pick-files" type="file" multiple accept=".pathogen" hidden tabindex="-1">
+      <input class="pick-folder" type="file" webkitdirectory hidden tabindex="-1">
+      <div class="drop-label" aria-hidden="true" hidden></div>
+      <clash-prompt></clash-prompt>
     `;
+    // Upload files… and Upload folder…: the picker's files, for the folder the menu was opened for.
+    for (const input of this.shadowRoot!.querySelectorAll<HTMLInputElement>('.pick-files, .pick-folder')) {
+      input.addEventListener('change', () => {
+        const { picked, truncated } = pickedFromInput(input.files ?? []);
+        input.value = '';
+        if (picked.length > 0) this._emit('upload-files', { folder: this._pickTarget, picked, truncated });
+      });
+    }
+    // Files dropped from the computer (step 6a): the folder under the pointer lights up.
+    this.addEventListener('dragenter', (e) => this._onDragOver(e));
+    this.addEventListener('dragover', (e) => this._onDragOver(e));
+    this.addEventListener('dragleave', (e) => {
+      // Only leaving the tree itself, not passing from one row to another.
+      const to = e.relatedTarget as Node | null;
+      if (to === null || !this.contains(to)) this._endDrop();
+    });
+    this.addEventListener('drop', (e) => this._onDrop(e));
     const list = this._list!;
     list.addEventListener('click', (e) => this._onClick(e));
     list.addEventListener('dblclick', (e) => this._onDoubleClick(e));
@@ -356,6 +428,10 @@ export class FileTree extends HTMLElement {
 
   disconnectedCallback(): void {
     this._closeMenu(false);
+    this._endDrop();
+    if (this._flashTimer) clearTimeout(this._flashTimer);
+    this._flashTimer = null;
+    this._flashing.clear();
     window.removeEventListener('pointerdown', this._onPointerDown, true);
     window.removeEventListener('pointerup', this._onPointerUp, true);
     window.removeEventListener('pointercancel', this._onPointerUp, true);
@@ -456,6 +532,8 @@ export class FileTree extends HTMLElement {
       } finally {
         this._redrawing = false;
       }
+      // New rows: a drop in progress lights them again at the next dragover.
+      this._dropFolder = null;
       this._hintShown = '';
       // A row's menu: its ⋮ was just drawn again. Still there, the menu stays with it;
       // gone, the menu closes, and the keyboard stays in the tree.
@@ -507,6 +585,7 @@ export class FileTree extends HTMLElement {
   private _mark(): void {
     const items = this._items();
     for (const el of items) {
+      el.classList.toggle('flash', this._flashing.has(el.dataset.path!));
       if (el.classList.contains('folder')) continue;
       const selected = el.dataset.path === this._active;
       el.setAttribute('aria-selected', String(selected));
@@ -834,6 +913,15 @@ export class FileTree extends HTMLElement {
       this._moveEntry(path, item?.dataset.folder ?? '');
       return;
     }
+    if (action === 'upload-files' || action === 'upload-folder') {
+      this._closeMenu(true);
+      // Still inside the click or key that chose it, so the browser opens its picker.
+      this._pickTarget = target;
+      this.shadowRoot!.querySelector<HTMLInputElement>(
+        action === 'upload-folder' ? '.pick-folder' : '.pick-files',
+      )!.click();
+      return;
+    }
     this._closeMenu(kind === undefined);
     if (kind !== undefined) this._startNaming(kind, target);
     else if (path !== null) {
@@ -1092,6 +1180,104 @@ export class FileTree extends HTMLElement {
    * when `keepKeyboard`. If workspace-view didn't (it refused, and said why),
    * they stay where they were.
    */
+  private _emit(type: string, detail: unknown): void {
+    this.dispatchEvent(new CustomEvent(type, { bubbles: true, composed: true, detail }));
+  }
+
+  /**
+   * The folder a drop over `target` goes to: a folder row's own, a file row's
+   * folder, and the top for empty space, the header or pathogen.json.
+   */
+  dropFolderAt(target: EventTarget | null): string {
+    const path = this._pathOf(target);
+    if (path === null || path === 'pathogen.json') return '';
+    return this._isFolder(path) ? path : parentOf(path);
+  }
+
+  /** Files dragged from the computer over the tree: light the folder they'd go to, and say so by the pointer. */
+  private _onDragOver(e: DragEvent): void {
+    if (!e.dataTransfer || !Array.from(e.dataTransfer.types).includes('Files')) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'copy';
+    // Heard on the tree itself, whose target is retargeted to it: the row is the event's first stop.
+    const folder = this.dropFolderAt(e.composedPath()[0] ?? null);
+    this._showDrop(folder);
+    const label = this.shadowRoot!.querySelector<HTMLElement>('.drop-label')!;
+    label.textContent = folder ? `Drop to add to ${folder}/` : 'Drop to add at the top';
+    label.style.left = `${e.clientX + 14}px`;
+    label.style.top = `${e.clientY + 18}px`;
+    label.hidden = false;
+  }
+
+  /** Light the folder a drop would go to, and the rows in it; the whole list for the top. */
+  private _showDrop(folder: string | null): void {
+    if (folder === this._dropFolder) return;
+    this._dropFolder = folder;
+    this._list?.classList.toggle('drop-top', folder === '');
+    for (const el of this._items()) {
+      const path = el.dataset.path!;
+      el.classList.toggle('drop', folder !== null && folder !== '' && path === folder);
+      el.classList.toggle('in-drop', folder !== null && folder !== '' && path.startsWith(`${folder}/`));
+    }
+  }
+
+  private _endDrop(): void {
+    this._showDrop(null);
+    const label = this.shadowRoot?.querySelector<HTMLElement>('.drop-label');
+    if (label) label.hidden = true;
+  }
+
+  /** Files dropped: what the drop holds is taken now (the browser empties it once the event ends), and read by workspace-view. */
+  private _onDrop(e: DragEvent): void {
+    if (!e.dataTransfer || !Array.from(e.dataTransfer.types).includes('Files')) return;
+    e.preventDefault();
+    const folder = this.dropFolderAt(e.composedPath()[0] ?? null);
+    this._endDrop();
+    this._emit('upload-drop', { folder, drop: captureDrop(e.dataTransfer) });
+  }
+
+  /**
+   * Mark new rows for a moment (an upload's files, mockup v6 screen U, state
+   * 3). They stay marked through a redraw; their folders open so they show.
+   */
+  flash(paths: readonly string[]): void {
+    for (const path of paths) {
+      for (let f = parentOf(path); f !== ''; f = parentOf(f)) this._collapsed.delete(f);
+      this._flashing.add(path);
+    }
+    this._drawn = '';
+    this._draw();
+    if (this._flashTimer) clearTimeout(this._flashTimer);
+    this._flashTimer = setTimeout(() => {
+      this._flashTimer = null;
+      this._flashing.clear();
+      this._mark();
+    }, FLASH_MS);
+  }
+
+  /**
+   * Ask what to do about an upload's file whose name `existing` already has
+   * (mockup v6 screen U, state 2): the question, beside that row (its folders
+   * opened so it shows). The answer, or null when withdrawn (cancelAsk).
+   */
+  async askClash(existing: string, question: ClashQuestion): Promise<ClashAnswer | null> {
+    for (let f = parentOf(existing); f !== ''; f = parentOf(f)) this._collapsed.delete(f);
+    this._draw();
+    const prompt = this.shadowRoot!.querySelector('clash-prompt')!;
+    const row = this._item(existing);
+    row?.scrollIntoView?.({ block: 'nearest' });
+    const host = this.getBoundingClientRect();
+    const at = row?.getBoundingClientRect() ?? host;
+    prompt.style.left = `${host.right + 10}px`;
+    prompt.style.top = `${Math.max(8, Math.min(at.top - 6, window.innerHeight - 160))}px`;
+    return prompt.ask(question);
+  }
+
+  /** Withdraw the upload's question, if one is open (another workspace). */
+  cancelAsk(): void {
+    this.shadowRoot?.querySelector('clash-prompt')?.cancel();
+  }
+
   private _dispatchMove(
     type: 'rename-entry' | 'move-entry',
     detail: Record<string, string>,

@@ -17,6 +17,7 @@ import {
   planNewFolder,
   planRename,
   planSetMain,
+  planUpload,
   PROJECT_FILE,
 } from '../playground/services/workspace-edits.js';
 import { programToShow, shownProgramText, workspaceNow } from '../playground/services/workspace-files.js';
@@ -179,6 +180,14 @@ class FakeEditor {
   refreshShown = (text: string): void => {
     this.refreshed.push(text);
   };
+
+  /** Files replaced whole, as the editor is given them. */
+  replaced: { path: string; text: string }[] = [];
+
+  replaceFiles = (files: { path: string; text: string }[]): void => {
+    for (const { path } of files) this.kept.delete(path);
+    this.replaced.push(...files);
+  };
 }
 
 // 4c-1: what a change does to the files open in the editor, and to the preview.
@@ -219,6 +228,37 @@ describe('a change and the editor', () => {
     ]);
     expect([...workspaceNow().texts.keys()].includes('parts/gears.pathogen')).toBe(false);
     expect([editor.forgotten, editor.kept.has('parts/gears.pathogen')]).toEqual([['parts/gears.pathogen'], false]);
+  });
+
+  it('an upload’s Replace of the open file keeps its tab, shows the new text afresh, and the Undo brings the old back (6a)', () => {
+    editor.kept.set('parts/kit.pathogen', KIT);
+    const upload = planUpload(
+      workspaceState(),
+      [
+        { path: 'parts/gears.pathogen', text: 'module;\n// new gears\n', whenTaken: 'replace' },
+        { path: 'parts/kit.pathogen', text: 'module;\n// new kit\n', whenTaken: 'replace' },
+      ],
+      'parts',
+    );
+    const done = applyToWorkspace(planned(upload), editor);
+    expect(done.ok && done.removed).toEqual([]);
+    expect([store.get('openFile'), store.get('openFiles'), store.get('code')]).toEqual([
+      'parts/gears.pathogen',
+      ['main.pathogen', 'parts/gears.pathogen', 'parts/kit.pathogen'],
+      'module;\n// new gears\n',
+    ]);
+    // Both start afresh: the one shown now, the kept one when it's next shown.
+    expect([editor.replaced.map((r) => r.path), editor.kept.has('parts/kit.pathogen')]).toEqual([
+      ['parts/gears.pathogen', 'parts/kit.pathogen'],
+      false,
+    ]);
+    if (!upload.ok) throw new Error(upload.message);
+    applyToWorkspace(upload.undo, editor);
+    expect([store.get('code'), (store.get('workspaceFiles') as Record<string, string>)['parts/kit.pathogen']]).toEqual([
+      GEARS,
+      KIT,
+    ]);
+    expect(editor.replaced.slice(2).map((r) => r.text)).toEqual([KIT, GEARS]);
   });
 
   it('a new file where a deleted one was starts without the old one’s undo history', async () => {

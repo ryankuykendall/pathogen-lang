@@ -551,6 +551,68 @@ Each step: tests first; a storybook entry for each new component (the playground
     - The drawing kept from each editor compile is a bounded walk, stopped at the limit.
     - `programsCompiler` is a module singleton, ended when the workspace view goes, as `editorCompiler` is.
 
+**Step 6, uploads and dragging: the plan** (2026-11-13, "Let's move onto step 6"). The design is mockup v6 screen U (approved in v5) and v7 screen F, state 7 (dragging a file). The contract is docs/workspace-files.md: "Uploading files", "Renaming, moving and deleting", and "Limits" ("A save or an upload that would pass a limit is refused with a message that names it, before anything is lost"). Two commits, 6a and 6b, each with tests first, a storybook entry, a browser check and a code review.
+- **6a, uploads.**
+  - The + menu and a folder's menu gain **Upload files…** ("Or drop them on the tree") and **Upload folder…** ("Keeps the folders inside it"), as v6 draws them. Upload folder… shows only where the browser can pick a folder.
+  - Dropping files and folders from the computer onto the tree: the folder under the pointer lights up, with the label "Drop to add to parts/" by the pointer. A file row means its folder; empty space, or pathogen.json, the top. A dropped folder is read through the browser's file entries, folders inside it included.
+  - A pure sort (`services/uploads.ts`): each file's workspace path (the folder dropped on, plus the folders it came in), then what goes in, what clashes (names compared without case, as for new files) and what's left out and why.
+  - The clash prompt beside the tree, by the row of the file already there: Replace, Keep both (primary, `keepBothName`), Skip, and "Do this for all" with more than one clash. Files without a clash go in at once with the rest, in one change.
+  - `planUpload` (`services/workspace-edits.ts`): the adds, a Replace as a remove and an add of the same path, and the new programs at the end of the list in the order they came. It goes through `finish`, so the server's own rules check it.
+  - After: the new rows flash; one file opens in a tab, several don't; the preview doesn't change; the toast says what was added, and lists what wasn't, and why (a list in the toast: `app-toast` gains `items`).
+  - A replaced file's tab stays and shows the new text, with a fresh undo history (a new editor call: the old history would map onto text it never had).
+- **6b, dragging within the tree.** A file or a folder dragged onto a folder (or the top) moves there, through `planMove` and the same change as Move to…, with its toast and Undo. The folder under the pointer lights up, with the label "Move to demos/ · updates the imports in 2 files" (`moveHint`, as Move to…'s last line). The dragged row dims. A folder can't go into itself or a folder inside it; the folder it's already in doesn't light up. Escape cancels.
+- **Proposed, not in the docs or the mockups (to confirm with you):**
+  1. **A name the workspace can't use** (`my gear.pathogen`, a name over 100 characters, one Windows reserves) is left out, and the message gives the name rule, as for a file that isn't `.pathogen`. It isn't renamed for you.
+  2. **More files than the limit:** the whole upload is refused before anything is added, with the limit and the count ("A workspace can hold at most 20 files: this upload would make 23"), as the Limits section says. Counted once the clashes are answered (Replace adds nothing; Keep both does).
+  3. **A file over 1 MB, or one that isn't text**, is left out, and the message says why.
+  4. **Files and folders whose names start with a dot** (`.DS_Store`, `.git/`) are left out without a word: they're the computer's, not yours.
+  5. **Undo on the upload's toast**, as rename and Move to… have: it takes out what was added and puts back what was replaced. Replace is otherwise the one change in the tree that loses text.
+  6. **Escape on the clash prompt skips that file**; the files already settled still go in.
+  7. **An empty folder inside an uploaded folder isn't added**: folders come with the files in them.
+  8. **A folder whose name differs only in letter case from one already there** (`Parts/` dropped where `parts/` is) goes into that one, rather than being refused.
+- **Not in step 6:** importing a whole project folder (2g); data files and fonts (after phase 2); narrow screens, where nothing is dragged (step 9).
+
+**Step 6a, uploads** (2026-11-13). As the plan above says, with the proposals built as written, and these details:
+- `services/uploads.ts` (new, mostly pure):
+  - `sortUpload`: where each file goes, the clashes, and what's left out and why, by the engine's own rules (`workspaceFileKind`, `workspaceNameProblem`, `workspacePathProblem`, `WORKSPACE_LIMITS`). A folder that differs only in case goes into the one already there, within the upload too. A file can't go where a folder has its name, nor a folder where a file has its.
+  - `textOf`: fatal UTF-8; a NUL means it isn't text; a byte-order mark is dropped and line ends become `\n`, as the editor keeps them, so the saved text and the autosave hash settle.
+  - The drop: `captureDrop` takes the entries inside the drop event, and `pickedFromDrop` walks folders, every batch of `readEntries`, skipping dot-folders.
+  - `pickedFromInput`: Upload folder…'s `webkitRelativePath`. Both stop at 1,000 files and say so.
+  - `fontSuggestion`: `Raleway-Bold.ttf` → `@font "Raleway" 700;`, `Open-Sans-Bold.ttf` → `@font "Open Sans" 700;`.
+- `planUpload` (`workspace-edits.ts`): a Replace is a remove and an add of one path, so the Undo puts the old text back. A replaced file that becomes a module or a program leaves or joins the list (`entryPointsAfterEdit`); the main stays first. Keep both is numbered against names taken earlier in the same upload. The message: "Added 2 files to parts/: springs.pathogen and labels-2.pathogen.", "Replaced kit.pathogen.", and both joined.
+- **A replaced file starts afresh** (`replaceFiles`, new on the editor pane; `applyToWorkspace` calls it for a remove and an add of one path): its tab stays, it shows the new text, and its undo history is new, since the old one would map onto text it never had. A kept tab's state is dropped. The toast's Undo goes through the same call.
+- `components/clash-prompt.ts` (new; storybook "Clash Prompt", two stories), placed by the tree beside the row of the file already there (`askClash`). The keyboard starts on Keep both. Escape, heard on the document first, skips that file only. Withdrawn by another workspace (`cancelAsk` in `initialize`), it adds nothing. Withdrawn by a second upload's question, the first says so ("Another upload began before this one's question was answered").
+- **The tree:** the + menu and a folder's menu gain Upload files… ("Or drop them on the tree") and Upload folder… ("Keeps the folders inside it", only where the browser can pick a folder); hidden file inputs; the drop target, with the folder lit, the rows in it, and the label by the pointer; `flash` for new rows (1.6 s, through a redraw). `app-toast` gains `items`, a text-only list (storybook story "With a list").
+- **workspace-view:** `_upload` sorts, reads, asks, then plans on the workspace as it stands and makes it as one change, with Undo ("Undone. The files are as they were before the upload."). The session is taken when the files are picked or dropped, so a switch during a folder's walk adds nothing anywhere. More files than the limit, counting only the files that can't clash, is refused before any is read. A file dragged anywhere but the tree, while a workspace shows, is stopped on the document (capture): the browser doesn't open it, and the editor doesn't paste it. Any file added or replaced recompiles the preview (it may be one the program shown imports, or was missing).
+- **One change from the mockup:** v6 has the files without a clash go in at once, before the question. Here the whole upload is one change, made once the last question is answered: one toast, one Undo, and one count against the limit. The question says so: "The other files go in once you've chosen."
+- **Dropping from the desktop:** the browser gives only "files" while they're dragged, not their names, so the label can't list them as v6's drawing does. It says where they'll go: "Drop to add to parts/".
+- **Checked:**
+  - tests:
+    - `tests/playground-uploads.test.ts` (27, new: the sort, `textOf`, the drop walk with fake batched entries, the cap, `fontSuggestion`, `planUpload`);
+    - `tests/playground-clash-prompt.test.ts` (5, new);
+    - `tests/playground-file-tree.test.ts` (+8: the menus, the pickers, the drop target, the drop, a text drag left alone, flash, `askClash`);
+    - `tests/playground-workspace-apply.test.ts` (+1: Replace of the open file and of a kept one, and the Undo);
+    - `tests/playground-editor-read-only.test.ts` (+1: `replaceFiles`);
+    - `tests/playground-app-toast.test.ts` (+1: `items`, a name with markup shown as text);
+  - `verify/verify-2d-step6a.ts` against `npm run dev:stack`, 26 checks:
+    - the + menu; the question beside its row; Keep both, the toast and its list, the flash, nothing opened, the program list, the server;
+    - Undo; Replace of the open file, its fresh history, and Undo;
+    - Windows line ends and a byte-order mark; a 900 KB file saved whole;
+    - Upload folder… (puppeteer's picker takes a folder, so it's checked for real), `.DS_Store` left out;
+    - a drop on a folder (built from a `DataTransfer` in the page; its entries come back empty, so a dropped folder's walk is checked by the unit tests only);
+    - a drop on the editor (nothing happens); Escape; the limit; a switch while it asks;
+    - dark; the storybook;
+  - `verify-2d-step3`, `3b`, `4a`, `4b`, `4c1`, `4c2`, `4d`, `5a` and `5b` still pass (4b, 4c1 and 4c2 with the menus' two new items);
+  - the full suite: 8,987 passed.
+- **Review** (code-reviewer: approve with warnings; no critical issues). It confirmed Replace and its Undo through `replaceFiles`, the fresh plan made in the same tick as it's applied, and the escaping. Fixed:
+  - **A drop's session was taken after its folder's walk**, so a switch during a long walk could add the files to the next workspace. Now it's taken when the files are dropped or picked.
+  - **Upload folder… had no cap**, and every candidate was read before the limit refused the upload. Now it's 1,000 files, as for a drop, and an upload over the limit is refused before any file is read.
+  - **The drop guard ran on every page** (workspace-view is always in the page): now only while a workspace shows.
+  - **Folders that differ only in case within one upload** (or a new file and a new folder with one name) would have made a workspace the server refuses. They merge or are left out with why.
+  - A pick or a drop before the workspace has loaded says so. The question's Keep both name is numbered from the new file's name, as the plan numbers it. `fontSuggestion` reads hyphenated families. A test pins the main replaced with a module, and one a later Keep both's numbering.
+  - Not changed, with reasons: `dragleave` in Safari (its `relatedTarget` is null) may let the light flicker between rows, and the next `dragover` lights it again; `flash` redraws the tree once per upload.
+- **Proposals 1 to 8 above, and the one change from the mockup, await your answer.**
+
 **The v7 mockup round** (2026-11-09, commit `5c8f925`): note 53, `phase-2-mockups-v7/`. Five screens: no programs left, folders and moving, narrow screens, the mini-workspace, the ⋮ menu. It also draws what v6 left out (renaming a file, Move to…, dragging a file). Six questions await you; steps 4 and 9 wait for them.
 - *Answered 2026-11-09: all six agreed* (note 53, "Your answers"). What that adds to the steps:
   - step 2: each change can be undone (the toast's Undo); a rename takes a name only, no slash and no extension; Move to…; the first program in an empty workspace is shown;

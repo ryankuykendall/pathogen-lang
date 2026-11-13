@@ -53,6 +53,11 @@ export const FILE_ICONS = {
   chevronUp: icon('<path d="m6 15 6-6 6 6"/>'),
   /** The program list's check on the program shown. */
   check: icon('<path d="M20 6 9 17l-5-5"/>'),
+  /** Upload files… and Upload folder… in the + menu (step 6a; mockup v6 screen N). */
+  upload: icon('<path d="M12 15V3M7 8l5-5 5 5"/><path d="M4 15v4a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-4"/>'),
+  folderUp: icon(
+    '<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M12 16v-6M9 12.5l3-3 3 3"/>',
+  ),
 } as const;
 
 /** The `main` badge's title, in the file tree and the program list (mockup v6). */

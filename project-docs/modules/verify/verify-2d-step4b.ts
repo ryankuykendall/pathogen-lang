@@ -212,7 +212,8 @@ try {
     'the + opens its menu for the folder of the file in the editor, the first item focused',
     s.menu.open &&
       s.menu.head === 'Add to parts/' &&
-      JSON.stringify(s.menu.items) === '["New program","New module","New folder"]' &&
+      // (Upload files… and Upload folder… since step 6a.)
+      JSON.stringify(s.menu.items) === '["New program","New module","New folder","Upload files…","Upload folder…"]' &&
       s.menu.focused === 'New program',
     s.menu,
   );

@@ -244,7 +244,8 @@ try {
     'a right-click on a folder opens its menu',
     s.menu.open &&
       s.menu.head === 'Add to parts/' &&
-      JSON.stringify(s.menu.items) === '["New program","New module","New folder","Rename…","Move to…","Delete…"]',
+      JSON.stringify(s.menu.items) ===
+        '["New program","New module","New folder","Upload files…","Upload folder…","Rename…","Move to…","Delete…"]',
     s.menu,
   );
   await page.screenshot({ path: `${SHOTS}/2d-step4c1-folder-menu-light.png` });

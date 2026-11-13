@@ -53,6 +53,8 @@ export interface ChangeEditor extends FileEditor {
   refreshShown: (text: string) => void;
   /** Files moved or renamed, in order: their kept states and the file shown go with them. */
   renameFiles: (moves: { from: string; to: string }[]) => void;
+  /** Files whose text was replaced whole (an upload's Replace): each starts afresh, undo history and all. */
+  replaceFiles: (files: { path: string; text: string }[]) => void;
   /**
    * A file's import rewrites (by its path after the change), outside its undo
    * history, without telling anyone (the store update says it all). `before`
@@ -168,6 +170,12 @@ export function applyToWorkspace(change: Change, editor?: ChangeEditor): ApplyRe
   for (const rewrite of rewrites) {
     editor?.editFile(follow(rewrite.path, rewrite.at), rewrite.edits, rewrite.before, rewrite.after);
   }
+  // Files replaced whole (a remove and an add of one path: an upload's Replace, or its Undo) start afresh.
+  const removedSteps = new Set(change.steps.flatMap((step) => (step.kind === 'remove' ? [step.path] : [])));
+  const replaced = change.steps.flatMap((step) =>
+    step.kind === 'add' && removedSteps.has(step.path) && step.path in next.files ? [step.path] : [],
+  );
+  if (replaced.length > 0) editor?.replaceFiles(replaced.map((path) => ({ path, text: next.files[path] })));
 
   // The tabs, and the file in the editor (none: the zero-state).
   const openFiles = store.get('openFiles') as string[];

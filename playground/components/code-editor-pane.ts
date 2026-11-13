@@ -401,6 +401,29 @@ export class CodeEditorPane extends HTMLElement {
     for (const path of paths) this._kept.delete(path);
   }
 
+  /**
+   * Files whose text was replaced whole (an upload's Replace, or its Undo):
+   * each starts afresh with its new text, undo history and all, since the old
+   * history would map onto text it never had. A kept one is dropped, so it's
+   * made afresh when shown; the file shown shows the new text now. No
+   * code-change: the caller updates the store.
+   */
+  replaceFiles(files: readonly { path: string; text: string }[]): void {
+    for (const { path, text } of files) {
+      this._kept.delete(path);
+      if (path !== this._activePath) continue;
+      if (!this._editor || !this._cmModules) {
+        this._initialCode = text;
+        continue;
+      }
+      const hadFocus = this._editor.hasFocus;
+      this._editor.setState(this._newState(text, path));
+      this._updateEditorTheme();
+      this._clearMarks();
+      if (hadFocus) this._editor.focus();
+    }
+  }
+
   /** Files moved or renamed, in order: each keeps its state, undo history and all, under its new path. */
   renameFiles(moves: readonly { from: string; to: string }[]): void {
     for (const { from, to } of moves) {

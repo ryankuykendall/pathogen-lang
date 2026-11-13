@@ -614,6 +614,91 @@ export function planDuplicate(state: WorkspaceState, path: string): Planned {
   return finish(state, [{ kind: 'add', path: copy, text }], state.folders, entryPoints, {});
 }
 
+/** One file of an upload, its clash (if any) answered (step 6a). */
+export interface UploadEntry {
+  /** Where it goes: a workspace path. */
+  path: string;
+  text: string;
+  /** For a name already taken (in any letter case): replace that file, or add this one beside it, numbered (Keep both). */
+  whenTaken: 'replace' | 'keep-both';
+}
+
+/** The names of files, joined for a message: "a.pathogen", "a.pathogen and b.pathogen", or the count past four. */
+function namesFor(paths: string[]): string {
+  return paths.length > 4 ? `${paths.length} files` : nameList(paths);
+}
+
+/** What an upload's toast says: what was added, and where, and what was replaced. */
+function uploadMessage(folder: string, added: string[], replaced: string[]): string {
+  const inFolder = (p: string): string => (folder && p.startsWith(`${folder}/`) ? p.slice(folder.length + 1) : p);
+  const parts: string[] = [];
+  if (added.length > 0) {
+    const names = added.map(inFolder);
+    const where = folder ? ` to ${folder}/` : '';
+    parts.push(
+      added.length > 1 && added.length <= 4
+        ? `Added ${added.length} files${where}: ${nameList(names)}`
+        : `Added ${namesFor(names)}${where}`,
+    );
+  }
+  if (replaced.length > 0) {
+    parts.push(`${parts.length > 0 ? 'replaced' : 'Replaced'} ${namesFor(replaced.map(inFolder))}`);
+  }
+  return `${parts.join(', and ')}.`;
+}
+
+/**
+ * Upload files… , Upload folder… or a drop (docs/workspace-files.md
+ * "Uploading files"), planned on the workspace as it stands once the clashes
+ * are answered: a name taken since is a clash, one freed since an add. A
+ * Replace is a remove and an add of the same path, so the Undo puts the old
+ * text back. New programs go at the end of the list in the order they came; a
+ * replaced file that becomes a module or a program leaves or joins it, as
+ * typing `module;` does. One file opens in a tab. More files than the limit
+ * refuses the whole upload, before anything is added (docs "Limits").
+ * `folder` is where they were put, for the message.
+ */
+export function planUpload(state: WorkspaceState, entries: readonly UploadEntry[], folder: string): Planned {
+  if (entries.length === 0) return nothing();
+  let working: WorkspaceState = state;
+  const steps: Step[] = [];
+  const added: string[] = [];
+  const replaced: string[] = [];
+  let entryPoints = state.entryPoints;
+  for (const entry of entries) {
+    const at = parentOf(entry.path);
+    const existing = Object.keys(working.files).find((p) => p.toLowerCase() === entry.path.toLowerCase());
+    if (existing !== undefined && entry.whenTaken === 'replace' && existing in state.files) {
+      steps.push({ kind: 'remove', path: existing, text: working.files[existing] });
+      steps.push({ kind: 'add', path: existing, text: entry.text });
+      replaced.push(existing);
+      if (entryPoints[0] !== existing) {
+        const next = entryPointsAfterEdit({ ...working, entryPoints }, existing, entry.text);
+        if (next) entryPoints = next.entryPoints;
+      }
+      working = { ...working, files: { ...working.files, [existing]: entry.text } };
+      continue;
+    }
+    const path = existing === undefined ? entry.path : join(at, keepBothName(working, at, baseOf(entry.path)));
+    steps.push({ kind: 'add', path, text: entry.text });
+    added.push(path);
+    if (!isLibrary(entry.text)) entryPoints = [...entryPoints, path];
+    working = { ...working, files: { ...working.files, [path]: entry.text } };
+  }
+  const limit = lib().WORKSPACE_LIMITS.files;
+  const count = Object.keys(state.files).length;
+  if (count + added.length > limit) {
+    return refuse(
+      `A workspace can hold at most ${limit} files: this one has ${count}, and the upload would make ${count + added.length}.`,
+    );
+  }
+  const all = [...added, ...replaced];
+  return finish(state, steps, state.folders, entryPoints, {
+    message: uploadMessage(folder, added, replaced),
+    ...(all.length === 1 ? { open: all[0] } : {}),
+  });
+}
+
 /** What Delete… asks about: the files that go, and the files left that import them. */
 export function deleteSummary(state: WorkspaceState, path: string): { files: string[]; importers: string[] } {
   const folder = isFolder(state, path);

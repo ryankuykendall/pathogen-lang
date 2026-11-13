@@ -22,6 +22,9 @@ import { workspaceApi } from '../services/api.js';
 import { autosave, SaveStatus } from '../services/autosave.js';
 import compilerWorker, { editorCompiler, programsCompiler } from '../services/compiler-worker.js';
 import { ProgramDrawings } from '../services/program-drawings.js';
+import { leftOutLines, MAX_PICKED, pickedFromDrop, sortUpload, textOf } from '../services/uploads.js';
+import type { CapturedDrop, LeftOut, PickedFile } from '../services/uploads.js';
+import type { ClashChoice } from './clash-prompt.js';
 import { formatFontSubstitutions } from '../services/font-loader.js';
 import thumbnailService from '../services/thumbnail-service.js';
 import { SnapshotController } from '../services/snapshot-controller.js';
@@ -59,6 +62,7 @@ import { applyToWorkspace, workspaceState } from '../services/workspace-apply.js
 import {
   deleteSummary,
   isFolder,
+  keepBothName,
   moveHint,
   pathAfterChange,
   planDelete,
@@ -68,9 +72,10 @@ import {
   planNewFolder,
   planRename,
   planSetMain,
+  planUpload,
   renameHint,
 } from '../services/workspace-edits.js';
-import type { Change, Planned } from '../services/workspace-edits.js';
+import type { Change, Planned, UploadEntry } from '../services/workspace-edits.js';
 import './shared/confirm-dialog.js';
 import type { ConfirmDialog } from './shared/confirm-dialog.js';
 import { deleteQuestion } from '../utils/delete-question.js';
@@ -301,11 +306,29 @@ export class WorkspaceView extends HTMLElement {
     // placing errors, kept current as the workspace changes.
     this._unwatchModules = watchOpenFileModules();
 
+    // Files dragged from the computer go to the tree only (step 6a). Anywhere
+    // else, the browser would open the file in place of the playground, and
+    // the editor would paste its text.
+    document.addEventListener('dragover', this._onStrayDrop, true);
+    document.addEventListener('drop', this._onStrayDrop, true);
+
     // Check if we should initialize immediately (if already on workspace route)
     this.handleRouteChange();
   }
 
+  /** A file dragged or dropped anywhere but the file tree: nothing happens (see connectedCallback). Only while a workspace shows. */
+  private readonly _onStrayDrop = (e: DragEvent): void => {
+    if (store.get('currentView') !== 'workspace') return;
+    if (!e.dataTransfer || !Array.from(e.dataTransfer.types).includes('Files')) return;
+    if (e.composedPath().some((node) => node instanceof HTMLElement && node.localName === 'file-tree')) return;
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.type === 'dragover') e.dataTransfer.dropEffect = 'none';
+  };
+
   disconnectedCallback(): void {
+    document.removeEventListener('dragover', this._onStrayDrop, true);
+    document.removeEventListener('drop', this._onStrayDrop, true);
     if (this._routeUnsubscribe) {
       this._routeUnsubscribe();
     }
@@ -453,6 +476,7 @@ export class WorkspaceView extends HTMLElement {
     forgetFiles: (paths: string[]) => void;
     refreshShown: (text: string) => void;
     renameFiles: (moves: { from: string; to: string }[]) => void;
+    replaceFiles: (files: { path: string; text: string }[]) => void;
     editFile: (
       path: string,
       edits: { from: number; to: number; insert: string }[],
@@ -608,8 +632,10 @@ export class WorkspaceView extends HTMLElement {
     this._editedSinceList.clear();
     this.programChip?.close();
     // Its programs' drawings too: a compile in flight is stopped, and the miniatures released.
+    // (An upload waiting on the reset's session, or on its question, adds nothing.)
     this._programsToDrawCache = null;
     this._drawings.reset();
+    this.fileTree?.cancelAsk();
 
     // With no file open, the editor shows the previous workspace's zero-state.
     const wasNone = openFileNow() === null;
@@ -1005,6 +1031,22 @@ export class WorkspaceView extends HTMLElement {
         const copy = made?.steps.find((step) => step.kind === 'add');
         if (copy?.kind === 'add') this.fileTree?.focusRow(copy.path);
       }
+    });
+    // Uploads (2d, step 6a; mockup v6 screen U): Upload files…, Upload folder…, or files dropped on the tree.
+    // Each upload belongs to the workspace it was made in: the session is taken now, before any reading.
+    this.shadowRoot!.addEventListener('upload-files', (e: Event) => {
+      const { folder, picked, truncated } = (
+        e as CustomEvent<{ folder: string; picked: PickedFile[]; truncated?: boolean }>
+      ).detail;
+      const session = this._drawings.session;
+      this._upload(folder, picked, truncated ?? false, session).catch((err: unknown) => this._uploadFailed(err));
+    });
+    this.shadowRoot!.addEventListener('upload-drop', (e: Event) => {
+      const { folder, drop } = (e as CustomEvent<{ folder: string; drop: CapturedDrop }>).detail;
+      const session = this._drawings.session;
+      pickedFromDrop(drop)
+        .then(async ({ picked, truncated }) => this._upload(folder, picked, truncated, session))
+        .catch((err: unknown) => this._uploadFailed(err));
     });
 
     // Background, Grid and Precision, from the inspector's Canvas section. The
@@ -1614,7 +1656,16 @@ export class WorkspaceView extends HTMLElement {
    */
   private _applyWorkspaceChange(
     change: Change,
-    options: { focusEditor?: boolean; undo?: Change; failTitle?: string } = {},
+    options: {
+      focusEditor?: boolean;
+      undo?: Change;
+      failTitle?: string;
+      /** What the Undo's own toast says (an upload's isn't about names and imports). */
+      undoMessage?: string;
+      /** More for the toast: a line under the title and a list (an upload's files left out). */
+      toastMessage?: string;
+      toastItems?: string[];
+    } = {},
   ): boolean {
     const shownBefore = openFileNow();
     const result = applyToWorkspace(change, this.editorPane);
@@ -1643,14 +1694,22 @@ export class WorkspaceView extends HTMLElement {
     }
     autosave.onChange(workspaceNow());
     const moved = change.steps.some((step) => step.kind === 'move' || step.kind === 'imports');
-    if (change.show !== undefined || result.removed.length > 0 || moved) this.updatePreview();
+    // A file added or replaced (an upload) may be one the program shown imports, or was missing.
+    const added = change.steps.some((step) => step.kind === 'add');
+    if (change.show !== undefined || result.removed.length > 0 || moved || added) this.updatePreview();
     if (change.message) {
       const detail: ToastDetail = { type: 'success', title: change.message };
+      if (options.toastMessage) detail.message = options.toastMessage;
+      if (options.toastItems && options.toastItems.length > 0) detail.items = options.toastItems;
       if (options.undo) {
         const undo = options.undo;
         const version = this._structureVersion;
         const workspaceId = store.get('workspaceId');
-        detail.action = { label: 'Undo', onSelect: () => this._undoChange(undo, version, workspaceId) };
+        const undoMessage = options.undoMessage;
+        detail.action = {
+          label: 'Undo',
+          onSelect: () => this._undoChange(undo, version, workspaceId, undoMessage),
+        };
         detail.duration = UNDO_TOAST_MS;
         this._undoToast = new AbortController();
         detail.signal = this._undoToast.signal;
@@ -1673,7 +1732,7 @@ export class WorkspaceView extends HTMLElement {
    * toast; this check is the backstop); typing since doesn't count. An import
    * retyped since can't be put back, and nothing changes.
    */
-  private _undoChange(undo: Change, version: number, workspaceId: unknown): void {
+  private _undoChange(undo: Change, version: number, workspaceId: unknown, undoMessage?: string): void {
     if (!this.isConnected || this._structureVersion !== version || store.get('workspaceId') !== workspaceId) {
       this._toastError(
         'Nothing was undone',
@@ -1681,7 +1740,7 @@ export class WorkspaceView extends HTMLElement {
       );
       return;
     }
-    const message = 'Undone. The names and the imports are as they were.';
+    const message = undoMessage ?? 'Undone. The names and the imports are as they were.';
     this._applyWorkspaceChange({ ...undo, message }, { focusEditor: false, failTitle: 'Nothing was undone' });
   }
 
@@ -1760,8 +1819,123 @@ export class WorkspaceView extends HTMLElement {
     if (next === null || !tree?.focusRow(next)) tree?.focusTabStop();
   }
 
-  private _toastError(title: string, message: string): void {
-    document.dispatchEvent(new CustomEvent('show-toast', { detail: { type: 'error', title, message } }));
+  private _toastError(title: string, message: string, items?: string[]): void {
+    const detail: ToastDetail = { type: 'error', title, message };
+    if (items && items.length > 0) detail.items = items;
+    document.dispatchEvent(new CustomEvent('show-toast', { detail }));
+  }
+
+  /**
+   * Upload files (2d, step 6a; docs/workspace-files.md "Uploading files"):
+   * sort them (where each goes, what clashes, what's left out and why), read
+   * them, ask about each taken name beside its row, then plan the upload on
+   * the workspace as it stands by then and make it as one change, with Undo.
+   * Another workspace meanwhile drops it. Nothing is added when nothing can
+   * be, or when the upload would pass the file limit.
+   */
+  private async _upload(folder: string, picked: PickedFile[], truncated: boolean, session: number): Promise<void> {
+    // Another workspace since the files were picked or dropped (a folder's walk takes a while): it gets nothing.
+    const stale = (): boolean => this._drawings.session !== session || !this.isConnected;
+    if (stale()) return;
+    if (!holdsWorkspace()) {
+      this._toastError('Nothing was added', 'Files can be added once the workspace has loaded.');
+      return;
+    }
+    const sorted = sortUpload(workspaceState(), folder, picked);
+    const leftOut: LeftOut[] = [...sorted.leftOut];
+    if (truncated) {
+      leftOut.unshift({
+        name: 'The folder',
+        reason: `holds more than ${MAX_PICKED} files: only the first were read.`,
+      });
+    }
+    // More files than the limit, whatever the answers about taken names: refused before reading any.
+    const limit = window.PathogenLang.WORKSPACE_LIMITS.files;
+    const count = Object.keys(workspaceState().files).length;
+    const adding = sorted.candidates.filter((c) => c.clashesWith === null).length;
+    if (count + adding > limit) {
+      this._toastError(
+        'Nothing was added',
+        `A workspace can hold at most ${limit} files: this one has ${count}, and the upload would make ${count + adding}.`,
+        leftOutLines(leftOut),
+      );
+      return;
+    }
+    const ready: { path: string; text: string; clashesWith: string | null }[] = [];
+    for (const candidate of sorted.candidates) {
+      let read: ReturnType<typeof textOf>;
+      try {
+        read = textOf(await candidate.file.read());
+      } catch {
+        read = { problem: "couldn't be read." };
+      }
+      if ('problem' in read) leftOut.push({ name: candidate.file.path, reason: read.problem });
+      else ready.push({ path: candidate.path, text: read.text, clashesWith: candidate.clashesWith });
+    }
+    if (stale()) return;
+    // Each taken name, in turn, beside its row (or all at once: "Do the same for the others").
+    const choices = new Map<string, ClashChoice>();
+    const clashes = ready.filter((r) => r.clashesWith !== null);
+    let forAll: ClashChoice | null = null;
+    for (const [i, clash] of clashes.entries()) {
+      if (forAll !== null) {
+        choices.set(clash.path, forAll);
+        continue;
+      }
+      const tree = this.fileTree;
+      const existing = clash.clashesWith!;
+      if (!tree) return;
+      const at = existing.includes('/') ? existing.slice(0, existing.lastIndexOf('/')) : '';
+      const answer = await tree.askClash(existing, {
+        name: existing.slice(existing.lastIndexOf('/') + 1),
+        where: at ? `${at}/` : 'the top of the workspace',
+        // Numbered from the new file's own name, as planUpload numbers it.
+        keepBothName: keepBothName(workspaceState(), at, clash.path.slice(clash.path.lastIndexOf('/') + 1)),
+        others: clashes.length - i - 1,
+      });
+      // Another workspace, or the workspace view gone: nothing is added.
+      if (stale()) return;
+      // Withdrawn by another upload's question: this one is set aside, and says so.
+      if (answer === null) {
+        this._toastError('Nothing was added', 'Another upload began before this one’s question was answered.');
+        return;
+      }
+      choices.set(clash.path, answer.choice);
+      if (answer.forAll) forAll = answer.choice;
+    }
+    const entries: UploadEntry[] = ready
+      .filter((r) => choices.get(r.path) !== 'skip')
+      .map((r) => ({
+        path: r.path,
+        text: r.text,
+        whenTaken: choices.get(r.path) === 'replace' ? 'replace' : 'keep-both',
+      }));
+    const lines = leftOutLines(leftOut);
+    if (entries.length === 0) {
+      if (lines.length > 0) this._toastError('Nothing was added', 'Not added:', lines);
+      this.fileTree?.focusTabStop();
+      return;
+    }
+    const planned = planUpload(workspaceState(), entries, folder);
+    if (!planned.ok) {
+      this._toastError('Nothing was added', planned.message, lines);
+      return;
+    }
+    const made = this._applyWorkspaceChange(planned.change, {
+      undo: planned.undo,
+      focusEditor: false,
+      failTitle: 'Nothing was added',
+      undoMessage: 'Undone. The files are as they were before the upload.',
+      ...(lines.length > 0 ? { toastMessage: 'Not added:', toastItems: lines } : {}),
+    });
+    if (!made) return;
+    const arrived = planned.change.steps.flatMap((step) => (step.kind === 'add' ? [step.path] : []));
+    this.fileTree?.flash(arrived);
+  }
+
+  private _uploadFailed(err: unknown): void {
+    console.warn('Upload failed:', err);
+    this._toastError('Nothing was added', err instanceof Error ? err.message : String(err));
   }
 
   /**

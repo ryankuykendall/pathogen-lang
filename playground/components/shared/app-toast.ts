@@ -24,6 +24,8 @@ export interface ToastDetail {
   action?: { label: string; onSelect: () => void };
   /** Withdraws the toast early when aborted: an action that no longer applies (a file change's Undo after another change). */
   signal?: AbortSignal;
+  /** Lines listed under the message, as text: the files an upload left out, each with why. */
+  items?: string[];
 }
 
 const DEFAULT_DURATION = 4500;
@@ -113,6 +115,19 @@ const styles = `
     display: -webkit-box;
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
+  }
+
+  .items {
+    margin: 0.2rem 0 0;
+    padding-left: 1.1rem;
+    font-size: 0.75rem;
+    line-height: 1.4;
+    color: var(--text-secondary, #64748b);
+    overflow-wrap: anywhere;
+  }
+
+  .items li + li {
+    margin-top: 0.15rem;
   }
 
   .action {
@@ -215,6 +230,17 @@ export class AppToast extends HTMLElement {
       msg.className = 'message';
       msg.textContent = opts.message;
       body.appendChild(msg);
+    }
+    if (opts.items && opts.items.length > 0) {
+      // Text only: an upload's lines name files from the user's disk, whatever they're called.
+      const list = document.createElement('ul');
+      list.className = 'items';
+      for (const line of opts.items) {
+        const li = document.createElement('li');
+        li.textContent = line;
+        list.appendChild(li);
+      }
+      body.appendChild(list);
     }
     if (opts.action) {
       const act = document.createElement('button');

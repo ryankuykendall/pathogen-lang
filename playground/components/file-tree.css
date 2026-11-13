@@ -455,8 +455,66 @@
   color: var(--error-text, #dc2626);
 }
 
+/* Uploads (step 6a; mockup v6 screen U): the folder a drop goes to, the rows in it, the top. */
+.row.drop {
+  background: var(--secondary-accent-subtle, rgba(148, 97, 196, 0.12));
+  box-shadow: inset 0 0 0 1.5px var(--secondary-accent, #9461c4);
+  border-radius: 4px;
+  color: var(--secondary-accent-text, #6b3fa0);
+}
+
+.row.in-drop {
+  background: color-mix(in srgb, var(--secondary-accent-subtle, rgba(148, 97, 196, 0.12)) 55%, transparent);
+}
+
+.list.drop-top {
+  background: color-mix(in srgb, var(--secondary-accent-subtle, rgba(148, 97, 196, 0.12)) 55%, transparent);
+  box-shadow: inset 0 0 0 1.5px var(--secondary-accent, #9461c4);
+  border-radius: 6px;
+}
+
+/* The label by the pointer while files are dragged over the tree. */
+.drop-label {
+  position: fixed;
+  z-index: var(--z-popover, 300);
+  pointer-events: none;
+  padding: 2px 9px;
+  border-radius: 999px;
+  border: 1px solid var(--secondary-accent, #9461c4);
+  background: var(--bg-elevated, #fff);
+  font-family: var(--font-sans, system-ui, sans-serif);
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--secondary-accent-text, #6b3fa0);
+  white-space: nowrap;
+  box-shadow: var(--shadow-md, 0 4px 12px rgba(0, 0, 0, 0.12));
+}
+
+.drop-label[hidden] {
+  display: none;
+}
+
+/* New rows, for a moment after an upload. */
+.row.flash {
+  animation: row-flash 1.6s ease-out;
+}
+
+@keyframes row-flash {
+  0%,
+  60% {
+    background: color-mix(in srgb, var(--success-color, #16a34a) 16%, transparent);
+  }
+  100% {
+    background: transparent;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .chev svg {
     transition: none;
+  }
+  .row.flash {
+    animation: none;
+    background: color-mix(in srgb, var(--success-color, #16a34a) 16%, transparent);
   }
 }
