@@ -68,9 +68,13 @@ export interface StoreState {
   workspaceFiles: Record<string, string>;
   workspaceFolders: string[];
   workspaceEntryPoints: string[];
-  /** The file in the editor. */
-  openFile: string;
-  /** The editor's tabs, in order; `openFile` is one of them. */
+  /**
+   * The file in the editor; null with every tab closed (2d, step 4d), when the
+   * editor shows its zero-state and `code` is ''. Read it with
+   * services/workspace-files.ts `openFileNow()`, never `as string`.
+   */
+  openFile: string | null;
+  /** The editor's tabs, in order; `openFile` is one of them. Empty with no file open. */
   openFiles: string[];
   /** The program the preview shows; null means the main (the first entry point). */
   shownProgram: string | null;

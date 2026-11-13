@@ -212,15 +212,16 @@ try {
   });
   made.push(a);
 
-  // 1. One tab, no ×, and the file crumb.
+  // 1. One tab and the file crumb. Its × came with step 4d: every tab closes,
+  // the last one too, to the editor's zero-state (verify-2d-step4d.ts).
   await open(page, a);
   let state = await editorState(page);
   check(
-    'a workspace opens on its main: one tab, without ×, and the crumb main.pathogen',
+    'a workspace opens on its main: one tab, with its × (step 4d), and the crumb main.pathogen',
     state.tabs.length === 1 &&
       state.tabs[0].label === 'main' &&
       state.tabs[0].selected &&
-      !state.tabs[0].closable &&
+      state.tabs[0].closable &&
       state.crumb === 'main.pathogen',
     state,
   );

@@ -56,6 +56,15 @@ describe('the store from a load', () => {
     expect(app.openFile).toBe('app.pathogen');
   });
 
+  it('a workspace with no files opens no file: never a main.pathogen it doesn’t hold (step 4d)', () => {
+    expect(workspaceFromAnswer({ files: {}, folders: ['parts'], entryPoints: [] })).toEqual({
+      workspaceFiles: {},
+      workspaceFolders: ['parts'],
+      workspaceEntryPoints: [],
+      openFile: null,
+    });
+  });
+
   it("reads a server's answer from before phase 2 (one `code`) as just main.pathogen", () => {
     expect(workspaceFromAnswer({ code: 'M 1 1' })).toEqual({
       workspaceFiles: { 'main.pathogen': 'M 1 1' },

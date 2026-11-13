@@ -13,7 +13,7 @@
 
 import { workspaceApi } from '../services/api.js';
 import { getUserId } from '../services/user-id.js';
-import { programToShow, workspaceNow } from '../services/workspace-files.js';
+import { holdsWorkspace, openFileNow, programToShow, workspaceNow } from '../services/workspace-files.js';
 import { hasFeature, UserFeature } from '../services/auth.js';
 import type { CurrentUser } from '../services/auth.js';
 import {
@@ -249,9 +249,9 @@ class AppBreadcrumb extends HTMLElement {
         }
 
         crumbs.push({ label, id, route: null, isCurrent: true });
-        // The file in the editor, with its folder: `parts/gears.pathogen`.
-        if (currentView === 'workspace') {
-          const file = store.get('openFile') as string;
+        // The file in the editor, with its folder: `parts/gears.pathogen`. None with no file open.
+        const file = openFileNow();
+        if (currentView === 'workspace' && file !== null) {
           crumbs.push({ label: file, route: null, isCurrent: true, file });
         }
       }
@@ -386,7 +386,9 @@ class AppBreadcrumb extends HTMLElement {
       `<button data-action="export" title="Export as SVG, PNG, or PDF (Ctrl+Shift+E)">${materialIcon('download', { size: 16, className: 'menu-icon' })}<span>Export</span></button>`,
     );
     menuItems.push(
-      `<button data-action="format-document" title="Format the current document (Ctrl/Cmd+Shift+F)">${materialIcon('format-left', { size: 16, className: 'menu-icon' })}<span>Format Document</span></button>`,
+      openFileNow() === null
+        ? `<button data-action="format-document" disabled title="No file open">${materialIcon('format-left', { size: 16, className: 'menu-icon' })}<span>Format Document</span></button>`
+        : `<button data-action="format-document" title="Format the current document (Ctrl/Cmd+Shift+F)">${materialIcon('format-left', { size: 16, className: 'menu-icon' })}<span>Format Document</span></button>`,
     );
     if (hasWorkspace && isOwner) {
       menuItems.push(
@@ -466,10 +468,12 @@ class AppBreadcrumb extends HTMLElement {
     const isWorkspaceView = currentView === 'workspace';
     const consoleOpen = store.get('consoleOpen') as boolean;
     const filesOpen = store.get('filesOpen') as boolean;
-    const hasFiles = Object.keys(store.get('workspaceFiles') as Record<string, string>).length > 0;
-    const filesToggle = hasFiles
+    // A saved workspace has a tree, even with every file deleted (its + is how files come back).
+    const filesToggle = holdsWorkspace()
       ? `<button id="files-toggle" class="toggle-btn ${filesOpen ? 'active' : ''}" aria-pressed="${filesOpen}" title="${filesOpen ? 'Hide' : 'Show'} the workspace’s files">Files</button>`
       : '';
+    // Copy Code and Format Document wait for a file (step 4d): with none open, they're off and say why.
+    const noFileOpen = openFileNow() === null;
 
     const calledStdlib = (store.get('calledStdlibFunctions') || []) as string[];
     const usesRandom = usesRandomValues(calledStdlib);
@@ -540,7 +544,7 @@ class AppBreadcrumb extends HTMLElement {
                 ${filesToggle}
                 <button id="console-toggle" class="toggle-btn ${consoleOpen ? 'active' : ''}" aria-pressed="${consoleOpen}" title="Show console output">Console</button>
               </div>
-              <button id="copy-code" class="secondary-btn" title="Copy code to clipboard">
+              <button id="copy-code" class="secondary-btn" ${noFileOpen ? 'disabled title="No file open: open one to copy its code"' : 'title="Copy code to clipboard"'}>
                 Copy Code
               </button>
               <span id="copy-feedback" class="copy-feedback">Copied!</span>

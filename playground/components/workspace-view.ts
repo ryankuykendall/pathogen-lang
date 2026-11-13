@@ -26,10 +26,13 @@ import { SnapshotController } from '../services/snapshot-controller.js';
 import type { CaptureSnapshotDetail } from '../services/snapshot-controller.js';
 import tabCoordinator from '../services/tab-coordinator.js';
 import { getUserId } from '../services/user-id.js';
-import { closeFile, openFile, tabItems } from '../services/open-files.js';
+import { closeFile, lastTabStays, openFile, tabItems } from '../services/open-files.js';
 import {
   filesWithoutText,
+  holdsWorkspace,
   MAIN_FILE,
+  mainOf,
+  openFileNow,
   programToShow,
   withOpenFileText,
   workspaceFromAnswer,
@@ -46,6 +49,7 @@ import type { OpenFileModules } from '../services/workspace-modules.js';
 import type { CanvasChangeDetail, CanvasSettings } from './canvas-panel.js';
 import type { EditorTabs } from './editor-tabs.js';
 import type { EntryCheck, FileTree } from './file-tree.js';
+import type { ZeroStateAction } from './editor-zero-state.js';
 import { applyToWorkspace, workspaceState } from '../services/workspace-apply.js';
 import {
   deleteSummary,
@@ -376,8 +380,10 @@ export class WorkspaceView extends HTMLElement {
 
   get editorPane(): HTMLElement & {
     code: string;
-    resetFiles: (path: string, text: string) => void;
+    resetFiles: (path: string | null, text: string) => void;
     showFile: (path: string, text: string) => void;
+    showNone: () => void;
+    zeroState: { main: string | null; noFiles: boolean; onlyLibraries: boolean; filesHidden: boolean };
     forgetFiles: (paths: string[]) => void;
     refreshShown: (text: string) => void;
     renameFiles: (moves: { from: string; to: string }[]) => void;
@@ -528,6 +534,8 @@ export class WorkspaceView extends HTMLElement {
     this.previewPane.showLoading();
     this._snapshots.resetForWorkspace();
 
+    // With no file open, the editor shows the previous workspace's zero-state.
+    const wasNone = openFileNow() === null;
     // Reset workspace state
     store.update({
       workspaceId: null,
@@ -556,6 +564,10 @@ export class WorkspaceView extends HTMLElement {
       openFiles: [MAIN_FILE],
       shownProgram: null,
     });
+    // The pane follows the store's main.pathogen while the load is out, as it
+    // does with a file open: not the old zero-state, whose Open button would
+    // name a main this workspace hasn't got (2d, step 4d).
+    if (wasNone) this.editorPane.resetFiles(MAIN_FILE, '');
     this._lastOutcome = null;
     this._libraryReadings.clear();
     this._fileHashes.clear();
@@ -628,7 +640,8 @@ export class WorkspaceView extends HTMLElement {
       // Every file's text (or, from a server before phase 2, the one `code`),
       // and the file the editor opens: the main.
       const files = workspaceFromAnswer(workspace);
-      const openCode = files.workspaceFiles[files.openFile] ?? '';
+      // A workspace with no files opens on the editor's zero-state (step 4d).
+      const openCode = files.openFile === null ? '' : (files.workspaceFiles[files.openFile] ?? '');
       // The files are replaced whole (a switch, or a reload of this one): no Undo applies to them.
       this._structureVersion += 1;
       this._withdrawUndo();
@@ -648,7 +661,7 @@ export class WorkspaceView extends HTMLElement {
         snapshotCount: typeof workspace.snapshotCount === 'number' ? workspace.snapshotCount : null,
         code: openCode,
         ...files,
-        openFiles: [files.openFile],
+        openFiles: files.openFile === null ? [] : [files.openFile],
         shownProgram: null,
         currentFileName: workspace.name,
       });
@@ -786,9 +799,29 @@ export class WorkspaceView extends HTMLElement {
       if (focusEditor) this.editorPane.focusEditor();
     });
     this.shadowRoot!.addEventListener('tab-close', (e: Event) => {
-      const before = store.get('openFile');
-      closeFile(this.editorPane, (e as CustomEvent<{ path: string }>).detail.path);
-      if (store.get('openFile') !== before) this._afterFileShown();
+      const { path, fromKeyboard } = (e as CustomEvent<{ path: string; fromKeyboard?: boolean }>).detail;
+      const before = openFileNow();
+      closeFile(this.editorPane, path);
+      if (openFileNow() !== before) this._afterFileShown();
+      // The last tab closed from the keyboard (Delete): the keyboard goes to the zero-state.
+      if (fromKeyboard && openFileNow() === null) this.editorPane.focusEditor();
+    });
+    // The editor's zero-state (2d, step 4d; mockup v11): open the main, start a
+    // program in the tree, or show the tree.
+    this.shadowRoot!.addEventListener('zero-state-action', (e: Event) => {
+      const { action } = (e as CustomEvent<{ action: ZeroStateAction }>).detail;
+      if (action === 'open-main') {
+        const main = this._zeroStateView().main;
+        if (main === null) return;
+        this.openFileInEditor(main);
+        if (openFileNow() === main) this.editorPane.focusEditor();
+      } else {
+        // New program and Show files need the tree: shown first (synchronously, so it can take the keyboard).
+        if (!(store.get('filesOpen') as boolean)) store.set('filesOpen', true);
+        if (action === 'new-program') this.fileTree?.startNewProgram();
+        // An empty tree has no row to take the keyboard: it stays on the zero-state (New program).
+        else if (!this.fileTree?.focusTabStop()) this.editorPane.focusEditor();
+      }
     });
     // Open a file of the workspace in a tab, or switch to it: the one way in
     // for the file tree, the program list and the error panel (2d, steps 4,
@@ -796,7 +829,7 @@ export class WorkspaceView extends HTMLElement {
     this.shadowRoot!.addEventListener('open-file', (e: Event) => {
       const { path, focusEditor } = (e as CustomEvent<{ path: string; focusEditor?: boolean }>).detail;
       this.openFileInEditor(path);
-      if (focusEditor && store.get('openFile') === path) this.editorPane.focusEditor();
+      if (focusEditor && openFileNow() === path) this.editorPane.focusEditor();
     });
     this.shadowRoot!.addEventListener('toggle-docs', () => {
       const docs = this.docsPanel as unknown as { toggle: () => void };
@@ -815,9 +848,13 @@ export class WorkspaceView extends HTMLElement {
     // put the row's folding and the keyboard back if it wasn't.
     this._treeUnsubscribe = store.subscribe(
       ['workspaceFiles', 'workspaceFolders', 'workspaceEntryPoints', 'openFile', 'filesOpen'],
-      () => this._refreshTree(),
+      () => {
+        this._refreshTree();
+        this._refreshZeroState();
+      },
     );
     this._refreshTree();
+    this._refreshZeroState();
     // The + in the tree (2d, step 4b): whether a typed name can be used, by the
     // workspace's own rules (the plans of services/workspace-edits.ts), and
     // making the new file or folder.
@@ -1320,18 +1357,18 @@ export class WorkspaceView extends HTMLElement {
    * tab. The preview stays on the program it shows.
    */
   openFileInEditor(path: string): void {
-    const before = store.get('openFile');
+    const before = openFileNow();
     if (!openFile(this.editorPane, path)) {
       console.warn(`[open-files] "${path}" isn't a file of this workspace.`);
       return;
     }
-    if (store.get('openFile') !== before) this._afterFileShown();
+    if (openFileNow() !== before) this._afterFileShown();
   }
 
-  /** The editor now shows another file: give it the last compile's marks. */
+  /** The editor now shows another file: give it the last compile's marks. (None to give with no file open.) */
   private _afterFileShown(): void {
     const outcome = this._lastOutcome;
-    if (!outcome) return;
+    if (!outcome || openFileNow() === null) return;
     if (outcome.ok) {
       this._markWarnings(outcome.warnings);
       return;
@@ -1394,19 +1431,42 @@ export class WorkspaceView extends HTMLElement {
       (path) => texts.get(path),
       (path, text) => this._isLibrary(path, text),
     );
-    tabs.active = store.get('openFile') as string;
+    tabs.active = openFileNow();
+    tabs.lastTabStays = lastTabStays();
+  }
+
+  /**
+   * What the editor's zero-state says (2d, step 4d; mockup v11): the main to
+   * open, or, with no program, why nothing draws; and whether the tree is
+   * hidden. Kept current while it shows (a rename, Set as main, a delete, Files).
+   */
+  private _zeroStateView(): { main: string | null; noFiles: boolean; onlyLibraries: boolean; filesHidden: boolean } {
+    const files = store.get('workspaceFiles') as Record<string, string>;
+    const entryPoints = store.get('workspaceEntryPoints') as string[];
+    const paths = Object.keys(files);
+    return {
+      main: mainOf(files, entryPoints),
+      noFiles: paths.length === 0,
+      onlyLibraries: paths.length > 0 && paths.every((p) => this._isLibrary(p, files[p])),
+      filesHidden: !(store.get('filesOpen') as boolean),
+    };
+  }
+
+  private _refreshZeroState(): void {
+    if (openFileNow() !== null) return;
+    this.editorPane.zeroState = this._zeroStateView();
   }
 
   /**
    * The file tree (2d, step 4a): the workspace's files, each with its kind,
    * its folders, the main and the file in the editor. Shown while Files is on,
-   * for a workspace's files only (a scratch link has none).
+   * for a saved workspace only (a scratch link has no tree), even one whose
+   * every file was deleted: its + is how files come back.
    */
   private _refreshTree(): void {
     const tree = this.fileTree;
     if (!tree) return;
-    const hasFiles = Object.keys(store.get('workspaceFiles') as Record<string, string>).length > 0;
-    const open = hasFiles && (store.get('filesOpen') as boolean);
+    const open = holdsWorkspace() && (store.get('filesOpen') as boolean);
     tree.classList.toggle('open', open);
     if (!open) return;
     const workspace = workspaceNow();
@@ -1443,7 +1503,7 @@ export class WorkspaceView extends HTMLElement {
     change: Change,
     options: { focusEditor?: boolean; undo?: Change; failTitle?: string } = {},
   ): boolean {
-    const shownBefore = store.get('openFile');
+    const shownBefore = openFileNow();
     const result = applyToWorkspace(change, this.editorPane);
     if (!result.ok) {
       this._toastError(options.failTitle ?? 'Couldn’t make that change', result.message);
@@ -1456,7 +1516,7 @@ export class WorkspaceView extends HTMLElement {
       for (const path of cache.keys()) if (!(path in result.state.files)) cache.delete(path);
     }
     // The editor shows another file now (the one shown was deleted or renamed): give it its marks.
-    if (store.get('openFile') !== shownBefore) this._afterFileShown();
+    if (openFileNow() !== shownBefore) this._afterFileShown();
     if (change.open !== undefined) {
       this.openFileInEditor(change.open);
       if (options.focusEditor !== false) this.editorPane.focusEditor();
@@ -1628,6 +1688,8 @@ export class WorkspaceView extends HTMLElement {
   }
 
   copyCode(): void {
+    // With no file open there's no code to copy (the button is off then too).
+    if (openFileNow() === null) return;
     const code = this.editorPane.code;
     navigator.clipboard.writeText(code).catch((err: Error) => {
       console.error('Failed to copy code:', err);

@@ -463,7 +463,8 @@ try {
       const first = window.__find('.story-tab');
       return [...(first?.parentElement?.querySelectorAll('.story-tab') ?? [])].map((b) => b.textContent.trim());
     })()`)) as string[];
-    for (const [i] of names.entries()) {
+    // Step 4a's own five stories; 4b and 4c add theirs after them, shot by their own checks.
+    for (const [i] of names.slice(0, 5).entries()) {
       await page.evaluate(`window.__find('.story-tab[data-story="${i}"]')?.click()`);
       await new Promise((r) => setTimeout(r, 400));
       const box = (await page.evaluate(`(() => {
@@ -473,7 +474,12 @@ try {
       })()`)) as { x: number; y: number; width: number; height: number };
       await page.screenshot({ path: `${SHOTS}/2d-step4a-story-${i + 1}-${theme}.png`, clip: box });
     }
-    check(`the storybook shows the five stories (${theme})`, names.length === 5, names);
+    const own = ['A workspace with folders', 'A new workspace', 'Another main, an empty folder', 'pathogen.json open', 'Long names'];
+    check(
+      `the storybook shows the five stories first (${theme})`,
+      JSON.stringify(names.slice(0, 5)) === JSON.stringify(own),
+      names,
+    );
   }
   const storyActive = (await page.evaluate(`(() => {
     window.__find('.story-tab[data-story="0"]')?.click();

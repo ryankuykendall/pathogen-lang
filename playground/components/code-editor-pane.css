@@ -46,6 +46,17 @@
   overflow: auto;
 }
 
+/* No file open (step 4d): the zero-state takes the editor's place. */
+#editor-container[hidden] {
+  display: none;
+}
+
+editor-zero-state {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+
 /* pathogen.json's line above the editor (2d, step 4a; mockup v6, screen J).
    Typing in the file lights it up, and the tip says the same at the cursor. */
 .read-only-note {

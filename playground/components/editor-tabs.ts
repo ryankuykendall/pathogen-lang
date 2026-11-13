@@ -8,7 +8,9 @@
 //                                      with the arrow keys (the keyboard stays)
 //   tab-close   { path }               its ×, a middle-click, or Delete
 //   toggle-docs                        the Docs button at the right end
-// The last tab has no ×: the editor always shows a file.
+// Every tab can close (step 4d): with none open, the editor shows its
+// zero-state, and `active` is null. Not where `lastTabStays` (a scratch link,
+// whose one file lives only in the editor): there the last tab has no ×.
 
 import type { TabItem } from '../services/open-files.js';
 import { FILE_ICONS } from '../utils/file-icons.js';
@@ -20,7 +22,9 @@ const esc = (s: string): string =>
 export class EditorTabs extends HTMLElement {
   private _items: TabItem[] = [];
 
-  private _active = '';
+  private _active: string | null = null;
+
+  private _lastTabStays = false;
 
   private _docsOpen = false;
 
@@ -28,7 +32,7 @@ export class EditorTabs extends HTMLElement {
   private _drawn = '';
 
   /** The tab last scrolled into view. */
-  private _scrolledTo = '';
+  private _scrolledTo: string | null = '';
 
   constructor() {
     super();
@@ -63,13 +67,24 @@ export class EditorTabs extends HTMLElement {
     this._draw();
   }
 
-  get active(): string {
+  /** The file in the editor; null with no file open. */
+  get active(): string | null {
     return this._active;
   }
 
-  set active(path: string) {
+  set active(path: string | null) {
     this._active = path;
     this._markActive();
+  }
+
+  /** Whether the last tab keeps no ×: a scratch link's one file can't close. */
+  get lastTabStays(): boolean {
+    return this._lastTabStays;
+  }
+
+  set lastTabStays(stays: boolean) {
+    this._lastTabStays = stays;
+    this._draw();
   }
 
   get docsOpen(): boolean {
@@ -92,11 +107,11 @@ export class EditorTabs extends HTMLElement {
   private _draw(): void {
     const list = this._list;
     if (!list) return;
-    const key = JSON.stringify(this._items);
+    const key = JSON.stringify([this._items, this._lastTabStays]);
     if (key !== this._drawn) {
       this._drawn = key;
       this._scrolledTo = '';
-      const sole = this._items.length < 2;
+      const sole = this._lastTabStays && this._items.length < 2;
       list.innerHTML = this._items
         .map((item) => {
           const label = `${esc(item.name)}${item.hint !== null ? ` <span class="hint">· ${esc(item.hint)}</span>` : ''}`;
@@ -180,7 +195,7 @@ export class EditorTabs extends HTMLElement {
     else if (e.key === 'End') to = tabs.length - 1;
     else if (e.key === 'Delete') {
       e.preventDefault();
-      this._close(tabs[at].dataset.path!);
+      this._close(tabs[at].dataset.path!, true);
       return;
     } else if (e.key === 'Enter' || e.key === ' ') {
       // Enter goes to the editor; the tab is already the shown one.
@@ -197,12 +212,13 @@ export class EditorTabs extends HTMLElement {
     tabs[to].focus();
   }
 
-  private _close(path: string): void {
-    if (this._items.length < 2) return;
-    this._emit('tab-close', { path });
+  /** Close a tab; `fromKeyboard` (Delete) lets workspace-view put the keyboard somewhere sensible after. */
+  private _close(path: string, fromKeyboard = false): void {
+    if (this._lastTabStays && this._items.length < 2) return;
+    this._emit('tab-close', { path, fromKeyboard });
   }
 
-  private _emit(name: string, detail?: { path: string; focusEditor?: boolean }): void {
+  private _emit(name: string, detail?: { path: string; focusEditor?: boolean; fromKeyboard?: boolean }): void {
     this.dispatchEvent(new CustomEvent(name, { bubbles: true, composed: true, detail }));
   }
 }

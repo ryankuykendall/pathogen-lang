@@ -880,10 +880,23 @@ export class FileTree extends HTMLElement {
     return true;
   }
 
+  /**
+   * New program from the editor's zero-state (step 4d, mockup v11): the name
+   * field at the top level of the workspace, with the keyboard in it, as the
+   * +'s New program makes it there. The tree must be shown.
+   */
+  startNewProgram(): void {
+    this._closeMenu(false);
+    this._startNaming('program', '');
+  }
+
   /** Put the keyboard on the tree's one Tab stop (when the row it was on has gone). */
-  focusTabStop(): void {
+  /** The keyboard to the tree's Tab stop; false when the tree has no row to take it. */
+  focusTabStop(): boolean {
     const items = this._items();
-    (items.find((el) => el.tabIndex === 0) ?? items[0])?.focus();
+    const stop = items.find((el) => el.tabIndex === 0) ?? items[0];
+    stop?.focus();
+    return stop !== undefined;
   }
 
   private _onMenuKeydown(e: KeyboardEvent): void {

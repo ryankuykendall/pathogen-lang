@@ -20,6 +20,8 @@ import { svgPathCompletions } from '../utils/codemirror-setup.js';
 import { pathogenLanguage } from '../utils/pathogen-language.js';
 import { themeManager } from '../utils/theme.js';
 import styles from './code-editor-pane.css';
+import './editor-zero-state.js';
+import type { EditorZeroState } from './editor-zero-state.js';
 
 // CodeMirror module types (dynamically imported from ESM CDN)
 interface CmStateModule {
@@ -82,6 +84,7 @@ interface CmEditorView {
   focus(): void;
   destroy(): void;
   scrollDOM: HTMLElement;
+  contentDOM: HTMLElement;
   coordsAtPos: (pos: number) => { left: number; top: number; bottom: number } | null;
   /** CodeMirror 6.23+: an effect that scrolls back to here when dispatched. */
   scrollSnapshot?: () => unknown;
@@ -177,7 +180,9 @@ export class CodeEditorPane extends HTMLElement {
   // its own undo while the workspace is open (docs/workspace-files.md). A
   // workspace load forgets them all: every workspace has a main.pathogen,
   // and another workspace's history must never come back.
-  private _activePath: string;
+  // Null with no file open (step 4d): the view holds an inert empty state,
+  // hidden behind the zero-state, so nothing typed can reach a file.
+  private _activePath: string | null;
 
   private _kept: Map<string, KeptFile>;
 
@@ -220,19 +225,21 @@ export class CodeEditorPane extends HTMLElement {
   }
 
   set initialCode(code: string) {
-    this.resetFiles(this._activePath, code);
+    this.resetFiles(this._activePath ?? DEFAULT_FILE, code);
   }
 
+  /** The file shown's text; '' with no file open. */
   get code(): string {
+    if (this._activePath === null) return '';
     return this._editor ? this._editor.state.doc.toString() : this._initialCode;
   }
 
   set code(value: string) {
-    this.resetFiles(this._activePath, value);
+    this.resetFiles(this._activePath ?? DEFAULT_FILE, value);
   }
 
-  /** The file shown. */
-  get activePath(): string {
+  /** The file shown; null with no file open. */
+  get activePath(): string | null {
     return this._activePath;
   }
 
@@ -241,9 +248,34 @@ export class CodeEditorPane extends HTMLElement {
     return this._activePath === PROJECT_FILE;
   }
 
-  /** Put the keyboard in the editor (after a tab is clicked). */
+  /** Put the keyboard in the editor (after a tab is clicked), or, with no file open, on the zero-state's first button. */
   focusEditor(): void {
-    this._editor?.focus();
+    if (this._activePath === null) this._zeroState?.focusPrimary();
+    else this._editor?.focus();
+  }
+
+  /** What the zero-state says (step 4d): workspace-view keeps it current while it shows. */
+  set zeroState(view: { main: string | null; noFiles: boolean; onlyLibraries: boolean; filesHidden: boolean }) {
+    this._zeroView = view;
+    if (this._zeroState) this._zeroState.view = view;
+  }
+
+  private _zeroView = { main: null as string | null, noFiles: false, onlyLibraries: false, filesHidden: false };
+
+  private get _zeroState(): EditorZeroState | null {
+    return this.shadowRoot?.querySelector('editor-zero-state') ?? null;
+  }
+
+  /** The zero-state in place of the editor, or the editor back. */
+  private _syncZeroState(): void {
+    const none = this._activePath === null;
+    const zero = this._zeroState;
+    if (zero) {
+      zero.hidden = !none;
+      if (none) zero.view = this._zeroView;
+    }
+    const container = this.shadowRoot?.querySelector<HTMLElement>('#editor-container');
+    if (container) container.hidden = none;
   }
 
   /**
@@ -256,15 +288,22 @@ export class CodeEditorPane extends HTMLElement {
    * setState also produces no ViewUpdate, so programmatic loads do NOT fire
    * the update listener: no `code-change` event, no store.set('code'/
    * 'isModified'), no autosave.onChange. Callers must write store('code')
-   * themselves.
+   * themselves. A null `path` starts over with no file open (a workspace
+   * loaded with no files): the zero-state, as after showNone.
    */
-  resetFiles(path: string, text: string): void {
+  resetFiles(path: string | null, text: string): void {
     this._kept.clear();
     this._activePath = path;
-    this._initialCode = text;
+    this._initialCode = path === null ? '' : text;
     this._syncReadOnly();
+    this._syncZeroState();
     if (!this._editor || !this._cmModules) {
       // CodeMirror not loaded yet — createEditor() will seed from _initialCode.
+      return;
+    }
+    if (path === null) {
+      this._editor.setState(this._noneState());
+      this._clearMarks();
       return;
     }
     const hadFocus = this._editor.hasFocus;
@@ -287,13 +326,12 @@ export class CodeEditorPane extends HTMLElement {
       this._activePath = path;
       this._initialCode = text;
       this._syncReadOnly();
+      this._syncZeroState();
       return;
     }
     const view = this._editor;
-    this._kept.set(this._activePath, {
-      state: view.state,
-      scroll: view.scrollSnapshot ? { snapshot: view.scrollSnapshot() } : { top: view.scrollDOM.scrollTop },
-    });
+    // The file shown until now is kept (none, from the zero-state).
+    this._keepShown();
     const kept = this._kept.get(path);
     this._kept.delete(path);
     let state = kept?.state ?? this._newState(text, path);
@@ -301,6 +339,7 @@ export class CodeEditorPane extends HTMLElement {
     if (changed) state = state.update({ changes: { from: 0, to: state.doc.length, insert: text } }).state;
     this._activePath = path;
     this._syncReadOnly();
+    this._syncZeroState();
     view.setState(state);
     // A kept state was made under the theme of its day.
     this._updateEditorTheme();
@@ -309,6 +348,52 @@ export class CodeEditorPane extends HTMLElement {
     // (a snapshot names positions in the old text).
     if (kept && !changed && 'snapshot' in kept.scroll) view.dispatch({ effects: kept.scroll.snapshot });
     else view.scrollDOM.scrollTop = kept && !changed && 'top' in kept.scroll ? kept.scroll.top : 0;
+  }
+
+  /** Keep the file shown's state, undo history and scroll position, for when it's shown again. */
+  private _keepShown(): void {
+    const view = this._editor;
+    if (!view || this._activePath === null) return;
+    this._kept.set(this._activePath, {
+      state: view.state,
+      scroll: view.scrollSnapshot ? { snapshot: view.scrollSnapshot() } : { top: view.scrollDOM.scrollTop },
+    });
+  }
+
+  /**
+   * Show no file: the zero-state (step 4d). The file shown until now is kept,
+   * undo history and all. The view takes an inert empty state (read-only, not
+   * editable, no update listener, no language services) and hides behind the
+   * zero-state, so a key pressed can't reach any file, and no timer of the
+   * file just left runs against a file. Nothing fires `code-change`: the
+   * caller updates the store.
+   */
+  showNone(): void {
+    if (this._activePath === null) return;
+    this._keepShown();
+    this._activePath = null;
+    this._initialCode = '';
+    this._syncReadOnly();
+    this._syncZeroState();
+    if (!this._editor || !this._cmModules) return;
+    this._editor.contentDOM.blur();
+    this._editor.setState(this._noneState());
+    this._clearMarks();
+  }
+
+  /** The view's state with no file open: nothing in it, and nothing can be typed. */
+  private _noneState(): CmEditorState {
+    const { state, view, autocomplete } = this._cmModules!;
+    return state.EditorState.create({
+      doc: '',
+      extensions: [
+        state.EditorState.readOnly.of(true),
+        view.EditorView.editable.of(false),
+        // A completion still pending in the file just left reads autocomplete's field
+        // from this state (the same trap as pathogen.json's state).
+        autocomplete.autocompletion({ override: [], activateOnTyping: false }),
+      ],
+    }) as CmEditorState;
   }
 
   /** Drop these files' kept states, undo history and all (they were deleted). */
@@ -623,7 +708,8 @@ export class CodeEditorPane extends HTMLElement {
     this._errorHighlight = this._languageExtensions.errorHighlight;
     this._changedLines = changedLinesExtension(state as never, view as never);
 
-    const editorState = this._newState(this._initialCode, this._activePath);
+    const editorState =
+      this._activePath === null ? this._noneState() : this._newState(this._initialCode, this._activePath);
 
     this._editor = new view.EditorView({
       state: editorState,
@@ -635,8 +721,8 @@ export class CodeEditorPane extends HTMLElement {
       this._updateEditorTheme();
     });
 
-    // Focus the editor
-    this._editor.focus();
+    // Focus the editor (not with no file open: the zero-state shows)
+    if (this._activePath !== null) this._editor.focus();
 
     // Apply any error or warning highlight that arrived before the editor was ready
     this._applyPendingError();
@@ -665,8 +751,8 @@ export class CodeEditorPane extends HTMLElement {
    * recompile all follow exactly as they do for typed edits.
    */
   replaceDocument(text: string): void {
-    // pathogen.json is the playground's to write.
-    if (this.readOnly) return;
+    // pathogen.json is the playground's to write; with no file open there's no document.
+    if (this.readOnly || this._activePath === null) return;
     if (!this._editor) {
       this._initialCode = text;
       return;
@@ -678,18 +764,21 @@ export class CodeEditorPane extends HTMLElement {
 
   /** Format the current document via the shared language-services formatter (not pathogen.json). */
   formatDocument(): void {
-    if (!this._editor || this.readOnly) return;
+    if (!this._editor || this.readOnly || this._activePath === null) return;
     runFormatDocument(this._editor);
   }
 
+  // Marks need a file: with none open there's nothing to mark (a file shown
+  // later gets its marks from workspace-view).
   highlightError(line: number, column: number): void {
+    if (this._activePath === null) return;
     this._pendingError = { line, column };
     if (!this._editor || !this._errorHighlight) return;
     this._applyPendingError();
   }
 
   highlightErrors(errors: Array<{ line: number; column: number }>): void {
-    if (errors.length === 0) return;
+    if (errors.length === 0 || this._activePath === null) return;
     this._pendingError = errors[0];
     if (!this._editor || !this._errorHighlight) return;
     this._errorHighlight.setErrors(this._editor, errors);
@@ -697,6 +786,7 @@ export class CodeEditorPane extends HTMLElement {
 
   /** Compiler warnings: same field as errors, rendered with the cm-warning-* classes. */
   highlightWarnings(warnings: Array<{ line: number; column: number }>): void {
+    if (this._activePath === null) return;
     this._pendingWarnings = warnings;
     if (!this._editor || !this._errorHighlight) return;
     if (warnings.length === 0) {
@@ -740,9 +830,11 @@ export class CodeEditorPane extends HTMLElement {
       <slot name="tabs"></slot>
       <div class="read-only-note" role="note" hidden>${FILE_ICONS.lock}<span>${READ_ONLY_NOTE}</span></div>
       <div id="editor-container"></div>
+      <editor-zero-state hidden></editor-zero-state>
       <div class="read-only-tip" role="status" hidden></div>
     `;
     this._syncReadOnly();
+    this._syncZeroState();
   }
 }
 

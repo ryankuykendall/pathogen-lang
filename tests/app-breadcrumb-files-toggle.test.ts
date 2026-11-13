@@ -2,8 +2,9 @@
 //
 // Files, beside Console in the breadcrumb (2d, step 4a; docs/workspace-files.md
 // "The file tree and tabs"): it shows or hides the tree. The tree is shown at
-// first, as every mockup draws it. A page with no workspace (a scratch link)
-// has no files to show, so no Files.
+// first, as every mockup draws it. A page with no saved workspace (a scratch
+// link) has no tree, so no Files; a saved workspace keeps it even with every
+// file deleted (step 4d: its + is how files come back).
 
 import { afterEach, beforeAll, describe, expect, it } from 'vitest';
 
@@ -15,14 +16,14 @@ describe('the Files toggle', () => {
 
   afterEach(async () => {
     const { store } = await import('../playground/state/store.ts');
-    store.update({ currentView: 'landing', workspaceFiles: {}, filesOpen: true });
+    store.update({ currentView: 'landing', workspaceFiles: {}, workspaceId: null, filesOpen: true });
     document.body.innerHTML = '';
   });
 
-  async function mount(workspaceFiles: Record<string, string>) {
+  async function mount(workspaceFiles: Record<string, string>, workspaceId: string | null = 'ws-1') {
     const { store } = await import('../playground/state/store.ts');
     await import('../playground/components/app-breadcrumb.ts');
-    store.update({ currentView: 'workspace', workspaceFiles });
+    store.update({ currentView: 'workspace', workspaceFiles, workspaceId });
     const el = document.createElement('app-breadcrumb');
     document.body.appendChild(el);
     const files = () => el.shadowRoot!.querySelector<HTMLButtonElement>('#files-toggle');
@@ -50,8 +51,30 @@ describe('the Files toggle', () => {
     expect(store.get('filesOpen')).toBe(true);
   });
 
-  it('isn’t there without a workspace’s files (a scratch link)', async () => {
-    const { files } = await mount({});
+  it('isn’t there without a saved workspace (a scratch link)', async () => {
+    const { files } = await mount({ 'main.pathogen': 'M 0 0' }, null);
     expect(files()).toBeNull();
+  });
+
+  it('stays in a saved workspace whose every file was deleted', async () => {
+    const { files } = await mount({});
+    expect(files()).not.toBeNull();
+  });
+
+  // Step 4d: with no file open, no file crumb, and Copy Code is off and says why.
+  it('with no file open: no file crumb, and Copy Code is off', async () => {
+    const { store, el } = await mount({ 'main.pathogen': 'M 0 0' });
+    const copy = () => el.shadowRoot!.querySelector<HTMLButtonElement>('#copy-code')!;
+    expect([el.shadowRoot!.querySelector('.breadcrumb-file')?.textContent, copy().disabled]).toEqual([
+      'main.pathogen',
+      false,
+    ]);
+    store.update({ openFile: null, openFiles: [] });
+    expect([el.shadowRoot!.querySelector('.breadcrumb-file'), copy().disabled, copy().title]).toEqual([
+      null,
+      true,
+      'No file open: open one to copy its code',
+    ]);
+    store.update({ openFile: 'main.pathogen', openFiles: ['main.pathogen'] });
   });
 });

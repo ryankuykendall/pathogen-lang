@@ -199,9 +199,25 @@
   transition: background var(--transition-base, 0.15s ease), color var(--transition-base, 0.15s ease);
 }
 
-.secondary-btn:hover {
+.secondary-btn:hover:not(:disabled) {
   background: var(--bg-tertiary, rgba(28, 23, 34, 0.05));
   color: var(--text-primary, #1c1722);
+}
+
+/* Copy Code with no file open (step 4d): off, and its title says why. */
+.secondary-btn:disabled {
+  color: var(--text-tertiary, #9087a0);
+  cursor: default;
+}
+
+/* Format Document with no file open (step 4d). */
+.menu-dropdown button:disabled {
+  color: var(--text-tertiary, #9087a0);
+  cursor: default;
+}
+
+.menu-dropdown button:disabled:hover {
+  background: transparent;
 }
 
 .refresh-btn {

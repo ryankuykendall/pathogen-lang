@@ -73,6 +73,13 @@ function createStore<T extends Record<string, unknown>>(initialState: T) {
   };
 }
 
+/**
+ * The file a page opens on. `openFile` can be null (every tab closed, step 4d),
+ * and the store's types come from these defaults: a function's declared return
+ * type keeps it `string | null` (a typed const would narrow back to string).
+ */
+const firstOpenFile = (): string | null => 'main.pathogen';
+
 // Main playground store
 export const store = createStore({
   // Routing
@@ -141,7 +148,8 @@ export const store = createStore({
   workspaceFiles: {},
   workspaceFolders: [] as string[],
   workspaceEntryPoints: [] as string[],
-  openFile: 'main.pathogen',
+  // Null with every tab closed (step 4d): the editor's zero-state.
+  openFile: firstOpenFile(),
   openFiles: ['main.pathogen'] as string[],
   shownProgram: null as string | null,
 

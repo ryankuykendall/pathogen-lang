@@ -344,7 +344,7 @@ describe('the row menus', () => {
     checkName: (() => null) | null;
     rowAfterRemoval: (path: string) => string | null;
     focusRow: (path: string) => boolean;
-    focusTabStop: () => void;
+    focusTabStop: () => boolean;
   };
   let actions: { action: string; path: string }[];
 
@@ -486,8 +486,16 @@ describe('the row menus', () => {
     expect(focused()).toBe(row('parts'));
     // A row that isn't there: false, and the keyboard goes to the tree's Tab stop instead.
     expect(tree.focusRow('gone.pathogen')).toBe(false);
-    tree.focusTabStop();
+    expect(tree.focusTabStop()).toBe(true);
     expect(focused()?.tabIndex).toBe(0);
+  });
+
+  it('a workspace with no files still has a row for the keyboard: pathogen.json (step 4d, Show files)', () => {
+    tree.files = [];
+    tree.main = null;
+    tree.active = null;
+    expect(tree.focusTabStop()).toBe(true);
+    expect(focused()?.textContent).toBe('pathogen.json');
   });
 });
 

@@ -49,19 +49,20 @@ let building: { key: string; done: Promise<OpenFileModules | null> } | null = nu
 
 /** What the graph depends on: the open file, its import lines, and every other file's text. */
 export function graphKey(workspace: WorkspaceTexts, planImports: (source: string) => { written: string }[]): string {
-  const open = workspace.texts.get(workspace.openFile) ?? '';
+  const open = workspace.openFile !== null ? (workspace.texts.get(workspace.openFile) ?? '') : '';
   const others = [...workspace.texts]
     .filter(([path]) => path !== workspace.openFile)
     .sort(([a], [b]) => (a < b ? -1 : 1));
   return JSON.stringify([workspace.openFile, planImports(open).map((p) => p.written), others, workspace.folders]);
 }
 
-async function build(workspace: WorkspaceTexts, l: Lib, label: string): Promise<OpenFileModules> {
+/** The graph from `entry`, a file of the workspace (the open file, or a program shown). */
+async function build(workspace: WorkspaceTexts, entry: string, l: Lib, label: string): Promise<OpenFileModules> {
   const host = l.createMemoryProjectHost(workspace.texts, { label, folders: workspace.folders });
-  const source = workspace.texts.get(workspace.openFile) ?? '';
-  const { graph, errors } = await l.resolveModules(source, { host, entry: `/${workspace.openFile}` });
+  const source = workspace.texts.get(entry) ?? '';
+  const { graph, errors } = await l.resolveModules(source, { host, entry: `/${entry}` });
   const projectFiles = [...workspace.texts]
-    .filter(([path, text]) => path !== workspace.openFile && l.isModuleSource(text))
+    .filter(([path, text]) => path !== entry && l.isModuleSource(text))
     .map(([path]) => `/${path}`)
     .sort();
   return { modules: graph, loadErrors: errors, projectFiles };
@@ -76,13 +77,15 @@ export async function refreshOpenFileModules(
 ): Promise<OpenFileModules | null> {
   const l = lib();
   if (!l) return null;
-  // pathogen.json in the editor has no imports: keep the last graph rather than build one for it.
-  if (!isWorkspaceFile(workspace.openFile)) return current?.value ?? null;
+  // pathogen.json in the editor has no imports, and with no file open there's no
+  // file to ask about: keep the last graph rather than build one.
+  const open = workspace.openFile;
+  if (!isWorkspaceFile(open)) return current?.value ?? null;
   const key = graphKey(workspace, l.planImports);
   if (current?.key === key) return current.value;
   if (building?.key === key) return building.done;
   const label = (store.get('workspaceName') as string | null) ?? 'this workspace';
-  const done = build(workspace, l, label).then((value) => {
+  const done = build(workspace, open, l, label).then((value) => {
     // A newer state may have started building meanwhile; only the latest is kept.
     if (building?.key === key) {
       current = { key, value };
@@ -135,7 +138,7 @@ export async function programModules(
   const l = lib();
   if (!l) return null;
   const label = (store.get('workspaceName') as string | null) ?? 'this workspace';
-  return build({ ...workspace, openFile: path }, l, label);
+  return build({ ...workspace, openFile: path }, path, l, label);
 }
 
 /** Forget the graph (a workspace switch). */

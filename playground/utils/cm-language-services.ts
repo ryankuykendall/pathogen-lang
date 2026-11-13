@@ -21,8 +21,8 @@ import { importPathBeforeCursor, makeSharedCompletionSource } from './cm-complet
 import { hoverTooltipExtension } from './cm-hover-tooltip.js';
 import { errorHighlightExtension } from './cm-error-highlight.js';
 import { perfSpan } from './perf-marks.js';
-import { store } from '../state/store.js';
 import { languageServiceOptions } from '../services/workspace-modules.js';
+import { openFileNow } from '../services/workspace-files.js';
 
 // ─── CodeMirror module shapes (dynamically imported from ESM CDN) ─────────────
 
@@ -475,7 +475,8 @@ function wireGoToDefinition(cm: CmModulesForLanguageServices): unknown {
       // (2d); until then the jump goes where it went before: the name's
       // import in this file.
       const across = getDefinition(doc, { line, character }, languageServiceOptions());
-      const openFile = `/${store.get('openFile') as string}`;
+      // (A click in the editor means a file is open: the zero-state has no view.)
+      const openFile = `/${openFileNow() ?? ''}`;
       const inThisFile = across && (!across.file || across.file === openFile);
       const def = inThisFile ? across : getDefinition(doc, { line, character });
       if (!def) return false;

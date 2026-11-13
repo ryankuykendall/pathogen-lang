@@ -9,7 +9,7 @@ import { beforeAll, describe, expect, it } from 'vitest';
 
 import type { TabItem } from '../playground/services/open-files.js';
 
-type Tabs = HTMLElement & { items: TabItem[]; active: string; docsOpen: boolean };
+type Tabs = HTMLElement & { items: TabItem[]; active: string | null; docsOpen: boolean; lastTabStays: boolean };
 
 beforeAll(async () => {
   await import('../playground/components/editor-tabs.ts');
@@ -59,18 +59,31 @@ describe('<editor-tabs>', () => {
     tabFor(tabs, 'demos/gears.pathogen').querySelector<HTMLElement>('.close')!.click();
     expect(events).toEqual([
       ['tab-select', { path: 'parts/gears.pathogen', focusEditor: true }],
-      ['tab-close', { path: 'demos/gears.pathogen' }],
+      ['tab-close', { path: 'demos/gears.pathogen', fromKeyboard: false }],
     ]);
   });
 
   it('a middle-click closes a tab', () => {
     const { tabs, events } = mount();
     tabFor(tabs, 'parts/gears.pathogen').dispatchEvent(new MouseEvent('auxclick', { button: 1, bubbles: true }));
-    expect(events).toEqual([['tab-close', { path: 'parts/gears.pathogen' }]]);
+    expect(events).toEqual([['tab-close', { path: 'parts/gears.pathogen', fromKeyboard: false }]]);
   });
 
-  it('the last tab has no ×, and nothing closes it', () => {
+  // Step 4d (mockup v11): every tab closes, the last one too: the editor shows its zero-state.
+  it('the last tab closes too, and no tab is chosen then', () => {
     const { tabs, events } = mount([ITEMS[0]]);
+    expect(tabFor(tabs, 'main.pathogen').querySelector('.close')).not.toBeNull();
+    tabFor(tabs, 'main.pathogen').dispatchEvent(new MouseEvent('auxclick', { button: 1, bubbles: true }));
+    expect(events).toEqual([['tab-close', { path: 'main.pathogen', fromKeyboard: false }]]);
+    // With none left, the bar stays, Docs at its right end (mockup v8).
+    tabs.items = [];
+    tabs.active = null;
+    expect([tabEls(tabs).length, tabs.shadowRoot!.querySelector('.docs') !== null]).toEqual([0, true]);
+  });
+
+  it('a scratch link’s last tab (lastTabStays) has no ×, and nothing closes it', () => {
+    const { tabs, events } = mount([ITEMS[0]]);
+    tabs.lastTabStays = true;
     expect(tabFor(tabs, 'main.pathogen').querySelector('.close')).toBeNull();
     tabFor(tabs, 'main.pathogen').dispatchEvent(new MouseEvent('auxclick', { button: 1, bubbles: true }));
     tabFor(tabs, 'main.pathogen').focus();
@@ -98,7 +111,7 @@ describe('<editor-tabs>', () => {
       ['tab-select', { path: 'main.pathogen', focusEditor: false }],
       ['tab-select', { path: 'pathogen.json', focusEditor: false }],
       ['tab-select', { path: 'main.pathogen', focusEditor: false }],
-      ['tab-close', { path: 'main.pathogen' }],
+      ['tab-close', { path: 'main.pathogen', fromKeyboard: true }],
       ['tab-select', { path: 'main.pathogen', focusEditor: true }],
     ]);
   });

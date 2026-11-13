@@ -30,6 +30,7 @@ const fakeModules = {
     keymap: { of: (bindings: unknown) => ({ keymap: bindings }) },
     EditorView: {
       lineWrapping: 'lineWrapping',
+      editable: { of: (v: boolean) => ({ editable: v }) },
       contentAttributes: { of: (attrs: unknown) => ({ contentAttributes: attrs }) },
       domEventHandlers: (handlers: Record<string, (event: unknown) => boolean>) => ({ handlers }),
       updateListener: { of: () => 'updateListener' },
@@ -234,6 +235,71 @@ describe('pathogen.json in the editor', () => {
       insert: m[0].replace('parts', 'machines'),
     }));
     expect(editedLines(after, edits)).toEqual([2, 3]);
+  });
+
+  // Step 4d (mockup v11): every tab closed.
+  it('with no file open: no document, the zero-state in its place, and nothing reaches a file', () => {
+    const pane = makePane() as Pane & {
+      showNone: () => void;
+      activePath: string | null;
+      _kept: Map<string, unknown>;
+    };
+    const zero = pane.shadowRoot!.querySelector<HTMLElement>('editor-zero-state')!;
+    const container = pane.shadowRoot!.querySelector<HTMLElement>('#editor-container')!;
+    expect([zero.hidden, container.hidden]).toEqual([true, false]);
+    pane.showNone();
+    expect([pane.activePath, pane.code, pane.readOnly, zero.hidden, container.hidden]).toEqual([
+      null,
+      '',
+      false,
+      false,
+      true,
+    ]);
+    // Nothing replaces or formats a document that isn't there.
+    pane.replaceDocument('M 9 9');
+    pane.formatDocument();
+    expect(pane.code).toBe('');
+    pane.showFile('main.pathogen', 'M 0 0');
+    expect([pane.activePath, pane.code, zero.hidden, container.hidden]).toEqual([
+      'main.pathogen',
+      'M 0 0',
+      true,
+      false,
+    ]);
+  });
+
+  it('starts over with no file open (a workspace loaded with no files): the zero-state, nothing kept', () => {
+    const pane = makePane() as Pane & {
+      resetFiles: (path: string | null, text: string) => void;
+      activePath: string | null;
+      _kept: Map<string, unknown>;
+    };
+    const zero = pane.shadowRoot!.querySelector<HTMLElement>('editor-zero-state')!;
+    const container = pane.shadowRoot!.querySelector<HTMLElement>('#editor-container')!;
+    pane.showFile('lib.pathogen', 'module;');
+    pane.resetFiles(null, 'ignored');
+    expect([pane.activePath, pane.code, pane._kept.size, zero.hidden, container.hidden]).toEqual([
+      null,
+      '',
+      0,
+      false,
+      true,
+    ]);
+    // And back to a file, the way a workspace switch starts (main.pathogen while the load is out).
+    pane.resetFiles('main.pathogen', '');
+    expect([pane.activePath, zero.hidden, container.hidden]).toEqual(['main.pathogen', true, false]);
+  });
+
+  it('the view’s state with no file open: read-only, not editable, no listener, no services', () => {
+    const pane = makePane() as Pane & { _noneState: () => { extensions: unknown[] } };
+    // (Installs the stand-in modules; pathogen.json's state needs no language services.)
+    extensionsFor(pane, 'pathogen.json');
+    const { extensions } = pane._noneState();
+    expect(extensions).toEqual([
+      { readOnly: true },
+      { editable: false },
+      { autocompletion: { override: [], activateOnTyping: false } },
+    ]);
   });
 
   it('stops typing, lights its line for 2 seconds, and lets nothing through', () => {

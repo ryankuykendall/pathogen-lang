@@ -123,7 +123,7 @@ describe('applying a change to the workspace', () => {
 class FakeEditor {
   kept = new Map<string, string>();
 
-  shown = 'main.pathogen';
+  shown: string | null = 'main.pathogen';
 
   /** Each file shown, and whether its kept state (its undo history) came back. */
   log: { path: string; fromKept: boolean }[] = [];
@@ -160,10 +160,15 @@ class FakeEditor {
   };
 
   showFile = (path: string): void => {
-    this.kept.set(this.shown, store.get('code') as string);
+    if (this.shown !== null) this.kept.set(this.shown, store.get('code') as string);
     this.log.push({ path, fromKept: this.kept.has(path) });
     this.kept.delete(path);
     this.shown = path;
+  };
+
+  showNone = (): void => {
+    if (this.shown !== null) this.kept.set(this.shown, store.get('code') as string);
+    this.shown = null;
   };
 
   forgetFiles = (paths: string[]): void => {
@@ -232,19 +237,34 @@ describe('a change and the editor', () => {
     expect(editor.forgotten.sort()).toEqual(['parts/gears.pathogen', 'parts/kit.pathogen']);
   });
 
-  it('with no tab left, the editor shows the main; with no file left, pathogen.json (until step 4d)', () => {
+  // Step 4d (mockup v11): with no tab left, no file is open: the editor's zero-state.
+  it('deleting the only open file leaves no file open, never the main or pathogen.json', () => {
     store.update({ openFiles: ['parts/gears.pathogen'] });
     applyToWorkspace(planned(planDelete(workspaceState(), 'parts')), editor);
-    expect([store.get('openFile'), store.get('openFiles')]).toEqual(['main.pathogen', ['main.pathogen']]);
+    expect([store.get('openFile'), store.get('openFiles'), store.get('code'), editor.shown]).toEqual([
+      null,
+      [],
+      '',
+      null,
+    ]);
+    expect(editor.forgotten.sort()).toEqual(['parts/gears.pathogen', 'parts/kit.pathogen']);
+    // Every file deleted while none is open: still none, and nothing left to draw.
     applyToWorkspace(planned(planDelete(workspaceState(), 'try.pathogen')), editor);
     applyToWorkspace(planned(planDelete(workspaceState(), 'main.pathogen')), editor);
-    expect([store.get('openFile'), store.get('openFiles'), store.get('code')]).toEqual([
-      PROJECT_FILE,
-      [PROJECT_FILE],
-      '{}\n',
-    ]);
-    // Nothing left to draw: the preview compiles nothing, never the JSON.
+    expect([store.get('openFile'), store.get('openFiles'), store.get('code')]).toEqual([null, [], '']);
     expect(shownProgramText()).toBe('');
+  });
+
+  it('with no file open, a rename reaches the files the editor keeps, and opens nothing', () => {
+    editor.kept.set('main.pathogen', MAIN);
+    store.update({ openFile: null, openFiles: [], code: '' });
+    editor.shown = null;
+    applyToWorkspace(planned(planRename(workspaceState(), 'parts/gears.pathogen', 'cogs')), editor);
+    expect([store.get('openFile'), store.get('openFiles'), store.get('code')]).toEqual([null, [], '']);
+    expect([editor.edited.map((e) => e.path), editor.kept.get('main.pathogen')]).toEqual([
+      ['main.pathogen'],
+      'import { gear } from "./parts/cogs.pathogen";\ngear(10);\n',
+    ]);
   });
 
   it('Set as main leaves the preview on the program it shows', () => {

@@ -17,6 +17,9 @@ name characters: decided in note 50. Copy URL leaves the playground with this pa
 The mockup v7 answers (2026-11-09, note 53) are folded in: the first program in an empty
 workspace is shown; the thumbnail while nothing draws; Undo after a rename or move; Rename
 changes the name only, and Move to… moves; "On a phone".
+The mockups v8 to v11 answers (2026-11-12, notes 54 to 57) are folded in: every tab can close; with
+none open, the editor's zero-state opens the main (or offers New program with no program); the
+preview has no zero-state of its own; Copy Code and Format Document wait for a file.
 -->
 
 # Files in a Workspace
@@ -38,11 +41,12 @@ A new workspace holds one program, `main.pathogen`, and `pathogen.json`, a proje
 - **Files**, beside Console in the breadcrumb, shows or hides the tree. Folders come first, then files.
 - The tree shows each file's full name. Programs and libraries have different icons.
 - Click a file to open it in a tab. Tab labels leave out `.pathogen`. When two open files share a name, each tab adds its folder: `gears · parts` and `gears · demos`.
-- A tab's **×** closes it, and so does a middle-click. The last open tab stays open.
+- A tab's **×** closes it, and so does a middle-click. You can close every tab. Opening the workspace again opens [the main](#workspace-files-the-main).
+- With no tab open, the editor offers to open the main, or you can click any file in the tree. In a workspace with no programs, it offers **New program** instead.
 - The book at the right end of the tabs shows or hides the docs.
 - The breadcrumb names the open file with its folder: `parts/gears.pathogen`.
 - Each file keeps its own undo history while the workspace is open, even after its tab is closed.
-- **Copy Code** copies the file in the editor.
+- **Copy Code** copies the file in the editor. With no file open, it's off, and so is **Format Document** in the workspace's menu.
 
 ## Programs and libraries
 
@@ -57,7 +61,7 @@ The workspace's **main** is the program it opens on and the one its thumbnail sh
 - Setting the main doesn't change what the preview shows.
 - Renaming the main keeps it the main.
 - **Deleting the main** makes the next program in `pathogen.json`'s list the main, and a message says which. After a Set as main, that's the program that was the main before.
-- **Deleting the last program** leaves the workspace with no main. The preview is empty and says to add a program, and `pathogen.json` becomes `{}`. The workspace's thumbnail keeps its last drawing, and your Workspaces page marks it "No programs". Export, Set Thumbnail and Make public wait until it has a program again.
+- **Deleting the last program** leaves the workspace with no main. The preview is empty until you add a program, the status in the breadcrumb reads "No program", and `pathogen.json` becomes `{}`. The workspace's thumbnail keeps its last drawing, and your Workspaces page marks it "No programs". Export, Set Thumbnail and Make public wait until it has a program again.
 - **Adding `module;` to the main** makes it a library, which can't draw. It stays the main, and the program list shows an error on it, until you take `module;` out or set another program as main. Adding `module;` to any other program takes it out of the program list and out of `pathogen.json`. Take `module;` out again and it goes back, at the end.
 
 ## The preview and the program list

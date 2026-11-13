@@ -78,7 +78,7 @@ describe('opening and closing tabs (the lists)', () => {
     expect(withTabOpened(['a.pathogen', 'b.pathogen'], 'a.pathogen')).toEqual(['a.pathogen', 'b.pathogen']);
   });
 
-  it('closing the shown tab shows the one to its right, else its left; the last tab stays', () => {
+  it('closing the shown tab shows the one to its right, else its left; the last leaves none (step 4d)', () => {
     const tabs = ['a.pathogen', 'b.pathogen', 'c.pathogen'];
     expect(afterTabClosed(tabs, 'b.pathogen', 'b.pathogen')).toEqual({
       openFiles: ['a.pathogen', 'c.pathogen'],
@@ -89,7 +89,10 @@ describe('opening and closing tabs (the lists)', () => {
       openFiles: ['a.pathogen', 'b.pathogen'],
       active: 'a.pathogen',
     });
-    expect(afterTabClosed(['a.pathogen'], 'a.pathogen', 'a.pathogen')).toBeNull();
+    // The last tab closes, and no file is open: the editor's zero-state.
+    expect(afterTabClosed(['a.pathogen'], 'a.pathogen', 'a.pathogen')).toEqual({ openFiles: [], active: null });
+    // Not in a scratch link, whose one file lives only in the editor.
+    expect(afterTabClosed(['a.pathogen'], 'a.pathogen', 'a.pathogen', true)).toBeNull();
     expect(afterTabClosed(tabs, 'a.pathogen', 'gone.pathogen')).toBeNull();
   });
 });
@@ -104,6 +107,11 @@ class FakeEditor implements FileEditor {
     if (this.shown !== null) this.kept.set(this.shown, store.get('code') as string);
     this.kept.set(path, text);
     this.shown = path;
+  };
+
+  showNone = (): void => {
+    if (this.shown !== null) this.kept.set(this.shown, store.get('code') as string);
+    this.shown = null;
   };
 }
 
@@ -191,8 +199,42 @@ describe('switching tabs (the store)', () => {
 
     closeFile(editor, 'main.pathogen');
     expect([store.get('openFile'), store.get('openFiles')]).toEqual(['parts/kit.pathogen', ['parts/kit.pathogen']]);
+    // No saved workspace here (workspaceId null): like a scratch link, its last tab stays.
     closeFile(editor, 'parts/kit.pathogen');
     expect(store.get('openFiles')).toEqual(['parts/kit.pathogen']);
+  });
+
+  // Step 4d (mockup v11): in a saved workspace every tab can close.
+  it('closing the last tab: no file open, and its typed text is the workspace’s, in that same update', () => {
+    store.set('workspaceId', 'ws-1');
+    try {
+      type('M 9 9');
+      const seen: { open: unknown; text: string | undefined }[] = [];
+      const unsubscribe = store.subscribe(['openFile', 'workspaceFiles', 'code'], () =>
+        seen.push({ open: store.get('openFile'), text: workspaceNow().texts.get('main.pathogen') }),
+      );
+      closeFile(editor, 'main.pathogen');
+      unsubscribe();
+      expect([store.get('openFile'), store.get('openFiles'), store.get('code'), editor.shown]).toEqual([
+        null,
+        [],
+        '',
+        null,
+      ]);
+      // Every subscriber saw the typed text: never a workspace without it.
+      expect(seen.length).toBeGreaterThan(0);
+      expect(seen.every((s) => s.text === 'M 9 9')).toBe(true);
+      // Opening it again brings it back, as the editor kept it.
+      openFile(editor, 'main.pathogen');
+      expect([
+        store.get('openFile'),
+        store.get('openFiles'),
+        store.get('code'),
+        editor.kept.get('main.pathogen'),
+      ]).toEqual(['main.pathogen', ['main.pathogen'], 'M 9 9', 'M 9 9']);
+    } finally {
+      store.set('workspaceId', null);
+    }
   });
 });
 

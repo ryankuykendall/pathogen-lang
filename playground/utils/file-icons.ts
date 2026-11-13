@@ -47,4 +47,6 @@ export const FILE_ICONS = {
     '<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>',
   ),
   close: icon('<path d="M18 6 6 18M6 6l12 12"/>'),
+  /** The editor's zero-state (step 4d): no file open. */
+  code: icon('<path d="m16 18 6-6-6-6M8 6l-6 6 6 6"/>'),
 } as const;

@@ -149,7 +149,7 @@ layer('hex').apply { circle(60, 100, 40) }`,
           let open = Object.keys(kinds);
           const tabs = document.createElement('editor-tabs') as HTMLElement & {
             items: unknown[];
-            active: string;
+            active: string | null;
             docsOpen: boolean;
           };
           if (props.width) tabs.style.width = `${Number(props.width)}px`;
@@ -343,6 +343,40 @@ layer('hex').apply { circle(60, 100, 40) }`,
           }
         })
         .catch((err: unknown) => console.error('File Tree story failed to load:', err));
+    },
+  },
+  {
+    id: 'editor-zero-state',
+    name: 'Editor Zero-State',
+    category: 'Editor',
+    description:
+      'The editor with no file open (mockup v11, note 57): the workspace\'s one zero-state, holding every "why" and every button. With a main, it opens the main. With no program, it says why nothing draws and offers New program. With Files off, Show files is beside it. The preview has no zero-state of its own.',
+    stories: [
+      { name: 'With a main', props: { main: 'main.pathogen' } },
+      { name: 'The tree hidden', props: { main: 'main.pathogen', filesHidden: true } },
+      { name: 'Only libraries', props: { main: '', onlyLibraries: true } },
+      { name: 'No files', props: { main: '', noFiles: true } },
+      { name: 'No program, the tree hidden', props: { main: '', onlyLibraries: true, filesHidden: true } },
+    ],
+    controls: [],
+    notes:
+      'workspace-view gives it the main (or none), whether the workspace has files and programs, and whether Files is on, and acts on its zero-state-action events (open-main, new-program, show-files). Here a button does nothing.',
+    render: (container, props) => {
+      import('../components/editor-zero-state.js')
+        .then(() => {
+          const zero = document.createElement('editor-zero-state');
+          zero.style.display = 'grid';
+          zero.style.height = '360px';
+          zero.style.border = '1px solid var(--border-color, #ddd)';
+          container.appendChild(zero);
+          zero.view = {
+            main: props.main ? String(props.main) : null,
+            noFiles: Boolean(props.noFiles),
+            onlyLibraries: Boolean(props.onlyLibraries),
+            filesHidden: Boolean(props.filesHidden),
+          };
+        })
+        .catch((err: unknown) => console.error('Editor Zero-State story failed to load:', err));
     },
   },
   {
