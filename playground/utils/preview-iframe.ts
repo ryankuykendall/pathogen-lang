@@ -74,14 +74,22 @@ ${COMMON_HEAD}
 /**
  * Blog mini-preview shell — simpler than the full playground preview. The
  * `#preview-content` group receives the parsed children of a pre-rendered
- * SVG (see playground/components/blog/mini-preview.ts).
+ * SVG (see playground/components/blog/mini-preview.ts). The grid sits on the
+ * canvas under the drawing, as in the playground's preview, hidden until the
+ * reader turns it on (2d, step 9c).
  */
 export const IFRAME_SRCDOC_MINI = `<!DOCTYPE html>
 <html>
 ${COMMON_HEAD}
 <body>
 <svg id="preview" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <pattern id="grid-pattern" patternUnits="userSpaceOnUse">
+      <path id="grid-path" fill="none" stroke-width="0.5"/>
+    </pattern>
+  </defs>
   <rect id="preview-bg" width="100%" height="100%"></rect>
+  <rect id="preview-grid" width="100%" height="100%" fill="url(#grid-pattern)"></rect>
   <g id="preview-content"></g>
 </svg>
 </body>

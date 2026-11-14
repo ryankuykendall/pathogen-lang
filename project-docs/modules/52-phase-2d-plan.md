@@ -960,7 +960,49 @@ Built in that order, one commit each.
     - a desktop, unchanged.
   - **Updated on purpose:** `verify-2d-step4a` (at 700 px the tree now closes instead of stacking) and `verify-2d-step5a` (at 700 px the list is a sheet).
   - **Unchanged and still passing:** 4b, 4c-1, 4c-2, 6b.
-- **For you:** v7's 760 px drawing says the chip, its list and the menus stay the desktop's there ("there's room for them"). The answer you agreed to (one rule below 800 px) and the docs page make them sheets, so 9b follows the docs. Sheets only at phone widths would be a change of breakpoint.
+- **For you (9b):** v7's 760 px drawing says the chip, its list and the menus stay the desktop's there ("there's room for them"). The answer you agreed to (one rule below 800 px) and the docs page make them sheets, so 9b follows the docs. Sheets only at phone widths would be a change of breakpoint.
+
+**9c, built** (2026-11-13): the blog's mini-workspace gets Background and Grid, as v7's screen W draws them (note 53's answer 6: "Agreed"). This follows W, not this note's step 3b line about reusing the inspector's Canvas section in the embed: that was an architecture note, not your decision. The two share only `utils/canvas-defaults.ts` (the grid's sizes, 20 px, `#cccccc`).
+- **The bar:**
+  - the post's variable chips, then **Background**, **Grid**, and **Reset**.
+  - The new controls are outside `#chip-group`: `_injectVarControls` fills that group only while it's empty, so variables that arrive late, with an SVG fetched after the page, still get their chips.
+- **Background**, "the canvas behind the drawing", opens a popover:
+  - five swatches with names (White, Paper, Light grey, Slate, Black);
+  - a hex field: a bad value is marked and changes nothing;
+  - **Default**, the embed's own `transparent`.
+  - Esc closes it only, and the keyboard goes back to Background. A press outside, or folding the bar, closes it too.
+  - The popover is placed against the bar's outer box, which doesn't scroll, so the bar can scroll sideways below 600 px without cutting it off.
+- **Grid:**
+  - `mini-preview` has a `grid` property;
+  - the mini frame's shell has the playground's grid pattern and a `#preview-grid` rect over the canvas, under the drawing;
+  - the size select shows while the grid is on.
+- **Reset** is always there, for the variables, the background and the grid. Its tooltip says which: without variables, "Reset the background and the grid".
+- **Nothing stays:**
+  - Open in Playground sends `_getImportState()` (the code, size, title and description), as before;
+  - nothing new is written to storage, and a test pins that.
+- **Storybook:** a "Background and Grid" story, and the entry's description.
+- **Also:** the embed's dynamic import of `/dist/highlight.global.js` goes through a variable. Vitest's bundler then leaves it alone, and it clears an old typecheck error.
+- **The code review** (no critical issues):
+  - *Background pressed while the bar unfolds* opened nothing visible, since the bar clips what hangs below it until its transition ends. It now waits and opens then. The browser check presses it at once.
+  - *An embed taken out of the page and put back* kept its old background and grid while the new bar and preview showed the defaults, so Grid's first click looked dead. Each connection now starts afresh, and the chip group is wired again. That also fixes an older gap: re-attached chips were never wired.
+  - The popover also closes when you Tab out of it, or when the bar scrolls sideways under it. A hex value equal to the current one clears the mark.
+  - **Tests for:**
+    - late variables;
+    - a press outside (in another embed too);
+    - folding, Reset, and Tab closing it;
+    - Esc not reaching a document listener;
+    - a re-attached embed.
+  - **Not changed:** below 600 px the bar's tooltips are cut off by the bar's sideways scroll. Touch has no hover.
+- **Checked:**
+  - `tests/mini-workspace-canvas.test.ts` (new, 13), and the full suite.
+  - `verify/verify-2d-step9c.ts` (17):
+    - the storybook embed with three variables, light and dark;
+    - the grid's box, cell and size in the frame;
+    - the background through a swatch, hex, a bad hex and Default;
+    - Esc;
+    - Reset of a variable, the background and the grid;
+    - storage untouched;
+    - a published post (`color-literals`) on a desktop and on a 390 px phone, with the popover whole and nothing scrolling sideways.
 
 **The v7 mockup round** (2026-11-09, commit `5c8f925`): note 53, `phase-2-mockups-v7/`. Five screens: no programs left, folders and moving, narrow screens, the mini-workspace, the ⋮ menu. It also draws what v6 left out (renaming a file, Move to…, dragging a file). Six questions await you; steps 4 and 9 wait for them.
 - *Answered 2026-11-09: all six agreed* (note 53, "Your answers"). What that adds to the steps:

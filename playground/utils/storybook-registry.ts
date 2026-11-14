@@ -2017,7 +2017,8 @@ layer('hex').apply { circle(60, 100, 40) }`,
     id: 'mini-workspace',
     name: 'Mini Workspace',
     category: 'Blog',
-    description: 'Display-only code+preview embed for blog posts with pannable/zoomable SVG',
+    description:
+      'Display-only code+preview embed for blog posts with pannable/zoomable SVG. Its control bar has the post’s color chips, then Background (the canvas behind the drawing: five swatches, a hex value, Default) and Grid (its size while on), and a Reset for all three (2d, step 9c; mockup v7 screen W).',
     stories: [
       {
         name: 'Default (code closed)',
@@ -2038,6 +2039,15 @@ layer('hex').apply { circle(60, 100, 40) }`,
           withVars: true,
           caption:
             'Click a color chip in the control bar to recolor the SVG — exercises <pathogen-color-input> in the blog embed.',
+        },
+      },
+      {
+        name: 'Background and Grid',
+        props: {
+          codeOpen: false,
+          withVars: true,
+          canvas: true,
+          caption: 'The bar open, the grid on at 20 px, the background slate; Reset puts all three back.',
         },
       },
     ],
@@ -2090,6 +2100,15 @@ dot.apply { circle(100, 100, 14); }`;
       el.style.maxWidth = '700px';
 
       container.appendChild(el);
+
+      // Background and Grid set as a reader would: the bar opened, Grid on, a swatch chosen.
+      if (props.canvas) {
+        const root = el.shadowRoot!;
+        root.querySelector<HTMLElement>('#summary')?.click();
+        root.querySelector<HTMLElement>('#grid-btn')?.click();
+        root.querySelector<HTMLElement>('#bg-btn')?.click();
+        root.querySelector<HTMLElement>('.swatch[data-color="#4b5563"]')?.click();
+      }
 
       controls.on('codeOpen', (value) => {
         if (value) {

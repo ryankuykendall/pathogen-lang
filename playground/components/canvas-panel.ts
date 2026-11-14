@@ -7,6 +7,7 @@
 // store, so another surface can give it its own values.
 
 import './shared/pathogen-color-input.js';
+import { GRID_COLOR, GRID_SIZE, GRID_SIZES } from '../utils/canvas-defaults.js';
 import styles from './canvas-panel.css';
 
 export interface CanvasSettings {
@@ -29,12 +30,11 @@ export interface CanvasChangeDetail {
 const DEFAULT_SETTINGS: CanvasSettings = {
   background: '#f5f5f5',
   gridEnabled: true,
-  gridColor: '#cccccc',
-  gridSize: 20,
+  gridColor: GRID_COLOR,
+  gridSize: GRID_SIZE,
   toFixed: null,
 };
 
-const GRID_SIZES = [10, 20, 25, 50, 100];
 const PRECISIONS = [0, 1, 2, 3, 4];
 
 const PRECISION_HINT = 'Rounds the numbers in the path data. Export starts from this value.';

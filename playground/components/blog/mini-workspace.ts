@@ -8,8 +8,31 @@
 // mini-preview goes fullscreen.
 
 import { themeManager } from '../../utils/theme.js';
+import { GRID_COLOR, GRID_SIZE, GRID_SIZES } from '../../utils/canvas-defaults.js';
 import '../shared/pathogen-color-input.js';
 import './mini-preview.js';
+
+import type { MiniGrid } from './mini-preview.js';
+
+// Background and Grid in the control bar (2d, step 9c; mockup v7 screen W, approved
+// 2026-11-09). The background is the canvas behind the drawing, not a variable of the
+// drawing's own. Both stay with the embed: Open in Playground carries the code alone,
+// and nothing is remembered after the page.
+const BG_DEFAULT = 'transparent';
+const BG_SWATCHES: { name: string; value: string }[] = [
+  { name: 'White', value: '#ffffff' },
+  { name: 'Paper', value: '#f5f0e6' },
+  { name: 'Light grey', value: '#e5e7eb' },
+  { name: 'Slate', value: '#4b5563' },
+  { name: 'Black', value: '#000000' },
+];
+const HEX = /^#(?:[0-9a-f]{3}|[0-9a-f]{6})$/i;
+const BG_TIP = 'Background: the canvas behind the drawing';
+const GRID_TIP = 'Grid: lines on the canvas, under the drawing';
+const RESET_TIP = 'Reset the background and the grid';
+const RESET_TIP_VARS = 'Reset the variables, the background and the grid';
+const RESET_ICON = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 12a8 8 0 0 1 14-5l2-2M20 4v4h-4"/><path d="M20 12a8 8 0 0 1-14 5l-2 2M4 20v-4h4"/></svg>`;
+const GRID_ICON = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="4" y="4" width="16" height="16" rx="1"/><path d="M4 9.33h16M4 14.67h16M9.33 4v16M14.67 4v16"/></svg>`;
 
 function escapeHtml(s: string): string {
   return s.replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[c] as string);
@@ -87,6 +110,13 @@ export class MiniWorkspace extends HTMLElement {
   }
 
   connectedCallback(): void {
+    // render() builds a fresh bar and preview, at their defaults: the instance's own state
+    // follows, or a re-attached embed would show Default while it held another colour (step 9c).
+    this._background = BG_DEFAULT;
+    this._grid = { enabled: false, size: GRID_SIZE, color: GRID_COLOR };
+    this._bgOpen = false;
+    this._bgPending = false;
+    this._chipGroupWired = false;
     this._captureChildren();
     this._initCssVars();
     this.render();
@@ -110,6 +140,7 @@ export class MiniWorkspace extends HTMLElement {
   }
 
   disconnectedCallback(): void {
+    this._closeBackground(false);
     if (this._themeUnsubscribe) this._themeUnsubscribe();
     if (this._onThemeChange) document.removeEventListener('theme-change', this._onThemeChange);
     if (this._inspectorOpen) this._closeInspector();
@@ -198,6 +229,10 @@ export class MiniWorkspace extends HTMLElement {
     if (!chipGroup || chipGroup.children.length > 0) return;
 
     chipGroup.innerHTML = this._renderChipGroupInner();
+    // Reset now puts the variables back too.
+    const reset = this.shadowRoot!.querySelector('#canvas-reset');
+    reset?.setAttribute('data-tip', this._resetTip());
+    reset?.setAttribute('aria-label', this._resetTip());
 
     const preview = this.shadowRoot!.querySelector('mini-preview') as
       | (HTMLElement & { setCssVar(n: string, v: string): void; removeCssVar(n: string): void })
@@ -227,12 +262,10 @@ export class MiniWorkspace extends HTMLElement {
       `;
       })
       .join('');
+    // Reset sits outside this group, after Background and Grid, and puts the variables back too (step 9c).
     return `
       <span class="glass-divider"></span>
       ${chips}
-      <button class="icon-btn" id="vars-reset" type="button" data-tip="Reset colors">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 12a8 8 0 0 1 14-5l2-2M20 4v4h-4"/><path d="M20 12a8 8 0 0 1-14 5l-2 2M4 20v-4h4"/></svg>
-      </button>
     `;
   }
 
@@ -254,22 +287,202 @@ export class MiniWorkspace extends HTMLElement {
       const chip = target.closest('.chip') as HTMLElement | null;
       if (chip) chip.style.setProperty('--chip-color', value);
     });
+  }
 
-    const resetBtn = chipGroup.querySelector('#vars-reset');
-    if (resetBtn) {
-      resetBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        for (const v of this._cssVars) {
-          const input = chipGroup.querySelector(`pathogen-color-input[data-var="${v.name}"]`) as
-            | (HTMLElement & { value: string })
-            | null;
-          if (input) input.value = v.defaultValue;
-          const chip = input?.closest('.chip') as HTMLElement | null;
-          if (chip) chip.style.setProperty('--chip-color', v.defaultValue);
-          if (preview) preview.setCssVar(v.name, v.defaultValue);
-        }
-      });
+  // --- Background, Grid and Reset (2d, step 9c) ---
+
+  private _background = BG_DEFAULT;
+
+  private _grid: MiniGrid = { enabled: false, size: GRID_SIZE, color: GRID_COLOR };
+
+  private _bgOpen = false;
+
+  // Background pressed while the bar is still unfolding (overflow hidden): it opens once the bar has.
+  private _bgPending = false;
+
+  private get _miniPreview(): (HTMLElement & { background: string; grid: MiniGrid }) | null {
+    return this.shadowRoot!.querySelector('mini-preview');
+  }
+
+  /** Background, Grid (its size while it's on), and Reset, after the variable chips. */
+  private _renderCanvasControls(): string {
+    const swatches = BG_SWATCHES.map(
+      (s) =>
+        `<button class="swatch" type="button" data-color="${s.value}" aria-label="${escapeAttr(`${s.name}, ${s.value}`)}" title="${escapeAttr(s.name)}" aria-pressed="false" style="--swatch:${s.value}"></button>`,
+    ).join('');
+    const sizes = GRID_SIZES.map(
+      (n) => `<option value="${n}"${n === GRID_SIZE ? ' selected' : ''}>${n}px</option>`,
+    ).join('');
+    return `
+      <span class="bg-control" id="bg-control">
+        <button class="icon-btn bar-chip" id="bg-btn" type="button" data-tip="${BG_TIP}" aria-haspopup="dialog" aria-expanded="false" aria-controls="bg-popover"><span class="bg-swatch"></span><span>Background</span></button>
+        <div class="bg-popover" id="bg-popover" role="dialog" aria-label="Background" hidden>
+          <div class="bg-popover-title">Background</div>
+          <div class="swatches">${swatches}</div>
+          <div class="bg-row">
+            <input id="bg-hex" type="text" spellcheck="false" autocomplete="off" placeholder="#rrggbb" aria-label="Background, as a hex colour" aria-invalid="false">
+            <button id="bg-default" class="link-btn" type="button">Default</button>
+          </div>
+        </div>
+      </span>
+      <span class="grid-control" id="grid-control">
+        <button class="icon-btn bar-chip" id="grid-btn" type="button" data-tip="${GRID_TIP}" aria-pressed="false">${GRID_ICON}<span>Grid</span></button>
+        <select id="grid-size" aria-label="Grid size" hidden>${sizes}</select>
+      </span>
+      <button class="icon-btn" id="canvas-reset" type="button" data-tip="${this._resetTip()}" aria-label="${this._resetTip()}">${RESET_ICON}</button>
+    `;
+  }
+
+  private _resetTip(): string {
+    return this._cssVars.length > 0 ? RESET_TIP_VARS : RESET_TIP;
+  }
+
+  private _wireCanvasControls(): void {
+    const root = this.shadowRoot!;
+    const bgBtn = root.querySelector<HTMLButtonElement>('#bg-btn')!;
+    const popover = root.querySelector<HTMLElement>('#bg-popover')!;
+    const hex = root.querySelector<HTMLInputElement>('#bg-hex')!;
+    bgBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (this._bgOpen) this._closeBackground(false);
+      // The bar clips what hangs below it until it has finished unfolding: open then.
+      else if (!this.classList.contains('bar-fully-open')) this._bgPending = true;
+      else this._openBackground();
+    });
+    // Tab out of it, or the bar scrolled sideways under it (a narrow screen): it closes.
+    const control = root.querySelector<HTMLElement>('#bg-control')!;
+    control.addEventListener('focusout', (e) => {
+      const to = e.relatedTarget as Node | null;
+      if (to !== null && !control.contains(to)) this._closeBackground(false);
+    });
+    root.querySelector('.glass-bar-inner')!.addEventListener('scroll', () => this._closeBackground(false));
+    popover.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const swatch = (e.target as HTMLElement).closest<HTMLElement>('.swatch');
+      if (swatch) this._setBackground(swatch.dataset.color!);
+    });
+    root.querySelector('#bg-default')!.addEventListener('click', () => this._setBackground(BG_DEFAULT));
+    const takeHex = (): void => {
+      const value = hex.value.trim();
+      if (value === '' || value === (this._background === BG_DEFAULT ? '' : this._background)) {
+        hex.setAttribute('aria-invalid', 'false');
+        return;
+      }
+      // A value that isn't a hex colour is marked, and changes nothing.
+      if (!HEX.test(value)) {
+        hex.setAttribute('aria-invalid', 'true');
+        return;
+      }
+      this._setBackground(value.toLowerCase());
+    };
+    hex.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        takeHex();
+      }
+    });
+    hex.addEventListener('change', takeHex);
+    hex.addEventListener('input', () => hex.setAttribute('aria-invalid', 'false'));
+    // Esc closes the popover only; the keyboard goes back to Background.
+    popover.addEventListener('keydown', (e) => {
+      if (e.key !== 'Escape') return;
+      e.preventDefault();
+      e.stopPropagation();
+      this._closeBackground(true);
+    });
+
+    const gridBtn = root.querySelector<HTMLButtonElement>('#grid-btn')!;
+    const gridSize = root.querySelector<HTMLSelectElement>('#grid-size')!;
+    gridBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this._setGrid({ ...this._grid, enabled: !this._grid.enabled });
+    });
+    gridSize.addEventListener('change', () => this._setGrid({ ...this._grid, size: parseInt(gridSize.value, 10) }));
+
+    root.querySelector('#canvas-reset')!.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this._resetCanvas();
+    });
+  }
+
+  private readonly _onOutsideBackground = (e: Event): void => {
+    if (!e.composedPath().includes(this.shadowRoot!.querySelector('#bg-control')!)) this._closeBackground(false);
+  };
+
+  private _openBackground(): void {
+    const root = this.shadowRoot!;
+    this._bgOpen = true;
+    // Under its button, inside the embed: placed against the bar, which doesn't scroll.
+    const bar = root.querySelector<HTMLElement>('#glass-bar')!.getBoundingClientRect();
+    const btn = root.querySelector<HTMLElement>('#bg-btn')!.getBoundingClientRect();
+    const popover = root.querySelector<HTMLElement>('#bg-popover')!;
+    const left = Math.max(8, Math.min(btn.left - bar.left, bar.width - 220 - 8));
+    popover.style.setProperty('--popover-left', `${Number.isFinite(left) ? left : 10}px`);
+    popover.hidden = false;
+    root.querySelector('#bg-btn')!.setAttribute('aria-expanded', 'true');
+    root.querySelector('#bg-btn')!.classList.add('active');
+    document.addEventListener('pointerdown', this._onOutsideBackground, true);
+    const pressed = root.querySelector<HTMLElement>('.swatch[aria-pressed="true"]');
+    (pressed ?? root.querySelector<HTMLElement>('.swatch'))?.focus();
+  }
+
+  private _closeBackground(toButton: boolean): void {
+    if (!this._bgOpen) return;
+    const root = this.shadowRoot!;
+    this._bgOpen = false;
+    root.querySelector<HTMLElement>('#bg-popover')!.hidden = true;
+    const btn = root.querySelector<HTMLElement>('#bg-btn')!;
+    btn.setAttribute('aria-expanded', 'false');
+    btn.classList.remove('active');
+    document.removeEventListener('pointerdown', this._onOutsideBackground, true);
+    if (toButton) btn.focus();
+  }
+
+  private _setBackground(value: string): void {
+    this._background = value;
+    const preview = this._miniPreview;
+    if (preview) preview.background = value;
+    const root = this.shadowRoot!;
+    for (const swatch of root.querySelectorAll<HTMLElement>('.swatch')) {
+      swatch.setAttribute('aria-pressed', String(swatch.dataset.color === value));
     }
+    const hex = root.querySelector<HTMLInputElement>('#bg-hex')!;
+    hex.value = value === BG_DEFAULT ? '' : value;
+    hex.setAttribute('aria-invalid', 'false');
+    const btn = root.querySelector<HTMLElement>('#bg-btn')!;
+    btn.classList.toggle('set', value !== BG_DEFAULT);
+    btn.style.setProperty('--bg-color', value === BG_DEFAULT ? 'transparent' : value);
+  }
+
+  private _setGrid(grid: MiniGrid): void {
+    this._grid = { ...grid };
+    const preview = this._miniPreview;
+    if (preview) preview.grid = this._grid;
+    const root = this.shadowRoot!;
+    const btn = root.querySelector<HTMLElement>('#grid-btn')!;
+    btn.setAttribute('aria-pressed', String(grid.enabled));
+    btn.classList.toggle('active', grid.enabled);
+    const size = root.querySelector<HTMLSelectElement>('#grid-size')!;
+    size.hidden = !grid.enabled;
+    size.value = String(grid.size);
+  }
+
+  /** Reset: the variables as the post set them, the background and the grid as the embed starts. */
+  private _resetCanvas(): void {
+    const root = this.shadowRoot!;
+    const preview = root.querySelector<HTMLElement & { setCssVar: (n: string, v: string) => void }>('mini-preview');
+    for (const v of this._cssVars) {
+      const input = root.querySelector<HTMLElement & { value: string }>(
+        `#chip-group pathogen-color-input[data-var="${v.name}"]`,
+      );
+      if (input) input.value = v.defaultValue;
+      const chip = input?.closest('.chip') as HTMLElement | null;
+      if (chip) chip.style.setProperty('--chip-color', v.defaultValue);
+      if (preview) preview.setCssVar(v.name, v.defaultValue);
+    }
+    this._closeBackground(false);
+    this._setBackground(BG_DEFAULT);
+    this._setGrid({ enabled: false, size: GRID_SIZE, color: GRID_COLOR });
   }
 
   // --- CSS Variable Detection ---
@@ -343,7 +556,9 @@ export class MiniWorkspace extends HTMLElement {
       (window as any).PathogenLang?.editorParser ?? (window as any).PathogenLang?.lezerParser;
     if (!parser) {
       try {
-        const mod = (await import(/* @vite-ignore */ '/dist/highlight.global.js')) as {
+        // A variable, so the test runner's bundler doesn't try to load it (it's served, not a module of the repo).
+        const bundle = '/dist/highlight.global.js';
+        const mod = (await import(/* @vite-ignore */ bundle)) as {
           editorParser?: unknown;
           lezerParser?: unknown;
         };
@@ -541,6 +756,9 @@ export class MiniWorkspace extends HTMLElement {
       summary?.setAttribute('aria-expanded', 'true');
       // .bar-fully-open toggled in transitionend
     } else {
+      // The bar folds: Background's popover goes with it, or one waiting to open (step 9c).
+      this._bgPending = false;
+      this._closeBackground(false);
       this.classList.remove('bar-fully-open'); // hide overflow immediately
       this.classList.remove('bar-open');
       summary?.setAttribute('aria-expanded', 'false');
@@ -550,6 +768,9 @@ export class MiniWorkspace extends HTMLElement {
   private setupEventListeners(): void {
     const summary = this.shadowRoot!.querySelector('#summary');
     const bar = this.shadowRoot!.querySelector('#glass-bar') as HTMLElement | null;
+
+    // Background, Grid and Reset (step 9c).
+    this._wireCanvasControls();
 
     // Click the summary row to toggle the glass-bar.
     if (summary) {
@@ -562,7 +783,14 @@ export class MiniWorkspace extends HTMLElement {
 
       this._onBarTransitionEnd = (e: TransitionEvent): void => {
         if (e.propertyName !== 'height') return;
-        if (this.classList.contains('bar-open')) this.classList.add('bar-fully-open');
+        if (this.classList.contains('bar-open')) {
+          this.classList.add('bar-fully-open');
+          // Background pressed while the bar unfolded (step 9c).
+          if (this._bgPending) {
+            this._bgPending = false;
+            this._openBackground();
+          }
+        }
       };
       bar.addEventListener('transitionend', this._onBarTransitionEnd as EventListener);
     }
@@ -848,6 +1076,128 @@ export class MiniWorkspace extends HTMLElement {
           flex-shrink: 0;
         }
 
+        /* Background and Grid (2d, step 9c; mockup v7 screen W): labelled buttons in the bar. */
+        /* Not positioned: Background's popover is placed against the bar itself (.glass-bar),
+           so a bar that scrolls sideways on a narrow screen doesn't cut it off. */
+        .bg-control,
+        .grid-control {
+          display: inline-flex;
+          align-items: center;
+          gap: 4px;
+          flex-shrink: 0;
+        }
+        .icon-btn.bar-chip {
+          width: auto;
+          gap: 6px;
+          padding: 0 8px 0 6px;
+          font-size: 0.75rem;
+          white-space: nowrap;
+        }
+        .bar-chip .bg-swatch {
+          width: 14px;
+          height: 14px;
+          border-radius: 3px;
+          background: var(--bg-color, transparent);
+          box-shadow: inset 0 0 0 1px var(--border-color, #e2e8f0);
+          flex-shrink: 0;
+        }
+        #grid-size {
+          height: 24px;
+          padding: 0 4px;
+          border: 1px solid var(--border-color, #e2e8f0);
+          border-radius: var(--radius-sm, 4px);
+          background: var(--bg-elevated, #ffffff);
+          color: var(--text-primary, #1a1a2e);
+          font-family: var(--font-mono, 'Inconsolata', monospace);
+          font-size: 0.6875rem;
+        }
+        #grid-size[hidden] { display: none; }
+
+        /* Background's popover: five swatches, a hex value, and Default. */
+        .bg-popover {
+          position: absolute;
+          top: calc(100% + 6px);
+          left: var(--popover-left, 10px);
+          z-index: 20;
+          width: 220px;
+          box-sizing: border-box;
+          padding: 10px 12px 12px;
+          border: 1px solid var(--border-color, #e2e8f0);
+          border-radius: var(--radius-md, 8px);
+          background: var(--bg-elevated, #ffffff);
+          box-shadow: var(--shadow-lg, 0 8px 24px rgba(0, 0, 0, 0.16));
+        }
+        .bg-popover[hidden] { display: none; }
+        .bg-popover-title {
+          margin-bottom: 8px;
+          font-size: 0.75rem;
+          font-weight: 600;
+          color: var(--text-primary, #1a1a2e);
+        }
+        .swatches {
+          display: grid;
+          grid-template-columns: repeat(5, 28px);
+          gap: 6px;
+          margin-bottom: 10px;
+        }
+        .swatch {
+          width: 28px;
+          height: 28px;
+          padding: 0;
+          border: 0;
+          border-radius: var(--radius-sm, 4px);
+          background: var(--swatch);
+          box-shadow: inset 0 0 0 1px var(--border-color, #e2e8f0);
+          cursor: pointer;
+        }
+        .swatch[aria-pressed='true'] {
+          box-shadow: inset 0 0 0 1px var(--border-color, #e2e8f0), 0 0 0 2px var(--bg-elevated, #ffffff),
+                      0 0 0 4px var(--secondary-accent, #9461c4);
+        }
+        .swatch:focus-visible {
+          outline: 2px solid var(--secondary-accent, #9461c4);
+          outline-offset: 2px;
+        }
+        .bg-row {
+          display: grid;
+          grid-template-columns: minmax(0, 1fr) auto;
+          align-items: center;
+          gap: 8px;
+        }
+        #bg-hex {
+          min-width: 0;
+          height: 28px;
+          box-sizing: border-box;
+          padding: 0 8px;
+          border: 1px solid var(--border-color, #e2e8f0);
+          border-radius: var(--radius-sm, 4px);
+          background: var(--bg-primary, #ffffff);
+          color: var(--text-primary, #1a1a2e);
+          font-family: var(--font-mono, 'Inconsolata', monospace);
+          font-size: 0.75rem;
+        }
+        #bg-hex[aria-invalid='true'] {
+          border-color: var(--error-color, #ef4444);
+        }
+        .link-btn {
+          padding: 0;
+          border: 0;
+          background: none;
+          font: inherit;
+          font-size: 0.75rem;
+          color: var(--secondary-accent-text, #5e3590);
+          cursor: pointer;
+        }
+        .link-btn:hover { text-decoration: underline; }
+
+        /* A narrow embed: the bar scrolls sideways rather than the page. */
+        @media (max-width: 600px) {
+          .glass-bar-inner {
+            overflow-x: auto;
+            scrollbar-width: none;
+          }
+        }
+
         /* Per-CSS-var color chips */
         .chip-group {
           display: inline-flex;
@@ -1019,6 +1369,9 @@ export class MiniWorkspace extends HTMLElement {
           </button>
 
           <span class="chip-group" id="chip-group">${chipGroupInner}</span>
+
+          <span class="glass-divider"></span>
+          ${this._renderCanvasControls()}
 
           <span class="glass-divider"></span>
           <button class="icon-btn" id="copy-btn" type="button" data-tip="Copy">

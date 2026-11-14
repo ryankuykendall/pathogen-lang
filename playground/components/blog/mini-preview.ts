@@ -4,12 +4,20 @@
 
 import { attachFullscreenBehavior, fullscreenButtonHTML, fullscreenStyles } from '../../utils/fullscreen-toggle.js';
 import { bootstrapPreviewIframe } from '../../utils/preview-iframe.js';
+import { GRID_COLOR, GRID_SIZE } from '../../utils/canvas-defaults.js';
 // Type-only (erased by the esbuild transpiler). The controller is loaded at
 // runtime via the dist/pan-zoom.global.js script (window.PathogenPanZoom),
 // which the blog page + BBWP .mw.html templates include.
 import type { PanZoomController, PanZoomView } from '../../../dist/pan-zoom';
 
 const LAYERS_ICON = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>`;
+
+/** The grid on the canvas: whether it shows, its spacing, its colour. */
+export interface MiniGrid {
+  enabled: boolean;
+  size: number;
+  color: string;
+}
 
 export class MiniPreview extends HTMLElement {
   // Canvas dimensions. Origin is nonzero when the compiled SVG's viewBox
@@ -25,6 +33,9 @@ export class MiniPreview extends HTMLElement {
   private _originY = 0;
 
   private _background = 'transparent';
+
+  // The grid on the canvas, under the drawing (2d, step 9c): off until the reader turns it on.
+  private _grid: MiniGrid = { enabled: false, size: GRID_SIZE, color: GRID_COLOR };
 
   // Zoom/pan state (mirrored from the shared controller, which owns the
   // viewBox/transform). Kept as instance fields because this component has no
@@ -251,6 +262,16 @@ export class MiniPreview extends HTMLElement {
 
   set background(val: string) {
     this._background = val;
+    this.updateSvgStyles();
+  }
+
+  /** The grid (2d, step 9c), kept until the frame has loaded and drawn with it. */
+  get grid(): MiniGrid {
+    return { ...this._grid };
+  }
+
+  set grid(val: MiniGrid) {
+    this._grid = { ...val };
     this.updateSvgStyles();
   }
 
@@ -542,6 +563,23 @@ export class MiniPreview extends HTMLElement {
     bg.setAttribute('y', String(this._originY));
     bg.setAttribute('width', String(this._width));
     bg.setAttribute('height', String(this._height));
+
+    // The grid covers the canvas under the drawing, as the playground's preview draws it.
+    const pattern = this._iframeDoc.getElementById('grid-pattern');
+    const gridPath = this._iframeDoc.getElementById('grid-path');
+    const grid = this._iframeDoc.getElementById('preview-grid') as unknown as SVGRectElement | null;
+    if (pattern && gridPath && grid) {
+      const { enabled, size, color } = this._grid;
+      pattern.setAttribute('width', String(size));
+      pattern.setAttribute('height', String(size));
+      gridPath.setAttribute('d', `M ${size} 0 L 0 0 0 ${size}`);
+      gridPath.setAttribute('stroke', color);
+      grid.style.display = enabled ? 'block' : 'none';
+      grid.setAttribute('x', String(this._originX));
+      grid.setAttribute('y', String(this._originY));
+      grid.setAttribute('width', String(this._width));
+      grid.setAttribute('height', String(this._height));
+    }
 
     // Canvas dims may have changed (new SVG content). Re-apply the viewBox via
     // the controller and refresh chrome.
