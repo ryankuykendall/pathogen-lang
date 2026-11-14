@@ -164,6 +164,52 @@ Each step: tests first; light and dark; a puppeteer check against `npm run dev:s
    - the export and collision check as a smoke test;
    - if 9 is yes, the card-image backfill for existing approvals (your go-ahead), and Regenerate by hand for the ones it can't render.
 
+## Your answers (2026-11-14)
+
+Questions 1 to 7 answered; 8 to 10 still open. The steps above are left as written; what changes in them is listed at the end of this section.
+
+1. **Publishing shows the main: yes, for the first release.** Later: "for a future release, we should actually be generating images for each entrypoint and making the whole collection the published artifact." On the backlog: "Publish every program's drawing".
+2. **Publishing from a snapshot, after the first release.** "I am starting to feel like we should only allow publishing from a specific snapshot (or, when whe publish, we would simply create a snapshot as the reference for the state of the generated image and the code at that point in time.) Publishing should be an explicit action." On the backlog: "Publish from a snapshot".
+   - *My reading, to confirm:* the first release keeps question 2 as it was asked. Any change to the files sends an approved workspace back to review, including renames, Set as main and an empty folder.
+   - This bears on question 9: a published snapshot would freeze the image by itself.
+3. **Yes.** A snapshot keeps the drawing the preview showed, every file as it was when that drawing was made, and which program drew it. Later: "whether we want give the user the ability to snapshot the results of each entrypoint." On the backlog: "Snapshots of every program".
+4. **Held for a later release** ("based on my answers above"). On the backlog: "Snapshots of a program that isn't the main". This leaves question A below.
+5. **Yes: "distill the requirements first for the experience and then create some mockups."**
+6. **Your question: does hiding the button mean imports are joined into the main to make one file?** No. Nothing in 2e joins files. Both buttons make a new workspace and leave the snapshot's own workspace as it is. They differ in what they carry:
+   - **"+ Start new workspace"** (the snapshots page's header, `app-breadcrumb.ts:362`) has the server copy the snapshot's stored files into a new workspace (`snapshots.ts:731-777`): every file at its path, the folders, and which program is the main.
+   - **The viewer's "Open in playground workspace" icon** (`mini-workspace.ts:655-666`) belongs to `<mini-workspace>`, the viewer the blog's embeds use, which the snapshots page reuses. It sends only the text in its code pane to `/workspace/new?import=`, in a new tab. From a snapshot with several files it would make a workspace holding one file, whose imports then fail as not found.
+
+   Today a snapshot holds one file, so both give the same workspace; after step 3 they won't. The purpose you describe, opening an older version in a new workspace once the workspace has moved on, is what Start new workspace does. Question B below.
+7. **Yes:** the 1 MB code cap counts only text not saved yet.
+   - **The 80 MB SVG is a different cap.** A snapshot's image is limited to 50 MB (`SNAPSHOT_LIMITS.svgBytes`), checked in the browser before anything is sent (`snapshot-controller.ts:213-220`). So the server never hears of a refused snapshot, and logging one needs a call from the playground.
+   - That goes with the analytics follow-up, not 2e. On the backlog: "Snapshots over 50 MB" and "Usage events: what Cloudflare offers", the research to do after the first release. I took your two scenarios to be the 20-file limit (already on the backlog) and snapshots over the image cap.
+
+### Still open
+
+- **A. A snapshot drawn by a program that isn't the main,** with question 4 held. Under answer 3 such a snapshot can still be made: the preview can show any program, and Snapshot takes what it shows. Without question 4's four parts, the snapshots page still has to pick the file its Code panel opens on and Copy code copies: the main, which doesn't match the drawing, or the program that drew it. Options:
+  - **(a)** the snapshots page's Code panel opens on the program that drew it, and Copy code copies that file. Nothing else names it; Start new workspace opens on the main, as any new workspace does. *Recommended:* the image and the code beside it agree, using only what answer 3 already keeps.
+  - **(b)** Snapshot takes only the main's drawing for now, as the thumbnail does ("Show the main first", 2d step 5a). Simpler, but Snapshot stops working while you look at another program.
+- **B. The viewer's icon on the snapshots page:**
+  - **(a)** hide it there, keeping Start new workspace. *Recommended:* one button, one result.
+  - **(b)** keep it, and have it do what Start new workspace does.
+- **8 to 10,** with question 9 now weighed against answer 2. Explore's cards follow live edits today, including edits waiting for re-review. Options:
+  - **(a)** freeze the card at approval from the approved drawing, with a production backfill for existing approvals (as asked);
+  - **(b)** the server copies the workspace's thumbnail when it approves, and a one-time copy for existing approvals. Smaller, with no rendering; but the copy can include edits made after submitting. *Recommended for the first release,* since publishing from a snapshot (answer 2) replaces it, and a snapshot already keeps its own card image (`SNAPSHOT_LIMITS.cardBytes`);
+  - **(c)** no code: the docs say the card follows your edits until publishing from a snapshot arrives. This leaves edits nobody has reviewed on Explore's cards.
+- **Whether the publishing bugs live in production now get an early fix** from a branch of what's deployed, or wait for 2e.
+
+### What changes in the steps
+
+- **Step 1** becomes: the requirements for showing several files (the snapshots page, the public page, the review screen), your review, then the v12 mockups.
+  - The public page and review screen parts depend on nothing still open.
+  - The snapshots page part waits on A and B.
+  - The snapshot panel's line (4a) is dropped.
+- **Step 2:** unchanged. The manifest keeps `program`.
+- **Step 3:**
+  - "Copy code and Export's legend use the drawing program's file" and "Start new workspace opens showing that program" are replaced by A's answer.
+  - "The embedded viewer's own button is hidden on that page" waits on B.
+- **Step 7:** snapshots.md's size line stays "up to 1 MB of edits not saved yet". The 50 MB image limit is unchanged.
+
 ## What the audits found (2026-11-14)
 
 ### Snapshots, copies, forks

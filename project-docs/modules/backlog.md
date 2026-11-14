@@ -35,6 +35,61 @@ Deferred work from the modules, data and files effort. Each entry says what it i
 - **Today:** the refusal is a toast ("A workspace can hold at most 20 files: this one has 18, and the upload would make 23.") and nothing is recorded. The app has no usage counting of any kind.
 - **Needs:** a small way to count events: a counter the API Worker keeps (a D1 table or a KV counter, per day, no user data), and a call from the playground when the limit refuses something. A privacy note in the docs if anything about a user is kept.
 - **From:** your answer on step 6a, 2026-11-13: "That's fine, although it would be beneficial to log how often this happens at some point."
+- **See also:** "Usage events: what Cloudflare offers" below. That research comes first and may replace the counter described here (2026-11-14).
+
+### Usage events: what Cloudflare offers
+- **What:** research, after the first release: does Cloudflare have a product that stores usage events, summarizes them and draws dashboards for us, so we don't build our own counters?
+- **Events in mind:**
+  - uploads refused by the 20-file limit (above);
+  - snapshots refused by the 50 MB image cap ("Snapshots over 50 MB", below).
+
+  Both are refused in the browser, so each needs a call from the playground to the API Worker.
+- **Start with:** Workers Analytics Engine, which, as far as I know, takes custom events written from a Worker and answers SQL queries over them. Not checked yet: what it charts on its own, how long it keeps data, and what it costs. Also needed: a privacy note in the docs, if anything about a user is kept.
+- **From:** your answer 7 on note 58, 2026-11-14: "I have identified two scenarios where we might want to capture analytics/telemetry events based on user behavior. Does CloudFlare provide some kind of product for this particular need that we could integrate with, and that would do all of the data storage, summarization, and dashboarding on our behalf? Let's create a follow-up item to do this research after we do the initial release."
+
+## Publishing and snapshots
+
+After the first release (phase 2 ships with 2e). Each entry comes from your answers on note 58.
+
+### Publish every program's drawing
+- **What:** publishing makes a drawing of each program in `pathogen.json`'s list, and the whole set is what's published: the card, the public page, the review.
+- **Today (the first release):** publishing shows the main. The card is the main's drawing, the public page draws the main with its imports, and its source is every file (note 58, answer 1).
+- **Needs:** a design: how Explore and the public page show several drawings, and how the review screen approves them. The thumbnail render queue (Playground, above) could make each image.
+- **From:** your answer 1, 2026-11-14: "For the initial release, we can limit publishing to just the image generated from the first entrypoint (main) in the workspace. However, for a future release, we should actually be generating images for each entrypoint and making the whole collection the published artifact."
+
+### Publish from a snapshot
+- **What:** publishing is an explicit action on a snapshot, or makes one when you publish. The snapshot is the record of the code and the image that were published.
+- **Today (the first release):** Make public freezes the workspace's last saved files for review. Any later change to an approved workspace's files sends it back to review (note 58, question 2).
+- **Needs:** a design round:
+  - where the action lives (the snapshot panel, the snapshots page);
+  - what re-review becomes;
+  - what happens to Make public and Make private;
+  - how existing approvals move over.
+
+  A snapshot already keeps a card image, and from 2e every file as drawn and which program drew it. So it could hold the frozen card that note 58's question 9 is about.
+- **From:** your answer 2, 2026-11-14: "I am starting to feel like we should only allow publishing from a specific snapshot (or, when whe publish, we would simply create a snapshot as the reference for the state of the generated image and the code at that point in time.) Publishing should be an explicit action, and I would like to see this workflow changed. Let's add this as a post initial release follow-up."
+
+### Snapshots of every program
+- **What:** a snapshot can keep the drawing of each program in the list, not only the one the preview shows.
+- **Today (2e):** a snapshot keeps the drawing the preview showed, every file as it was then, and which program drew it.
+- **From:** your answer 3, 2026-11-14: "We can then circle back at a later point to determine whether we want give the user the ability to snapshot the results of each entrypoint."
+
+### Snapshots of a program that isn't the main
+- **What:** note 58's question 4:
+  - **(a)** the snapshot panel names the program under its thumbnail (`demos/gears.pathogen`);
+  - **(b)** the snapshots page labels it;
+  - **(c)** "Start new workspace" opens the new workspace showing that program;
+  - **(d)** "Copy code" copies that program's file.
+- **Today:** what 2e does for such a snapshot is note 58's question A.
+- **From:** your answer 4, 2026-11-14: "Let's hold off on this until a future release based on my answers above."
+
+### Snapshots over 50 MB
+- **What:** a way to snapshot images larger than 50 MB. You've seen an SVG of 80 MB.
+- **Today:** the browser refuses before uploading: "This render is … Snapshots are limited to 50 MB. Try a lower Precision, or export it directly." (`playground/services/snapshot-controller.ts:213-220`). The server checks the same limit (`SNAPSHOT_LIMITS.svgBytes`, `website/api/snapshots.ts`). Nothing records a refusal.
+- **Needs:**
+  1. first, a count of refusals ("Usage events", above);
+  2. then a way to take larger uploads. The Worker reads the whole form with `request.formData()`, and a 49 MB upload was checked only against the local runtime.
+- **From:** your answer 7, 2026-11-14: "although that are some snapshots that get quite large (where the SVG was as large as 80MB)...we don't have to accommodate that immediately, but we might want to log when users try to snapshot an image result that exceeds our cap."
 
 ## Language
 
