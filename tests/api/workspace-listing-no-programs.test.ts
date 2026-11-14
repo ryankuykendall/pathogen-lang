@@ -1,5 +1,6 @@
 // GET /workspaces marks a workspace with no program (2d, step 9a; mockup v7
-// screen X, state 5; docs/workspace-files.md "The main"): your Workspaces page
+// screen X, state 5; docs/workspace-files.md "When the main is gone or can't
+// draw"): your Workspaces page
 // labels its card "No programs" and holds back Make Public. The record already
 // holds pathogen.json's list, so the listing reads nothing more.
 //

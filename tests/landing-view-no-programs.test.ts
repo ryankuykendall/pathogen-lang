@@ -1,7 +1,8 @@
 // @vitest-environment jsdom
 //
 // Your Workspaces page and a workspace with no program (2d, step 9a; mockup
-// v7 screen X, state 5; docs/workspace-files.md "The main"). The listing's
+// v7 screen X, state 5; docs/workspace-files.md "When the main is gone or
+// can't draw"). The listing's
 // `noPrograms` flag puts a "No programs" label on the card, in both the grid
 // and the list, and its menu's Make Public waits and says why. Make Private
 // never waits.

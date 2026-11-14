@@ -992,6 +992,17 @@ A second pass over the applied wording found six more, all applied. The disposit
   - Both forms were checked with the CLI, and `npm run build:docs` has the new anchors.
 - **What's left:** your approval of the page, which publishes with 2e. Then 2e.
 
+**After your go-ahead** (2026-11-14, "go ahead and apply the review fixes"):
+- **The reorder (#5) is applied.** pathogen.json follows the program list and Try it. A new "When the main is gone or can't draw" holds deleting the last program and a main that's a module.
+- **The reorder's own content review** found five things, all applied:
+  - the module main's preview is empty only while it's shown;
+  - the two pointers name their section;
+  - Try it is back after the program list;
+  - its step 1 says where the + is.
+- **#16 stays on the header's checklist,** since 2e builds what publishing does.
+- **#17 is on the checklist too:** one screenshot, taken with 2e's final UI. The docs have no image support yet, and 2e changes the menu and Snapshot.
+- Details are in the review record, "After your go-ahead".
+
 **9c, built** (2026-11-13): the blog's mini-workspace gets Background and Grid, as v7's screen W draws them (note 53's answer 6: "Agreed"). This follows W, not this note's step 3b line about reusing the inspector's Canvas section in the embed: that was an architecture note, not your decision. The two share only `utils/canvas-defaults.ts` (the grid's sizes, 20 px, `#cccccc`).
 - **The bar:**
   - the post's variable chips, then **Background**, **Grid**, and **Reset**.

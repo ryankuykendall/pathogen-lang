@@ -11,9 +11,14 @@ program-list sentence held back in note 46; docs/modules.md's intro line "A play
 one program for now", its In each tool Playground bullet, and its Errors row "No project folder
 (the playground)"; docs/snapshots.md's "When you can't take a snapshot yet" gains "**When the
 workspace has no program.** Add one first: there's nothing to keep." (step 9a's content review);
-"The main" (line ~86) and Set as main's menu line ("Puts it first in pathogen.json. Thumbnails and
+"The main"'s first line and Set as main's menu line ("Puts it first in pathogen.json. Thumbnails and
 publishing use the main") must agree on what publishing does with the main, as 2e builds it: the
 page adds "and publishing uses", or the menu drops "publishing" (step 10's review, finding 16).
+At most one screenshot, near the top: the tree, the tabs, and the chip with its list open, taken
+with 2e's final UI (2e changes the menu and Snapshot) and taken again whenever the workspace's
+layout changes (step 10's review, finding 17). The docs have no images yet, so it needs the docs
+build to copy images, a light and a dark version, and image styles on the docs page and in the
+playground's docs panel.
 When data files and fonts can be added (after phase 2): Limits gains data files 5 MB each, fonts
 20 MB each (note 50), and the 50 MB whole-workspace row, which 20 files of 1 MB can't reach today.
 Sources: mockups v1 to v6 and their reviews (project-docs/modules/39- to 46-).
@@ -54,6 +59,10 @@ Step 10 (2026-11-13): the final content review of the whole page, findings appli
 (project-docs/modules/reviews/phase-2d-step10-docs-review.md). Which program Export and Copy SVG
 take is stated as built, the program the preview shows (your answer: "Sounds good for now. We can
 spend more time during 2g").
+Reordered 2026-11-14 ("go ahead and apply the review fixes"), as the review's finding 5 proposed:
+pathogen.json now follows the program list and Try it, and a new "When the main is gone or can't
+draw" after it holds deleting the last program and a main that's a module. Its content review's
+five findings are applied (step 10's review record, "After your go-ahead").
 -->
 
 
@@ -101,17 +110,7 @@ The workspace's **main** is the program it opens on and the one its thumbnail sh
 - The thumbnail is taken from the preview, so **Set Thumbnail** works while the preview shows the main. With another program shown, it's off and says "Show the main first".
 - Renaming the main keeps it the main.
 - **Deleting the main** makes the next program in `pathogen.json`'s list the main, and a message says which. After a Set as main, that's the program that was the main before.
-- **Deleting the last program** leaves the workspace with no main. Until you add a program:
-  - The preview is empty, and the status in the breadcrumb reads "No programs".
-  - `pathogen.json` becomes `{}`.
-  - The thumbnail keeps its last drawing, and your Workspaces page marks the workspace "No programs".
-  - **Export**, **Snapshot**, **Set Thumbnail** and **Make public** are off, and each says why: "Add a program first".
-- **Adding `module;` to the main** makes it a module, which can't draw. It stays the main until you take `module;` out or set another program as main. Until then:
-  - The preview, which shows the main, is empty.
-  - The error panel says why, under "The main": "A module can't draw as the main. Take out module;, or set another program as main." The link opens the menu of the next program in `pathogen.json`'s list, at **Set as main**. With no other program, there's no link, and the note suggests adding one.
-  - The main has a red dot in the tree and in the program list, and the chip has one too.
-  - Set Thumbnail is off and says "The main is a module now".
-- Adding `module;` to any other program takes it out of the program list and out of `pathogen.json`. Take `module;` out again and it goes back, at the end.
+- **Deleting the last program**, or **adding `module;` to the main**, leaves no main that draws: see [When the main is gone or can't draw](#workspace-files-when-the-main-is-gone-or-cant-draw).
 
 ## The preview and the program list
 
@@ -127,10 +126,41 @@ With more than one program, a chip beside the zoom controls names the program th
 
 ## Try it: move a fn into a module
 
-1. In the tree's **+** menu, choose **New module** and type `parts/gears`. It opens in a tab, starting with `module;`.
+1. Click the **+** in the Files header, choose **New module** and type `parts/gears`: the slash makes the `parts/` folder too. The module opens in a tab, starting with `module;`.
 2. Move a fn, say `gear`, from `main.pathogen` into it, and put `export` in front of it ([Modules](#modules-exporting)).
 3. At the top of `main.pathogen`, import it: `import { gear } from "./parts/gears.pathogen";`.
 4. Open `parts/gears.pathogen` again and change a number. The preview still shows `main.pathogen`, redrawn with your change.
+
+## pathogen.json
+
+Every workspace has a `pathogen.json` at the top: the same project file that the CLI and VS Code read ([pathogen.json](#projects-pathogenjson)). Its `entryPoints` list holds the workspace's programs, the main first:
+
+```json
+{
+  "entryPoints": [
+    "main.pathogen",
+    "demos/gears.pathogen",
+    "try-sizes.pathogen"
+  ]
+}
+```
+
+- **It's read-only.** The playground rewrites it as you add, rename and delete programs and set the main. Open it to see the list; typing in it does nothing, and a line at the top of the editor says how to change the main.
+- It's the last row of the tree's top level, with a lock. Its tab keeps `.json`. It can't be renamed, moved or deleted, and the program list doesn't include it.
+- Modules aren't listed. The list sets only the order of the program list, and which program is the main.
+- Adding `module;` to a program other than the main takes it out of the program list and out of `pathogen.json`. Take `module;` out again and it goes back, at the end. The main stays first in both: see [When the main is gone or can't draw](#workspace-files-when-the-main-is-gone-or-cant-draw).
+
+## When the main is gone or can't draw
+
+- **Deleting the last program** leaves the workspace with no main. Until you add a program:
+  - The preview is empty, and the status in the breadcrumb reads "No programs".
+  - `pathogen.json` becomes `{}`.
+  - The thumbnail keeps its last drawing, and your Workspaces page marks the workspace "No programs".
+  - **Export**, **Snapshot**, **Set Thumbnail** and **Make public** are off, and each says why: "Add a program first".
+- **Adding `module;` to the main** makes it a module, which can't draw. It stays the main until you take `module;` out or set another program as main. Until then:
+  - If the preview shows the main, it's empty. The error panel says why, under "The main": "A module can't draw as the main. Take out module;, or set another program as main." The link opens the menu of the next program in `pathogen.json`'s list, at **Set as main**. With no other program, there's no link, and the note suggests adding one.
+  - The main has a red dot in the tree and in the program list, and the chip has one too.
+  - Set Thumbnail is off and says "The main is a module now".
 
 ## Adding files and folders
 
@@ -175,24 +205,6 @@ The **+** in the Files header opens a menu: New program, New module, New folder,
 - After a rename or a move, a message names the files whose imports changed. Its **Undo** puts the names and the imports back together. The import paths a rename or a move changes aren't part of any file's own undo history, so undoing in a file never points an import back at a name that's gone.
 - **Delete…** asks before it deletes. A folder's Delete… deletes the folder and the files in it. The files that imported a deleted module show an error at their `import` line until you change them.
 - **Duplicate** makes a copy beside the file, named with a number as Keep both does: `gears-2.pathogen`. A copy of a program goes at the end of the program list.
-
-## pathogen.json
-
-Every workspace has a `pathogen.json` at the top: the same project file that the CLI and VS Code read ([pathogen.json](#projects-pathogenjson)). Its `entryPoints` list holds the workspace's programs, the main first:
-
-```json
-{
-  "entryPoints": [
-    "main.pathogen",
-    "demos/gears.pathogen",
-    "try-sizes.pathogen"
-  ]
-}
-```
-
-- **It's read-only.** The playground rewrites it as you add, rename and delete programs and set the main. Open it to see the list; typing in it does nothing, and a line at the top of the editor says how to change the main.
-- It's the last row of the tree's top level, with a lock. Its tab keeps `.json`. It can't be renamed, moved or deleted, and the program list doesn't include it.
-- Modules aren't listed. The list sets only the order of the program list, and which program is the main.
 
 ## On a phone or a tablet
 

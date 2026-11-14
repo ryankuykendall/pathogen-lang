@@ -2092,9 +2092,10 @@ export class WorkspaceView extends HTMLElement {
   }
 
   /**
-   * pathogen.json's list after typing (docs/workspace-files.md "The main",
-   * mockup v6 screen E): a program that gained `module;` leaves it, one that
-   * lost it goes back at the end, and the main stays. Made as a change, so
+   * pathogen.json's list after typing (docs/workspace-files.md "pathogen.json"
+   * and "When the main is gone or can't draw", mockup v6 screen E): a program
+   * that gained `module;` leaves it, one that lost it goes back at the end, and
+   * the main stays. Made as a change, so
    * autosave sends the list, an open pathogen.json follows, and the toast's
    * Undo, planned on the old list, is withdrawn. The program shown, once it's a
    * library, hands the preview back to the main (note 52, step 5a; agreed

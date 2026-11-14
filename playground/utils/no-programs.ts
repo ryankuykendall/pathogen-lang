@@ -1,5 +1,6 @@
 // A saved workspace with no program draws nothing (2d, step 9a;
-// docs/workspace-files.md "The main"). What it says then, in the words of
+// docs/workspace-files.md "When the main is gone or can't draw"). What it
+// says then, in the words of
 // mockup v7's screen X (state 5) and your answer of 2026-11-12 ("'No
 // programs' should be fine"). Shared by the breadcrumb, its status, the
 // Export shortcut and the Workspaces page. Set Thumbnail's reason, "Add a

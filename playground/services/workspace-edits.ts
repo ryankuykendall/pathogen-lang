@@ -778,7 +778,8 @@ export function planSetMain(state: WorkspaceState, path: string): Planned {
 
 /**
  * The program list after `path`'s text becomes `text` (docs/workspace-files.md
- * "The main", screen E of the mockups). A program that gains `module;` leaves the
+ * "pathogen.json" and "When the main is gone or can't draw", screen E of the
+ * mockups). A program that gains `module;` leaves the
  * list, and goes back at the end when it loses it. The main stays first either
  * way, and the playground shows an error on it until `module;` comes out or
  * another program is set as main. Null when the list doesn't change. Call it for

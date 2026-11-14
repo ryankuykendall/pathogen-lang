@@ -67,3 +67,52 @@ Checked against the code and right: the ⋮ at the right end of the breadcrumb; 
   - publishing and the main (finding 16, 2e);
   - the data-file, font and 50 MB limits (after phase 2);
   - the `[month]` and the snapshot sentence (2e).
+
+## After your go-ahead (2026-11-14)
+
+"go ahead and apply the review fixes." Three findings were still open: finding 5's reorder (Fix A), 16 and 17. The table above stays as it was decided on 2026-11-13; this section records what happened next.
+
+- **Finding 5, Fix A: applied.** The order is now:
+  1. A new workspace;
+  2. The file tree and tabs;
+  3. Programs and modules;
+  4. The main, up to "Deleting the main", with a pointer on;
+  5. The preview and the program list;
+  6. Try it;
+  7. pathogen.json, which gains the bullet on adding `module;` to a program other than the main;
+  8. a new section, **When the main is gone or can't draw**: deleting the last program, and a main that's a module;
+  9. Adding files and folders, and the rest as before.
+
+  It differs from the proposal in two ways:
+  - **The heading.** Fix A proposed "When the main can't draw". After you delete the last program there's no main at all, so the heading names both cases.
+  - **Try it.** It didn't exist when Fix A was written. I first put it after the new section; the reorder's review (finding 4 below) moved it back after the program list.
+
+  Fix B, applied on 2026-11-13, stays.
+- **Finding 16: still on the header's checklist.** What publishing does with the main is for 2e to build. Today, Make public checks that the main compiles (app-breadcrumb.ts:729–734), and the review queue keeps every file and `entryPoints` (moderation.ts:518–531). But what a published workspace shows is decided in 2e, so the page can't say it yet.
+- **Finding 17: added to the header's checklist, not taken now.**
+  - **No images yet.** The docs have none, so one needs three things: the docs build copying images, a light and a dark version, and image styles on the docs page and in the playground's docs panel.
+  - **It would be out of date.** 2e changes the workspace's menu and Snapshot, so a screenshot taken today would be wrong before the page publishes.
+  - **The entry follows the reviewer's compromise:** at most one screenshot near the top (the tree, the tabs, and the chip with its list open), taken with 2e's final UI and retaken when the layout changes.
+
+### The reorder's content review
+
+The four personas reviewed the move only: the seams between sections, new forward references, the heading, the two pointers and Try it's place. They found no new forward references. The tree's red dot and the error panel were explained further down before the move too, and the chip's red dot is now explained before it's used.
+
+| # | Group | Finding | Disposition |
+|---|---|---|---|
+| 1 | SHOULD | The moved bullets said the preview shows the main, after "You choose the program shown with the chip". The note shows only while the preview shows the main (workspace-view.ts:2775) | **Applied:** "If the preview shows the main, it's empty. The error panel says why…" |
+| 2 | SHOULD | The Main's pointer said "is covered below", which skips two sections and says nothing of what happens | **Applied:** "…leaves no main that draws: see [When the main is gone or can't draw]" |
+| 3 | SHOULD | pathogen.json's "For the main, see below" didn't say how the main differs | **Applied:** "The main stays first in both". Checked: entryPointsAfterEdit leaves the main in place (workspace-edits.ts:792), and programsOf keeps it first (program-list.ts:59) |
+| 4 | CONSIDER | Try it, placed after the error-state section, sat away from the rule it shows (editing a module leaves the preview on your program) | **Applied:** moved back after the program list, word for word |
+| 5 | CONSIDER | Try it's step 1 relies on where the + is and on a slash making a folder, both explained later | **Applied:** "Click the **+** in the Files header, … the slash makes the `parts/` folder too." |
+
+**Code comments** that named "The main" for text that moved now name the new sections:
+- workspace-view.ts (`_followProgramList`);
+- workspace-edits.ts (`entryPointsAfterEdit`);
+- no-programs.ts;
+- tests/landing-view-no-programs.test.ts;
+- tests/api/workspace-listing-no-programs.test.ts.
+
+**Checks:**
+- `tmp/step10-fixes/check-anchors.ts`: the page isn't in DOC_FILES, so it applies the docs build's slug rule itself. Every in-page link resolves, and every "below" points down. The new anchor is `#workspace-files-when-the-main-is-gone-or-cant-draw`.
+- docs-examples passes.
