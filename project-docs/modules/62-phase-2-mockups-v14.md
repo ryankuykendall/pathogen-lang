@@ -33,6 +33,10 @@ So one cell, with the same width, border and icon, sits in the tabs, a file's li
 - Code examples in the docs and the blog: on the backlog, for after the first release ("Copy for the code examples in the docs and the blog").
 - The icon copies the file shown, and the review modal's ↗ is hidden for every entry. These were note 61's readings; you didn't raise them, so they stand.
 
+## Approved (2026-11-14)
+
+"v14 approved, go ahead and start building 2e". The mockup round (note 58's step 1) is done: v12's list, v13's copy icon and v14's header cell are what gets built.
+
 ## After your review
 
 - The icon is built with each screen:

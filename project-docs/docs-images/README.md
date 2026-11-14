@@ -41,6 +41,8 @@ The style follows the docs' code blocks:
 
 All of it is open to change.
 
+**Approved 2026-11-14:** "The image styling is approved." The workspace files page's screenshot uses this styling when it's taken with 2e's final UI.
+
 ## Checks
 
 - **Every page renders as before.** I saved the three outputs before the change (`tmp/doc-images/snapshot.ts`). After it, all 29 pages are byte-identical in `docs-content.js` and `docs.md`. The static page differs only inside its `<style>` block.

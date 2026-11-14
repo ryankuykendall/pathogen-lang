@@ -249,7 +249,10 @@ export async function filesFromBody(
   // Texts first, so a file sent by hash can name a text sent in the same save.
   const texts = new Map<string, string>();
   const textSizes = new Map<string, number>();
-  const files: Record<string, unknown> = {};
+  // No prototype: a path such as "__proto__" (an own key of parsed JSON) is a
+  // key like any other, so checkManifest sees it and refuses it, rather than
+  // the assignment setting the prototype and the file vanishing unchecked.
+  const files: Record<string, unknown> = Object.create(null) as Record<string, unknown>;
   const byHash: { path: string; sha256: string }[] = [];
   for (const [path, sent] of Object.entries(body.files)) {
     if (isRecord(sent) && typeof sent.text === 'string') {

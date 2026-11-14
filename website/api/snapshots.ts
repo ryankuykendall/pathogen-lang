@@ -127,9 +127,20 @@ const R2_FILES = {
 type R2FileKind = keyof typeof R2_FILES;
 const R2_FILE_KINDS = Object.keys(R2_FILES) as R2FileKind[];
 
-/** What manifest.json holds: the workspace's files when the snapshot was taken. */
+/**
+ * What manifest.json holds: the workspace's files when the snapshot was taken,
+ * and since 2e the program that drew its image (`program`, a path among
+ * `files`). A manifest written before 2e has none: see programOf.
+ */
 interface SnapshotManifest extends WorkspaceManifest {
   contentHash: string;
+  program?: string;
+}
+
+/** A snapshot's files, and the program that drew its image. */
+export interface SnapshotFiles extends StoredFiles {
+  /** Null only for files with no program at all, which no playground snapshot sends. */
+  program: string | null;
 }
 
 /** A snapshot whose saved code can't be read: its manifest is damaged, or a file it names is gone. */
@@ -140,11 +151,36 @@ function isStringArray(value: unknown): value is string[] {
 }
 
 /**
+ * The program that drew a snapshot: the one it names, or the main (the first
+ * entry point) for a snapshot that names none. Every snapshot saved before
+ * 2e is one of those, and the main of all but development ones is
+ * main.pathogen (note 58, step 2).
+ */
+function programOf(manifest: WorkspaceManifest, named: string | undefined): string | null {
+  return named ?? manifest.entryPoints[0] ?? null;
+}
+
+/**
+ * Why a create's `program` can't be kept, or null when it can. Checked against
+ * the files as sent, before anything is written. The files themselves are
+ * checked like a save's, so a path among them is a .pathogen file's.
+ */
+function programProblem(program: unknown, files: unknown): string | null {
+  if (typeof program !== 'string') {
+    return '"program" must be the path of the program that drew the image, such as "main.pathogen".';
+  }
+  if (!isPlainObject(files) || !Object.hasOwn(files, program)) {
+    return `"program" names "${program}", which isn't one of the snapshot's files.`;
+  }
+  return null;
+}
+
+/**
  * A snapshot's code: its manifest (the files are the workspace's blobs), or
  * for one saved before phase 2, its code.pathogen read as just main.pathogen.
  * Null when neither is there; SnapshotUnreadable when the manifest is damaged.
  */
-async function readSnapshotFiles(env: Env, workspaceId: string, snapshotId: string): Promise<StoredFiles | null> {
+async function readSnapshotFiles(env: Env, workspaceId: string, snapshotId: string): Promise<SnapshotFiles | null> {
   const manifestObject = await env.THUMBNAILS.get(r2Key(workspaceId, snapshotId, 'manifest'));
   if (manifestObject) {
     let saved: unknown;
@@ -158,18 +194,17 @@ async function readSnapshotFiles(env: Env, workspaceId: string, snapshotId: stri
       isPlainObject(saved.files) &&
       isStringArray(saved.folders) &&
       isStringArray(saved.entryPoints) &&
-      typeof saved.contentHash === 'string';
+      typeof saved.contentHash === 'string' &&
+      (saved.program === undefined || (typeof saved.program === 'string' && Object.hasOwn(saved.files, saved.program)));
     if (!ok) throw new SnapshotUnreadable(`The saved files of snapshot ${snapshotId} are damaged (not a manifest).`);
-    const manifest = saved as unknown as SnapshotManifest;
-    return {
-      manifest: { files: manifest.files, folders: manifest.folders, entryPoints: manifest.entryPoints },
-      hash: manifest.contentHash,
-      legacyText: null,
-    };
+    const kept = saved as unknown as SnapshotManifest;
+    const manifest: WorkspaceManifest = { files: kept.files, folders: kept.folders, entryPoints: kept.entryPoints };
+    return { manifest, hash: kept.contentHash, legacyText: null, program: programOf(manifest, kept.program) };
   }
   const codeObject = await env.THUMBNAILS.get(r2Key(workspaceId, snapshotId, 'code'));
   if (!codeObject) return null;
-  return readStoredFiles({ code: await new Response(codeObject.body).text() }, undefined);
+  const stored = await readStoredFiles({ code: await new Response(codeObject.body).text() }, undefined);
+  return { ...stored, program: programOf(stored.manifest, undefined) };
 }
 
 /**
@@ -376,11 +411,12 @@ function quotaReached(): Response {
 
 export const snapshotHandlers = {
   // POST /workspace/:id/snapshots — FormData { svg, card, meta(JSON), and the
-  // code as either `code` (one program's text: today's playground) or
-  // `files` (JSON, as a save sends it: { files, folders?, entryPoints? },
-  // each file as { text } or, for bytes the workspace already stores,
-  // { sha256 }). Either way at most 1 MB of text is uploaded; files sent by
-  // hash cost nothing.
+  // code as either `code` (one program's text, drawn by main.pathogen) or
+  // `files` (JSON, as a save sends it: { files, folders?, entryPoints?,
+  // program? }, each file as { text } or, for bytes the workspace already
+  // stores, { sha256 }; `program` is the path of the program that drew the
+  // image, the main when left out). Either way at most 1 MB of text is
+  // uploaded; files sent by hash cost nothing.
   async create(request: Request, env: Env, workspaceId: string): Promise<Response> {
     if (request.headers.get(SNAPSHOT_UPLOAD_HEADER) !== '1') return missingUploadHeader();
     const userId = await sessionUserId(request, env);
@@ -437,6 +473,7 @@ export const snapshotHandlers = {
       );
     }
     let filesBody: Record<string, unknown> | null = null;
+    let namedProgram: string | undefined;
     if (filesText !== null) {
       let parsed: unknown;
       try {
@@ -446,6 +483,11 @@ export const snapshotHandlers = {
       }
       if (!isPlainObject(parsed) || parsed.files === undefined) {
         return errorResponse('files must be a JSON object with a `files` field', 400);
+      }
+      if (parsed.program !== undefined) {
+        const problem = programProblem(parsed.program, parsed.files);
+        if (problem) return errorResponse(problem, 400);
+        namedProgram = parsed.program as string;
       }
       // A snapshot stands alone: what it doesn't say defaults the way a new
       // workspace's would, never to what the workspace holds now.
@@ -512,7 +554,17 @@ export const snapshotHandlers = {
     );
     if (!change.ok) return errorResponse(change.message, change.status ?? 400);
     const frozen = change.value!;
-    const manifestJson: SnapshotManifest = { ...frozen.manifest, contentHash: frozen.hash };
+    // The program named must be a file of what's stored, as a read will check.
+    if (namedProgram !== undefined && !Object.hasOwn(frozen.manifest.files, namedProgram)) {
+      return errorResponse(`"program" names "${namedProgram}", which isn't one of the snapshot's files.`, 400);
+    }
+    // `code` is main.pathogen's text, and the main is main.pathogen.
+    const program = programOf(frozen.manifest, namedProgram);
+    const manifestJson: SnapshotManifest = {
+      ...frozen.manifest,
+      contentHash: frozen.hash,
+      ...(program !== null ? { program } : {}),
+    };
     const codeBytes = Object.values(frozen.manifest.files).reduce((sum, f) => sum + f.size, 0);
 
     // Files first, row second: a failed insert leaves files we can delete,
@@ -670,15 +722,16 @@ export const snapshotHandlers = {
 
   // GET /snapshot/:sid/files — the snapshot's code as a load returns a
   // workspace's: every file with its text, folders, entryPoints and the hash
-  // (and `code` for one that is just main.pathogen). One R2 read per
-  // distinct .pathogen file.
+  // (and `code` for one that is just main.pathogen), plus `program`, the
+  // path of the program that drew the image. One R2 read per distinct
+  // .pathogen file.
   async getFiles(request: Request, env: Env, snapshotId: string): Promise<Response> {
     const found = await readOwnedSnapshot(request, env, snapshotId);
     if ('error' in found) return found.error;
     return guardedRead(snapshotId, async () => {
       const files = await readSnapshotFiles(env, found.row.workspace_id, snapshotId);
       if (!files) return errorResponse('Snapshot file not found', 404);
-      return jsonResponse(await filesWithText(env, found.row.workspace_id, files));
+      return jsonResponse({ ...(await filesWithText(env, found.row.workspace_id, files)), program: files.program });
     });
   },
 

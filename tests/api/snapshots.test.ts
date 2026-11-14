@@ -319,12 +319,14 @@ describe.skipIf(!sqlite)('snapshots API', () => {
       const prefix = `snapshots/${ws}/${body.snapshot.id}/`;
       expect(ctx.r2.keys(prefix)).toEqual([`${prefix}card.png`, `${prefix}image.svg`, `${prefix}manifest.json`]);
       expect(ctx.r2.text(`${prefix}image.svg`)).toBe(SVG);
-      // The code is a manifest naming the workspace's blob, not a copy of its text.
+      // The code is a manifest naming the workspace's blob, not a copy of its text,
+      // and the program that drew the image (2e): `code` is main.pathogen's.
       const main = await entryForText(CODE);
       const manifest = { files: { 'main.pathogen': main }, folders: [], entryPoints: ['main.pathogen'] };
       expect(JSON.parse(ctx.r2.text(`${prefix}manifest.json`)!)).toEqual({
         ...manifest,
         contentHash: await contentHashOf(manifest),
+        program: 'main.pathogen',
       });
       expect(ctx.r2.text(`files/${ws}/${main.sha256}`)).toBe(CODE);
     });
@@ -769,6 +771,165 @@ describe.skipIf(!sqlite)('snapshots API', () => {
       const created = (await started.json()) as { files: Record<string, { text: string }> };
       expect(Object.keys(created.files)).toHaveLength(20);
       expect(created.files['f19.pathogen'].text).toBe('// 19');
+    });
+
+    // 2e, step 2 (note 58): a snapshot keeps which program drew its image.
+    describe('the program that drew it', () => {
+      const DEMO = 'import { gear } from "../parts/gears.pathogen";\ngear(8);\n';
+      const programOf = async (id: string): Promise<string | null> => {
+        const res = await call(ctx, 'GET', `/snapshot/${id}/files`, { cookie: alice });
+        return ((await res.json()) as { program: string | null }).program;
+      };
+      const manifestOf = (id: string): { program?: string } =>
+        JSON.parse(ctx.r2.text(`snapshots/${ws}/${id}/manifest.json`)!) as { program?: string };
+      const created = async (res: Response): Promise<string> => {
+        expect(res.status).toBe(201);
+        return ((await res.json()) as SnapshotBody).snapshot.id;
+      };
+
+      it('keeps the program `files` names, listed or not, in the manifest and through /files', async () => {
+        // demos/gears.pathogen isn't in entryPoints: the preview can show any program.
+        const id = await created(
+          await postSnapshot(
+            ctx,
+            alice,
+            ws,
+            filesForm({
+              files: {
+                'main.pathogen': { text: MAIN },
+                'parts/gears.pathogen': { text: GEARS },
+                'demos/gears.pathogen': { text: DEMO },
+              },
+              entryPoints: ['main.pathogen'],
+              program: 'demos/gears.pathogen',
+            }),
+          ),
+        );
+        expect(manifestOf(id).program).toBe('demos/gears.pathogen');
+        expect(await programOf(id)).toBe('demos/gears.pathogen');
+      });
+
+      it('reads one program sent as `code` as drawn by main.pathogen', async () => {
+        const id = await created(await postSnapshot(ctx, alice, ws));
+        expect(manifestOf(id).program).toBe('main.pathogen');
+        expect(await programOf(id)).toBe('main.pathogen');
+      });
+
+      it('without `program`, takes the main: the first entry point', async () => {
+        const id = await created(
+          await postSnapshot(
+            ctx,
+            alice,
+            ws,
+            filesForm({
+              files: { 'app.pathogen': { text: CODE }, 'main.pathogen': { text: MAIN } },
+              entryPoints: ['app.pathogen', 'main.pathogen'],
+            }),
+          ),
+        );
+        expect(await programOf(id)).toBe('app.pathogen');
+      });
+
+      it("refuses a program that isn't one of its files, or isn't a path, writing nothing", async () => {
+        const missing = await postSnapshot(
+          ctx,
+          alice,
+          ws,
+          filesForm({ files: { 'main.pathogen': { text: MAIN } }, program: 'demos/gears.pathogen' }),
+        );
+        expect(await errorOf(missing)).toEqual([
+          400,
+          '"program" names "demos/gears.pathogen", which isn\'t one of the snapshot\'s files.',
+        ]);
+        const notPath = await postSnapshot(
+          ctx,
+          alice,
+          ws,
+          filesForm({ files: { 'main.pathogen': { text: MAIN } }, program: 7 }),
+        );
+        expect(await errorOf(notPath)).toEqual([
+          400,
+          '"program" must be the path of the program that drew the image, such as "main.pathogen".',
+        ]);
+        const nullProgram = await postSnapshot(
+          ctx,
+          alice,
+          ws,
+          filesForm({ files: { 'main.pathogen': { text: MAIN } }, program: null }),
+        );
+        expect((await errorOf(nullProgram))[0]).toBe(400);
+        nothingStored();
+        // Refused before the texts were written, too.
+        expect(ctx.r2.text(`files/${ws}/${(await entryForText(MAIN)).sha256}`)).toBeUndefined();
+      });
+
+      it('refuses a file named "__proto__" like any bad name, rather than keeping a program it lost', async () => {
+        // An own key of parsed JSON: assigned into a plain object, it set the prototype and vanished.
+        const res = await postSnapshot(
+          ctx,
+          alice,
+          ws,
+          filesForm({
+            files: { 'main.pathogen': { text: MAIN }, ['__proto__']: { text: CODE } },
+            program: '__proto__',
+          }),
+        );
+        const [status, error] = await errorOf(res);
+        expect(status).toBe(400);
+        expect(error).toMatch(/^"__proto__" /);
+        nothingStored();
+      });
+
+      it('names no program for files with no program at all', async () => {
+        const id = await created(
+          await postSnapshot(
+            ctx,
+            alice,
+            ws,
+            filesForm({ files: { 'parts/gears.pathogen': { text: GEARS } }, entryPoints: [] }),
+          ),
+        );
+        expect(manifestOf(id).program).toBeUndefined();
+        expect(await programOf(id)).toBeNull();
+      });
+
+      it('reads a snapshot saved before 2e as drawn by the main', async () => {
+        // A manifest written without `program`, as 2b wrote them: the main is app.pathogen.
+        const id = await created(
+          await postSnapshot(
+            ctx,
+            alice,
+            ws,
+            filesForm({
+              files: { 'app.pathogen': { text: CODE } },
+              entryPoints: ['app.pathogen'],
+              program: 'app.pathogen',
+            }),
+          ),
+        );
+        const older = manifestOf(id);
+        delete older.program;
+        await ctx.r2.put(`snapshots/${ws}/${id}/manifest.json`, JSON.stringify(older));
+        expect(await programOf(id)).toBe('app.pathogen');
+
+        // One saved before phase 2: a code.pathogen, no manifest.
+        const old = await created(await postSnapshot(ctx, alice, ws));
+        await ctx.r2.delete(`snapshots/${ws}/${old}/manifest.json`);
+        await ctx.r2.put(`snapshots/${ws}/${old}/code.pathogen`, '// before phase 2');
+        expect(await programOf(old)).toBe('main.pathogen');
+      });
+
+      it('calls a manifest whose program names no file of its own damaged', async () => {
+        const id = await created(await postSnapshot(ctx, alice, ws));
+        await ctx.r2.put(
+          `snapshots/${ws}/${id}/manifest.json`,
+          JSON.stringify({ ...manifestOf(id), program: 'gone.pathogen' }),
+        );
+        expect(await errorOf(await call(ctx, 'GET', `/snapshot/${id}/files`, { cookie: alice }))).toEqual([
+          500,
+          `The saved files of snapshot ${id} are damaged (not a manifest).`,
+        ]);
+      });
     });
   });
 

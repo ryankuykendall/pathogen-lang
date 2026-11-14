@@ -226,6 +226,37 @@ What this changes in the steps:
 - **Step 5:** "the approved card image" is the server's copy of the thumbnail at approval (9b), not a drawing made in the admin's browser.
 - **Step 8:** the backfill for existing approvals is that copy. No rendering is needed, and no GPU-gradient source needs Regenerate by hand.
 
+## Step 1, done (2026-11-14)
+
+The requirements (note 59) and three mockup rounds:
+- **v12** (note 60): the list beside the code;
+- **v13** (note 61): copying from an icon in the code panel;
+- **v14** (note 62): that icon in a bordered cell in every header.
+
+v14 approved: "v14 approved, go ahead and start building 2e".
+
+## Step 2, built (2026-11-14)
+
+**A snapshot keeps the program that drew its image** (`website/api/snapshots.ts`).
+
+- **Sending it:** `files` may carry `program`, a path among the files sent. Leave it out and the program is the main, the first entry point. `code` (one program's text) is main.pathogen's.
+- **Refused before anything is written,** with these messages:
+  - not a string: `"program" must be the path of the program that drew the image, such as "main.pathogen".`;
+  - not one of the files: `"program" names "X", which isn't one of the snapshot's files.`
+  - After the files are stored, the same check runs against what was kept, so create and read can't disagree.
+- **Stored** in manifest.json as `program`; no D1 change.
+- **Read back** by `GET /snapshot/:sid/files` as `program`.
+- **Snapshots saved before 2e** (a manifest without `program`, or the code.pathogen from before phase 2) read as drawn by the main, which is main.pathogen for every one in production. So the production migration, which writes manifests without `program`, needs no change.
+- **A damaged `program`,** one present but naming no file of its own, makes the manifest read as damaged, like its other fields.
+
+**Found by the code review, and fixed.** A file named `__proto__` is an own key of parsed JSON. Assigned into a plain object in `filesFromBody` (`website/api/workspace-store.ts`), it set the object's prototype instead, and the file vanished without being checked. That was true for saves too. With `program: "__proto__"`, the snapshot would have named a file it doesn't hold and been unreadable. `files` now has no prototype, so such a name is refused like any other bad name.
+
+**Tested:**
+- `tests/api/snapshots.test.ts`: eight new tests, and the exact-manifest test updated;
+- every API test (235);
+- the full suite (9,145 passed);
+- `project-docs/modules/verify/verify-2e-step2-program.ts`: 6 checks against the local workerd API.
+
 ## What the audits found (2026-11-14)
 
 ### Snapshots, copies, forks
