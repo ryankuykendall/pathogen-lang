@@ -83,7 +83,7 @@ Each step: tests first; a storybook entry for each new component (the playground
 7. **Errors and navigation:** a file's name in the error panel opens it at that line; Cmd-click on an imported name opens its file at the definition; red dots in the tree on the failing file and the program that ran into it.
 8. **Copy Debug Info (2h):** answer note 42's five questions with you first, then build.
 9. **The rest:** Copy Code copies the file in the editor; Copy URL leaves the menu; the empty preview (after the v7 mockup); the mini-workspace's Background and Grid (after its mockup); narrow screens (after the v7 mockup).
-10. **The docs page:** remove the [TO CONFIRM] marks as they're settled, and run its content review again before it publishes with 2e.
+10. **The docs page:** remove the [TO CONFIRM] marks as they're settled, and run its content review again before it publishes with 2e. (*Done 2026-11-13: see "Step 10, built" below, and `reviews/phase-2d-step10-docs-review.md`.*)
 
 ## Built
 
@@ -961,6 +961,36 @@ Built in that order, one commit each.
   - **Updated on purpose:** `verify-2d-step4a` (at 700 px the tree now closes instead of stacking) and `verify-2d-step5a` (at 700 px the list is a sheet).
   - **Unchanged and still passing:** 4b, 4c-1, 4c-2, 6b.
 - **For you (9b):** v7's 760 px drawing says the chip, its list and the menus stay the desktop's there ("there's room for them"). The answer you agreed to (one rule below 800 px) and the docs page make them sheets, so 9b follows the docs. Sheets only at phone widths would be a change of breakpoint.
+  - *Answered 2026-11-13:* "Happy to go with your recommendation on question #1". One rule below 800 px stays, as built.
+
+## Step 10, built (2026-11-13)
+
+"Let's move onto step 10." The final content review of docs/workspace-files.md as a whole, with the four personas. 18 findings: 3 must-fix, 7 should-fix, 8 to consider. All are applied but three:
+- the reorder (#5): a lighter fix instead;
+- publishing and the main (#16): goes to the publication checklist;
+- the screenshot (#17): not taken.
+
+A second pass over the applied wording found six more, all applied. The dispositions are in `reviews/phase-2d-step10-docs-review.md`.
+- **Which program Export and Copy SVG take:** your answer, "Sounds good for now. We can spend more time during 2g." The page states what's built, the program the preview shows, in "The preview and the program list". The `[TO DECIDE]` mark is gone.
+- **The biggest additions:**
+  - "Three parts work together" (the tree, the editor, the preview);
+  - how to open the row menus and the workspace's menu;
+  - what happens to an uploaded CLI or VS Code project;
+  - "Try it: move a fn into a module";
+  - "On a phone or a tablet", with the narrow and touch rules apart;
+  - `imported from` lines;
+  - Windows-reserved names;
+  - a fuller Limits table.
+- **Accuracy fixes:**
+  - the program list's order;
+  - the +'s precedence;
+  - Copy Debug Info's five-excerpt cap;
+  - Cmd+click on an import's path, which moved to the tree and tabs section.
+- **Published pages too:**
+  - docs/exporting.md's Precision sentence had a CLI flag the CLI refuses (`--to-fixed <N>`). It now has `--to-fixed=<N>` and says where the inspector is.
+  - docs/cli.md gains "Round the numbers", since the flag wasn't documented there.
+  - Both forms were checked with the CLI, and `npm run build:docs` has the new anchors.
+- **What's left:** your approval of the page, which publishes with 2e. Then 2e.
 
 **9c, built** (2026-11-13): the blog's mini-workspace gets Background and Grid, as v7's screen W draws them (note 53's answer 6: "Agreed"). This follows W, not this note's step 3b line about reusing the inspector's Canvas section in the embed: that was an architecture note, not your decision. The two share only `utils/canvas-defaults.ts` (the grid's sizes, 20 px, `#cccccc`).
 - **The bar:**

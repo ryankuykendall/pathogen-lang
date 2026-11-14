@@ -123,6 +123,14 @@ pathogen-lang --src=input.pathogen --json -o result.json
 
 Prints one JSON document with every layer's path data, styles, and per-fragment source records, the defs, CSS properties, logs, warnings, the stdlib functions the program called, any missing glyphs, and the full command trace. See [Structured Output](#debug-structured-output). `--json` cannot be combined with `--output-svg-file`, `--render-gpu`, or `--png`.
 
+### Round the numbers
+
+```bash
+pathogen-lang --src=input.pathogen --to-fixed=2
+```
+
+Rounds every coordinate to that many decimal places, from 0 to 20. It's the playground's **Precision** setting ([Optimizing output](#exporting-optimizing-output)), which offers 0 to 4. Without it, numbers keep their full precision. The value must follow `=`: `--to-fixed 2` is an unknown option.
+
 ## Log Output
 
 Pathogen programs can use `log()` to produce diagnostic output. By default, the CLI discards log entries. Two flags expose them:
