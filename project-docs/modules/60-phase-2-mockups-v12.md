@@ -5,13 +5,13 @@
 ## Where to look
 
 The mockup is in `phase-2-mockups-v12/`:
-- `multi-file-mockup-v12.html`, also as the BBWP `2026-11-14-14:20:09--multi-file-workspaces--mockup-v12.bbwp.html` (localhost:3001/website/bbwp/);
+- `multi-file-mockup-v12.html`, also as the BBWP `2026-11-14-14:25:40--multi-file-workspaces--mockup-v12.bbwp.html` (localhost:3001/website/bbwp/). The three earlier copies that day lack the follow-up fixes;
 - a PNG of each state, light and dark: `<screen>-<state>-<theme>.png`, 22 states.
 
 **The harness:**
 - five screens: **F**, **S**, **P**, **R** and **N**;
 - each screen's states, as chips;
-- a switch at the top right, "Switch files with: List · Tabs · One after another", which redraws S, P, R and N in any of the three styles. The PNGs use the list.
+- a switch at the top right, "Switch files with: List · Tabs · One after another", which redraws S, P, R and N in any of the three styles, phones included. The PNGs use the list, and the state descriptions describe it.
 
 **What you can click:**
 - a file opens it;
@@ -38,13 +38,13 @@ The example workspace is the one every mockup since v6 uses: six files and `path
 | **Public page,** as served | The main's text | The main's text and every file's name. The other texts load when View source opens (note 59 Q3) |
 | **Review,** a card with several files | "compile failed" | The main's drawing; "7 files" in the meta line |
 | **Review,** the modal | "No source available." | The drawing and every file, opening on the main |
-| **Review,** a re-review | Nothing says what changed | A box lists the changes, and its lines open the files; a dot of the same colour marks each file in the list |
+| **Review,** a re-review | Nothing says what changed | A box lists the changes, and its lines open the files. A small badge with the same sign and colour marks each file in the list: + new, • changed, → moved, − removed |
 | **Review,** files that can't be read | Looks like a compile failure; Approve works | Said on the card and in the modal; Approve is off |
 | **One file,** anywhere | | Exactly as today (S4, P5, R7). On the snapshots page the ↗ and Copy are hidden, as B and Q1 say |
 
 ## What's drawn
 
-**F · Three ways to move between files.** The same snapshot in each style, in the snapshots page's code pane:
+**F · Three ways to move between files.** The same snapshot in each style, in the snapshots page's code pane (about 600 px; the review modal's is narrower, about 520 px):
 1. **A list beside the code** (recommended). The tree's rows, with folders, icons, the `main` badge rule and `pathogen.json` last. A line above the code names the open file with its folder.
 2. **Tabs above the code,** labelled as the editor labels them: no `.pathogen`, and a folder only where two names clash. With seven files, `pathogen.json` is already past the pane's edge, and folders are hidden.
 3. **One after another:** every file in one scroll under its heading, opening scrolled to the file that drew the image, with a Jump to menu.
@@ -94,7 +94,7 @@ So **step 6 serves every file's name in the page.** The texts come from `source.
    - **(a) hide it when there are several files,** keeping it for one file, as today. *Recommended.* Drawn this way in R2 to R4.
    - **(b) keep it,** sending one file.
 
-Also for your eye: the dots in the list. The re-review's words are in the box and in the open file's line, so the list's names keep their room. Text labels in the list cut names short in the modal's narrow pane, as in an earlier draft of R3.
+Also for your eye: the badges in the list. With words ("changed") in the list, names in the modal's narrow pane were cut short, to `gears.pa…`. So the list has a small badge with a sign and a colour, and the words are in the box and in the open file's line. The sign means the badges don't rest on colour alone.
 
 ## After your review
 

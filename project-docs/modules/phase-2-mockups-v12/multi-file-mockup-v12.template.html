@@ -63,9 +63,13 @@
   .mk.chg { background: var(--warning-bg); color: var(--mark-chg); }
   .mk.mov { background: var(--info-bg); color: var(--info-color); }
   .mk.gone { background: var(--bg-tertiary); color: var(--text-tertiary); }
-  /* In the list, a mark is a dot, so names keep their room; the words are in the path line and the changes box */
-  .mdot { width: 8px; height: 8px; border-radius: 50%; flex: none; display: inline-block; margin-right: 3px; }
-  .mdot.new { background: var(--success-color); } .mdot.chg { background: var(--mark-chg); } .mdot.mov { background: var(--info-color); } .mdot.gone { background: var(--text-tertiary); }
+  /* In the list, a mark is a small badge, so names keep their room; the words are in the path line and the
+     changes box. Each has a sign as well as a colour, so it doesn't rest on colour alone. */
+  .mdot { width: 15px; height: 15px; border-radius: 4px; flex: none; display: inline-grid; place-items: center; margin-right: 2px; font: 700 10px/1 var(--font-sans); }
+  .mdot.new { background: var(--success-bg); color: var(--success-color); } .mdot.new::before { content: '+'; font-size: 12px; }
+  .mdot.chg { background: var(--warning-bg); color: var(--mark-chg); } .mdot.chg::before { content: '•'; font-size: 15px; }
+  .mdot.mov { background: var(--info-bg); color: var(--info-color); } .mdot.mov::before { content: '→'; }
+  .mdot.gone { background: var(--bg-tertiary); color: var(--text-tertiary); } .mdot.gone::before { content: '−'; font-size: 12px; }
   .ld-spin { width: 10px; height: 10px; flex: none; border-radius: 50%; border: 1.5px solid var(--border-strong); border-top-color: var(--secondary-accent); animation: spin .9s linear infinite; }
   .bad-i { width: 14px; height: 14px; flex: none; border-radius: 50%; background: var(--warning-bg); color: var(--mark-chg); font-size: 10px; font-weight: 700; display: grid; place-items: center; font-family: var(--font-sans); }
   .fl-foot { margin-top: auto; padding: 8px 12px; font-size: 11.5px; line-height: 1.4; color: var(--text-secondary); border-top: 1px solid var(--border-subtle); }
@@ -102,6 +106,8 @@
   .fs-h svg { width: 13px; height: 13px; color: var(--text-secondary); }
   .fs-h.lib svg { color: var(--secondary-accent); }
   .fs-h .n { margin-left: auto; font-family: var(--font-body); font-weight: 400; font-size: 11px; color: var(--text-tertiary); }
+  .fs-body .vmsg { flex: none; padding: 12px; }
+  .fs-body .vmsg button { margin: 0 0 0 6px; }
   .fs-above { flex: none; padding: 3px 12px; font-size: 11px; color: var(--text-tertiary); background: var(--bg-secondary); border-bottom: 1px solid var(--border-subtle); }
 
   /* Narrow: the list becomes a menu above the code */
@@ -246,7 +252,7 @@
   .ad-changes ul { margin: 4px 0 0; padding: 0; list-style: none; }
   .ad-changes li { margin: 1px 0; }
   .ad-changes code { font-size: 12.5px; }
-  .ad-changes .mdot { vertical-align: 1px; margin-right: 7px; }
+  .ad-changes .mdot { vertical-align: -2px; margin-right: 7px; }
   .ad-changes [data-file] { cursor: pointer; }
   .ad-changes [data-file] code { text-decoration: underline dotted; text-underline-offset: 3px; }
   .ad-wrap.has-modal { min-height: 960px; }
@@ -289,13 +295,13 @@
 <section class="screen active" id="s-fstyles">
   <div class="notes">
     <h2>F · Three ways to move between files <span class="tag ask">your choice</span></h2>
-    <p>Note 59 asked for one way of moving between files, used by both viewers: the blog's viewer (the snapshots page and the review modal) and the public page's View source. Here are three, drawn in the tightest place, the snapshots page's code pane (about 600 px wide). The other screens use the one you pick: the switch at the top right redraws them in any of the three.</p>
+    <p>Note 59 asked for one way of moving between files, used by both viewers: the blog's viewer (the snapshots page and the review modal) and the public page's View source. Here are three, drawn in the snapshots page's code pane, about 600 px wide; the review modal's is narrower, about 520 px. The other screens are drawn with the list, and the switch at the top right redraws them in any of the three, phones included.</p>
     <table class="cmp">
       <tr><th></th><th>1 · A list beside the code <span class="tag rec">recommended</span></th><th>2 · Tabs above the code</th><th>3 · One after another</th></tr>
       <tr><td>Folders (requirement 3)</td><td>Shown, as the tree shows them</td><td><b>Dropped</b> unless two names clash (the editor's rule), so <code>parts/</code> is hidden</td><td>In each file's heading</td></tr>
       <tr><td>Up to 20 files</td><td>A short scroll in the list</td><td><b>Hidden</b> past the pane's width: here <code>pathogen.json</code> is cut off already, with 7 files</td><td><b>A long scroll</b> through every file</td></tr>
       <tr><td>Looks like</td><td>The workspace's tree (requirement 4)</td><td>The editor's tabs</td><td>A page of code, like a gist</td></tr>
-      <tr><td>Re-review marks</td><td>A coloured dot on each row; removed files stay in place, struck out</td><td>On tabs, but a removed file has no tab</td><td>On each heading</td></tr>
+      <tr><td>Re-review marks</td><td>A small badge on each row, with a sign and a colour; removed files stay in place, struck out</td><td>On tabs, but a removed file has no tab</td><td>On each heading</td></tr>
       <tr><td>Costs</td><td>About 190 px of the pane's width</td><td>32 px of height</td><td>Nothing, until there are many files</td></tr>
       <tr><td>On a phone</td><td>Becomes a menu above the code (screen N)</td><td>Scrolls sideways</td><td>As here</td></tr>
     </table>
@@ -383,7 +389,7 @@
       <tr><th></th><th>Today</th><th>After 2e</th></tr>
       <tr><td>A card with several files</td><td>"compile failed"</td><td>The main's drawing, compiled with its imports; the meta line counts the files</td></tr>
       <tr><td>The Review modal</td><td>"No source available."</td><td>The drawing and every file, opening on the main</td></tr>
-      <tr><td>A re-review</td><td>Nothing says what changed</td><td>A box lists what changed since the approved version, and its lines open the files. In the list, a dot of the same colour marks each file; the open file's line says it in words (note 59 Q4)</td></tr>
+      <tr><td>A re-review</td><td>Nothing says what changed</td><td>A box lists what changed since the approved version, and its lines open the files. In the list, a badge with the same sign and colour marks each file; the open file's line says it in words (note 59 Q4)</td></tr>
       <tr><td>Files that can't be read</td><td>Looks like a compile failure; Approve still works</td><td>Says so on the card and in the modal; <b>Approve is off</b> (note 59 Q5)</td></tr>
     </table>
     <div class="cols">
@@ -420,6 +426,7 @@
     <ul>
       <li><b>The list becomes a menu</b> above the code, naming the open file and how many there are. A tap opens the files as a sheet, with rows big enough to tap (requirement 6).</li>
       <li><b>The blog viewer's code pane</b> already stacks above the drawing below 768 px, in a 200 px row; the menu takes 32 px of it.</li>
+      <li><b>Drawn with the list.</b> The switch at the top right shows tabs (they scroll sideways, and the open tab can be out of view) and one after another at this width too.</li>
     </ul>
   </div>
   <div class="statebar" id="st-phone">
@@ -547,7 +554,11 @@ function stackView(c, look) {
   const at = Math.max(0, files.indexOf(c.open));
   const blocks = files.slice(at).map(p => {
     const n = p === PJ ? pjText(c).length : textOf(c, p).length;
-    return `<div class="fs-h ${isLib(p) ? 'lib' : ''}">${iconOf(p)}${pathHtml(p)}${markPill(c, p)}<span class="n">${n} lines</span></div>${fileCode(c, p, look)}`;
+    const ld = loadOf(c, p);
+    const body = ld === 'loading' ? `<div class="vmsg ${look}"><div><span class="ld-spin"></span>Loading…</div></div>`
+      : ld === 'failed' ? `<div class="vmsg ${look}"><div>This file's text didn't load. <button>Try again</button></div></div>`
+      : fileCode(c, p, look);
+    return `<div class="fs-h ${isLib(p) ? 'lib' : ''}">${iconOf(p)}${pathHtml(p)}${markPill(c, p)}<span class="n">${ld ? '' : `${n} lines`}</span></div>${body}`;
   }).join('');
   const above = at ? `<div class="fs-above">↑ ${at} file${at === 1 ? '' : 's'} above</div>` : '';
   return `<div class="vpane"><div class="fs-bar"><span>${fileCount(c)} files, one after another</span><span class="fs-jump">Jump to ${I.chevD}</span></div><div class="fs-body">${above}${blocks}</div></div>`;
@@ -558,8 +569,9 @@ function menuRow(c) {
 }
 function filesView(c, look) {
   if (c.one) return `<div class="vc ${look}">${linesHtml(SRC[c.oneKey])}</div>`;
-  if (c.narrow) return `<div class="vpane">${menuRow(c)}${codeBody(c, look)}</div>`;
   const style = c.style || STYLE;
+  /* On a phone the list becomes a menu; tabs and one after another draw as they are */
+  if (c.narrow && style === 'list') return `<div class="vpane">${menuRow(c)}${codeBody(c, look)}</div>`;
   if (style === 'tabs') return `<div class="vpane">${tabsRow(c)}${codeBody(c, look)}</div>`;
   if (style === 'stack') return stackView(c, look);
   return `<div class="vpane row">${listCol(c)}<div class="vpane">${pathLine(c, look)}${codeBody(c, look)}</div></div>`;
@@ -682,7 +694,8 @@ function adminPage(c, nav) {
 
 /* ---------- phones ---------- */
 function phoneSheet(c) {
-  if (!c.sheet) return '';
+  /* The sheet is the list's phone form; tabs and one after another have no menu to open it */
+  if (!c.sheet || (c.style || STYLE) !== 'list') return '';
   const rows = treeEntries(c).map(e => fileRow(c, e, true)).join('');
   return `<div class="ph-scrim"></div><div class="ph-sheet"><span class="grab"></span><div class="fl-h"><span>Files</span><span class="cnt">${fileCount(c)}</span></div>${rows}</div>`;
 }
@@ -761,7 +774,7 @@ const SCREENS = {
     'failed': [PUB({ loadState: allBut('main', 'failed') }),
       'The request for the other files <b>failed</b>. The main\'s text still shows; the other rows say they didn\'t load, and Try again sends the request again.'],
     'one': [PUB({ one: true, oneKey: 'swatch', pub: 'rings', art: 'swatch' }),
-      'A public workspace with <b>one file</b>: "Pathogen · 21 lines" and its text, exactly as today.'],
+      'A public workspace with <b>one file</b>: "Pathogen · 24 lines" and its text, exactly as today.'],
   } },
   rev: { states: {
     'queue': [ADM({}),
@@ -773,7 +786,7 @@ const SCREENS = {
         '<span data-file="parts/springs"><span class="mdot new"></span><code>parts/springs.pathogen</code> is new</span>',
         '<span><span class="mdot gone"></span><code>try-sizes.pathogen</code> was removed</span>',
         '<span data-file="pathogen.json"><span class="mdot chg"></span>The program list: <code>try-sizes.pathogen</code> left it, so <code>pathogen.json</code> changed</span>'] } } }, CHANGED)),
-      'A <b>re-review</b>. The box says what changed, and its lines open the files. In the list, a dot of the same colour marks each one, and <code>try-sizes.pathogen</code> stays in its place, struck out. The admin opened <b>parts/gears.pathogen</b> (toothDepth 6 → 10).'],
+      'A <b>re-review</b>. The box says what changed, and its lines open the files. In the list, a badge with the same sign and colour marks each one (+ new, • changed, → moved, − removed), and <code>try-sizes.pathogen</code> stays in its place, struck out. The admin opened <b>parts/gears.pathogen</b> (toothDepth 6 → 10).'],
     'quiet': [ADM(Object.assign({ tab: 'rereview', counts: [2, 1], cards: ['gearsQuiet'], modal: { title: 'Gears', changes: { quiet: true, items: [
         '<span data-file="parts/springs"><span class="mdot mov"></span><code>springs.pathogen</code> moved to <code>parts/springs.pathogen</code></span>',
         '<span><span class="mdot new"></span>A folder was added: <code>examples/</code>, empty</span>',
