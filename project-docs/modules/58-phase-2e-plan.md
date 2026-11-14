@@ -45,9 +45,15 @@ The server side was mostly built in 2b (note 50, steps 3–6). This plan comes f
    This settles step 10's finding 16: the docs page's "The main" says "…and the one its thumbnail shows and publishing uses", and Set as main's menu line stays as it is.
 
    *Recommended: yes.* The alternative, publishing the program the preview shows, would let the public drawing and the thumbnail disagree.
-2. **Re-review after any change to any file.** An approved workspace goes back to review when its hash changes, and the hash covers every file. So editing a module the main doesn't import, or another program, also starts a re-review.
+2. **Re-review after any change to the workspace's files.** An approved workspace goes back to review when its hash changes. The hash covers every file's path and bytes, the order of `pathogen.json`'s list, and the folders (`src/workspace/files.ts:265-270`). So each of these starts a re-review:
+   - editing any file, including a module the main doesn't import, or another program;
+   - renaming or moving a file;
+   - **Set as main**;
+   - adding an empty folder.
 
-   *Recommended: keep it.* The public page shows every file, so any change is a new version to review.
+   A change to the name, the description or the canvas settings doesn't.
+
+   *Recommended: keep it.* The public page shows every file and folder, and which program is the main, so each of these changes what visitors see.
 3. **What a snapshot keeps:**
    - the drawing the preview showed (as now);
    - every file as it was when that drawing was made (not as it is when you press Save);
@@ -76,7 +82,7 @@ The server side was mostly built in 2b (note 50, steps 3–6). This plan comes f
 
    *Recommended:* keep the 1 MB cap on what's uploaded. The docs line becomes "up to 1 MB of edits not saved yet", since a 20-file workspace can hold more than 1 MB in all.
 
-The audits also found publishing problems that **predate phase 2** (details at the end). Three questions cover them:
+The audits also found publishing problems that **predate phase 2** (details at the end). They are **live on the site today**. Fixed in 2e, they stay live until 2e ships. Fixing one sooner would mean a branch from what's deployed, outside the commit-to-main habit; that's your call. Three questions cover them:
 
 8. **Fix the plain bugs in 2e:**
    - Make public saves first, so the review sees the version that was checked.
@@ -90,10 +96,23 @@ The audits also found publishing problems that **predate phase 2** (details at t
    *Recommended: yes, all seven.* 2e reworks publishing anyway, and each one is small.
 9. **Freeze the public image at approval.** Explore's cards and the public page's fallback show the live thumbnail, which follows the owner's edits within about 10 minutes, including edits waiting for re-review. The docs say it's frozen.
 
-   *Recommended: freeze it.* At approval, the card image is made from the approved drawing (the approval SVG, which 2e makes for every approval). Explore, the profile page, Featured and the public page then read that image. The alternative is to change the docs to say the image follows your edits.
-10. **Close the live files of a public workspace to everyone but the owner and admins.** Visitors read only the approved files (the public page, `source.json`). Today anyone with the workspace's id can read a pending edit through the API.
+   *Recommended: freeze it.* Approve makes a card image from the approved drawing: the review screen already compiles it in the admin's browser, and already makes thumbnails there (Regenerate). Explore, the profile page, Featured and the public page then read that image.
+   - **Approvals that exist need one too:** a backfill on production, run only with your go-ahead.
+   - **The backfill script can't make every image.** `backfill-approval-svgs.ts` skips programs with GPU gradients, which can't render headless. Those need the review screen's Regenerate, by hand.
+   - **Before building it, I'll compare this with copying the thumbnail at approval on the server.** That copy is simpler, but it takes the live thumbnail, which can already hold edits made after submitting.
 
-    *Recommended: yes.* Nothing in the playground needs those reads, and step 5 checks that before closing them.
+   The other answer is to change the docs to say the image follows your edits.
+10. **Close the live files of a public workspace to everyone but the owner and admins.** Today anyone signed in can read a pending edit three ways:
+    - `GET /workspace/:id`;
+    - the file route;
+    - `POST /workspace/:id/copy`, which copies another user's public workspace with its live files (`router.ts:699`).
+
+    Under this answer:
+    - visitors read only the approved files: the public page and `source.json`;
+    - copying is for the owner and admins;
+    - other people's forks go through `source.json`, as Open as new workspace will (step 4).
+
+    *Recommended: yes.* Before closing anything, step 5 checks that no page of the site needs those reads from someone else. The new-workspace form's `copyFrom` reads a workspace through `GET`, so it's the first place to check.
 
     The thumbnail routes' missing visibility check goes on the backlog. Ids are random, and 9 already moves public pages to the approved image.
 
@@ -104,8 +123,10 @@ Each step: tests first; light and dark; a puppeteer check against `npm run dev:s
 1. **v12 mockups** (question 5): the snapshot panel's line, the snapshots page's Code panel, the public page's source and the review modal, each with several files, built on v11's page. Reviewed with you before steps 3, 5 and 6.
 2. **Snapshots, the server:** the manifest gains `program` (the path that drew it), read back by `/files`. A snapshot made before 2e reads as `main.pathogen`. No D1 change: the field lives in the manifest in R2.
 3. **Snapshots, the playground:**
-   - The preview keeps the texts of every file it drew from (a map of references, no copies).
-   - The snapshot sends files: by hash where the text equals the saved file, as text where it doesn't, plus `program`.
+   - The preview keeps what it drew from: every file's text (a map of references, no copies), the folders and `pathogen.json`'s list.
+   - The snapshot sends all of that as it was drawn, plus `program`:
+     - each file by hash when its text equals the saved file, and as text when it doesn't;
+     - the folders and `entryPoints`, always. A `files` snapshot that leaves them out gets a new workspace's defaults (`snapshots.ts:450-457`), so "Start new workspace" would get the wrong main. Tested.
    - The snapshots page reads `/files` and shows the v12 Code panel.
    - Copy code and Export's legend use the drawing program's file.
    - Start new workspace opens showing that program.
@@ -140,7 +161,8 @@ Each step: tests first; light and dark; a puppeteer check against `npm run dev:s
    - both deploys live;
    - the production dry run (your go-ahead) and the write (your go-ahead);
    - the dry run again;
-   - the export and collision check as a smoke test.
+   - the export and collision check as a smoke test;
+   - if 9 is yes, the card-image backfill for existing approvals (your go-ahead), and Regenerate by hand for the ones it can't render.
 
 ## What the audits found (2026-11-14)
 
