@@ -59,6 +59,14 @@ It has one screen, **C · Copying code**. A click on a file opens it; a click on
 
 Both docs pages change in step 7's docs round, with a content review and your approval.
 
+## Your answers (2026-11-14)
+
+- **The look in a header:** "In the case of it being in a tab bar or a filename header, I want the styling where the button sits inside of a block (with a border to the left of the button" (the workspace's tabs, state 1), "but not like this" (the snapshots page's file line, state 5): "this just doesn't feel very tidy with the vertical spacing, the right margin in the button, etc...tighten this up." v14 (note 62) gives every header the tabs' cell.
+- **Question 1:** settled by the same answer. The workspace's icon sits at the right end of the tabs, in its cell before the docs book (a).
+- **One file:** "The positioning for single files where the tab bar or filename header are not present, is fine (top right of code editor.)"
+- **Question 2:** "let's add that as another follow-up item we need to revisit after the initial release." On the backlog: "Copy for the code examples in the docs and the blog".
+- **The two readings** (the icon copies the file shown; the review modal's ↗ hidden for every entry) weren't raised in your reply. I've gone ahead on them.
+
 ## After your review
 
 - The icon is built with the screen each step builds:

@@ -84,6 +84,12 @@ After the first release (phase 2 ships with 2e). Each entry comes from your answ
 - **Today:** what 2e does for such a snapshot is note 58's question A.
 - **From:** your answer 4, 2026-11-14: "Let's hold off on this until a future release based on my answers above."
 
+### Copy for the code examples in the docs and the blog
+- **What:** the code examples on docs and blog pages (code blocks, not the embeds) get the same copy icon as every code panel in 2e: at the top right of the example, copying its text, with "Copied" only once the copy has worked.
+- **Today:** they have no copy at all. 2e puts the icon in the workspace, the snapshots page, the review modal, the public page and blog embeds (notes 61 and 62).
+- **Needs:** the docs build (`scripts/build-docs.ts`, the static page and the docs panel) and the blog build (`scripts/build-blog.ts`) to emit it, and a small shared script to run it. The blog can't be rebuilt while blog edits are in progress in the working tree.
+- **From:** your answer on v13, 2026-11-14: "Per the code examples in the doces and blog pages, let's add that as another follow-up item we need to revisit after the initial release."
+
 ### Line-by-line differences on a re-review
 - **What:** in a re-review, each changed file shows what changed in its text, line by line, against the approved version.
 - **Today (2e):** a re-review marks each file new, changed, moved or removed, with a line for a new main and for a folder added or removed. The marks come from comparing the two manifests by hash, without reading any text (note 59, question 4).

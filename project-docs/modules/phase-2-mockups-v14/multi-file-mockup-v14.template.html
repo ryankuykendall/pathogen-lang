@@ -1,0 +1,68 @@
+<!-- v14's parts. build.ts puts them into v13's built page (phase-2-mockups-v13/multi-file-mockup-v13.html,
+     read in place): the CSS at the end of its <style>, the harness button in place of v13's, the
+     section in place of v13's, and the script just before v6's `const current = {};`. v13's screen
+     table and click listeners stay; v14's script only takes the floating workspace state out.
+
+     v14 is v13's copy icon with your critique (note 61): in a header (the tabs, a file's line, the
+     phone's file menu) the icon sits in a cell of its own, with a border on its left, flush right,
+     like the workspace's tabs. One-file panels keep the icon floating in the corner. -->
+
+<!-- @@CSS -->
+  /* Every header is the tabs' height, 34 px, so the 26 px icon has the same 4 px above and below */
+  .fpath, .fmenu, .fl-h { height: 34px; }
+  .fpath, .fmenu { padding-right: 0; }
+  /* The cell: the header's full height, 38 px wide, a border on its left, flush with the right edge */
+  .fpath .cpw, .fmenu .cpw, .tab-copy { align-self: stretch; display: grid; place-items: center; width: 38px; flex: none; margin: 0; border-left: 1px solid var(--border-color); }
+  .fpath .cpw { margin-left: auto; }
+  .fmenu .cnt { padding-right: 10px; }
+  .tab-copy .cpw { display: grid; place-items: center; }
+
+<!-- @@NAV -->
+    <button data-s="copy" aria-pressed="true">C · Copying code, round 2</button>
+
+<!-- @@SECTIONS -->
+<!-- ============ C, ROUND 2. COPYING CODE ============ -->
+<section class="screen active" id="s-copy">
+  <div class="notes">
+    <h2>C · Copying code, round 2: one cell in every header <span class="tag ask">for your review</span></h2>
+    <p>Your critique of v13 (note 61): "In the case of it being in a tab bar or a filename header, I want the styling where the button sits inside of a block (with a border to the left of the button…), but not like this… tighten this up." One-file panels were "fine (top right of code editor.)"</p>
+    <table class="cmp">
+      <tr><th></th><th>v13 (before)</th><th>v14 (now)</th></tr>
+      <tr><td>A file's line (the snapshots page, the review modal, the public page)</td><td>28 px tall; the 26 px icon nearly touched its edges, inset from the right with no border</td><td><b>34 px tall,</b> the tabs' height. The icon sits in a cell of its own, 38 px wide, the line's full height, with a border on its left, flush right</td></tr>
+      <tr><td>The phone's file menu</td><td>The icon after the count, inset</td><td>The same cell, after the count</td></tr>
+      <tr><td>The workspace's tabs</td><td>The cell before the docs book (question 1, a), or floating (b)</td><td><b>The cell</b>, your choice. The floating option is gone</td></tr>
+      <tr><td>The Files header beside the code</td><td>28 px</td><td>34 px, so its bottom line meets the file line's</td></tr>
+      <tr><td>One file</td><td colspan="2">The icon floats in the code's top right corner: unchanged</td></tr>
+    </table>
+    <ul>
+      <li><b>One cell, three places:</b> the same width, border and icon in the tabs, a file's line and the phone's menu.</li>
+      <li><b>Code examples in the docs and the blog</b> are on the backlog, for after the first release (your answer).</li>
+    </ul>
+  </div>
+  <div class="statebar" id="st-copy">
+    <span class="lbl">State</span>
+    <button data-st="ws" aria-pressed="true">1 · Workspace</button>
+    <button data-st="ws-none">2 · Workspace: no file open</button>
+    <button data-st="ws-phone">3 · Workspace on a phone</button>
+    <button data-st="snap">4 · Snapshots page</button>
+    <button data-st="copied">5 · Copied</button>
+    <button data-st="fail">6 · Couldn't copy</button>
+    <button data-st="snap-one">7 · Snapshot, one file</button>
+    <button data-st="review">8 · Review modal</button>
+    <button data-st="review-one">9 · Review modal, one file</button>
+    <button data-st="pub">10 · Public page</button>
+    <button data-st="pub-one">11 · Public page, one file</button>
+    <button data-st="blog">12 · Blog embed</button>
+    <button data-st="blog-closed">13 · Blog embed, code closed</button>
+    <button data-st="snap-phone">14 · Snapshots page on a phone</button>
+  </div>
+  <div class="statedesc" id="sd-copy"></div>
+  <div class="frame-out"><div class="window" id="w-copy"></div></div>
+</section>
+
+<!-- @@SCRIPT -->
+/* ===================== v14 ===================== */
+/* v13's screen table stays; the floating workspace icon was question 1's option (b), not chosen. */
+delete SCREENS.copy.states['ws-float'];
+SCREENS.copy.states['ws'][1] = '<b>The workspace.</b> The icon\'s cell at the right end of the tabs, before the docs book: your choice. It copies the file in the editor; its tooltip names it.';
+SCREENS.copy.states['snap'][1] = 'The <b>snapshots page</b>. The icon now sits in the same cell as the tabs\': the line\'s full height, a border on its left, flush right. It copies <code>demos/gears.pathogen</code>, the file shown.';
