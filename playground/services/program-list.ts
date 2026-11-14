@@ -5,9 +5,11 @@
 // to pathogen.json's list (screen E).
 
 import { MAIN_FILE } from './workspace-files.js';
+import { errorRowText } from './error-place.js';
 import { tabLabels } from './open-files.js';
 import { entryPointsAfterEdit } from './workspace-edits.js';
 
+import type { ErrorPlace } from './error-place.js';
 import type { Change, WorkspaceState } from './workspace-edits.js';
 
 /** One program in the chip's list. */
@@ -116,6 +118,35 @@ export function chipAlert(items: readonly ProgramItem[], shown: string | null): 
   if (items.some((item) => item.error !== null && item.path !== shown)) return 'Another program has an error';
   const own = items.find((item) => item.path === shown && item.error === MODULE_MAIN);
   return own ? `${own.path}: ${MODULE_MAIN}` : null;
+}
+
+/**
+ * The tree's red dots (2d, step 7c; mockup v6 screen G, state 5): on each
+ * program whose compile failed, saying where (its row's words), and on the
+ * file where it failed, saying which program fails there; on a main that's a
+ * module too. Every program, the one shown or not. A file several programs
+ * fail in says each, one per line. Path → what hovering its dot says.
+ */
+export function treeErrorDots(
+  rows: ReadonlyMap<string, { place: ErrorPlace | null }>,
+  { main, mainIsLibrary }: { main: string | null; mainIsLibrary: boolean },
+): Map<string, string> {
+  const lines = new Map<string, string[]>();
+  const add = (path: string, line: string): void => {
+    const said = lines.get(path);
+    if (said) said.push(line);
+    else lines.set(path, [line]);
+  };
+  if (main !== null && mainIsLibrary) add(main, MODULE_MAIN);
+  for (const [program, row] of rows) {
+    const place = row.place;
+    if (!place) continue;
+    add(program, errorRowText(place));
+    if (place.file !== program) {
+      add(place.file, place.line === null ? `${program} fails here` : `${program} fails here, line ${place.line}`);
+    }
+  }
+  return new Map([...lines].map(([path, said]) => [path, said.join('\n')]));
 }
 
 /**

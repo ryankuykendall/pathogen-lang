@@ -27,6 +27,7 @@
 import { errorPlace, errorRowText } from './error-place.js';
 import { pathAfterChange } from './workspace-edits.js';
 
+import type { ErrorPlace } from './error-place.js';
 import type { Change } from './workspace-edits.js';
 import type { WorkspaceTexts } from './workspace-files.js';
 import type { CompileResult, LayerOutput } from '../types/compiler.js';
@@ -172,7 +173,8 @@ interface Entry {
   graphFor: Inputs | null;
   /** What its row's error and drawing were made from; null before its first compile. */
   drawnFor: Inputs | null;
-  error: string | null;
+  /** Where its last compile failed (its row's words and the tree's dots: step 7c); null when it worked. */
+  place: ErrorPlace | null;
   /** A compile's drawing, kept until the list opens to draw it. */
   drawing: Drawing | null;
   svg: string | null;
@@ -185,7 +187,10 @@ interface Entry {
 
 /** One program's row, as ProgramDrawings has it. */
 export interface ProgramDrawingRow {
+  /** Its row's words: "Error in parts/gears.pathogen line 9". */
   error: string | null;
+  /** Where it failed: the file (a workspace path) and line, for the tree's red dots (step 7c). */
+  place: ErrorPlace | null;
   miniature: string | null;
   /** Its drawing is out of date, and a compile will redraw it (the spinner). */
   updating: boolean;
@@ -262,7 +267,8 @@ export class ProgramDrawings {
     for (const path of this.deps.programs()) {
       const entry = this._entries.get(path);
       rows.set(path, {
-        error: entry?.error ?? null,
+        error: entry?.place ? errorRowText(entry.place) : null,
+        place: entry?.place ?? null,
         miniature: entry?.url ?? null,
         updating: path !== shown && this._stale(entry, workspace, layout),
         files: entry?.files ?? null,
@@ -310,9 +316,9 @@ export class ProgramDrawings {
     const entry = this._entry(program);
     const failed = 'message' in outcome;
     entry.drawnFor = inputsOf(program, entry.files, workspace, failed);
-    if (failed) entry.error = errorRowText(errorPlace(outcome.message, program));
+    if (failed) entry.place = errorPlace(outcome.message, program);
     else {
-      entry.error = null;
+      entry.place = null;
       this._setDrawing(entry, drawingOf(outcome.result));
     }
     this._ready = true;
@@ -351,6 +357,8 @@ export class ProgramDrawings {
       entry.files = entry.files?.map((f) => pathAfterChange(f, change)) ?? null;
       if (entry.graphFor) entry.graphFor = followInputs(entry.graphFor, change);
       if (entry.drawnFor) entry.drawnFor = followInputs(entry.drawnFor, change);
+      // Where it failed moves with its file, so a red dot stays on the right row (step 7c).
+      if (entry.place) entry.place = { ...entry.place, file: pathAfterChange(entry.place.file, change) };
       return [pathAfterChange(path, change), entry] as const;
     });
     this._entries.clear();
@@ -392,7 +400,7 @@ export class ProgramDrawings {
         files: null,
         graphFor: null,
         drawnFor: null,
-        error: null,
+        place: null,
         drawing: null,
         svg: null,
         box: DEFAULT_BOX,
@@ -522,10 +530,10 @@ export class ProgramDrawings {
     if (outcome === null || session !== this._session || epoch !== this._epoch) return;
     if ('message' in outcome) {
       entry.drawnFor = { ...inputs, layout: layoutOf(workspace) };
-      entry.error = errorRowText(errorPlace(outcome.message, program));
+      entry.place = errorPlace(outcome.message, program);
     } else {
       entry.drawnFor = inputs;
-      entry.error = null;
+      entry.place = null;
       this._setDrawing(entry, drawingOf(outcome.result));
     }
     this._notify();

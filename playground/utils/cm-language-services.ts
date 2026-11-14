@@ -23,7 +23,7 @@ import { hoverTooltipExtension } from './cm-hover-tooltip.js';
 import { errorHighlightExtension } from './cm-error-highlight.js';
 import { perfSpan } from './perf-marks.js';
 import { languageServiceOptions } from '../services/workspace-modules.js';
-import { openFileNow } from '../services/workspace-files.js';
+import { openFileNow, workspaceNow } from '../services/workspace-files.js';
 
 // ─── CodeMirror module shapes (dynamically imported from ESM CDN) ─────────────
 
@@ -477,7 +477,7 @@ function wireGoToDefinition(cm: CmModulesForLanguageServices): unknown {
       // tree and the error panel open files (`open-file`, which workspace-view
       // acts on; the line is clamped there, since the graph may lag an edit).
       const across = getDefinition(doc, { line, character }, languageServiceOptions());
-      const other = otherFileDefinition(across, openFileNow());
+      const other = otherFileDefinition(across, openFileNow(), (path) => workspaceNow().texts.has(path));
       if (other) {
         ev.preventDefault();
         view.dom.dispatchEvent(

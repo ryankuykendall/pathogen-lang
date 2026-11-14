@@ -44,7 +44,7 @@ import {
   workspaceFromAnswer,
   workspaceNow,
 } from '../services/workspace-files.js';
-import { chipAlert, programItems, programListChange, programsOf } from '../services/program-list.js';
+import { chipAlert, programItems, programListChange, programsOf, treeErrorDots } from '../services/program-list.js';
 import type { WorkspaceTexts } from '../services/workspace-files.js';
 import {
   currentOpenFileModules,
@@ -689,10 +689,11 @@ export class WorkspaceView extends HTMLElement {
     this._programsToDrawCache = null;
     this._drawings.reset();
     this.fileTree?.cancelAsk();
-    // The last workspace's errors and messages are its own (step 7).
+    // The last workspace's errors and messages are its own (step 7), its red dots too.
     this._failure = null;
     this._panelMessage = null;
     this.errorPanel?.hide();
+    if (this.fileTree) this.fileTree.errors = new Map();
 
     // With no file open, the editor shows the previous workspace's zero-state.
     const wasNone = openFileNow() === null;
@@ -1700,6 +1701,23 @@ export class WorkspaceView extends HTMLElement {
     tree.folders = workspace.folders;
     tree.main = workspace.entryPoints[0] ?? null;
     tree.active = workspace.openFile;
+    this._refreshTreeDots();
+  }
+
+  /**
+   * The tree's red dots (2d, step 7c): each program whose compile failed (the
+   * one shown, and step 5b's in the background) and the file it failed in, and
+   * a main that's a module, as the chip's list reads it (_mainNow: one reading
+   * per text, kept).
+   */
+  private _refreshTreeDots(
+    rows = this._drawings.rows(),
+    mainNow: { main: string | null; mainIsLibrary: boolean } = this._mainNow(),
+  ): void {
+    const tree = this.fileTree;
+    if (!tree) return;
+    // The same reading of the main the chip's list takes (_refreshPrograms passes it).
+    tree.errors = holdsWorkspace() ? treeErrorDots(rows, mainNow) : new Map();
   }
 
   /** New program, New module or New folder, planned on the workspace as it stands: the change, or why not. */
@@ -1754,6 +1772,9 @@ export class WorkspaceView extends HTMLElement {
     for (const cache of [this._libraryReadings, this._fileHashes]) {
       for (const path of cache.keys()) if (!(path in result.state.files)) cache.delete(path);
     }
+    // The rows have followed the change: the chip's list and the tree's red dots too (step 7c),
+    // not only once the next compile is back.
+    this._refreshPrograms();
     // The editor shows another file now (the one shown was deleted or renamed): give it its marks.
     if (openFileNow() !== shownBefore) this._afterFileShown();
     if (change.open !== undefined) {
@@ -2084,6 +2105,9 @@ export class WorkspaceView extends HTMLElement {
     store.set('thumbnailWait', this._thumbnailWait(main, mainIsLibrary));
     // The error panel's note about a main that's a module follows the main (step 7).
     this._renderErrors();
+    // Each program's failure, as the tree's red dots (step 7c): with one program too.
+    const rows = this._drawings.rows();
+    this._refreshTreeDots(rows, { main, mainIsLibrary });
     const chip = this.programChip;
     if (!chip) return;
     const programs = this._programsOf(workspace);
@@ -2093,7 +2117,6 @@ export class WorkspaceView extends HTMLElement {
       return;
     }
     const shown = programToShow(workspace, store.get('shownProgram') as string | null);
-    const rows = this._drawings.rows();
     const items = programItems(programs, { main, mainIsLibrary }, { rows, editing: workspace.openFile, shown });
     chip.items = items;
     chip.shown = shown;

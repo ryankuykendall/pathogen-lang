@@ -10,13 +10,19 @@ interface DefinitionLike {
   range: { start: { line: number; character: number } };
 }
 
-/** The file to open and where (1-based), or null when the definition is in `openFile` itself (or there's none). */
+/**
+ * The file to open and where (1-based), or null when the definition is in
+ * `openFile` itself, there's none, or its file isn't one the workspace holds
+ * (`isFile`: a graph built before a delete). Null leaves the jump as it was:
+ * within the file open.
+ */
 export function otherFileDefinition(
   definition: DefinitionLike | null | undefined,
   openFile: string | null,
+  isFile: (path: string) => boolean = () => true,
 ): { path: string; line: number; column: number } | null {
   if (!definition?.file) return null;
   const path = definition.file.replace(/^\/+/, '');
-  if (path === openFile) return null;
+  if (path === openFile || !isFile(path)) return null;
   return { path, line: definition.range.start.line + 1, column: definition.range.start.character + 1 };
 }

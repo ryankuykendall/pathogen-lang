@@ -73,6 +73,8 @@ const RENAME_KEYS_HINT = 'Enter to rename, Esc to cancel';
 const HERE_NOW = 'It’s here now';
 /** How long new rows stay marked after an upload. */
 const FLASH_MS = 1600;
+/** A folded folder's red dot: a file inside it has one (step 7c). */
+const FOLDED_ERROR = 'A file in it has an error';
 
 /** Why a name can't be used (the message), or null when it can. */
 export type NameCheck = (kind: NewEntryKind, folder: string, name: string) => string | null;
@@ -330,6 +332,9 @@ export class FileTree extends HTMLElement {
   /** What dropping the dragged row on each folder would do, asked once per folder; null where it isn't offered. */
   private readonly _dragChecks = new Map<string, EntryCheck | null>();
 
+  /** The red dots (step 7c): path → what hovering its dot says. */
+  private _errors = new Map<string, string>();
+
   /** New rows marked for a moment (flash). */
   private readonly _flashing = new Set<string>();
 
@@ -491,6 +496,24 @@ export class FileTree extends HTMLElement {
     return this._active;
   }
 
+  /**
+   * The red dots (2d, step 7c; mockup v6 screen G, state 5): the files where
+   * programs failed and the programs, each with what hovering its dot says
+   * (services/program-list.ts treeErrorDots). Marked on the rows as they are,
+   * never by drawing them again, so a name field or a menu stays open.
+   */
+  set errors(errors: Map<string, string>) {
+    const same =
+      errors.size === this._errors.size && [...errors].every(([path, said]) => this._errors.get(path) === said);
+    if (same) return;
+    this._errors = new Map(errors);
+    this._mark();
+  }
+
+  get errors(): Map<string, string> {
+    return this._errors;
+  }
+
   /** The workspace's main, badged unless it's main.pathogen; null when it has no programs. */
   set main(path: string | null) {
     this._main = path;
@@ -618,6 +641,7 @@ export class FileTree extends HTMLElement {
     for (const el of items) {
       el.classList.toggle('flash', this._flashing.has(el.dataset.path!));
       el.classList.toggle('dragging', el.dataset.path === this._dragPath);
+      this._markError(el);
       if (el.classList.contains('folder')) continue;
       const selected = el.dataset.path === this._active;
       el.setAttribute('aria-selected', String(selected));
@@ -628,6 +652,36 @@ export class FileTree extends HTMLElement {
       items.find((el) => el.dataset.path === this._active) ??
       items[0];
     for (const el of items) el.tabIndex = el === stop ? 0 : -1;
+  }
+
+  /**
+   * A row's red dot, on its icon, with what it says on hover and to a screen
+   * reader. A folded folder takes a dot for a file inside it, whose row is hidden.
+   */
+  private _markError(el: HTMLElement): void {
+    const path = el.dataset.path!;
+    let said = this._errors.get(path) ?? null;
+    if (said === null && el.classList.contains('folded')) {
+      const inside = [...this._errors.keys()].some((p) => p.startsWith(`${path}/`));
+      if (inside) said = FOLDED_ERROR;
+    }
+    el.classList.toggle('has-error', said !== null);
+    const icon = el.querySelector<HTMLElement>('.icon');
+    // A screen reader reads the reason with the row's name: words the eye doesn't see
+    // (every browser reads them, where aria-description isn't everywhere yet).
+    let note = el.querySelector<HTMLElement>('.err-note');
+    if (said === null) {
+      icon?.removeAttribute('title');
+      note?.remove();
+      return;
+    }
+    icon?.setAttribute('title', said);
+    if (!note) {
+      note = document.createElement('span');
+      note.className = 'err-note';
+      el.querySelector('.name')?.after(note);
+    }
+    note.textContent = `, ${said.replace(/\n/g, '; ')}`;
   }
 
   private _setFocusPath(path: string): void {

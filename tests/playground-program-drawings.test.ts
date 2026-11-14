@@ -375,6 +375,25 @@ describe('the rows’ errors', () => {
     expect(h.drawings.rows().get(MAIN)!.error).toBe('Error in main.pathogen line 4');
   });
 
+  it('each row also gives where it failed (the tree’s dots, step 7c), and a rename takes that with its file', async () => {
+    const h = harness();
+    await h.shownCompiled();
+    await h.finish(
+      'parts/gears.pathogen line 9, col 3: Array index 5 out of bounds (length 2)\n  called from demos/gears.pathogen line 2',
+    );
+    expect(h.drawings.rows().get(GEARS_DEMO)!.place).toEqual({ file: 'parts/gears.pathogen', line: 9 });
+    // parts/gears.pathogen renamed to parts/cogs.pathogen, before anything compiles again.
+    const change = {
+      steps: [{ kind: 'move', from: 'parts/gears.pathogen', to: 'parts/cogs.pathogen' }],
+      importsUpdated: [],
+    } as unknown as Change;
+    h.drawings.follow(change);
+    expect(h.drawings.rows().get(GEARS_DEMO)).toMatchObject({
+      place: { file: 'parts/cogs.pathogen', line: 9 },
+      error: 'Error in parts/cogs.pathogen line 9',
+    });
+  });
+
   it('a failed program is compiled again when a file appears (an import that was missing)', async () => {
     const h = harness();
     await h.shownCompiled();

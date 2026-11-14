@@ -748,6 +748,38 @@ Three commits, each with tests first, a storybook entry where there's a componen
   - `verify/verify-2d-step7b.ts` (6, real clicks with Meta held): the call, `g.size`, the path, a local name, a click without Cmd.
 - The code review comes with 7c's (one review over both commits).
 
+**Step 7c, red dots in the tree** (2026-11-13). As v6 screen G, state 5 draws them: a red dot at the corner of the icon of each program whose compile failed, and of the file where it failed. That covers the one shown (the editor's compile) and every other program (step 5b's compiles in the background), with one program too. Proposal 5's hover texts are built as written.
+- **`program-drawings.ts`:**
+  - entries keep where they failed (`place`), not their row's words; `rows()` gives both;
+  - `follow()` moves a place's file with a rename or a move, and workspace-view refreshes the rows right after a change, so a dot goes with its file at once, before any compile.
+- **`program-list.ts` `treeErrorDots`:** path → what the dot says.
+  - The program's row words: "Error in parts/gears.pathogen line 9".
+  - The failing file: "try-sizes.pathogen fails here, line 9". Several programs failing in one file, one line each.
+  - A main that's a module: "A module now, so it can't draw as the main". It isn't in the rows (it draws nothing); it's read as the chip reads it.
+- **`file-tree.ts`:**
+  - `errors` marks the rows as they are (`_mark`), never by drawing them again, so a name field or a menu stays open. Setting the same dots again does nothing.
+  - The icon's `title` says why on hover.
+  - The row's text ends with the reason, hidden from the eye, so every screen reader reads it with the name. (`aria-description` isn't in every browser yet; the review's point.)
+  - **Not in the plan, proposed (7):** a folded folder takes a dot for a file inside it ("A file in it has an error"), since that file's row is hidden.
+- Storybook: the tree's "Red dots" story (fourteen stories now; the 4b, 4c-1 and 4c-2 checks count them).
+- **Checked:**
+  - tests:
+    - `tests/playground-program-list.test.ts` (+5, `treeErrorDots`);
+    - `tests/playground-program-drawings.test.ts` (+1: the place, and a rename);
+    - `tests/playground-file-tree.test.ts` (+5: the dots, no redraw, a folded folder, two deep, cleared);
+    - `tests/playground-go-to-definition.test.ts` (+1, below).
+  - `verify/verify-2d-step7c.ts` against `npm run dev:stack`, 12 checks:
+    - a program not shown failing in another file, its two dots and what they say;
+    - the screen reader's words; a rename while the dot shows; a folded folder; fixed;
+    - the main shown failing; the main a module, and back; dark; the storybook.
+  - `verify-2d-step4b`, `4c1`, `4c2`, `5a`, `5b` (typing: `module;` still read 0 times), `6a`, `6b` and `7b` still pass.
+- **Review** (code-reviewer, over 7b and 7c: no critical issues). Fixed:
+  - the tree's dot and the chip read "the main is a module" from two places, which could disagree for a moment; now one;
+  - `aria-description` alone (see above);
+  - **7b:** Cmd+click on a definition whose file the workspace no longer holds (a graph built before a delete) now jumps within the file, as before, instead of a toast saying the file is gone (`otherFileDefinition`'s `isFile`; +1 test);
+  - the dots cleared at once on a workspace switch.
+- Not changed, with reasons: a place whose file was deleted keeps its dot's text until the next compile, but there's no row to show it on, and the change itself recompiles.
+
 **The v7 mockup round** (2026-11-09, commit `5c8f925`): note 53, `phase-2-mockups-v7/`. Five screens: no programs left, folders and moving, narrow screens, the mini-workspace, the ⋮ menu. It also draws what v6 left out (renaming a file, Move to…, dragging a file). Six questions await you; steps 4 and 9 wait for them.
 - *Answered 2026-11-09: all six agreed* (note 53, "Your answers"). What that adds to the steps:
   - step 2: each change can be undone (the toast's Undo); a rename takes a name only, no slash and no extension; Move to…; the first program in an empty workspace is shown;

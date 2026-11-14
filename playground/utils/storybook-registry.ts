@@ -192,7 +192,7 @@ layer('hex').apply { circle(60, 100, 40) }`,
     name: 'File Tree',
     category: 'Editor',
     description:
-      "The workspace's files beside the editor (docs/workspace-files.md, mockup v6 screens O, J and N). Folders first, then files, each by name; .pathogen quiet; a module's box icon; the main's badge when it isn't main.pathogen; pathogen.json last, with a lock. Click a folder to fold it, a file to open it. One Tab stop: Up and Down move, Right and Left unfold and fold, Space opens a file, Enter opens it and goes to the editor. The + adds a program, a module or a folder to the folder clicked last, else the folder of the file in the editor, else the top: a name field appears first in that folder; a taken name is refused in place; Enter creates, Esc cancels. Each row's ⋮ (or a right-click, or Shift+F10) opens its menu: Rename… turns the row into a field holding its name, and Move to… lists the top and the folders, the one it's in marked. A file or folder dragged onto a folder (or empty space, for the top) moves there: the row dims, the folder lights up, and the label by the pointer says what the move changes, or why it can't go there.",
+      "The workspace's files beside the editor (docs/workspace-files.md, mockup v6 screens O, J and N). Folders first, then files, each by name; .pathogen quiet; a module's box icon; the main's badge when it isn't main.pathogen; pathogen.json last, with a lock. Click a folder to fold it, a file to open it. One Tab stop: Up and Down move, Right and Left unfold and fold, Space opens a file, Enter opens it and goes to the editor. The + adds a program, a module or a folder to the folder clicked last, else the folder of the file in the editor, else the top: a name field appears first in that folder; a taken name is refused in place; Enter creates, Esc cancels. Each row's ⋮ (or a right-click, or Shift+F10) opens its menu: Rename… turns the row into a field holding its name, and Move to… lists the top and the folders, the one it's in marked. A file or folder dragged onto a folder (or empty space, for the top) moves there: the row dims, the folder lights up, and the label by the pointer says what the move changes, or why it can't go there. A red dot on a row's icon marks a program that fails, and the file it fails in; hovering the icon says where (a folded folder takes a dot for a file inside it).",
     stories: [
       { name: 'A workspace with folders', props: { set: 'gears', active: 'demos/gears.pathogen' } },
       { name: 'A new workspace', props: { set: 'new', active: 'main.pathogen' } },
@@ -213,6 +213,7 @@ layer('hex').apply { circle(60, 100, 40) }`,
         name: 'Dragging where it can’t go',
         props: { set: 'gears', active: 'main.pathogen', open: 'drag:parts/gears.pathogen>demos' },
       },
+      { name: 'Red dots', props: { set: 'gears', active: 'main.pathogen', open: 'dots' } },
     ],
     controls: [],
     notes:
@@ -344,6 +345,12 @@ layer('hex').apply { circle(60, 100, 40) }`,
             field.dispatchEvent(new Event('input', { bubbles: true }));
           } else if (open.startsWith('move:')) {
             chooseIn(open.slice(5), 'move');
+          } else if (open === 'dots') {
+            // Step 7c (mockup v6 screen G, state 5): try-sizes fails in parts/gears.pathogen.
+            (tree as unknown as { errors: Map<string, string> }).errors = new Map([
+              ['try-sizes.pathogen', 'Error in parts/gears.pathogen line 9'],
+              ['parts/gears.pathogen', 'try-sizes.pathogen fails here, line 9'],
+            ]);
           } else if (open.startsWith('drag:')) {
             // A drag held over a row ('drag:from>onto'), as the browser sends it (step 6b). The
             // browser's own drag image (the chip) isn't drawn: only a real drag shows it.

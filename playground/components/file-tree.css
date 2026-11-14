@@ -494,6 +494,34 @@
   display: none;
 }
 
+/* A red dot on the icon (step 7c; mockup v6 screen G, state 5): a program that fails, and the file
+   it fails in. Hovering the icon says why (its title). */
+.row.has-error .icon {
+  position: relative;
+}
+
+.row.has-error .icon::after {
+  content: '';
+  position: absolute;
+  top: -3px;
+  left: -4px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--error-color, #ef4444);
+  box-shadow: 0 0 0 1.5px var(--bg-primary, #fff);
+}
+
+/* The dot's reason, for a screen reader only (the row's spoken name ends with it). */
+.err-note {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
 /* A dragged row that can't go where it is (step 6b): the label says why, without the accent. */
 .drop-label.refused {
   border-color: var(--border-color, #d4d4d8);

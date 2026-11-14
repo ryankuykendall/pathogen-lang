@@ -1231,6 +1231,89 @@ describe('uploads', () => {
   });
 });
 
+describe('red dots (step 7c; mockup v6 screen G, state 5)', () => {
+  beforeAll(async () => {
+    await import('../playground/components/file-tree.js');
+  });
+
+  let tree: FileTreeEl & { errors: Map<string, string> };
+
+  beforeEach(() => {
+    document.body.innerHTML = '';
+    tree = document.createElement('file-tree');
+    document.body.appendChild(tree);
+    tree.files = GEARS;
+    tree.folders = [];
+    tree.main = 'main.pathogen';
+    tree.active = 'main.pathogen';
+  });
+
+  const row = (path: string) => tree.shadowRoot!.querySelector<HTMLElement>(`[role="treeitem"][data-path="${path}"]`)!;
+  const dotted = () => [...tree.shadowRoot!.querySelectorAll<HTMLElement>('.row.has-error')].map((r) => r.dataset.path);
+  const ERRORS = new Map([
+    ['parts/gears.pathogen', 'try-sizes.pathogen fails here, line 9'],
+    ['try-sizes.pathogen', 'Error in parts/gears.pathogen line 9'],
+  ]);
+
+  it('a dot on each row with an error; hovering it says why, and so does the row to a screen reader', () => {
+    tree.errors = ERRORS;
+    expect(dotted()).toEqual(['parts/gears.pathogen', 'try-sizes.pathogen']);
+    expect(row('parts/gears.pathogen').querySelector('.icon')!.getAttribute('title')).toBe(
+      'try-sizes.pathogen fails here, line 9',
+    );
+    // Read with the row's name (its text), by every screen reader; hidden from the eye.
+    expect(row('try-sizes.pathogen').querySelector('.err-note')!.textContent).toBe(
+      ', Error in parts/gears.pathogen line 9',
+    );
+    expect(row('try-sizes.pathogen').textContent).toContain('try-sizes.pathogen, Error in parts/gears.pathogen line 9');
+    expect(row('main.pathogen').querySelector('.err-note')).toBeNull();
+  });
+
+  it('set without drawing the rows again, so a name field or a menu stays open', () => {
+    const before = row('main.pathogen');
+    tree.errors = ERRORS;
+    expect(row('main.pathogen')).toBe(before);
+  });
+
+  it('a folded folder holding a file with a dot gets one too, since the file’s row is hidden', () => {
+    row('parts').click();
+    tree.errors = ERRORS;
+    expect(dotted()).toEqual(['parts', 'try-sizes.pathogen']);
+    expect(row('parts').querySelector('.icon')!.getAttribute('title')).toBe('A file in it has an error');
+    row('parts').click();
+    expect(dotted()).toEqual(['parts/gears.pathogen', 'try-sizes.pathogen']);
+  });
+
+  it('they stay through a redraw (a file added), and go when cleared', () => {
+    tree.errors = ERRORS;
+    tree.files = [...GEARS, { path: 'parts/springs.pathogen', kind: 'program' }];
+    expect(dotted()).toEqual(['parts/gears.pathogen', 'try-sizes.pathogen']);
+    tree.errors = new Map();
+    expect(dotted()).toEqual([]);
+    expect(row('parts/gears.pathogen').querySelector('.icon')!.hasAttribute('title')).toBe(false);
+    expect(row('try-sizes.pathogen').querySelector('.err-note')).toBeNull();
+  });
+
+  it('folders folded two deep: the folded ones on the way take the dot; parts2/ doesn’t for parts/', () => {
+    tree.files = [
+      ...GEARS,
+      { path: 'a/b/c.pathogen', kind: 'library' },
+      { path: 'parts2/x.pathogen', kind: 'program' },
+    ];
+    tree.errors = new Map([
+      ['a/b/c.pathogen', 'main.pathogen fails here, line 2'],
+      ['parts/gears.pathogen', 'try-sizes.pathogen fails here, line 9'],
+    ]);
+    row('a/b').click();
+    expect(dotted()).toEqual(['a/b', 'parts/gears.pathogen']);
+    row('a').click();
+    expect(dotted()).toEqual(['a', 'parts/gears.pathogen']);
+    // parts2/ folded: a file in parts/ isn't in it.
+    row('parts2').click();
+    expect(dotted()).toEqual(['a', 'parts/gears.pathogen']);
+  });
+});
+
 describe('dragging within the tree (step 6b; mockup v7 screen F, state 7)', () => {
   beforeAll(async () => {
     await import('../playground/components/file-tree.js');

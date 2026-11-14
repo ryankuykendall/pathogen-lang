@@ -15,6 +15,7 @@ import {
   programListChange,
   programsOf,
   TOO_DETAILED,
+  treeErrorDots,
   usesOf,
 } from '../playground/services/program-list.js';
 
@@ -183,6 +184,69 @@ describe("the chip's red dot", () => {
     expect(chipAlert([item('main.pathogen', MODULE_MAIN), item('b', null)], 'main.pathogen')).toBe(
       `main.pathogen: ${MODULE_MAIN}`,
     );
+  });
+});
+
+// Step 7c (docs/workspace-files.md "Errors in other files"; mockup v6 screen G,
+// state 5): a red dot on each program that fails and on the file where it
+// fails, for every program, with what hovering the dot says.
+describe("the tree's red dots (treeErrorDots)", () => {
+  const rows = (places: Record<string, { file: string; line: number | null } | null>) =>
+    new Map(Object.entries(places).map(([path, place]) => [path, { place }]));
+  const noMain = { main: 'main.pathogen', mainIsLibrary: false };
+
+  it('a program that fails in another file: a dot on each, saying where', () => {
+    expect(
+      treeErrorDots(
+        rows({ 'main.pathogen': null, 'try-sizes.pathogen': { file: 'parts/gears.pathogen', line: 9 } }),
+        noMain,
+      ),
+    ).toEqual(
+      new Map([
+        ['try-sizes.pathogen', 'Error in parts/gears.pathogen line 9'],
+        ['parts/gears.pathogen', 'try-sizes.pathogen fails here, line 9'],
+      ]),
+    );
+  });
+
+  it('one that fails in its own code: one dot; with no line, no line said', () => {
+    expect(treeErrorDots(rows({ 'main.pathogen': { file: 'main.pathogen', line: 6 } }), noMain)).toEqual(
+      new Map([['main.pathogen', 'Error in main.pathogen line 6']]),
+    );
+    expect(
+      treeErrorDots(
+        rows({ 'main.pathogen': null, 'b.pathogen': { file: 'parts/fonts.pathogen', line: null } }),
+        noMain,
+      ),
+    ).toEqual(
+      new Map([
+        ['b.pathogen', 'Error in parts/fonts.pathogen'],
+        ['parts/fonts.pathogen', 'b.pathogen fails here'],
+      ]),
+    );
+  });
+
+  it('two programs failing in one file: its dot says both', () => {
+    const dots = treeErrorDots(
+      rows({
+        'main.pathogen': { file: 'parts/gears.pathogen', line: 4 },
+        'try-sizes.pathogen': { file: 'parts/gears.pathogen', line: 9 },
+      }),
+      noMain,
+    );
+    expect(dots.get('parts/gears.pathogen')).toBe(
+      'main.pathogen fails here, line 4\ntry-sizes.pathogen fails here, line 9',
+    );
+  });
+
+  it('a main that’s a module: its dot says so (it isn’t a compile failure: it isn’t in the rows)', () => {
+    expect(treeErrorDots(rows({ 'try-sizes.pathogen': null }), { main: 'main.pathogen', mainIsLibrary: true })).toEqual(
+      new Map([['main.pathogen', MODULE_MAIN]]),
+    );
+  });
+
+  it('no failures: no dots', () => {
+    expect(treeErrorDots(rows({ 'main.pathogen': null }), noMain).size).toBe(0);
   });
 });
 

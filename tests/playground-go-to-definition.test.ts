@@ -64,4 +64,14 @@ describe('otherFileDefinition: where Cmd+click goes (step 7b)', () => {
     ).toBeNull();
     expect(otherFileDefinition(null, 'main.pathogen')).toBeNull();
   });
+
+  it('a file the workspace doesn’t hold (a graph built before a delete): null, so the jump stays in this file', async () => {
+    const definition = await definitionAt(4, 1);
+    expect(otherFileDefinition(definition, 'main.pathogen', (path) => path === 'main.pathogen')).toBeNull();
+    expect(otherFileDefinition(definition, 'main.pathogen', (path) => path === 'parts/gears.pathogen')).toEqual({
+      path: 'parts/gears.pathogen',
+      line: 3,
+      column: 11,
+    });
+  });
 });
