@@ -833,6 +833,87 @@ Three commits, each with tests first, a storybook entry where there's a componen
   - `verify-2d-step7a` still passes.
 - **Reviews:** code-reviewer (no critical issues; its warnings fixed, as above); a focused content review of the docs section (its two blockers were the code findings above; its wording applied: "starts from", the files' limit, "the workspace's menu", the order, "the assistant").
 
+## Step 9, the rest (2026-11-13)
+
+"Let's move onto the next step." Step 9 is everything v7's answers left for it (below, "What that adds to the steps"). Each part is already drawn in an approved mockup, so none needs a new round:
+- **9a, the menu and a workspace with no program:**
+  - drawn in v7's screens K and X, and v11's state 6, which replaced X's preview;
+  - Copy URL leaves the menu, for every workspace (note 52's answer 4);
+  - Copy Code's tooltip names the file in the editor;
+  - the empty preview;
+  - "No programs" in the status and on the Workspaces page's card;
+  - Export, Snapshot, Set Thumbnail and Make public wait.
+- **9b, narrow screens:**
+  - v7's screen M, below 800 px;
+  - the tree as a drawer, the program list as a sheet, a row's menu as an action sheet;
+  - every row's ⋮ and Open in the editor always shown;
+  - no dragging, and Upload folder… only where a folder can be picked;
+  - the breadcrumb without the id and size, and Snapshot as its icon.
+- **9c, the mini-workspace:** v7's screen W, Background and Grid in its control bar, with Reset.
+
+Built in that order, one commit each.
+
+**9a, built** (2026-11-13):
+- **The menu:**
+  - Copy URL is gone, for every workspace and a scratch link too. `utils/url-state.ts` still loads `?state=` links.
+  - Format Document says "The file in the editor".
+  - Copy Code's tooltip is "Copy the code of parts/gears.pathogen, the file in the editor".
+  - `playground-header.ts`, the storybook's old header, keeps its own Copy URL. It is never mounted in a workspace.
+- **No program:**
+  - **One reading.** workspace-view's `_hasNoPrograms(workspace, main)` is a saved workspace with no main, and no file that's a program. `_refreshPrograms` puts it in the store's `noPrograms`, beside `thumbnailWait`. A main that became a module isn't this state: it's still the main, and step 7 says why it draws nothing.
+  - **No compile.** `updatePreview` goes to `_showNoPrograms()`, which:
+    - supersedes a compile still running (bumps `compilationId` and cancels the worker), so a program deleted mid-compile can't paint;
+    - clears the drawing, errors, logs, warnings, layers, `renderedCode` and the export size;
+    - sets the status "No programs", with its hover text.
+  - **The preview** keeps only the inspector toggle (v11, state 6). The drawing's surface is hidden, not removed, so the iframe keeps its size.
+  - **What waits, and why** (`utils/no-programs.ts`, v7's words):
+    - Export says why in the menu. Its button in the preview is hidden, and Ctrl/Cmd+Shift+E says why in a message.
+    - Snapshot says why on hover. Its count still opens the snapshots page.
+    - Make public says why; Make private never waits.
+    - Copy SVG is unchanged.
+  - **The listing** (`GET /workspaces`) adds `noPrograms: true` when the record's list is empty, with nothing more read. The Workspaces page labels the card "No programs", in the grid and the list, and holds back its Make Public.
+- **The docs:** "**Export**, **Snapshot**, **Set Thumbnail** and **Make public** wait …, and each says why: "Add a program first"". docs/snapshots.md gets the no-program case in the publishing push; it's on the page's checklist.
+- **The code review** (no critical issues):
+  - *A module made a program lagged.* Taking `module;` out of the only module made it a program before the list caught up, 300 ms after typing stops. A compile in that gap left the flag set, so the error showed over a blank preview. `updatePreview`, which reads the live text, now clears the flag before it compiles. The browser check records the flag as that compile starts; run against a build without the fix, it failed.
+  - *The server's empty list versus the client's scan.* The playground keeps the list naming every program: new, duplicate, upload, delete, and an edit that adds or takes out `module;`. The server refuses a list naming a missing file. So the two agree; the comments say why.
+  - *The export size* is cleared too. A workspace switch resets `noPrograms` and a "No programs" status.
+- **Seen while checking, not changed:** the breadcrumb redraws on every save and status change. A click whose press and release fall on two different redraws of the ⋮ button is lost; the browser check waits for the save to settle before using it. This was already so before 9a.
+- **Checked:**
+  - tests:
+    - `tests/app-breadcrumb-menu.test.ts` (new, 4);
+    - `tests/landing-view-no-programs.test.ts` (new, 2);
+    - `tests/api/workspace-listing-no-programs.test.ts` (new, 1);
+    - `tests/compilation-status.test.ts` (+1);
+    - the full suite.
+  - `verify/verify-2d-step9a.ts` (17, against `npm run dev:stack`):
+    - the menu;
+    - deleting the last program;
+    - the blank preview, and what waits;
+    - the shortcut;
+    - a reload;
+    - the listing and the card;
+    - a new program;
+    - a delete mid-compile;
+    - a module made a failing program;
+    - Escape closing the menu.
+
+**9b, the plan** (v7 screen M; docs "On a phone"):
+- **One rule below 800 px** (v7: "rather than a second layout for tablets").
+- **The tree as a drawer** (`playground-main.ts`, which today stacks the tree above the editor, capped at 30% of the height, "until step 9's drawer"):
+  - it sits over the editor and the preview from the left, with the rest dimmed;
+  - a tap on the dimmed part closes it, and so do Esc and the drawer's ×;
+  - tapping a file opens it and closes the drawer;
+  - Files starts closed below 800 px (it starts open on a desktop).
+- **A row's menu as an action sheet:**
+  - the same items, in large rows under the file's path, with Cancel;
+  - Move to… is how a file moves.
+- **The program list as a sheet** from the bottom, the screen's width.
+- **Hover-only controls always shown:** each row's ⋮ and each program's Open in the editor show below 800 px, as they already do on a touch screen (`hover: none`).
+- **No dragging** below 800 px, or on a touch screen.
+- **Upload folder…** only where the browser can pick a folder.
+- **The breadcrumb:** no workspace id or size below 800 px, and Snapshot as its icon alone.
+- **Tabs** already scroll sideways, with Docs at the right end: unchanged.
+
 **The v7 mockup round** (2026-11-09, commit `5c8f925`): note 53, `phase-2-mockups-v7/`. Five screens: no programs left, folders and moving, narrow screens, the mini-workspace, the ⋮ menu. It also draws what v6 left out (renaming a file, Move to…, dragging a file). Six questions await you; steps 4 and 9 wait for them.
 - *Answered 2026-11-09: all six agreed* (note 53, "Your answers"). What that adds to the steps:
   - step 2: each change can be undone (the toast's Undo); a rename takes a name only, no slash and no extension; Move to…; the first program in an empty workspace is shown;

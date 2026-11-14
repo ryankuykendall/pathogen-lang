@@ -1,9 +1,10 @@
 // App Breadcrumb — secondary navigation
 // Left: breadcrumb trail. Right (workspace view only): the console
 // toggle, Copy Code, save status, and the overflow menu containing
-// Export / Format Document / Copy URL / Copy Workspace / Copy SVG /
+// Export / Format Document / Copy Workspace / Copy SVG /
 // Copy Debug Info / Set Thumbnail and (when signed in)
-// Publish/Unpublish workspace.
+// Publish/Unpublish workspace. Copy URL left the menu in 2d, step 9a: a link
+// holds one file (note 52); links copied before still open.
 //
 // The overflow menu was relocated here from app-header in Phase 2 so the top
 // nav stays visually invariant across routes (anti-shift contract). Workspace
@@ -24,8 +25,8 @@ import {
 } from '../services/publish-precheck.js';
 import { store } from '../state/store.js';
 import { navigateTo, parseWorkspaceSlugId } from '../utils/router.js';
-import { copyURL } from '../utils/url-state.js';
 import { usesRandomValues } from '../utils/uses-random.js';
+import { NO_PROGRAM_EXPORT, NO_PROGRAM_PUBLISH, NO_PROGRAM_SNAPSHOT } from '../utils/no-programs.js';
 import { compilationStatusStyles, compilationStatusView } from '../utils/compilation-status.js';
 import { materialIcon } from '../utils/material-icons.js';
 import { formatBytes } from '../utils/format-bytes.js';
@@ -34,7 +35,6 @@ import styles from './app-breadcrumb.css';
 // Inline (the material sprite has no camera glyph); same 24-unit stroke style
 // as the preview pane's chrome icons.
 const CAMERA_ICON = `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>`;
-
 /** Shape of store.snapshotsPage, set by workspace-snapshots-view. */
 interface SnapshotsPageCrumbs {
   workspaceName: string;
@@ -126,6 +126,7 @@ class AppBreadcrumb extends HTMLElement {
         'snapshotsPage',
         'openFile',
         'thumbnailWait',
+        'noPrograms',
       ],
       () => this.render(),
     );
@@ -301,12 +302,13 @@ class AppBreadcrumb extends HTMLElement {
   private _applyCompilationStatus(): void {
     const el = this.shadowRoot!.querySelector<HTMLElement>('#compilation-status');
     if (!el) return;
-    const { text, className } = compilationStatusView(
+    const { text, className, title } = compilationStatusView(
       store.get('compilationStatus') as string | null,
       store.get('compilationElapsedMs') as number,
     );
     el.textContent = text;
     el.className = `compilation-status ${className}`;
+    el.title = title ?? '';
   }
 
   /**
@@ -326,7 +328,10 @@ class AppBreadcrumb extends HTMLElement {
     const status = store.get('compilationStatus') as string | null;
     const renderedCode = store.get('renderedCode') as string | null;
     let disabledReason: string | null = null;
-    if (status === 'compiling' || status === 'rendering') {
+    if (store.get('noPrograms') as boolean) {
+      // A workspace with no program draws nothing to keep (2d, step 9a; mockup v7, screen X).
+      disabledReason = NO_PROGRAM_SNAPSHOT;
+    } else if (status === 'compiling' || status === 'rendering') {
       disabledReason = 'Snapshot is available when this render finishes, so the image and code always match.';
     } else if (status === 'error') {
       disabledReason = 'Fix the error first. A snapshot always pairs the image with code that rendered successfully.';
@@ -382,14 +387,19 @@ class AppBreadcrumb extends HTMLElement {
     const isOwner = isSignedIn && !!workspaceOwnerId && currentUser?.id === workspaceOwnerId;
     const canPublish = hasFeature(currentUser, UserFeature.Publishing);
 
+    const noPrograms = store.get('noPrograms') as boolean;
     const menuItems: string[] = [];
+    const exportIcon = materialIcon('download', { size: 16, className: 'menu-icon' });
     menuItems.push(
-      `<button data-action="export" title="Export as SVG, PNG, or PDF (Ctrl+Shift+E)">${materialIcon('download', { size: 16, className: 'menu-icon' })}<span>Export</span></button>`,
+      noPrograms
+        ? `<button data-action="export" disabled>${exportIcon}<span>Export<small>${NO_PROGRAM_EXPORT}</small></span></button>`
+        : `<button data-action="export" title="Export as SVG, PNG, or PDF (Ctrl+Shift+E)">${exportIcon}<span>Export</span></button>`,
     );
+    // It formats the file in the editor, as Copy Code copies it (mockup v7, screen K).
     menuItems.push(
       openFileNow() === null
         ? `<button data-action="format-document" disabled title="No file open">${materialIcon('format-left', { size: 16, className: 'menu-icon' })}<span>Format Document</span></button>`
-        : `<button data-action="format-document" title="Format the current document (Ctrl/Cmd+Shift+F)">${materialIcon('format-left', { size: 16, className: 'menu-icon' })}<span>Format Document</span></button>`,
+        : `<button data-action="format-document" title="Format the current document (Ctrl/Cmd+Shift+F)">${materialIcon('format-left', { size: 16, className: 'menu-icon' })}<span>Format Document<small>The file in the editor</small></span></button>`,
     );
     if (hasWorkspace && isOwner) {
       menuItems.push(
@@ -397,9 +407,6 @@ class AppBreadcrumb extends HTMLElement {
       );
     }
     menuItems.push('<div class="menu-divider"></div>');
-    menuItems.push(
-      `<button data-action="copy-url">${materialIcon('link', { size: 16, className: 'menu-icon' })}<span>Copy URL</span></button>`,
-    );
     if (hasWorkspace) {
       menuItems.push(
         `<button data-action="copy-workspace">${materialIcon('content-copy', { size: 16, className: 'menu-icon' })}<span>Copy Workspace</span></button>`,
@@ -451,8 +458,10 @@ class AppBreadcrumb extends HTMLElement {
         publishLabel = 'Make public';
         publishIcon = 'public';
       }
+      // Making it public waits for a program; making it private never waits (step 9a).
+      const waits = noPrograms && publishLabel === 'Make public';
       menuItems.push(
-        `<button data-action="toggle-publish" class="publish-item" ${disabled ? 'disabled' : ''}>${materialIcon(publishIcon, { size: 16, className: 'menu-icon' })}<span>${publishLabel}</span></button>`,
+        `<button data-action="toggle-publish" class="publish-item" ${disabled || waits ? 'disabled' : ''}>${materialIcon(publishIcon, { size: 16, className: 'menu-icon' })}<span>${publishLabel}${waits ? `<small>${NO_PROGRAM_PUBLISH}</small>` : ''}</span></button>`,
       );
     }
 
@@ -480,7 +489,12 @@ class AppBreadcrumb extends HTMLElement {
       ? `<button id="files-toggle" class="toggle-btn ${filesOpen ? 'active' : ''}" aria-pressed="${filesOpen}" title="${filesOpen ? 'Hide' : 'Show'} the workspace’s files">Files</button>`
       : '';
     // Copy Code and Format Document wait for a file (step 4d): with none open, they're off and say why.
-    const noFileOpen = openFileNow() === null;
+    // Copy Code's tooltip names the file it copies, whichever program the preview shows (step 9a; v7, screen K).
+    const fileOpen = openFileNow();
+    const noFileOpen = fileOpen === null;
+    const copyCodeTitle = noFileOpen
+      ? 'No file open: open one to copy its code'
+      : `Copy the code of ${escHtml(fileOpen)}, the file in the editor`;
 
     const calledStdlib = (store.get('calledStdlibFunctions') || []) as string[];
     const usesRandom = usesRandomValues(calledStdlib);
@@ -551,7 +565,7 @@ class AppBreadcrumb extends HTMLElement {
                 ${filesToggle}
                 <button id="console-toggle" class="toggle-btn ${consoleOpen ? 'active' : ''}" aria-pressed="${consoleOpen}" title="Show console output">Console</button>
               </div>
-              <button id="copy-code" class="secondary-btn" ${noFileOpen ? 'disabled title="No file open: open one to copy its code"' : 'title="Copy code to clipboard"'}>
+              <button id="copy-code" class="secondary-btn" ${noFileOpen ? 'disabled ' : ''}title="${copyCodeTitle}">
                 Copy Code
               </button>
               <span id="copy-feedback" class="copy-feedback">Copied!</span>
@@ -658,10 +672,6 @@ class AppBreadcrumb extends HTMLElement {
         break;
       case 'format-document':
         this.dispatchEvent(new CustomEvent('format-document', { bubbles: true, composed: true }));
-        break;
-      case 'copy-url':
-        await copyURL(store);
-        this.showOverflowFeedback('URL copied!');
         break;
       case 'copy-workspace': {
         const workspaceId = store.get('workspaceId') as string | null;

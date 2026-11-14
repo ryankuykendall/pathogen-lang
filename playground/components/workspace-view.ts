@@ -88,6 +88,7 @@ import { createCompileTicker } from '../utils/compile-ticker.js';
 import { collectLayerNames, pruneVisibility } from '../utils/layer-visibility.js';
 import { installPerfObservers, perfSpan, perfSpanAsync } from '../utils/perf-marks.js';
 import { drawingSvgMarkup } from '../utils/preview-fit.js';
+import { NO_PROGRAM_EXPORT } from '../utils/no-programs.js';
 import type { FitCanvas } from '../utils/preview-fit.js';
 import { computeDefaultExportSvgBytes } from '../utils/svg-export-size.js';
 import { ensureChromeFontRules, getChromeFontRulesIfReady } from '../utils/export-fonts.js';
@@ -725,6 +726,9 @@ export class WorkspaceView extends HTMLElement {
       openFile: MAIN_FILE,
       openFiles: [MAIN_FILE],
       shownProgram: null,
+      // "No programs" was the last workspace's (step 9a): this one says its own after its first compile.
+      noPrograms: false,
+      ...(store.get('compilationStatus') === 'no-programs' ? { compilationStatus: 'idle' } : {}),
     });
     // The pane follows the store's main.pathogen while the load is out, as it
     // does with a file open: not the old zero-state, whose Open button would
@@ -1247,6 +1251,11 @@ export class WorkspaceView extends HTMLElement {
 
     // Open the export modal (SVG / PNG / PDF, optional legend)
     this._handleOpenExport = (): void => {
+      // Every way in (the menu, the preview's button, Ctrl/Cmd+Shift+E) waits for a program (step 9a).
+      if (store.get('currentView') === 'workspace' && (store.get('noPrograms') as boolean)) {
+        this._toastError('Export waits for a program', NO_PROGRAM_EXPORT);
+        return;
+      }
       if (store.get('currentView') === 'workspace') {
         const svgElement = this.previewPane.preview;
         if (svgElement) {
@@ -2103,7 +2112,10 @@ export class WorkspaceView extends HTMLElement {
   private _refreshPrograms(): void {
     const workspace = workspaceNow();
     const { main, mainIsLibrary } = this._mainNow(workspace);
-    store.set('thumbnailWait', this._thumbnailWait(main, mainIsLibrary));
+    store.update({
+      thumbnailWait: this._thumbnailWait(main, mainIsLibrary),
+      noPrograms: this._hasNoPrograms(workspace, main),
+    });
     // The error panel's note about a main that's a module follows the main (step 7).
     this._renderErrors();
     // Each program's failure, as the tree's red dots (step 7c): with one program too.
@@ -2147,6 +2159,67 @@ export class WorkspaceView extends HTMLElement {
       this._programsToDrawCache = mainIsLibrary ? programs.filter((p) => p !== main) : programs;
     }
     return this._programsToDrawCache;
+  }
+
+  /**
+   * A saved workspace with no program at all (2d, step 9a): nothing to draw.
+   * Not a main that became a module, which is still the main (step 7 says
+   * why it's empty). `main` is checked first, so a workspace with a main reads
+   * no other file. A scratch link always holds its one program.
+   *
+   * pathogen.json's list names every program: each new program, duplicate,
+   * upload, delete, and edit that adds or takes out `module;` keeps it so, and
+   * the server refuses a list that names a missing file. So "no main" is the
+   * server's empty list (the Workspaces page's "No programs"). The scan of the
+   * files covers only the moment between an edit and the list catching up.
+   */
+  private _hasNoPrograms(workspace: WorkspaceTexts, main: string | null): boolean {
+    return holdsWorkspace() && main === null && this._programsOf(workspace).length === 0;
+  }
+
+  /**
+   * Nothing draws (2d, step 9a; mockup v11, state 6): no compile, a blank
+   * preview, and the status "No programs". It supersedes a compile still
+   * running, so a program deleted mid-compile can't paint its drawing
+   * afterwards, and it clears what the last program left: its drawing, its
+   * errors, its logs and warnings, and the code a snapshot would pair.
+   */
+  private _showNoPrograms(): void {
+    store.set('compilationId', (store.get('compilationId') as number) + 1);
+    if (editorCompiler.cancelInFlight('superseded')) {
+      console.log('[compiler-worker] cancelled superseded compile');
+    }
+    this._compileTicker.stop();
+    this.previewPane.hideLoading();
+    this.previewPane.setStale(false);
+    this.previewPane.clear();
+    this.consolePane.logs = [];
+    this._lastOutcome = null;
+    this._renderedProgram = null;
+    this.hideError();
+    this._markWarnings([]);
+    // The export size was the last drawing's, and a pending estimate would measure the empty pane.
+    this._sizeArmed = false;
+    store.update({
+      noPrograms: true,
+      compilationStatus: 'no-programs',
+      exportSvgBytes: null,
+      compilationError: null,
+      compilationElapsedMs: 0,
+      logs: [],
+      warnings: [],
+      fontWarnings: [],
+      layers: [],
+      masks: [],
+      clipPaths: [],
+      gradients: [],
+      patterns: [],
+      markers: [],
+      filters: [],
+      cssProperties: [],
+      calledStdlibFunctions: [],
+      renderedCode: null,
+    });
   }
 
   /** The workspace's main (its first program still there), and whether `module;` has made it a library. */
@@ -2252,6 +2325,14 @@ export class WorkspaceView extends HTMLElement {
     // The program the preview shows (the main, or the one chosen in the
     // program chip), with every file it imports, from the workspace as it stands.
     const workspace = withOpenFileText(workspaceNow(), (store.get('code') as string) || this.editorPane.code);
+    // A saved workspace with no program draws nothing, and nothing compiles (step 9a).
+    if (this._hasNoPrograms(workspace, this._mainNow(workspace).main)) {
+      this._showNoPrograms();
+      return;
+    }
+    // A program again: what waited comes back now, whatever this compile does. Taking `module;`
+    // out of the only module makes it one before the list catches up, and before it compiles.
+    if (store.get('noPrograms') as boolean) store.set('noPrograms', false);
     const shown = programToShow(workspace, store.get('shownProgram') as string | null);
     const code = workspace.texts.get(shown) ?? '';
     // The program list's drawings take this compile only if no other workspace has loaded since.

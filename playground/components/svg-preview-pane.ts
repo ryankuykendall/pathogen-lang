@@ -403,6 +403,11 @@ export class SvgPreviewPane extends HTMLElement {
     subscribe('inspectorOpen', () => {
       this._applyInspectorOpen();
     });
+    // A saved workspace with no program (2d, step 9a): blank, with only the inspector toggle.
+    subscribe('noPrograms', () => {
+      this.classList.toggle('no-programs', store.get('noPrograms') as boolean);
+    });
+    this.classList.toggle('no-programs', store.get('noPrograms') as boolean);
     // Gates the fullscreen refresh button (:host(.fullscreen.uses-random)).
     subscribe('calledStdlibFunctions', () => {
       this._applyUsesRandom();
@@ -1144,6 +1149,24 @@ export class SvgPreviewPane extends HTMLElement {
           position: static;
           transform: none;
           flex: none;
+        }
+
+        /* A workspace with no program (2d, step 9a; mockup v11, state 6): the
+         * preview is blank and keeps only the inspector toggle. The drawing's
+         * surface is hidden, not removed, so the iframe and the pan/zoom
+         * controller keep their size for the next program. */
+        :host(.no-programs) #preview-container {
+          visibility: hidden;
+        }
+
+        :host(.no-programs) #fullscreen-toggle,
+        :host(.no-programs) #bottom-group,
+        :host(.no-programs) #export-btn,
+        :host(.no-programs) #refresh-btn,
+        :host(.no-programs) #snapshot-btn,
+        :host(.no-programs) #snapshot-tray,
+        :host(.no-programs) #compilation-chrome {
+          display: none !important;
         }
 
         #loading-overlay {

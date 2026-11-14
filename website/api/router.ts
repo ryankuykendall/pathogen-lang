@@ -318,6 +318,10 @@ export const apiHandlers: Record<string, (request: Request, env: Env, ...args: s
             manualThumbnailAt: meta.manualThumbnailAt,
             autoThumbnailAt: meta.autoThumbnailAt,
             publicationState: publicationState as WorkspaceListing['publicationState'],
+            // No program left (step 9a): the record holds the list, so nothing more is read. The
+            // playground keeps the list naming every program, and a save can't list a missing file,
+            // so an empty list is the playground's own "no program" (workspace-view _hasNoPrograms).
+            ...(Array.isArray(ws.entryPoints) && ws.entryPoints.length === 0 ? { noPrograms: true as const } : {}),
           };
           return listing;
         }),

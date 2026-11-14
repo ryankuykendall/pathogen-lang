@@ -390,6 +390,39 @@ h1 {
   background: var(--error-bg, #fef2f2);
 }
 
+/* An item that waits, with why under it (2d, step 9a: Make Public with no program). */
+.menu-dropdown button:disabled {
+  color: var(--text-tertiary, #94a3b8);
+  cursor: default;
+}
+
+.menu-dropdown button:disabled:hover {
+  background: transparent;
+}
+
+.menu-dropdown button small {
+  display: block;
+  margin-top: 2px;
+  max-width: 14rem;
+  font-size: 0.75rem;
+  line-height: 1.35;
+  color: var(--text-tertiary, #94a3b8);
+}
+
+/* No program left (2d, step 9a; mockup v7 screen X, state 5): neutral, beside the date. */
+.workspace-meta .no-programs-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--text-secondary, #64748b);
+  background: var(--bg-secondary, #f8fafc);
+  border: 1px solid var(--border-color, #e2e8f0);
+}
+
 /* Loading state */
 .loading-state {
   text-align: center;

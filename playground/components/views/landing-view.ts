@@ -12,6 +12,7 @@ import {
 import { store } from '../../state/store.js';
 import { materialIcon } from '../../utils/material-icons.js';
 import { buildWorkspaceSlugId, navigateTo } from '../../utils/router.js';
+import { NO_PROGRAM_PUBLISH, NO_PROGRAMS } from '../../utils/no-programs.js';
 import styles from './landing-view.css';
 
 interface Workspace {
@@ -22,6 +23,8 @@ interface Workspace {
   isPublic?: boolean;
   updatedAt?: string;
   thumbnailAt?: string;
+  /** No program left, so nothing draws (2d, step 9a): the card says so, and Make Public waits. */
+  noPrograms?: boolean;
 }
 
 class LandingView extends HTMLElement {
@@ -354,8 +357,15 @@ class LandingView extends HTMLElement {
           return `<button data-action="toggle-publish">Make Private</button>`;
         }
         if (!canPublish) return '';
+        // With no program there's nothing to show, so it waits and says why (step 9a).
+        if (ws.noPrograms) {
+          return `<button data-action="toggle-publish" disabled>Make Public<small>${NO_PROGRAM_PUBLISH}</small></button>`;
+        }
         return `<button data-action="toggle-publish">Make Public</button>`;
       };
+      const metaBadges = (ws: Workspace): string =>
+        (ws.isPublic ? '<span class="public-badge">Public</span>' : '') +
+        (ws.noPrograms ? `<span class="no-programs-badge">${NO_PROGRAMS}</span>` : '');
       content = `
         <div class="workspace-list ${this.viewMode}">
           ${workspaces
@@ -389,7 +399,7 @@ class LandingView extends HTMLElement {
                   <p>${this.escapeHtml(ws.description) || 'No description'}</p>
                   <div class="workspace-meta">
                     <span>Modified: ${this.formatDate(ws.updatedAt)}</span>
-                    ${ws.isPublic ? '<span class="public-badge">Public</span>' : ''}
+                    ${metaBadges(ws)}
                   </div>
                 </div>
               </div>`;
@@ -420,7 +430,7 @@ class LandingView extends HTMLElement {
                   <p>${this.escapeHtml(ws.description) || 'No description'}</p>
                   <div class="workspace-meta">
                     <span>Modified: ${this.formatDate(ws.updatedAt)}</span>
-                    ${ws.isPublic ? '<span class="public-badge">Public</span>' : ''}
+                    ${metaBadges(ws)}
                   </div>
                 </div>
               </div>`;

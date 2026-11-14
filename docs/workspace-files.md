@@ -9,7 +9,8 @@ On publishing, update in the same push: docs/projects.md line 3 ("The playground
 yet"), its In each tool Playground bullet ("one program for now") with a link to this page, and the
 program-list sentence held back in note 46; docs/modules.md's intro line "A playground workspace is
 one program for now", its In each tool Playground bullet, and its Errors row "No project folder
-(the playground)".
+(the playground)"; docs/snapshots.md's "When you can't take a snapshot yet" gains "**When the
+workspace has no program.** Add one first: there's nothing to keep." (step 9a's content review).
 Sources: mockups v1 to v6 and their reviews (project-docs/modules/39- to 46-).
 The [TO CONFIRM] items (undo per file, clicking an error to open its file, a moved file's own
 imports, folder Rename/Delete, Duplicate's naming) were confirmed 2026-11-09 (note 52). Limits and
@@ -42,6 +43,8 @@ Answered 2026-11-13 (note 52, step 8; note 42's five questions): Copy Debug Info
 shown and the files its imports reach; 200 lines a file, about 1,500 in all; other programs' errors
 with five lines either side ("Could we include a bit more context"); both places it's offered; a
 short note for an assistant that names no syntax and points to the docs.
+Built 2026-11-13 (note 52, step 9a): with no program, Snapshot waits too (v7 draws it off), and the
+four reasons start "Add a program first".
 -->
 
 
@@ -85,7 +88,7 @@ The workspace's **main** is the program it opens on and the one its thumbnail sh
 - The thumbnail is taken from the preview, so **Set Thumbnail** works while the preview shows the main. With another program shown, it's off and says "Show the main first".
 - Renaming the main keeps it the main.
 - **Deleting the main** makes the next program in `pathogen.json`'s list the main, and a message says which. After a Set as main, that's the program that was the main before.
-- **Deleting the last program** leaves the workspace with no main. The preview is empty until you add a program, the status in the breadcrumb reads "No programs", and `pathogen.json` becomes `{}`. The workspace's thumbnail keeps its last drawing, and your Workspaces page marks it "No programs". Export, Set Thumbnail and Make public wait until it has a program again.
+- **Deleting the last program** leaves the workspace with no main. The preview is empty until you add a program, the status in the breadcrumb reads "No programs", and `pathogen.json` becomes `{}`. The workspace's thumbnail keeps its last drawing, and your Workspaces page marks it "No programs". **Export**, **Snapshot**, **Set Thumbnail** and **Make public** wait until it has a program again, and each says why: "Add a program first".
 - **Adding `module;` to the main** makes it a module, which can't draw. It stays the main until you take `module;` out or set another program as main. Until then:
   - The preview, which shows the main, is empty.
   - The error panel says why, under "The main": "A module can't draw as the main. Take out module;, or set another program as main." The link opens the menu of the next program in `pathogen.json`'s list, at **Set as main**. With no other program, there's no link, and the note suggests adding one.

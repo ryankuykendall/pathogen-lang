@@ -84,6 +84,13 @@ export interface StoreState {
    * main's drawing, and it's taken from the preview. Set by workspace-view.
    */
   thumbnailWait: string | null;
+  /**
+   * A saved workspace with no program: nothing compiles, the preview is blank,
+   * and Export, Snapshot, Set Thumbnail and Make public wait (2d, step 9a). A
+   * main that became a module isn't this: it's still the main. Set by
+   * workspace-view, from the same reading as the main.
+   */
+  noPrograms: boolean;
 
   // Compilation results
   pathData: string;

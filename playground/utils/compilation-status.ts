@@ -12,9 +12,13 @@
 // workspace-view's compile ticker (utils/compile-ticker.ts); consumers just
 // paint what the store says.
 
+import { NO_PROGRAMS, NO_PROGRAMS_WHY } from './no-programs.js';
+
 export interface CompilationStatusView {
   text: string;
   className: string;
+  /** The chip's hover text, for a status that needs saying why (no-programs). */
+  title?: string;
 }
 
 /**
@@ -46,6 +50,9 @@ export function compilationStatusView(status: string | null, elapsedMs = 0): Com
       return { text: 'Error', className: 'error' };
     case 'cancelled':
       return { text: 'Cancelled', className: 'cancelled' };
+    // A saved workspace with no program: nothing compiles or draws (2d, step 9a).
+    case 'no-programs':
+      return { text: NO_PROGRAMS, className: 'no-programs', title: NO_PROGRAMS_WHY };
     default:
       return { text: '', className: 'hidden' };
   }
@@ -95,10 +102,16 @@ export function compilationStatusStyles(): string {
       color: var(--error-text, #721c24);
     }
 
-    /* Neutral: a cancel is neither success nor failure. */
-    .compilation-status.cancelled {
+    /* Neutral: a cancel is neither success nor failure, and neither is a
+       workspace with no program (it stays, and says why on hover). */
+    .compilation-status.cancelled,
+    .compilation-status.no-programs {
       background: var(--bg-tertiary, rgba(28, 23, 34, 0.05));
       color: var(--text-secondary, #5a4f6a);
+    }
+
+    .compilation-status.no-programs {
+      cursor: help;
     }
 
     /* The Cancel control shown beside the compiling chip (breadcrumb and the

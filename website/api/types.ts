@@ -108,6 +108,11 @@ export interface WorkspaceListing {
   // stays 'approved' in this case; this flag carries the "needs re-review"
   // signal so the UI can render "Pending re-review".
   rereviewPending?: boolean;
+  // True when pathogen.json's list is empty: the workspace has no program, so
+  // nothing draws. The Workspaces page labels the card "No programs" and holds
+  // back Make Public (2d, step 9a). Absent otherwise, and for a record from
+  // before phase 2, which is one main.pathogen.
+  noPrograms?: true;
 }
 
 // A workspace's files (StoredFileFields): `files`, `folders` and

@@ -47,4 +47,14 @@ describe('compilationStatusView', () => {
   it.each([['idle'], [null], [''], ['bogus-status']])('hides for %j', (status) => {
     expect(compilationStatusView(status)).toEqual({ text: '', className: 'hidden' });
   });
+
+  // 2d, step 9a (mockup v11; your answer 2026-11-12, "'No programs' should be fine"): a
+  // workspace with no program draws nothing, and the status says so, explaining itself on hover.
+  it('no programs: "No programs", saying why on hover', () => {
+    expect(compilationStatusView('no-programs')).toEqual({
+      text: 'No programs',
+      className: 'no-programs',
+      title: 'Nothing draws: the workspace has no program. Add one with the + in the Files header.',
+    });
+  });
 });

@@ -154,6 +154,8 @@ export const store = createStore({
   shownProgram: null as string | null,
   // Why the thumbnail waits (step 5a): see types/store.d.ts.
   thumbnailWait: null as string | null,
+  // A saved workspace with no program (step 9a): see types/store.d.ts.
+  noPrograms: false,
 
   // Compilation results
   pathData: '',
