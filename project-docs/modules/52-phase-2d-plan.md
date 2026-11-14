@@ -690,6 +690,15 @@ Three commits, each with tests first, a storybook entry where there's a componen
 
 **Not in step 7:** Copy Debug Info (step 8); narrow screens (step 9); docs/modules.md's playground lines (they change in the publishing push, as the comment at the top of docs/workspace-files.md says).
 
+*Answered 2026-11-13, all as built:*
+1. Every error grouped under its file, with links: "Great".
+2. The console's links: "Great".
+3. The note's words, "A module can't draw as the main. Take out module;, or set another program as main.": "Yes".
+4. The note's link (the next program's menu on Set as main; no link with no other program): "That's fine".
+5. The dots' hover texts: "Great".
+6. Cmd+click on an import's path opens the file at its top: "Great".
+7. *(proposed in 7c)* A folded folder takes a dot for a file inside it: "Great".
+
 **Step 7a, the error panel and opening a file at a line** (2026-11-13). Built as the plan says, with proposals 1 to 4 built as written. Details:
 - **`services/error-place.ts`**:
   - `readMessage` and `readDiagnostics` give `ErrorReading[]`: file, line, column, words, steps, and site.

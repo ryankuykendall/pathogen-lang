@@ -35,7 +35,11 @@ without a mention; the upload's message has Undo; Esc skips; a dropped folder's 
 kept; a folder differing only in case goes into the one there.
 Answered 2026-11-13 (note 52, step 6b): the upload's label counts what's dragged (the browser hides
 the names until the drop); a whole upload goes in after the last question ("This is fine").
+Agreed 2026-11-13 (note 52, step 7): every error under its file, with links; the console's links;
+the note's words and its link to Set as main; the dots' hover texts; Cmd+click on an import's path;
+a folded folder's dot.
 -->
+
 
 # Files in a Workspace
 
@@ -177,7 +181,7 @@ Line 5: assertion failed: a gear needs at least 3 teeth
 
 - Click the file's name, `Line 5` or a `called from` line to open that file at that line. The line is marked: where the error happened, or the call that led there.
 - In the console, a `log()` or a warning from another file starts with its place, such as `parts/gears.pathogen line 9:`. Click the place to open the file there.
-- A red dot in the tree marks the file where an error happened, and another marks the program that ran into it. That covers every program, not only the one the preview shows. Hover a dot to see where the program failed.
+- A red dot in the tree marks the file where an error happened, and another marks the program that ran into it. That covers every program, not only the one the preview shows. Hover a dot to see where the program failed. A folded folder shows a dot when a file inside it has one.
 - **Cmd+click** (Ctrl+click on Windows and Linux) a name you imported to open the file it comes from, at its declaration.
 
 ## Limits
