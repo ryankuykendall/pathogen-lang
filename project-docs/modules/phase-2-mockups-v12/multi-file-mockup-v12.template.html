@@ -1,0 +1,820 @@
+<!-- v12's parts. build.ts puts them into v11's built page (phase-2-mockups-v11/multi-file-mockup-v11.html,
+     read in place): the CSS at the end of its <style>, the harness buttons in place of v11's, the
+     sections in place of v11's, and the script in place of v11's screen table. The function
+     declarations in the script come after v11's, so they replace v11's functions of the same name.
+
+     v12 draws three pages that aren't the workspace: the snapshots page, the public page and the
+     review screen (note 59). Their looks are copied from today's code:
+       - the blog viewer: playground/components/blog/mini-workspace.ts (its code theme is
+         @uiw/codemirror-theme-github, approximated here);
+       - the snapshots page: views/workspace-snapshots-view.ts, shared/snapshot-filmstrip.ts;
+       - the public page: playground/styles/workspace-detail.css, website/_worker.ts;
+       - the review screen: views/admin-moderation-view.ts (_styles). -->
+
+<!-- @@CSS -->
+  /* The blog viewer's code theme (@uiw/codemirror-theme-github, approximately) */
+  :root { --gh-bg: #ffffff; --gh-fg: #24292e; --gh-gutter: #6e7781; --gh-kw: #d73a49; --gh-str: #032f62; --gh-num: #005cc5; --gh-com: #6a737d;
+    --shadow-tint-rgb: 28, 23, 34; --mark-chg: #b45309; }
+  [data-theme='dark'] { --gh-bg: #0d1117; --gh-fg: #c9d1d9; --gh-gutter: #6e7681; --gh-kw: #ff7b72; --gh-str: #a5d6ff; --gh-num: #79c0ff; --gh-com: #8b949e;
+    --shadow-tint-rgb: 0, 0, 0; --mark-chg: #e0a840; }
+
+  /* The harness's style switch */
+  .harness .stylesw { display: flex; gap: 4px; align-items: center; }
+  .harness .stylesw .lbl { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: #b5a8c4; margin-right: 4px; }
+  .harness .stylesw button { background: transparent; border: 1px solid rgba(246,233,218,0.2); color: #f6e9da; border-radius: 6px; padding: 4px 10px; cursor: pointer; font-size: 12px; }
+  .harness .stylesw button[aria-pressed='true'] { background: #f6e9da; color: #1c1722; }
+  .notes table.cmp { border-collapse: collapse; margin: 10px 0 6px; font-size: 13px; width: 100%; }
+  .notes table.cmp th, .notes table.cmp td { text-align: left; vertical-align: top; padding: 5px 10px; border-bottom: 1px solid var(--border-color); }
+  .notes table.cmp th { color: var(--text-primary); font-weight: 600; }
+  .notes .qs { margin: 10px 0 0; padding: 10px 14px; border: 1px solid var(--border-strong); border-radius: 8px; background: var(--bg-elevated); }
+  .notes .qs ol { margin: 4px 0 0; padding-left: 20px; }
+
+  /* ---------- code, as the viewers show it ---------- */
+  .vc { flex: 1; min-height: 0; overflow: hidden; font-family: var(--font-mono); font-weight: 500; font-size: 13px; line-height: 18px; padding: 4px 0; color: var(--gh-fg); background: var(--gh-bg); }
+  .vc .ln { display: flex; }
+  .vc .gn { width: 32px; flex: none; text-align: right; padding-right: 8px; color: var(--gh-gutter); }
+  .vc .lt { flex: 1; min-width: 0; padding: 0 10px 0 4px; white-space: pre-wrap; overflow-wrap: anywhere; }
+  .vc .t-kw { color: var(--gh-kw); } .vc .t-str, .vc .t-tpl { color: var(--gh-str); } .vc .t-num { color: var(--gh-num); } .vc .t-com { color: var(--gh-com); }
+  .vc .t-id, .vc .t-op, .vc .t-pun { color: var(--gh-fg); }
+  /* The public page's code: the editor's colours (detail-source-mount.ts), on the plate's surface */
+  .vc.pdl { background: var(--cm-host-bg); color: var(--cm-text); font-size: 14.5px; line-height: 1.7; padding: 8px 0; }
+  .vc.pdl .gn { color: var(--text-tertiary); border-right: 1px solid var(--border-subtle); margin-right: 8px; width: 44px; padding-right: 10px; }
+  .vc.pdl .t-kw { color: var(--cm-kw); } .vc.pdl .t-str { color: var(--cm-str); } .vc.pdl .t-tpl { color: var(--cm-tpl); } .vc.pdl .t-num { color: var(--cm-num); } .vc.pdl .t-com { color: var(--cm-com); }
+  .vc.pdl .t-id { color: var(--cm-id); } .vc.pdl .t-op { color: var(--cm-op); } .vc.pdl .t-pun { color: var(--cm-pun); }
+
+  /* ---------- several files: the pane, the list, the path line, the marks ---------- */
+  .vpane { flex: 1; min-width: 0; min-height: 0; display: flex; flex-direction: column; }
+  .vpane.row { flex-direction: row; }
+  .fl { width: 188px; flex: none; overflow: hidden; border-right: 1px solid var(--border-color); background: var(--bg-secondary); padding: 0 0 4px; display: flex; flex-direction: column; }
+  .pd .fl { width: 232px; }
+  .fl-h { display: flex; align-items: center; justify-content: space-between; height: 28px; flex: none; padding: 0 10px 0 12px; font-size: 10.5px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--text-tertiary); }
+  .fl-h .cnt { font-family: var(--font-mono); letter-spacing: 0; font-weight: 500; }
+  .fl .frow { height: 26px; font-size: 12px; }
+  .fl .frow.dir { cursor: default; }
+  .fl .frow.dir:hover { background: none; }
+  .fl .frow .badge-main { font-size: 9.5px; padding: 0 6px; line-height: 14px; }
+  .frow.gone { cursor: default; }
+  .frow.gone:hover { background: none; }
+  .frow.gone .fname { text-decoration: line-through; color: var(--text-tertiary); }
+  .frow.gone .fic { color: var(--text-tertiary); }
+  .frow.wait .fname, .frow.bad .fname { color: var(--text-secondary); }
+  .mk { font-family: var(--font-body); font-size: 10px; font-weight: 600; padding: 0 6px; border-radius: 999px; line-height: 16px; flex: none; }
+  .mk.new { background: var(--success-bg); color: var(--success-color); }
+  .mk.chg { background: var(--warning-bg); color: var(--mark-chg); }
+  .mk.mov { background: var(--info-bg); color: var(--info-color); }
+  .mk.gone { background: var(--bg-tertiary); color: var(--text-tertiary); }
+  /* In the list, a mark is a dot, so names keep their room; the words are in the path line and the changes box */
+  .mdot { width: 8px; height: 8px; border-radius: 50%; flex: none; display: inline-block; margin-right: 3px; }
+  .mdot.new { background: var(--success-color); } .mdot.chg { background: var(--mark-chg); } .mdot.mov { background: var(--info-color); } .mdot.gone { background: var(--text-tertiary); }
+  .ld-spin { width: 10px; height: 10px; flex: none; border-radius: 50%; border: 1.5px solid var(--border-strong); border-top-color: var(--secondary-accent); animation: spin .9s linear infinite; }
+  .bad-i { width: 14px; height: 14px; flex: none; border-radius: 50%; background: var(--warning-bg); color: var(--mark-chg); font-size: 10px; font-weight: 700; display: grid; place-items: center; font-family: var(--font-sans); }
+  .fl-foot { margin-top: auto; padding: 8px 12px; font-size: 11.5px; line-height: 1.4; color: var(--text-secondary); border-top: 1px solid var(--border-subtle); }
+  .fl-foot button, .vmsg button { margin-top: 6px; padding: 3px 10px; border-radius: 6px; border: 1px solid var(--border-strong); background: var(--bg-elevated); font-size: 12px; font-weight: 600; cursor: pointer; }
+  .fpath { flex: none; display: flex; align-items: center; gap: 6px; height: 28px; padding: 0 12px; border-bottom: 1px solid var(--border-subtle); font-family: var(--font-mono); font-size: 12px; font-weight: 600; color: var(--text-primary); background: var(--gh-bg); white-space: nowrap; overflow: hidden; }
+  .fpath.pdl { background: var(--cm-host-bg); }
+  .fpath .dir { color: var(--text-tertiary); font-weight: 500; }
+  .fpath svg { width: 13px; height: 13px; color: var(--text-secondary); }
+  .fpath.lib svg { color: var(--secondary-accent); }
+  .fpath .mk { margin-left: 4px; }
+  .vmsg { flex: 1; display: grid; place-items: center; padding: 24px; text-align: center; font-size: 13px; line-height: 1.5; color: var(--text-secondary); background: var(--gh-bg); }
+  .vmsg.pdl { background: var(--cm-host-bg); }
+  .vmsg b { color: var(--text-primary); }
+  .vmsg .ld-spin { display: inline-block; vertical-align: -1px; margin-right: 8px; }
+
+  /* The tabs style */
+  .ft { flex: none; position: relative; display: flex; height: 32px; background: var(--bg-secondary); border-bottom: 1px solid var(--border-color); overflow: hidden; }
+  .ft-tab { flex: none; display: flex; align-items: center; gap: 5px; padding: 0 10px; font-family: var(--font-mono); font-size: 12px; font-weight: 500; color: var(--text-secondary); border-right: 1px solid var(--border-color); white-space: nowrap; cursor: pointer; }
+  .ft-tab svg { width: 12px; height: 12px; }
+  .ft-tab.lib svg { color: var(--secondary-accent); }
+  .ft-tab.sel { background: var(--gh-bg); color: var(--text-primary); font-weight: 600; box-shadow: inset 0 2px 0 var(--secondary-accent); }
+  .ft-more { position: absolute; right: 0; top: 0; bottom: 0; width: 56px; display: grid; place-items: center end; padding-right: 8px; background: linear-gradient(90deg, transparent, var(--bg-secondary) 55%); color: var(--text-secondary); }
+  .ft-more svg { width: 14px; height: 14px; }
+
+  /* The one-after-another style */
+  .fs-bar { flex: none; display: flex; align-items: center; gap: 8px; height: 32px; padding: 0 10px 0 12px; border-bottom: 1px solid var(--border-color); background: var(--bg-secondary); font-size: 12px; color: var(--text-secondary); }
+  .fs-jump { margin-left: auto; display: inline-flex; align-items: center; gap: 4px; height: 22px; padding: 0 8px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--bg-elevated); font-size: 12px; color: var(--text-primary); }
+  .fs-jump svg { width: 12px; height: 12px; }
+  .fs-body { flex: 1; min-height: 0; overflow: hidden; background: var(--gh-bg); display: flex; flex-direction: column; }
+  .fs-body .vc { flex: none; }
+  .fs-h { flex: none; display: flex; align-items: center; gap: 6px; height: 28px; padding: 0 12px; font-family: var(--font-mono); font-size: 12px; font-weight: 600; color: var(--text-primary); background: var(--bg-tertiary); border-top: 1px solid var(--border-color); border-bottom: 1px solid var(--border-subtle); }
+  .fs-h:first-child { border-top: none; }
+  .fs-h .dir { color: var(--text-tertiary); font-weight: 500; }
+  .fs-h svg { width: 13px; height: 13px; color: var(--text-secondary); }
+  .fs-h.lib svg { color: var(--secondary-accent); }
+  .fs-h .n { margin-left: auto; font-family: var(--font-body); font-weight: 400; font-size: 11px; color: var(--text-tertiary); }
+  .fs-above { flex: none; padding: 3px 12px; font-size: 11px; color: var(--text-tertiary); background: var(--bg-secondary); border-bottom: 1px solid var(--border-subtle); }
+
+  /* Narrow: the list becomes a menu above the code */
+  .fmenu { flex: none; display: flex; align-items: center; gap: 6px; height: 32px; padding: 0 10px; border-bottom: 1px solid var(--border-color); background: var(--bg-secondary); font-family: var(--font-mono); font-size: 12.5px; font-weight: 600; color: var(--text-primary); white-space: nowrap; overflow: hidden; cursor: pointer; }
+  .fmenu .dir { color: var(--text-tertiary); font-weight: 500; }
+  .fmenu > svg { width: 13px; height: 13px; color: var(--text-secondary); }
+  .fmenu.lib > svg { color: var(--secondary-accent); }
+  .fmenu .cv { display: grid; color: var(--text-tertiary); }
+  .fmenu .cv svg { width: 12px; height: 12px; }
+  .fmenu .cnt { margin-left: auto; font-family: var(--font-body); font-weight: 500; font-size: 11.5px; color: var(--text-tertiary); }
+
+  /* ---------- the blog viewer, as it is today (mini-workspace.ts) ---------- */
+  .mwr { position: relative; display: flex; flex-direction: column; height: 100%; border: 1px solid var(--border-color); border-radius: var(--radius-lg); background: var(--bg-elevated); box-shadow: var(--shadow-sm); font-family: var(--font-body); }
+  .mwr-sum { flex: none; display: flex; align-items: center; gap: 6px; height: 28px; padding: 0 14px 0 10px; border-bottom: 1px solid var(--border-color); border-radius: var(--radius-lg) var(--radius-lg) 0 0; cursor: pointer; }
+  .mwr-sum .chev { width: 14px; height: 14px; display: grid; place-items: center; color: var(--text-tertiary); }
+  .mwr-sum .chev svg { width: 10px; height: 10px; stroke-width: 2.4; }
+  .mwr.bar-open .mwr-sum .chev { transform: rotate(90deg); color: var(--accent-color); }
+  .mwr-title { margin: 0; font-size: 13px; font-weight: 600; letter-spacing: .01em; color: var(--text-primary); flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-family: var(--font-body); }
+  .mwr-go { position: absolute; right: -0.6rem; top: 0.8rem; z-index: 25; width: 28px; height: 28px; border-radius: var(--radius-sm); background: var(--accent-color); color: var(--accent-text); display: grid; place-items: center; }
+  .mwr-go svg { width: 16px; height: 16px; }
+  .mwr-bar { flex: none; display: flex; align-items: center; gap: 6px; height: 44px; padding: 0 10px; border-bottom: 1px solid var(--border-color); background: color-mix(in srgb, var(--bg-elevated) 82%, transparent); }
+  .mwr-ib { width: 28px; height: 28px; padding: 0; border: 0; border-radius: var(--radius-sm); background: transparent; color: var(--text-secondary); display: grid; place-items: center; }
+  .mwr-ib svg { width: 16px; height: 16px; }
+  .mwr-ib.on { color: var(--accent-color); background: var(--accent-subtle); }
+  .mwr-div { width: 1px; height: 20px; background: var(--border-color); margin: 0 2px; }
+  .mwr-body { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); overflow: hidden; border-radius: 0 0 var(--radius-lg) var(--radius-lg); }
+  .mwr-body.closed { grid-template-columns: minmax(0,1fr); }
+  .mwr-code { min-width: 0; min-height: 0; overflow: hidden; border-right: 1px solid var(--border-color); display: flex; flex-direction: column; background: var(--gh-bg); }
+  .mwr-pv { position: relative; min-width: 0; min-height: 0; background: var(--bg-primary); }
+  .mwr-pv .canvas { position: absolute; inset: 28px 28px 56px; }
+  .mwr-pv .canvas svg { width: 100%; height: 100%; display: block; }
+  .mwr-pv .canvas svg text { font-family: 'Times New Roman', Times, serif; }
+  .mwr-pv .zoom-wrap { bottom: 12px; }
+  .mwr-hint { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); font-size: 11px; color: var(--text-tertiary); white-space: nowrap; }
+  .mwr.narrow .mwr-body { grid-template-columns: minmax(0,1fr); grid-template-rows: 200px minmax(0,1fr); }
+  .mwr.narrow .mwr-body.closed { grid-template-rows: minmax(0,1fr); }
+  .mwr.narrow .mwr-code { border-right: none; border-bottom: 1px solid var(--border-color); }
+  .mwr.narrow .mwr-pv .canvas { inset: 26px 16px 50px; }
+  .mwr.narrow .mwr-go { right: -0.35rem; }
+
+  /* ---------- the snapshots page (workspace-snapshots-view.ts) ---------- */
+  .sp { display: grid; grid-template-rows: auto minmax(0,1fr) auto auto; height: 860px; }
+  .sp-stage { min-height: 0; padding: 14px 18px 10px; }
+  .sp-detail { display: grid; grid-template-columns: auto auto minmax(160px,1fr); align-items: center; gap: 14px; padding: 2px 18px 10px; }
+  .sp-name { font-weight: 600; font-size: 15px; white-space: nowrap; }
+  .sp-name small { color: var(--text-tertiary); font-weight: 500; font-family: var(--font-mono); font-size: 12px; margin-left: 6px; }
+  .sp-meta { font-size: 12px; color: var(--text-tertiary); white-space: nowrap; }
+  .sp-note { font-size: 13px; color: var(--text-tertiary); display: flex; gap: 6px; align-items: center; }
+  .sp-note span { color: var(--text-primary); }
+  .sp-film { border-top: 1px solid var(--border-color); background: var(--bg-secondary); padding: 10px 18px 12px; }
+  .sf-head { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 10px; font-size: 12px; margin-bottom: 8px; color: var(--text-secondary); }
+  .sf-head b { color: var(--text-primary); }
+  .sf-head kbd { font-family: var(--font-mono); font-size: 11px; border: 1px solid var(--border-strong); border-bottom-width: 2px; border-radius: 4px; padding: 0 4px; background: var(--bg-elevated); }
+  .sf-seg { display: inline-grid; grid-auto-flow: column; border: 1px solid var(--border-strong); border-radius: 6px; overflow: hidden; }
+  .sf-seg span { background: var(--bg-elevated); color: var(--text-secondary); padding: 3px 9px; font-size: 11px; }
+  .sf-seg span.on { background: var(--text-primary); color: var(--bg-primary); }
+  .sf-row { display: flex; gap: 8px; padding: 3px 3px 6px; }
+  .sf-day { writing-mode: vertical-rl; transform: rotate(180deg); font-size: 10px; text-transform: uppercase; letter-spacing: .08em; color: var(--text-tertiary); font-weight: 600; border-left: 1px solid var(--border-subtle); padding: 0 4px 0 6px; text-align: center; }
+  .sf-fr { width: 92px; flex: none; }
+  .sf-img { position: relative; display: grid; place-items: center; width: 92px; height: 92px; padding: 6px; border-radius: var(--radius-md); border: 1px solid var(--border-color); background: #fff; opacity: .8; }
+  .sf-img svg { width: 100%; height: 100%; display: block; }
+  .sf-fr.cur .sf-img { opacity: 1; outline: 2px solid var(--text-primary); outline-offset: 2px; }
+  .sf-note { position: absolute; top: 4px; right: 4px; width: 17px; height: 17px; border-radius: 50%; background: var(--text-primary); color: var(--bg-elevated); font-size: 10px; display: grid; place-items: center; }
+  .sf-meta { font-size: 11px; color: var(--text-tertiary); margin-top: 5px; display: flex; justify-content: space-between; }
+  .sf-meta b { color: var(--text-secondary); }
+  .v-tip { position: absolute; z-index: 60; background: #1c1722; color: #f6e9da; font-size: 12px; line-height: 1.4; padding: 6px 9px; border-radius: 6px; box-shadow: var(--shadow-lg); white-space: nowrap; font-family: var(--font-body); }
+  [data-theme='dark'] .v-tip { background: #f6e9da; color: #1c1722; }
+
+  /* ---------- the public page (workspace-detail.css) ---------- */
+  .pd { padding-bottom: 48px; font-family: var(--font-body); }
+  .pd-sub { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 18px 32px 0; }
+  .pd-crumb { font-family: var(--font-mono); font-size: 11.5px; font-weight: 600; letter-spacing: .18em; text-transform: uppercase; color: var(--text-tertiary); }
+  .pd-crumb a { color: var(--secondary-accent-text); }
+  .pd-crumb .sep { display: inline-block; margin: 0 .45rem; opacity: .65; }
+  .pd-crumb .here { color: var(--text-secondary); }
+  .pd-cta { display: inline-flex; align-items: center; gap: 8px; padding: 10px 20px; font-weight: 600; font-size: 14px; color: var(--accent-text); background: linear-gradient(135deg, var(--accent-from), var(--accent-to)); border-radius: 999px; box-shadow: 0 8px 24px -8px color-mix(in srgb, var(--accent-color) 70%, transparent); white-space: nowrap; }
+  .pd-plate { margin: 26px 32px 0; }
+  .pd-stage { position: relative; height: 360px; background: var(--bg-elevated); border: 1px solid var(--border-color); border-radius: 12px; overflow: hidden;
+    box-shadow: 0 1px 2px rgba(var(--shadow-tint-rgb),.08), 0 16px 40px rgba(var(--shadow-tint-rgb),.14), 0 36px 72px rgba(var(--shadow-tint-rgb),.08); }
+  .pd-stage .canvas { position: absolute; inset: 36px 120px 56px; }
+  .pd-stage .canvas svg { width: 100%; height: 100%; display: block; }
+  .pd-stage .zoom-wrap { bottom: 14px; }
+  .pd-meta { max-width: 880px; margin: 40px auto 0; padding: 0 32px; }
+  .pd-title { margin: 0; font-family: var(--font-display); font-weight: 400; font-size: 50px; line-height: 1.04; color: var(--text-primary); }
+  .pd-title em { font-style: italic; background: linear-gradient(120deg, var(--secondary-from), var(--secondary-to)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .pd-by { margin: 16px 0 0; font-size: 15px; color: var(--text-secondary); display: flex; align-items: center; gap: 11px; }
+  .pd-by .avatar { font-family: var(--font-display); font-size: 14px; }
+  .pd-by .handle { color: var(--secondary-accent-text); font-weight: 600; }
+  .pd-by .dot { width: 4px; height: 4px; border-radius: 50%; background: var(--text-tertiary); opacity: .6; }
+  .pd-deck { margin: 22px 0 0; font-family: var(--font-display); font-style: italic; font-size: 19.5px; line-height: 1.45; color: var(--text-secondary); max-width: 56ch; }
+  .pd-src { margin: 52px 32px 0; }
+  .pd-disc { background: var(--bg-elevated); border: 1px solid var(--border-color); border-radius: 12px; overflow: hidden; box-shadow: 0 1px 2px rgba(var(--shadow-tint-rgb),.06), 0 8px 24px rgba(var(--shadow-tint-rgb),.06); }
+  .pd-sum { display: flex; align-items: baseline; padding: 22px 29px; cursor: pointer; }
+  .pd-sum .t { font-family: var(--font-display); font-size: 22px; color: var(--text-primary); }
+  .pd-sum .m { margin-left: auto; font-family: var(--font-mono); font-size: 11.8px; font-weight: 600; letter-spacing: .14em; text-transform: uppercase; color: var(--text-tertiary); }
+  .pd-sum::after { content: '＋'; margin-left: 16px; font-family: var(--font-display); font-size: 21.6px; line-height: 1; color: var(--secondary-accent-text); }
+  .pd-disc.open .pd-sum::after { content: '−'; }
+  .pd-disc.open .pd-sum { border-bottom: 1px solid var(--border-subtle); }
+  .pd-body { display: flex; height: 420px; }
+  .pd-body.one { display: block; height: auto; }
+  .pd-body.one .vc { flex: none; }
+  .pd-more { margin: 40px 32px 0; font-size: 13px; color: var(--text-tertiary); text-align: center; }
+
+  /* ---------- the review screen (admin-moderation-view.ts _styles) ---------- */
+  .ad-wrap { position: relative; }
+  .ad { max-width: 1200px; margin: 0 auto; padding: 20px 16px 48px; font-family: var(--font-sans); }
+  .ad-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+  .ad-head h1 { margin: 0; font: 600 24px/1.2 var(--font-sans); color: var(--text-primary); }
+  .ad-btn { font: 13.6px/1.3 var(--font-sans); padding: 5.6px 12px; border-radius: var(--radius-sm); border: 1px solid var(--border-color); background: transparent; color: var(--text-primary); display: inline-flex; align-items: center; cursor: pointer; }
+  .ad-btn.primary { background: var(--accent-color); color: #fff; border-color: transparent; }
+  .ad-btn.danger-o { color: #b8302c; border-color: #b8302c; }
+  .ad-btn[disabled] { opacity: .55; cursor: default; }
+  .ad-tabs { display: flex; flex-wrap: wrap; gap: 4px; border-bottom: 1px solid var(--border-color); margin-bottom: 20px; }
+  .ad-tab { font: 500 13.6px/1 var(--font-sans); padding: 8.8px 14.4px; color: var(--text-secondary); border-bottom: 2px solid transparent; }
+  .ad-tab.on { color: var(--text-primary); border-bottom-color: var(--accent-color); }
+  .ad-grid { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 16px; }
+  .ad-card { display: grid; grid-template-columns: 120px 1fr; gap: 16px; border: 1px solid var(--border-color); border-radius: var(--radius-md); background: var(--bg-elevated); padding: 13.6px; align-items: start; }
+  .ad-thumb { width: 120px; height: 120px; border-radius: var(--radius-sm); overflow: hidden; background: #fff; border: 1px solid var(--border-color); display: flex; align-items: center; justify-content: center; }
+  .ad-thumb svg { width: 100%; height: 100%; display: block; }
+  .ad-thumb.ph { background: var(--bg-tertiary); font: 600 20.8px/1 var(--font-sans); color: var(--text-secondary); }
+  .ad-body { min-width: 0; display: flex; flex-direction: column; gap: 5.6px; }
+  .ad-title { margin: 0; font: 600 16px/1.3 var(--font-sans); color: var(--text-primary); }
+  .ad-meta { margin: 0; font: 400 12px/1.4 var(--font-sans); color: var(--text-secondary); display: flex; flex-wrap: wrap; gap: 5.6px; align-items: center; }
+  .ad-meta .sep { color: var(--text-tertiary); }
+  .ad-meta .hash { font-family: var(--font-mono); }
+  .ad-meta .files { color: var(--text-primary); font-weight: 500; }
+  .ad-desc { margin: 0; font: 400 13.6px/1.45 var(--font-sans); color: var(--text-secondary); }
+  .ad-chg { margin: 0; font: 400 12.5px/1.4 var(--font-sans); color: var(--text-secondary); }
+  .ad-chg b { color: var(--text-primary); font-weight: 600; }
+  .ad-acts { display: flex; flex-wrap: wrap; gap: 6.4px; align-items: center; margin-top: 6.4px; }
+  .ad-why { margin: 2px 0 0; padding: 7px 10px; border-radius: var(--radius-sm); border: 1px solid var(--warning-border); background: var(--warning-bg); font: 400 12.5px/1.45 var(--font-sans); color: var(--text-primary); }
+  .ad-why.big { margin: 0; padding: 14px 16px; font-size: 14px; }
+  .ad-back { position: absolute; inset: 0; z-index: 50; background: rgba(0,0,0,0.6); display: flex; align-items: flex-start; justify-content: center; padding: 32px; }
+  .ad-modal { width: 100%; max-width: 1080px; background: var(--bg-elevated); border-radius: var(--radius-md); box-shadow: 0 12px 40px rgba(0,0,0,0.35); overflow: hidden; }
+  .ad-mhead { display: flex; align-items: center; justify-content: space-between; padding: 13.6px 17.6px; border-bottom: 1px solid var(--border-color); }
+  .ad-mhead h2 { margin: 0; font: 600 16.8px/1.2 var(--font-sans); color: var(--text-primary); }
+  .ad-mbody { padding: 16px 17.6px; }
+  .ad-mw { height: 540px; }
+  .ad-changes { margin: 0 0 12px; padding: 10px 14px; border: 1px solid var(--info-border); background: var(--info-bg); border-radius: var(--radius-sm); font: 400 13px/1.5 var(--font-sans); color: var(--text-primary); }
+  .ad-changes h4 { margin: 0; font-size: 13px; font-weight: 600; }
+  .ad-changes h4 span { font-weight: 400; color: var(--text-secondary); }
+  .ad-changes ul { margin: 4px 0 0; padding: 0; list-style: none; }
+  .ad-changes li { margin: 1px 0; }
+  .ad-changes code { font-size: 12.5px; }
+  .ad-changes .mdot { vertical-align: 1px; margin-right: 7px; }
+  .ad-changes [data-file] { cursor: pointer; }
+  .ad-changes [data-file] code { text-decoration: underline dotted; text-underline-offset: 3px; }
+  .ad-wrap.has-modal { min-height: 960px; }
+
+  /* ---------- phones ---------- */
+  .phone .sp-mini { height: 470px; padding: 10px 12px 8px; }
+  .phone .ph-ctl { flex-wrap: wrap; }
+  .phone .sp-detail { grid-template-columns: 1fr; gap: 3px; padding: 4px 14px 10px; }
+  .phone .sp-film { padding: 8px 14px 12px; flex: 1; }
+  .phone .sf-row { overflow: hidden; }
+  .phone .ph-sheet .fl-h { padding: 0 6px 4px; }
+  .phone .ph-sheet .frow { height: 38px; font-size: 13px; border-radius: 8px; }
+  .phone .pd-sub { padding: 12px 14px 0; flex-wrap: wrap; gap: 10px; }
+  .phone .pd-crumb { font-size: 10px; letter-spacing: .12em; }
+  .phone .pd-cta { padding: 8px 14px; font-size: 13px; }
+  .phone .pd-plate { margin: 14px 14px 0; }
+  .phone .pd-stage { height: 190px; }
+  .phone .pd-stage .canvas { inset: 18px 18px 40px; }
+  .phone .pd-meta { margin-top: 20px; padding: 0 14px; }
+  .phone .pd-title { font-size: 34px; }
+  .phone .pd-by { font-size: 13px; margin-top: 10px; }
+  .phone .pd-deck { display: none; }
+  .phone .pd-src { margin: 22px 14px 0; }
+  .phone .pd-sum { padding: 14px 16px; }
+  .phone .pd-sum .t { font-size: 19px; }
+  .phone .pd-body { height: 250px; flex-direction: column; }
+  .phone .vc.pdl { font-size: 13px; line-height: 1.6; }
+  .phone .vc.pdl .gn { width: 34px; }
+  .phone-scroll { flex: 1; min-height: 0; overflow: hidden; }
+
+<!-- @@NAV -->
+    <button data-s="fstyles" aria-pressed="true">F · Three ways to switch files</button>
+    <button data-s="snap">S · Snapshots page</button>
+    <button data-s="pub">P · Public page</button>
+    <button data-s="rev">R · Review screen</button>
+    <button data-s="phone">N · On a phone</button>
+
+<!-- @@SECTIONS -->
+<!-- ============ F. THREE WAYS TO SWITCH FILES ============ -->
+<section class="screen active" id="s-fstyles">
+  <div class="notes">
+    <h2>F · Three ways to move between files <span class="tag ask">your choice</span></h2>
+    <p>Note 59 asked for one way of moving between files, used by both viewers: the blog's viewer (the snapshots page and the review modal) and the public page's View source. Here are three, drawn in the tightest place, the snapshots page's code pane (about 600 px wide). The other screens use the one you pick: the switch at the top right redraws them in any of the three.</p>
+    <table class="cmp">
+      <tr><th></th><th>1 · A list beside the code <span class="tag rec">recommended</span></th><th>2 · Tabs above the code</th><th>3 · One after another</th></tr>
+      <tr><td>Folders (requirement 3)</td><td>Shown, as the tree shows them</td><td><b>Dropped</b> unless two names clash (the editor's rule), so <code>parts/</code> is hidden</td><td>In each file's heading</td></tr>
+      <tr><td>Up to 20 files</td><td>A short scroll in the list</td><td><b>Hidden</b> past the pane's width: here <code>pathogen.json</code> is cut off already, with 7 files</td><td><b>A long scroll</b> through every file</td></tr>
+      <tr><td>Looks like</td><td>The workspace's tree (requirement 4)</td><td>The editor's tabs</td><td>A page of code, like a gist</td></tr>
+      <tr><td>Re-review marks</td><td>A coloured dot on each row; removed files stay in place, struck out</td><td>On tabs, but a removed file has no tab</td><td>On each heading</td></tr>
+      <tr><td>Costs</td><td>About 190 px of the pane's width</td><td>32 px of height</td><td>Nothing, until there are many files</td></tr>
+      <tr><td>On a phone</td><td>Becomes a menu above the code (screen N)</td><td>Scrolls sideways</td><td>As here</td></tr>
+    </table>
+    <ul>
+      <li><b>Every style keeps the tree's order:</b> folders first, then the files at the top, <code>pathogen.json</code> last. The file that drew the image is <b>selected, not moved</b>: putting it first would name it, which is held question 4(b).</li>
+      <li><b>One file shows no switcher at all,</b> in every style (requirement 1).</li>
+    </ul>
+  </div>
+  <div class="statebar" id="st-fstyles">
+    <span class="lbl">Style</span>
+    <button data-st="list" aria-pressed="true">1 · A list beside the code</button>
+    <button data-st="tabs">2 · Tabs above the code</button>
+    <button data-st="stack">3 · One after another</button>
+  </div>
+  <div class="statedesc" id="sd-fstyles"></div>
+  <div class="frame-out"><div class="window" id="w-fstyles"></div></div>
+</section>
+
+<!-- ============ S. THE SNAPSHOTS PAGE ============ -->
+<section class="screen" id="s-snap">
+  <div class="notes">
+    <h2>S · The snapshots page <span class="tag ask">for your review</span></h2>
+    <table class="cmp">
+      <tr><th></th><th>Today</th><th>After 2e</th></tr>
+      <tr><td>A snapshot of several files</td><td>Fails to open, image included (the page reads one file)</td><td>Opens. The Code panel shows the files, with the one that drew the image selected</td></tr>
+      <tr><td>Copy code</td><td>Copies the one file</td><td>Copies the program that drew the image (answer A), whichever file is open</td></tr>
+      <tr><td>The viewer's ↗ and its own Copy</td><td>Shown</td><td><b>Hidden on this page</b> (answer B, note 59 Q1), for every snapshot</td></tr>
+      <tr><td>Start new workspace</td><td>Copies every file</td><td>The same; its tooltip says "files"</td></tr>
+    </table>
+    <div class="cols">
+      <ul>
+        <li><b>Nothing names the program that drew it</b> (question 4 is held). It's the selected file when the Code panel opens; that's all.</li>
+        <li><b>The files are the snapshot's,</b> as they were when it was drawn. A click opens any of them.</li>
+      </ul>
+      <ul>
+        <li><b>A snapshot made before 2e</b> (state 4) holds one file: no list, as today, apart from the two hidden buttons.</li>
+        <li><b>Export's legend</b> lists the program that drew the image (it follows from A).</li>
+      </ul>
+    </div>
+  </div>
+  <div class="statebar" id="st-snap">
+    <span class="lbl">State</span>
+    <button data-st="main" aria-pressed="true">1 · Drawn by the main</button>
+    <button data-st="other">2 · Another file opened</button>
+    <button data-st="demo">3 · Drawn by demos/gears</button>
+    <button data-st="old">4 · Made before 2e (one file)</button>
+  </div>
+  <div class="statedesc" id="sd-snap"></div>
+  <div class="frame-out"><div class="window" id="w-snap"></div></div>
+</section>
+
+<!-- ============ P. THE PUBLIC PAGE ============ -->
+<section class="screen" id="s-pub">
+  <div class="notes">
+    <h2>P · The public page <span class="tag ask">for your review</span></h2>
+    <table class="cmp">
+      <tr><th></th><th>Today</th><th>After 2e</th></tr>
+      <tr><td>View source</td><td>The main's text alone; "Pathogen · N lines"</td><td>Every approved file, opening on the main; "Pathogen · 7 files"</td></tr>
+      <tr><td>What the page holds as served</td><td>The main's text</td><td>The main's text, <b>and every file's name</b>, so the list and the count show at once. The other texts load when View source opens (note 59 Q3)</td></tr>
+      <tr><td>Open as new workspace</td><td>The main alone (empty with several files)</td><td>Every approved file, the folders and the main</td></tr>
+      <tr><td>The code's theme</td><td>Picked once, when it loads</td><td>Follows a theme change</td></tr>
+    </table>
+    <ul>
+      <li><b>Without scripts,</b> the page shows the main's text in View source, and no list.</li>
+      <li><b>One file</b> (state 5) looks exactly as today.</li>
+    </ul>
+  </div>
+  <div class="statebar" id="st-pub">
+    <span class="lbl">State</span>
+    <button data-st="closed" aria-pressed="true">1 · View source closed</button>
+    <button data-st="loading">2 · Just opened: the other files loading</button>
+    <button data-st="module">3 · A module open</button>
+    <button data-st="failed">4 · The other files couldn't load</button>
+    <button data-st="one">5 · One file, as today</button>
+  </div>
+  <div class="statedesc" id="sd-pub"></div>
+  <div class="frame-out"><div class="window" id="w-pub"></div></div>
+</section>
+
+<!-- ============ R. THE REVIEW SCREEN ============ -->
+<section class="screen" id="s-rev">
+  <div class="notes">
+    <h2>R · The review screen <span class="tag ask">for your review</span></h2>
+    <table class="cmp">
+      <tr><th></th><th>Today</th><th>After 2e</th></tr>
+      <tr><td>A card with several files</td><td>"compile failed"</td><td>The main's drawing, compiled with its imports; the meta line counts the files</td></tr>
+      <tr><td>The Review modal</td><td>"No source available."</td><td>The drawing and every file, opening on the main</td></tr>
+      <tr><td>A re-review</td><td>Nothing says what changed</td><td>A box lists what changed since the approved version, and its lines open the files. In the list, a dot of the same colour marks each file; the open file's line says it in words (note 59 Q4)</td></tr>
+      <tr><td>Files that can't be read</td><td>Looks like a compile failure; Approve still works</td><td>Says so on the card and in the modal; <b>Approve is off</b> (note 59 Q5)</td></tr>
+    </table>
+    <div class="cols">
+      <ul>
+        <li><b>The marks compare the two versions by hash,</b> without reading any text. A file renamed <i>and</i> edited shows as removed and new, not moved.</li>
+        <li><b>pathogen.json is marked changed</b> when the program list changes: a program added or removed, a new main, or the order alone (state 4).</li>
+      </ul>
+      <ul>
+        <li><b>The modal keeps the file you're reading</b> while thumbnails finish compiling.</li>
+        <li><b>One file</b> (state 7) looks exactly as today.</li>
+      </ul>
+    </div>
+    <div class="qs"><b>A new question.</b> In the modal, the viewer's ↗ "Open in playground workspace" sends one file, like the snapshots page's (answer B).
+      <ol><li><b>Hide it when there are several files</b> <span class="tag rec">recommended</span>. With one file it stays, as today. Drawn this way in states 2 to 4.</li><li>Keep it, sending one file.</li></ol></div>
+  </div>
+  <div class="statebar" id="st-rev">
+    <span class="lbl">State</span>
+    <button data-st="queue" aria-pressed="true">1 · The queue</button>
+    <button data-st="new">2 · Reviewing a new entry</button>
+    <button data-st="changed">3 · Re-review: files changed</button>
+    <button data-st="quiet">4 · Re-review: no file's text changed</button>
+    <button data-st="unread">5 · Files that can't be read</button>
+    <button data-st="unread-modal">6 · … and their modal</button>
+    <button data-st="one">7 · One file, as today</button>
+  </div>
+  <div class="statedesc" id="sd-rev"></div>
+  <div class="frame-out"><div class="window" id="w-rev"></div></div>
+</section>
+
+<!-- ============ N. ON A PHONE ============ -->
+<section class="screen" id="s-phone">
+  <div class="notes">
+    <h2>N · On a phone <span class="tag ask">for your review</span></h2>
+    <ul>
+      <li><b>The list becomes a menu</b> above the code, naming the open file and how many there are. A tap opens the files as a sheet, with rows big enough to tap (requirement 6).</li>
+      <li><b>The blog viewer's code pane</b> already stacks above the drawing below 768 px, in a 200 px row; the menu takes 32 px of it.</li>
+    </ul>
+  </div>
+  <div class="statebar" id="st-phone">
+    <span class="lbl">State</span>
+    <button data-st="snap" aria-pressed="true">1 · The snapshots page</button>
+    <button data-st="sheet">2 · Choosing a file</button>
+    <button data-st="pub">3 · The public page</button>
+  </div>
+  <div class="statedesc" id="sd-phone"></div>
+  <div class="frame-out"><div class="window" id="w-phone"></div></div>
+</section>
+
+<!-- @@SCRIPT -->
+/* ===================== v12 ===================== */
+/* Everything above this point is v11's page (v6's kit, v7's to v11's parts), unchanged. v12 draws
+   pages that aren't the workspace, so every state is a board (v6's wire() is skipped) and v12's
+   own clicks go through one listener per screen, below. */
+
+/* ---------- icons today's code uses (mini-workspace.ts) ---------- */
+const V12I = {
+  chevR: sv('<path d="M9 6l6 6-6 6"/>'),
+  code: sv('<path d="M8 9l-4 3 4 3M16 9l4 3-4 3"/>'),
+  fs: sv('<path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/>'),
+  go: sv('<path d="M7 17L17 7M17 7H9M17 7v8"/>'),
+};
+
+/* ---------- the example workspace, as a snapshot or an approval holds it ---------- */
+/* A one-file version of main, for a snapshot made before 2e (mockup-only text). It draws exactly
+   what main draws: gear() is star() plus a hub of radius * 0.3, toothDepth 6. */
+SRC['old/main'] = ['// Two gears that mesh.', 'define ViewBox(0, 0, 200, 100);', '', 'star(55, 50, 40, 34, 12);', 'circle(55, 50, 12);', 'star(150, 50, 28, 22, 8);', 'circle(150, 50, 8.4);'];
+const FILES = ['demos/gears', 'parts/gears', 'parts/kit', 'parts/labels', 'main', 'try-sizes'];
+const ENTRY0 = ['main', 'demos/gears', 'try-sizes'];
+const mainOf = c => c.entry[0];
+const textOf = (c, p) => SRC[(c.texts || {})[p] || p];
+const pjText = c => JSON.stringify({ entryPoints: c.entry.map(p => `${p}.pathogen`) }, null, 2).split('\n');
+const fileCount = c => c.files.length + 1;
+const drawing = key => (key === 'swatch' ? swatchArt({}) : art(key));
+
+/* The tree's order: folders first (each with its files), then the files at the top, pathogen.json last.
+   Removed files keep their place, struck out; an added empty folder shows on its own. */
+function treeEntries(c) {
+  const all = [...c.files, ...(c.removed || [])];
+  const folders = [...new Set([...all.filter(p => p.includes('/')).map(folderOf), ...(c.folderAdded || [])])].sort();
+  const out = [];
+  for (const f of folders) {
+    out.push({ folder: f });
+    all.filter(p => folderOf(p) === f).sort().forEach(p => out.push({ p, d: 1 }));
+  }
+  all.filter(p => !p.includes('/')).sort().forEach(p => out.push({ p, d: 0 }));
+  out.push({ p: PJ, d: 0 });
+  return out;
+}
+const MARK_WORDS = { new: 'new', chg: 'changed', mov: 'moved', gone: 'removed' };
+function markOf(c, p) {
+  if ((c.removed || []).includes(p)) return 'gone';
+  return (c.marks || {})[p] || '';
+}
+function markDot(c, p) {
+  const m = markOf(c, p);
+  if (!m) return '';
+  const word = m === 'mov' ? `moved from ${(c.moved || {})[p] || ''}` : MARK_WORDS[m];
+  return `<span class="mdot ${m}" title="${esc(word)}" aria-label="${esc(word)}"></span>`;
+}
+function markPill(c, p) {
+  const m = markOf(c, p);
+  if (!m) return '';
+  const title = m === 'mov' ? ` title="Moved from ${esc((c.moved || {})[p] || '')}"` : '';
+  return `<span class="mk ${m}"${title}>${MARK_WORDS[m]}</span>`;
+}
+function iconOf(p) { return p === PJ ? I.braces : isLib(p) ? I.lib : I.prog; }
+function pathHtml(p) {
+  if (p === PJ) return `<span>${PJ}</span>`;
+  const i = p.lastIndexOf('/');
+  return `<span>${i >= 0 ? `<span class="dir">${esc(p.slice(0, i + 1))}</span>` : ''}${esc(p.slice(i + 1))}.pathogen</span>`;
+}
+function loadOf(c, p) { return (c.loadState || {})[p] || ''; }
+
+/* ---------- the list ---------- */
+function fileRow(c, e, touch) {
+  if (e.folder !== undefined) {
+    const added = (c.folderAdded || []).includes(e.folder);
+    return `<div class="frow dir" style="padding-left:6px"><span class="chev">${I.chevD}</span><span class="fic">${I.folder}</span><span class="fname">${esc(e.folder)}</span>${added ? '<span class="mdot new" title="new" aria-label="new"></span>' : ''}</div>`;
+  }
+  const p = e.p, gone = markOf(c, p) === 'gone', ld = loadOf(c, p);
+  const isPj = p === PJ;
+  const cls = [isLib(p) ? 'lib' : '', isPj ? 'pj' : '', c.open === p ? 'sel' : '', gone ? 'gone' : '', ld === 'loading' ? 'wait' : '', ld === 'failed' ? 'bad' : ''].join(' ');
+  const name = isPj ? `pathogen<span class="ext">.json</span>` : `${esc(baseName(p))}<span class="ext">.pathogen</span>`;
+  const badge = p === mainOf(c) && p !== 'main' ? '<span class="badge-main">main</span>' : '';
+  const state = ld === 'loading' ? '<span class="ld-spin" title="Loading"></span>' : ld === 'failed' ? '<span class="bad-i" title="Couldn\'t load">!</span>' : '';
+  const full = isPj ? PJ : `${p}.pathogen`;
+  return `<div class="frow ${cls}"${gone ? '' : ` data-file="${esc(p)}"`} style="padding-left:${(touch ? 10 : 6) + e.d * 16}px" title="${esc(full)}"><span class="chev"></span><span class="fic">${iconOf(p)}</span><span class="fname">${name}</span>${badge}${touch ? markPill(c, p) : markDot(c, p)}${state}</div>`;
+}
+function listCol(c) {
+  const rows = treeEntries(c).map(e => fileRow(c, e)).join('');
+  const failed = Object.values(c.loadState || {}).includes('failed');
+  const foot = failed ? `<div class="fl-foot">The other files couldn't load.<br><button>Try again</button></div>` : '';
+  return `<div class="fl"><div class="fl-h"><span>Files</span><span class="cnt">${fileCount(c)}</span></div>${rows}${foot}</div>`;
+}
+
+/* ---------- the code of the open file ---------- */
+const linesHtml = (lines, fmt = lineHtml) => lines.map((l, i) => `<div class="ln"><span class="gn">${i + 1}</span><span class="lt">${fmt(l)}</span></div>`).join('');
+function fileCode(c, p, look) {
+  const html = p === PJ ? linesHtml(pjText(c), jsonLineHtml) : linesHtml(textOf(c, p));
+  return `<div class="vc ${look}">${html}</div>`;
+}
+function codeBody(c, look) {
+  const ld = loadOf(c, c.open);
+  if (ld === 'loading') return `<div class="vmsg ${look}"><div><span class="ld-spin"></span>Loading <b>${esc(baseName(c.open))}${c.open === PJ ? '' : '.pathogen'}</b>…</div></div>`;
+  if (ld === 'failed') return `<div class="vmsg ${look}"><div><b>This file's text didn't load.</b><br>Only the main's text comes with the page.<br><button>Try again</button></div></div>`;
+  return fileCode(c, c.open, look);
+}
+function pathLine(c, look) {
+  const p = c.open;
+  return `<div class="fpath ${look} ${isLib(p) ? 'lib' : ''}">${iconOf(p)}${pathHtml(p)}${markPill(c, p)}</div>`;
+}
+
+/* ---------- the three styles, and the narrow menu ---------- */
+function tabsRow(c) {
+  const files = treeEntries(c).filter(e => e.p && markOf(c, e.p) !== 'gone').map(e => e.p);
+  const tabs = files.map(p => `<span class="ft-tab ${isLib(p) ? 'lib' : ''} ${c.open === p ? 'sel' : ''}" data-file="${esc(p)}">${iconOf(p)}${p === PJ ? PJ : label(p, files)}${markPill(c, p)}</span>`).join('');
+  return `<div class="ft">${tabs}<span class="ft-more">${V12I.chevR}</span></div>`;
+}
+function stackView(c, look) {
+  const files = treeEntries(c).filter(e => e.p && markOf(c, e.p) !== 'gone').map(e => e.p);
+  const at = Math.max(0, files.indexOf(c.open));
+  const blocks = files.slice(at).map(p => {
+    const n = p === PJ ? pjText(c).length : textOf(c, p).length;
+    return `<div class="fs-h ${isLib(p) ? 'lib' : ''}">${iconOf(p)}${pathHtml(p)}${markPill(c, p)}<span class="n">${n} lines</span></div>${fileCode(c, p, look)}`;
+  }).join('');
+  const above = at ? `<div class="fs-above">↑ ${at} file${at === 1 ? '' : 's'} above</div>` : '';
+  return `<div class="vpane"><div class="fs-bar"><span>${fileCount(c)} files, one after another</span><span class="fs-jump">Jump to ${I.chevD}</span></div><div class="fs-body">${above}${blocks}</div></div>`;
+}
+function menuRow(c) {
+  const p = c.open;
+  return `<div class="fmenu ${isLib(p) ? 'lib' : ''}" data-menu>${iconOf(p)}${pathHtml(p)}<span class="cv">${I.chevD}</span><span class="cnt">${fileCount(c)} files</span></div>`;
+}
+function filesView(c, look) {
+  if (c.one) return `<div class="vc ${look}">${linesHtml(SRC[c.oneKey])}</div>`;
+  if (c.narrow) return `<div class="vpane">${menuRow(c)}${codeBody(c, look)}</div>`;
+  const style = c.style || STYLE;
+  if (style === 'tabs') return `<div class="vpane">${tabsRow(c)}${codeBody(c, look)}</div>`;
+  if (style === 'stack') return stackView(c, look);
+  return `<div class="vpane row">${listCol(c)}<div class="vpane">${pathLine(c, look)}${codeBody(c, look)}</div></div>`;
+}
+
+/* ---------- the blog viewer (<mini-workspace>), as it is today, with several files ---------- */
+function miniWs(c) {
+  const bar = c.barOpen ? `<div class="mwr-bar">
+      <button class="mwr-ib ${c.codeOpen ? 'on' : ''}" title="Toggle code">${V12I.code}</button>
+      <span class="mwr-div"></span>
+      <button class="mwb"><span class="sq" style="background:#ffffff"></span>Background</button>
+      <button class="mwb">${I.grid}Grid</button>
+      <button class="mwr-ib" title="Reset">${I.reset}</button>
+      <span class="mwr-div"></span>
+      ${c.noCopy ? '' : `<button class="mwr-ib" title="Copy">${I.copy}</button>`}
+      <button class="mwr-ib" title="Fullscreen">${V12I.fs}</button>
+    </div>` : '';
+  const go = c.noOpen ? '' : `<span class="mwr-go" title="Open in playground workspace">${V12I.go}</span>`;
+  const code = c.codeOpen ? `<div class="mwr-code">${filesView(c, 'gh')}</div>` : '';
+  return `<div class="mwr ${c.barOpen ? 'bar-open' : ''} ${c.narrow ? 'narrow' : ''}">
+    <div class="mwr-sum"><span class="chev">${V12I.chevR}</span><h2 class="mwr-title">${esc(c.caption)}</h2></div>
+    ${go}${bar}
+    <div class="mwr-body ${c.codeOpen ? '' : 'closed'}">${code}
+      <div class="mwr-pv"><span class="mwr-hint">⌘/Ctrl + scroll to zoom</span><div class="canvas">${drawing(c.art)}</div><div class="zoom-wrap">${zoomPill({})}</div></div>
+    </div>
+  </div>`;
+}
+
+/* ---------- the snapshots page ---------- */
+const SNAPS = {
+  4: { art: 'demo', when: 'Today, 11:02 AM', dims: '300 × 110', size: '14.2 KB', note: '' },
+  3: { art: 'main', when: 'Today, 10:24 AM', dims: '200 × 100', size: '7.9 KB', note: 'Meshing at 12 and 8 teeth' },
+  2: { art: 'try', when: 'Today, 10:05 AM', dims: '200 × 200', size: '9.6 KB', note: '' },
+  1: { art: 'main', when: 'Nov 2, 4:40 PM', dims: '200 × 100', size: '7.4 KB', note: 'Before the modules' },
+};
+function snapCrumb(c) {
+  const tip = c.tip ? `<div class="v-tip" style="right:268px;top:46px">Copy the code that drew this image</div>` : '';
+  return `<div class="crumbbar" style="position:relative"><div class="crumbs"><span>Workspaces</span><span class="sep">/</span><span>Gears</span><span class="sep">/</span><span>Snapshots</span><span class="sep">/</span><span class="cur">${esc(c.caption)}</span></div>
+    <div class="cr"><button class="btn-s" ${c.tip ? 'style="border-color:var(--border-strong);color:var(--text-primary)"' : ''}>${I.copy}Copy code</button><button class="btn-s" title="Create a new workspace with this snapshot's files">+ Start new workspace</button><button class="btn-s">Export…</button><button class="kebab">${I.kebab}</button></div>${tip}</div>`;
+}
+function snapDetail(c) {
+  const s = SNAPS[c.film];
+  return `<div class="sp-detail"><span class="sp-name">${esc(c.caption)}<small>#${c.film} of 4</small></span>
+    <span class="sp-meta">${s.when} · ${s.dims} · ${s.size}</span>
+    <span class="sp-note">✎ ${s.note ? `<span>${esc(s.note)}</span>` : 'Add a note…'}</span></div>`;
+}
+function filmstrip(c, n = 4) {
+  const fr = k => `<div class="sf-fr ${c.film === k ? 'cur' : ''}"><div class="sf-img">${drawing(SNAPS[k].art)}${SNAPS[k].note ? '<span class="sf-note">✎</span>' : ''}</div><div class="sf-meta"><b>#${k}</b><span>${SNAPS[k].when.split(', ')[1] && k > 1 ? SNAPS[k].when.split(', ')[1] : 'Nov 2'}</span></div></div>`;
+  const frames = n >= 4 ? `<span class="sf-day">Today</span>${fr(4)}${fr(3)}${fr(2)}<span class="sf-day">Nov 2</span>${fr(1)}` : `<span class="sf-day">Today</span>${fr(4)}${fr(3)}${fr(2)}`;
+  return `<div class="sp-film"><div class="sf-head"><b>4 snapshots</b><span>newest first · <kbd>←</kbd> <kbd>→</kbd> to step</span><span class="sf-seg"><span class="on">Newest</span><span>Oldest</span><span>With notes</span></span></div><div class="sf-row">${frames}</div></div>`;
+}
+function snapPage(c) {
+  return `<div class="sp">${snapCrumb(c)}<div class="sp-stage">${miniWs(c)}</div>${snapDetail(c)}${filmstrip(c)}</div>`;
+}
+
+/* ---------- the public page ---------- */
+function siteNav(initials) {
+  const items = ['Workspaces', 'Docs', 'Explore', 'Featured', 'Blog', 'Preferences'];
+  return `<div class="topnav"><div class="brand">Pathogen <span>Studio</span><small>built on Pathogen v0.8.0</small></div>
+    <nav class="navpill">${items.map(n => `<a class="${n === 'Explore' ? 'on' : ''}">${n}</a>`).join('')}</nav>
+    <div class="nav-right"><button class="theme-btn" title="Theme">${I.sun}${I.moon}</button><span class="acct"><span class="avatar">${initials}</span>Mika ${I.chevD}</span></div></div>`;
+}
+const PUBS = {
+  gears: { title: ['Two gears that', 'mesh'], handle: 'ryan', initial: 'R', date: 'Nov 14, 2026', deck: 'A twelve-tooth gear turning an eight-tooth one, built from a small module of parts.' },
+  rings: { title: ['Four rings on a', 'panel'], handle: 'mika', initial: 'M', date: 'Nov 3, 2026', deck: 'The panel is the drawing\'s own --bg colour; change it and the panel follows.' },
+};
+function pubSource(c) {
+  const meta = c.one ? `Pathogen · ${SRC[c.oneKey].length} lines` : `Pathogen · ${fileCount(c)} files`;
+  const body = !c.srcOpen ? '' : c.one ? `<div class="pd-body one">${filesView(c, 'pdl')}</div>` : `<div class="pd-body">${filesView(c, 'pdl')}</div>`;
+  return `<div class="pd-src"><div class="pd-disc ${c.srcOpen ? 'open' : ''}"><div class="pd-sum" data-src-toggle><span class="t">View source</span><span class="m">${meta}</span></div>${body}</div></div>`;
+}
+function pubPage(c, phone) {
+  const p = PUBS[c.pub];
+  const head = `<div class="pd-sub"><nav class="pd-crumb"><a>Explore</a><span class="sep">›</span><a>@${p.handle}</a><span class="sep">›</span><span class="here">${esc(p.title.join(' '))}</span></nav><a class="pd-cta"><span>Open as new workspace</span><span>→</span></a></div>`;
+  const plate = `<div class="pd-plate"><div class="pd-stage"><div class="canvas">${drawing(c.art)}</div><div class="zoom-wrap">${zoomPill({})}</div></div></div>`;
+  const meta = `<div class="pd-meta"><h1 class="pd-title">${esc(p.title[0])} <em>${esc(p.title[1])}</em></h1><p class="pd-by"><span class="avatar">${p.initial}</span><span>by</span><span class="handle">@${p.handle}</span><span class="dot"></span><span>Published ${p.date}</span></p><p class="pd-deck">${esc(p.deck)}</p></div>`;
+  return `<div class="pd">${phone ? '' : siteNav('MK')}${head}${plate}${meta}${pubSource(c)}${phone ? '' : '<div class="pd-more">More by @' + p.handle + ' follows, unchanged.</div>'}</div>`;
+}
+
+/* ---------- the review screen ---------- */
+const CARDS = {
+  gears: { name: 'Gears', who: '@ryan', when: '11/14/2026, 10:12:31 AM', hash: '7f3a91c2', desc: 'Two gears that mesh, from a small module of parts.', art: 'main', files: 7 },
+  gearsRe: { name: 'Gears', who: '@ryan', when: '11/14/2026, 1:48:09 PM', hash: '2c8e40af', desc: 'Two gears that mesh, from a small module of parts.', art: 'mainEdited', files: 7, chg: 'Since the approved version: <b>1 changed, 1 new, 1 removed</b>' },
+  gearsQuiet: { name: 'Gears', who: '@ryan', when: '11/14/2026, 2:20:44 PM', hash: '91d0c3e7', desc: 'Two gears that mesh, from a small module of parts.', art: 'main', files: 8, chg: 'Since the approved version: <b>no file\'s text changed</b>' },
+  rings: { name: 'Four rings', who: '@mika', when: '11/14/2026, 9:40:02 AM', hash: 'c41e0b7d', desc: 'Rings on a panel in the drawing\'s own --bg.', art: 'swatch', files: 1 },
+  spirals: { name: 'Spirals', who: '@lee', when: '11/14/2026, 8:03:57 AM', hash: '0b9d2e44', desc: 'Nested spirals, one module per curve.', unreadable: true, files: 4 },
+};
+function adCard(k) {
+  const e = CARDS[k];
+  const thumb = e.unreadable ? `<span class="ad-thumb ph">SP</span>` : `<span class="ad-thumb">${drawing(e.art)}</span>`;
+  const files = e.files > 1 ? `<span class="sep">·</span><span class="files">${e.files} files</span>` : '';
+  const why = e.unreadable ? `<p class="ad-why">The submitted files couldn't be read, so there's nothing to review. Approve is off until they load: refresh to try again.</p>` : '';
+  return `<li class="ad-card">${thumb}<div class="ad-body">
+    <h2 class="ad-title">${esc(e.name)}</h2>
+    <p class="ad-meta"><span>${e.who}</span><span class="sep">·</span><time>${e.when}</time><span class="sep">·</span><span class="hash">${e.hash}</span>${files}</p>
+    ${e.desc ? `<p class="ad-desc">${esc(e.desc)}</p>` : ''}
+    ${e.chg ? `<p class="ad-chg">${e.chg}</p>` : ''}${why}
+    <div class="ad-acts"><button class="ad-btn primary" ${e.unreadable ? 'disabled title="Approve needs the files, and they couldn\'t be read"' : ''}>Approve</button><button class="ad-btn danger-o">Reject</button></div>
+  </div></li>`;
+}
+function changesBox(ch) {
+  return `<div class="ad-changes"><h4>What changed since the approved version <span>(approved Nov 12)</span>${ch.quiet ? '<span>. No file\'s text changed.</span>' : ''}</h4><ul>${ch.items.map(i => `<li>${i}</li>`).join('')}</ul></div>`;
+}
+function adModal(c) {
+  const m = c.modal;
+  const body = m.unreadable
+    ? `<div class="ad-why big"><b>The submitted files couldn't be read.</b> There's nothing to review yet, so Approve is off on the card. Refresh the page to try again.</div>`
+    : `${m.changes ? changesBox(m.changes) : ''}<div class="ad-mw">${miniWs(Object.assign({}, c, { caption: m.title, codeOpen: true }))}</div>`;
+  return `<div class="ad-back"><div class="ad-modal" role="dialog"><header class="ad-mhead"><h2>${esc(m.title)}</h2><button class="ad-btn">Close</button></header><div class="ad-mbody">${body}</div></div></div>`;
+}
+function adminPage(c, nav) {
+  const tabs = [['pending', 'Pending review', c.counts[0]], ['rereview', 'Re-review', c.counts[1]], ['approved', 'Approved', 12], ['featured', 'Featured', 3], ['rejected', 'Rejected', 2], ['fw', 'Flagged workspaces', 0], ['fu', 'Flagged users', 0]];
+  /* The real backdrop is fixed over the whole window, the app's header included */
+  return `<div class="ad-wrap ${c.modal ? 'has-modal' : ''}">${nav}<div class="ad">
+    <div class="ad-head"><h1>Moderation</h1><button class="ad-btn">Refresh</button></div>
+    <div class="ad-tabs">${tabs.map(([k, n, count]) => `<span class="ad-tab ${c.tab === k ? 'on' : ''}">${n} (${count})</span>`).join('')}</div>
+    <ul class="ad-grid">${c.cards.map(adCard).join('')}</ul>
+  </div>${c.modal ? adModal(c) : ''}</div>`;
+}
+
+/* ---------- phones ---------- */
+function phoneSheet(c) {
+  if (!c.sheet) return '';
+  const rows = treeEntries(c).map(e => fileRow(c, e, true)).join('');
+  return `<div class="ph-scrim"></div><div class="ph-sheet"><span class="grab"></span><div class="fl-h"><span>Files</span><span class="cnt">${fileCount(c)}</span></div>${rows}</div>`;
+}
+function phoneBoard(c) {
+  let inner;
+  if (c.page === 'pub') {
+    inner = `<div class="ph-nav"><div class="brand">Pathogen <span>Studio</span></div><span class="sp"></span><span class="avatar">MK</span></div><div class="phone-scroll">${pubPage(c, true)}</div>`;
+  } else {
+    inner = `<div class="ph-nav"><div class="brand">Pathogen <span>Studio</span></div><span class="sp"></span><span class="avatar">RK</span></div>
+      <div class="ph-crumb"><span>Gears</span><span class="sep">/</span><span>Snapshots</span><span class="sep">/</span><span class="cur">${esc(c.caption)}</span></div>
+      <div class="ph-ctl"><button class="btn-s">${I.copy}Copy code</button><button class="btn-s">+ Start new workspace</button><button class="btn-s">Export…</button><button class="kebab">${I.kebab}</button></div>
+      <div class="sp-mini">${miniWs(c)}</div>${snapDetail(c)}${filmstrip(c, 3)}${phoneSheet(c)}`;
+  }
+  const notes = c.page === 'pub'
+    ? `<h4>The public page</h4><ul><li>View source opens with the menu above the main's text. The other files' text loads as it opens.</li><li>The list's 232 px would leave the code too little room at this width, so it's the menu here too.</li></ul>`
+    : c.sheet
+      ? `<h4>Choosing a file</h4><ul><li>The sheet lists the files in the tree's order, with folders, and the open one selected.</li><li>A tap opens the file and closes the sheet; so does a tap outside it.</li></ul>`
+      : `<h4>The snapshots page</h4><ul><li>The menu names the open file, <code>main.pathogen</code>, and says there are 7. Tap it for the others.</li><li>Copy code, Start new workspace and Export… wrap onto the next line, as they do today below 600 px.</li></ul>`;
+  return `<div class="ph-stage"><div class="phone">${inner}</div><div class="ph-notes">${notes}</div></div>`;
+}
+
+/* ---------- which page a state draws ---------- */
+let STYLE = 'list';
+const LAST = {};
+function workspace(c) {
+  LAST[c.screen] = c;
+  if (c.frame === 'snap') return `${topnav()}${snapPage(c)}`;
+  if (c.frame === 'pub') return pubPage(c);
+  if (c.frame === 'admin') return adminPage(c, topnav());
+  if (c.frame === 'phone') return `<div class="frame-bare">${phoneBoard(c)}</div>`;
+  return '';
+}
+
+/* ---------- the screens and their states ---------- */
+const V12 = o => Object.assign({ board: true, files: FILES, entry: ENTRY0, open: 'main', codeOpen: true }, o);
+const SNAP = o => V12(Object.assign({ screen: 'snap', frame: 'snap', caption: 'Gears #3', art: 'main', film: 3, noOpen: true, noCopy: true }, o));
+const PUB = o => V12(Object.assign({ screen: 'pub', frame: 'pub', pub: 'gears', art: 'main', srcOpen: true }, o));
+const ADM = o => V12(Object.assign({ screen: 'rev', frame: 'admin', tab: 'pending', counts: [2, 0], cards: ['gears', 'rings'], noOpen: true, art: 'main' }, o));
+const PH = o => V12(Object.assign({ screen: 'phone', frame: 'phone', narrow: true, caption: 'Gears #3', art: 'main', film: 3, noOpen: true, noCopy: true, pub: 'gears' }, o));
+const allBut = (p, v) => Object.fromEntries([...FILES, PJ].filter(q => q !== p).map(q => [q, v]));
+const ONE_SNAP = { one: true, oneKey: 'old/main', caption: 'Gears #1', film: 1, art: 'main' };
+const CHANGED = {
+  files: ['demos/gears', 'parts/gears', 'parts/kit', 'parts/labels', 'parts/springs', 'main'], removed: ['try-sizes'], entry: ['main', 'demos/gears'],
+  texts: { 'parts/gears': 'parts/gears#edited' }, marks: { 'parts/gears': 'chg', 'parts/springs': 'new', [PJ]: 'chg' }, art: 'mainEdited',
+};
+const QUIET = {
+  files: [...FILES, 'parts/springs'], entry: ['main', 'try-sizes', 'demos/gears'], folderAdded: ['examples'],
+  marks: { 'parts/springs': 'mov', [PJ]: 'chg' }, moved: { 'parts/springs': 'springs.pathogen' },
+};
+const SCREENS = {
+  fstyles: { states: {
+    'list': [SNAP({ screen: 'fstyles', style: 'list', barOpen: true }),
+      '<b>A list beside the code.</b> The tree\'s rows: folders, icons, <code>pathogen.json</code> last. <code>main.pathogen</code> drew this snapshot, so it\'s selected; the line above the code names the open file with its folder.'],
+    'tabs': [SNAP({ screen: 'fstyles', style: 'tabs', barOpen: true }),
+      '<b>Tabs above the code</b>, labelled as the editor labels them: no <code>.pathogen</code>, and a folder only where two names clash (<code>gears · demos</code>, <code>gears · parts</code>). With seven files, the last tab is already past the pane\'s edge; the review modal\'s pane is narrower still.'],
+    'stack': [SNAP({ screen: 'fstyles', style: 'stack', barOpen: true }),
+      '<b>One after another:</b> every file in one scroll, each under a heading with its path. It opens scrolled to <code>main.pathogen</code>, with four files above it in the tree\'s order; Jump to lists them all.'],
+  } },
+  snap: { states: {
+    'main': [SNAP({ barOpen: true }),
+      'A snapshot taken while the preview showed <b>main.pathogen</b>. The Code panel opens on it. The viewer\'s bar (open here) has no Copy, and there\'s no ↗ at the corner. Click any file.'],
+    'other': [SNAP({ open: 'parts/gears' }),
+      'You clicked <b>parts/gears.pathogen</b>. Copy code in the breadcrumb still copies <code>main.pathogen</code>, the program that drew the image (answer A).'],
+    'demo': [SNAP({ caption: 'Gears #4', film: 4, art: 'demo', open: 'demos/gears', tip: true }),
+      'A snapshot taken while the preview showed <b>demos/gears.pathogen</b>. The Code panel opens on it, selected in its place in the tree. Copy code\'s tooltip doesn\'t name it: "Copy the code that drew this image".'],
+    'old': [SNAP(Object.assign({ barOpen: true }, ONE_SNAP)),
+      'A snapshot <b>made before 2e</b> holds one file. The Code panel is today\'s: no list, no path line. The ↗ and the viewer\'s Copy are hidden, as on every snapshot here.'],
+  } },
+  pub: { states: {
+    'closed': [PUB({ srcOpen: false }),
+      'A visitor\'s view. <b>View source</b> is closed; its count comes from the names in the page as served, so it\'s right before anything loads.'],
+    'loading': [PUB({ loadState: allBut('main', 'loading') }),
+      '<b>Just opened.</b> The list and the main\'s text are there at once. The other files\' text is loading, in one request to <code>source.json</code>; clicking one meanwhile says it\'s loading.'],
+    'module': [PUB({ open: 'parts/gears' }),
+      'Everything has loaded, and the visitor clicked <b>parts/gears.pathogen</b>, a module.'],
+    'failed': [PUB({ loadState: allBut('main', 'failed') }),
+      'The request for the other files <b>failed</b>. The main\'s text still shows; the other rows say they didn\'t load, and Try again sends the request again.'],
+    'one': [PUB({ one: true, oneKey: 'swatch', pub: 'rings', art: 'swatch' }),
+      'A public workspace with <b>one file</b>: "Pathogen · 21 lines" and its text, exactly as today.'],
+  } },
+  rev: { states: {
+    'queue': [ADM({}),
+      'The <b>Pending review</b> tab. Gears has seven files: its card shows the main\'s drawing, compiled with its imports, and counts the files. Four rings has one file and looks as today.'],
+    'new': [ADM({ modal: { title: 'Gears' }, barOpen: true }),
+      'The admin clicked Gears\' thumbnail. The modal shows the drawing and every file, opening on the main. The viewer\'s Copy copies the file shown; the ↗ is hidden (the new question above).'],
+    'changed': [ADM(Object.assign({ tab: 'rereview', counts: [2, 1], cards: ['gearsRe'], open: 'parts/gears', modal: { title: 'Gears', changes: { items: [
+        '<span data-file="parts/gears"><span class="mdot chg"></span><code>parts/gears.pathogen</code> changed</span>',
+        '<span data-file="parts/springs"><span class="mdot new"></span><code>parts/springs.pathogen</code> is new</span>',
+        '<span><span class="mdot gone"></span><code>try-sizes.pathogen</code> was removed</span>',
+        '<span data-file="pathogen.json"><span class="mdot chg"></span>The program list: <code>try-sizes.pathogen</code> left it, so <code>pathogen.json</code> changed</span>'] } } }, CHANGED)),
+      'A <b>re-review</b>. The box says what changed, and its lines open the files. In the list, a dot of the same colour marks each one, and <code>try-sizes.pathogen</code> stays in its place, struck out. The admin opened <b>parts/gears.pathogen</b> (toothDepth 6 → 10).'],
+    'quiet': [ADM(Object.assign({ tab: 'rereview', counts: [2, 1], cards: ['gearsQuiet'], modal: { title: 'Gears', changes: { quiet: true, items: [
+        '<span data-file="parts/springs"><span class="mdot mov"></span><code>springs.pathogen</code> moved to <code>parts/springs.pathogen</code></span>',
+        '<span><span class="mdot new"></span>A folder was added: <code>examples/</code>, empty</span>',
+        '<span data-file="pathogen.json"><span class="mdot chg"></span>The program list\'s order changed: <code>try-sizes.pathogen</code> now comes before <code>demos/gears.pathogen</code>, so <code>pathogen.json</code> changed</span>'] } } }, QUIET)),
+      'A re-review where <b>no file\'s text changed</b>: a move, an empty folder, and the program list\'s order (Set as main on another program, then back). Today this would look like nothing changed.'],
+    'unread': [ADM({ counts: [3, 0], cards: ['spirals', 'gears', 'rings'] }),
+      'Spirals\' <b>files couldn\'t be read</b>. Its card says so, and Approve is off, with the reason on hover too. Reject still works.'],
+    'unread-modal': [ADM({ counts: [3, 0], cards: ['spirals', 'gears', 'rings'], modal: { title: 'Spirals', unreadable: true } }),
+      'The admin clicked Spirals\' placeholder. The modal says the same, in place of the viewer.'],
+    'one': [ADM(Object.assign({ modal: { title: 'Four rings' }, noOpen: false, art: 'swatch' }, { one: true, oneKey: 'swatch' })),
+      'Four rings has <b>one file</b>: the modal is today\'s, with the ↗ and the viewer\'s own Copy.'],
+  } },
+  phone: { states: {
+    'snap': [PH({ page: 'snap' }),
+      'The snapshots page at <b>390 px</b>: the viewer\'s code row, with the menu at its top.'],
+    'sheet': [PH({ page: 'snap', sheet: true }),
+      'After a tap on the menu: the <b>files as a sheet</b>.'],
+    'pub': [PH({ page: 'pub', srcOpen: true }),
+      'The public page at <b>390 px</b>, View source open.'],
+  } },
+};
+
+/* ---------- v12's clicks: a file, View source, the phone's menu and sheet ---------- */
+function againV12(screen, o) { renderState(screen, null, Object.assign({}, LAST[screen], o)); }
+Object.keys(SCREENS).forEach(screen => {
+  document.getElementById('w-' + screen).addEventListener('click', e => {
+    const f = e.target.closest('[data-file]');
+    if (f) return againV12(screen, { open: f.dataset.file, sheet: false, tip: false });
+    if (e.target.closest('[data-src-toggle]')) return againV12(screen, { srcOpen: !LAST[screen].srcOpen });
+    if (e.target.closest('[data-menu]')) return againV12(screen, { sheet: true });
+    if (e.target.closest('.ph-scrim')) return againV12(screen, { sheet: false });
+  });
+});
+/* The style switch, beside the screens: it redraws the screen shown in the chosen style (F keeps its own) */
+document.querySelector('.harness .spacer').insertAdjacentHTML('beforebegin', `<span class="stylesw" id="style"><span class="lbl">Switch files with</span><button data-style="list" aria-pressed="true">List</button><button data-style="tabs" aria-pressed="false">Tabs</button><button data-style="stack" aria-pressed="false">One after another</button></span>`);
+document.getElementById('style').onclick = e => {
+  const b = e.target.closest('button[data-style]');
+  if (!b) return;
+  STYLE = b.dataset.style;
+  pressGroup(document.getElementById('style'), 'data-style', STYLE);
+  const screen = document.querySelector('.screen.active').id.slice(2);
+  if (current[screen]) renderState(screen, current[screen]);
+  else againV12(screen, {});
+};
