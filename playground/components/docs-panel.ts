@@ -1,4 +1,5 @@
 // Documentation slide-out panel component
+import { docImageCss } from '../utils/doc-image-css.js';
 import { cli, debug, hljsThemeDark, layers, pathBlocks, stdlib, syntax } from '../utils/docs-content.js';
 
 export class DocsPanel extends HTMLElement {
@@ -262,6 +263,9 @@ export class DocsPanel extends HTMLElement {
           border-top: 1px solid var(--border-color, #ddd);
           margin: 20px 0;
         }
+
+        /* Images (shared with the static docs page) */
+        ${docImageCss}
       </style>
 
       <div class="header">

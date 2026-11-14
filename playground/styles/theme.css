@@ -122,6 +122,11 @@
   --z-sticky: 200;
   --z-modal: 300;
   --z-tooltip: 400;
+
+  /* A docs image with a dark version shows the version for the theme
+   * (playground/utils/doc-image-css.ts). */
+  --doc-image-light: block;
+  --doc-image-dark: none;
 }
 
 /* ===== Dark Theme — atmospheric deep purple ===== */
@@ -215,6 +220,9 @@
   --code-comment: #7a6f8a;
   --code-op:      #a8a0b8;
   --code-tp:      #e8b48a;
+
+  --doc-image-light: none;
+  --doc-image-dark: block;
 }
 
 /* Auto dark mode based on system preference (when no explicit theme set) */
@@ -292,6 +300,9 @@
     --code-comment: #7a6f8a;
     --code-op:      #a8a0b8;
     --code-tp:      #e8b48a;
+
+    --doc-image-light: none;
+    --doc-image-dark: block;
   }
 }
 

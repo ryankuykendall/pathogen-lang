@@ -5,7 +5,9 @@ import { fileURLToPath } from 'node:url';
 import { Command } from 'commander';
 import hljs from 'highlight.js/lib/core';
 
+import { docImageCss } from '../playground/utils/doc-image-css.js';
 import { siteHeaderHtml } from '../playground/utils/site-header-template.js';
+import { copyDocImages, docImageRenderer, listDocImages } from './lib/doc-images';
 
 // Register languages we need
 import bash from 'highlight.js/lib/languages/bash';
@@ -32,6 +34,9 @@ const ROOT = join(__dirname, '..');
 const DOCS_DIR = join(ROOT, 'docs');
 const OUTPUT_FILE = join(ROOT, 'playground', 'utils', 'docs-content.js');
 const STATIC_DOCS_DIR = join(ROOT, 'website', 'docs-static');
+// Images (docs/CLAUDE.md "Images"): PNGs in docs/images/, copied to
+// docs-static/images/, which build-website serves at /docs/images/.
+const IMAGES_DIR = join(DOCS_DIR, 'images');
 const HLJS_STYLES_DIR = join(ROOT, 'node_modules', 'highlight.js', 'styles');
 
 // Syntax-highlighting extension shared by every per-document Marked instance
@@ -143,6 +148,9 @@ async function buildDocs(): Promise<void> {
   const exports: Record<string, string> = {};
   const missing: string[] = [];
   const tocData: TocEntry[] = [];
+  // Every image file a published page shows, and every image that can't be shown.
+  const usedImages = new Set<string>();
+  const imageProblems: string[] = [];
 
   for (const [filename, exportName] of Object.entries(DOC_FILES)) {
     const filepath = join(DOCS_DIR, filename);
@@ -174,6 +182,8 @@ async function buildDocs(): Promise<void> {
           headings.push({ id: slug, title: decodeEntities(plainText), level: depth });
           return `<h${depth} id="${slug}">${text}</h${depth}>\n`;
         },
+        // An image on a line of its own becomes a <figure>; every other paragraph is unchanged.
+        ...docImageRenderer(filename, IMAGES_DIR, usedImages, imageProblems),
       };
 
       // A fresh Marked instance per document: the heading renderer closes over
@@ -200,6 +210,12 @@ async function buildDocs(): Promise<void> {
         throw err;
       }
     }
+  }
+
+  if (imageProblems.length > 0) {
+    throw new Error(
+      `${imageProblems.length} image(s) can't be shown (docs/CLAUDE.md "Images"):\n${imageProblems.map((p) => `  - ${p}`).join('\n')}`,
+    );
   }
 
   if (missing.length > 0) {
@@ -406,6 +422,9 @@ async function buildDocs(): Promise<void> {
     hr { border: none; border-top: 1px solid var(--border-color, #e2e8f0); margin: 2rem 0; }
     a { color: var(--accent-color, #10b981); }
 
+    /* Images (playground/utils/doc-image-css.ts, shared with the docs panel) */
+    ${docImageCss}
+
     /* Syntax highlighting */
     ${githubDark.replace(/\\/g, '\\\\').replace(/`/g, '\\`')}
     ${pathogenCodeCssDark}
@@ -583,6 +602,13 @@ async function buildDocs(): Promise<void> {
   await fs.mkdir(STATIC_DOCS_DIR, { recursive: true });
   await fs.writeFile(join(STATIC_DOCS_DIR, 'index.html'), staticPage);
   console.log(`Generated: website/docs-static/index.html`);
+
+  // The images the published pages show, served at /docs/images/.
+  const unused = copyDocImages(usedImages, IMAGES_DIR, join(STATIC_DOCS_DIR, 'images'), listDocImages(IMAGES_DIR));
+  console.log(`Copied: ${usedImages.size} image(s) to website/docs-static/images/`);
+  if (unused.length > 0) {
+    console.log(`  Not on a published page (yet): ${unused.map((name) => `docs/images/${name}`).join(', ')}`);
+  }
 
   // ─── Generate single-page markdown docs for AI/LLM consumption ─────
   console.log('\nGenerating single-page markdown docs...');

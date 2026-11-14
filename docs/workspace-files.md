@@ -16,9 +16,9 @@ publishing use the main") must agree on what publishing does with the main, as 2
 page adds "and publishing uses", or the menu drops "publishing" (step 10's review, finding 16).
 At most one screenshot, near the top: the tree, the tabs, and the chip with its list open, taken
 with 2e's final UI (2e changes the menu and Snapshot) and taken again whenever the workspace's
-layout changes (step 10's review, finding 17). The docs have no images yet, so it needs the docs
-build to copy images, a light and a dark version, and image styles on the docs page and in the
-playground's docs panel.
+layout changes (step 10's review, finding 17). The docs can show images since 2026-11-14
+(docs/CLAUDE.md "Images"): add docs/images/workspace-files.png and workspace-files.dark.png, with
+alt text, and list here what it shows.
 When data files and fonts can be added (after phase 2): Limits gains data files 5 MB each, fonts
 20 MB each (note 50), and the 50 MB whole-workspace row, which 20 files of 1 MB can't reach today.
 Sources: mockups v1 to v6 and their reviews (project-docs/modules/39- to 46-).

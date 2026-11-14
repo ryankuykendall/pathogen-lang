@@ -29,7 +29,7 @@ program.parse();
 
 | Script | Purpose |
 |---|---|
-| `build-docs.ts` | Convert markdown docs to `playground/utils/docs-content.js` |
+| `build-docs.ts` | Convert markdown docs to `playground/utils/docs-content.js`, the static docs page and `docs.md`; checks and copies the pages' images (`lib/doc-images.ts`, docs/CLAUDE.md "Images") |
 | `build-blog.ts` | Convert blog markdown to `playground/utils/blog-content.js` |
 | `build-website.ts` | Assemble CloudFlare Pages output in `public/` |
 | `new-blog-post.ts` | Scaffold a new blog post with frontmatter |
@@ -42,7 +42,7 @@ program.parse();
 | `serve-bbwp.ts` | HTTP server for browsing BBWP artifacts (default port 3001) |
 | `update-bbwp-index.ts` | Regenerate `website/bbwp/index.html` from directory listing |
 | `generate-unicode-data.ts` | `npm run generate:unicode-data` — writes `src/evaluator/unicode-data.generated.ts` (Unicode block ranges from the vendored `scripts/unicode/Blocks-16.0.0.txt`, script ranges from the JS engine's `\p{Script=…}`), used by the `Font` namespace and the glyph `script`/`block` properties. Refuses to run when Node's Unicode version differs from the vendored files. |
-| `check-links.ts` | Puppeteer link checker for blog posts and documentation pages |
+| `check-links.ts` | Puppeteer link checker for blog posts and documentation pages; also checks that every image on them loads as an image (status, `image/*` type, decoded width) |
 | `inspect-pdf.ts` | PDF/raster inspection CLI (`npm run inspect:pdf`): page + embedded-image summary, image extraction, pixel statistics (uniform/black detection — the black-page failure signature), decoded content streams. Shares `scripts/lib/pdf-inspect.ts` with the unified-export E2E harness. |
 | `validate-samples.ts` | Puppeteer sample validator (`npm run validate:samples [-- <dir>]`, default every post under `website/blog/samples`): margins (`--margin`), text/text, text/geometry and geometry/geometry collisions, dead space, GroupLayer usage, formatter cleanliness; writes `<dir>/previews/*.png`. Needs `compile:samples` first. Soft gate; `--strict` exits 1. |
 | `migrate-style-opener.ts` | One-off codemod for the 2026-09 style-block opener change (`${ … }` → `#{ … }`). Builds the FROZEN pre-change grammar (`scripts/legacy-style-opener/pathogen-legacy.grammar`) at runtime with `@lezer/generator`, so the old parser — not a regex — decides which `${` are block openers; rewrites `.pathogen` files, Markdown fences, and Pathogen inside TS/JS string literals (JS interpolations become same-length identifier stand-ins; `${'${'}` smuggled openers are handled). Dry run by default, `--write` applies, `--report` emits JSON with `review` (opener next to a parse error) and `skipped` (snippet placeholders, probable interpolations, already migrated) entries. Library in `scripts/lib/legacy-style-opener.ts`, tests in `tests/migrate-style-opener.test.ts`. Delete `scripts/legacy-style-opener/` once the production KV migration has run twice. |

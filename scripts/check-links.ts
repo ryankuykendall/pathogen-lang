@@ -53,7 +53,7 @@ async function discoverBlogSlugs(): Promise<string[]> {
 const targetCache = new Map<string, { status: number | string; ok: boolean }>();
 
 /**
- * Extract and check every internal link on a page.
+ * Extract and check every internal link on a page, and every image it shows.
  *
  * Three link forms exist in this codebase and all three are checked:
  *  - `/pathogen/...`  absolute site paths (with or without a `#fragment`)
@@ -125,6 +125,41 @@ async function checkPageLinks(
         ok: found[i],
       });
     });
+  }
+
+  // Phase 1b — images (docs/CLAUDE.md "Images"), checked on the page we're on,
+  // before any navigation below. A status of 200 isn't enough: a path the site
+  // doesn't hold can still come back as an HTML page. So each image must come
+  // back as `image/*` and decode to a real width, as a browser would show it.
+  const images = await page.evaluate(() => {
+    const seen = new Set<string>();
+    return Array.from(document.querySelectorAll('img[src]'))
+      .map((img) => ({ src: img.getAttribute('src') || '', alt: img.getAttribute('alt') || '' }))
+      .filter((i) => {
+        if (!i.src || i.src.startsWith('data:') || /^[a-z]+:/i.test(i.src) || i.src.startsWith('//')) return false;
+        if (seen.has(i.src)) return false;
+        seen.add(i.src);
+        return true;
+      });
+  });
+  for (const image of images) {
+    const outcome: { status: number | string; ok: boolean } = await page.evaluate(async (src: string) => {
+      try {
+        const resp = await fetch(src);
+        if (!resp.ok) return { status: resp.status, ok: false };
+        const type = resp.headers.get('content-type') || '';
+        if (!type.startsWith('image/')) {
+          return { status: `${resp.status}, but ${type || 'no content type'}: not an image`, ok: false };
+        }
+        const img = new Image();
+        img.src = src;
+        await img.decode();
+        return img.naturalWidth > 0 ? { status: resp.status, ok: true } : { status: 'IMAGE_EMPTY', ok: false };
+      } catch (err) {
+        return { status: `IMAGE_FAILED: ${(err as Error).message}`, ok: false };
+      }
+    }, image.src);
+    results.push({ href: image.src, text: `[image] ${image.alt}`.substring(0, 60), ...outcome });
   }
 
   // Phase 2 — links that require navigating to a different document. Hrefs are
