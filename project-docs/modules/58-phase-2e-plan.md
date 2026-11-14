@@ -210,6 +210,22 @@ Questions 1 to 7 answered; 8 to 10 still open. The steps above are left as writt
   - "The embedded viewer's own button is hidden on that page" waits on B.
 - **Step 7:** snapshots.md's size line stays "up to 1 MB of edits not saved yet". The 50 MB image limit is unchanged.
 
+## Your second answers (2026-11-14)
+
+- **Question 2:** confirmed. "I think that is fine for the initial release." The first release keeps re-review after any change to the files.
+- **Question 7:** "50MB for a snapshot's image is a fine limit." Analytics waits ("We can circle back on the analytics issue in the future").
+- **A: (a).** A snapshot drawn by a program that isn't the main: the snapshots page's Code panel opens on that program, and Copy code copies its file. Nothing else names it. Start new workspace opens on the main.
+- **B: (a).** The viewer's "Open in playground workspace" icon is hidden on the snapshots page. Start new workspace stays.
+- **8: agreed.** All seven fixes are in 2e.
+- **9: (b).** "Yes...that's fine for the time being." When it approves, the server copies the workspace's thumbnail as the card image. Explore, the profile page, Featured and the public page read that copy. Existing approvals get a one-time copy on production, with your go-ahead. The copy can include edits made after submitting; publishing from a snapshot replaces it (backlog).
+- **Early fix:** "Let them wait for 2e."
+- **10:** not answered yet. It changes only step 5's server work.
+
+What this changes in the steps:
+- **Step 3:** Copy code and Export's legend use the drawing program's file (A); "Start new workspace opens showing that program" goes; the viewer's icon is hidden (B).
+- **Step 5:** "the approved card image" is the server's copy of the thumbnail at approval (9b), not a drawing made in the admin's browser.
+- **Step 8:** the backfill for existing approvals is that copy. No rendering is needed, and no GPU-gradient source needs Regenerate by hand.
+
 ## What the audits found (2026-11-14)
 
 ### Snapshots, copies, forks
