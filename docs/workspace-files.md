@@ -38,6 +38,10 @@ the names until the drop); a whole upload goes in after the last question ("This
 Agreed 2026-11-13 (note 52, step 7): every error under its file, with links; the console's links;
 the note's words and its link to Set as main; the dots' hover texts; Cmd+click on an import's path;
 a folded folder's dot.
+Answered 2026-11-13 (note 52, step 8; note 42's five questions): Copy Debug Info carries the program
+shown and the files its imports reach; 200 lines a file, about 1,500 in all; other programs' errors
+with five lines either side ("Could we include a bit more context"); both places it's offered; a
+short note for an assistant that names no syntax and points to the docs.
 -->
 
 
@@ -183,6 +187,18 @@ Line 5: assertion failed: a gear needs at least 3 teeth
 - In the console, a `log()` or a warning from another file starts with its place, such as `parts/gears.pathogen line 9:`. Click the place to open the file there.
 - A red dot in the tree marks the file where an error happened, and another marks the program that ran into it. That covers every program, not only the one the preview shows. Hover a dot to see where the program failed. A folded folder shows a dot when a file inside it has one.
 - **Cmd+click** (Ctrl+click on Windows and Linux) a name you imported to open the file it comes from, at its declaration.
+
+## Copy Debug Info
+
+**Copy Debug Info**, on the error panel and in the workspace's menu, copies a report you can paste into an issue or give to an AI assistant. It starts from the program the preview shows:
+
+- Which program the preview shows, and which file is open in the editor.
+- The error, if there is one: its file and line, each `called from` or `imported from` line, and the five lines on each side of where it happened, numbered as in the file.
+- Errors in other programs, one line each, as the program list words them, with the lines around where each failed.
+- The text of the program shown and of every file its imports reach. The file where the error happened comes first. Each file stops after 200 lines, and the files together after about 1,500, with "…N more lines" where one stops.
+- Every other file, by name, as a program or a module, with its length but not its text.
+- The layers, the warnings and the `log()` output, each with its file and line, and the canvas settings. A program that stops at an error has no log output, in the console or the report.
+- A short note for the assistant, which points it to these docs.
 
 ## Limits
 

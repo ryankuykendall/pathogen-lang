@@ -241,6 +241,28 @@ describe('reading a failure (step 7)', () => {
     expect(readMessage('', 'main.pathogen')).toEqual([]);
   });
 
+  it('errorText read back gives the same readings, a place-less error included (Copy Debug Info reads the status this way)', () => {
+    const readings = [
+      {
+        file: 'parts/gears.pathogen',
+        line: 4,
+        column: 3,
+        text: 'assertion failed',
+        steps: [{ kind: 'called from' as const, file: 'main.pathogen', line: 3 }],
+        site: { line: 3, column: 1 },
+      },
+      {
+        file: 'main.pathogen',
+        line: null,
+        column: null,
+        text: 'Font "Nope" could not be loaded.',
+        steps: [],
+        site: null,
+      },
+    ];
+    expect(readMessage(errorText(readings), 'main.pathogen')).toEqual(readings);
+  });
+
   it('the chip’s row (from the message) and the panel (from the diagnostics) agree on where each failure is', async () => {
     for (const source of [
       'define ViewBox(0, 0, 100, 100);\nlet a = 1;\ncircle(a, nope, 3);\n',

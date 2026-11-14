@@ -51,6 +51,8 @@ const OWN_RUNTIME = /^Line (\d+)(?:, col (\d+))?: ?([\s\S]*)$/;
 const OWN_PARSE = /^Parse error at line (\d+), column (\d+): ?([\s\S]*)$/;
 // A workspace path has no spaces (its name rules), so words before ".pathogen line" aren't a file.
 const OTHER_FILE = /^(\S+?\.pathogen) line (\d+)(?:, col (\d+))?: ?([\s\S]*)$/;
+// A file with no line: errorText's own words for an error with no place in it ("main.pathogen: …").
+const FILE_ONLY = /^(\S+?\.pathogen): ([\s\S]*)$/;
 const STEP = /^\s+(called from|imported from) (.+?\.pathogen) line (\d+)\s*$/;
 
 /** A path as the workspace names it: project paths (`/parts/gears.pathogen`) lose their slash. */
@@ -104,11 +106,17 @@ function readOne(lines: readonly string[], program: string): ErrorReading {
       site: file === program ? null : siteFromSteps(steps, program),
     };
   }
+  const fileOnly = FILE_ONLY.exec(first);
+  if (fileOnly) {
+    const file = workspacePath(fileOnly[1]);
+    return { file, line: null, column: null, text: words(fileOnly[2]), steps, site: null };
+  }
   return { file: program, line: null, column: null, text: words(first), steps, site: null };
 }
 
 /** Whether a line starts an error: it names a place ("Line 2, col 9:", "parts/gears.pathogen line 7:", a parse error's). */
-const startsError = (line: string): boolean => OWN_RUNTIME.test(line) || OWN_PARSE.test(line) || OTHER_FILE.test(line);
+const startsError = (line: string): boolean =>
+  OWN_RUNTIME.test(line) || OWN_PARSE.test(line) || OTHER_FILE.test(line) || FILE_ONLY.test(line);
 
 /**
  * Read a compile's message: one reading for each error in it (a message can

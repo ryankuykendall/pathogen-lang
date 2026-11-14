@@ -55,6 +55,8 @@ export interface CompileWarning {
   message: string;
   line?: number;
   column?: number;
+  /** The imported file it came from (a workspace path); absent for the program compiled. */
+  file?: string;
 }
 
 export interface PathRecordOutput {

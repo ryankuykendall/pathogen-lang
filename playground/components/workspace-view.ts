@@ -96,6 +96,7 @@ import './shared/error-panel.js';
 import type { ErrorPanel, ErrorPanelSection } from './shared/error-panel.js';
 import { errorMarks, errorText, readDiagnostics, readMessage } from '../services/error-place.js';
 import type { DiagnosticLike, ErrorReading } from '../services/error-place.js';
+import type { CaptureContext } from '../utils/debug-capture.js';
 import type { ToastDetail } from './shared/app-toast.js';
 import type { CompileResult } from '../types/compiler.js';
 
@@ -1316,7 +1317,7 @@ export class WorkspaceView extends HTMLElement {
       if (store.get('currentView') === 'workspace') {
         try {
           const { buildDebugCapture } = await import('../utils/debug-capture.js');
-          const markdown = buildDebugCapture();
+          const markdown = buildDebugCapture(await this._captureContext());
           await navigator.clipboard.writeText(markdown);
           // Show feedback on error panel if visible, otherwise on header
           if (this.errorPanel.classList.contains('visible')) {
@@ -2474,6 +2475,9 @@ export class WorkspaceView extends HTMLElement {
         ...(fontInfo.fontNotices || []),
       ]);
       store.set('layers', []);
+      // As the console: a failed compile hands back no logs or warnings, so Copy Debug Info
+      // mustn't carry the last good run's as this one's (step 8).
+      store.update({ logs: [], warnings: [] });
       store.update({
         compilationStatus: 'error',
         compilationError: displayError,
@@ -2686,6 +2690,36 @@ export class WorkspaceView extends HTMLElement {
             '.',
           ]
         : ["A module can't draw as the main. Take out module; so it draws, or add a program."],
+    };
+  }
+
+  /**
+   * What Copy Debug Info carries that only this view holds (2d, step 8;
+   * docs/workspace-files.md "Copy Debug Info"): the shown program's failure as
+   * read (7a), the other programs' places (7c), the files its imports reach
+   * (its graph), which files are modules, and the note about a main that's one.
+   */
+  private async _captureContext(): Promise<CaptureContext> {
+    const workspace = workspaceNow();
+    const shown = programToShow(workspace, store.get('shownProgram') as string | null);
+    const graph = holdsWorkspace() ? await this._modulesFor(shown, workspace) : null;
+    const reach = graph
+      ? [...graph.modules.files.keys()].map((key) => key.replace(/^\/+/, '')).filter((path) => path !== shown)
+      : null;
+    const others = [...this._drawings.rows()].flatMap(([program, row]) =>
+      program !== shown && row.place ? [{ program, place: row.place }] : [],
+    );
+    const note = this._mainNote();
+    return {
+      readings: this._shownFailure()?.readings ?? [],
+      others,
+      reach,
+      kindOf: (path, text) => (this._isLibrary(path, text) ? 'module' : 'program'),
+      notes: note
+        ? [
+            `The main, ${workspace.entryPoints.find((p) => workspace.texts.has(p))}, is a module: a module can't draw as the main.`,
+          ]
+        : [],
     };
   }
 

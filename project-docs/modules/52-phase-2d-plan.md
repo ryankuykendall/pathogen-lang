@@ -789,6 +789,50 @@ Three commits, each with tests first, a storybook entry where there's a componen
   - the dots cleared at once on a workspace switch.
 - Not changed, with reasons: a place whose file was deleted keeps its dot's text until the next compile, but there's no row to show it on, and the change itself recompiles.
 
+**Step 8, Copy Debug Info (2h): note 42's five questions, answered 2026-11-13**, recommendations first and your words after:
+1. **What it carries:** the program shown and the files its imports reach, in full; every other file one line (path, program or module, length), no text. "Agreed...this is also going to get tricky potentially with large data files, so shrinking the scope makes sense."
+2. **How big:** 200 lines a file and about 1,500 in all; the file where the error happened first; "…N more lines" where it's cut. "Sure, let's try that."
+3. **Errors in other programs:** one line each, in the program list's words. "Could we include a bit more context like plus or minus 5-10 lines? Would that be useful for debugging?"
+   - Yes: five lines on each side of where it failed, numbered as in the file, the failing line marked.
+   - The shown program's own errors get the same excerpt, so an error past a file's 200-line cut is still seen.
+4. **Where:** both places (the error panel's button, the workspace's ⋮ menu), no new wording; the capture's heading names the program shown and the file open. "Sounds good."
+5. **The prompt:** short, naming no syntax: how to read the capture and what to do, plus the docs' link; a test keeps syntax out. "Agreed...my sense is that the prompt is pretty stale since it has not been revisited in a number of months. It needs a refresh to simplify direction and actions to take by analyzing and debugging agents."
+
+**The build:**
+- `utils/debug-capture.ts` gets a pure `buildCapture(input)`; `buildDebugCapture(context?)` reads the store. workspace-view gives it what it holds: the kept reading of the failure (7a), the other programs' places (7c), the files the shown program's imports reach (its graph), and which files are modules.
+- Logs name their file. Source fences say `pathogen`, not `svg-path`.
+- docs/workspace-files.md "Copy Debug Info" is the contract (written first).
+
+**Step 8, built** (2026-11-13). As above, and:
+- **The report's order:**
+  - the heading (the program shown, "(the main)" when it is; the file open);
+  - Errors: each with its steps and its lines, five either side, numbered as in the file, the line marked; the playground's own note when the main is a module;
+  - Errors in other programs: the row's words, with their lines;
+  - Files: the error's file, the program shown, then the reach, 200 lines each and 1,500 together, "…N more lines" where cut; then the other files by name, kind and length;
+  - Compilation, Layers, Warnings, Log Output (each with its file), Canvas, Called Functions;
+  - "For an assistant reading this".
+  - A real one is kept: `verify/2d-step8-capture.md`.
+- **The note for an assistant** names no syntax. It says how to read the report and what to do (start from the error and follow the steps, read the files in order, compare the layers and logs with what was expected, check against https://pathogen.studio/docs rather than memory, answer with the smallest change). A test keeps code out of it.
+- **Robustness, from the review:**
+  - each code block's fence is longer than any run of backticks in it (Pathogen's strings use them);
+  - one value is cut at 4,000 characters (a layer's path data, a log's value, a warning's message), and an excerpt's line at 300;
+  - the first five errors get their lines;
+  - an excerpt that can't be shown says why (the file is gone; the line is past its end, since the file changed after that compile).
+- **Two things the docs review found:**
+  - the playground's warning type had dropped the engine's `file`, so warnings now name theirs;
+  - a failed compile kept the last good run's logs and warnings in the store, so the report could carry them as this run's. The store now clears them, as the console does, and the report says why there are none.
+- `error-place.ts` reads errorText's own place-less form ("main.pathogen: …") back, so the store's fallback (`compilationError`) round-trips; a test pins it.
+- **Checked:**
+  - tests:
+    - `tests/playground-debug-capture.test.ts` (+15);
+    - `tests/playground-error-place.test.ts` (+1, the round trip).
+  - `verify/verify-2d-step8.ts` (11):
+    - real clicks on both places; the heading; the error and its lines; the other program's; the files' order and the others by name; the note;
+    - "Copied!"; the menu's copy the same; logs with their file;
+    - broken again (no stale logs); the main as a module.
+  - `verify-2d-step7a` still passes.
+- **Reviews:** code-reviewer (no critical issues; its warnings fixed, as above); a focused content review of the docs section (its two blockers were the code findings above; its wording applied: "starts from", the files' limit, "the workspace's menu", the order, "the assistant").
+
 **The v7 mockup round** (2026-11-09, commit `5c8f925`): note 53, `phase-2-mockups-v7/`. Five screens: no programs left, folders and moving, narrow screens, the mini-workspace, the ⋮ menu. It also draws what v6 left out (renaming a file, Move to…, dragging a file). Six questions await you; steps 4 and 9 wait for them.
 - *Answered 2026-11-09: all six agreed* (note 53, "Your answers"). What that adds to the steps:
   - step 2: each change can be undone (the toast's Undo); a rename takes a name only, no slash and no extension; Move to…; the first program in an empty workspace is shown;
