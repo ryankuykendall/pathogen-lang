@@ -83,13 +83,19 @@ After the first release (phase 2 ships with 2e). Each entry comes from your answ
 - **Today:** what 2e does for such a snapshot is note 58's question A.
 - **From:** your answer 4, 2026-11-14: "Let's hold off on this until a future release based on my answers above."
 
+### Line-by-line differences on a re-review
+- **What:** in a re-review, each changed file shows what changed in its text, line by line, against the approved version.
+- **Today (2e):** a re-review marks each file new, changed, moved or removed, with a line for a new main and for a folder added or removed. The marks come from comparing the two manifests by hash, without reading any text (note 59, question 4).
+- **Needs:** the approved and submitted texts of each changed file (the admin can read both from 2e), and a diff view in the review modal.
+- **From:** note 59, question 4, agreed 2026-11-14. Line-by-line differences were put on the backlog there.
+
 ### Snapshots over 50 MB
 - **What:** a way to snapshot images larger than 50 MB. You've seen an SVG of 80 MB.
 - **Today:** the browser refuses before uploading: "This render is … Snapshots are limited to 50 MB. Try a lower Precision, or export it directly." (`playground/services/snapshot-controller.ts:213-220`). The server checks the same limit (`SNAPSHOT_LIMITS.svgBytes`, `website/api/snapshots.ts`). Nothing records a refusal.
 - **Needs:**
   1. first, a count of refusals ("Usage events", above);
   2. then a way to take larger uploads. The Worker reads the whole form with `request.formData()`, and a 49 MB upload was checked only against the local runtime.
-- **From:** your answer 7, 2026-11-14: "although that are some snapshots that get quite large (where the SVG was as large as 80MB)...we don't have to accommodate that immediately, but we might want to log when users try to snapshot an image result that exceeds our cap."
+- **From:** your answer 7, 2026-11-14: "although that are some snapshots that get quite large (where the SVG was as large as 80MB)...we don't have to accommodate that immediately, but we might want to log when users try to snapshot an image result that exceeds our cap." Later the same day: "50MB for a snapshot's image is a fine limit." So this waits until the refusal counts say otherwise.
 
 ## Language
 

@@ -100,6 +100,18 @@ So note 58's shared pattern (question 5) is one way of moving between files, use
    *Recommended: yes, in 2e.* Line-by-line differences go on the backlog.
 5. **Approve when an entry's files can't be read.** *Proposed:* Approve is off, with the reason, until the files load. Today it would approve files nobody has seen. This changes how moderation works, so it's your call. *Recommended: yes.*
 
+## Your answers (2026-11-14)
+
+1. **(a)** "Yes, that's fine for the initial release." The viewer's own Copy is hidden on the snapshots page, so the page has one Copy code.
+2. **(a)** "Yes." pathogen.json shows after the other files, read-only.
+3. **(a)** "Agreed that we should be lazy loading the files." The page as served holds the main's text; the other files' text loads when View source opens.
+4. **Yes** ("Agreed"). A re-review marks each file new, changed, moved or removed, with a line for a new main and for a folder added or removed. Line-by-line differences are on the backlog ("Line-by-line differences on a re-review").
+5. **Yes** ("Agreed"). Approve is off, with the reason, while an entry's files can't be read.
+
+Note 58's question 10 was answered the same day ("Agreed"); see note 58.
+
+Next: the v12 mockups (note 60).
+
 ## Found along the way
 
 Each one was read in the code, and a step fixes it if you agree.

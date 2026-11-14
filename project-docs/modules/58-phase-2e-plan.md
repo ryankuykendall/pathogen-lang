@@ -219,7 +219,7 @@ Questions 1 to 7 answered; 8 to 10 still open. The steps above are left as writt
 - **8: agreed.** All seven fixes are in 2e.
 - **9: (b).** "Yes...that's fine for the time being." When it approves, the server copies the workspace's thumbnail as the card image. Explore, the profile page, Featured and the public page read that copy. Existing approvals get a one-time copy on production, with your go-ahead. The copy can include edits made after submitting; publishing from a snapshot replaces it (backlog).
 - **Early fix:** "Let them wait for 2e."
-- **10:** not answered yet. It changes only step 5's server work.
+- **10:** not answered yet. It changes only step 5's server work. *Answered later the same day: "Agreed".* Only the owner and admins read or copy a public workspace's live files: `GET /workspace/:id`, the file route and `POST /workspace/:id/copy`. Visitors read the approved files through the public page and `source.json`, and step 5 first checks that nothing on the site needs those reads from someone else, the new-workspace form's `copyFrom` first. Recorded with note 59's answers.
 
 What this changes in the steps:
 - **Step 3:** Copy code and Export's legend use the drawing program's file (A); "Start new workspace opens showing that program" goes; the viewer's icon is hidden (B).
