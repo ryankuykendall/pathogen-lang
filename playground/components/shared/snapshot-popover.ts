@@ -18,11 +18,23 @@
 //   snapshot-popover-open-export                — too-large fallback
 //   snapshot-popover-close                      — Esc, Cancel, outside click
 
+import type { StaleNote } from '../../services/snapshot-capture.js';
 import { escapeHtml } from '../../utils/html-escape.js';
 
+/**
+ * The first sentence of the "edited since this rendered" note (2e, step 3):
+ * the line, the line and its file when the workspace has several, or the
+ * files themselves when one was added, removed or renamed.
+ */
+function staleLead(stale: Exclude<StaleNote, null>): string {
+  if (stale.kind === 'files') return "You've changed the workspace's files since this rendered.";
+  const where = stale.file ? ` of <code>${escapeHtml(stale.file)}</code>` : '';
+  return `You've edited line ${stale.line}${where} since this rendered.`;
+}
+
 export type SnapshotPopoverState =
-  | { kind: 'naming'; thumbUrl: string | null; name: string; staleLine: number | null }
-  | { kind: 'scratch'; thumbUrl: string | null; workspaceName: string; staleLine: number | null }
+  | { kind: 'naming'; thumbUrl: string | null; name: string; stale: StaleNote }
+  | { kind: 'scratch'; thumbUrl: string | null; workspaceName: string; stale: StaleNote }
   | { kind: 'saving'; thumbUrl: string | null; name: string; sizeLabel: string }
   | { kind: 'saved'; thumbUrl: string | null; name: string; total: number | null }
   | { kind: 'signed-out'; thumbUrl: string | null }
@@ -296,8 +308,8 @@ export class SnapshotPopover extends HTMLElement {
           </div>
           <textarea id="note" maxlength="2000" placeholder="Note (optional)" aria-label="Note"></textarea>
           ${
-            state.staleLine != null
-              ? `<div class="msg warn">You've edited line ${state.staleLine} since this rendered. The snapshot saves the code that drew <b>this</b> image, not your newer edits.</div>`
+            state.stale
+              ? `<div class="msg warn">${staleLead(state.stale)} The snapshot saves the code that drew <b>this</b> image, not your newer edits.</div>`
               : ''
           }
           <div class="foot"><span><kbd>⏎</kbd> save · <kbd>esc</kbd> cancel</span><button class="primary" data-act="save">Save snapshot</button></div>`;
@@ -308,8 +320,8 @@ export class SnapshotPopover extends HTMLElement {
           </div>
           <div class="msg warn">Snapshots are kept with a workspace. Saving this one creates the workspace “<span id="ws-echo">${escapeHtml(state.workspaceName)}</span>”.</div>
           ${
-            state.staleLine != null
-              ? `<div class="msg warn">You've edited line ${state.staleLine} since this rendered. The snapshot saves the code that drew <b>this</b> image; the new workspace keeps your latest edits.</div>`
+            state.stale
+              ? `<div class="msg warn">${staleLead(state.stale)} The snapshot saves the code that drew <b>this</b> image; the new workspace keeps your latest edits.</div>`
               : ''
           }
           <div class="foot"><button class="linkish" data-act="cancel">Cancel</button><button class="primary" data-act="save">Save workspace + snapshot</button></div>`;

@@ -1,6 +1,7 @@
 // Observable state store for playground
 // Simple pub/sub pattern - no framework needed
 
+import type { RenderedFiles } from '../types/store.js';
 import { perfEnabled, perfSpan } from '../utils/perf-marks.js';
 import { isNarrow } from '../utils/narrow.js';
 
@@ -118,6 +119,9 @@ export const store = createStore({
   // recentSnapshots feeds the fullscreen tray: this visit's captures, newest
   // first, with an object URL for the card image already in memory.
   renderedCode: null as string | null,
+  // Every file as that render drew, and which program drew (2e): set and
+  // cleared with renderedCode. A snapshot keeps it.
+  renderedFiles: null as null | RenderedFiles,
   snapshotCount: null as number | null,
   recentSnapshots: [] as { id: string; n: number; cardUrl: string }[],
   // Breadcrumb data for the /workspace/:slugId/snapshots page (set by

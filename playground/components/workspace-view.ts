@@ -101,6 +101,7 @@ import type { DiagnosticLike, ErrorReading } from '../services/error-place.js';
 import type { CaptureContext } from '../utils/debug-capture.js';
 import type { ToastDetail } from './shared/app-toast.js';
 import type { CompileResult } from '../types/compiler.js';
+import type { RenderedFiles } from '../types/store.js';
 
 /** How long a toast with Undo stays: long enough to read the files it names and reach for Undo. */
 const UNDO_TOAST_MS = 9000;
@@ -717,6 +718,7 @@ export class WorkspaceView extends HTMLElement {
       exportSvgBytes: null,
       // Snapshot state belongs to the previous workspace too.
       renderedCode: null,
+      renderedFiles: null,
       snapshotCount: null,
       recentSnapshots: [],
       // So do its files: a scratch link or a new workspace is just its `code`
@@ -2233,6 +2235,7 @@ export class WorkspaceView extends HTMLElement {
       cssProperties: [],
       calledStdlibFunctions: [],
       renderedCode: null,
+      renderedFiles: null,
     });
   }
 
@@ -2349,6 +2352,14 @@ export class WorkspaceView extends HTMLElement {
     if (store.get('noPrograms') as boolean) store.set('noPrograms', false);
     const shown = programToShow(workspace, store.get('shownProgram') as string | null);
     const code = workspace.texts.get(shown) ?? '';
+    // Every file as this compile reads it, and the program: what a snapshot of
+    // its drawing keeps (2e, step 3). A copy now, so nothing later reaches it.
+    const drawnFiles: RenderedFiles = {
+      texts: new Map(workspace.texts),
+      folders: [...workspace.folders],
+      entryPoints: [...workspace.entryPoints],
+      program: shown,
+    };
     // The program list's drawings take this compile only if no other workspace has loaded since.
     const drawingsSession = this._drawings.session;
 
@@ -2508,6 +2519,7 @@ export class WorkspaceView extends HTMLElement {
           // The code that drew what's now on screen — a snapshot pairs the
           // image with this, not with later unrendered edits.
           renderedCode: code,
+          renderedFiles: drawnFiles,
         });
       });
       // And the program it is: the thumbnail is taken only from the main's

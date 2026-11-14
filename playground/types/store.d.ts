@@ -21,6 +21,20 @@ export interface Preferences {
   toFixed: number | null;
 }
 
+/**
+ * Every file as the preview last drew, and the program that drew (note 58,
+ * step 3): what a snapshot keeps. A copy taken with that compile, so later
+ * edits never reach it.
+ */
+export interface RenderedFiles {
+  /** Path → text. pathogen.json is never among them. */
+  texts: ReadonlyMap<string, string>;
+  folders: readonly string[];
+  entryPoints: readonly string[];
+  /** The path of the program that drew. */
+  program: string;
+}
+
 export interface StoreState {
   // Routing
   currentRoute: string;
@@ -44,6 +58,7 @@ export interface StoreState {
 
   // Snapshots — see state/store.ts for semantics.
   renderedCode: string | null;
+  renderedFiles: RenderedFiles | null;
   snapshotCount: number | null;
   recentSnapshots: { id: string; n: number; cardUrl: string }[];
   snapshotsPage: { workspaceName: string; workspaceSlugId: string; currentName: string | null } | null;

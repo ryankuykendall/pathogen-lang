@@ -26,15 +26,19 @@ import { store } from '../state/store.js';
 import { formatBytes } from '../utils/format-bytes.js';
 import { buildWorkspaceSlugId, navigateTo } from '../utils/router.js';
 import { snapshotApi, workspaceApi } from './api.js';
-import { shownProgramText } from './workspace-files.js';
+import { autosave } from './autosave.js';
+import { shownProgramText, workspaceNow } from './workspace-files.js';
 import {
   captureSnapshot,
   firstChangedLine,
   renderSnapshotCard,
   SNAPSHOT_CLIENT_LIMITS,
+  snapshotFilesField,
+  staleNote,
   utf8Bytes,
 } from './snapshot-capture.js';
-import type { CapturedSnapshot } from './snapshot-capture.js';
+import type { CapturedSnapshot, StaleNote } from './snapshot-capture.js';
+import type { RenderedFiles } from '../types/store.js';
 
 export interface CaptureSnapshotDetail {
   anchor: DOMRect;
@@ -67,13 +71,26 @@ interface PendingCapture {
   defaultName: string;
   name: string;
   note: string;
-  staleLine: number | null;
+  stale: StaleNote;
+  /**
+   * The files as the upload sends them (2e, step 3), built at capture time,
+   * while autosave still holds this workspace and knows which files the
+   * server has: those go by hash. Null for a scratch buffer, which sends its
+   * one program as `code`.
+   */
+  filesField: { json: string; bytes: number } | null;
   savedId: string | null;
   saving: boolean;
   generation: number;
   /** Where to re-open the popover if a background save fails. */
   anchor: DOMRect;
   placement: SnapshotPopoverPlacement;
+}
+
+/** The note for a capture with no files recorded: the program shown, as before 2e. */
+function staleLineOnly(code: string): StaleNote {
+  const line = firstChangedLine(code, shownProgramText());
+  return line === null ? null : { kind: 'line', line, file: null };
 }
 
 interface ApiErrorLike {
@@ -160,6 +177,7 @@ export class SnapshotController {
     const state = store.getAll() as unknown as Record<string, unknown>;
     const capture = captureSnapshot(this.host.getPreview(), {
       renderedCode: state.renderedCode as string | null,
+      renderedFiles: state.renderedFiles as RenderedFiles | null,
       width: state.width as number,
       height: state.height as number,
       background: (state.background as string) || '#ffffff',
@@ -170,6 +188,11 @@ export class SnapshotController {
     const count = state.snapshotCount as number | null;
     const workspaceName = (state.workspaceName as string | null) || 'Untitled';
     const defaultName = `${workspaceName} #${(count ?? 0) + 1}`;
+    // A saved workspace sends every file as drawn, and the program that drew
+    // (2e, step 3); a scratch buffer, its one program as `code`, as before.
+    const files = capture.files;
+    const filesField =
+      workspaceId && files ? snapshotFilesField(autosave.filesBody(files, workspaceId), files.program) : null;
     const pending: PendingCapture = {
       capture,
       svgBytes: utf8Bytes(capture.svg),
@@ -183,9 +206,11 @@ export class SnapshotController {
       defaultName,
       name: defaultName,
       note: '',
-      // Edited since it drew? Against the program shown, which needn't be
-      // the file in the editor (a library, or another program, in a tab).
-      staleLine: firstChangedLine(capture.code, shownProgramText()),
+      // Edited since it drew? Every file the snapshot keeps, the program that
+      // drew first. Without the files, against the program shown, which needn't
+      // be the file in the editor (a library, or another program, in a tab).
+      stale: files ? staleNote(files, workspaceNow().texts) : staleLineOnly(capture.code),
+      filesField,
       savedId: null,
       saving: false,
       generation: this._generation,
@@ -221,21 +246,29 @@ export class SnapshotController {
       });
       return;
     }
-    if (utf8Bytes(capture.code) > SNAPSHOT_CLIENT_LIMITS.codeBytes) {
+    // The server counts the bytes it's sent: with `files`, only the texts not
+    // saved yet weigh anything (a saved file goes by its hash).
+    const sendBytes = filesField ? filesField.bytes : utf8Bytes(capture.code);
+    if (sendBytes > SNAPSHOT_CLIENT_LIMITS.codeBytes) {
       popover.setState({
         kind: 'error',
         thumbUrl: null,
         name: defaultName,
         note: '',
-        message: 'This program is larger than 1 MB, the most code a snapshot can hold.',
+        message: !filesField
+          ? 'This program is larger than 1 MB, the most code a snapshot can hold.'
+          : autosave.holds(workspaceId)
+            ? 'Your edits not saved yet come to more than 1 MB, the most a snapshot can send. Once the workspace has saved, the snapshot sends the saved files by reference: take it again then.'
+            : // Every file went as text: waiting for a save wouldn't help.
+              "This workspace's code comes to more than 1 MB, the most a snapshot can send at once.",
       });
       return;
     }
     if (pending.isScratch) {
-      popover.setState({ kind: 'scratch', thumbUrl: null, workspaceName: 'Untitled', staleLine: pending.staleLine });
+      popover.setState({ kind: 'scratch', thumbUrl: null, workspaceName: 'Untitled', stale: pending.stale });
       return;
     }
-    popover.setState({ kind: 'naming', thumbUrl: null, name: defaultName, staleLine: pending.staleLine });
+    popover.setState({ kind: 'naming', thumbUrl: null, name: defaultName, stale: pending.stale });
   }
 
   private _ensurePopover(): SnapshotPopover {
@@ -332,9 +365,11 @@ export class SnapshotController {
       // Keeping the suggested name sends none, so the server numbers it
       // from the real sequence ("<workspace> #n") even after deletions.
       const sendName = pending.isScratch || pending.name === pending.defaultName ? '' : pending.name;
+      // A scratch buffer's new workspace holds its one program: `code`.
+      const sendFiles = pending.isScratch ? null : pending.filesField;
       const { snapshot, count } = await snapshotApi.create(pending.workspaceId!, {
         svg: pending.capture.svg,
-        code: pending.capture.code,
+        ...(sendFiles ? { files: sendFiles.json } : { code: pending.capture.code }),
         card,
         meta: {
           name: sendName,

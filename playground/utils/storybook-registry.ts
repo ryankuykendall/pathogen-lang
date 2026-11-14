@@ -2275,6 +2275,11 @@ dot.apply { circle(100, 100, 14); }`;
     stories: [
       { name: 'Naming', props: { kind: 'naming', placement: 'below' } },
       { name: 'Edited since render', props: { kind: 'naming', staleLine: 5, placement: 'below' } },
+      {
+        name: 'Edited a module since render',
+        props: { kind: 'naming', staleLine: 5, staleFile: 'parts/gears.pathogen', placement: 'below' },
+      },
+      { name: 'Files changed since render', props: { kind: 'naming', staleFiles: true, placement: 'below' } },
       { name: 'Saving', props: { kind: 'saving', placement: 'below' } },
       { name: 'Saved', props: { kind: 'saved', placement: 'below' } },
       { name: 'Signed out', props: { kind: 'signed-out', placement: 'below' } },
@@ -2303,7 +2308,15 @@ dot.apply { circle(100, 100, 14); }`;
         const base = { thumbUrl: thumb, name: 'Scatter Rings #13' };
         const state: Record<string, unknown> =
           kind === 'naming'
-            ? { ...base, kind, staleLine: props.staleLine ?? null }
+            ? {
+                ...base,
+                kind,
+                stale: props.staleFiles
+                  ? { kind: 'files' }
+                  : props.staleLine
+                    ? { kind: 'line', line: props.staleLine, file: props.staleFile ?? null }
+                    : null,
+              }
             : kind === 'saving'
               ? { ...base, kind, sizeLabel: '2.1 MB' }
               : kind === 'saved'

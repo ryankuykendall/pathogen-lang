@@ -257,6 +257,50 @@ v14 approved: "v14 approved, go ahead and start building 2e".
 - the full suite (9,145 passed);
 - `project-docs/modules/verify/verify-2e-step2-program.ts`: 6 checks against the local workerd API.
 
+## Step 3, split
+
+Step 3 is four commits, so that each one's tree works on its own:
+- **3a:** a snapshot sends every file as drawn, and the snapshots page reads `/files`;
+- **3b:** the blog viewer shows several files: the list, the 34 px file line, and the copy icon in its cell, floating for one file (v12 to v14);
+- **3c:** the snapshots page with that viewer, Copy code in the code panel, Export's legend, and the hidden ↗;
+- **3d:** the workspace's copy icon in the tabs, and Copy Code gone from the breadcrumb.
+
+## Step 3a, built (2026-11-14)
+
+- **The store keeps every file as the preview drew it** (`renderedFiles`: texts, folders, entry points, and the program that drew). It's copied when the compile starts, set in the same update as `renderedCode`, and cleared wherever that is.
+- **The snapshot sends `files`,** built when Snapshot is pressed, while autosave still holds the workspace:
+  - each file the server holds goes by its hash, and an edit not saved yet as text;
+  - autosave's own rule decides which, now one method that saves and snapshots share (`autosave.filesBody`). It uses hashes only for the workspace autosave holds; for any other, every file goes as text;
+  - a scratch buffer still sends `code`.
+- **The 1 MB check measures the very string uploaded,** as the server does. Its message now says the unsaved edits are what's too big.
+- **The "edited since this rendered" note covers every file,** the program that drew first:
+  - "line 5 of `parts/gears.pathogen`" with several files;
+  - the line alone with one, as before;
+  - "You've changed the workspace's files" when a file was added, removed or renamed.
+- **The snapshots page reads `/files`** for its code, Copy code and Export: the drawing program's text. `/code` answers 409 for several files, which would have left the page empty. The list and the copy icon come in 3b and 3c.
+
+**The code review** found no critical problem. It traced the races:
+- a save between capture and upload sends an older hash, which the server still finds, since saves never delete;
+- a workspace switch is safe, because the body names the same workspace it's posted to.
+
+Fixed from it:
+- the folders and the program list are copied too, not shared with the store;
+- the size message for a workspace autosave doesn't hold, where every file goes as text, says the code is over 1 MB, not that waiting for a save will help (`autosave.holds`);
+- `snapshotApi.files` uses the snapshot calls' own fetch and errors.
+
+**Tested:**
+- `tests/playground-autosave-files.test.ts`: four new tests;
+- `tests/playground-snapshots.test.ts`: seven new tests;
+- the playground typecheck: no new errors (the four from before remain);
+- `project-docs/modules/verify/verify-2e-step3a.ts`, 10 checks on the dev stack:
+  - the real upload's `files` (saved files by hash, the edit as text);
+  - `/files` after an unsaved module edit;
+  - a non-main program;
+  - the note naming a module's line;
+  - the snapshots page opening a snapshot of several files;
+  - Start new workspace;
+  - a scratch buffer's `code`.
+
 ## What the audits found (2026-11-14)
 
 ### Snapshots, copies, forks

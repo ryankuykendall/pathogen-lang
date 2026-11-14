@@ -264,6 +264,24 @@ export interface SnapshotRecord {
 
 export type SnapshotFileKind = 'svg' | 'code' | 'card';
 
+/** GET /snapshot/:sid/files (website/api/snapshots.ts getFiles). */
+export interface SnapshotFiles {
+  files: Record<string, { sha256: string; size: number; text: string }>;
+  folders: string[];
+  entryPoints: string[];
+  contentHash: string;
+  /** The path of the program that drew the image; null only for files with no program. */
+  program: string | null;
+  /** Its one program's text, for a snapshot that is just main.pathogen. */
+  code?: string;
+}
+
+/** The text of the program that drew a snapshot: its `program`'s, else the main's. */
+export function drawingText(files: SnapshotFiles): string {
+  const path = files.program ?? files.entryPoints[0];
+  return (path !== undefined ? files.files[path]?.text : undefined) ?? files.code ?? '';
+}
+
 const SNAPSHOT_HEADER = { 'X-Pathogen-Snapshot': '1' };
 
 async function snapshotError(response: Response, fallback: string): Promise<ApiError> {
@@ -298,14 +316,18 @@ export const snapshotApi = {
     workspaceId: string,
     payload: {
       svg: string;
-      code: string;
       card: Blob;
       meta: { name?: string; note?: string; width?: number; height?: number; background?: string };
-    },
+    } & (
+      | { code: string; files?: undefined }
+      /** 2e: the files field as built and measured at capture (snapshotFilesField). */
+      | { files: string; code?: undefined }
+    ),
   ): Promise<{ snapshot: SnapshotRecord; count: number }> {
     const form = new FormData();
     form.append('svg', new Blob([payload.svg], { type: 'image/svg+xml' }), 'image.svg');
-    form.append('code', new Blob([payload.code], { type: 'text/plain' }), 'code.pathogen');
+    if (payload.files !== undefined) form.append('files', payload.files);
+    else form.append('code', new Blob([payload.code], { type: 'text/plain' }), 'code.pathogen');
     form.append('card', payload.card, 'card.png');
     form.append('meta', JSON.stringify(payload.meta));
     const response = await snapshotFetch(`${API_BASE}/workspace/${workspaceId}/snapshots`, {
@@ -338,6 +360,17 @@ export const snapshotApi = {
       slug: string;
       name: string;
     }>;
+  },
+
+  /**
+   * A snapshot's code (2e): every file with its text, the folders, the program
+   * list, and `program`, the path of the program that drew its image. Works
+   * for every snapshot, one saved before phase 2 included.
+   */
+  async files(id: string): Promise<SnapshotFiles> {
+    const response = await snapshotFetch(`${API_BASE}/snapshot/${id}/files`, { method: 'GET' });
+    if (!response.ok) throw await snapshotError(response, "Could not load the snapshot's code");
+    return response.json() as Promise<SnapshotFiles>;
   },
 
   /** Fetch one stored file with the session cookie. */

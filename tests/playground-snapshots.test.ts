@@ -12,8 +12,16 @@
 
 import { describe, expect, it } from 'vitest';
 
-import { captureSnapshot, firstChangedLine, SNAPSHOT_CARD_MAX } from '../playground/services/snapshot-capture.js';
+import {
+  captureSnapshot,
+  firstChangedLine,
+  SNAPSHOT_CARD_MAX,
+  snapshotFilesField,
+  staleNote,
+} from '../playground/services/snapshot-capture.js';
 import { parseSnapshotSvg } from '../playground/utils/sanitize-svg-dom.js';
+
+import type { RenderedFiles } from '../playground/types/store.js';
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
 
@@ -89,6 +97,84 @@ describe('firstChangedLine', () => {
     expect(firstChangedLine('a\nb', 'a\nb\nc')).toBe(3);
     expect(firstChangedLine('a\nb\nc', 'a\nb')).toBe(3);
     expect(firstChangedLine('a', 'x')).toBe(1);
+  });
+});
+
+// 2e, step 3 (note 58): a snapshot keeps every file as the preview drew it,
+// and which program drew it.
+const MAIN = 'import { gear } from "./parts/gears.pathogen";\ngear(4);\n';
+const GEARS = 'module;\nexport fn gear(r) {\n  circle(0, 0, r);\n}\n';
+const DEMO = 'import { gear } from "../parts/gears.pathogen";\ngear(8);\n';
+const drawnFiles = (texts: Record<string, string>, program = 'main.pathogen'): RenderedFiles => ({
+  texts: new Map(Object.entries(texts)),
+  folders: ['spare'],
+  entryPoints: ['main.pathogen'],
+  program,
+});
+const SEVERAL = { 'main.pathogen': MAIN, 'parts/gears.pathogen': GEARS, 'demos/gears.pathogen': DEMO };
+
+describe('a snapshot of several files', () => {
+  it('the capture carries the files the preview drew, with the program', () => {
+    const files = drawnFiles(SEVERAL, 'demos/gears.pathogen');
+    const cap = captureSnapshot(makePreview(400, 200), {
+      renderedCode: DEMO,
+      renderedFiles: files,
+      width: 400,
+      height: 200,
+      background: '#fff',
+    })!;
+    expect(cap.files).toBe(files);
+    expect(cap.code).toBe(DEMO);
+  });
+
+  describe('staleNote: what changed since it drew', () => {
+    it('is null when every file is as drawn', () => {
+      expect(staleNote(drawnFiles(SEVERAL), new Map(Object.entries(SEVERAL)))).toBeNull();
+    });
+
+    it('in a one-file workspace, names the line alone, as before', () => {
+      const drawn = drawnFiles({ 'main.pathogen': 'a\nb\n' });
+      expect(staleNote(drawn, new Map([['main.pathogen', 'a\nB\n']]))).toEqual({ kind: 'line', line: 2, file: null });
+    });
+
+    it('with several files, names the file: an edit to a module counts, since the snapshot keeps it as drawn', () => {
+      const now = new Map(Object.entries({ ...SEVERAL, 'parts/gears.pathogen': `${GEARS}// more\n` }));
+      expect(staleNote(drawnFiles(SEVERAL), now)).toEqual({ kind: 'line', line: 5, file: 'parts/gears.pathogen' });
+    });
+
+    it('names the program that drew first, whatever the order of the paths', () => {
+      const now = new Map(
+        Object.entries({
+          'main.pathogen': `${MAIN}x\n`,
+          'parts/gears.pathogen': GEARS,
+          'demos/gears.pathogen': `${DEMO}y\n`,
+        }),
+      );
+      expect(staleNote(drawnFiles(SEVERAL, 'main.pathogen'), now)).toEqual({
+        kind: 'line',
+        line: 3,
+        file: 'main.pathogen',
+      });
+    });
+
+    it('a file added, removed or renamed since is a change to the files, with no line', () => {
+      const added = new Map(Object.entries({ ...SEVERAL, 'parts/kit.pathogen': 'module;\n' }));
+      expect(staleNote(drawnFiles(SEVERAL), added)).toEqual({ kind: 'files' });
+      const rest: Record<string, string> = { ...SEVERAL };
+      delete rest['demos/gears.pathogen'];
+      expect(staleNote(drawnFiles(SEVERAL), new Map(Object.entries(rest)))).toEqual({ kind: 'files' });
+      const renamed = new Map(Object.entries({ ...rest, 'demos/cogs.pathogen': DEMO }));
+      expect(staleNote(drawnFiles(SEVERAL), renamed)).toEqual({ kind: 'files' });
+    });
+  });
+
+  it('snapshotFilesField: the exact string sent, with the program, and its size as the server counts it', () => {
+    const body = { files: { 'main.pathogen': { text: 'é' } }, folders: [], entryPoints: ['main.pathogen'] };
+    const field = snapshotFilesField(body, 'main.pathogen');
+    expect(JSON.parse(field.json)).toEqual({ ...body, program: 'main.pathogen' });
+    // UTF-8: "é" is two bytes, as the server's TextEncoder counts it.
+    expect(field.bytes).toBe(new TextEncoder().encode(field.json).byteLength);
+    expect(field.bytes).toBe(field.json.length + 1);
   });
 });
 

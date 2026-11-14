@@ -105,6 +105,20 @@ function isJustMain(workspace: WorkspaceTexts): boolean {
   );
 }
 
+/** A workspace's files and shape: what filesBody reads (a WorkspaceTexts, or what a snapshot kept). */
+export interface FilesOf {
+  texts: ReadonlyMap<string, string>;
+  folders: readonly string[];
+  entryPoints: readonly string[];
+}
+
+/** A save's or a snapshot's `files` body (website/api/workspace-store.ts FilesBody). */
+export interface FilesBodyOut {
+  files: Record<string, { text: string } | { sha256: string }>;
+  folders: string[];
+  entryPoints: string[];
+}
+
 /** A save request out, and the promise its answer settles (success or not). */
 interface SaveRequest {
   workspace: WorkspaceTexts;
@@ -407,6 +421,16 @@ class AutosaveManager {
    */
   _saveBody(workspace: WorkspaceTexts, shas: ReadonlyMap<string, string> = new Map()): Record<string, unknown> {
     if (isJustMain(workspace) && this._serverJustMain) return { code: workspace.texts.get(MAIN_FILE) ?? '' };
+    return { ...this._filesBody(workspace, shas) };
+  }
+
+  /**
+   * A workspace's files as `files`, with its folders and program list: each
+   * file whose text the server holds by its hash, every other as text. The
+   * one rule for a save and for a snapshot (2e): `shas` are the files'
+   * hashes when the caller computed them; without them, texts are compared.
+   */
+  _filesBody(workspace: FilesOf, shas: ReadonlyMap<string, string> = new Map()): FilesBodyOut {
     const files: Record<string, { text: string } | { sha256: string }> = {};
     for (const [path, text] of workspace.texts) {
       const saved = this._savedShas.get(path);
@@ -414,7 +438,25 @@ class AutosaveManager {
         saved !== undefined && (shas.has(path) ? shas.get(path) === saved : this._savedTexts.get(path) === text);
       files[path] = unchanged ? { sha256: saved } : { text };
     }
-    return { files, folders: workspace.folders, entryPoints: workspace.entryPoints };
+    return { files, folders: [...workspace.folders], entryPoints: [...workspace.entryPoints] };
+  }
+
+  /** Whether this autosave holds `workspaceId` now, knowing which of its files the server has. */
+  holds(workspaceId: string | null): boolean {
+    return this._isEnabled && workspaceId !== null && workspaceId === this._workspaceId;
+  }
+
+  /**
+   * What a snapshot of `workspaceId` sends for its files (note 58, step 3):
+   * by hash only while this autosave holds that workspace, whose saved files
+   * it knows. The server checks a hash against the workspace's own files, so
+   * for any other, or once stopped, every file goes as text.
+   */
+  filesBody(workspace: FilesOf, workspaceId: string | null): FilesBodyOut {
+    if (this.holds(workspaceId)) return this._filesBody(workspace);
+    const files: Record<string, { text: string }> = {};
+    for (const [path, text] of workspace.texts) files[path] = { text };
+    return { files, folders: [...workspace.folders], entryPoints: [...workspace.entryPoints] };
   }
 
   /** The server now holds exactly `workspace`: its texts, hashes (when known) and shape. */

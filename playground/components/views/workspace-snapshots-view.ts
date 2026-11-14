@@ -18,7 +18,7 @@ import '../blog/mini-workspace.js';
 import '../export-modal.js';
 import '../shared/snapshot-filmstrip.js';
 import type { FilmstripSort, SnapshotFilmstrip } from '../shared/snapshot-filmstrip.js';
-import { snapshotApi, workspaceApi } from '../../services/api.js';
+import { drawingText, snapshotApi, workspaceApi } from '../../services/api.js';
 import type { SnapshotRecord } from '../../services/api.js';
 import { store } from '../../state/store.js';
 import { formatBytes } from '../../utils/format-bytes.js';
@@ -329,10 +329,15 @@ export class WorkspaceSnapshotsView extends HTMLElement {
     return text;
   }
 
+  /**
+   * The text of the program that drew the snapshot. Read from /files, which
+   * answers for every snapshot (2e, step 3): /code answers 409 for one with
+   * several files, which would leave the page with neither code nor image.
+   */
   private async _loadCode(id: string): Promise<string> {
     const cached = this._code.get(id);
     if (cached != null) return cached;
-    const text = await (await snapshotApi.file(id, 'code')).text();
+    const text = drawingText(await snapshotApi.files(id));
     this._code.set(id, text);
     return text;
   }

@@ -588,3 +588,60 @@ describe("a save's shape follows what the server holds", () => {
     expect(updateSpy.mock.calls[1][1]).toEqual({ code: 'M 3 3', baseRev: 2 });
   });
 });
+
+// 2e, step 3 (note 58): a snapshot sends every file as the preview drew it, the
+// way a save does: each file the server holds by its hash, every other as text.
+describe('filesBody: the files a snapshot sends', () => {
+  const drawn = (texts: Record<string, string>) => ({
+    texts: new Map(Object.entries(texts)),
+    folders: FOLDERS,
+    entryPoints: ENTRY,
+    openFile: 'main.pathogen',
+  });
+
+  it('sends each file the server holds by its hash, an edit not saved yet as text, with the folders and the program list', async () => {
+    await load('ws-30');
+    expect(autosave.filesBody(drawn({ ...FILES, 'parts/gears.pathogen': GEARS_EDITED }), 'ws-30')).toEqual({
+      files: {
+        'main.pathogen': { sha256: await shaOf(MAIN) },
+        'parts/gears.pathogen': { text: GEARS_EDITED },
+        'parts/kit.pathogen': { sha256: await shaOf(KIT) },
+      },
+      folders: FOLDERS,
+      entryPoints: ENTRY,
+    });
+  });
+
+  it('a file added since the load goes as text', async () => {
+    await load('ws-31');
+    const body = autosave.filesBody(drawn({ ...FILES, 'parts/new.pathogen': 'module;\n' }), 'ws-31');
+    expect(body.files['parts/new.pathogen']).toEqual({ text: 'module;\n' });
+  });
+
+  it('sends every file as text for a workspace this autosave doesn’t hold, or once it has stopped', async () => {
+    // Its hashes are checked against that workspace's own files, which this one doesn't know.
+    await load('ws-32');
+    const allText = {
+      'main.pathogen': { text: MAIN },
+      'parts/gears.pathogen': { text: GEARS },
+      'parts/kit.pathogen': { text: KIT },
+    };
+    expect(autosave.filesBody(drawn(FILES), 'ws-other').files).toEqual(allText);
+    expect([autosave.holds('ws-32'), autosave.holds('ws-other'), autosave.holds(null)]).toEqual([true, false, false]);
+    autosave.stop();
+    expect(autosave.filesBody(drawn(FILES), 'ws-32').files).toEqual(allText);
+    expect(autosave.holds('ws-32')).toBe(false);
+  });
+
+  it('a save sends the same body: one rule for both', async () => {
+    await load('ws-33');
+    editTwoFiles();
+    const expected = autosave.filesBody(
+      drawn({ ...FILES, 'main.pathogen': MAIN_EDITED, 'parts/gears.pathogen': GEARS_EDITED }),
+      'ws-33',
+    );
+    updateSpy.mockResolvedValueOnce({ rev: 2, updatedAt: 'now' });
+    await autosave.saveNow();
+    expect(updateSpy.mock.calls[0][1]).toEqual({ ...expected, baseRev: 1 });
+  });
+});
