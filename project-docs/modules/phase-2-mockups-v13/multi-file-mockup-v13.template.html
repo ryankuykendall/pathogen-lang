@@ -1,0 +1,309 @@
+<!-- v13's parts. build.ts puts them into v12's built page (phase-2-mockups-v12/multi-file-mockup-v12.html,
+     read in place): the CSS at the end of its <style>, the harness button in place of v12's, the
+     section in place of v12's, and the script in place of v12's SCREENS table, its click listeners and
+     its style switch (the list was chosen, note 60). v12's state helpers (V12, SNAP, PUB, ADM, PH,
+     ONE_SNAP) sit before its SCREENS, so they stay. The function declarations in the script come
+     after v12's, so they replace v12's functions of the same name.
+
+     v13 is one screen: copying code, from an icon in the top right of the code panel, everywhere a
+     code panel shows code (note 60, your answer 1). -->
+
+<!-- @@CSS -->
+  /* The copy icon: one look in every code panel */
+  .cpw { position: relative; display: inline-flex; flex: none; }
+  .cp { width: 26px; height: 26px; padding: 0; border: 1px solid transparent; border-radius: 6px; background: none; color: var(--text-secondary); display: grid; place-items: center; cursor: pointer; }
+  .cp svg { width: 15px; height: 15px; }
+  .cp:hover, .cp.hov { background: var(--hover-bg); color: var(--text-primary); }
+  .cp.ok { color: var(--success-color); }
+  .cp.fail { color: var(--error-text); }
+  [data-theme='dark'] .cp.fail { color: #f87171; }
+  .cp-tip { position: absolute; top: calc(100% + 6px); right: -4px; z-index: 70; background: #1c1722; color: #f6e9da; font: 400 12px/1.4 var(--font-body); padding: 5px 9px; border-radius: 6px; box-shadow: var(--shadow-lg); white-space: nowrap; }
+  .cp-tip code { font-size: 11.5px; }
+  [data-theme='dark'] .cp-tip { background: #f6e9da; color: #1c1722; }
+  /* In the path line: at its right end. The line lets the tooltip out; its name shortens instead */
+  .fpath, .fmenu { overflow: visible; position: relative; z-index: 8; }
+  .fpath > span:not(.cpw), .fmenu > span:not(.cpw) { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+  .fpath .cpw { margin-left: auto; margin-right: -6px; }
+  .fmenu .cpw { margin-left: 4px; margin-right: -4px; }
+  /* With one file there's no path line: the icon floats in the panel's corner, over the code */
+  .vone { position: relative; flex: 1; min-height: 0; display: flex; flex-direction: column; }
+  .vone > .cpw { position: absolute; top: 6px; right: 8px; z-index: 5; }
+  .vone > .cpw .cp { background: var(--bg-elevated); border-color: var(--border-color); box-shadow: var(--shadow-sm); }
+  .pd-body.one .vone { display: block; }
+  /* The workspace: a cell at the right end of the tabs, before the docs book */
+  .tab-copy { width: 38px; flex: none; display: grid; place-items: center; border-left: 1px solid var(--border-color); position: relative; }
+  .tab-copy .cp { border-radius: 4px; }
+  /* Option b: floating over the editor's text */
+  .ed .cm-float { position: absolute; top: 42px; right: 12px; z-index: 6; }
+  .ed .cm-float .cp { background: var(--bg-elevated); border-color: var(--border-color); box-shadow: var(--shadow-sm); }
+  /* v12 named the snapshots page .sp (860 px tall), which is also the kit's spacer class: undo it for spacers */
+  .ph-nav .sp, .ph-ctl .sp, .ph-crumb .sp { display: block; height: auto; }
+  /* A blog post around an embed */
+  .bpost { max-width: 860px; margin: 0 auto; padding: 24px 0 28px; font-size: 15.5px; line-height: 1.65; color: var(--text-primary); }
+  .bpost p { margin: 0 0 16px; }
+  .bpost .mw-h { height: 400px; margin: 0 0 18px; }
+  .notes .chg-list { margin: 4px 0 0; padding-left: 18px; }
+
+<!-- @@NAV -->
+    <button data-s="copy" aria-pressed="true">C · Copying code</button>
+
+<!-- @@SECTIONS -->
+<!-- ============ C. COPYING CODE ============ -->
+<section class="screen active" id="s-copy">
+  <div class="notes">
+    <h2>C · Copying code: an icon in the code panel <span class="tag ask">for your review</span></h2>
+    <p>Your direction on v12 (note 60): "we should be moving the copy code action into an icon button that sits in the top right of the code panel… on snapshot page as well as anywhere else where we will be displaying code in the web app (including the primary workspace)." Drawn with the list you chose.</p>
+    <table class="cmp">
+      <tr><th></th><th>Today (and v12)</th><th>v13</th></tr>
+      <tr><td>The workspace</td><td><b>Copy Code</b> in the breadcrumb, copying the file in the editor</td><td>An icon at the right end of the tabs, before the docs book (state 1); or floating over the code (state 2)</td></tr>
+      <tr><td>The snapshots page</td><td><b>Copy code</b> in the breadcrumb, copying the program that drew the image (answer A)</td><td>An icon at the right end of the line naming the open file. It copies <b>that file</b></td></tr>
+      <tr><td>The review modal</td><td>The viewer's Copy, in its bar</td><td>The same icon, in the code panel. The ↗ is hidden for every entry (your answer 2)</td></tr>
+      <tr><td>The public page</td><td>No copy at all</td><td>The same icon</td></tr>
+      <tr><td>A blog embed</td><td>The viewer's Copy, in its bar</td><td>The icon in the code panel's corner. With the code closed, there's nothing to copy</td></tr>
+      <tr><td>One file, anywhere</td><td></td><td>No path line, so the icon floats in the panel's top right corner, over the code</td></tr>
+    </table>
+    <div class="cols">
+      <ul>
+        <li><b>It copies the file it sits on,</b> and says which: "Copy <code>parts/gears.pathogen</code>". On the snapshots page that's the program that drew the image until you open another file. <b>Export's legend</b> still lists the program that drew the image.</li>
+        <li><b>"Copied" shows only once the copy has worked</b> (state 6). If it fails, the icon says so and what to do instead (state 7). Today the snapshots page says "Copied!" before the copy finishes (note 59, found along the way).</li>
+      </ul>
+      <ul>
+        <li><b>With no file open,</b> the workspace has no icon: there's nothing to copy, and the editor's zero-state shows (state 3). Today Copy Code is there but off.</li>
+        <li><b>On a phone,</b> the icon stays at the right end of the tabs, or of the file menu (states 4 and 15). The workspace's control row loses Copy Code.</li>
+      </ul>
+    </div>
+    <div class="qs"><b>Questions.</b>
+      <ol>
+        <li><b>Where the workspace's icon goes.</b> (a) At the right end of the tabs, before the docs book <span class="tag rec">recommended</span>: always visible, and it never covers the text you're typing. (b) Floating over the top right of the code, as in the viewers' one-file panels: nearer the code, but it covers the end of long lines.</li>
+        <li><b>Code blocks in the docs and the blog</b> (the examples on each page, not the embeds) have no copy today. <span class="tag rec">recommended</span> later, on the backlog: they're built by the docs and blog scripts, and the blog can't be rebuilt now without overwriting your blog edits in progress.</li>
+      </ol>
+    </div>
+    <h3>What this changes in work you approved</h3>
+    <ul class="chg-list">
+      <li><code>docs/workspace-files.md</code>, "The file tree and tabs": "Copy Code copies the file in the editor. With no file open, it's off…" becomes the icon at the end of the tabs, absent with no file open. And the phone section, if it names Copy Code.</li>
+      <li><code>docs/snapshots.md</code>, "What you can do with a snapshot": Copy code leaves the actions; the icon copies the file shown.</li>
+      <li>v7's screens K and M: Copy Code in the breadcrumb, kept on one line on a phone.</li>
+      <li>Note 59's requirement 1 (one file looks exactly as today): copying is the exception now, in blog embeds too. Note 59's question 1 and note 58's step 3 bullet on Copy code.</li>
+      <li>mini-workspace's storybook stories: Copy moves out of the bar.</li>
+    </ul>
+    <p>The two docs pages change with step 7's docs round, with a content review and your approval.</p>
+  </div>
+  <div class="statebar" id="st-copy">
+    <span class="lbl">State</span>
+    <button data-st="ws" aria-pressed="true">1 · Workspace: end of the tabs</button>
+    <button data-st="ws-float">2 · Workspace: over the code</button>
+    <button data-st="ws-none">3 · Workspace: no file open</button>
+    <button data-st="ws-phone">4 · Workspace on a phone</button>
+    <button data-st="snap">5 · Snapshots page</button>
+    <button data-st="copied">6 · Copied</button>
+    <button data-st="fail">7 · Couldn't copy</button>
+    <button data-st="snap-one">8 · Snapshot, one file</button>
+    <button data-st="review">9 · Review modal</button>
+    <button data-st="review-one">10 · Review modal, one file</button>
+    <button data-st="pub">11 · Public page</button>
+    <button data-st="pub-one">12 · Public page, one file</button>
+    <button data-st="blog">13 · Blog embed</button>
+    <button data-st="blog-closed">14 · Blog embed, code closed</button>
+    <button data-st="snap-phone">15 · Snapshots page on a phone</button>
+  </div>
+  <div class="statedesc" id="sd-copy"></div>
+  <div class="frame-out"><div class="window" id="w-copy"></div></div>
+</section>
+
+<!-- @@SCRIPT -->
+/* ===================== v13 ===================== */
+/* Everything above this point is v12's page (v6's kit, v7's to v12's parts), unchanged, up to v12's
+   screen table, which this replaces. The function declarations below replace earlier ones of the same name. */
+
+/* ---------- the copy icon ---------- */
+/* c.copied: 'ok' after a copy that worked, 'fail' after one that didn't; c.copyTip shows the tooltip */
+/* A blog sample isn't a file, so its icon says "Copy the code" (c.oneLabel) */
+function copyIcon(c, file, plain) {
+  const name = plain ? '' : file === PJ ? PJ : `${file}.pathogen`;
+  const what = plain ? esc(plain) : `<code>${esc(name)}</code>`;
+  const state = c.copied || '';
+  const icon = state === 'ok' ? I.check : state === 'fail' ? I.x : I.copy;
+  const tip = state === 'ok' ? `Copied ${what}`
+    : state === 'fail' ? `Couldn't copy. Select the text and press ⌘C`
+    : `Copy ${what}`;
+  const show = c.copyTip || state;
+  const aria = `Copy ${plain || name}`;
+  return `<span class="cpw"><button class="cp ${state} ${c.copyTip ? 'hov' : ''}" aria-label="${esc(aria)}" title="${esc(aria)}">${icon}</button>${show ? `<span class="cp-tip">${tip}</span>` : ''}</span>`;
+}
+function againV12(screen, o) { renderState(screen, null, Object.assign({}, LAST[screen], o)); }
+
+/* ---------- v12's code panels, with the icon ---------- */
+function pathLine(c, look) {
+  const p = c.open;
+  return `<div class="fpath ${look} ${isLib(p) ? 'lib' : ''}">${iconOf(p)}${pathHtml(p)}${markPill(c, p)}${copyIcon(c, p)}</div>`;
+}
+function menuRow(c) {
+  const p = c.open;
+  return `<div class="fmenu ${isLib(p) ? 'lib' : ''}" data-menu>${iconOf(p)}${pathHtml(p)}<span class="cv">${I.chevD}</span><span class="cnt">${fileCount(c)} files</span>${copyIcon(c, p)}</div>`;
+}
+function filesView(c, look) {
+  if (c.one) return `<div class="vone">${copyIcon(c, 'main', c.oneLabel)}<div class="vc ${look}">${linesHtml(SRC[c.oneKey])}</div></div>`;
+  if (c.narrow) return `<div class="vpane">${menuRow(c)}${codeBody(c, look)}</div>`;
+  return `<div class="vpane row">${listCol(c)}<div class="vpane">${pathLine(c, look)}${codeBody(c, look)}</div></div>`;
+}
+/* The viewer's bar loses Copy everywhere: copying is the code panel's */
+function miniWs(c) {
+  const bar = c.barOpen ? `<div class="mwr-bar">
+      <button class="mwr-ib ${c.codeOpen ? 'on' : ''}" title="Toggle code">${V12I.code}</button>
+      ${c.chips ? `<span class="mwr-div"></span><button class="mwb chip"><span class="dot" style="background:#d0d7f0"></span>--bg</button>` : ''}
+      <span class="mwr-div"></span>
+      <button class="mwb"><span class="sq" style="background:#ffffff"></span>Background</button>
+      <button class="mwb">${I.grid}Grid</button>
+      <button class="mwr-ib" title="Reset">${I.reset}</button>
+      <span class="mwr-div"></span>
+      <button class="mwr-ib" title="Fullscreen">${V12I.fs}</button>
+    </div>` : '';
+  const go = c.noOpen ? '' : `<span class="mwr-go" title="Open in playground workspace">${V12I.go}</span>`;
+  const code = c.codeOpen ? `<div class="mwr-code">${filesView(c, 'gh')}</div>` : '';
+  return `<div class="mwr ${c.barOpen ? 'bar-open' : ''} ${c.narrow ? 'narrow' : ''}">
+    <div class="mwr-sum"><span class="chev">${V12I.chevR}</span><h2 class="mwr-title">${esc(c.caption)}</h2></div>
+    ${go}${bar}
+    <div class="mwr-body ${c.codeOpen ? '' : 'closed'}">${code}
+      <div class="mwr-pv"><span class="mwr-hint">⌘/Ctrl + scroll to zoom</span><div class="canvas">${drawing(c.art)}</div><div class="zoom-wrap">${zoomPill({})}</div></div>
+    </div>
+  </div>`;
+}
+/* The snapshots page's breadcrumb: no Copy code */
+function snapCrumb(c) {
+  return `<div class="crumbbar"><div class="crumbs"><span>Workspaces</span><span class="sep">/</span><span>Gears</span><span class="sep">/</span><span>Snapshots</span><span class="sep">/</span><span class="cur">${esc(c.caption)}</span></div>
+    <div class="cr"><button class="btn-s" title="Create a new workspace with this snapshot's files">+ Start new workspace</button><button class="btn-s">Export…</button><button class="kebab">${I.kebab}</button></div></div>`;
+}
+/* The phone's snapshots page: the same, without Copy code */
+function phoneBoard(c) {
+  const inner = `<div class="ph-nav"><div class="brand">Pathogen <span>Studio</span></div><span class="sp"></span><span class="avatar">RK</span></div>
+      <div class="ph-crumb"><span>Gears</span><span class="sep">/</span><span>Snapshots</span><span class="sep">/</span><span class="cur">${esc(c.caption)}</span></div>
+      <div class="ph-ctl"><button class="btn-s">+ Start new workspace</button><button class="btn-s">Export…</button><button class="kebab">${I.kebab}</button></div>
+      <div class="sp-mini">${miniWs(c)}</div>${snapDetail(c)}${filmstrip(c, 3)}${phoneSheet(c)}`;
+  return `<div class="ph-stage"><div class="phone">${inner}</div><div class="ph-notes"><h4>The snapshots page</h4><ul><li>The icon sits at the right end of the file menu, after the count.</li><li>Copy code has left the actions row, so Start new workspace, Export… and ⋮ fit on one line.</li></ul></div></div>`;
+}
+
+/* ---------- the workspace (v8's window), with the icon in the tabs ---------- */
+function crumbbar(c) {
+  const err = c.chip === 'err', none = !!c.noPrograms;
+  const ws = ['My Gears', '(3-Gq8vR2mLpX_k-T4wNc)', c.noFiles ? '(1 KB)' : '(4 KB)'];
+  const stat = none ? '<span class="cstat none">No program</span>' : `<span class="cstat ${err ? 'err' : 'ok'}">${err ? 'Error' : 'Ready'}</span>`;
+  const file = c.open ? `<span class="sep">/</span>${fileCrumb(c.open)}` : '';
+  const files = `<button class="btn-s ${c.filesHidden ? '' : 'active'}" title="${c.filesHidden ? 'Show' : 'Hide'} the workspace's files">Files</button>`;
+  return `<div class="crumbbar">
+    <nav class="crumbs"><span>Workspaces</span><span class="sep">/</span><span class="cur">${ws[0]}</span><span class="ws-id">${ws[1]}</span><span class="ws-size">${ws[2]}</span>${file}</nav>
+    <div class="controls">
+      <div class="cl">
+        ${stat}
+        <span class="split"><button class="btn-s">${I.camera}Snapshot</button><button class="btn-s"><span class="count">2</span> ›</button></span>
+        <span class="tbar">${files}<button class="btn-s">Console</button></span>
+      </div>
+      <div class="cr"><span class="save">Saved</span><button class="kebab" title="More actions">${I.kebab}</button></div>
+    </div></div>`;
+}
+function tabStrip(c) {
+  const copy = c.open && !c.copyFloat ? `<span class="tab-copy">${copyIcon(c, c.open)}</span>` : '';
+  return `<div class="tabs"><div class="tabs-scroll">${c.tabs.map(p => {
+    if (p === PJ) return `<div class="tab ${p === c.open ? 'sel' : ''}" data-tab="${p}"><span class="fic">${I.braces}</span>${PJ}<span class="lk" title="Read-only">${I.lock}</span><span class="x">×</span></div>`;
+    const lib = isLibIn(c, p);
+    return `<div class="tab ${lib ? 'lib' : ''} ${p === c.open ? 'sel' : ''}" data-tab="${p}"><span class="fic">${lib ? I.lib : I.prog}</span>${label(p, c.tabs.filter(q => q !== PJ))}<span class="x">×</span></div>`;
+  }).join('')}</div>${copy}
+    <button class="tab-docs ${c.docs ? 'on' : ''}" aria-pressed="${!!c.docs}" title="${c.docs ? 'Hide the docs' : 'Show the docs'}">${I.book}</button></div>`;
+}
+function editor(c) {
+  if (!c.open) return `<div class="ed">${tabStrip(c)}${edEmpty(c)}</div>`;
+  const pj = c.open === PJ && !c.code;
+  const lines = pj ? pjLines(c) : c.code ? SRC[c.code] : SRC[c.open];
+  const hl = pj ? jsonLineHtml : lineHtml;
+  const body = lines.map((l, i) => {
+    const n = i + 1, cls = ['cm-ln', n === c.active ? 'act' : '', (c.changed || []).includes(n) ? 'chg' : ''].join(' ');
+    return `<div class="${cls}"><span class="gn">${n}</span><span class="lt">${hl(l)}</span></div>`;
+  }).join('');
+  const ro = pj ? `<div class="ro-bar ${c.roHint ? 'hl' : ''}">${RO_LINE}</div>` : '';
+  const float = c.copyFloat ? `<div class="cm-float">${copyIcon(c, c.open)}</div>` : '';
+  return `<div class="ed">${tabStrip(c)}${ro}<div class="cm">${body}</div>${float}</div>`;
+}
+function wsWindow(c) {
+  const cls = ['ws', c.inspector ? 'with-insp' : '', c.filesHidden ? 'no-files' : ''].join(' ');
+  return `${topnav()}${crumbbar(c)}<div class="ws-wrap"><div class="${cls}">${c.filesHidden ? '' : filesPane(c)}${editor(c)}${preview(c)}${inspector(c)}${overlays(c)}</div>${errorPanel(c)}${docsPanel(c)}${dialog(c)}${kebabMenu(c)}</div>${toast(c)}`;
+}
+/* v8's phone, without Copy Code in the control row */
+function phone(c) {
+  const pv = previewBox(Object.assign({}, c, { pickOpen: false }));
+  return `<div class="ph-stage"><div class="phone">
+    <div class="ph-nav"><span class="brand">Pathogen <span>Studio</span></span><span class="sp"></span><button class="theme-btn">${I.sun}${I.moon}</button><span class="avatar">RK</span></div>
+    <div class="ph-crumb"><span class="cur">My Gears</span><span class="sep">/</span>${fileCrumb(c.open)}<span class="save">Saved</span></div>
+    <div class="ph-ctl"><span class="cstat ok">Ready</span><button class="btn-s" title="Snapshot">${I.camera}</button>
+      <span class="tbar"><button class="btn-s">Files</button><button class="btn-s">Console</button></span><span class="sp"></span><button class="kebab">${I.kebab}</button></div>
+    <div class="ph-body">${editor(c)}<div class="pv">${pv}</div></div>
+  </div><div class="ph-notes"><h4>The workspace on a phone</h4><ul><li>The icon keeps its place at the right end of the tabs, before the docs book.</li><li>The control row loses Copy Code.</li></ul></div></div>`;
+}
+
+/* ---------- a blog post around an embed ---------- */
+function blogPost(c) {
+  return `<div class="bpost"><p>Each ring sits on a panel filled with <code>--bg</code>, the drawing's own colour variable. Change it with the chip, and the panel follows.</p>
+    <div class="mw-h">${miniWs(c)}</div><p>The paragraph after the embed goes on as before.</p></div>`;
+}
+
+/* ---------- which page a state draws (v12's, with the workspace and the blog) ---------- */
+function workspace(c) {
+  LAST[c.screen] = c;
+  if (c.frame === 'ws') return wsWindow(c);
+  if (c.frame === 'wsphone') return `<div class="frame-bare">${phone(c)}</div>`;
+  if (c.frame === 'blog') return blogPost(c);
+  if (c.frame === 'snap') return `${topnav()}${snapPage(c)}`;
+  if (c.frame === 'pub') return pubPage(c);
+  if (c.frame === 'admin') return adminPage(c, topnav());
+  if (c.frame === 'phone') return `<div class="frame-bare">${phoneBoard(c)}</div>`;
+  return '';
+}
+
+/* ---------- the screen and its states ---------- */
+const WS = o => C(Object.assign({ board: true, screen: 'copy', frame: 'ws', open: 'parts/gears', tabs: ['main', 'parts/gears', 'parts/kit'], active: 9 }, o));
+const CP = o => Object.assign({ screen: 'copy' }, o);
+const BLOG = o => V12(Object.assign({ screen: 'copy', frame: 'blog', one: true, oneKey: 'swatch', oneLabel: 'the code', art: 'swatch', caption: 'Four rings on a panel in the drawing\'s own --bg', barOpen: true, chips: true }, o));
+const SCREENS = {
+  copy: { states: {
+    'ws': [WS({ copyTip: true }),
+      '<b>The workspace.</b> Copy Code has left the breadcrumb. The icon sits at the right end of the tabs, before the docs book, and copies the file in the editor; its tooltip names it.'],
+    'ws-float': [WS({ copyFloat: true, copyTip: true }),
+      'Option (b): the icon <b>floats over the top right of the code</b>, as in the viewers\' one-file panels. It covers the end of a long line there.'],
+    'ws-none': [WS({ open: null, tabs: [] }),
+      '<b>No file open</b>: no icon, since there\'s nothing to copy. The editor\'s zero-state shows. Today Copy Code stays in the breadcrumb, off.'],
+    'ws-phone': [WS({ frame: 'wsphone', open: 'main', tabs: ['main', 'parts/gears'], active: 7 }),
+      'The workspace on a <b>phone</b>: the icon at the right end of the tabs, and no Copy Code in the control row.'],
+    'snap': [SNAP(CP({ caption: 'Gears #4', film: 4, art: 'demo', open: 'demos/gears', copyTip: true })),
+      'The <b>snapshots page</b>, the case from your screenshot. Copy code has left the breadcrumb; the icon is on the line naming the open file, and copies that file: here <code>demos/gears.pathogen</code>, the program that drew this snapshot.'],
+    'copied': [SNAP(CP({ open: 'parts/gears', copied: 'ok' })),
+      'After a click, once the copy has <b>worked</b>: a check and "Copied", for about two seconds.'],
+    'fail': [SNAP(CP({ open: 'parts/gears', copied: 'fail' })),
+      'If the browser <b>refuses</b> the copy: an ×, and what to do instead.'],
+    'snap-one': [SNAP(CP(Object.assign({ copyTip: true }, ONE_SNAP))),
+      'A snapshot with <b>one file</b>: no path line, so the icon floats in the code panel\'s top right corner, over the code.'],
+    'review': [ADM(CP({ modal: { title: 'Gears' }, barOpen: true, copyTip: true })),
+      'The <b>review modal</b>: the icon in the code panel. The viewer\'s bar has no Copy, and there\'s no ↗ (your answer 2).'],
+    'review-one': [ADM(CP({ modal: { title: 'Four rings' }, one: true, oneKey: 'swatch', art: 'swatch', barOpen: true })),
+      'The review modal with <b>one file</b>: the icon in the corner, and no ↗ for this entry either, as I read your answer 2 ("suppress the button for the time being").'],
+    'pub': [PUB(CP({ open: 'parts/gears', copyTip: true })),
+      'The <b>public page</b>, which has no copy today: the icon on the line naming the open file.'],
+    'pub-one': [PUB(CP({ one: true, oneKey: 'swatch', pub: 'rings', art: 'swatch', copyTip: true })),
+      'The public page with <b>one file</b>: the icon in the code\'s top right corner.'],
+    'blog': [BLOG({ copyTip: true }),
+      'A <b>blog embed</b>: Copy has left the viewer\'s bar (the bar is open here) for the code panel\'s corner. The ↗ stays: a blog sample is one program.'],
+    'blog-closed': [BLOG({ codeOpen: false }),
+      'The same embed with its <b>code closed</b>: nothing to copy until you open it. Today the bar\'s Copy works with the code closed.'],
+    'snap-phone': [PH(CP({ page: 'snap', copyTip: true })),
+      'The snapshots page on a <b>phone</b>: the icon at the right end of the file menu.'],
+  } },
+};
+
+/* ---------- clicks: a file, the phone's menu and sheet, and the icon itself ---------- */
+Object.keys(SCREENS).forEach(screen => {
+  document.getElementById('w-' + screen).addEventListener('click', e => {
+    if (e.target.closest('.cp')) return againV12(screen, { copied: 'ok', copyTip: false });
+    const f = e.target.closest('[data-file]');
+    if (f) return againV12(screen, { open: f.dataset.file, sheet: false, copied: '', copyTip: false });
+    if (e.target.closest('[data-src-toggle]')) return againV12(screen, { srcOpen: !LAST[screen].srcOpen });
+    if (e.target.closest('[data-menu]')) return againV12(screen, { sheet: true });
+    if (e.target.closest('.ph-scrim')) return againV12(screen, { sheet: false });
+  });
+});

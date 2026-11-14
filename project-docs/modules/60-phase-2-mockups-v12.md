@@ -96,6 +96,16 @@ So **step 6 serves every file's name in the page.** The texts come from `source.
 
 Also for your eye: the badges in the list. With words ("changed") in the list, names in the modal's narrow pane were cut short, to `gears.pa…`. So the list has a small badge with a sign and a colour, and the words are in the box and in the open file's line. The sign means the badges don't rest on colour alone.
 
+## Your answers (2026-11-14)
+
+1. **The list beside the code.** "I prefer the version with the file tree next to the code."
+   - **And a new direction for copying,** from S3's screenshot: "what does copy code mean? In the context of the snapshot page, the button feels like it is too far away from the actual code, and there is uncertainty as to which code is being copied...It makes me think that we should be moving the copy code action into an icon button that sits in the top right of the code panel. This seems like the right solution on snapshot page as well as anywhere else where we will be displaying code in the web app (including the primary workspace.)"
+   - *My reading, to confirm:* the icon copies the file it sits on, the one shown. On the snapshots page that's the program that drew the image until you open another file. So answer A's Copy code becomes "the file shown", and note 59's question 1 (the viewer's own Copy) is settled the same way. The breadcrumb's Copy code goes, on the snapshots page and in the workspace.
+2. **Start new workspace copies everything.** "Start new workspace (from a snapshot or a public page) should be copying the entirety of the code to a new workspace (entrypoints, modules, folders, pathogen.json.)" That's what steps 3 and 4 build: the snapshot's route copies its whole manifest, and Open as new workspace creates from `source.json`'s files, folders and `entryPoints`.
+   - **The review modal's ↗:** "In the case of review now, we can suppress the button for the time being, but bring it back at the point where we move publishing to point at a specific snapshot." *My reading:* hidden in the review modal for every entry, one file included. On the backlog with "Publish from a snapshot".
+
+Next: a v13 mockup round for the copy icon wherever a code panel shows code (note 61).
+
 ## After your review
 
 - The style you choose becomes the one built.
