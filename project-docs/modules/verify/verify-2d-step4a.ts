@@ -420,13 +420,17 @@ try {
   tree = await treeState(page);
   check('after a reload the tree shows again, on the main', tree.open && JSON.stringify(tree.active) === '["main.pathogen"]', tree);
 
-  // 11. At 700 px the tree stacks above the editor, its height capped (step 9 brings the drawer).
+  // 11. At 700 px the tree is a drawer (step 9b; verify-2d-step9b.ts checks it): narrowing the
+  //     window closes the tree rather than open the drawer over the editor. (Before 9b the tree
+  //     stacked above the editor here, capped at 30% of the window.)
   await page.setViewport({ width: 700, height: 860 });
   await new Promise((r) => setTimeout(r, 500));
   tree = await treeState(page);
-  check('at 700 px the tree sits above the editor, no taller than 30% of the window', tree.open && (tree.rect?.bottom ?? 999) <= (tree.editor?.top ?? 0) + 1 && (tree.rect?.height ?? 999) <= 860 * 0.3 + 1, tree);
+  check('at 700 px the tree closes: below 800 px it’s a drawer, opened with Files', !tree.open, tree);
   await page.screenshot({ path: `${SHOTS}/2d-step4a-narrow-light.png` });
   await page.setViewport({ width: 1320, height: 860 });
+  // Files shows it again on a desktop.
+  await clickFiles(page);
 
   // 12. A scratch link has no files: no Files, no tree.
   const state = (await page.evaluate(

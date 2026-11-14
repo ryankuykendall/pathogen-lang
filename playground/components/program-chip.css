@@ -353,9 +353,63 @@
   visibility: visible;
 }
 
-@media (hover: none) {
+@media (hover: none), (max-width: 800px) {
   .open {
     visibility: visible;
+  }
+}
+
+/* ---------- Below 800 px: the list is a sheet from the foot of the screen (2d, step 9b; v7 screen M, state 3) ---------- */
+
+.scrim {
+  display: none;
+}
+
+@media (max-width: 800px) {
+  .scrim:not([hidden]) {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 99;
+    background: var(--scrim, rgba(20, 16, 28, 0.42));
+  }
+
+  /* The list's own sizing (_fit) is for a popover in the preview: the sheet sets its own. */
+  .list {
+    position: fixed;
+    top: auto;
+    right: 0 !important;
+    bottom: 0;
+    left: 0;
+    z-index: 100;
+    width: auto;
+    max-height: 72vh !important;
+    padding: 18px 10px calc(10px + env(safe-area-inset-bottom, 0px));
+    border-width: 1px 0 0;
+    border-radius: 16px 16px 0 0;
+  }
+
+  /* The sheet's handle. */
+  .list::before {
+    content: '';
+    position: absolute;
+    top: 7px;
+    left: 50%;
+    width: 36px;
+    height: 4px;
+    margin-left: -18px;
+    border-radius: 2px;
+    background: var(--border-strong, #cbd5e1);
+  }
+
+  .prow {
+    min-height: 56px;
+  }
+
+  .open {
+    width: 34px;
+    height: 34px;
+    margin-right: 6px;
   }
 }
 

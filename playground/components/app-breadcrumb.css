@@ -191,6 +191,8 @@
   padding: 4px 10px;
   font-size: 0.75rem;
   font-family: inherit;
+  /* "Copy Code" stays on one line on a phone (mockup v7 screen M). */
+  white-space: nowrap;
   background: transparent;
   border: 1px solid var(--border-color, rgba(28, 23, 34, 0.10));
   border-radius: 4px;
@@ -468,6 +470,18 @@
 }
 
 /* ---------- Responsive ---------- */
+
+/* Below 800 px (2d, step 9b; mockup v7 screen M): the workspace's id and size go, and Snapshot is its icon. */
+@media (max-width: 800px) {
+  .workspace-id,
+  .workspace-size {
+    display: none;
+  }
+  .snapshot-btn span {
+    display: none;
+  }
+}
+
 @media (max-width: 768px) {
   .breadcrumb-bar {
     padding: 0.4rem 0.75rem;

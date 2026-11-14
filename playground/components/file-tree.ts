@@ -57,6 +57,7 @@ import { captureDrop, pickedFromInput } from '../services/uploads.js';
 import { renamedPath } from '../services/workspace-edits.js';
 import { FILE_ICONS, MAIN_BADGE_TITLE } from '../utils/file-icons.js';
 import { treeRows } from '../utils/file-tree-rows.js';
+import { canDragRows, isNarrow, isTouch, onNarrowChange } from '../utils/narrow.js';
 import './clash-prompt.js';
 import styles from './file-tree.css';
 
@@ -68,6 +69,9 @@ const esc = (s: string): string =>
 
 const LOCK_TITLE = 'Read-only: the playground writes this file';
 const ADD_LABEL = 'Add a file or folder';
+// Below 800 px the tree is a drawer (step 9b; mockup v7 screen M, state 2): its × and its last line.
+const CLOSE_LABEL = 'Close the files';
+const DRAWER_HINT = 'Tap a file to open it; the drawer closes. Every row has its ⋮.';
 const KEYS_HINT = 'Enter to create, Esc to cancel';
 const RENAME_KEYS_HINT = 'Enter to rename, Esc to cancel';
 const HERE_NOW = 'It’s here now';
@@ -133,27 +137,37 @@ const NEW_KIND: Partial<Record<MenuAction, NewEntryKind>> = {
   'new-folder': 'folder',
 };
 
-/** Whether this browser's file picker can pick a folder (Upload folder… shows only then: docs "On a phone"). */
-const CAN_PICK_FOLDER = typeof HTMLInputElement !== 'undefined' && 'webkitdirectory' in HTMLInputElement.prototype;
+/**
+ * Whether this browser's file picker can pick a folder (Upload folder… shows
+ * only then: docs "On a phone"). Phone browsers have the attribute but can't
+ * pick a folder, so a touch screen counts as one that can't (step 9b; v7 screen M).
+ */
+const canPickFolder = (): boolean =>
+  typeof HTMLInputElement !== 'undefined' && 'webkitdirectory' in HTMLInputElement.prototype && !isTouch();
 
 /** The + menu's items, and a folder's menu's first ones: the new files, then the uploads (step 6a; mockup v6 screen N). */
-const ADD_ITEMS: MenuEntry[] = [
-  { action: 'new-program', label: 'New program', detail: 'A file that draws', icon: FILE_ICONS.program },
-  { action: 'new-library', label: 'New module', icon: FILE_ICONS.library },
-  { action: 'new-folder', label: 'New folder', icon: FILE_ICONS.folderPlus },
-  'divider',
-  { action: 'upload-files', label: 'Upload files…', detail: 'Or drop them on the tree', icon: FILE_ICONS.upload },
-  ...(CAN_PICK_FOLDER
-    ? [
-        {
-          action: 'upload-folder',
-          label: 'Upload folder…',
-          detail: 'Keeps the folders inside it',
-          icon: FILE_ICONS.folderUp,
-        } as MenuItem,
-      ]
-    : []),
-];
+function addItems(): MenuEntry[] {
+  return [
+    { action: 'new-program', label: 'New program', detail: 'A file that draws', icon: FILE_ICONS.program },
+    { action: 'new-library', label: 'New module', icon: FILE_ICONS.library },
+    { action: 'new-folder', label: 'New folder', icon: FILE_ICONS.folderPlus },
+    'divider',
+    // Files are dropped on the tree only where rows can be dragged (step 9b).
+    canDragRows()
+      ? { action: 'upload-files', label: 'Upload files…', detail: 'Or drop them on the tree', icon: FILE_ICONS.upload }
+      : { action: 'upload-files', label: 'Upload files…', icon: FILE_ICONS.upload },
+    ...(canPickFolder()
+      ? [
+          {
+            action: 'upload-folder',
+            label: 'Upload folder…',
+            detail: 'Keeps the folders inside it',
+            icon: FILE_ICONS.folderUp,
+          } as MenuItem,
+        ]
+      : []),
+  ];
+}
 
 const SET_MAIN: MenuItem = {
   action: 'set-main',
@@ -239,15 +253,17 @@ function rowHtml(row: TreeRow): string {
   // (Shift+F10 or the menu key), and the row says it has one (aria-haspopup), so the ⋮ stays
   // out of the row's spoken name.
   const dots = `<button class="row-menu" type="button" tabindex="-1" aria-hidden="true" title="More">${FILE_ICONS.kebab}</button>`;
+  // Dragged with a mouse on a wide screen only (step 9b): on a phone, Move to… moves.
+  const drag = canDragRows() ? ' draggable="true"' : '';
   if (row.type === 'folder') {
     const label = row.empty ? ` aria-label="${esc(row.name)}, empty"` : '';
-    return `<div class="row folder${row.expanded ? '' : ' folded'}" ${common} draggable="true" aria-haspopup="menu" aria-expanded="${row.expanded}"${label}><span class="chev">${FILE_ICONS.chevron}</span><span class="icon">${FILE_ICONS.folder}</span><span class="name">${esc(row.name)}</span>${dots}</div>`;
+    return `<div class="row folder${row.expanded ? '' : ' folded'}" ${common}${drag} aria-haspopup="menu" aria-expanded="${row.expanded}"${label}><span class="chev">${FILE_ICONS.chevron}</span><span class="icon">${FILE_ICONS.folder}</span><span class="name">${esc(row.name)}</span>${dots}</div>`;
   }
   if (row.type === 'project') {
     return `<div class="row project" ${common}><span class="chev"></span><span class="icon">${FILE_ICONS.json}</span><span class="name">${nameHtml(row.name)}</span><span class="lock" title="${LOCK_TITLE}">${FILE_ICONS.lock}</span></div>`;
   }
   const badge = row.main ? `<span class="badge-main" title="${MAIN_BADGE_TITLE}">main</span>` : '';
-  return `<div class="row file ${row.kind}" ${common} draggable="true" aria-haspopup="menu"><span class="chev"></span><span class="icon">${FILE_ICONS[row.kind]}</span><span class="name">${nameHtml(row.name)}</span>${badge}${dots}</div>`;
+  return `<div class="row file ${row.kind}" ${common}${drag} aria-haspopup="menu"><span class="chev"></span><span class="icon">${FILE_ICONS[row.kind]}</span><span class="name">${nameHtml(row.name)}</span>${badge}${dots}</div>`;
 }
 
 const parentOf = (path: string): string => (path.includes('/') ? path.slice(0, path.lastIndexOf('/')) : '');
@@ -350,8 +366,14 @@ export class FileTree extends HTMLElement {
     this._closeMenu(false);
   };
 
-  /** The menu is placed once, when it opens; a resize closes it rather than leave it floating. */
-  private readonly _onResize = (): void => this._closeMenu(false);
+  /**
+   * The menu is placed once, when it opens; a resize closes it rather than leave it floating.
+   * An action sheet stays: it sits at the screen's foot, and a phone resizes as its address bar
+   * hides (step 9b). Crossing 800 px closes it (_watchScreen).
+   */
+  private readonly _onResize = (): void => {
+    if (!this._menu!.classList.contains('sheet')) this._closeMenu(false);
+  };
 
   /**
    * Whether a pointer is down. The name field's blur then comes from a click
@@ -380,11 +402,18 @@ export class FileTree extends HTMLElement {
     window.addEventListener('pointerdown', this._onPointerDown, true);
     window.addEventListener('pointerup', this._onPointerUp, true);
     window.addEventListener('pointercancel', this._onPointerUp, true);
-    if (this.shadowRoot!.firstChild) return;
+    this._watchScreen();
+    if (this.shadowRoot!.firstChild) {
+      // Back in the page: the screen may have changed while it was out.
+      this._draw();
+      return;
+    }
     this.shadowRoot!.innerHTML = `
       <style>${styles}</style>
-      <div class="head"><span class="title" aria-hidden="true">Files</span><button class="add" type="button" aria-label="${ADD_LABEL}" title="${ADD_LABEL}" aria-haspopup="menu" aria-expanded="false" aria-controls="add-menu">${FILE_ICONS.plus}</button></div>
+      <div class="head"><span class="title" aria-hidden="true">Files</span><button class="add" type="button" aria-label="${ADD_LABEL}" title="${ADD_LABEL}" aria-haspopup="menu" aria-expanded="false" aria-controls="add-menu">${FILE_ICONS.plus}</button><button class="close-files" type="button" aria-label="${CLOSE_LABEL}" title="${CLOSE_LABEL}">${FILE_ICONS.close}</button></div>
       <div class="list" role="tree" aria-label="Files"></div>
+      <p class="drawer-hint">${DRAWER_HINT}</p>
+      <div class="sheet-scrim" aria-hidden="true" hidden></div>
       <div class="menu" id="add-menu" role="menu" aria-label="Add" hidden></div>
       <input class="pick-files" type="file" multiple accept=".pathogen" hidden tabindex="-1">
       <input class="pick-folder" type="file" webkitdirectory hidden tabindex="-1">
@@ -409,6 +438,15 @@ export class FileTree extends HTMLElement {
       if (to === null || !this.contains(to)) this._endDrop();
     });
     this.addEventListener('drop', (e) => this._onDrop(e));
+    // Below 800 px the tree is a drawer (step 9b): its × asks for it to close, and so does Esc
+    // anywhere in it (a row, the +, the ×). A menu or a name field takes Esc first, and stops it.
+    this.shadowRoot!.querySelector('.close-files')!.addEventListener('click', () => this._closeDrawer(true));
+    this.shadowRoot!.addEventListener('keydown', (e) => {
+      const key = e as KeyboardEvent;
+      if (key.key !== 'Escape' || key.defaultPrevented || !isNarrow()) return;
+      key.preventDefault();
+      this._closeDrawer(true);
+    });
     const list = this._list!;
     // A row dragged within the tree (step 6b) moves it.
     list.addEventListener('dragstart', (e) => this._onDragStart(e));
@@ -439,6 +477,11 @@ export class FileTree extends HTMLElement {
     const menu = this._menu!;
     menu.addEventListener('keydown', (e) => this._onMenuKeydown(e));
     menu.addEventListener('click', (e) => {
+      // An action sheet's Cancel (step 9b), as Esc.
+      if ((e.target as HTMLElement).closest('.menu-cancel')) {
+        this._closeMenu(true);
+        return;
+      }
       const item = (e.target as HTMLElement).closest<HTMLElement>('[role="menuitem"]');
       // A folder Move to… can't use stays in the list, saying why; choosing it does nothing.
       if (item && item.getAttribute('aria-disabled') !== 'true') this._choose(item.dataset.action as MenuAction, item);
@@ -455,7 +498,28 @@ export class FileTree extends HTMLElement {
     this._draw();
   }
 
+  /** Below 800 px, or on a touch screen, rows don't drag and menus are sheets: a resize or rotation redraws (step 9b). */
+  private _narrowUndo: (() => void) | null = null;
+
+  private _watchScreen(): void {
+    this._narrowUndo?.();
+    this._narrowUndo = onNarrowChange(() => {
+      this._closeMenu(false);
+      this._draw();
+    });
+  }
+
+  /**
+   * Below 800 px the tree is a drawer over the editor: ask for it to close (workspace-view hides
+   * it). `dismissed` (its × or Esc, not a file chosen) sends the keyboard back to Files.
+   */
+  private _closeDrawer(dismissed: boolean): void {
+    this.dispatchEvent(new CustomEvent('close-files', { bubbles: true, composed: true, detail: { dismissed } }));
+  }
+
   disconnectedCallback(): void {
+    this._narrowUndo?.();
+    this._narrowUndo = null;
     this._closeMenu(false);
     this._endMove();
     if (this._flashTimer) clearTimeout(this._flashTimer);
@@ -563,7 +627,8 @@ export class FileTree extends HTMLElement {
       : null;
     const rows = treeRows(this._files, this._folders, { collapsed: this._collapsed, main: this._main, naming });
     this._rows = rows;
-    const key = JSON.stringify(rows);
+    // Whether rows drag is in the markup too (step 9b): a resize across 800 px redraws.
+    const key = `${canDragRows() ? 'drag' : 'still'}:${JSON.stringify(rows)}`;
     /** The keyboard was in a menu that this redraw closed: it goes to the tree's Tab stop. */
     let focusStop = false;
     if (key !== this._drawn) {
@@ -707,6 +772,8 @@ export class FileTree extends HTMLElement {
 
   private _open(path: string, focusEditor: boolean): void {
     this.dispatchEvent(new CustomEvent('open-file', { bubbles: true, composed: true, detail: { path, focusEditor } }));
+    // A file chosen in the drawer opens, and the drawer closes (step 9b; docs "On a phone").
+    if (isNarrow()) this._closeDrawer(false);
   }
 
   private _onClick(e: MouseEvent): void {
@@ -832,20 +899,34 @@ export class FileTree extends HTMLElement {
   }): void {
     this._closeMenu(false);
     const menu = this._menu!;
-    menu.innerHTML = menuHtml(spec.head, spec.entries);
+    // Below 800 px a menu is an action sheet (step 9b; mockup v7 screen M, state 4): the same
+    // items, under the row's path, in large rows, with Cancel. Its CSS places it.
+    const sheet = isNarrow();
+    const head = sheet && spec.head === null && spec.path !== null ? `<code>${esc(spec.path)}</code>` : spec.head;
+    menu.innerHTML =
+      menuHtml(head, spec.entries) + (sheet ? '<button type="button" class="menu-cancel">Cancel</button>' : '');
+    menu.classList.toggle('sheet', sheet);
+    this.shadowRoot!.querySelector<HTMLElement>('.sheet-scrim')!.hidden = !sheet;
     menu.setAttribute('aria-label', spec.label);
     this._menuTarget = spec.target;
     this._menuPath = spec.path;
     this._menuOpener = spec.opener;
     this._menuReturn = spec.returnTo;
-    const width = Math.min(spec.place.width, window.innerWidth - 16);
-    menu.style.width = `${width}px`;
-    menu.style.left = `${Math.max(8, Math.min(spec.place.left, window.innerWidth - width - 8))}px`;
-    menu.style.top = `${spec.place.top}px`;
-    menu.hidden = false;
-    const height = menu.getBoundingClientRect().height;
-    if (height > 0 && spec.place.top + height > window.innerHeight - 8) {
-      menu.style.top = `${Math.max(8, spec.flipAbove - height)}px`;
+    if (sheet) {
+      menu.style.width = '';
+      menu.style.left = '';
+      menu.style.top = '';
+      menu.hidden = false;
+    } else {
+      const width = Math.min(spec.place.width, window.innerWidth - 16);
+      menu.style.width = `${width}px`;
+      menu.style.left = `${Math.max(8, Math.min(spec.place.left, window.innerWidth - width - 8))}px`;
+      menu.style.top = `${spec.place.top}px`;
+      menu.hidden = false;
+      const height = menu.getBoundingClientRect().height;
+      if (height > 0 && spec.place.top + height > window.innerHeight - 8) {
+        menu.style.top = `${Math.max(8, spec.flipAbove - height)}px`;
+      }
     }
     this._menuOpen = true;
     if (spec.opener.hasAttribute('aria-haspopup')) spec.opener.setAttribute('aria-expanded', 'true');
@@ -870,7 +951,7 @@ export class FileTree extends HTMLElement {
       returnTo: add,
       label: 'Add',
       head: addHead(target),
-      entries: ADD_ITEMS,
+      entries: addItems(),
       target,
       path: null,
       place: { left: host.left + 8, top: head.bottom + 2, width: Math.max(200, Math.min(240, host.width - 16)) },
@@ -894,7 +975,7 @@ export class FileTree extends HTMLElement {
     let entries: MenuEntry[];
     if (row.classList.contains('folder')) {
       head = addHead(path);
-      entries = [...ADD_ITEMS, 'divider', RENAME_FOLDER, MOVE_FOLDER, DELETE_FOLDER];
+      entries = [...addItems(), 'divider', RENAME_FOLDER, MOVE_FOLDER, DELETE_FOLDER];
     } else if (row.classList.contains('program') && path !== this._main) {
       entries = [SET_MAIN, 'divider', RENAME_FILE, MOVE_FILE, DUPLICATE, 'divider', DELETE_FILE];
     } else {
@@ -1031,6 +1112,7 @@ export class FileTree extends HTMLElement {
     if (!this._menuOpen) return;
     this._menuOpen = false;
     this._menu!.hidden = true;
+    this.shadowRoot!.querySelector<HTMLElement>('.sheet-scrim')!.hidden = true;
     const opener = this._menuOpener;
     if (opener?.hasAttribute('aria-haspopup')) opener.setAttribute('aria-expanded', 'false');
     opener?.classList.remove('on');
@@ -1340,7 +1422,8 @@ export class FileTree extends HTMLElement {
   private _onDragStart(e: DragEvent): void {
     const path = this._pathOf(e.target);
     if (path === null || !e.dataTransfer) return;
-    if (this._naming || path === 'pathogen.json') {
+    // Nothing is dragged below 800 px or on touch (step 9b); the rows say so, and this is the backstop.
+    if (this._naming || path === 'pathogen.json' || !canDragRows()) {
       e.preventDefault();
       return;
     }

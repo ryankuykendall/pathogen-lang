@@ -470,18 +470,19 @@ try {
   await page.keyboard.press('Escape');
   await pause(300);
 
-  // 13. A narrow window (the panes stack): the chip and its list stay inside the preview.
+  // 13. A narrow window (the panes stack): below 800 px the list is a sheet from the foot of the
+  //     window, its width (step 9b; verify-2d-step9b.ts checks it on a phone). Before 9b the list
+  //     stayed inside the preview here. Either way the preview doesn't scroll.
   await page.setViewport({ width: 700, height: 900 });
   await open(page, id);
   await click(page, CHIP, '.pick');
-  const narrowPreview = (await page.evaluate(`(() => { const b = window.__find('svg-preview-pane').getBoundingClientRect(); return { left: b.left, right: b.right, top: b.top, bottom: b.bottom }; })()`)) as { left: number; right: number; top: number; bottom: number };
   const narrowList = await rectIn(page, CHIP, '.list');
   const paneScroll = (await page.evaluate(`(() => { const p = window.__find('svg-preview-pane'); return { h: p.scrollHeight - p.clientHeight, w: p.scrollWidth - p.clientWidth }; })()`)) as { h: number; w: number };
   await page.screenshot({ path: `${SHOTS}/2d-step5a-narrow-light.png` });
   check(
-    'at 700 px the list fits inside the preview, and the preview doesn’t scroll',
-    narrowList.top >= narrowPreview.top && narrowList.left >= narrowPreview.left && narrowList.right <= narrowPreview.right && paneScroll.h <= 0 && paneScroll.w <= 0,
-    { narrowPreview, narrowList, paneScroll },
+    'at 700 px the list is a sheet at the window’s foot, its width, and the preview doesn’t scroll',
+    narrowList.left === 0 && Math.abs(narrowList.right - 700) <= 1 && Math.abs(narrowList.bottom - 900) <= 1 && paneScroll.h <= 0 && paneScroll.w <= 0,
+    { narrowList, paneScroll },
   );
   // 13b. A phone's width: the zoom controls and the chip fit side by side (the chip's name shortens).
   await page.setViewport({ width: 390, height: 844 });

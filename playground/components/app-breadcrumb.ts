@@ -340,7 +340,8 @@ class AppBreadcrumb extends HTMLElement {
     }
     const count = store.get('snapshotCount') as number | null;
     const showCount = !!workspaceId && !!currentUser && count != null;
-    const snapBtn = `<button id="snapshot-btn" class="snapshot-btn" ${
+    // Below 800 px it's its icon alone (step 9b): the label keeps its name for a screen reader.
+    const snapBtn = `<button id="snapshot-btn" class="snapshot-btn" aria-label="Snapshot" ${
       disabledReason
         ? `disabled aria-disabled="true" title="${disabledReason}"`
         : 'title="Save this image with the code that drew it"'

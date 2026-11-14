@@ -171,8 +171,8 @@ Every workspace has a `pathogen.json` at the top: the same project file that the
 
 On a screen narrower than 800 pixels, such as a phone's, the editor sits above the preview.
 
-- **Files** opens the tree as a panel over them. Choosing a file opens it and closes the panel.
-- The program list opens from the bottom of the screen.
+- **Files** opens the tree as a panel over them and dims the rest of the screen. Choosing a file opens it and closes the panel. The panel's **×**, a tap on the dimmed screen, or Esc also closes it.
+- The program list opens from the bottom of the screen. So do the tree's menus, which end with a **Cancel** button.
 - Each row's ⋮ and each program's **Open in the editor** are always shown, since there's no hover.
 - Nothing is dragged. Use **Move to…** to move a file, and **Upload files…** to add some. **Upload folder…** is there only where the browser can pick a folder.
 

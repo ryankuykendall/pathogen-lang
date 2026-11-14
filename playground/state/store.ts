@@ -2,6 +2,7 @@
 // Simple pub/sub pattern - no framework needed
 
 import { perfEnabled, perfSpan } from '../utils/perf-marks.js';
+import { isNarrow } from '../utils/narrow.js';
 
 type StoreCallback = (value: unknown, key: string) => void;
 
@@ -212,8 +213,9 @@ export const store = createStore({
   consoleOpen: false,
   docsOpen: false,
   inspectorOpen: false,
-  // The file tree: shown until Files hides it (2d, step 4a; every mockup draws it shown).
-  filesOpen: true,
+  // The file tree: shown until Files hides it (2d, step 4a; every mockup draws it shown). Below
+  // 800 px it's a drawer over the editor, so it starts closed there (step 9b; v7 screen M).
+  filesOpen: !isNarrow(),
 
   // File state
   currentFileName: null,

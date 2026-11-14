@@ -1,9 +1,16 @@
-// Main workspace layout container
+// Main workspace layout container. Below 800 px the panes stack, and the file
+// tree is a drawer over them from the left, the rest dimmed (2d, step 9b;
+// mockup v7 screen M, state 2; docs/workspace-files.md "On a phone").
 
 import { store } from '../state/store.js';
+import { focusFilesToggle, isNarrow, onNarrowChange } from '../utils/narrow.js';
 
 export class PlaygroundMain extends HTMLElement {
   private _unsubscribe: (() => void) | null = null;
+
+  private _filesUnsubscribe: (() => void) | null = null;
+
+  private _narrowUndo: (() => void) | null = null;
 
   constructor() {
     super();
@@ -15,13 +22,56 @@ export class PlaygroundMain extends HTMLElement {
     this._unsubscribe = store.subscribe('inspectorOpen', () => {
       this.classList.toggle('inspector-open', store.get('inspectorOpen') as boolean);
     });
+    this._filesUnsubscribe = store.subscribe('filesOpen', () => this._applyFilesOpen());
+    // Narrowed with the tree open (a window made narrow, a tablet turned): the drawer
+    // doesn't open over the editor by itself.
+    this._narrowUndo = onNarrowChange(() => {
+      if (isNarrow() && (store.get('filesOpen') as boolean)) store.set('filesOpen', false);
+      this._applyFilesOpen();
+    });
+    window.addEventListener('resize', this._onResize);
+    document.addEventListener('keydown', this._onEscape);
+    this.shadowRoot!.querySelector('.drawer-scrim')!.addEventListener('click', () => store.set('filesOpen', false));
+    this._applyFilesOpen();
   }
+
+  /**
+   * Esc closes the drawer wherever the keyboard is (on Files, say). Heard last, on the way
+   * up: the tree, its menus and fields, and the program list take Esc first and stop it.
+   */
+  private readonly _onEscape = (e: KeyboardEvent): void => {
+    if (e.key !== 'Escape' || e.defaultPrevented || !isNarrow() || !(store.get('filesOpen') as boolean)) return;
+    e.preventDefault();
+    store.set('filesOpen', false);
+    focusFilesToggle();
+  };
 
   disconnectedCallback(): void {
     if (this._unsubscribe) {
       this._unsubscribe();
       this._unsubscribe = null;
     }
+    this._filesUnsubscribe?.();
+    this._filesUnsubscribe = null;
+    this._narrowUndo?.();
+    this._narrowUndo = null;
+    window.removeEventListener('resize', this._onResize);
+    document.removeEventListener('keydown', this._onEscape);
+  }
+
+  /** The drawer and its dimming start at this pane's top edge, under the breadcrumb. */
+  private readonly _onResize = (): void => {
+    if (this.classList.contains('files-open')) this._placeDrawer();
+  };
+
+  private _placeDrawer(): void {
+    this.style.setProperty('--drawer-top', `${Math.max(0, this.getBoundingClientRect().top)}px`);
+  }
+
+  private _applyFilesOpen(): void {
+    const open = store.get('filesOpen') as boolean;
+    this.classList.toggle('files-open', open);
+    if (open) this._placeDrawer();
   }
 
   render(): void {
@@ -115,18 +165,41 @@ export class PlaygroundMain extends HTMLElement {
           }
         }
 
+        /* The drawer's dimming (below 800 px only): a tap on it closes the drawer. */
+        .drawer-scrim {
+          display: none;
+          position: fixed;
+          top: var(--drawer-top, 0px);
+          right: 0;
+          bottom: 0;
+          left: 0;
+          z-index: 99;
+          background: var(--scrim, rgba(20, 16, 28, 0.42));
+        }
+
         @media (max-width: 800px) {
-          /* Until step 9's drawer: the tree stacks above the editor, its height capped. */
+          /* The tree is a drawer over the editor and the preview, from the left (step 9b).
+             It's placed with top/left, never a transform: a transform would make the drawer
+             the box its fixed menus and action sheets are placed in. */
           ::slotted(file-tree) {
             display: none;
           }
 
           ::slotted(file-tree.open) {
             display: flex;
-            flex: 0 0 auto;
-            max-height: 30vh;
-            border-right: none;
-            border-bottom: 1px solid var(--border-color, #ddd);
+            position: fixed;
+            top: var(--drawer-top, 0px);
+            bottom: 0;
+            left: 0;
+            z-index: 100;
+            width: min(320px, 86vw);
+            flex: none;
+            border-right: 1px solid var(--border-color, #ddd);
+            box-shadow: var(--shadow-xl, 0 12px 32px rgba(0, 0, 0, 0.24));
+          }
+
+          :host(.files-open) .drawer-scrim {
+            display: block;
           }
 
           ::slotted(code-editor-pane) {
@@ -161,6 +234,7 @@ export class PlaygroundMain extends HTMLElement {
       </style>
 
       <slot></slot>
+      <div class="drawer-scrim" aria-hidden="true"></div>
     `;
   }
 }

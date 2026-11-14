@@ -897,6 +897,12 @@ export class SvgPreviewPane extends HTMLElement {
     document.addEventListener('pointerup', () => this.panZoom?.endGesture());
     document.addEventListener('mouseup', () => this.panZoom?.endGesture());
 
+    // Below 800 px the program list is a sheet over the whole window (step 9b). The group it sits
+    // in is a stacking context at z-index 10, under the editor's panels: raised while it's open.
+    const group = this.shadowRoot!.querySelector<HTMLElement>('#bottom-group')!;
+    group.addEventListener('program-list-open', () => group.classList.add('list-open'));
+    group.addEventListener('program-list-close', () => group.classList.remove('list-open'));
+
     // Inspector toggle
     this.shadowRoot!.querySelector('#inspector-open-btn')?.addEventListener('click', () => {
       this.dispatchEvent(new CustomEvent('toggle-inspector', { bubbles: true, composed: true }));
@@ -1149,6 +1155,13 @@ export class SvgPreviewPane extends HTMLElement {
           position: static;
           transform: none;
           flex: none;
+        }
+
+        /* The program list open as a sheet (step 9b): above the editor, the drawer and their panels. */
+        @media (max-width: 800px) {
+          #bottom-group.list-open {
+            z-index: 200;
+          }
         }
 
         /* A workspace with no program (2d, step 9a; mockup v11, state 6): the

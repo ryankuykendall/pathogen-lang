@@ -914,6 +914,54 @@ Built in that order, one commit each.
 - **The breadcrumb:** no workspace id or size below 800 px, and Snapshot as its icon alone.
 - **Tabs** already scroll sideways, with Docs at the right end: unchanged.
 
+**9b, built** (2026-11-13):
+- **`utils/narrow.ts`** is the one reading for what CSS can't do. It uses the CSS's own query, `(max-width: 800px)`, and the touch rule `(hover: none)`, and offers `isNarrow`, `isTouch`, `canDragRows` and `onNarrowChange`. jsdom has no `matchMedia`, so there it reads as a wide screen with a mouse.
+- **The drawer** (`playground-main.ts`):
+  - The slotted tree is `position: fixed` from the left, under the breadcrumb (`--drawer-top`), at most 320 px wide.
+  - A scrim dims the rest; tapping it closes the drawer.
+  - It's placed with top/left and never a transform: a transform would turn the drawer into the box its own fixed menus are placed in.
+  - Files starts closed below 800 px (`filesOpen: !isNarrow()`).
+  - Narrowing the window with the tree open closes it.
+  - Esc closes it from anywhere: on the tree's shadow root, with a fallback on the document. Each skips an Esc that a menu, a name field or the chip has already used.
+- **The tree** (`file-tree.ts`):
+  - Its × and its last line ("Tap a file to open it; the drawer closes. Every row has its ⋮.") show below 800 px only.
+  - Tapping a file sends `close-files` after `open-file`; a folder folds and leaves the drawer open.
+  - Rows are 36 px, and every ⋮ shows.
+  - Rows are draggable only on a wide screen with a mouse. The draw key includes that, so a resize redraws, and dragstart refuses as a backstop.
+  - The + omits "Or drop them on the tree" where nothing drags, and omits Upload folder… on a touch screen, where phone browsers have the attribute but can't pick a folder.
+- **Action sheets:** every menu of the tree (a row's ⋮, the +, Move to…) takes the class `sheet` below 800 px.
+  - It has the row's path as its head, the same items in 48 px rows, the lines hidden except a disabled folder's reason, and Cancel (not a menu item; Esc does the same).
+  - It has its own scrim.
+  - A resize doesn't close a sheet, since a phone resizes as its address bar hides; crossing 800 px does.
+- **The program list** (`program-chip`): below 800 px it's a sheet from the foot, the window's width, with a handle and a scrim that closes it. Open in the editor shows on every row, and a resize doesn't close it.
+- **The breadcrumb:** no workspace id or size, Snapshot as its icon (still named "Snapshot" for a screen reader), and button labels on one line.
+- **The docs:** "On a phone" says the screen dims; the panel's ×, a tap on the dimmed screen, or Esc closes it; and the tree's menus come up from the bottom, ending with a Cancel button. The wording is the content review's.
+- **The code review** (no critical issues):
+  - *The program list's sheet sat under the error panel.* The list is inside `#bottom-group`, a stacking context at z-index 10, and the error panel is at 10 too, later in the page. The chip now says when its list closes (`program-list-close`) as well as when it opens, and the preview raises the group to 200 while it's open, below 800 px. The browser check finds the sheet's dimming on top of a showing error panel; run against a build without the raise, it failed.
+  - *Esc with the docs open closed both.* workspace-view's Esc for the docs now marks the Esc used. A click on Files closes the docs first, so only a keyboard user has both open; the check presses Files with Enter.
+  - *Focus after a dismissal.* The × or Esc (`close-files` with `dismissed`) and the document's Esc send the keyboard back to Files (`focusFilesToggle`, through app-shell's shadow root).
+  - *A new file made in the drawer* (New program, New module) now closes it, as choosing a file does, once the file is made. A new folder leaves it open.
+  - *Tests:*
+    - the Esc order: a menu's Esc or the name field's Esc closes only that;
+    - a sheet staying open through a resize;
+    - `tests/playground-main-drawer.test.ts`: the dimming, Esc from anywhere unless already used, narrowing, and nothing heard once it's gone.
+  - **Not changed:**
+    - A rotation mid-rename redraws the name field. The same redraw path already keeps its text and focus (4b's check).
+    - The drawer isn't modal: no focus trap, and what's behind the dimming can still be tabbed to.
+    - Widening the window doesn't reopen a tree that narrowing closed.
+- **Checked:**
+  - tests:
+    - `tests/playground-file-tree-narrow.test.ts` (new, 8);
+    - `tests/playground-main-drawer.test.ts` (new, 5);
+    - the full suite.
+  - `verify/verify-2d-step9b.ts` (25), in three runs. Each run first confirms which rules apply:
+    - a phone, 390 px with touch and taps;
+    - 760 px with a mouse, so the narrow rule alone is tested;
+    - a desktop, unchanged.
+  - **Updated on purpose:** `verify-2d-step4a` (at 700 px the tree now closes instead of stacking) and `verify-2d-step5a` (at 700 px the list is a sheet).
+  - **Unchanged and still passing:** 4b, 4c-1, 4c-2, 6b.
+- **For you:** v7's 760 px drawing says the chip, its list and the menus stay the desktop's there ("there's room for them"). The answer you agreed to (one rule below 800 px) and the docs page make them sheets, so 9b follows the docs. Sheets only at phone widths would be a change of breakpoint.
+
 **The v7 mockup round** (2026-11-09, commit `5c8f925`): note 53, `phase-2-mockups-v7/`. Five screens: no programs left, folders and moving, narrow screens, the mini-workspace, the ⋮ menu. It also draws what v6 left out (renaming a file, Move to…, dragging a file). Six questions await you; steps 4 and 9 wait for them.
 - *Answered 2026-11-09: all six agreed* (note 53, "Your answers"). What that adds to the steps:
   - step 2: each change can be undone (the toast's Undo); a rename takes a name only, no slash and no extension; Move to…; the first program in an empty workspace is shown;

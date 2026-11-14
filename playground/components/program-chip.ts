@@ -19,6 +19,7 @@
 // in the editor and Left comes back; Enter chooses; Escape closes, back to the chip.
 
 import { FILE_ICONS, MAIN_BADGE_TITLE } from '../utils/file-icons.js';
+import { isNarrow } from '../utils/narrow.js';
 import styles from './program-chip.css';
 
 import type { ProgramItem } from '../services/program-list.js';
@@ -67,8 +68,13 @@ export class ProgramChip extends HTMLElement {
     this.close(e.composedPath().includes(this));
   };
 
-  /** The window resized: the list was sized for the preview as it was. */
-  private readonly _onResize = (): void => this.close();
+  /**
+   * The window resized: the list was sized for the preview as it was. Below 800 px it's a
+   * sheet at the screen's foot and stays (a phone resizes as its address bar hides; step 9b).
+   */
+  private readonly _onResize = (): void => {
+    if (!isNarrow()) this.close();
+  };
 
   constructor() {
     super();
@@ -79,6 +85,7 @@ export class ProgramChip extends HTMLElement {
     const root = this.shadowRoot!;
     if (!root.firstChild) {
       root.innerHTML = `<style>${styles}</style>
+        <div class="scrim" aria-hidden="true" hidden></div>
         <div class="list" id="list" role="group" aria-label="Programs" hidden>
           <div class="head"><span>Programs</span><span class="cnt"></span></div>
           <div class="rows"></div>
@@ -92,6 +99,8 @@ export class ProgramChip extends HTMLElement {
         e.preventDefault();
         this._openList(true);
       });
+      // Below 800 px the list is a sheet over a dimmed screen (step 9b): a tap on the dimming closes it.
+      root.querySelector('.scrim')!.addEventListener('click', () => this.close(true));
       const list = this._list!;
       list.addEventListener('click', (e) => this._onListClick(e));
       list.addEventListener('keydown', (e) => this._onListKeydown(e));
@@ -157,7 +166,10 @@ export class ProgramChip extends HTMLElement {
       document.removeEventListener('keydown', this._onEscape, true);
       window.removeEventListener('resize', this._onResize);
       if (this._list) this._list.hidden = true;
+      this.shadowRoot!.querySelector<HTMLElement>('.scrim')!.hidden = true;
       this._pick?.setAttribute('aria-expanded', 'false');
+      // The preview lowers the group it sits in again (it raised it for the sheet; step 9b).
+      this.dispatchEvent(new CustomEvent('program-list-close', { bubbles: true, composed: true }));
     }
     if (toChip) this._pick?.focus();
   }
@@ -269,6 +281,8 @@ export class ProgramChip extends HTMLElement {
     if (!this._open) {
       this._open = true;
       list.hidden = false;
+      // Shown below 800 px only (its CSS); above, the list is a popover.
+      this.shadowRoot!.querySelector<HTMLElement>('.scrim')!.hidden = false;
       this._pick!.setAttribute('aria-expanded', 'true');
       document.addEventListener('pointerdown', this._onOutside, true);
       document.addEventListener('keydown', this._onEscape, true);

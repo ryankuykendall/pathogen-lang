@@ -89,6 +89,7 @@ import { collectLayerNames, pruneVisibility } from '../utils/layer-visibility.js
 import { installPerfObservers, perfSpan, perfSpanAsync } from '../utils/perf-marks.js';
 import { drawingSvgMarkup } from '../utils/preview-fit.js';
 import { NO_PROGRAM_EXPORT } from '../utils/no-programs.js';
+import { focusFilesToggle, isNarrow } from '../utils/narrow.js';
 import type { FitCanvas } from '../utils/preview-fit.js';
 import { computeDefaultExportSvgBytes } from '../utils/svg-export-size.js';
 import { ensureChromeFontRules, getChromeFontRulesIfReady } from '../utils/export-fonts.js';
@@ -1009,6 +1010,12 @@ export class WorkspaceView extends HTMLElement {
       if (line !== undefined) this.editorPane.revealPosition(line, column ?? 1);
       if (focusEditor) this.editorPane.focusEditor();
     });
+    // Below 800 px the tree is a drawer: a file chosen in it, its ×, or Esc closes it (step 9b).
+    // Dismissed (the × or Esc), the keyboard goes back to Files, rather than to nowhere.
+    this.shadowRoot!.addEventListener('close-files', (e: Event) => {
+      store.set('filesOpen', false);
+      if ((e as CustomEvent<{ dismissed?: boolean }>).detail?.dismissed) focusFilesToggle();
+    });
     // The error panel's note: "set another program as main" (step 7).
     this.shadowRoot!.addEventListener('error-panel-action', (e: Event) => {
       if ((e as CustomEvent<{ action: string }>).detail.action === 'set-main') this._offerSetMain();
@@ -1070,8 +1077,12 @@ export class WorkspaceView extends HTMLElement {
         e as CustomEvent<{ kind: NewEntryKind; folder: string; name: string; focusEditor: boolean }>
       ).detail;
       const plan = this._newEntryPlan(kind, folder, name);
-      if (plan.change) this._applyWorkspaceChange(plan.change, { focusEditor });
-      else this._toastError('Couldn’t add it', plan.message ?? 'The workspace changed.');
+      if (plan.change) {
+        // A new file opens in a tab; below 800 px the drawer closes, as choosing a file does (step 9b).
+        // A new folder leaves it open, to add to.
+        const made = this._applyWorkspaceChange(plan.change, { focusEditor });
+        if (made && kind !== 'folder' && isNarrow()) store.set('filesOpen', false);
+      } else this._toastError('Couldn’t add it', plan.message ?? 'The workspace changed.');
     });
     // Rename… and Move to… (2d, step 4c-2): what a name or a folder would do, by the
     // plans; making it, with Undo in its toast.
@@ -1234,6 +1245,8 @@ export class WorkspaceView extends HTMLElement {
         }
         if (this.docsPanel.classList.contains('open')) {
           this.docsPanel.close();
+          // This Esc was the docs': the drawer below 800 px (step 9b), which skips a used Esc, stays.
+          e.preventDefault();
         }
       }
       // Ctrl/Cmd+S saves immediately
