@@ -6,7 +6,7 @@
 //
 //   npx tsx project-docs/preview-raster-perf/measure-overlay.ts <source> <mode>
 //
-// source: heavy (heavy-filters.pathogen, here), or a workspace id on the dev stack, read
+// source: heavy (heavy-filters.pathogen, here), light (two gears from a module), or a workspace id on the dev stack, read
 //         with the local API's admin token (read only) and copied into a test user's
 //         workspace, so nothing of the original is touched.
 // mode:   built   the layout as built, for comparison
@@ -164,6 +164,20 @@ if (SOURCE === 'heavy') {
     folders: [],
     entryPoints: ['main.pathogen'],
   };
+} else if (SOURCE === 'light') {
+  // An ordinary drawing: two gears from a module.
+  source = {
+    files: {
+      'main.pathogen': {
+        text: 'import { gear } from "./parts/gears.pathogen";\ndefine ViewBox(0, 0, 200, 100);\ngear(Point(55, 50), 40);\ngear(Point(150, 50), 28);\n',
+      },
+      'parts/gears.pathogen': {
+        text: 'module;\n\nexport fn gear(at, r) {\n  star(at.x, at.y, r, r - 6, 12);\n  circle(at.x, at.y, r * 0.3);\n}\n',
+      },
+    },
+    folders: ['parts'],
+    entryPoints: ['main.pathogen'],
+  };
 } else {
   const token = /^ADMIN_TOKEN=(.*)$/m.exec(readFileSync('api/.dev.vars', 'utf8'))?.[1]?.trim() ?? '';
   const res = await fetch(`${DEV_API}/workspace/${encodeURIComponent(SOURCE)}?token=${encodeURIComponent(token)}`);
@@ -277,7 +291,7 @@ try {
     const trace = TRACE && traced <= 2;
     if (trace) {
       await page.tracing.start({
-        path: `tmp/perf-files/inspector-${traced}-${MODE}${HIDE ? '-hide' : ''}.json`,
+        path: `tmp/perf-files/inspector-${traced}-${SOURCE.slice(0, 8)}-${MODE}${HIDE ? '-hide' : ''}${process.argv.includes('--no-grain') ? '-nograin' : ''}.json`,
         categories: [
           'devtools.timeline',
           'disabled-by-default-devtools.timeline',

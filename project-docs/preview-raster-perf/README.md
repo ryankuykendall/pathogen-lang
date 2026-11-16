@@ -95,6 +95,19 @@ You asked whether hiding the inspector's contents (`display: none`) before it cl
 
 It happens once, on the first inspector toggle after the drawing was last redrawn (here the zoom steps). When the inspector was toggled before anything else (`--inspector-only`), the first open paid it (0.23 s) and every close was free. A trace puts it on the GPU, with the main thread idle. Which part of the drawing is redrawn, and why, isn't pinned down: Chrome's tile details need a trace category these runs didn't record. To check when building option 1, with a regression check.
 
+### The grain texture (theme.css `body::before`)
+
+You asked whether turning off the site's grain texture in the workspace would help. It makes no measurable difference: the browser draws it once and reuses it.
+
+| Measured (full Chrome, 2x) | Grain on | Grain off |
+|---|---|---|
+| Two gears (`light`), today's layout: slow frames over 8 toggles | 0 | 0 |
+| Two gears: GPU busy, opening the inspector (about 2 s traced) | 42 ms | 35 ms |
+| Two gears: GPU busy, closing it | 28 ms | 31 ms |
+| kablammo copy, option 1 layout: the inspector's one-time freeze | 0.21–0.31 s (5 runs) | 0.17, 0.23 s (2 runs) |
+
+In the workspace the grain shows only in the top nav and the breadcrumb bar. In light mode it also darkens them, so turning it off lightens them. `shoot-grain.ts` captures the app with it on and off for the comparison mockup (`website/bbwp/2026-11-16-11:12:44--preview-raster-perf--grain-off-workspace.bbwp.html`).
+
 **A flaw in the setup:** on the kablammo copy, the drawing was first placed in a 340 px gap instead of 593 px. When the gap was measured, something on the left reached 1,099 px. I haven't chased the cause. Moving a layer costs the same at any size, so the costs stand. The scale factors in the screenshots are larger than they would be.
 
 ## Files
@@ -109,6 +122,7 @@ It happens once, on the first inspector toggle after the drawing was last redraw
   - a blog embed.
 - `measure-toggles.ts`: the table above, for any workspace or the heavy drawing, and any candidate fix.
 - `measure-overlay.ts`: the overlay layout (2026-11-16), with the drawing re-fitted, slid, or slid and scaled.
+- `shoot-grain.ts`: screenshots of the app with the grain texture on and off.
 - `trace-summary.ts`: where a Chrome trace's time goes, by thread and event, and what painted.
 - `preview-layer-light.png`, `preview-layer-dark.png`: the heavy drawing with the controls over it.
 - `tests/playground-preview-iframe.test.ts`: the layer, for both kinds of preview.
