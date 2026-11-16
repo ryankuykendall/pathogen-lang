@@ -64,7 +64,7 @@ Your proposal:
 | Console on or off | 1.70–1.82 s | **0** | **0** |
 | One raster (a 2% zoom step, which every edit and pan already costs) | 1.47–1.95 s | 1.47–1.95 s | 1.53–1.87 s |
 
-\* Only when the inspector closes, before the drawing moves. This is the inspector's own work: it lists 7,005 layers here. It shows in every mode.
+\* Once, on the first inspector toggle after the drawing was last redrawn, and before the drawing moves; it shows in every mode. A first version of this note blamed the inspector's list of 7,005 layers. That was wrong: see "The inspector's one-time freeze" below.
 
 The heavy drawing behaves the same way: a re-fit costs one stall of 0.1 to 0.3 s, and sliding costs none.
 
@@ -79,6 +79,21 @@ The heavy drawing behaves the same way: a re-fit costs one stall of 0.1 to 0.3 s
 - **Fit and pan:** Fit, and the pointer math of pan and zoom, use the drawing's own box. They would have to use the gap instead. That is a change to the shared pan-zoom controller, which the blog viewer and VS Code also use.
 - **The preview's controls** (the zoom pill, the layers button, Snapshot, Export, fullscreen) are placed inside the preview pane, so they would have to follow the gap. Fullscreen still covers everything.
 - **Below 800 px the panes stack,** so this applies to the wide layout only.
+
+### The inspector's one-time freeze
+
+You asked whether hiding the inspector's contents (`display: none`) before it closes would remove its 0.2–0.3 s. It doesn't. The layer list is virtualized (only the rows in view exist), so the number of layers doesn't matter, and the freeze is the browser redrawing part of the drawing. Each variant was measured on the first close, slide and scale mode, kablammo copy (`measure-overlay.ts` flags):
+
+| Variant | First close |
+|---|---|
+| As measured (five runs) | 0.21–0.31 s |
+| The inspector's contents hidden while closed (`--hide-inspector`) | 0.36 s |
+| The page's grain texture off (`--no-grain`) | 0.17 s |
+| The preview's layers button kept hidden (`--no-inspector-btn`) | 0.28 s |
+| **The drawing hidden** (`--hide-drawing`) | **0** |
+| Closes 2 to 4 (`--repeat-inspector`) | **0** |
+
+It happens once, on the first inspector toggle after the drawing was last redrawn (here the zoom steps). When the inspector was toggled before anything else (`--inspector-only`), the first open paid it (0.23 s) and every close was free. A trace puts it on the GPU, with the main thread idle. Which part of the drawing is redrawn, and why, isn't pinned down: Chrome's tile details need a trace category these runs didn't record. To check when building option 1, with a regression check.
 
 **A flaw in the setup:** on the kablammo copy, the drawing was first placed in a 340 px gap instead of 593 px. When the gap was measured, something on the left reached 1,099 px. I haven't chased the cause. Moving a layer costs the same at any size, so the costs stand. The scale factors in the screenshots are larger than they would be.
 

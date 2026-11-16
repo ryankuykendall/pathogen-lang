@@ -18,6 +18,14 @@
 //         scale   overlay; the preview's layer slides and scales so the drawing fits the
 //                 gap, from the pixels already drawn (soft when enlarged), without redrawing
 //         --detail (after the mode) also prints every frame over 25 ms
+//         --inspector-only opens and closes the inspector three times, nothing else
+//         --hide-inspector hides the inspector's contents (display: none) while it's closed
+//         --trace writes Chrome traces of the first inspector open and close to tmp/perf-files/
+//         --no-grain turns off the page's grain texture (theme.css body::before)
+//         --hide-drawing hides the preview's iframe (to see what the drawing itself costs)
+//         --no-inspector-btn keeps the preview's layers button hidden (it reappears on close)
+//         --trace-tiles adds Chrome's cc debug category to --trace
+//         --repeat-inspector ends with three more inspector opens and closes
 //
 // Each run also nudges the zoom by 2% and back: the cost of one raster of the drawing,
 // which every edit and every pan pays already.
@@ -33,6 +41,9 @@ import type { Page } from 'puppeteer';
 const SOURCE = process.argv[2] ?? 'heavy';
 const MODE = process.argv[3] ?? 'built';
 if (!['built', 'static', 'slide', 'refit', 'scale'].includes(MODE)) throw new Error(`unknown mode ${MODE}`);
+const HIDE = process.argv.includes('--hide-inspector');
+const TRACE = process.argv.includes('--trace');
+const INSPECTOR_ONLY = process.argv.includes('--inspector-only');
 const PAGES_URL = 'http://localhost:3000';
 const DEV_API = 'http://localhost:8787';
 const USER_ID = `perf-${randomUUID().slice(0, 8)}`;
@@ -229,15 +240,83 @@ try {
   const nudge = (factor: number): string =>
     `const pz = __deep('svg-preview-pane').panZoom; pz.setView({ zoom: pz.getView().zoom * ${factor} })`;
 
-  await frames(page, 'one raster (zoom 2%)', nudge(1.02));
-  await frames(page, 'one raster (zoom back)', nudge(1 / 1.02));
-  await frames(page, 'Files off', toggle('#files-toggle'));
-  await frames(page, 'Files on', toggle('#files-toggle'));
-  await frames(page, 'Inspector on', toggle('#inspector-open-btn'));
-  await page.screenshot({ path: `tmp/perf-files/overlay-${MODE}-inspector.png` });
-  await frames(page, 'Inspector off', toggle('#inspector-open-btn'));
-  await frames(page, 'Console on', toggle('#console-toggle'));
-  await frames(page, 'Console off', toggle('#console-toggle'));
+  // --hide-inspector: the inspector's contents are display: none while it's closed, so
+  // they're hidden in the same style change that starts the close.
+  if (HIDE) {
+    await ev(
+      page,
+      `const s = document.createElement('style'); s.textContent = ':host(:not(.open)) .inspector { display: none; }';
+       __deep('inspector-panel').shadowRoot.appendChild(s); return 1;`,
+    );
+  }
+  // --no-grain: the page's grain texture (theme.css body::before) turned off.
+  if (process.argv.includes('--no-grain')) {
+    await ev(
+      page,
+      `const s = document.createElement('style'); s.textContent = 'body::before { display: none !important; }';
+       document.head.appendChild(s); return 1;`,
+    );
+  }
+  // --hide-drawing: the preview's iframe is hidden (visibility), to see what the drawing costs.
+  if (process.argv.includes('--hide-drawing')) {
+    await ev(page, `__deep('#preview-frame').style.visibility = 'hidden'; return 1;`);
+    await pause(3000);
+  }
+  // --no-inspector-btn: the preview's layers button (shown again when the inspector closes) stays hidden.
+  if (process.argv.includes('--no-inspector-btn')) {
+    await ev(
+      page,
+      `const s = document.createElement('style'); s.textContent = '#inspector-open-btn { display: none !important; }';
+       __deep('svg-preview-pane').shadowRoot.appendChild(s); return 1;`,
+    );
+  }
+  let traced = 0;
+  const inspectorToggle = async (label: string): Promise<void> => {
+    traced += 1;
+    // Only the first open and the first close are traced (inspector-1.json, inspector-2.json).
+    const trace = TRACE && traced <= 2;
+    if (trace) {
+      await page.tracing.start({
+        path: `tmp/perf-files/inspector-${traced}-${MODE}${HIDE ? '-hide' : ''}.json`,
+        categories: [
+          'devtools.timeline',
+          'disabled-by-default-devtools.timeline',
+          'blink',
+          'cc',
+          'gpu',
+          'viz',
+          'toplevel',
+          ...(process.argv.includes('--trace-tiles') ? ['disabled-by-default-cc.debug'] : []),
+        ],
+      });
+    }
+    await frames(page, label, toggle('#inspector-open-btn'));
+    if (trace) await page.tracing.stop();
+  };
+
+  if (INSPECTOR_ONLY) {
+    for (let i = 1; i <= 3; i++) {
+      await inspectorToggle(`Inspector on (${i})`);
+      await inspectorToggle(`Inspector off (${i})`);
+    }
+  } else {
+    await frames(page, 'one raster (zoom 2%)', nudge(1.02));
+    await frames(page, 'one raster (zoom back)', nudge(1 / 1.02));
+    await frames(page, 'Files off', toggle('#files-toggle'));
+    await frames(page, 'Files on', toggle('#files-toggle'));
+    await inspectorToggle('Inspector on');
+    await page.screenshot({ path: `tmp/perf-files/overlay-${MODE}-inspector.png` });
+    await inspectorToggle('Inspector off');
+    await frames(page, 'Console on', toggle('#console-toggle'));
+    await frames(page, 'Console off', toggle('#console-toggle'));
+    // --repeat-inspector: three more opens and closes, to see whether a close's cost recurs.
+    if (process.argv.includes('--repeat-inspector')) {
+      for (let i = 2; i <= 4; i++) {
+        await inspectorToggle(`Inspector on (${i})`);
+        await inspectorToggle(`Inspector off (${i})`);
+      }
+    }
+  }
   const placed = await ev<{ center: number; width: number } | null>(
     page,
     `return window.__gap ? window.__gap() : null;`,
