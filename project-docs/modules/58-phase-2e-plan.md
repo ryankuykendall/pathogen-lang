@@ -695,6 +695,51 @@ The Featured findings are left as they are: they are outside answer 8's list and
 - `scripts/copy-approval-cards.ts --dry-run` against the dev API: "Would copy 18 cards; 0 already had one", nothing written.
 - A code review; its six warnings are fixed above.
 
+## Step 5c, built (2026-11-16)
+
+**Make public, on the breadcrumb and the Workspaces page:**
+- **The breadcrumb saves the latest edits first.** Before, Make public submitted the last saved version, so an edit made within autosave's delay was left out. A save that fails, or a conflict with another tab, submits nothing and says why.
+- **The check compiles the main with its imports**, as the preview does (`precheckWorkspace` in `services/publish-precheck.ts`). The main is the first program the workspace holds, which is what's published (answer 1).
+  - Before, the main was compiled alone, so any main that imports a module failed the check.
+  - A workspace with no program says "This workspace has no program to publish." The menu already holds Make public back then.
+- **The Workspaces page does the same.** It waits for a save still leaving the editor, reads the workspace's files, and runs the same check.
+  - Before, it read `code`, which only a workspace that is just `main.pathogen` has, so any other workspace was refused as "Workspace is empty."
+  - It keeps the state the server answers. While a submission waits, its menu says "Pending Review", off, as the breadcrumb says "Pending review"; before, it offered Make Public again.
+- **The menu's re-review state follows each save** (`publishingFrom` in `services/autosave.ts`). Every save's answer carries `rereviewPending` and `publicationState` (5a), the page-teardown save's too. An edit to an approved workspace shows "Pending re-review" once saved, and going back to the approved text shows "Make private" again, with no reload. Make private takes the answer's state as well.
+- **`workspacePublicationState` and `workspaceRereviewPending` are typed** in `types/store.d.ts`.
+
+**From the code review:**
+- **Make public waits for every save still out** (`autosave.saveAndSettle`), a page-teardown save included. Before that, `saveNow` alone could answer at once while a save was still out, and the submission could reach the server first and freeze the older files.
+- **A workspace the editor can't save** (autosave not armed for it) is checked and submitted as the server holds it, rather than refused as "Couldn't save".
+- **Make private waits for a save still out** (`autosave.requestsAnswered`), so that save's answer, from before Make private, can't land afterwards and put back the re-review it withdrew.
+- **`precheckCompile` is no longer exported**: compiled without its workspace, an importing main fails, and every caller had that wrong.
+- **Left as it is:**
+  - An edit typed during the moment the check compiles is saved by the next autosave, after the submission, as with any edit made after Make public.
+  - On the Workspaces page, a save that failed when the editor was left can't be seen. The page submits the server's copy, as before.
+
+**A question for you: Make private while a re-review waits.**
+- Answer 8 says Make private withdraws a waiting re-review, and 5a does that on the server.
+- But the breadcrumb's menu doesn't offer Make private then: it shows "Pending re-review", off, in its place.
+- The Workspaces page still offers Make Private, so that's the only way to it today. 5c left it so, rather than follow the breadcrumb there and leave no way at all.
+- Two ways:
+  - **(a)** both menus offer Make private during a re-review, with "An edit is waiting for review" as its note (the menu's existing small-note style). *Recommended*: answer 8 assumed it.
+  - **(b)** neither does, as the breadcrumb today: the owner waits for the review, or reverts the edit.
+- Either is a change to a menu, so a mockup comes first.
+
+**Tested:**
+- `tests/playground-make-public.test.ts` (new, 11):
+  - each save's answer sets the re-review state, a skipped save's too, and an answer without it leaves it;
+  - `precheckWorkspace` compiles the main with its imports; an import that can't load blocks with the compile's message; no program, nothing to publish;
+  - the breadcrumb saves the edit, then checks, then submits; a failed save submits nothing; a page-teardown save still out is waited for; a workspace autosave doesn't hold is submitted as the server holds it;
+  - Make private takes the answer's state, and waits for a save still out, whose older answer then can't put the re-review back;
+  - the Workspaces page says "Pending Review"; its Make Public checks the main with its imports, submits, and shows the state answered.
+- `project-docs/modules/verify/verify-2e-step5c.ts`, 9 checks on the dev stack in full Chrome, passing:
+  - the breadcrumb right after typing: the edit is saved first and is what the review queue holds; the importing main passes; "Pending review";
+  - the Workspaces page: an importing main is submitted; "Pending Review" (`2e-step5c-workspaces-pending.png`);
+  - after approval, an edit saved with Ctrl+S gives "Pending re-review", and deleting it gives "Make private" with no re-review waiting.
+  - Run again after the review's fixes: all 9 pass.
+- A code review; its three warnings are fixed above.
+
 ## What the audits found (2026-11-14)
 
 ### Snapshots, copies, forks

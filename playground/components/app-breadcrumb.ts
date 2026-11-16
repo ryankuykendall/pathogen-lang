@@ -14,11 +14,12 @@
 
 import { workspaceApi } from '../services/api.js';
 import { getUserId } from '../services/user-id.js';
-import { holdsWorkspace, openFileNow, programToShow, workspaceNow } from '../services/workspace-files.js';
+import { holdsWorkspace, openFileNow, workspaceNow } from '../services/workspace-files.js';
 import { hasFeature, UserFeature } from '../services/auth.js';
 import type { CurrentUser } from '../services/auth.js';
+import { autosave } from '../services/autosave.js';
 import {
-  precheckCompile,
+  precheckWorkspace,
   toastPrivateSuccess,
   toastPublishBlocked,
   toastPublishSuccess,
@@ -722,28 +723,41 @@ class AppBreadcrumb extends HTMLElement {
     // a Worker), so the client is the authority — and the toast tells
     // the user exactly why it was blocked.
     if (requestPublic) {
-      // The main, whichever file the editor shows. (It's compiled alone: a
-      // main that imports files fails here until publishing carries the
-      // workspace, phase 2e.)
-      const workspace = workspaceNow();
-      const code = workspace.texts.get(programToShow(workspace, null)) ?? '';
-      const precheck = await precheckCompile(code);
+      // What's submitted is what the server holds, so the latest edits are
+      // saved first, and every save still out has answered (2e step 5c):
+      // before, an edit made within the autosave delay was left out.
+      if (!(await autosave.saveAndSettle(workspaceId))) {
+        this.showOverflowFeedback("Couldn't save your latest changes, so it wasn't submitted", true);
+        return;
+      }
+      // The main, with its imports, whichever file the editor shows. The main
+      // is the first program the workspace holds, which is what the server
+      // freezes; with none, there's nothing to publish (the menu waits then).
+      const label = (store.get('workspaceName') as string | null) ?? 'this workspace';
+      const precheck = await precheckWorkspace(workspaceNow(), label);
       if (!precheck.ok) {
         toastPublishBlocked(precheck);
         return;
       }
+    } else {
+      // A save still out answers first: its answer, from before Make private,
+      // mustn't land after this one's and put back the re-review it withdrew.
+      await autosave.requestsAnswered();
     }
 
     try {
       const updated = (await workspaceApi.update(workspaceId, { isPublic: requestPublic })) as {
         isPublic?: boolean;
         publicationState?: string;
+        rereviewPending?: boolean;
       };
       const newState = updated.publicationState ?? (requestPublic ? 'pending' : 'unpublished');
       const newIsPublic = Boolean(updated.isPublic);
       store.update({
         workspaceIsPublic: newIsPublic,
         workspacePublicationState: newState,
+        // Make private withdraws a waiting re-review (2e step 5a).
+        ...(typeof updated.rereviewPending === 'boolean' ? { workspaceRereviewPending: updated.rereviewPending } : {}),
       });
 
       const workspaces = (store.get('workspaces') || []) as {

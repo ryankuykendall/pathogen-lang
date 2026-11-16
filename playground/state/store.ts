@@ -106,7 +106,8 @@ export const store = createStore({
   workspacePublicationState: 'unpublished',
   // True for an approved workspace whose live code has drifted from the
   // approval snapshot — the prior version is still visible on Explore
-  // but the new code awaits re-review.
+  // but the new code awaits re-review. Set on load and from every save's
+  // answer (services/autosave.ts), so it follows edits (2e step 5c).
   workspaceRereviewPending: false,
   workspaceOwnerId: null, // Owner user ID
   workspaceUpdatedAt: null, // Last update timestamp

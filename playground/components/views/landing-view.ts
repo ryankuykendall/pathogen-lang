@@ -3,12 +3,14 @@
 
 import { snapshotApi, thumbnailApi, workspaceApi } from '../../services/api.js';
 import { hasFeature, UserFeature, type CurrentUser } from '../../services/auth.js';
+import { autosave } from '../../services/autosave.js';
 import {
-  precheckCompile,
+  precheckWorkspace,
   toastPrivateSuccess,
   toastPublishBlocked,
   toastPublishSuccess,
 } from '../../services/publish-precheck.js';
+import { workspaceFromAnswer } from '../../services/workspace-files.js';
 import { store } from '../../state/store.js';
 import { materialIcon } from '../../utils/material-icons.js';
 import { buildWorkspaceSlugId, navigateTo } from '../../utils/router.js';
@@ -21,6 +23,8 @@ interface Workspace {
   name: string;
   description?: string;
   isPublic?: boolean;
+  /** The moderation state ('pending' while a submission waits for review). */
+  publicationState?: string;
   updatedAt?: string;
   thumbnailAt?: string;
   /** No program left, so nothing draws (2d, step 9a): the card says so, and Make Public waits. */
@@ -234,23 +238,39 @@ class LandingView extends HTMLElement {
           if (!workspace) return;
 
           const newIsPublic = !workspace.isPublic;
+          if (newIsPublic && workspace.publicationState === 'pending') return; // disabled in the menu
 
-          // Make-public requires the workspace to compile. The list
-          // payload doesn't include `code` (the listing endpoint omits
-          // it), so we fetch the workspace once before precheck.
+          // Make-public requires the workspace's main to compile, with its
+          // imports, as the breadcrumb's does (2e step 5c). The listing
+          // carries no files, so the workspace is read first: after the save
+          // of any edit left behind in the editor, which is what's submitted.
           if (newIsPublic) {
-            const full = (await workspaceApi.get(id)) as { code?: string };
-            const precheck = await precheckCompile(full.code);
+            await autosave.awaitPendingFlush();
+            const full = (await workspaceApi.get(id)) as Parameters<typeof workspaceFromAnswer>[0];
+            const files = workspaceFromAnswer(full);
+            const precheck = await precheckWorkspace(
+              {
+                texts: new Map(Object.entries(files.workspaceFiles)),
+                folders: files.workspaceFolders,
+                entryPoints: files.workspaceEntryPoints,
+                openFile: files.openFile,
+              },
+              workspace.name || 'this workspace',
+            );
             if (!precheck.ok) {
               toastPublishBlocked(precheck);
               return;
             }
           }
 
-          await workspaceApi.update(id, { isPublic: newIsPublic });
+          const updated = (await workspaceApi.update(id, { isPublic: newIsPublic })) as {
+            isPublic?: boolean;
+            publicationState?: string;
+          };
 
-          // Update local state
-          workspace.isPublic = newIsPublic;
+          // Update local state, as the server answered.
+          workspace.isPublic = typeof updated.isPublic === 'boolean' ? updated.isPublic : newIsPublic;
+          workspace.publicationState = updated.publicationState ?? (newIsPublic ? 'pending' : 'unpublished');
           store.set('workspaces', [...workspaces]);
           this.render();
 
@@ -355,6 +375,11 @@ class LandingView extends HTMLElement {
       const publishMenuItem = (ws: Workspace): string => {
         if (ws.isPublic) {
           return `<button data-action="toggle-publish">Make Private</button>`;
+        }
+        // Submitted and waiting, as the breadcrumb says (2e step 5c): Make
+        // Public again would only repeat the submission.
+        if (ws.publicationState === 'pending') {
+          return `<button data-action="toggle-publish" disabled>Pending Review</button>`;
         }
         if (!canPublish) return '';
         // With no program there's nothing to show, so it waits and says why (step 9a).

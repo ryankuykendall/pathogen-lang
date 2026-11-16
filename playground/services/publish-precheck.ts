@@ -1,9 +1,9 @@
 // Precheck helper used by every UI surface that publishes a workspace
 // (app-breadcrumb's Make-public action, landing-view's overflow menu).
-// Compiles the workspace code in the browser before issuing
-// `PUT /workspace/:id {isPublic:true}`; if the compile fails, the
-// caller surfaces a toast and aborts the publish so the moderation
-// queue never accumulates broken submissions.
+// Compiles the workspace's main, with its imports (precheckWorkspace), in
+// the browser before issuing `PUT /workspace/:id {isPublic:true}`; if the
+// compile fails, the caller surfaces a toast and aborts the publish so the
+// moderation queue never accumulates broken submissions.
 //
 // The API Worker can't enforce the same gate (the compiler bundle is
 // ~9 MB, well past the Workers size limit), so the client is the
@@ -12,6 +12,9 @@
 // `submitWorkspaceForReview`.
 
 import compilerWorker from './compiler-worker.js';
+
+import type { WorkspaceCompileInput } from './compiler-worker.js';
+import type { WorkspaceTexts } from './workspace-files.js';
 
 export type PrecheckResult =
   | { ok: true }
@@ -55,13 +58,36 @@ function layerHasContent(layer: PrecheckLayer | null | undefined): boolean {
   return false;
 }
 
-export async function precheckCompile(code: string | null | undefined): Promise<PrecheckResult> {
+/**
+ * Make public's check (2e step 5c): the workspace's main, the program that is
+ * published (answer 1), compiled with its imports, as the preview and the review
+ * screen compile it. A workspace with no program has nothing to publish.
+ */
+export async function precheckWorkspace(workspace: WorkspaceTexts, label: string): Promise<PrecheckResult> {
+  const main = workspace.entryPoints.find((path) => workspace.texts.has(path));
+  if (main === undefined) {
+    return { ok: false, reason: 'empty', message: 'This workspace has no program to publish.' };
+  }
+  return precheckCompile(workspace.texts.get(main), {
+    files: workspace.texts,
+    folders: workspace.folders,
+    entry: main,
+    label,
+  });
+}
+
+// The compile behind precheckWorkspace. Not exported: compiled without its
+// workspace, a main that imports a module fails, which every caller had wrong.
+async function precheckCompile(
+  code: string | null | undefined,
+  workspace: WorkspaceCompileInput,
+): Promise<PrecheckResult> {
   if (!code || !code.trim()) {
     return { ok: false, reason: 'empty', message: 'Workspace is empty.' };
   }
   try {
     const id = ++_compilationCounter;
-    const result = (await compilerWorker.compileWithContext(code, id, undefined)) as PrecheckResultShape;
+    const result = (await compilerWorker.compileWithContext(code, id, undefined, { workspace })) as PrecheckResultShape;
 
     // A workspace renders if any of: a leaf path layer carries data,
     // a text layer has elements, a fragment has visuals, a group has

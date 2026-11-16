@@ -94,6 +94,21 @@ async function workspaceHash(workspace: WorkspaceTexts): Promise<{ hash: string;
   return { hash, shas: new Map(Object.entries(files).map(([path, entry]) => [path, entry.sha256])) };
 }
 
+/**
+ * The publishing state a save answers with, for the menu (2e step 5c): whether
+ * an edit is waiting for re-review follows each save, not only the load. A field
+ * the answer doesn't carry (an older server) leaves the store as it is.
+ */
+function publishingFrom(result: Record<string, unknown>): {
+  workspacePublicationState?: string;
+  workspaceRereviewPending?: boolean;
+} {
+  return {
+    ...(typeof result.publicationState === 'string' ? { workspacePublicationState: result.publicationState } : {}),
+    ...(typeof result.rereviewPending === 'boolean' ? { workspaceRereviewPending: result.rereviewPending } : {}),
+  };
+}
+
 /** A workspace that is just main.pathogen, as every workspace was before phase 2: it saves as `code`. */
 function isJustMain(workspace: WorkspaceTexts): boolean {
   return (
@@ -447,6 +462,36 @@ class AutosaveManager {
   }
 
   /**
+   * Make public's save (2e step 5c): saves this workspace's edits and waits for
+   * every save of ours still out, a page-teardown save included, so the server
+   * holds what the editor shows before it's submitted. True when nothing of it
+   * is left unsaved. A workspace this autosave doesn't hold (one it can't save)
+   * has nothing here to save: true.
+   */
+  async saveAndSettle(workspaceId: string): Promise<boolean> {
+    if (!this.holds(workspaceId)) return true;
+    const token = this._token();
+    await this.saveNow();
+    await this._requestsAnswered();
+    // A page-teardown save that crossed this one and failed leaves the edit
+    // pending: once more, as flush does.
+    if (this._bound(token) && this._pendingWorkspace && !this._conflicted) {
+      await this.saveNow();
+      await this._requestsAnswered();
+    }
+    return this._bound(token) && !this.hasUnsavedChanges();
+  }
+
+  /**
+   * Waits for every save of ours still out (2e step 5c). Make private waits,
+   * so that an older save's answer, from before it, never lands after its own
+   * and puts back a re-review it withdrew.
+   */
+  async requestsAnswered(): Promise<void> {
+    await this._requestsAnswered();
+  }
+
+  /**
    * What a snapshot of `workspaceId` sends for its files (note 58, step 3):
    * by hash only while this autosave holds that workspace, whose saved files
    * it knows. The server checks a hash against the workspace's own files, so
@@ -532,11 +577,12 @@ class AutosaveManager {
       this._settle(workspace);
       const status = this._pendingWorkspace ? SaveStatus.MODIFIED : SaveStatus.SAVED;
       if (result.skipped) {
-        store.set('saveStatus', status);
+        store.update({ saveStatus: status, ...publishingFrom(result) });
       } else {
         (store as any).update({
           saveStatus: status,
           workspaceUpdatedAt: result.updatedAt,
+          ...publishingFrom(result),
         });
       }
       return true;
@@ -739,7 +785,10 @@ class AutosaveManager {
             // we don't re-warn/re-send when the tab is restored.
             this._recordSaved(workspace, new Map());
             this._settle(workspace);
-            store.set('saveStatus', this._pendingWorkspace ? SaveStatus.MODIFIED : SaveStatus.SAVED);
+            store.update({
+              saveStatus: this._pendingWorkspace ? SaveStatus.MODIFIED : SaveStatus.SAVED,
+              ...publishingFrom(result as Record<string, unknown>),
+            });
             // The page survived: hash what was sent, so the next save finds it
             // unchanged and sends unchanged files by hash. A normal save
             // waits for this (`answered` runs in `finally`, after the hash).

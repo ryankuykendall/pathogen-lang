@@ -52,6 +52,10 @@ export interface StoreState {
   workspaceName: string | null;
   workspaceDescription: string | null;
   workspaceIsPublic: boolean;
+  /** The moderation state: 'unpublished' | 'pending' | 'approved' | 'rejected' | 'flagged'. */
+  workspacePublicationState: string;
+  /** An edit waiting for re-review: set on load and after each save (2e step 5c). */
+  workspaceRereviewPending: boolean;
   workspaceOwnerId: string | null;
   workspaceUpdatedAt: string | null;
   workspaceManualThumbnailAt: string | null;
