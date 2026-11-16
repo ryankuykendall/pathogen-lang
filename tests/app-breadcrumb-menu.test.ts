@@ -56,12 +56,14 @@ describe('the workspace’s menu (step 9a)', () => {
     expect(scratch.item('copy-svg')).not.toBeNull();
   });
 
-  it('Copy Code’s tooltip names the file in the editor; Format Document says it’s that file', async () => {
+  // Copy Code left the bar for the copy icon at the end of the editor's tabs (2e, step 3d; mockups v13, v14).
+  it('has no Copy Code; Format Document says it’s the file in the editor', async () => {
     const { store, el, item } = await mount({ 'main.pathogen': 'M 0 0', 'parts/gears.pathogen': 'module;' });
     store.update({ openFile: 'parts/gears.pathogen', openFiles: ['main.pathogen', 'parts/gears.pathogen'] });
-    expect(el.shadowRoot!.querySelector<HTMLButtonElement>('#copy-code')!.title).toBe(
-      'Copy the code of parts/gears.pathogen, the file in the editor',
-    );
+    expect([el.shadowRoot!.querySelector('#copy-code'), el.shadowRoot!.querySelector('#copy-feedback')]).toEqual([
+      null,
+      null,
+    ]);
     expect(item('format-document')!.querySelector('small')?.textContent).toBe('The file in the editor');
   });
 

@@ -191,7 +191,7 @@
   padding: 4px 10px;
   font-size: 0.75rem;
   font-family: inherit;
-  /* "Copy Code" stays on one line on a phone (mockup v7 screen M). */
+  /* "+ Start new workspace" stays on one line on a phone (mockups v7 screen M, v13 state 15). */
   white-space: nowrap;
   background: transparent;
   border: 1px solid var(--border-color, rgba(28, 23, 34, 0.10));
@@ -206,7 +206,7 @@
   color: var(--text-primary, #1c1722);
 }
 
-/* Copy Code with no file open (step 4d): off, and its title says why. */
+/* A secondary button that waits, saying why in its title. */
 .secondary-btn:disabled {
   color: var(--text-tertiary, #9087a0);
   cursor: default;
@@ -257,17 +257,6 @@
 
 .refresh-btn:hover .refresh-icon {
   transform: rotate(180deg);
-}
-
-.copy-feedback {
-  font-size: 0.75rem;
-  color: var(--secondary-accent-text, #5e3590);
-  opacity: 0;
-  transition: opacity 0.2s;
-}
-
-.copy-feedback.visible {
-  opacity: 1;
 }
 
 /* ---------- Save & compilation status ---------- */
@@ -522,7 +511,7 @@
 }
 
 /* ---------- Snapshot split button (docs/snapshots.md) ----------
-   Neutral, like Refresh / Copy Code: the accent is reserved for the
+   Neutral, like Refresh: the accent is reserved for the
    popover's Save button. */
 .snapshot-split {
   display: inline-grid;

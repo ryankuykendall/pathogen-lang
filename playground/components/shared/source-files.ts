@@ -21,10 +21,19 @@
 //
 // Events (bubbles + composed): source-file-open { path } when the reader opens a file.
 
+import {
+  COPY_FEEDBACK_MS,
+  COPY_STATUS_HTML,
+  COPY_TIP_CSS,
+  copyIconFor,
+  copyStatusText,
+  copyTipHtml,
+} from '../../utils/copy-feedback.js';
 import { FILE_ICONS, MAIN_BADGE_TITLE } from '../../utils/file-icons.js';
 import { treeRows } from '../../utils/file-tree-rows.js';
 import { PROJECT_FILE } from '../../utils/workspace-names.js';
 
+import type { CopyState } from '../../utils/copy-feedback.js';
 import type { TreeFile, TreeRow } from '../../utils/file-tree-rows.js';
 
 export interface SourceFile {
@@ -45,8 +54,6 @@ export const NARROW_PX = 480;
 const FOLDED_PX = 120;
 /** A width must hold this long before the layout follows it, so a panel opening doesn't flip it midway. */
 export const SETTLE_MS = 150;
-/** How long "Copied" (or the failure) shows. */
-const FEEDBACK_MS = 2000;
 
 /**
  * The file shown: `open` when it's among the files, else the first program, else the first file.
@@ -79,7 +86,6 @@ const iconOf = (kind: SourceFile['kind']): string => (kind === 'project' ? FILE_
 /** A file's kind, held to the three the viewer draws (it lands in a class name and picks an icon). */
 const kindOf = (file: SourceFile | undefined): SourceFile['kind'] =>
   file?.kind === 'library' ? 'library' : file?.kind === 'project' ? 'project' : 'program';
-const modKey = (): string => (/Mac|iPhone|iPad/.test(navigator.platform) ? '⌘C' : 'Ctrl+C');
 
 const styles = `
   :host { display: flex; flex-direction: column; min-width: 0; min-height: 0; height: 100%; }
@@ -152,10 +158,7 @@ const styles = `
   .float .cp { background: var(--bg-elevated, #fff); border-color: var(--border-color, #e2e8f0); box-shadow: var(--shadow-sm, 0 1px 2px rgba(0, 0, 0, 0.05)); }
   .cp.ok { color: var(--success-color, #10b981); }
   .cp.fail { color: var(--error-text, #dc2626); }
-  .tip { position: absolute; top: calc(100% + 6px); right: -4px; z-index: 30; padding: 5px 9px; border-radius: 6px; white-space: nowrap;
-    font: 400 12px/1.4 var(--font-sans, system-ui, sans-serif); background: #1c1722; color: #f6e9da; box-shadow: var(--shadow-lg, 0 10px 15px rgba(0, 0, 0, 0.1)); }
-  .root.dark .tip { background: #f6e9da; color: #1c1722; }
-  .tip code { font-family: var(--font-mono, monospace); font-size: 11.5px; }
+  ${COPY_TIP_CSS}
 
   /* The code */
   .code { flex: 1; min-height: 0; overflow: auto; position: relative; }
@@ -193,7 +196,7 @@ export class SourceFiles extends HTMLElement {
 
   private _sheet = false;
 
-  private _copied: '' | 'ok' | 'fail' = '';
+  private _copied: CopyState = '';
 
   private _copiedTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -403,16 +406,8 @@ export class SourceFiles extends HTMLElement {
     const path = this._shownPath();
     const what = this._copyLabel ?? path ?? '';
     const label = `Copy ${what}`;
-    const icon =
-      this._copied === 'ok' ? FILE_ICONS.check : this._copied === 'fail' ? FILE_ICONS.close : FILE_ICONS.copy;
     const named = this._copyLabel ? esc(this._copyLabel) : `<code>${esc(what)}</code>`;
-    const tip =
-      this._copied === 'ok'
-        ? `<span class="tip" role="status">Copied ${named}</span>`
-        : this._copied === 'fail'
-          ? `<span class="tip" role="status">Couldn't copy. Select the text and press ${modKey()}</span>`
-          : '';
-    return `<button class="cp ${this._copied}" type="button" aria-label="${esc(label)}" title="${esc(label)}">${icon}</button>${tip}`;
+    return `<button class="cp ${this._copied}" type="button" aria-label="${esc(label)}" title="${esc(label)}">${copyIconFor(this._copied)}</button>${copyTipHtml(this._copied, named)}`;
   }
 
   private _codeHtml(): string {
@@ -449,7 +444,7 @@ export class SourceFiles extends HTMLElement {
     // The editor's DOM survives a re-layout: it's moved into the new code box, keeping its place.
     const editorDom = this._view?.dom as HTMLElement | undefined;
     const scrollTop = this._view ? (this._view.scrollDOM.scrollTop as number) : 0;
-    root.innerHTML = `<style>${styles}</style><div class="root ${mode}${this._dark ? ' dark' : ''}">${body}</div>`;
+    root.innerHTML = `<style>${styles}</style><div class="root ${mode}${this._dark ? ' dark' : ''}">${body}</div>${COPY_STATUS_HTML}`;
     if (editorDom) {
       root.querySelector('.cm')?.appendChild(editorDom);
       root.querySelector('.code')?.classList.add('loaded');
@@ -475,6 +470,8 @@ export class SourceFiles extends HTMLElement {
       row.tabIndex = on ? 0 : -1;
     });
     this._copied = '';
+    const status = root.querySelector('.copy-status');
+    if (status) status.textContent = '';
     const header = root.querySelector('.path, .menu-row');
     if (header) header.outerHTML = this._headerHtml();
     const float = root.querySelector('.float');
@@ -562,19 +559,24 @@ export class SourceFiles extends HTMLElement {
 
   /** Copy the file shown. "Copied" only once the clipboard has taken it; a refusal says so. */
   private async _copy(): Promise<void> {
+    const path = this._shownPath();
+    let state: CopyState;
     try {
       await navigator.clipboard.writeText(this.shownText);
-      this._copied = 'ok';
+      state = 'ok';
     } catch {
-      this._copied = 'fail';
+      state = 'fail';
     }
+    // Another file shown by now: say nothing, rather than name a file that isn't on the clipboard.
+    if (!this._connected || this._shownPath() !== path) return;
+    this._copied = state;
     // After the wait: a second copy made meanwhile mustn't leave this one's timer to cut its "Copied" short.
     if (this._copiedTimer) clearTimeout(this._copiedTimer);
     this._refreshCopy();
     this._copiedTimer = setTimeout(() => {
       this._copied = '';
       this._refreshCopy();
-    }, FEEDBACK_MS);
+    }, COPY_FEEDBACK_MS);
   }
 
   private _refreshCopy(): void {
@@ -582,6 +584,8 @@ export class SourceFiles extends HTMLElement {
       cell.innerHTML = this._copyHtml();
     });
     this._wireCopy();
+    const status = this.shadowRoot!.querySelector('.copy-status');
+    if (status) status.textContent = copyStatusText(this._copied, this._copyLabel ?? this._shownPath() ?? '');
   }
 
   // ─── Theme ──────────────────────────────────────────────────────────

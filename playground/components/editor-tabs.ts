@@ -7,12 +7,27 @@
 //   tab-select  { path, focusEditor }  a tab clicked (focusEditor), or chosen
 //                                      with the arrow keys (the keyboard stays)
 //   tab-close   { path }               its ×, a middle-click, or Delete
+//   copy-code   { path }               the copy icon, before Docs (2e, step 3d)
 //   toggle-docs                        the Docs button at the right end
 // Every tab can close (step 4d): with none open, the editor shows its
 // zero-state, and `active` is null. Not where `lastTabStays` (a scratch link,
 // whose one file lives only in the editor): there the last tab has no ×.
+//
+// The copy icon (mockups v13 and v14) sits in a cell of its own, as Docs does,
+// and copies the file in the editor; with no file open it isn't there. It
+// says "Copied" only once workspace-view reports the clipboard took the text
+// (`copied(ok)`), or what to do instead.
 
 import type { TabItem } from '../services/open-files.js';
+import {
+  COPY_FEEDBACK_MS,
+  COPY_STATUS_HTML,
+  COPY_TIP_CSS,
+  copyIconFor,
+  copyStatusText,
+  copyTipHtml,
+} from '../utils/copy-feedback.js';
+import type { CopyState } from '../utils/copy-feedback.js';
 import { FILE_ICONS } from '../utils/file-icons.js';
 import styles from './editor-tabs.css';
 
@@ -34,6 +49,11 @@ export class EditorTabs extends HTMLElement {
   /** The tab last scrolled into view. */
   private _scrolledTo: string | null = '';
 
+  /** What the copy icon says: nothing yet, copied, or refused. */
+  private _copied: CopyState = '';
+
+  private _copiedTimer: ReturnType<typeof setTimeout> | null = null;
+
   constructor() {
     super();
     this.attachShadow({ mode: 'open' });
@@ -41,10 +61,15 @@ export class EditorTabs extends HTMLElement {
 
   connectedCallback(): void {
     this.shadowRoot!.innerHTML = `
-      <style>${styles}</style>
+      <style>${styles}${COPY_TIP_CSS}</style>
       <div class="list" role="tablist" aria-label="Open files"></div>
+      <span class="copy-cell"><button class="copy" type="button"></button></span>
       <button class="docs" type="button" aria-label="Docs">${FILE_ICONS.book}</button>
+      ${COPY_STATUS_HTML}
     `;
+    this.shadowRoot!.querySelector('.copy')!.addEventListener('click', () => {
+      if (this._active !== null) this._emit('copy-code', { path: this._active });
+    });
     const list = this.shadowRoot!.querySelector('.list') as HTMLElement;
     list.addEventListener('click', (e) => this._onClick(e));
     list.addEventListener('auxclick', (e) => this._onAuxClick(e));
@@ -56,6 +81,29 @@ export class EditorTabs extends HTMLElement {
     this.shadowRoot!.querySelector('.docs')!.addEventListener('click', () => this._emit('toggle-docs'));
     this._drawn = '';
     this._draw();
+  }
+
+  disconnectedCallback(): void {
+    if (this._copiedTimer) clearTimeout(this._copiedTimer);
+    this._copiedTimer = null;
+    this._copied = '';
+  }
+
+  /**
+   * The copy's outcome, once the clipboard has answered: "Copied", or what to do instead.
+   * `path` is the file copied: if another file is in the editor by now, it says nothing,
+   * rather than name a file that isn't on the clipboard.
+   */
+  copied(ok: boolean, path: string | null = this._active): void {
+    if (!this.isConnected || path === null || path !== this._active) return;
+    if (this._copiedTimer) clearTimeout(this._copiedTimer);
+    this._copied = ok ? 'ok' : 'fail';
+    this._markCopy();
+    this._copiedTimer = setTimeout(() => {
+      this._copiedTimer = null;
+      this._copied = '';
+      this._markCopy();
+    }, COPY_FEEDBACK_MS);
   }
 
   get items(): TabItem[] {
@@ -73,8 +121,15 @@ export class EditorTabs extends HTMLElement {
   }
 
   set active(path: string | null) {
+    // Another file: what the icon said was about the one before.
+    if (path !== this._active && this._copied) {
+      if (this._copiedTimer) clearTimeout(this._copiedTimer);
+      this._copiedTimer = null;
+      this._copied = '';
+    }
     this._active = path;
     this._markActive();
+    this._markCopy();
   }
 
   /** Whether the last tab keeps no ×: a scratch link's one file can't close. */
@@ -127,7 +182,26 @@ export class EditorTabs extends HTMLElement {
         .join('');
     }
     this._markActive();
+    this._markCopy();
     this._markDocs();
+  }
+
+  /** The copy icon: named for the file in the editor, gone with none open. */
+  private _markCopy(): void {
+    const cell = this.shadowRoot?.querySelector<HTMLElement>('.copy-cell');
+    const button = cell?.querySelector<HTMLElement>('.copy');
+    if (!cell || !button) return;
+    cell.hidden = this._active === null;
+    const label = this._active === null ? 'Copy' : `Copy ${this._active}`;
+    button.setAttribute('aria-label', label);
+    button.setAttribute('title', label);
+    button.className = `copy ${this._copied}`.trim();
+    button.innerHTML = copyIconFor(this._copied);
+    cell.querySelector('.tip')?.remove();
+    const tip = copyTipHtml(this._copied, `<code>${esc(this._active ?? '')}</code>`);
+    if (tip) button.insertAdjacentHTML('afterend', tip);
+    const status = this.shadowRoot!.querySelector('.copy-status');
+    if (status) status.textContent = copyStatusText(this._copied, this._active ?? '');
   }
 
   private _markActive(): void {

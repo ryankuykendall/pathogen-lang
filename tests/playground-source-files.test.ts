@@ -238,6 +238,28 @@ describe('copying', () => {
     expect($(el, '.cp')?.className).toBe('cp ');
   });
 
+  it('a copy that finishes after another file opened says nothing; one that doesn’t is heard too', async () => {
+    let resolve!: () => void;
+    writeText.mockReturnValueOnce(
+      new Promise<void>((r) => {
+        resolve = r;
+      }),
+    );
+    const el = mount(SEVERAL);
+    $(el, '.path .cp')!.click();
+    el.open = 'parts/kit.pathogen';
+    resolve();
+    await flush();
+    expect([$(el, '.tip'), $(el, '[role="status"]')?.textContent]).toEqual([null, '']);
+    writeText.mockResolvedValue(undefined);
+    $(el, '.path .cp')!.click();
+    await flush();
+    expect([text($(el, '.tip')), $(el, '[role="status"]')?.textContent]).toEqual([
+      'Copied parts/kit.pathogen',
+      'Copied parts/kit.pathogen',
+    ]);
+  });
+
   it('a second copy keeps its “Copied” for the full moment, whatever the first one’s timer', async () => {
     vi.useFakeTimers();
     writeText.mockResolvedValue(undefined);

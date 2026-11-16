@@ -61,20 +61,12 @@ describe('the Files toggle', () => {
     expect(files()).not.toBeNull();
   });
 
-  // Step 4d: with no file open, no file crumb, and Copy Code is off and says why.
-  it('with no file open: no file crumb, and Copy Code is off', async () => {
+  // Step 4d: with no file open, no file crumb. (Copy Code, off then, left for the tabs' copy icon in 2e, step 3d.)
+  it('with no file open: no file crumb', async () => {
     const { store, el } = await mount({ 'main.pathogen': 'M 0 0' });
-    const copy = () => el.shadowRoot!.querySelector<HTMLButtonElement>('#copy-code')!;
-    expect([el.shadowRoot!.querySelector('.breadcrumb-file')?.textContent, copy().disabled]).toEqual([
-      'main.pathogen',
-      false,
-    ]);
+    expect(el.shadowRoot!.querySelector('.breadcrumb-file')?.textContent).toBe('main.pathogen');
     store.update({ openFile: null, openFiles: [] });
-    expect([el.shadowRoot!.querySelector('.breadcrumb-file'), copy().disabled, copy().title]).toEqual([
-      null,
-      true,
-      'No file open: open one to copy its code',
-    ]);
+    expect(el.shadowRoot!.querySelector('.breadcrumb-file')).toBeNull();
     store.update({ openFile: 'main.pathogen', openFiles: ['main.pathogen'] });
   });
 

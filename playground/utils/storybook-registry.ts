@@ -113,7 +113,7 @@ layer('hex').apply { circle(60, 100, 40) }`,
     name: 'Editor Tabs',
     category: 'Editor',
     description:
-      'The tabs above the editor, one per open file (docs/workspace-files.md). Labels leave out .pathogen; two open files with one name add their folder (gears · parts). Icons: program, module (module;), pathogen.json with a lock. Close ×, and middle-click, close a tab; the last tab stays. Docs at the right end. Arrow keys, Home and End move between tabs; Delete closes one.',
+      'The tabs above the editor, one per open file (docs/workspace-files.md). Labels leave out .pathogen; two open files with one name add their folder (gears · parts). Icons: program, module (module;), pathogen.json with a lock. Close ×, and middle-click, close a tab; the last tab stays. At the right end, a cell each: the copy icon (2e, step 3d; mockups v13, v14), which copies the file in the editor and is gone with no file open, then Docs. Arrow keys, Home and End move between tabs; Delete closes one.',
     stories: [
       // docsOpen in each: the storybook keeps a control's value from the story before.
       { name: 'A new workspace (one tab)', props: { set: 'one', docsOpen: false } },
@@ -124,10 +124,16 @@ layer('hex').apply { circle(60, 100, 40) }`,
         name: 'More tabs than fit',
         props: { set: 'many', active: 'shapes/star-9.pathogen', width: 520, docsOpen: false },
       },
+      { name: 'Copied', props: { set: 'gears', active: 'parts/gears.pathogen', docsOpen: false, copied: 'ok' } },
+      {
+        name: 'Couldn’t copy',
+        props: { set: 'gears', active: 'parts/gears.pathogen', docsOpen: false, copied: 'fail' },
+      },
+      { name: 'No file open', props: { set: 'none', docsOpen: false } },
     ],
     controls: [{ name: 'docsOpen', type: 'toggle', label: 'Docs open', default: false }],
     notes:
-      'Clicking a tab, its ×, or Docs here updates the story, as workspace-view does (tab-select, tab-close, toggle-docs).',
+      'Clicking a tab, its ×, the copy icon, or Docs here updates the story, as workspace-view does (tab-select, tab-close, copy-code then copied(ok), toggle-docs). The copy icon copies a line naming the file.',
     render: (container, props, controls) => {
       const loaded = Promise.all([import('../components/editor-tabs.js'), import('../services/open-files.js')]);
       loaded
@@ -145,6 +151,7 @@ layer('hex').apply { circle(60, 100, 40) }`,
               ['main.pathogen', 'program'],
               ...Array.from({ length: 11 }, (_, i) => [`shapes/star-${i}.pathogen`, i % 3 ? 'program' : 'library']),
             ]),
+            none: {},
           };
           const kinds = SETS[String(props.set)] ?? SETS.one;
           let open = Object.keys(kinds);
@@ -152,6 +159,7 @@ layer('hex').apply { circle(60, 100, 40) }`,
             items: unknown[];
             active: string | null;
             docsOpen: boolean;
+            copied: (ok: boolean) => void;
           };
           if (props.width) tabs.style.width = `${Number(props.width)}px`;
           tabs.style.border = '1px solid var(--border-color, #ddd)';
@@ -163,9 +171,19 @@ layer('hex').apply { circle(60, 100, 40) }`,
             );
           };
           apply();
-          tabs.active = String(props.active ?? open[0]);
+          tabs.active = props.active !== undefined ? String(props.active) : (open[0] ?? null);
           tabs.docsOpen = Boolean(props.docsOpen);
           container.appendChild(tabs);
+          if (props.copied) tabs.copied(props.copied === 'ok');
+
+          // As workspace-view does: copy, then say how it went.
+          tabs.addEventListener('copy-code', (e) => {
+            const { path } = (e as CustomEvent<{ path: string }>).detail;
+            navigator.clipboard.writeText(`// ${path}\n`).then(
+              () => tabs.copied(true),
+              () => tabs.copied(false),
+            );
+          });
 
           tabs.addEventListener('tab-select', (e) => {
             tabs.active = (e as CustomEvent<{ path: string }>).detail.path;

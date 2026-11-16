@@ -149,11 +149,11 @@ Each step: tests first; light and dark; a puppeteer check against `npm run dev:s
    - The menu's re-review state, after each save.
 6. **The public page** (`/u/:handle/:slug`, the Pages worker): the v12 source view. `source.json` already carries every file. *A Pages worker change needs `dev:stack` restarted to check it (note 50, step 6).*
 7. **The docs:**
-   - Publish `docs/workspace-files.md`: its `DOC_FILES` line; the header comment out; `[month]`; the snapshot sentence; the publishing-and-main wording; the screenshot, in light and dark.
+   - Publish `docs/workspace-files.md`: its `DOC_FILES` line; the header comment out; `[month]`; the snapshot sentence; the publishing-and-main wording; the screenshot, in light and dark. And from step 3d, its three lines on Copy Code (7, 33 and 97 on 2026-11-15) become the copy icon at the end of the tabs, which isn't there with no file open (Format Document stays off then).
    - Bring four published pages up to date:
      - `projects.md`: "The playground can't read files yet", and its In each tool bullet;
      - `modules.md`: its intro line, its In each tool bullet, and the "No project folder" error row;
-     - `snapshots.md`: several files, the no-program reason, the size limit;
+     - `snapshots.md`: several files, the no-program reason, the size limit; and from step 3c, Copy code leaves the actions (the icon copies the file shown) and Start new workspace copies "this snapshot's files";
      - `publishing.md`: the main and every file; the menu items' real names; the frozen image, if 9 is yes.
    - A content review, then your approval.
    - The CHANGELOG, covering 2b to 2e.
@@ -425,6 +425,48 @@ Committed as 127ed62.
   - no ancestor that would pin the sheet;
   - a phone's menu, sheet and breadcrumb;
 - step 3a's check again (10): its snapshots-page line now reads the panel's text, since the page no longer adds a `<code>` child.
+
+Committed as 78f671e.
+
+## Step 3d, built (2026-11-15)
+
+**The workspace copies from an icon at the end of its tabs,** as mockups v13 and v14 draw it (states 1 to 3, 5, 6):
+- **A cell of its own,** before the docs book, the same size as the book's: the bar's height, 38 px wide, a border on its left.
+- **It copies the file in the editor,** and its tooltip names that file ("Copy parts/gears.pathogen").
+- **"Copied" shows only once the clipboard has taken the text.** A refusal says to select the text and press ⌘C. Before, Copy Code said "Copied!" whatever happened.
+- **With no file open, the icon isn't there.**
+- **Copy Code has left the breadcrumb,** on a phone too: the control row is the same markup.
+- **One look for every copy icon** (`utils/copy-feedback.ts`): the check or cross, the note and its wording. The note's colours now come from the theme, light on a dark page, rather than fixed values.
+
+**The code review** found nothing blocking. Fixed from it:
+- a copy that finishes after another file has opened no longer says "Copied" with the new file's name; it says nothing. The same in `<source-files>`;
+- "Copied" reaches a screen reader through a status region that stays on the page. One inserted already holding its words is often skipped;
+- a stale comment.
+
+Its docs findings (`workspace-files.md`, `snapshots.md`) are listed under step 7, which changes the docs with a content review and your approval.
+
+**Superseded checks:** `verify-2d-step9a.ts` and `verify-2d-step4d.ts` look for the breadcrumb's Copy Code. They're kept as the record of those steps; run again, those lines fail.
+
+**Tested:**
+- `tests/playground-editor-tabs.test.ts`, five more:
+  - the cell before Docs, and its event;
+  - no icon with no file open;
+  - "Copied" only when told, and gone after a moment;
+  - a late copy naming no one;
+  - a refusal, cleared by another file;
+- `tests/playground-source-files.test.ts`: a late copy, and the status region;
+- the two breadcrumb tests, now without Copy Code;
+- the playground typecheck (no new errors);
+- `project-docs/modules/verify/verify-2e-step3d.ts`, 15 checks on the dev stack, light and dark:
+  - the cell's size and place;
+  - the clipboard, and the note over the code (not under it);
+  - another file opened from the tree;
+  - no Copy Code in the breadcrumb;
+  - every tab closed;
+  - a phone;
+- the 3b and 3c checks again, for the shared note.
+
+**That ends step 3.** Every place the web app shows code now copies from an icon in the code's own panel: the workspace, the snapshots page and blog embeds. The review modal and the public page follow in steps 5 and 6.
 
 ## What the audits found (2026-11-14)
 

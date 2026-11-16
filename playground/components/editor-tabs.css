@@ -131,7 +131,19 @@
   padding-right: 12px;
 }
 
-.docs {
+/* The copy icon and Docs: a cell each at the right end, 38 px wide, a border on its left. */
+.copy-cell {
+  position: relative;
+  flex: none;
+  display: flex;
+}
+
+.copy-cell[hidden] {
+  display: none;
+}
+
+.docs,
+.copy {
   width: 38px;
   flex: none;
   display: grid;
@@ -149,9 +161,28 @@
   height: 16px;
 }
 
-.docs:hover {
+.copy svg {
+  width: 15px;
+  height: 15px;
+}
+
+.docs:hover,
+.copy:hover {
   color: var(--text-primary, #1a1a2e);
   background: var(--hover-bg, rgba(0, 0, 0, 0.04));
+}
+
+.copy.ok {
+  color: var(--success-color, #10b981);
+}
+
+.copy.fail {
+  color: var(--error-text, #dc2626);
+}
+
+.copy:focus-visible {
+  outline: 2px solid var(--focus-ring, rgba(148, 97, 196, 0.5));
+  outline-offset: -2px;
 }
 
 .docs[aria-pressed='true'] {

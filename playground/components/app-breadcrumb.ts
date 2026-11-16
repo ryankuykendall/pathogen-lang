@@ -1,6 +1,6 @@
 // App Breadcrumb — secondary navigation
 // Left: breadcrumb trail. Right (workspace view only): the console
-// toggle, Copy Code, save status, and the overflow menu containing
+// toggle, save status, and the overflow menu containing
 // Export / Format Document / Copy Workspace / Copy SVG /
 // Copy Debug Info / Set Thumbnail and (when signed in)
 // Publish/Unpublish workspace. Copy URL left the menu in 2d, step 9a: a link
@@ -397,7 +397,7 @@ class AppBreadcrumb extends HTMLElement {
         ? `<button data-action="export" disabled>${exportIcon}<span>Export<small>${NO_PROGRAM_EXPORT}</small></span></button>`
         : `<button data-action="export" title="Export as SVG, PNG, or PDF (Ctrl+Shift+E)">${exportIcon}<span>Export</span></button>`,
     );
-    // It formats the file in the editor, as Copy Code copies it (mockup v7, screen K).
+    // It formats the file in the editor, as the tabs' copy icon copies it (mockup v7, screen K).
     menuItems.push(
       openFileNow() === null
         ? `<button data-action="format-document" disabled title="No file open">${materialIcon('format-left', { size: 16, className: 'menu-icon' })}<span>Format Document</span></button>`
@@ -490,13 +490,7 @@ class AppBreadcrumb extends HTMLElement {
     const filesToggle = holdsWorkspace()
       ? `<button id="files-toggle" class="toggle-btn ${filesOpen ? 'active' : ''}" aria-pressed="${filesOpen}" title="${filesOpen ? 'Hide' : 'Show'} the workspace’s files">Files</button>`
       : '';
-    // Copy Code and Format Document wait for a file (step 4d): with none open, they're off and say why.
-    // Copy Code's tooltip names the file it copies, whichever program the preview shows (step 9a; v7, screen K).
-    const fileOpen = openFileNow();
-    const noFileOpen = fileOpen === null;
-    const copyCodeTitle = noFileOpen
-      ? 'No file open: open one to copy its code'
-      : `Copy the code of ${escHtml(fileOpen)}, the file in the editor`;
+    // Copy Code moved to the copy icon at the end of the editor's tabs (2e, step 3d; mockups v13, v14).
 
     const calledStdlib = (store.get('calledStdlibFunctions') || []) as string[];
     const usesRandom = usesRandomValues(calledStdlib);
@@ -567,10 +561,6 @@ class AppBreadcrumb extends HTMLElement {
                 ${filesToggle}
                 <button id="console-toggle" class="toggle-btn ${consoleOpen ? 'active' : ''}" aria-pressed="${consoleOpen}" title="Show console output">Console</button>
               </div>
-              <button id="copy-code" class="secondary-btn" ${noFileOpen ? 'disabled ' : ''}title="${copyCodeTitle}">
-                Copy Code
-              </button>
-              <span id="copy-feedback" class="copy-feedback">Copied!</span>
             </div>
             <div class="controls-right">
               ${this.getSaveStatusHtml()}
@@ -607,12 +597,6 @@ class AppBreadcrumb extends HTMLElement {
     this.shadowRoot!.querySelector('#console-toggle')?.addEventListener('click', () => {
       store.set('consoleOpen', !store.get('consoleOpen'));
       this.dispatchEvent(new CustomEvent('toggle-console', { bubbles: true, composed: true }));
-    });
-
-    // Copy code
-    this.shadowRoot!.querySelector('#copy-code')?.addEventListener('click', () => {
-      this.dispatchEvent(new CustomEvent('copy-code', { bubbles: true, composed: true }));
-      this.showCopyFeedback();
     });
 
     // Refresh button (only present when usesRandom)
@@ -767,14 +751,6 @@ class AppBreadcrumb extends HTMLElement {
     } catch (err: unknown) {
       console.error('Failed to update workspace visibility:', err);
       this.showOverflowFeedback('Publish failed', true);
-    }
-  }
-
-  showCopyFeedback(): void {
-    const feedback = this.shadowRoot!.querySelector('#copy-feedback');
-    if (feedback) {
-      feedback.classList.add('visible');
-      setTimeout(() => feedback.classList.remove('visible'), 2000);
     }
   }
 

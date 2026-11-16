@@ -1189,9 +1189,10 @@ export class WorkspaceView extends HTMLElement {
     };
     document.addEventListener('format-document', this._handleFormatDocument);
 
+    // From the tabs' copy icon (2e, step 3d).
     this._handleCopyCode = (): void => {
       if (store.get('currentView') === 'workspace') {
-        this.copyCode();
+        this.copyCode().catch(() => undefined);
       }
     };
     document.addEventListener('copy-code', this._handleCopyCode);
@@ -2292,13 +2293,21 @@ export class WorkspaceView extends HTMLElement {
     return this._simpleHash(parts.join('\n'));
   }
 
-  copyCode(): void {
-    // With no file open there's no code to copy (the button is off then too).
-    if (openFileNow() === null) return;
+  /** Copy the file in the editor; the tabs' icon says so once the clipboard has answered. */
+  async copyCode(): Promise<void> {
+    // With no file open there's no code to copy (the icon isn't there then either).
+    const path = openFileNow();
+    if (path === null) return;
     const code = this.editorPane.code;
-    navigator.clipboard.writeText(code).catch((err: Error) => {
+    let ok = true;
+    try {
+      await navigator.clipboard.writeText(code);
+    } catch (err) {
+      ok = false;
       console.error('Failed to copy code:', err);
-    });
+    }
+    // Named for the file copied: the tabs say nothing if another is open by now.
+    this.editorTabs?.copied(ok, path);
   }
 
   copySvg(): void {

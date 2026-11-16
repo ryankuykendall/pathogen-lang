@@ -5,7 +5,7 @@
 // storybook entry (playground/utils/storybook-registry.ts, "Editor Tabs") is
 // its visual spec.
 
-import { beforeAll, describe, expect, it } from 'vitest';
+import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 
 import type { TabItem } from '../playground/services/open-files.js';
 
@@ -143,5 +143,76 @@ describe('<editor-tabs>', () => {
     ]);
     expect(tabFor(tabs, '<b>.pathogen').querySelector('b')).toBeNull();
     expect(tabFor(tabs, '<b>.pathogen').textContent.trim()).toBe('<b>');
+  });
+});
+
+// 2e, step 3d (mockups v13 and v14): the copy icon in a cell of its own, before Docs.
+describe('<editor-tabs>’s copy icon', () => {
+  afterEach(() => {
+    vi.useRealTimers();
+    document.body.innerHTML = '';
+  });
+
+  const copyCell = (tabs: Tabs): HTMLElement => tabs.shadowRoot!.querySelector<HTMLElement>('.copy-cell')!;
+  const copyButton = (tabs: Tabs): HTMLButtonElement => tabs.shadowRoot!.querySelector<HTMLButtonElement>('.copy')!;
+  const tipText = (tabs: Tabs): string | null => tabs.shadowRoot!.querySelector('.tip')?.textContent ?? null;
+
+  it('sits before Docs, named for the file in the editor, and asks to copy that file', () => {
+    const { tabs } = mount(ITEMS, 'parts/gears.pathogen');
+    const asked: unknown[] = [];
+    tabs.addEventListener('copy-code', (e) => asked.push((e as Event & { detail?: unknown }).detail));
+    const cells = [...tabs.shadowRoot!.children].map((c) => c.className).filter((c) => c !== '');
+    // The status region after them is hidden from the eye: it speaks "Copied" to a screen reader.
+    expect(cells).toEqual(['list', 'copy-cell', 'docs', 'copy-status']);
+    expect([copyButton(tabs).getAttribute('aria-label'), copyButton(tabs).title]).toEqual([
+      'Copy parts/gears.pathogen',
+      'Copy parts/gears.pathogen',
+    ]);
+    copyButton(tabs).click();
+    expect(asked).toEqual([{ path: 'parts/gears.pathogen' }]);
+  });
+
+  it('with no file open, it isn’t there (nothing to copy)', () => {
+    const { tabs } = mount();
+    tabs.items = [];
+    tabs.active = null;
+    expect(copyCell(tabs).hidden).toBe(true);
+    tabs.items = ITEMS;
+    tabs.active = 'main.pathogen';
+    expect(copyCell(tabs).hidden).toBe(false);
+  });
+
+  it('says “Copied” only when told the clipboard took it, then goes back after a moment', () => {
+    vi.useFakeTimers();
+    const { tabs } = mount(ITEMS, 'parts/gears.pathogen');
+    copyButton(tabs).click();
+    expect([tipText(tabs), copyButton(tabs).className]).toEqual([null, 'copy']);
+    (tabs as Tabs & { copied: (ok: boolean) => void }).copied(true);
+    expect([tipText(tabs), copyButton(tabs).className]).toEqual(['Copied parts/gears.pathogen', 'copy ok']);
+    vi.advanceTimersByTime(2000);
+    expect([tipText(tabs), copyButton(tabs).className]).toEqual([null, 'copy']);
+  });
+
+  it('a copy that finishes after another file opened says nothing, rather than name the wrong file', () => {
+    const { tabs } = mount(ITEMS, 'main.pathogen');
+    const copied = (tabs as Tabs & { copied: (ok: boolean, path?: string | null) => void }).copied.bind(tabs);
+    tabs.active = 'parts/gears.pathogen';
+    copied(true, 'main.pathogen');
+    expect([tipText(tabs), copyButton(tabs).className]).toEqual([null, 'copy']);
+    copied(true, 'parts/gears.pathogen');
+    expect(tipText(tabs)).toBe('Copied parts/gears.pathogen');
+    // A screen reader hears it from the status region that stays on the page.
+    expect(tabs.shadowRoot!.querySelector('[role="status"]')?.textContent).toBe('Copied parts/gears.pathogen');
+  });
+
+  it('a refused copy says what to do instead; choosing another file clears it', () => {
+    const { tabs } = mount(ITEMS, 'main.pathogen');
+    (tabs as Tabs & { copied: (ok: boolean) => void }).copied(false);
+    expect([tipText(tabs), copyButton(tabs).className]).toEqual([
+      expect.stringMatching(/^Couldn't copy\. Select the text and press (⌘C|Ctrl\+C)$/),
+      'copy fail',
+    ]);
+    tabs.active = 'parts/gears.pathogen';
+    expect([tipText(tabs), copyButton(tabs).title]).toEqual([null, 'Copy parts/gears.pathogen']);
   });
 });
