@@ -8,7 +8,9 @@
 // - the breadcrumb has no Copy Code;
 // - every tab closed: no icon;
 // - a phone (390 px): the icon at the right end of the tabs, no Copy Code in
-//   the control row.
+//   the control row;
+// - signed out, on a scratch link (where a blog embed's ↗ leads): the icon is
+//   there, named, and copies.
 //
 //   npm run dev:stack            (and npm run build:playground:dev after a change)
 //   npx tsx project-docs/modules/verify/verify-2e-step3d.ts
@@ -230,6 +232,40 @@ try {
     phone,
   );
   await page.screenshot({ path: `${SHOTS}/2e-step3d-phone-light.png` });
+
+  // Signed out, on a scratch link (where a blog embed's ↗ brings a reader): the icon is there and copies.
+  const anon = await browser.createBrowserContext();
+  await anon.overridePermissions(PAGES_URL, ['clipboard-read', 'clipboard-write', 'clipboard-sanitized-write']);
+  const reader = await anon.newPage();
+  await reader.setViewport({ width: 1400, height: 900 });
+  const SCRATCH = 'define ViewBox(0, 0, 100, 100);\ncircle(50, 50, 30);\n';
+  const state = Buffer.from(encodeURIComponent(JSON.stringify({ code: SCRATCH }))).toString('base64');
+  await reader.goto(`${PAGES_URL}/workspace/scratch?state=${state}`, { waitUntil: 'domcontentloaded' });
+  const scratchLoaded = await poll(
+    reader,
+    `return __copy() && __deep('code-editor-pane')?.code === ${JSON.stringify(SCRATCH)} ? 1 : null;`,
+    30_000,
+  );
+  const scratchCell = await ev<Record<string, unknown>>(
+    reader,
+    `return { hidden: __tabs().shadowRoot.querySelector('.copy-cell').hidden, label: __copy().getAttribute('aria-label') };`,
+  );
+  await ev(reader, `__copy().click(); return 1;`);
+  const scratchTip = await poll<string>(
+    reader,
+    `return __tabs().shadowRoot.querySelector('.tip')?.textContent ?? null;`,
+  );
+  const scratchClip = await clipboard(reader);
+  check(
+    'signed out, on a scratch link: the icon is there, named, and copies the code',
+    scratchLoaded === 1 &&
+      scratchCell.hidden === false &&
+      scratchCell.label === 'Copy main.pathogen' &&
+      scratchTip === 'Copied main.pathogen' &&
+      scratchClip === SCRATCH,
+    { scratchLoaded, ...scratchCell, scratchTip, clip: scratchClip.slice(0, 40) },
+  );
+  await anon.close();
 } finally {
   await browser.close();
   for (const id of made) await api('DELETE', `/workspace/${id}`);

@@ -357,8 +357,10 @@ export class WorkspaceSnapshotsView extends HTMLElement {
   private async _loadFiles(id: string): Promise<SnapshotViewerFiles> {
     const cached = this._files.get(id);
     if (cached) return cached;
-    const files = snapshotViewerFiles(await snapshotApi.files(id), engine());
-    this._files.set(id, files);
+    const lib = engine();
+    const files = snapshotViewerFiles(await snapshotApi.files(id), lib);
+    // Read before the engine loaded, every file passes for a program: read them again next time.
+    if (lib) this._files.set(id, files);
     return files;
   }
 

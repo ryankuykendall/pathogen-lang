@@ -466,6 +466,11 @@ Its docs findings (`workspace-files.md`, `snapshots.md`) are listed under step 7
   - a phone;
 - the 3b and 3c checks again, for the shared note.
 
+**Checked after the commit** (note 59, requirement 1, and the readers the blog sends):
+- **A snapshot made before 2e,** stored as its `code.pathogen` alone with no manifest: made in the playground, then turned back into the old form in local R2. The page shows the code alone, "Copy main.pathogen", and Export's legend lists it (`verify-2e-step3c.ts`, now 15 checks).
+- **Signed out, on a scratch link,** where a blog embed's ↗ leads: the tabs' icon is there, named, and copies (`verify-2e-step3d.ts`, now 16).
+- **And one fix:** the snapshots page kept files read before the engine had loaded, with every file passing for a program, for as long as the page stayed open. They're now read again next time.
+
 **That ends step 3.** Every place the web app shows code now copies from an icon in the code's own panel: the workspace, the snapshots page and blog embeds. The review modal and the public page follow in steps 5 and 6.
 
 ## What the audits found (2026-11-14)

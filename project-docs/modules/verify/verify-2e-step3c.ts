@@ -10,6 +10,8 @@
 // - ← and → in the list move between files, not snapshots; elsewhere they step;
 // - a snapshot drawn by the main opens on the main;
 // - a one-file snapshot: the code alone, "Copy main.pathogen";
+// - a snapshot made before 2e (its manifest swapped in local R2 for the old
+//   code.pathogen): the same, and Export's legend lists its code;
 // - nothing above the panel pins its sheet to an ancestor; on a phone (390 px)
 //   the list is a menu whose sheet sits at the window's bottom, and the
 //   breadcrumb's actions fit on one line.
@@ -19,6 +21,7 @@
 
 import { execFileSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
+import { writeFileSync } from 'node:fs';
 
 import puppeteer from 'puppeteer';
 
@@ -43,6 +46,17 @@ const check = (label: string, ok: boolean, detail?: unknown): void => {
   console.log(`${ok ? 'PASS' : 'FAIL'}: ${label}${ok ? '' : ` ${JSON.stringify(detail)?.slice(0, 800)}`}`);
   if (!ok) failures++;
 };
+
+/** The local dev stack's R2 bucket (api/wrangler.toml), and a scratch file for a put. */
+const R2_BUCKET = 'svg-path-extended-thumbnails';
+const PRE2E_FILE = 'tmp/verify-2e-step3c-code.pathogen';
+
+function r2(args: string[]): void {
+  execFileSync('npx', ['wrangler', 'r2', ...args, '--local', '--persist-to=../.wrangler/state'], {
+    cwd: 'api',
+    stdio: ['pipe', 'pipe', 'inherit'],
+  });
+}
 
 function d1(sql: string): void {
   execFileSync(
@@ -375,6 +389,39 @@ try {
     one,
   );
   await page.screenshot({ path: `${SHOTS}/2e-step3c-one-light.png` });
+
+  // ── Made before 2e: no manifest, only code.pathogen (how every snapshot before phase 2 is stored) ──
+  const prefix = `snapshots/${single.id}/${byOne}`;
+  writeFileSync(PRE2E_FILE, ONE);
+  r2(['object', 'delete', `${R2_BUCKET}/${prefix}/manifest.json`]);
+  r2(['object', 'put', `${R2_BUCKET}/${prefix}/code.pathogen`, `--file=../${PRE2E_FILE}`]);
+  const legacy = (await (await api('GET', `/snapshot/${byOne}/files`)).json()) as { files?: Record<string, unknown> };
+  check(
+    'the snapshot now reads as one made before 2e (no manifest, its code alone)',
+    Object.keys(legacy.files ?? {}).join() === 'main.pathogen',
+    legacy,
+  );
+  await openSnapshot(page, singleSlugId, nOne);
+  const old = await ev<Record<string, unknown>>(
+    page,
+    `const sf = __sf().shadowRoot;
+     return { list: !!sf.querySelector('.list'), path: !!sf.querySelector('.path'), icon: sf.querySelector('.float .cp')?.getAttribute('aria-label'), text: __sf().shownText };`,
+  );
+  await ev(
+    page,
+    `const m = __deep('workspace-snapshots-view').shadowRoot.querySelector('export-modal');
+     const real = m.open.bind(m);
+     m.open = (svg, state) => { window.__exportState = state; return real(svg, state); };
+     return 1;`,
+  );
+  await ev(page, `__deep('[data-snapshot-action="export"]').click(); return 1;`);
+  const oldLegend = await poll<string>(page, `return window.__exportState?.code ?? null;`);
+  await ev(page, `document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' })); return 1;`);
+  check(
+    'a snapshot made before 2e: the code alone, "Copy main.pathogen", and Export’s legend lists it',
+    !old.list && !old.path && old.icon === 'Copy main.pathogen' && old.text === ONE && oldLegend === ONE,
+    { ...old, oldLegend },
+  );
 
   // ── A phone ──────────────────────────────────────────────────────────
   await page.setViewport({ width: 390, height: 844, deviceScaleFactor: 2 });
