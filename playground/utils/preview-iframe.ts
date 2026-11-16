@@ -118,6 +118,11 @@ export function bootstrapPreviewIframe(
   // spurious "Blocked script execution" warning per iframe in Chrome.
   iframe.setAttribute('sandbox', 'allow-same-origin');
   iframe.setAttribute('title', 'Compiled SVG preview (sandboxed)');
+  // Its own compositing layer, so the drawing is rasterized only when it changes. Without
+  // it, the drawing shares the page's layer, and any repaint near it (a tab, the
+  // breadcrumb, the program chip) rasterizes it again: about 1.9 s at 2x pixels for a
+  // drawing of a few thousand filtered layers (project-docs/preview-raster-perf/).
+  iframe.style.willChange = 'transform';
   iframe.srcdoc = variant === 'mini' ? IFRAME_SRCDOC_MINI : IFRAME_SRCDOC;
   return new Promise<Document>((resolve, reject) => {
     const onLoad = (): void => {

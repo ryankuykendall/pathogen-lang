@@ -1,0 +1,21 @@
+// A drawing that costs the browser about a second to rasterize at 2x pixels:
+// 1,521 layers, each with a drop-shadow filter (like kablammo-investigations,
+// which draws thousands). Any repaint of the preview redraws all of it, so the
+// preview must keep its own compositing layer (preview-raster-perf/README.md).
+define ViewBox(0, 0, 2000, 2000);
+
+let dotFill = oklch(0.86 0.12 80);
+let dotShadow = oklch(0.55 0.22 350);
+
+for (row in 0..38) {
+  for (column in 0..38) {
+    let dot = PathLayer(`dot-${row}-${column}`) #{
+      fill: dotFill;
+      stroke: none;
+      filter: drop-shadow(0px 0px 8px dotShadow);
+    };
+    dot.apply {
+      circle(calc(40 + column * 50), calc(40 + row * 50), 22);
+    }
+  }
+}
