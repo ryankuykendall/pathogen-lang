@@ -270,6 +270,10 @@ interface OpenOptions {
   /** Workspace name shown in the header so the viewer can confirm which
    *  workspace they're editing (important when targeting arbitrary ids). */
   title?: string;
+  /** 'approval' saves the approval's card (website/api/approval-card.ts), which
+   *  the public pages show, instead of the live thumbnail: the review screen's
+   *  Set thumbnail, drawn from the approved files. */
+  target?: 'live' | 'approval';
 }
 
 type ResizeCorner = 'nw' | 'ne' | 'sw' | 'se';
@@ -322,6 +326,8 @@ class ThumbnailCropModal extends HTMLElement {
 
   private _context: 'owner' | 'admin' = 'owner';
 
+  private _target: 'live' | 'approval' = 'live';
+
   private _saving = false;
 
   // Document-level event handlers
@@ -356,6 +362,7 @@ class ThumbnailCropModal extends HTMLElement {
     this._storeState = { ...storeState };
     this._workspaceId = options?.workspaceId ?? null;
     this._context = options?.context ?? 'owner';
+    this._target = options?.target ?? 'live';
     this._canvasWidth = storeState.width || 200;
     this._canvasHeight = storeState.height || 200;
     this._saving = false;
@@ -402,6 +409,7 @@ class ThumbnailCropModal extends HTMLElement {
     // owner-path open.
     this._workspaceId = null;
     this._context = 'owner';
+    this._target = 'live';
     this._removeDocumentListeners();
     this._panZoom?.destroy();
     this._panZoom = null;
@@ -750,12 +758,14 @@ class ThumbnailCropModal extends HTMLElement {
         size: this._cropSize,
       };
 
+      const forApproval = this._target === 'approval';
       const result = (await thumbnailService.generateThumbnail(
         workspaceId,
         this._svgElement!,
         this._storeState!,
         cropRegion,
-      )) as { manualThumbnailAt?: string | null } | null;
+        forApproval ? { kind: 'approval' } : undefined,
+      )) as { manualThumbnailAt?: string | null; cardAt?: string } | null;
 
       // Keep the store in sync so the next open() of this modal correctly
       // shows the Clear button. Owner path only — in admin context the
@@ -764,12 +774,12 @@ class ThumbnailCropModal extends HTMLElement {
         store.set('workspaceManualThumbnailAt', result?.manualThumbnailAt ?? new Date().toISOString());
       }
 
-      // Dispatch event for landing-view refresh
+      // Dispatch event for landing-view refresh (and, with cardAt, the review screen's card).
       document.dispatchEvent(
         new CustomEvent('thumbnail-updated', {
           bubbles: true,
           composed: true,
-          detail: { workspaceId },
+          detail: { workspaceId, ...(result?.cardAt ? { cardAt: result.cardAt } : {}) },
         }),
       );
 
@@ -786,7 +796,9 @@ class ThumbnailCropModal extends HTMLElement {
               this._context === 'admin'
                 ? "It will appear on the workspace's public thumbnails."
                 : 'It will appear on your workspaces page.',
-            image: `${thumbnailApi.url(workspaceId, 256)}?v=${Date.now()}`,
+            image: result?.cardAt
+              ? thumbnailApi.cardUrl(workspaceId, result.cardAt)
+              : `${thumbnailApi.url(workspaceId, 256)}?v=${Date.now()}`,
           },
         }),
       );

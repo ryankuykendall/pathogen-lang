@@ -38,6 +38,7 @@ program.parse();
 | `kill-port.ts` | Kill processes on a port (default 3000); used by `kill:wrangler` |
 | `install-git-hooks.ts` | Install git hooks from `scripts/git-hooks/` |
 | `backfill-approval-svgs.ts` | Regenerate missing approval SVGs (detail-page hero viewer) via the admin pipeline: compiles each approval's frozen code in a puppeteer harness serving `public/` (real `compiler-worker.compileWithContext` + `generateSvg`), PUTs to `/admin/approval/:id/svg`. Sweeps approved + featured queues; skips GPU-gradient sources by default; `--dry-run`; non-local API requires `--confirm`. Run via `ADMIN_TOKEN=... npm run backfill:approval-svgs`. |
+| `copy-approval-cards.ts` | One-off (2e step 5b): give every approval from before the card copy its card image, through the API's own copy (`POST /admin/approval-cards`, `website/api/approval-card.ts`), in batches until done. `--dry-run` counts; non-local API requires `--confirm`. Run via `ADMIN_TOKEN=... npx tsx scripts/copy-approval-cards.ts [--api-base …]`. |
 | `compile-bbwp.ts` | Compile `.pathogen` → SVG → HTML artifact in `website/bbwp/` |
 | `serve-bbwp.ts` | HTTP server for browsing BBWP artifacts (default port 3001) |
 | `update-bbwp-index.ts` | Regenerate `website/bbwp/index.html` from directory listing |

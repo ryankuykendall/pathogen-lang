@@ -20,6 +20,16 @@ import { computeUserFeatures, isAdminUser } from '../auth/features.js';
 import { readSessionTokenFromRequest, getSessionUserId } from '../auth/session.js';
 import { findUserById } from '../auth/users.js';
 import { UserFeature } from '../auth/types.js';
+import {
+  CARD_PNG,
+  CARD_SIZES,
+  cardKey,
+  cardKeysFor,
+  freezeApprovalCard,
+  indexCards,
+  isCardSize,
+  refreshIndexCards,
+} from './approval-card.js';
 import { removeFromPublicIndex } from './public-index.js';
 import { countSnapshotsForWorkspace, deleteSnapshotsForWorkspace, routeSnapshotRequest } from './snapshots.js';
 import {
@@ -30,6 +40,7 @@ import {
   getEffectiveState,
   getRereviewQueueEntry,
   getReviewQueueEntry,
+  indexEntryFor,
   listAllApprovals,
   listAllRejections,
   listApprovalsForUser,
@@ -57,6 +68,7 @@ import {
 import { setUserFlag } from '../auth/users.js';
 import type {
   Env,
+  PublicIndexEntry,
   ReviewQueueEntry,
   Workspace,
   WorkspaceApproval,
@@ -281,6 +293,59 @@ async function requirePublishingFeature(request: Request, env: Env): Promise<Res
     return publishingError('Publishing is not available for this account', 'publishing-not-available');
   }
   return null;
+}
+
+/**
+ * PUT /workspace/:id/thumbnail?kind=approval|approval-hero, an admin's (checked by
+ * the caller): writes the approval's card (approval-card.ts), never the live
+ * thumbnail. The squares stamp a new `cardAt` on the approval and on its index
+ * entry, if it has one, so every card's URL changes and browsers fetch it again.
+ * So does a hero, for an approval that has a card: a hero written after the
+ * squares (Set thumbnail sends them in that order) is never cached under their
+ * `cardAt`. A hero alone doesn't make a card where there was none.
+ */
+async function uploadApprovalCard(
+  request: Request,
+  env: Env,
+  id: string,
+  kind: 'approval' | 'approval-hero',
+): Promise<Response> {
+  try {
+    if (!(await readApproval(env, id))) return errorResponse('Workspace is not approved', 404);
+    const formData = await request.formData();
+    if (kind === 'approval-hero') {
+      const hero = formData.get('hero');
+      if (!(hero instanceof Blob)) return errorResponse('Missing hero image', 400);
+      await env.THUMBNAILS.put(cardKey(id, 'hero'), await hero.arrayBuffer(), CARD_PNG);
+      const approval = await readApproval(env, id);
+      if (typeof approval?.cardAt !== 'string') return jsonResponse({ success: true });
+      return jsonResponse({ cardAt: await stampCard(env, id) });
+    }
+    // Every size first, so a missing one writes nothing.
+    const files = CARD_SIZES.map((size) => [size, formData.get(size)] as const);
+    const missing = files.find(([, file]) => !(file instanceof Blob));
+    if (missing) return errorResponse(`Missing ${missing[0]} thumbnail`, 400);
+    for (const [size, file] of files) {
+      await env.THUMBNAILS.put(cardKey(id, size), await (file as Blob).arrayBuffer(), CARD_PNG);
+    }
+    return jsonResponse({ cardAt: await stampCard(env, id) });
+  } catch (err) {
+    return errorResponse('Failed to upload the card image: ' + (err as Error).message, 500);
+  }
+}
+
+/**
+ * A new `cardAt` on the approval and its index entry, always later than the one
+ * before (two writes in one millisecond would otherwise share a URL). Read just
+ * before writing, so an approval written meanwhile keeps its fields.
+ */
+async function stampCard(env: Env, id: string): Promise<string> {
+  const approval = await readApproval(env, id);
+  const previous = typeof approval?.cardAt === 'string' ? Date.parse(approval.cardAt) : Number.NaN;
+  const cardAt = new Date(Number.isNaN(previous) ? Date.now() : Math.max(Date.now(), previous + 1)).toISOString();
+  if (approval) await writeApproval(env, { ...approval, cardAt });
+  await refreshIndexCards(env, new Map([[id, cardAt]]));
+  return cardAt;
 }
 
 // Each handler signature: (request, env, ...captures) => Promise<Response>.
@@ -861,7 +926,18 @@ export const apiHandlers: Record<string, (request: Request, env: Env, ...args: s
     // upload thumbnails for a workspace it doesn't own.
     const tokenAdmin = !!adminToken && !!env.ADMIN_TOKEN && adminToken === env.ADMIN_TOKEN;
     const rawKind = url.searchParams.get('kind');
-    const kind = rawKind === 'auto' ? 'auto' : rawKind === 'hero' ? 'hero' : 'manual';
+    const kind =
+      rawKind === 'auto' || rawKind === 'hero' || rawKind === 'approval' || rawKind === 'approval-hero'
+        ? rawKind
+        : 'manual';
+
+    // The approval's card (approval-card.ts): the review screen's Regenerate and
+    // Set thumbnail, which draw the approved files. An admin's alone, the owner's
+    // included, and never the live thumbnail or its timestamps.
+    if (kind === 'approval' || kind === 'approval-hero') {
+      if (!tokenAdmin && !(await isAdminRequest(request, env))) return errorResponse('Access denied', 403);
+      return uploadApprovalCard(request, env, id, kind);
+    }
 
     if (!userId && !tokenAdmin && !(await isAdminRequest(request, env))) {
       return errorResponse('User ID required', 401);
@@ -1004,6 +1080,40 @@ export const apiHandlers: Record<string, (request: Request, env: Env, ...args: s
     }
   },
 
+  // GET /approval-card/:id/:size — the approval's card image (approval-card.ts),
+  // size 256, 512, 1024 or hero. Guarded like getApprovalSvg: 404 unless the
+  // workspace is public and not flagged, except for an admin (the review
+  // screen's Featured tab lists unpublished workspaces too). A missing size
+  // falls back to another of the card's (cardKeysFor), the hero to the squares,
+  // never to the live images. Pages add ?v=<cardAt>, since Regenerate and a
+  // re-approval write the same keys.
+  async getApprovalCard(request: Request, env: Env, id: string, size: string): Promise<Response> {
+    try {
+      if (size !== 'hero' && !isCardSize(size)) return errorResponse('Card image not found', 404);
+      const wsJson = await env.WORKSPACES.get(`workspace:${id}`);
+      if (!wsJson) return errorResponse('Workspace not found', 404);
+      const workspace: Workspace & { flagged?: boolean } = JSON.parse(wsJson);
+      const shown = workspace.isPublic && !workspace.flagged;
+      if (!shown && !(await isAdminRequest(request, env))) {
+        return errorResponse('Workspace not available', 404);
+      }
+      for (const key of cardKeysFor(id, size)) {
+        const object = await env.THUMBNAILS.get(key);
+        if (object) {
+          return new Response(object.body, {
+            headers: {
+              'Content-Type': 'image/png',
+              'Cache-Control': shown ? 'public, max-age=3600' : 'private, no-store',
+            },
+          });
+        }
+      }
+      return errorResponse('Card image not found', 404);
+    } catch (err) {
+      return errorResponse('Failed to get the card image: ' + (err as Error).message, 500);
+    }
+  },
+
   // GET /approval-source/:id — public read of an approved workspace's source,
   // for the detail page and its source.json (note 48 §4): the Pages worker
   // has no R2 binding, as for /approval-svg/:id. It serves the APPROVAL's
@@ -1039,7 +1149,9 @@ export const apiHandlers: Record<string, (request: Request, env: Env, ...args: s
   // DELETE /api/workspace/:id/thumbnail?kind=manual|auto|all
   // kind=manual (default) removes the manual layer only, revealing the auto layer
   // if one exists. kind=auto removes the auto/legacy layer. kind=all removes both
-  // square layers plus the hero image.
+  // square layers plus the hero image. Never the approval's card
+  // (`approved-*.png`, approval-card.ts): that is what was approved, and stays
+  // until a re-approval, Regenerate or deleting the workspace.
   async deleteThumbnail(request: Request, env: Env, id: string): Promise<Response> {
     const userId = await getEffectiveUserId(request, env);
     if (!userId) return errorResponse('User ID required', 401);
@@ -1277,6 +1389,18 @@ export const apiHandlers: Record<string, (request: Request, env: Env, ...args: s
       // workspace, since saves never delete. An entry from before phase 2 has
       // its text written to R2 first.
       await materialize(env, id, submitted);
+      // The card image as approved (approval-card.ts, answer 9b). A failed copy
+      // keeps the earlier approval's card, if there was one: never the live
+      // thumbnail, which can hold the edit under review. A first approval's
+      // failed copy leaves `cardAt` absent, and the one-time copy (POST
+      // /admin/approval-cards) tries again. Approve itself still succeeds.
+      let cardAt: string | null | undefined;
+      try {
+        cardAt = await freezeApprovalCard(env, id);
+      } catch (err) {
+        console.error(`[approve] ${id}: the card image wasn't copied: ${(err as Error).message}`);
+        cardAt = (await readApproval(env, id))?.cardAt;
+      }
       const approval: WorkspaceApproval = {
         workspaceId: id,
         userId: queueEntry.userId,
@@ -1294,6 +1418,7 @@ export const apiHandlers: Record<string, (request: Request, env: Env, ...args: s
         featuredAt: feature ? new Date().toISOString() : null,
         ...(ownerHandle ? { ownerHandle } : {}),
         ...(approvalSvgAt ? { approvalSvgAt } : {}),
+        ...(cardAt !== undefined ? { cardAt } : {}),
       };
       await writeApproval(env, approval);
 
@@ -1435,6 +1560,8 @@ export const apiHandlers: Record<string, (request: Request, env: Env, ...args: s
               approvedAt: a.approvedAt,
               featuredAt: a.featuredAt ?? null,
               thumbnailAt,
+              // The approved card (approval-card.ts); absent from before its copy.
+              cardAt: a.cardAt,
               // A preview SVG exists if it's inline (legacy KV) OR in R2 (current).
               hasSvg: Boolean(a.svg || a.approvalSvgAt),
             };
@@ -1482,6 +1609,8 @@ export const apiHandlers: Record<string, (request: Request, env: Env, ...args: s
             approvedAt: approval.approvedAt,
             featuredAt: approval.featuredAt,
             thumbnailAt,
+            // The approved card (approval-card.ts); absent from before its copy.
+            cardAt: approval.cardAt,
             // A preview SVG exists if it's inline (legacy KV) OR in R2 (current).
             hasSvg: Boolean(approval.svg || approval.approvalSvgAt),
           };
@@ -1862,6 +1991,83 @@ export const apiHandlers: Record<string, (request: Request, env: Env, ...args: s
     }
   },
 
+  // POST /admin/approval-cards — admin-only, the one-time card copy for
+  // approvals from before 2e step 5b (approval-card.ts; run in step 8, with the
+  // user's go-ahead). Body { after?, limit? }: reads approvals in workspace-id
+  // order after `after`, copies the card of each without `cardAt` (at most
+  // `limit`, default 20, at most 40), and reads at most 200, so a call stays
+  // inside the Worker's 1,000 KV and R2 calls (at most about 18 a copy). The
+  // index is read once and written once a call, since KV takes about one write
+  // a second to a key; an approval with a card whose index entry lacks it (an
+  // earlier run stopped between the two) is repaired in the same write. Answers
+  // { copied, alreadyCopied, repaired, after, done }; call again with `after`
+  // until `done`. A second run copies nothing. With dryRun: true it writes
+  // nothing, and `copied` and `repaired` count what it would do.
+  async adminCopyApprovalCards(request: Request, env: Env): Promise<Response> {
+    if (!(await isAdminRequest(request, env))) return errorResponse('Unauthorized', 401);
+    let body: { after?: unknown; limit?: unknown; dryRun?: unknown } = {};
+    try {
+      body = (await request.json()) as typeof body;
+    } catch {
+      /* no body: from the start */
+    }
+    const dryRun = body.dryRun === true;
+    const after = typeof body.after === 'string' ? body.after : '';
+    const limit = typeof body.limit === 'number' && body.limit >= 1 ? Math.min(Math.floor(body.limit), 40) : 20;
+    const MAX_READS = 200;
+    try {
+      const ids: string[] = [];
+      let cursor: string | undefined;
+      do {
+        const page = await env.WORKSPACES.list({ prefix: 'approval:', cursor });
+        for (const k of page.keys) ids.push(k.name.slice('approval:'.length));
+        cursor = page.list_complete ? undefined : page.cursor;
+      } while (cursor);
+      const todo = ids.filter((id) => id > after).sort();
+      const listed = await indexCards(env);
+      // The index entries to stamp, written once after the loop.
+      const stamps = new Map<string, string | null>();
+      let copied = 0;
+      let alreadyCopied = 0;
+      let repaired = 0;
+      let reads = 0;
+      let last = after;
+      try {
+        for (const id of todo) {
+          if (copied >= limit || reads >= MAX_READS) break;
+          reads++;
+          last = id;
+          const approval = await readApproval(env, id);
+          if (!approval) continue;
+          if (approval.cardAt !== undefined) {
+            alreadyCopied++;
+            if (listed.has(id) && listed.get(id) !== approval.cardAt) {
+              stamps.set(id, approval.cardAt);
+              repaired++;
+            }
+            continue;
+          }
+          if (dryRun) {
+            copied++;
+            continue;
+          }
+          const cardAt = await freezeApprovalCard(env, id);
+          const latest = await readApproval(env, id);
+          if (latest) await writeApproval(env, { ...latest, cardAt });
+          stamps.set(id, cardAt);
+          copied++;
+        }
+      } finally {
+        // Also when a copy throws: the cards copied before it reach the index.
+        if (!dryRun) await refreshIndexCards(env, stamps);
+      }
+      const done = todo.length === 0 || last === todo[todo.length - 1];
+      return jsonResponse({ copied, alreadyCopied, repaired, after: last, done, ...(dryRun ? { dryRun } : {}) });
+    } catch (err) {
+      return errorResponse('Failed to copy the card images: ' + (err as Error).message, 500);
+    }
+  },
+
   // POST /admin/reconcile-indexes — admin-only. Rebuilds the
   // public:workspaces and featured:workspaces indexes from the canonical
   // approval records. Used to recover from drift — e.g. when a sequence
@@ -1888,18 +2094,7 @@ export const apiHandlers: Record<string, (request: Request, env: Env, ...args: s
         if (!ws.isPublic || ws.flagged) continue;
         // ownerFlagged: the badge propagates here too — but we still
         // include the entry; admin filters via the user-level flag.
-        const entry: PublicIndexEntry = {
-          id: a.workspaceId,
-          slug: a.slug,
-          name: a.name,
-          description: a.description || '',
-          userId: a.userId,
-          updatedAt: ws.updatedAt,
-          thumbnailAt: (await readThumbMeta(env, a.workspaceId, ws)).thumbnailAt,
-          approvedAt: a.approvedAt,
-        };
-        if (a.ownerHandle) entry.ownerHandle = a.ownerHandle;
-        entries.push(entry);
+        entries.push(await indexEntryFor(env, a, ws));
         if (a.featuredAt) featuredIds.push(a.workspaceId);
       }
       entries.sort((a, b) => {
@@ -2043,6 +2238,11 @@ export async function handleApiRequest(request: Request, env: Env, apiPath: stri
     return apiHandlers.getApprovalSource(request, env, approvalSourceMatch[1]);
   }
 
+  const approvalCardMatch = apiPath.match(/^\/approval-card\/([^/]+)\/([^/]+)$/);
+  if (approvalCardMatch && method === 'GET') {
+    return apiHandlers.getApprovalCard(request, env, approvalCardMatch[1], approvalCardMatch[2]);
+  }
+
   // ─── Admin ────────────────────────────────────────────────────────
   if (apiPath === '/admin/workspaces-without-thumbnails' && method === 'GET') {
     return apiHandlers.adminListWithoutThumbnails(request, env);
@@ -2053,6 +2253,9 @@ export async function handleApiRequest(request: Request, env: Env, apiPath: stri
   }
   if (apiPath === '/admin/reconcile-indexes' && method === 'POST') {
     return apiHandlers.adminReconcileIndexes(request, env);
+  }
+  if (apiPath === '/admin/approval-cards' && method === 'POST') {
+    return apiHandlers.adminCopyApprovalCards(request, env);
   }
   if (apiPath === '/admin/queue/rereview' && method === 'GET') {
     return apiHandlers.adminListRereviewQueue(request, env);

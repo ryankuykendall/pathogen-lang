@@ -304,23 +304,34 @@ export async function publishApprovalToIndex(
 ): Promise<void> {
   const entries = await readPublicIndex(env);
   const filtered = entries.filter((e) => e.id !== approval.workspaceId);
-  filtered.push({
+  filtered.push(await indexEntryFor(env, approval, workspace));
+  await writePublicIndex(env, filtered);
+}
+
+/** The public index's entry for an approval: one builder for every path that writes the index. */
+export async function indexEntryFor(
+  env: Env,
+  approval: WorkspaceApproval,
+  workspace: Workspace,
+): Promise<PublicIndexEntry> {
+  return {
     id: approval.workspaceId,
     slug: approval.slug,
     name: approval.name,
     description: approval.description || '',
     userId: approval.userId,
     updatedAt: workspace.updatedAt,
-    // Read the live thumbnail timestamp via the sidecar (with legacy fallback)
-    // — same source adminReconcileIndexes uses, so the two index-writing paths
-    // agree. Deriving from the approval's manual/auto fields alone would blank
-    // the card for pre-kind-split workspaces (single legacy `thumbnailAt`, both
-    // manual/auto null) on re-approve or owner un-flag.
+    // Read the live thumbnail timestamp via the sidecar (with legacy fallback).
+    // Deriving from the approval's manual/auto fields alone would blank the card
+    // for pre-kind-split workspaces (single legacy `thumbnailAt`, both manual/auto
+    // null) on re-approve or owner un-flag. Cards use it only for an approval
+    // from before the card copy (`cardAt` absent).
     thumbnailAt: (await readThumbMeta(env, approval.workspaceId, workspace)).thumbnailAt,
     approvedAt: approval.approvedAt,
     ...(approval.ownerHandle ? { ownerHandle: approval.ownerHandle } : {}),
-  });
-  await writePublicIndex(env, filtered);
+    // Absent stays absent: it means "from before the card copy" (approval-card.ts).
+    ...(approval.cardAt !== undefined ? { cardAt: approval.cardAt } : {}),
+  };
 }
 
 export async function unpublishFromIndex(env: Env, workspaceId: string): Promise<void> {

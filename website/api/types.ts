@@ -162,6 +162,9 @@ export interface PublicIndexEntry {
   // build /u/<handle>/<slug> hrefs without a D1 lookup per card. Optional
   // for back-compat with pre-Phase-4 index entries.
   ownerHandle?: string;
+  // The approval's card image (approval-card.ts): a time, null for none, or
+  // absent for an approval from before 2e step 5b (the live thumbnail).
+  cardAt?: string | null;
 }
 
 export interface SsrUser {
@@ -237,6 +240,10 @@ export interface WorkspaceApproval extends StoredFileFields {
   // it. Absent on legacy approvals (which used the inline `svg` field) and
   // on approvals where no SVG was captured.
   approvalSvgAt?: string | null;
+  // The card image copied at approval (approval-card.ts): when it was written,
+  // null when the workspace had no thumbnail, absent on an approval from before
+  // 2e step 5b, whose cards show the live thumbnail until the one-time copy.
+  cardAt?: string | null;
 }
 
 export interface WorkspaceRejection {

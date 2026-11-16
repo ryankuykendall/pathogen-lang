@@ -54,6 +54,8 @@ interface WorkspaceApproval {
   approvedAt: string;
   approvedByUserId: string;
   featuredAt: string | null;
+  ownerHandle?: string;
+  cardAt?: string | null;
 }
 
 interface PublicIndexEntry {
@@ -65,6 +67,9 @@ interface PublicIndexEntry {
   updatedAt: string;
   thumbnailAt: string | null;
   approvedAt?: string;
+  ownerHandle?: string;
+  // The approval's card image (website/api/approval-card.ts); absent from before it.
+  cardAt?: string | null;
 }
 
 const PUBLIC_INDEX_CAP = 100;
@@ -254,6 +259,10 @@ program
               updatedAt: workspace.updatedAt,
               thumbnailAt: workspace.thumbnailAt,
               approvedAt: apr.approvedAt,
+              // As website/api/moderation.ts indexEntryFor writes them; an entry
+              // without cardAt would show the live thumbnail, not the card.
+              ...(apr.ownerHandle ? { ownerHandle: apr.ownerHandle } : {}),
+              ...(apr.cardAt !== undefined ? { cardAt: apr.cardAt } : {}),
             });
           } catch {
             /* skip */

@@ -13,96 +13,12 @@
 
 import { describe, expect, it } from 'vitest';
 
-import { MemoryR2 } from './memory-r2';
+import { approved, call, EDITED, makeHarness, publicIds, rereviewIds, reviewIds, SPIRAL } from './publishing-harness';
 import { storedRecord } from './workspace-helpers';
 import { handleApiRequest } from '../../website/api/router';
 import { entryForText } from '../../website/api/workspace-files';
-import { createSession, SESSION_COOKIE_NAME } from '../../website/auth/session';
-import { createUserWithDerivedHandle } from '../../website/auth/users';
-import { MemoryD1, MemoryKV } from '../auth/helpers';
 
-import type { Env, KVNamespace } from '../../website/api/types';
-
-const ADMIN_TOKEN = 'admin-secret';
-const SPIRAL = 'define ViewBox(0, 0, 100, 100);\ncircle(50, 50, 40);\n';
-const EDITED = `${SPIRAL}circle(50, 50, 10);\n`;
-
-type Who = 'owner' | 'visitor' | 'admin-session' | 'admin-token' | 'signed-out';
-
-interface Harness {
-  env: Env;
-  kv: KVNamespace;
-  cookies: Record<'owner' | 'visitor' | 'admin-session', string>;
-}
-
-async function makeHarness(): Promise<Harness> {
-  const kv = new MemoryKV() as unknown as KVNamespace;
-  const env = {
-    WORKSPACES: kv,
-    THUMBNAILS: new MemoryR2(),
-    USERS_DB: new MemoryD1(),
-    ADMIN_TOKEN,
-    ADMIN_EMAILS: 'grace@example.com',
-  } as Env;
-  const cookie = async (id: string, email: string, name: string): Promise<string> => {
-    await createUserWithDerivedHandle(env.USERS_DB, { id, email, displayName: name });
-    return `${SESSION_COOKIE_NAME}=${await createSession(env.USERS_DB, id)}`;
-  };
-  return {
-    env,
-    kv,
-    cookies: {
-      owner: await cookie('user-a', 'ada@example.com', 'Ada'),
-      visitor: await cookie('user-b', 'bo@example.com', 'Bo'),
-      'admin-session': await cookie('user-g', 'grace@example.com', 'Grace'),
-    },
-  };
-}
-
-async function call(
-  h: Harness,
-  method: string,
-  path: string,
-  body?: unknown,
-  who: Who = 'owner',
-): Promise<{ status: number; data: Record<string, unknown> }> {
-  const url = who === 'admin-token' ? `${path}${path.includes('?') ? '&' : '?'}token=${ADMIN_TOKEN}` : path;
-  const cookie = who === 'owner' || who === 'visitor' || who === 'admin-session' ? h.cookies[who] : null;
-  const res = await handleApiRequest(
-    new Request(`https://api.pathogen.studio${url}`, {
-      method,
-      headers: { 'Content-Type': 'application/json', ...(cookie ? { Cookie: cookie } : {}) },
-      ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
-    }),
-    h.env,
-    path.split('?')[0],
-  );
-  // The file route answers with the file's text; everything else with JSON.
-  const text = await res.text();
-  if ((res.headers.get('Content-Type') ?? '').startsWith('text/plain')) return { status: res.status, data: { text } };
-  return { status: res.status, data: text ? (JSON.parse(text) as Record<string, unknown>) : {} };
-}
-
-/** A workspace of the owner's, submitted and approved: public, with an approval. */
-async function approved(h: Harness): Promise<string> {
-  const created = await call(h, 'POST', '/workspace', { name: 'Spiral', code: SPIRAL });
-  const id = created.data.id as string;
-  expect((await call(h, 'POST', `/workspace/${id}/submit-for-review`)).status).toBe(200);
-  const res = await call(h, 'POST', `/admin/review/${id}`, { decision: 'approve', svg: '<svg/>' }, 'admin-token');
-  expect(res.status).toBe(200);
-  return id;
-}
-
-const rereviewIds = async (h: Harness): Promise<string[]> =>
-  (
-    (await call(h, 'GET', '/admin/queue/rereview', undefined, 'admin-token')).data.entries as { workspaceId: string }[]
-  ).map((e) => e.workspaceId);
-const reviewIds = async (h: Harness): Promise<string[]> =>
-  (
-    (await call(h, 'GET', '/admin/queue/review', undefined, 'admin-token')).data.entries as { workspaceId: string }[]
-  ).map((e) => e.workspaceId);
-const publicIds = async (h: Harness): Promise<string[]> =>
-  (JSON.parse((await h.kv.get('public:workspaces')) ?? '[]') as { id: string }[]).map((e) => e.id);
+import type { Harness } from './publishing-harness';
 
 describe('a re-review is only for a public workspace (answer 8)', () => {
   it('an edit to an approved workspace queues a re-review (as before)', async () => {

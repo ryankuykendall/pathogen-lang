@@ -169,7 +169,7 @@ async function renderExplorePage(request: Request, env: Env, url: URL): Promise<
   } else {
     cardsHtml = `<div class="explore-grid">${slice
       .map((ws: PublicIndexEntry) => {
-        const thumbUrl = ws.thumbnailAt ? thumbnailUrl(env, ws.id, 512) : '';
+        const thumbUrl = cardImageUrl(env, ws.id, 512, { cardAt: ws.cardAt, hasLive: Boolean(ws.thumbnailAt) });
         const desc = ws.description ? ws.description.slice(0, 120) + (ws.description.length > 120 ? '...' : '') : '';
         const date = ws.updatedAt
           ? new Date(ws.updatedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
@@ -308,6 +308,24 @@ function heroUrl(env: Env, workspaceId: string): string {
   return `${apiBase(env)}/thumbnail/${encodeURIComponent(workspaceId)}/hero`;
 }
 
+// A public card's image (website/api/approval-card.ts, 2e step 5b): the card as
+// approved when the approval has one; none (a placeholder) when it was approved
+// without a thumbnail; and, for an approval from before the card copy (`cardAt`
+// absent), the live thumbnail, when there is one. '' means a placeholder.
+function cardImageUrl(
+  env: Env,
+  workspaceId: string,
+  size: 256 | 512 | 1024 | 'hero',
+  card: { cardAt?: string | null; hasLive: boolean },
+): string {
+  if (card.cardAt !== undefined) {
+    if (!card.cardAt) return '';
+    return `${apiBase(env)}/approval-card/${encodeURIComponent(workspaceId)}/${size}?v=${encodeURIComponent(card.cardAt)}`;
+  }
+  if (!card.hasLive) return '';
+  return size === 'hero' ? heroUrl(env, workspaceId) : thumbnailUrl(env, workspaceId, size);
+}
+
 // Admin-captured approval SVG, served from R2 by the API Worker. Used when an
 // approval carries approvalSvgAt (the SVG lives in R2, not inline in KV) — the
 // Pages worker has no R2 binding so it must reference this cross-origin URL.
@@ -378,7 +396,7 @@ async function renderProfilePage(request: Request, env: Env, url: URL, handle: s
   } else {
     cardsHtml = `<div class="explore-grid">${workspaces
       .map((ws: PublicIndexEntry) => {
-        const thumbUrl = ws.thumbnailAt ? thumbnailUrl(env, ws.id, 512) : '';
+        const thumbUrl = cardImageUrl(env, ws.id, 512, { cardAt: ws.cardAt, hasLive: Boolean(ws.thumbnailAt) });
         const desc = ws.description ? ws.description.slice(0, 120) + (ws.description.length > 120 ? '...' : '') : '';
         const date = ws.updatedAt
           ? new Date(ws.updatedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
@@ -602,9 +620,13 @@ async function renderWorkspaceDetailPage(
     }
   }
 
-  const thumbUrl = approval.manualThumbnailAt || approval.autoThumbnailAt
-    ? thumbnailUrl(env, approval.workspaceId, 1024)
-    : '';
+  // The card as approved (og:image, and the hero when there's no SVG).
+  const card = {
+    cardAt: approval.cardAt,
+    hasLive: Boolean(approval.manualThumbnailAt || approval.autoThumbnailAt),
+  };
+  const thumbUrl = cardImageUrl(env, approval.workspaceId, 1024, card);
+  const heroImageUrl = cardImageUrl(env, approval.workspaceId, 'hero', card);
   const ogImage = thumbUrl || `${SITE_URL}/og-default.png`;
   const approvedDate = new Date(approval.approvedAt).toLocaleDateString('en-US', {
     month: 'short', day: 'numeric', year: 'numeric',
@@ -662,15 +684,15 @@ async function renderWorkspaceDetailPage(
     // mismatch) — degrade to the thumbnail when available, else the swatch,
     // rather than showing an empty hero.
     const [from, to] = swatchFor(approval.workspaceId);
-    const objectFallback = thumbUrl
-      ? `<img class="detail-plate-art" src="${heroUrl(env, approval.workspaceId)}" alt="${escapeHtml(approval.name)} by ${escapeHtml(user.display_name)}" loading="eager">`
+    const objectFallback = heroImageUrl
+      ? `<img class="detail-plate-art" src="${heroImageUrl}" alt="${escapeHtml(approval.name)} by ${escapeHtml(user.display_name)}" loading="eager">`
       : `<div class="detail-plate-fallback" style="background: linear-gradient(135deg, ${from} 0%, ${to} 100%);">Preview pending</div>`;
     heroHtml = `<object type="image/svg+xml" data="${approvalSvgUrl(env, approval.workspaceId)}" class="detail-plate-art" aria-label="${escapeHtml(approval.name)} by ${escapeHtml(user.display_name)}">${objectFallback}</object>`;
-  } else if (thumbUrl) {
+  } else if (heroImageUrl) {
     // Use the uncropped hero (not the square 1024 thumbUrl, which is still used for
     // og:image) so non-square artwork renders at its true aspect ratio here. The hero
     // endpoint falls back to the square 1024 when a workspace has no hero yet.
-    heroHtml = `<img class="detail-plate-art" src="${heroUrl(env, approval.workspaceId)}" alt="${escapeHtml(approval.name)} by ${escapeHtml(user.display_name)}" loading="eager">`;
+    heroHtml = `<img class="detail-plate-art" src="${heroImageUrl}" alt="${escapeHtml(approval.name)} by ${escapeHtml(user.display_name)}" loading="eager">`;
   } else {
     const [from, to] = swatchFor(approval.workspaceId);
     heroHtml = `<div class="detail-plate-fallback" style="background: linear-gradient(135deg, ${from} 0%, ${to} 100%);">Preview pending</div>`;
@@ -723,7 +745,10 @@ async function renderWorkspaceDetailPage(
         </div>
         <div class="detail-moreby-grid">
           ${moreBy.map((entry) => {
-            const cardThumb = entry.thumbnailAt ? thumbnailUrl(env, entry.id, 512) : '';
+            const cardThumb = cardImageUrl(env, entry.id, 512, {
+              cardAt: entry.cardAt,
+              hasLive: Boolean(entry.thumbnailAt),
+            });
             const cardDate = new Date(entry.approvedAt || entry.updatedAt).toLocaleDateString('en-US', {
               month: 'short', day: 'numeric', year: 'numeric',
             });
@@ -922,6 +947,7 @@ async function renderFeaturedPage(request: Request, env: Env, _url: URL): Promis
     slug: string;
     ownerHandle: string | null;
     thumbnailAt: string | null;
+    cardAt?: string | null;
   }
   const cards = (
     await Promise.all(
@@ -935,6 +961,7 @@ async function renderFeaturedPage(request: Request, env: Env, _url: URL): Promis
             name: string;
             description: string;
             ownerHandle?: string;
+            cardAt?: string | null;
           };
           // Stale-index defense: confirm the underlying workspace still
           // exists and hasn't been flagged or owner-unpublished.
@@ -948,7 +975,9 @@ async function renderFeaturedPage(request: Request, env: Env, _url: URL): Promis
             description: approval.description || '',
             slug: approval.slug,
             ownerHandle: approval.ownerHandle ?? null,
-            thumbnailAt: (await readThumbMeta(env, id, ws)).thumbnailAt,
+            // The live thumbnail is read only for an approval from before the card copy.
+            thumbnailAt: approval.cardAt === undefined ? (await readThumbMeta(env, id, ws)).thumbnailAt : null,
+            ...(approval.cardAt !== undefined ? { cardAt: approval.cardAt } : {}),
           };
         } catch {
           return null;
@@ -963,7 +992,7 @@ async function renderFeaturedPage(request: Request, env: Env, _url: URL): Promis
   } else {
     cardsHtml = `<div class="featured-grid">${cards
       .map((c) => {
-        const thumbUrl = c.thumbnailAt ? thumbnailUrl(env, c.workspaceId, 512) : '';
+        const thumbUrl = cardImageUrl(env, c.workspaceId, 512, { cardAt: c.cardAt, hasLive: Boolean(c.thumbnailAt) });
         const desc = c.description ? c.description.slice(0, 200) + (c.description.length > 200 ? '...' : '') : '';
         // Prefer the frozen detail URL when ownerHandle is present.
         // Pre-Phase-4 approvals without ownerHandle fall back to the

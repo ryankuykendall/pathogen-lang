@@ -21,6 +21,7 @@
 // embed so the admin can read the code and inspect the rendered SVG before
 // making a decision.
 
+import { thumbnailApi } from '../../services/api.js';
 import { hasFeature, UserFeature, type CurrentUser } from '../../services/auth.js';
 import compilerWorker from '../../services/compiler-worker.js';
 import thumbnailService from '../../services/thumbnail-service.js';
@@ -70,6 +71,9 @@ interface ApprovedEntry {
   approvedAt: string;
   featuredAt: string | null;
   thumbnailAt: string | null;
+  // The approved card (website/api/approval-card.ts): a time, null for none,
+  // absent for an approval from before the card copy (the live thumbnail).
+  cardAt?: string | null;
   hasSvg: boolean;
 }
 
@@ -201,8 +205,8 @@ class AdminModerationView extends HTMLElement {
       if (store.get('currentView') === 'admin-moderation') this._loadIfAdmin();
     });
     this._onThumbnailUpdated = (e: Event) => {
-      const id = (e as CustomEvent).detail?.workspaceId as string | undefined;
-      if (id) this._reflectThumbnailUpdate(id);
+      const detail = (e as CustomEvent).detail as { workspaceId?: string; cardAt?: string } | undefined;
+      if (detail?.workspaceId) this._reflectThumbnailUpdate(detail.workspaceId, detail.cardAt);
     };
     document.addEventListener('thumbnail-updated', this._onThumbnailUpdated);
     if (store.get('currentView') === 'admin-moderation') this._loadIfAdmin();
@@ -231,17 +235,20 @@ class AdminModerationView extends HTMLElement {
   }
 
   // After a thumbnail save (crop modal dispatches 'thumbnail-updated'),
-  // repaint the card with the fresh image: stamp thumbnailAt (drives the
-  // cache-busted img URL) and drop the cached compile, which would
-  // otherwise shadow the R2 thumbnail.
-  private _reflectThumbnailUpdate(workspaceId: string): void {
+  // repaint the card with the fresh image: stamp cardAt for the approval's
+  // card, else thumbnailAt (either drives the cache-busted img URL), and drop
+  // the cached compile, which would otherwise shadow the R2 image.
+  private _reflectThumbnailUpdate(workspaceId: string, cardAt?: string): void {
     const entries = [
       this._approved.find((x) => x.workspaceId === workspaceId),
       this._featured.find((x) => x.workspaceId === workspaceId),
     ].filter((x): x is ApprovedEntry => Boolean(x));
     if (entries.length === 0) return;
     const stamp = new Date().toISOString();
-    for (const entry of entries) entry.thumbnailAt = stamp;
+    for (const entry of entries) {
+      if (cardAt) entry.cardAt = cardAt;
+      else entry.thumbnailAt = stamp;
+    }
     this._svg.delete(this._svgKey('approved', workspaceId));
     this._svg.delete(this._svgKey('featured', workspaceId));
     this.render();
@@ -730,12 +737,13 @@ class AdminModerationView extends HTMLElement {
     }
   }
 
-  // Regenerate the public preview (approval.svg → R2) and the grid PNG
-  // thumbnails for an Approved/Featured workspace, compiling from the FROZEN
-  // approval.code (what visitors actually see — not the possibly-diverged live
-  // workspace). Heals entries whose preview was dropped by the old 1 MB cap or
-  // that never got a thumbnail. Thumbnail upload rides the session cookie;
-  // uploadThumbnail grants session-admins the ownership bypass.
+  // Regenerate the public preview (approval.svg → R2) and the approval's card
+  // images (website/api/approval-card.ts) for an Approved/Featured workspace,
+  // compiling from the FROZEN approval.code (what visitors actually see — not
+  // the possibly-diverged live workspace). Heals entries whose preview was
+  // dropped by the old 1 MB cap or that never got a card. The owner's live
+  // thumbnail is left alone. The upload rides the session cookie; the card
+  // upload (kind=approval) is an admin's.
   // Fetch the frozen approval record and compile it to a full-aspect SVG
   // string. Shared by "Regenerate preview" and "Set thumbnail" — both act
   // on the immutable approval source, never the live workspace code.
@@ -788,46 +796,49 @@ class AdminModerationView extends HTMLElement {
       const previewOk = put.ok;
       const previewErr = put.ok ? '' : put.error || 'preview not stored';
 
-      // 4. Square-crop SVG → PNG grid thumbnails (used on /explore + /featured).
-      // Always attempt this, even if the preview PUT failed.
-      const square = this._squareDims(dims.viewBox);
-      const squareSvg = generateSvg(result, square);
-      const thumbOk = Boolean(
-        await thumbnailService.generateThumbnail(workspaceId, null as unknown as SVGElement, {}, undefined, {
-          svgString: squareSvg,
-          kind: 'auto',
-        }),
-      );
-
-      // 4b. Uncropped, source-aspect hero PNG from the FULL preview SVG. Without
-      // it, the detail page falls back to the square thumbnail, which distorts
-      // non-square artwork (e.g. an 8000×4800 workspace squashed to 1:1). Best-
-      // effort: a hero failure must not fail the (already-uploaded) thumbnail.
+      // 4. Uncropped, source-aspect hero PNG from the FULL preview SVG. Without
+      // it, the detail page falls back to the square card, which distorts
+      // non-square artwork (e.g. an 8000×4800 workspace squashed to 1:1). Before
+      // the squares, whose new cardAt changes every card's URL. Best-effort: a
+      // hero failure must not stop the squares.
       try {
         await thumbnailService.uploadHeroFromSvgString(
           workspaceId,
           previewSvg,
           Number(dims.width) || 0,
           Number(dims.height) || 0,
+          { forApproval: true },
         );
       } catch (e) {
-        console.warn('[regenerate] hero render failed (thumbnail unaffected):', e);
+        console.warn('[regenerate] hero render failed (card unaffected):', e);
       }
+
+      // 4b. Square-crop SVG → the card's PNGs (used on /explore + /featured).
+      // Always attempt this, even if the preview PUT failed.
+      const square = this._squareDims(dims.viewBox);
+      const squareSvg = generateSvg(result, square);
+      const card = (await thumbnailService.generateThumbnail(
+        workspaceId,
+        null as unknown as SVGElement,
+        {},
+        undefined,
+        { svgString: squareSvg, kind: 'approval' },
+      )) as { cardAt?: string } | null;
+      const thumbOk = Boolean(card?.cardAt);
 
       if (!previewOk && !thumbOk) {
         throw new Error(previewErr || 'thumbnail generation was blocked or timed out');
       }
 
-      // 5. Reflect immediately: bust the cached compile + stamp thumbnailAt so
-      // the card repaints with the fresh thumbnail.
+      // 5. Reflect immediately: bust the cached compile + stamp cardAt so
+      // the card repaints with the fresh image.
       this._svg.delete(this._svgKey('approved', workspaceId));
       this._svg.delete(this._svgKey('featured', workspaceId));
-      const stamp = new Date().toISOString();
       const entry =
         this._approved.find((x) => x.workspaceId === workspaceId) ??
         this._featured.find((x) => x.workspaceId === workspaceId);
       if (entry) {
-        if (thumbOk) entry.thumbnailAt = stamp;
+        if (card?.cardAt) entry.cardAt = card.cardAt;
         if (previewOk) entry.hasSvg = true;
       }
 
@@ -844,10 +855,9 @@ class AdminModerationView extends HTMLElement {
 
   // "Set thumbnail" — open the interactive crop modal on a render of the
   // frozen approval code, targeting a workspace the admin doesn't own.
-  // Saves as kind=manual (via the modal's element path), which takes
-  // precedence over the auto layer on all public reads. The element path
-  // also re-uploads the detail-page hero render from the same frozen SVG
-  // (same as Regenerate and the owner flow).
+  // Saves the approval's card (target 'approval', kind=approval), which the
+  // public pages show; the owner's live thumbnail is left alone. The element
+  // path also re-uploads the card's hero from the same frozen SVG.
   private async _openSetThumbnail(workspaceId: string): Promise<void> {
     if (this._busy.has(workspaceId)) return;
     // One shared modal instance: don't let a second card's click race an
@@ -897,7 +907,7 @@ class AdminModerationView extends HTMLElement {
       this._ensureCropModal().open(
         svgEl,
         { width: norm.width, height: norm.height, background: '#ffffff' },
-        { workspaceId, context: 'admin', title: name },
+        { workspaceId, context: 'admin', title: name, target: 'approval' },
       );
     } catch (err) {
       this._toast(`Set thumbnail failed: ${(err as Error).message}`, 'error');
@@ -1058,7 +1068,7 @@ class AdminModerationView extends HTMLElement {
   private _renderCatalogCard(e: ApprovedEntry, tab: 'approved' | 'featured'): string {
     const busy = this._busy.has(e.workspaceId);
     return `<li class="card">
-      ${this._renderClickableCatalogThumb(this._svgKey(tab, e.workspaceId), e.thumbnailAt, e.workspaceId, e.name)}
+      ${this._renderClickableCatalogThumb(this._svgKey(tab, e.workspaceId), e.thumbnailAt, e.workspaceId, e.name, e.cardAt)}
       <div class="card-body">
         <h2 class="card-title">${this._escapeHtml(e.name)} ${tab === 'featured' ? '<span class="badge">★ featured</span>' : ''} ${this._badge(e.ownerFlagged)}</h2>
         ${this._renderMeta(e.ownerHandle, e.userId, `approved ${this._fmtDate(e.approvedAt)}`, e.codeHash)}
@@ -1075,7 +1085,7 @@ class AdminModerationView extends HTMLElement {
               `
           }
           <button class="ghost" data-action="regenerate" data-id="${this._escapeHtml(e.workspaceId)}" ${busy ? 'disabled' : ''} title="Recompile from the frozen approval source and refresh the public preview + thumbnail">${busy ? 'Regenerating…' : 'Regenerate preview'}</button>
-          <button class="ghost" data-action="set-thumbnail" data-id="${this._escapeHtml(e.workspaceId)}" ${busy ? 'disabled' : ''} title="Crop and set the manual thumbnail from the frozen approval render">Set thumbnail</button>
+          <button class="ghost" data-action="set-thumbnail" data-id="${this._escapeHtml(e.workspaceId)}" ${busy ? 'disabled' : ''} title="Crop and set the public card image from the frozen approval render">Set thumbnail</button>
         </div>
       </div>
     </li>`;
@@ -1141,13 +1151,22 @@ class AdminModerationView extends HTMLElement {
   }
 
   // Renders a thumbnail: compiled SVG when we have one for this card, else
-  // R2 thumbnail, else a placeholder letter avatar. SVG is inlined; we
-  // trust it because it came from our own compile path.
-  private _renderThumb(svgKey: string, thumbnailAt: string | null, workspaceId: string): string {
+  // the approval's card (cardAt; see ApprovedEntry), else the R2 thumbnail,
+  // else a placeholder letter avatar. SVG is inlined; we trust it because it
+  // came from our own compile path.
+  private _renderThumb(
+    svgKey: string,
+    thumbnailAt: string | null,
+    workspaceId: string,
+    cardAt?: string | null,
+  ): string {
     const cached = this._svg.get(svgKey);
     if (cached && cached.length > 0) return `<div class="thumb svg-thumb">${cached}</div>`;
     if (cached === '') return `<div class="thumb placeholder"><span>compile failed</span></div>`;
-    if (thumbnailAt) {
+    if (cardAt) {
+      return `<div class="thumb"><img src="${thumbnailApi.cardUrl(workspaceId, cardAt)}" alt="" loading="lazy" /></div>`;
+    }
+    if (thumbnailAt && cardAt === undefined) {
       // API_BASE is the pathogen-api origin (set via the
       // __PATHOGEN_API_BASE__ build define). The thumbnail endpoint
       // lives at /thumbnail/:id/:size on that same origin in both prod
@@ -1184,9 +1203,10 @@ class AdminModerationView extends HTMLElement {
     thumbnailAt: string | null,
     workspaceId: string,
     name: string,
+    cardAt?: string | null,
   ): string {
     return `<button class="thumb-button" data-action="review-catalog" data-id="${this._escapeHtml(workspaceId)}" data-name="${this._escapeHtml(name)}" title="Review code and preview">
-      ${this._renderThumb(svgKey, thumbnailAt, workspaceId)}
+      ${this._renderThumb(svgKey, thumbnailAt, workspaceId, cardAt)}
     </button>`;
   }
 

@@ -151,7 +151,9 @@ export const preferencesApi = {
 
 // Square card-thumbnail layers. The uncropped detail-page hero (kind=hero) is a
 // separate path via uploadHero(), deliberately not part of this union.
-export type ThumbnailKind = 'manual' | 'auto';
+// 'approval' is the approval's card (website/api/approval-card.ts), an admin's:
+// the review screen's Regenerate and Set thumbnail, which draw the approved files.
+export type ThumbnailKind = 'manual' | 'auto' | 'approval';
 export type ThumbnailDeleteKind = 'manual' | 'auto' | 'all';
 
 // Thumbnail API
@@ -197,10 +199,11 @@ export const thumbnailApi = {
   // ${id}/hero.png and served by GET /thumbnail/:id/hero, which the workspace detail
   // page uses so non-square artwork isn't clipped the way the square card thumbnails
   // are. Generated alongside the square thumbnails by thumbnail-service.
+  // forApproval writes the approval's card hero instead (kind=approval-hero).
   async uploadHero(
     workspaceId: string,
     blob: Blob,
-    { adminToken }: { adminToken?: string } = {},
+    { adminToken, forApproval = false }: { adminToken?: string; forApproval?: boolean } = {},
   ): Promise<unknown> {
     const userId = getUserId();
     const formData = new FormData();
@@ -208,7 +211,7 @@ export const thumbnailApi = {
 
     const params = new URLSearchParams();
     if (adminToken) params.set('token', adminToken);
-    params.set('kind', 'hero');
+    params.set('kind', forApproval ? 'approval-hero' : 'hero');
     const response = await fetch(`${API_BASE}/workspace/${workspaceId}/thumbnail?${params}`, {
       method: 'PUT',
       credentials: 'include',
@@ -231,6 +234,11 @@ export const thumbnailApi = {
   // Get thumbnail URL for a workspace. The server picks manual over auto.
   url(workspaceId: string, size: number = 256): string {
     return `${API_BASE}/thumbnail/${workspaceId}/${size}`;
+  },
+
+  // The approval's card image, versioned by its `cardAt` so a new card is fetched.
+  cardUrl(workspaceId: string, cardAt: string, size: 256 | 512 | 1024 = 256): string {
+    return `${API_BASE}/approval-card/${encodeURIComponent(workspaceId)}/${size}?v=${encodeURIComponent(cardAt)}`;
   },
 
   // Delete thumbnails. kind=manual (default) clears just the manual layer,

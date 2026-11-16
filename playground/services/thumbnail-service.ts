@@ -2,6 +2,7 @@
 // Rasterizes SVG -> Web Worker (OffscreenCanvas) -> PNG blobs -> API upload
 
 import { thumbnailApi } from './api.js';
+import type { ThumbnailKind } from './api.js';
 import { createSvgSnapshot } from '../utils/svg-snapshot.js';
 import { aspectFit, rasterizeSvgString } from '../utils/svg-raster.js';
 
@@ -219,13 +220,13 @@ async function uploadHeroFromSvgString(
   svgString: string,
   canvasWidth: number,
   canvasHeight: number,
-  adminToken?: string,
+  { adminToken, forApproval = false }: { adminToken?: string; forApproval?: boolean } = {},
 ): Promise<void> {
   // Aspect-fit to HERO_MAX_DIM (never upscale beyond source units). outW:outH
   // equals the source ratio, so drawImage into it preserves aspect.
   const { width: outW, height: outH } = aspectFit(canvasWidth, canvasHeight, HERO_MAX_DIM);
   const blob = await rasterizeSvgString(svgString, outW, outH);
-  await thumbnailApi.uploadHero(workspaceId, blob, { adminToken });
+  await thumbnailApi.uploadHero(workspaceId, blob, { adminToken, forApproval });
 }
 
 /**
@@ -244,7 +245,8 @@ async function generateThumbnail(
   svgElement: SVGElement,
   storeState: Record<string, unknown>,
   cropRegion?: { x: number; y: number; size: number },
-  options?: { adminToken?: string; svgString?: string; kind?: 'manual' | 'auto' },
+  // kind 'approval' writes the approval's card and its hero (approval-card.ts).
+  options?: { adminToken?: string; svgString?: string; kind?: ThumbnailKind },
 ): Promise<unknown> {
   // Wait for any in-progress generation to finish (up to 30s)
   if (_generating) {
@@ -325,7 +327,7 @@ async function generateThumbnail(
             snapshots.heroSvgString,
             snapshots.canvasWidth,
             snapshots.canvasHeight,
-            options?.adminToken,
+            { adminToken: options?.adminToken, forApproval: options?.kind === 'approval' },
           );
         } catch (err) {
           console.warn('Hero render failed (thumbnails unaffected):', err);
@@ -336,8 +338,8 @@ async function generateThumbnail(
       // happened mid-flight: stamping the CURRENT _latestContentHash here
       // would mark the NEXT workspace's edits as already-thumbnailed (its
       // thumbnail would then never regenerate), and edits typed during this
-      // generation must stay dirty.
-      if (_workspaceId === workspaceId) {
+      // generation must stay dirty. An approval's card isn't the live thumbnail.
+      if (_workspaceId === workspaceId && options?.kind !== 'approval') {
         _thumbnailContentHash = latestHashAtStart;
       }
 

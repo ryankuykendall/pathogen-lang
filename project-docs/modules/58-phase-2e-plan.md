@@ -622,6 +622,79 @@ The Featured findings are left as they are: they are outside answer 8's list and
 - `verify-2e-step4.ts` again, 18 checks. Its last check is now "someone else's public workspace: 'You do not have access', no Copy Workspace, nothing saved" (no PUT or POST; the browser's CORS preflight aside). Its open-on-main check now waits for the workspace's files rather than the moment before.
 - A code review. Its three warnings are fixed above (the admin's Unpublish and Flag, the review screen's 409, the race with Make private); the rest is in "Left as they are".
 
+## Step 5b, built (2026-11-16)
+
+**The card image frozen at approval** (answer 9b; `website/api/approval-card.ts`):
+- **Approve copies the workspace's live thumbnails as the approval's card.** For each size it takes the manual layer, else the auto one, and it copies the hero, to `${id}/approved-{1024,512,256,hero}.png`. It stamps `cardAt` on the approval and its index entry.
+  - The copy happens before the approval is written, so the index entry has `cardAt` from the start.
+  - A copy that throws leaves `cardAt` absent. Approve still succeeds, and the one-time copy tries again.
+  - A re-approval copies again, and removes an older card's images that have no counterpart now.
+- **`cardAt` has three states**, on the approval and on the index entry:
+  - a time: the card;
+  - null: approved without a thumbnail, so a placeholder;
+  - absent: an approval from before 5b, which shows the live thumbnail, as before, until the one-time copy reaches it.
+- **One builder for index entries,** `indexEntryFor` in `moderation.ts`. Before, reconcile built its own, so it would have dropped `cardAt`.
+- **`GET /approval-card/:id/:size`** serves 256, 512, 1024 and hero.
+  - It's guarded like `/approval-svg`: 404 unless the workspace is public and not flagged, except for an admin, with `private, no-store`, since the review screen's Featured tab lists unpublished workspaces too.
+  - The hero falls back to the card's 1024, never the live hero.
+- **Every public page links the card through one helper,** `cardImageUrl` in `_worker.ts`. That covers Explore, the profile, Featured, and the public page's og:image, hero image and More by.
+  - The URL carries `?v=<cardAt>`, since Regenerate and a re-approval write the same keys.
+- **The review screen's Regenerate and Set thumbnail write the card,** with `kind=approval` and `approval-hero` on the thumbnail upload. That upload is an admin's only, the owner included. It needs an approval, and never writes the live thumbnail or its times.
+  - Before, both wrote the owner's live thumbnail from the approved files, over the owner's own.
+  - The Approved and Featured cards show the card, and so does Set thumbnail's notice.
+  - The crop modal takes `target: 'approval'`; its admin opener is the review screen alone.
+- **The one-time copy:** `POST /admin/approval-cards` (admin) runs the same copy for approvals with no `cardAt`.
+  - It works in batches that resume after the last workspace id read: at most 40 copies and 200 reads a call, inside the Worker's 1,000 calls.
+  - `dryRun` counts without writing.
+  - `scripts/copy-approval-cards.ts` loops it, and refuses a non-local API without `--confirm`. It runs in step 8, with your go-ahead.
+
+**From the code review:**
+- **The one-time copy writes the Explore index once a call.** KV takes about one write a second to a key, so writing it once per approval would have failed partway through production's run.
+  - The write happens even when a copy throws, so the cards copied before it reach the index.
+  - An approval with a card whose index entry lacks it (a run that stopped between the two) gets its entry repaired, counted as `repaired`.
+- **A new hero stamps a new `cardAt`** when the approval has a card, so Set thumbnail's hero, which comes after its squares, is never cached under the squares' URL. A stamp is always later than the one before.
+- **A card copied with only some sizes serves the nearest one** (`cardKeysFor`), never a broken image.
+- **A re-approval whose copy fails keeps the earlier approval's card,** never the live thumbnail, and the failure is logged.
+- **`scripts/backfill-publication-state.ts`**, the Phase 2 backfill, rebuilt index entries by hand. It now carries `cardAt` and `ownerHandle` from the approval.
+- **The owner's thumbnail delete leaves the card,** now said in a comment.
+
+**What stays as it was:**
+- `/thumbnail/:id/:size` is still readable by anyone with the id; only the pages stop linking it. Closing it would break the owner's own `<img>` loads when signed out (an anonymous owner can't send its id with an image request). That's a question for later, not part of 9b.
+- The copy takes the live thumbnail at approval, which can include edits made after submitting (accepted in answer 9).
+- Approvals the dev seed made have no card until the one-time copy runs locally; the review screen shows their live thumbnail or placeholder, as before.
+
+**For step 7's docs:** `docs/publishing.md:28` says visitors see "a stable version that does not change as you continue editing". With 5b that's true of the card image too, so the page needs no change for it; queued for a check during step 7's review.
+
+**For step 8:** `scripts/copy-approval-cards.ts --dry-run` on production, then the copy (your go-ahead).
+
+**Tested:**
+- `tests/api/approval-card.test.ts` (new, 17):
+  - Approve copies manual over auto, size by size, and the hero, and stamps `cardAt` on both records;
+  - the owner's later thumbnails change the live images, not the card, and the card's hero falls back to its 1024;
+  - with no thumbnail, `cardAt` is null and a re-approval removes the older card;
+  - the route serves visitors while public, an admin after Make private, 404s after a flag, for a size it doesn't serve, and before approval;
+  - the admin upload writes the card and stamps `cardAt`, never the live images or times; it's an admin's alone and needs an approval; it never puts an unpublished workspace back on Explore; a missing size writes nothing;
+  - the one-time copy: a dry run writes nothing, batches resume, a second run copies nothing, inside the budget, with one index write a call, and an entry missing its card repaired;
+  - a partial copy serves the nearest size; a re-approval whose copy fails keeps the earlier card;
+  - a new hero stamps a later `cardAt`, and makes none where there's no card;
+  - reconcile, a user's unflag, Feature, Unfeature and a new approval SVG keep `cardAt`.
+- `tests/pages-card-images.test.ts` (new, 3) runs the Pages worker over the same storage:
+  - every page's card URL;
+  - the placeholder for a null card, even after the owner makes a thumbnail;
+  - the live thumbnail for an approval from before the copy.
+- `tests/api/publishing-harness.ts`: the 5a tests' harness, now shared.
+- `project-docs/modules/verify/verify-2e-step5b.ts`, 15 checks on the dev stack in full Chrome, passing:
+  - the owner's red thumbnail is approved, then the owner makes blue ones and a blue hero;
+  - a visitor sees the red card load on Explore, the profile, og:image and the hero;
+  - the review screen's Approved card shows the card;
+  - Regenerate makes a new card from the approved files and leaves the live blue;
+  - Set thumbnail saves the card and its notice shows it, and the live stays blue.
+  - Screenshots: `2e-step5b-public-page.png`, `2e-step5b-review-approved-tab.png`.
+  - The dev site's Pages worker was rebuilt alone (`tmp/2e-step5/build-pages-worker.ts`), since `build:website` regenerates the blog.
+  - Run again after the review's fixes: all 15 pass.
+- `scripts/copy-approval-cards.ts --dry-run` against the dev API: "Would copy 18 cards; 0 already had one", nothing written.
+- A code review; its six warnings are fixed above.
+
 ## What the audits found (2026-11-14)
 
 ### Snapshots, copies, forks
