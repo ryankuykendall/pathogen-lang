@@ -49,7 +49,7 @@ Deferred work from the modules, data and files effort. Each entry says what it i
 
 ### A console "mole", with the errors in it
 - **What:** the console as a narrow bottom sheet over the workspace, like Gmail's chat "mole", instead of a pane in the row. It could also take in the error panel, so logs and errors are one place.
-- **Today (from 2026-11-16):** the preview fills the workspace behind the panes, and the gap the panes leave shows the drawing (`project-docs/preview-raster-perf/`, option 1). The console is a 280 px pane after the editor, so with the tree, the console and the inspector open, a 1280 px window leaves the drawing about 72 px.
+- **Today (from 2026-11-16):** the preview pane is the gap the other panes leave, and the editor keeps half the room the tree leaves (`project-docs/preview-raster-perf/`, option 1, 90997bc). The console is a 280 px pane after the editor. With the tree, the console and the inspector open, the preview is 0 px wide on 1024 and 1280 px windows, 73 px at 1440 and 193 px at 1680 (`measure-gap-widths.ts`). You chose to leave it that way until the mole (2026-11-16: "Leave it until the console 'mole'").
 - **Needs:** a mockup first: where the mole sits, how it opens and resizes, and how errors show in it.
 - **From:** your answer 5 on the option 1 mockup, 2026-11-16: "Perhaps we should try to pull the console out of flow as well. In Google's GMail, they have a UI view component call a 'mole'… I think that as a follow-up we should consider mocking up a version of a 'mole' style console, perhaps one that ultimately also combines absorbing errors as well into a unified interface. For now, we will just have to be limited to 72px of viewspace until we are able to circle back on mocking up the new console mole."
 
@@ -159,6 +159,12 @@ Existing issues outside the modules work, found while mapping phase 2 (`38-phase
 - **No server-side limit on workspace code size.**
 
 ## Performance
+
+### The inspector's one-time freeze on its first close
+- **What:** find out why the first inspector toggle after the drawing is redrawn redraws part of the drawing, and stop it.
+- **Today:** 0.17–0.31 s on kablammo-investigations (thousands of drop-shadow layers), once: on the first close (or, if the inspector is toggled first, the first open) after an edit, a pan or a zoom. Later opens and closes cost nothing.
+- **Known:** it's GPU raster of part of the drawing, with the main thread idle. Hiding the drawing removes it. Hiding the inspector's contents, turning the grain off and hiding the preview's layers button don't. Which tiles are redrawn isn't known: the traces didn't record Chrome's tile details. `project-docs/preview-raster-perf/README.md`, "The inspector's one-time freeze"; `measure-overlay.ts` has the flags used.
+- **From:** your answer on the option 1 build, 2026-11-16: "Let's leave 'The 0.17 s on the inspector's first close' for another follow-up."
 
 ### Cache parsed modules across compiles in VS Code
 - Keyed by content hash. Only if large projects get slow (plan 12 follow-ups).

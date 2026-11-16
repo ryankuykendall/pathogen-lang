@@ -132,7 +132,7 @@ On the kablammo copy, as built (`measure-overlay.ts … built --repeat-inspector
 
 The one-time inspector freeze is the same one measured above. Its cause still isn't pinned down.
 
-**Narrow windows, your call.** The editor keeps half the room the tree leaves, so with the tree, the console and the inspector all open the preview runs out of room on a smaller window (`measure-gap-widths.ts`, preview pane's width):
+**Narrow windows.** *Settled 2026-11-16: left as it is until the console "mole" (`project-docs/modules/backlog.md`), which frees that room. The inspector's one-time freeze is on the backlog too.* The editor keeps half the room the tree leaves, so with the tree, the console and the inspector all open the preview runs out of room on a smaller window (`measure-gap-widths.ts`, preview pane's width):
 
 | Window | Tree and inspector | Tree, console and inspector |
 |---|---|---|
