@@ -473,6 +473,70 @@ Its docs findings (`workspace-files.md`, `snapshots.md`) are listed under step 7
 
 **That ends step 3.** Every place the web app shows code now copies from an icon in the code's own panel: the workspace, the snapshots page and blog embeds. The review modal and the public page follow in steps 5 and 6.
 
+## Step 4, built (2026-11-16)
+
+**Copies and forks carry every file.**
+
+**Copy Workspace and Duplicate** (`?copyFrom=`, the owner's workspace) copy on the server, with `POST /workspace/:id/copy`.
+- The copy has every saved file, the folders, the programs' list (so the same main) and the canvas settings.
+- It gets the form's name and description.
+- It waits for the save that leaving the workspace started, so an edit typed just before Copy Workspace is in the copy.
+- Nothing is created from text any more.
+
+**Open as new workspace** (`?fromHandle=&fromSlug=`, someone's public workspace) creates from `source.json`'s files:
+- It takes the approved version, each file sent as text, with its folders and list, so an edit waiting for review isn't carried.
+- A `source.json` without files says "Failed to load workspace", and submitting creates nothing. Before, it made an empty workspace.
+
+**Both open on their main**, including a main that isn't `main.pathogen`.
+
+**What differs from the plan's wording:**
+- **The copy route takes the description itself** (`description` in its body, else the original's) instead of the form applying it after the copy. That's one request, with no copy left with the wrong description if a second request failed.
+- **The copy route drops `publicationState` and `rereviewPending`,** as it already dropped `flagged`. Both are read from the moderation records by id, which a copy has none of. A record that kept them stored mustn't pass them on.
+
+**Visible changes:**
+- **The breadcrumb's Copy Workspace shows only to the workspace's owner,** signed in or not (`workspaceOwnerId === getUserId()`, the workspace view's own test). This follows answer 10: someone else forks from the public page, which copies the approved files.
+- **The Open as new workspace form reads like Copy Workspace:** the title "Copy Workspace", "Creating a copy of …", and no starting-template picker, which it never used.
+
+**For step 5:**
+- **The copy route's access rule is unchanged here.** Anyone signed in can still copy a public workspace's live files through it, until step 5 restricts it to the owner and admins (answer 10).
+- **Public workspaces made before Phase 4, with no approval, have no public page.** Explore's and Featured's fallback links open them in the playground. With Copy Workspace now the owner's, visitors there have no way to copy them. Step 5's audit of the live reads should settle what those links do.
+
+**The code review** found nothing critical. Fixed from it:
+- **A load that ends after a newer one began is dropped.** Each load has a number. Before, a slow first link could fill the form with its workspace's name and, for a fork, its files.
+- **The same fork link, notified twice, is left alone.** The store notifies once per key, so a route change that sets the view and the query runs the form's subscriber twice. The second ran the blank form's path and reset the form. That reset happened before this step too: a late load then filled the form back in.
+- **Copy Workspace and Snapshot share one ownership test:** the owner is this browser's id or the signed-in account's.
+- **Smaller fixes:**
+  - a submit while the source loads does nothing;
+  - the copy route ignores a name that isn't text, or a blank one;
+  - a `source.json` whose folders or programs aren't text is refused;
+  - a new load clears the last one's error;
+  - `resetForm` drops the fork's files.
+
+Declined:
+- **Waiting at submit for a save that leaving the workspace hadn't started yet.** It's started when the route changes, and has finished by the time the form is submitted; the browser check types an edit and copies at once. A save that fails drops the edit whether or not you copy, as leaving a workspace always has.
+- **A length limit on the description.** The create route has none on the server either; the form keeps its 500 characters.
+
+**Tested:**
+- `tests/api/workspace-files-api.test.ts`, four more:
+  - the name and description given, with every file, the empty folder and a main that isn't `main.pathogen` kept, and the original untouched;
+  - no description (or one that isn't text) keeps the original's;
+  - a name that isn't text, or is blank, gives "(Copy)";
+  - no publishing state carried.
+- `tests/playground-new-workspace-copy.test.ts` (new), the form in jsdom:
+  - Copy Workspace calls the copy route with the form's name and description, after the save, and never creates;
+  - a refused copy (too many files) says why and goes nowhere;
+  - Open as new workspace creates from the files, each as text, with no `code`;
+  - a fork link set after the form mounted, the view and the query together as the router does, loads and stays (it fails without the fix);
+  - a fork's load that ends after a newer one began leaves the form to the newer one;
+  - an unreadable `source.json` creates nothing.
+- `tests/app-breadcrumb-menu.test.ts`: Copy Workspace for the owner, signed in or not, and not on someone else's workspace.
+- `project-docs/modules/verify/verify-2e-step4.ts`, 18 checks on the dev stack, in full Chrome:
+  - **Copy Workspace:** an edit typed just before it is in the copy; every file, the empty folder, the list's order; the form's name and description; private and unpublished; it opens on its main (`demos/gears.pathogen`) with the empty folder in the tree; the original is unchanged.
+  - **Duplicate** on the Workspaces page.
+  - **Open as new workspace by a second user,** of an approved workspace with an edit waiting for review: the approved files, not the edit; the folders and list; it opens on its main.
+  - **No Copy Workspace** on someone else's public workspace.
+  - The form, light and dark (`2e-step4-copy-form-{light,dark}.png`).
+
 ## What the audits found (2026-11-14)
 
 ### Snapshots, copies, forks

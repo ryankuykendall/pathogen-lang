@@ -31,6 +31,7 @@ describe('the workspace’s menu (step 9a)', () => {
       compilationStatus: 'idle',
       currentUser: null,
       workspaceOwnerId: null,
+      workspaceIsPublic: false,
       noPrograms: false,
     });
     document.body.innerHTML = '';
@@ -49,11 +50,31 @@ describe('the workspace’s menu (step 9a)', () => {
   it('Copy URL is gone from the menu, in a saved workspace and on a scratch link', async () => {
     const saved = await mount({ 'main.pathogen': 'M 0 0' });
     expect(saved.item('copy-url')).toBeNull();
-    expect(saved.item('copy-workspace')).not.toBeNull();
     document.body.innerHTML = '';
     const scratch = await mount({}, null);
     expect(scratch.item('copy-url')).toBeNull();
     expect(scratch.item('copy-svg')).not.toBeNull();
+  });
+
+  // Copying is for the owner (2e step 4; note 58, answer 10): someone else forks a
+  // public workspace from its page, which copies the approved files, not the live ones.
+  it("Copy Workspace is the owner's: signed in or not, but not on someone else's workspace", async () => {
+    const users = await import('../playground/services/user-id.ts');
+    const { store, item } = await mount({ 'main.pathogen': 'M 0 0' });
+    // Not signed in: the owner is this browser's own id.
+    store.update({ workspaceOwnerId: users.getUserId() });
+    expect(item('copy-workspace')).not.toBeNull();
+    // Signed in, as sign-in sets it.
+    users.setAuthenticatedUserId('u-1');
+    try {
+      store.update({ currentUser: { id: 'u-1', features: [] }, workspaceOwnerId: 'u-1' });
+      expect(item('copy-workspace')).not.toBeNull();
+      // Someone else's public workspace.
+      store.update({ workspaceOwnerId: 'u-2', workspaceIsPublic: true });
+      expect(item('copy-workspace')).toBeNull();
+    } finally {
+      users.clearAuthenticatedUserId();
+    }
   });
 
   // Copy Code left the bar for the copy icon at the end of the editor's tabs (2e, step 3d; mockups v13, v14).

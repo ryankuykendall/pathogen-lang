@@ -701,7 +701,10 @@ export const apiHandlers: Record<string, (request: Request, env: Env, ...args: s
       }
 
       const body = ((await request.json().catch(() => ({}))) as Record<string, unknown>) ?? {};
-      const newName = (body.name as string) || `${original.name} (Copy)`;
+      const newName =
+        typeof body.name === 'string' && body.name.trim() ? body.name.trim() : `${original.name} (Copy)`;
+      // The copy form's description (2e step 4), else the original's.
+      const newDescription = typeof body.description === 'string' ? body.description : original.description;
 
       const newId = generateNanoId();
       const now = new Date().toISOString();
@@ -721,6 +724,7 @@ export const apiHandlers: Record<string, (request: Request, env: Env, ...args: s
         slug: slugify(newName),
         userId,
         name: newName,
+        description: newDescription,
         isPublic: false,
         createdAt: now,
         updatedAt: now,
@@ -732,8 +736,13 @@ export const apiHandlers: Record<string, (request: Request, env: Env, ...args: s
         manualThumbnailAt: null,
         autoThumbnailAt: null,
       };
-      // A copy starts unflagged: the flag is a moderation decision about the original.
+      // A copy starts unflagged and unpublished: the flag and the publication state
+      // are moderation decisions about the original. The publication state is read
+      // from the moderation records, which a copy has none of; a stored copy of it
+      // must not pass on either.
       delete newWorkspace.flagged;
+      delete newWorkspace.publicationState;
+      delete newWorkspace.rereviewPending;
       setFiles(newWorkspace, copied);
 
       await env.WORKSPACES.put(`workspace:${newId}`, JSON.stringify(newWorkspace));

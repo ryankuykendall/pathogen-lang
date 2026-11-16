@@ -320,10 +320,8 @@ class AppBreadcrumb extends HTMLElement {
    */
   getSnapshotButtonHtml(): string {
     const workspaceId = store.get('workspaceId') as string | null;
-    const ownerId = store.get('workspaceOwnerId') as string | null;
     const currentUser = store.get('currentUser') as CurrentUser | null;
-    const isOwn = !!workspaceId && !!ownerId && (ownerId === getUserId() || ownerId === currentUser?.id);
-    if (workspaceId && !isOwn) return '';
+    if (workspaceId && !this._ownsWorkspace()) return '';
 
     const status = store.get('compilationStatus') as string | null;
     const renderedCode = store.get('renderedCode') as string | null;
@@ -379,6 +377,17 @@ class AppBreadcrumb extends HTMLElement {
       </div>`;
   }
 
+  /**
+   * The workspace shown is this user's: its owner is this browser's id, signed in or
+   * not, or the signed-in account's. Snapshot and Copy Workspace are the owner's.
+   */
+  private _ownsWorkspace(): boolean {
+    const workspaceId = store.get('workspaceId') as string | null;
+    const ownerId = store.get('workspaceOwnerId') as string | null;
+    const currentUser = store.get('currentUser') as CurrentUser | null;
+    return !!workspaceId && !!ownerId && (ownerId === getUserId() || ownerId === currentUser?.id);
+  }
+
   getOverflowMenuHtml(): string {
     const workspaceId = store.get('workspaceId') as string | null;
     const workspaceIsPublic = store.get('workspaceIsPublic') as boolean;
@@ -409,7 +418,10 @@ class AppBreadcrumb extends HTMLElement {
       );
     }
     menuItems.push('<div class="menu-divider"></div>');
-    if (hasWorkspace) {
+    // Copying is the owner's, signed in or not. Anyone else forks a public workspace
+    // from its page, which copies the approved files rather than the live ones (2e
+    // step 4; note 58, answer 10).
+    if (hasWorkspace && this._ownsWorkspace()) {
       menuItems.push(
         `<button data-action="copy-workspace">${materialIcon('content-copy', { size: 16, className: 'menu-icon' })}<span>Copy Workspace</span></button>`,
       );

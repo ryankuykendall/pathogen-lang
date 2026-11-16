@@ -511,9 +511,9 @@ async function renderWorkspaceSourceJson(
     }
   }
   // The approval's files, through the API Worker (approval-source.ts).
-  // `code` is the text of an approval that is just main.pathogen, which
-  // today's "Open as new workspace" form reads; `files`, `folders` and
-  // `entryPoints` say the whole workspace.
+  // `files`, `folders` and `entryPoints` say the whole workspace, and are
+  // what "Open as new workspace" creates from (2e step 4). `code`, the text
+  // of an approval that is just main.pathogen, stays for older readers.
   const source = await readApprovalSource(approval, apiBase(env));
   if (!source) {
     return new Response(JSON.stringify({ error: 'source-unavailable' }), {

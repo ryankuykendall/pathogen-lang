@@ -447,6 +447,74 @@ describe('deleting and copying', () => {
     expect(r2.totalCalls()).toBe(0);
   });
 
+  it('a copy takes the name and the description it is given, and keeps the files, the folders and the main', async () => {
+    const { env, kv, r2 } = makeEnv();
+    const created = await call(env, 'POST', '/workspace', {
+      name: 'Gears',
+      description: 'The original',
+      files: {
+        'main.pathogen': { text: MAIN },
+        'parts/gears.pathogen': { text: GEARS },
+        'demos/gears.pathogen': { text: MAIN.replace('./parts', '../parts') },
+      },
+      folders: ['parts', 'demos', 'empty'],
+      entryPoints: ['demos/gears.pathogen', 'main.pathogen'],
+    });
+    const id = created.data.id as string;
+    const res = await call(env, 'POST', `/workspace/${id}/copy`, { name: 'Mine', description: 'My copy' });
+    expect(res.status).toBe(201);
+    const copy = await storedRecord(kv, res.data.id as string);
+    expect([copy.name, copy.slug, copy.description]).toEqual(['Mine', 'mine', 'My copy']);
+    expect(res.data.entryPoints).toEqual(['demos/gears.pathogen', 'main.pathogen']);
+    expect(res.data.folders).toEqual(expect.arrayContaining(['empty']));
+    expect(await storedText(kv, r2, res.data.id as string, 'demos/gears.pathogen')).toBe(
+      MAIN.replace('./parts', '../parts'),
+    );
+    // The original is as it was.
+    const original = await storedRecord(kv, id);
+    expect([original.name, original.description]).toEqual(['Gears', 'The original']);
+  });
+
+  it("without a description (or with one that isn't text), the copy keeps the original's", async () => {
+    const { env, kv } = makeEnv();
+    const created = await call(env, 'POST', '/workspace', {
+      name: 'Gears',
+      description: 'The original',
+      code: 'M 0 0',
+    });
+    const id = created.data.id as string;
+    const plain = await call(env, 'POST', `/workspace/${id}/copy`, {});
+    const odd = await call(env, 'POST', `/workspace/${id}/copy`, { description: 42 });
+    expect((await storedRecord(kv, plain.data.id as string)).description).toBe('The original');
+    expect((await storedRecord(kv, odd.data.id as string)).description).toBe('The original');
+  });
+
+  it("a name that isn't text, or is blank, gives the copy the original's name with (Copy)", async () => {
+    const { env, kv } = makeEnv();
+    const created = await call(env, 'POST', '/workspace', { name: 'Gears', code: 'M 0 0' });
+    const id = created.data.id as string;
+    for (const name of [7, '   ']) {
+      const res = await call(env, 'POST', `/workspace/${id}/copy`, { name });
+      expect(res.status).toBe(201);
+      expect((await storedRecord(kv, res.data.id as string)).name).toBe('Gears (Copy)');
+    }
+  });
+
+  it('a copy carries no publishing state: private, not approved, no re-review waiting', async () => {
+    const { env, kv } = makeEnv();
+    const id = await createWithFiles(env);
+    const record = await storedRecord(kv, id);
+    await kv.put(
+      `workspace:${id}`,
+      JSON.stringify({ ...record, isPublic: true, publicationState: 'approved', rereviewPending: true }),
+    );
+    const res = await call(env, 'POST', `/workspace/${id}/copy`, {});
+    const copy = await storedRecord(kv, res.data.id as string);
+    expect(copy.isPublic).toBe(false);
+    expect(copy).not.toHaveProperty('publicationState');
+    expect(copy).not.toHaveProperty('rereviewPending');
+  });
+
   it('copying a record from before phase 2 writes its text for the copy', async () => {
     const { env, kv, r2 } = makeEnv();
     await seedLegacy(kv, 'old7', 'M 7 7');

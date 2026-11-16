@@ -31,8 +31,34 @@ interface SourceWorkspace {
   name: string;
   description?: string;
   isPublic?: boolean;
-  code?: string;
   preferences?: Record<string, unknown>;
+}
+
+/** An approved workspace's files, as Open as new workspace sends them: each as text. */
+interface ForkFiles {
+  files: Record<string, { text: string }>;
+  folders: string[];
+  entryPoints: string[];
+}
+
+/**
+ * The files of a source.json answer (the Pages worker's /u/:handle/:slug/source.json,
+ * the approved version), each reduced to its text; null when it doesn't carry them.
+ */
+function forkFilesOf(data: Record<string, unknown>): ForkFiles | null {
+  const { files, folders, entryPoints } = data;
+  if (typeof files !== 'object' || files === null || Array.isArray(files)) return null;
+  const allText = (list: unknown): list is string[] =>
+    Array.isArray(list) && list.every((item) => typeof item === 'string');
+  if (!allText(folders) || !allText(entryPoints)) return null;
+  const texts: Record<string, { text: string }> = {};
+  for (const [path, file] of Object.entries(files as Record<string, unknown>)) {
+    const text = (file as { text?: unknown } | null)?.text;
+    if (typeof text !== 'string') return null;
+    texts[path] = { text };
+  }
+  if (Object.keys(texts).length === 0) return null;
+  return { files: texts, folders, entryPoints };
 }
 
 interface ImportState {
@@ -56,6 +82,14 @@ class NewWorkspaceView extends HTMLElement {
   private _fromApproval: { handle: string; slug: string } | null = null;
   private _loadingSource: boolean = false;
   private _sourceWorkspace: SourceWorkspace | null = null;
+
+  // The approved files of the workspace Open as new workspace copies (2e step 4).
+  private _forkFiles: ForkFiles | null = null;
+
+  // Counts loads of a source workspace: a load that ends after a newer one began (or
+  // after the form was left) leaves the form alone.
+  private _loadSeq = 0;
+
   private _stateCode: string | null = null;
   private _importKey: string | null = null;
   private _beforeUnloadHandler: (() => void) | null = null;
@@ -132,12 +166,17 @@ class NewWorkspaceView extends HTMLElement {
             ? { handle: newFromHandle, slug: newFromSlug }
             : null;
           this._sourceWorkspace = null;
+          this._forkFiles = null;
 
           if (newFromHandle && newFromSlug) {
             this.loadApprovalSource(newFromHandle, newFromSlug);
             return;
           }
         }
+        // The same fork link: nothing to do. (The store notifies once per key, so a
+        // route change that sets the view and the query comes twice; the second
+        // mustn't reset the form, or cancel its load, as if it were a blank one.)
+        if (this._fromApproval) return;
 
         // Check if we're entering copy mode or the copyFrom ID changed
         if (newCopyFromId !== this._copyFromId) {
@@ -152,12 +191,14 @@ class NewWorkspaceView extends HTMLElement {
           }
         } else if (newQuery.import) {
           if (!this._importKey) {
+            this._dropLoad();
             this._stateCode = null;
             this.loadPreferences();
             this._applyImportKey(newQuery.import);
             this.render();
           }
         } else if (newQuery.state) {
+          this._dropLoad();
           this._stateCode = null;
           this.loadPreferences();
           this._applyStateParam(newQuery.state);
@@ -172,6 +213,7 @@ class NewWorkspaceView extends HTMLElement {
   }
 
   disconnectedCallback(): void {
+    this._dropLoad();
     this._cleanupImport();
     if (this._unsubscribe) {
       this._unsubscribe();
@@ -239,74 +281,90 @@ class NewWorkspaceView extends HTMLElement {
   // another user's workspace, but the SSR endpoint is publicly
   // readable for any approved workspace.
   //
-  // On success we hydrate the same _sourceWorkspace state the
-  // owned-copy path uses, so the rest of the form (name prefilled
-  // with "<Name> (Copy)", description preserved, code injected into
-  // the new workspace on submit) behaves identically.
+  // On success the form reads as the owner's Copy Workspace does (name
+  // prefilled with "<Name> (Copy)", description preserved), and submitting
+  // creates a workspace from the approved files: every file as text, its
+  // folders and its programs' list, so the copy opens on the same main (2e
+  // step 4). The live files aren't read: they can hold edits waiting for review.
   async loadApprovalSource(handle: string, slug: string): Promise<void> {
-    this._loadingSource = true;
-    this.render();
+    const seq = this._startLoad();
+    let source: SourceWorkspace | null = null;
+    let files: ForkFiles | null = null;
+    let error: string | null = null;
     try {
       const resp = await fetch(`/u/${encodeURIComponent(handle)}/${encodeURIComponent(slug)}/source.json`);
       if (!resp.ok) {
         throw new Error(`Source unavailable (status ${resp.status})`);
       }
-      const data = (await resp.json()) as {
+      const data = (await resp.json()) as Record<string, unknown> & {
         name?: string;
         description?: string;
-        code?: string;
       };
-      this._sourceWorkspace = {
-        name: data.name || 'Untitled',
-        description: data.description,
-        code: data.code,
-        isPublic: false,
-      };
-
+      files = forkFilesOf(data);
+      if (!files) throw new Error('its files could not be read');
+      source = { name: data.name || 'Untitled', description: data.description, isPublic: false };
+    } catch (err: unknown) {
+      console.error('Failed to load approval source:', err);
+      error = `Failed to load workspace: ${(err as Error).message}`;
+    }
+    // A newer load began, or the form was left, while this one waited.
+    if (seq !== this._loadSeq) return;
+    this._forkFiles = error ? null : files;
+    this._sourceWorkspace = error ? null : source;
+    if (error) this.errors.submit = error;
+    if (source && !error) {
       // Pre-populate form. Append "(Copy)" to the original name so
       // forks don't collide visually with the original in the user's
       // workspace list.
-      this.formData.name = `${this._sourceWorkspace.name} (Copy)`;
-      this.formData.description = this._sourceWorkspace.description || '';
-
+      this.formData.name = `${source.name} (Copy)`;
+      this.formData.description = source.description || '';
       this.formData.template = '';
-    } catch (err: unknown) {
-      console.error('Failed to load approval source:', err);
-      this.errors.submit = `Failed to load workspace: ${(err as Error).message}`;
-      this._sourceWorkspace = null;
-    } finally {
-      this._loadingSource = false;
-      this.render();
     }
+    this._loadingSource = false;
+    this.render();
   }
 
   async loadSourceWorkspace(id: string): Promise<void> {
-    this._loadingSource = true;
-    this.render();
-
+    const seq = this._startLoad();
+    let workspace: SourceWorkspace | null = null;
+    let error: string | null = null;
     try {
       // Wait for any in-progress autosave flush to complete before fetching
       // (prevents race condition when user copies immediately after editing)
       await autosave.awaitPendingFlush();
-
-      const workspace = (await workspaceApi.get(id)) as SourceWorkspace;
-      this._sourceWorkspace = workspace;
-
+      workspace = (await workspaceApi.get(id)) as SourceWorkspace;
+    } catch (err: unknown) {
+      console.error('Failed to load source workspace:', err);
+      error = `Failed to load workspace: ${(err as Error).message}`;
+    }
+    // A newer load began, or the form was left, while this one waited.
+    if (seq !== this._loadSeq) return;
+    this._sourceWorkspace = error ? null : workspace;
+    if (error) this.errors.submit = error;
+    if (workspace && !error) {
       // Pre-populate form with source workspace data
       this.formData.name = `${workspace.name} (Copy)`;
       this.formData.description = workspace.description || '';
       this.formData.isPublic = workspace.isPublic || false;
-
-      // Clear template since we're copying code from source
+      // Clear template since we're copying from the source
       this.formData.template = '';
-    } catch (err: unknown) {
-      console.error('Failed to load source workspace:', err);
-      this.errors.submit = `Failed to load workspace: ${(err as Error).message}`;
-      this._sourceWorkspace = null;
-    } finally {
-      this._loadingSource = false;
-      this.render();
     }
+    this._loadingSource = false;
+    this.render();
+  }
+
+  /** A load begins: it supersedes any under way, and clears the last one's error. */
+  private _startLoad(): number {
+    this._loadingSource = true;
+    delete this.errors.submit;
+    this.render();
+    return ++this._loadSeq;
+  }
+
+  /** No load is wanted any more: one still under way leaves the form alone. */
+  private _dropLoad(): void {
+    this._loadSeq++;
+    this._loadingSource = false;
   }
 
   resetForm(): void {
@@ -316,6 +374,7 @@ class NewWorkspaceView extends HTMLElement {
       return;
     }
 
+    this._dropLoad();
     this.formData = {
       name: '',
       description: '',
@@ -324,6 +383,7 @@ class NewWorkspaceView extends HTMLElement {
     };
     this.errors = {};
     this._sourceWorkspace = null;
+    this._forkFiles = null;
     this._stateCode = null;
     this.render();
   }
@@ -347,7 +407,7 @@ class NewWorkspaceView extends HTMLElement {
   async handleSubmit(e: Event): Promise<void> {
     e.preventDefault();
 
-    if (this._isSubmitting) return;
+    if (this._isSubmitting || this._loadingSource) return;
     if (!this.validate()) {
       this.render();
       return;
@@ -357,44 +417,47 @@ class NewWorkspaceView extends HTMLElement {
     this.render();
 
     try {
-      // Get code: from state param, source workspace, picked template, or
-      // fall back to the empty boilerplate (just `define ViewBox` and the
-      // canonical default PathLayer — no demo content).
-      let code: string;
-      if (this._stateCode) {
-        code = this._stateCode;
-      } else if (this._sourceWorkspace) {
-        code = this._sourceWorkspace.code || '';
-      } else if (this.formData.template) {
-        code = (examples as Record<string, string>)[this.formData.template] || emptyBoilerplate;
+      const name = this.formData.name.trim();
+      const description = this.formData.description.trim();
+      let workspace: { slug?: string; id: string };
+      if (this._copyFromId) {
+        // Copy Workspace and Duplicate, the owner's: the server copies every saved
+        // file, the folders, the main and the canvas settings (2e step 4). Leaving
+        // the workspace started saving its last edits: the copy waits for that.
+        if (!this._sourceWorkspace) throw new Error('The workspace to copy could not be loaded.');
+        await autosave.awaitPendingFlush();
+        workspace = (await workspaceApi.copy(this._copyFromId, { name, description })) as typeof workspace;
+      } else if (this._fromApproval) {
+        // Open as new workspace: the approved files, each as text.
+        if (!this._forkFiles) throw new Error('The workspace to copy could not be loaded.');
+        workspace = (await workspaceApi.create({
+          name,
+          description,
+          ...this._forkFiles,
+          isPublic: false,
+          preferences: this._newPreferences(),
+        })) as typeof workspace;
       } else {
-        code = emptyBoilerplate;
+        // From a state param, a picked template, or the empty boilerplate (just
+        // `define ViewBox` and the canonical default PathLayer, no demo content).
+        let code: string;
+        if (this._stateCode) {
+          code = this._stateCode;
+        } else if (this.formData.template) {
+          code = (examples as Record<string, string>)[this.formData.template] || emptyBoilerplate;
+        } else {
+          code = emptyBoilerplate;
+        }
+        workspace = (await workspaceApi.create({
+          name,
+          description,
+          code,
+          // Always start private. Publishing happens via the overflow
+          // menu (Make public) after the workspace exists.
+          isPublic: false,
+          preferences: this._newPreferences(),
+        })) as typeof workspace;
       }
-
-      // Get user preferences for other settings
-      const prefs = (store.get('preferences') as Record<string, unknown> | undefined) || {};
-      // If copying, merge source workspace preferences
-      const sourcePrefs = (this._sourceWorkspace?.preferences as Record<string, unknown> | undefined) || {};
-
-      const workspace = (await workspaceApi.create({
-        name: this.formData.name.trim(),
-        description: this.formData.description.trim(),
-        code,
-        // Always start private. Publishing happens via the overflow
-        // menu (Make public) after the workspace exists.
-        isPublic: false,
-        preferences: {
-          stroke: sourcePrefs.stroke || prefs.stroke || '#000000',
-          strokeWidth: sourcePrefs.strokeWidth ?? prefs.strokeWidth ?? 2,
-          fillEnabled: sourcePrefs.fillEnabled ?? prefs.fillEnabled ?? false,
-          fill: sourcePrefs.fill || prefs.fill || '#3498db',
-          background: sourcePrefs.background || prefs.background || '#f5f5f5',
-          gridEnabled: sourcePrefs.gridEnabled ?? prefs.gridEnabled ?? true,
-          gridColor: sourcePrefs.gridColor || prefs.gridColor || '#cccccc',
-          gridSize: sourcePrefs.gridSize ?? prefs.gridSize ?? 20,
-          toFixed: sourcePrefs.toFixed ?? prefs.toFixed ?? null,
-        },
-      })) as { slug?: string; id: string };
 
       // Clean up import data before navigating away
       this._cleanupImport();
@@ -409,6 +472,22 @@ class NewWorkspaceView extends HTMLElement {
     } finally {
       this._isSubmitting = false;
     }
+  }
+
+  /** A new workspace's canvas settings: the user's preferences, else the defaults. */
+  private _newPreferences(): Record<string, unknown> {
+    const prefs = (store.get('preferences') as Record<string, unknown> | undefined) || {};
+    return {
+      stroke: prefs.stroke || '#000000',
+      strokeWidth: prefs.strokeWidth ?? 2,
+      fillEnabled: prefs.fillEnabled ?? false,
+      fill: prefs.fill || '#3498db',
+      background: prefs.background || '#f5f5f5',
+      gridEnabled: prefs.gridEnabled ?? true,
+      gridColor: prefs.gridColor || '#cccccc',
+      gridSize: prefs.gridSize ?? 20,
+      toFixed: prefs.toFixed ?? null,
+    };
   }
 
   handleCancel(): void {
@@ -479,7 +558,8 @@ class NewWorkspaceView extends HTMLElement {
   }
 
   render(): void {
-    const isCopyMode = !!this._copyFromId;
+    // Copy Workspace and Open as new workspace read alike: both copy a workspace.
+    const isCopyMode = !!this._copyFromId || !!this._fromApproval;
     const isStateMode = !!this._stateCode;
     const isLoading = this._loadingSource;
 

@@ -123,12 +123,12 @@ export const workspaceApi = {
     });
   },
 
-  // Copy/duplicate a workspace
-  async copy(id: string, newName: string | null = null): Promise<unknown> {
-    const body = newName ? { name: newName } : {};
+  // Copy a workspace on the server: every saved file, the folders, the main and the
+  // canvas settings, with a new name and description (each the original's if left out).
+  async copy(id: string, { name, description }: { name?: string; description?: string } = {}): Promise<unknown> {
     return apiRequest(`/workspace/${id}/copy`, {
       method: 'POST',
-      body: JSON.stringify(body),
+      body: JSON.stringify({ name, description }),
     });
   },
 };
