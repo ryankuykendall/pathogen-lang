@@ -127,10 +127,17 @@ describe('the code panel’s files', () => {
     expect(viewer.files.map((f) => f.kind)).toEqual(['program', 'program', 'program']);
   });
 
-  it('a file the server couldn’t read is named in the page’s error, never shown empty (2e step 5d)', () => {
+  it('a file the server couldn’t read keeps its place, marked, and the others show (2e step 5d)', () => {
     const answer = filesOf(SEVERAL);
     answer.files['parts/gears.pathogen'] = { sha256: 'g', size: GEARS.length, unreadable: true };
-    expect(() => snapshotViewerFiles(answer, ENGINE)).toThrow("parts/gears.pathogen couldn't be read.");
+    const { viewer, drawing } = snapshotViewerFiles(answer, ENGINE);
+    expect(viewer.files.map((f) => [f.path, f.unreadable === true, f.text.length > 0])).toEqual([
+      ['main.pathogen', false, true],
+      ['parts/gears.pathogen', true, false],
+      ['demos/gears.pathogen', false, true],
+      ['pathogen.json', false, true],
+    ]);
+    expect(drawing).toEqual({ path: 'main.pathogen', text: MAIN });
   });
 });
 

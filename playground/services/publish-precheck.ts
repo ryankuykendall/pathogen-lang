@@ -16,6 +16,12 @@ import compilerWorker from './compiler-worker.js';
 import type { WorkspaceCompileInput } from './compiler-worker.js';
 import type { WorkspaceTexts } from './workspace-files.js';
 
+/**
+ * Under Make private while an edit waits for re-review, in the workspace's menu
+ * and on the Workspaces page (2e step 5c, answer (a)): Make private withdraws it.
+ */
+export const REREVIEW_NOTE = 'An edit is waiting for review';
+
 export type PrecheckResult =
   | { ok: true }
   | { ok: false; reason: 'empty' | 'compile-error'; message: string };

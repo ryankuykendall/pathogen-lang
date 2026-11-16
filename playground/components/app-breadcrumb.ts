@@ -20,6 +20,7 @@ import type { CurrentUser } from '../services/auth.js';
 import { autosave } from '../services/autosave.js';
 import {
   precheckWorkspace,
+  REREVIEW_NOTE,
   toastPrivateSuccess,
   toastPublishBlocked,
   toastPublishSuccess,
@@ -446,9 +447,11 @@ class AppBreadcrumb extends HTMLElement {
       );
     }
     // Publish toggle reflects the moderation state machine. 'rejected' is
-    // shown as 'Submit for review' (silent rejection — owners are never
-    // told why their submission did not become public). rereviewPending
-    // overlays "Pending re-review" on top of the otherwise-approved state.
+    // shown as 'Make public' (silent rejection — owners are never told why
+    // their submission did not become public). While an edit waits for
+    // re-review, Make private stays offered, with a note saying so: it
+    // withdraws the re-review (2e step 5c, answer (a); mockup
+    // project-docs/modules/mockups-2e-5c-rereview-menu/).
     const pubState = (store.get('workspacePublicationState') as string) || 'unpublished';
     const rereviewPending = Boolean(store.get('workspaceRereviewPending'));
     if (isSignedIn && hasWorkspace && (canPublish || workspaceIsPublic || pubState === 'pending')) {
@@ -456,27 +459,24 @@ class AppBreadcrumb extends HTMLElement {
       let publishLabel: string;
       let publishIcon: 'public' | 'lock';
       let disabled = false;
+      let note = '';
       if (pubState === 'pending') {
         publishLabel = 'Pending review';
         publishIcon = 'public';
         disabled = true;
       } else if (workspaceIsPublic || pubState === 'approved') {
-        if (rereviewPending) {
-          publishLabel = 'Pending re-review';
-          publishIcon = 'public';
-          disabled = true;
-        } else {
-          publishLabel = 'Make private';
-          publishIcon = 'lock';
-        }
+        publishLabel = 'Make private';
+        publishIcon = 'lock';
+        if (rereviewPending) note = REREVIEW_NOTE;
       } else {
         publishLabel = 'Make public';
         publishIcon = 'public';
       }
       // Making it public waits for a program; making it private never waits (step 9a).
       const waits = noPrograms && publishLabel === 'Make public';
+      if (waits) note = NO_PROGRAM_PUBLISH;
       menuItems.push(
-        `<button data-action="toggle-publish" class="publish-item" ${disabled || waits ? 'disabled' : ''}>${materialIcon(publishIcon, { size: 16, className: 'menu-icon' })}<span>${publishLabel}${waits ? `<small>${NO_PROGRAM_PUBLISH}</small>` : ''}</span></button>`,
+        `<button data-action="toggle-publish" class="publish-item" ${disabled || waits ? 'disabled' : ''}>${materialIcon(publishIcon, { size: 16, className: 'menu-icon' })}<span>${publishLabel}${note ? `<small>${note}</small>` : ''}</span></button>`,
       );
     }
 
@@ -764,11 +764,13 @@ class AppBreadcrumb extends HTMLElement {
         id: string;
         isPublic: boolean;
         publicationState?: string;
+        rereviewPending?: boolean;
       }[];
       const workspace = workspaces.find((w) => w.id === workspaceId);
       if (workspace) {
         workspace.isPublic = newIsPublic;
         workspace.publicationState = newState;
+        if (typeof updated.rereviewPending === 'boolean') workspace.rereviewPending = updated.rereviewPending;
         store.set('workspaces', [...workspaces]);
       }
 

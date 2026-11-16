@@ -208,6 +208,63 @@ describe('theme', () => {
   });
 });
 
+describe('a file that couldn’t be read (2e step 5d; note 59, requirement 9)', () => {
+  const LOST: SourceFile[] = SEVERAL.map((f) =>
+    f.path === 'parts/gears.pathogen' ? { path: f.path, text: '', kind: 'program', unreadable: true } : f,
+  );
+
+  it('keeps its place in the list, with a warning, and says so on hover and to a screen reader', () => {
+    const el = mount(LOST);
+    const row = $(el, '.row[data-path="parts/gears.pathogen"]')!;
+    expect([row.classList.contains('unreadable'), row.title, row.getAttribute('aria-label')]).toEqual([
+      true,
+      "parts/gears.pathogen couldn't be read",
+      "gears.pathogen, couldn't be read",
+    ]);
+    expect($$(el, '.row.unreadable')).toHaveLength(1);
+    // The file shown still shows its code.
+    expect([$(el, '.code')!.classList.contains('lost'), $(el, '.fallback code')?.textContent]).toEqual([false, MAIN]);
+  });
+
+  it('with no file asked for, a readable program opens first, never the one that couldn’t be read', () => {
+    const files: SourceFile[] = [
+      { path: 'a.pathogen', text: '', kind: 'program', unreadable: true },
+      { path: 'b.pathogen', text: MAIN, kind: 'program' },
+    ];
+    const el = document.createElement('source-files') as SourceFiles;
+    el.files = files;
+    document.body.appendChild(el);
+    expect([el.open, $(el, '.code')!.classList.contains('lost')]).toEqual(['b.pathogen', false]);
+  });
+
+  it('shown, it says so where its code would be, and its copy icon is off; the next file shows again', async () => {
+    const el = mount(LOST);
+    $(el, '.row[data-path="parts/gears.pathogen"]')!.click();
+    expect($(el, '.code')!.classList.contains('lost')).toBe(true);
+    expect(text($(el, '.unread'))).toBe('This file couldn’t be read. The other files show as saved.');
+    const copy = $(el, '.path .cp') as HTMLButtonElement;
+    expect([copy.disabled, copy.title]).toEqual([true, "Nothing to copy: this file couldn't be read"]);
+    expect($(el, '.path')!.classList.contains('unreadable')).toBe(true);
+    // Disabled, and refusing even when asked directly (a click jsdom wouldn't send).
+    copy.click();
+    await (el as unknown as { _copy: () => Promise<void> })._copy();
+    expect(writeText).not.toHaveBeenCalled();
+
+    $(el, '.row[data-path="parts/kit.pathogen"]')!.click();
+    expect([$(el, '.code')!.classList.contains('lost'), ($(el, '.path .cp') as HTMLButtonElement).disabled]).toEqual([
+      false,
+      false,
+    ]);
+    expect($(el, '.fallback code')?.textContent).toBe(KIT);
+  });
+
+  it('one file alone that couldn’t be read says so too, its floating copy icon off', () => {
+    const el = mount([{ path: 'main.pathogen', text: '', kind: 'program', unreadable: true }]);
+    expect($(el, '.code')!.classList.contains('lost')).toBe(true);
+    expect(($(el, '.cell.float .cp') as HTMLButtonElement).disabled).toBe(true);
+  });
+});
+
 describe('copying', () => {
   it('copies the file shown, and says “Copied” only once the clipboard has taken it', async () => {
     let resolve!: () => void;

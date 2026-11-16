@@ -11,7 +11,7 @@
 //   named;
 // - a save that changes nothing still says whether a re-review is waiting.
 
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import { approved, call, EDITED, makeHarness, publicIds, rereviewIds, reviewIds, SPIRAL } from './publishing-harness';
 import { storedRecord } from './workspace-helpers';
@@ -56,6 +56,32 @@ describe('a re-review is only for a public workspace (answer 8)', () => {
     const back = await call(h, 'PUT', `/workspace/${id}`, { code: SPIRAL });
     expect(back.data.rereviewPending).toBe(false);
     expect(await rereviewIds(h)).toEqual([]);
+  });
+
+  it('the Workspaces listing says which workspace has an edit waiting for re-review', async () => {
+    const h = await makeHarness();
+    const edited = await approved(h);
+    const unchanged = await approved(h);
+    await call(h, 'PUT', `/workspace/${edited}`, { code: EDITED });
+    const listed = (await call(h, 'GET', '/workspaces')).data as unknown as {
+      id: string;
+      rereviewPending: boolean;
+    }[];
+    const byId = new Map(listed.map((w) => [w.id, w.rereviewPending]));
+    expect([byId.get(edited), byId.get(unchanged)]).toEqual([true, false]);
+
+    // A queue that can't be read loses only the notes, never the list.
+    const get = h.kv.get.bind(h.kv);
+    vi.spyOn(h.kv, 'get').mockImplementation(async (key: string) => {
+      if (key === 'queue:rereview') throw new Error('KV is down');
+      return get(key);
+    });
+    const degraded = await call(h, 'GET', '/workspaces');
+    expect(degraded.status).toBe(200);
+    expect((degraded.data as unknown as { rereviewPending: boolean }[]).map((w) => w.rereviewPending)).toEqual([
+      false,
+      false,
+    ]);
   });
 
   it('a save that changes nothing still says whether a re-review is waiting', async () => {

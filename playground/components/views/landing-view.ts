@@ -6,6 +6,7 @@ import { hasFeature, UserFeature, type CurrentUser } from '../../services/auth.j
 import { autosave } from '../../services/autosave.js';
 import {
   precheckWorkspace,
+  REREVIEW_NOTE,
   toastPrivateSuccess,
   toastPublishBlocked,
   toastPublishSuccess,
@@ -25,6 +26,8 @@ interface Workspace {
   isPublic?: boolean;
   /** The moderation state ('pending' while a submission waits for review). */
   publicationState?: string;
+  /** An edit waiting for re-review: Make Private says so (2e step 5c). */
+  rereviewPending?: boolean;
   updatedAt?: string;
   thumbnailAt?: string;
   /** No program left, so nothing draws (2d, step 9a): the card says so, and Make Public waits. */
@@ -266,11 +269,14 @@ class LandingView extends HTMLElement {
           const updated = (await workspaceApi.update(id, { isPublic: newIsPublic })) as {
             isPublic?: boolean;
             publicationState?: string;
+            rereviewPending?: boolean;
           };
 
           // Update local state, as the server answered.
           workspace.isPublic = typeof updated.isPublic === 'boolean' ? updated.isPublic : newIsPublic;
           workspace.publicationState = updated.publicationState ?? (newIsPublic ? 'pending' : 'unpublished');
+          // Make Private withdraws a waiting re-review (2e step 5a).
+          if (typeof updated.rereviewPending === 'boolean') workspace.rereviewPending = updated.rereviewPending;
           store.set('workspaces', [...workspaces]);
           this.render();
 
@@ -374,7 +380,9 @@ class LandingView extends HTMLElement {
       );
       const publishMenuItem = (ws: Workspace): string => {
         if (ws.isPublic) {
-          return `<button data-action="toggle-publish">Make Private</button>`;
+          // While an edit waits for re-review, it says so: Make Private withdraws it (2e step 5c).
+          const note = ws.rereviewPending ? `<small>${REREVIEW_NOTE}</small>` : '';
+          return `<button data-action="toggle-publish">Make Private${note}</button>`;
         }
         // Submitted and waiting, as the breadcrumb says (2e step 5c): Make
         // Public again would only repeat the submission.

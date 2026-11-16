@@ -134,6 +134,7 @@ export class MiniWorkspace extends HTMLElement {
     this._sourceCode = this._files ? this._drawingText(this._files) : this._childCode();
     this._readSize();
     this._fillCodePanel();
+    this._syncPlaygroundLink();
   }
 
   get sourceFiles(): MiniWorkspaceFiles | null {
@@ -635,7 +636,14 @@ export class MiniWorkspace extends HTMLElement {
 
   private _syncPlaygroundLink(): void {
     const link = this.shadowRoot!.querySelector<HTMLElement>('.playground-link');
-    if (link) link.hidden = this.hasAttribute('hide-playground-link');
+    if (link) link.hidden = this.hasAttribute('hide-playground-link') || this._drawingLost();
+  }
+
+  /** The program that drew the image couldn't be read (2e step 5d): there's no code to open in the playground. */
+  private _drawingLost(): boolean {
+    if (!this._files) return false;
+    const path = this._openPath(this._files);
+    return this._files.files.find((f) => f.path === path)?.unreadable === true;
   }
 
   // --- "Open in Playground" ---

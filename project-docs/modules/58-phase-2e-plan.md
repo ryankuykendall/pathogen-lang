@@ -797,6 +797,52 @@ The Featured findings are left as they are: they are outside answer 8's list and
 - The mockup's capture is itself a dev-stack check of the interim: the storage delete is real, and the page names the file.
 - A code review: no critical findings, its three warnings fixed (above).
 
+## The two mockups, approved and built (2026-11-16)
+
+"The mock-ups look fine. Let's proceed with the next step."
+
+**Make private while an edit waits for re-review** (5c's question, answer (a)):
+- The workspace's menu offers Make private, on, with "An edit is waiting for review" under it. Before, it showed "Pending re-review", off, in its place.
+- The Workspaces page's Make Private has the same note. `GET /workspaces` now says which workspace has an edit waiting (`rereviewPending`), from one read of the re-review queue for the whole list.
+- Make private withdraws the re-review (5a). The note goes once the menu or the card takes the answer.
+- One note for both menus: `REREVIEW_NOTE` in `services/publish-precheck.ts`.
+
+**A file that can't be read, in the viewer** (5d; note 59, requirement 9):
+- `<source-files>` takes `unreadable` on a file:
+  - its row keeps its place, with a warning icon, its name muted, and "couldn't be read" on hover;
+  - shown, it says "This file couldn't be read." and "The other files show as saved." where its code would be;
+  - its copy icon is off.
+- **Two differences from the mockup:**
+  - The second line drops "Reload the page to try again": a lost file doesn't come back by reloading (proposed with the mockup).
+  - The line naming the open file shows the warning icon, not a kind's: a file that can't be read has no known kind.
+- The snapshots page shows it in place of the interim error. The review modal (5e) and the public page (step 6) will use the same state.
+- Storybook: "A file that couldn't be read, shown".
+- **From the code review:**
+  - With no file asked for, the viewer opens on a readable program, never on one that couldn't be read (`shownPathOf`).
+  - `<mini-workspace>` hides Open in Playground when the drawing's program couldn't be read: there's no code to open.
+  - Export's legend leaves the code out for such a program, as it does for empty code; it never shows an empty program.
+  - The copy refuses for a lost file even when asked directly.
+  - A screen reader hears "couldn't be read" in the row's name.
+  - The Workspaces listing survives a re-review queue that can't be read: it loses only the notes.
+
+**Tested:**
+- `tests/playground-source-files.test.ts` (+3): the row, the message and the copy icon off; another file shows again; one file alone.
+- `tests/playground-snapshot-viewer-files.test.ts`: the file keeps its place, marked; the drawing's program unaffected.
+- `tests/playground-make-public.test.ts` (+2): the breadcrumb's Make private with the note, and none with nothing waiting; the Workspaces page's note, and its Make Private taking the answer.
+- `tests/api/publishing-rules.test.ts` (+1): the listing's `rereviewPending`.
+- `project-docs/modules/verify/verify-2e-step5d.ts` (new, 4 checks), on the dev stack in full Chrome:
+  - a snapshot's module really lost from local R2, after an edit;
+  - the page opens with the drawing and every file;
+  - the module's row and its message, the copy icon off;
+  - another file shows again.
+  - Screenshots `2e-step5d-unreadable-{light,dark}.png`.
+- `verify-2e-step5c.ts`, now 11 checks:
+  - Make private with the note, on, after a save;
+  - no note once back to the approved text;
+  - the Workspaces page's note;
+  - its Make Private withdraws the re-review.
+  - Screenshot `2e-step5c-make-private-waiting.png`.
+
 ## What the audits found (2026-11-14)
 
 ### Snapshots, copies, forks

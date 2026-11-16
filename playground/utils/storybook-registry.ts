@@ -2037,7 +2037,7 @@ layer('hex').apply { circle(60, 100, 40) }`,
     description:
       'Read-only code, one file or several (2e, step 3b; note 59, mockups v12 to v14): a list beside the code in the workspace tree’s order and look, the open file’s path above the code with the copy icon in its cell, and the copy icon floating with one file. Narrower than 480 px, the list becomes a menu and a bottom sheet.',
     notes:
-      'Properties: files ({ path, text, kind: program | library | project }), folders, main, open, copyLabel. activate() loads CodeMirror (esm.sh); until then the text shows plain. Event: source-file-open { path }. Shared by <mini-workspace> and, from step 6, the public page, so it imports nothing that needs the store.',
+      'Properties: files ({ path, text, kind: program | library | project, unreadable? }), folders, main, open, copyLabel. activate() loads CodeMirror (esm.sh); until then the text shows plain. Event: source-file-open { path }. A file marked unreadable (2e step 5d) keeps its row with a warning, and shown, says so where its code would be, its copy icon off. Shared by <mini-workspace> and, from step 6, the public page, so it imports nothing that needs the store.',
     stories: [
       { name: 'One file', props: { files: 'one' } },
       { name: 'Several files', props: { files: 'several' } },
@@ -2047,6 +2047,10 @@ layer('hex').apply { circle(60, 100, 40) }`,
         props: { files: 'several', main: 'demos/gears.pathogen', open: 'demos/gears.pathogen' },
       },
       { name: 'Narrow: a menu and a sheet', props: { files: 'several', width: 380 } },
+      {
+        name: 'A file that couldn’t be read, shown',
+        props: { files: 'several', lost: 'parts/gears.pathogen', open: 'parts/gears.pathogen' },
+      },
     ],
     controls: [],
     render: (container, props) => {
@@ -2074,7 +2078,12 @@ layer('hex').apply { circle(60, 100, 40) }`,
           open: string | null;
           activate: () => Promise<void>;
         };
-        el.files = props.files === 'one' ? [several[0]] : several;
+        // A file whose bytes couldn't be read (2e step 5d): no text, marked.
+        const lost = props.lost ? String(props.lost) : null;
+        const files = several.map((f) =>
+          f.path === lost ? { path: f.path, text: '', kind: 'program', unreadable: true } : f,
+        );
+        el.files = props.files === 'one' ? [files[0]] : files;
         el.folders = [];
         el.main = main;
         el.open = String(props.open ?? main);

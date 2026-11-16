@@ -214,6 +214,20 @@ describe('several files', () => {
     expect([viewer().open, JSON.parse(setItem.mock.calls[1][1]).code]).toEqual(['main.pathogen', MAIN]);
   });
 
+  it('the drawing’s program couldn’t be read (2e step 5d): no ↗, since there’s no code to open', () => {
+    const lost: MiniWorkspaceFiles = {
+      ...SEVERAL,
+      files: SEVERAL.files.map((f) =>
+        f.path === 'demos/gears.pathogen' ? { path: f.path, text: '', kind: 'program', unreadable: true } : f,
+      ),
+    };
+    const { el, root } = mount({ files: lost });
+    expect(root.querySelector<HTMLElement>('.playground-link')!.hidden).toBe(true);
+    // Another drawing, readable: the ↗ is back.
+    el.sourceFiles = SEVERAL;
+    expect(root.querySelector<HTMLElement>('.playground-link')!.hidden).toBe(false);
+  });
+
   it('set while the embed is on the page, Open in Playground carries the new drawing’s size', () => {
     const setItem = vi.spyOn(window.Storage.prototype, 'setItem');
     vi.spyOn(window, 'open').mockImplementation(() => null);

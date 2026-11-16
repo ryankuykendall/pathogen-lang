@@ -108,7 +108,8 @@ async function until<T>(page: Page, src: string, ms = 20_000): Promise<T | null>
 
 /** The breadcrumb's publish item: its words (without a note) and whether it's off. */
 const publishItem = `const b = __deep('app-breadcrumb')?.shadowRoot?.querySelector('[data-action="toggle-publish"]');
-  return b ? { label: b.querySelector('span')?.firstChild?.textContent?.trim() ?? '', disabled: b.disabled } : null;`;
+  return b ? { label: b.querySelector('span')?.firstChild?.textContent?.trim() ?? '', disabled: b.disabled,
+    note: b.querySelector('small')?.textContent ?? '' } : null;`;
 
 async function openInEditor(page: Page, slug: string, id: string): Promise<void> {
   await page.goto(`${PAGES_URL}/workspace/${slug}--${id}`, { waitUntil: 'domcontentloaded' });
@@ -246,22 +247,56 @@ try {
   const edit = ' // waiting';
   await page.keyboard.type(edit, { delay: 5 });
   await save(page);
-  const waiting = await until<{ label: string; disabled: boolean }>(
+  const NOTE = 'An edit is waiting for review';
+  const waiting = await until<{ label: string; disabled: boolean; note: string }>(
     page,
-    `const p = (() => { ${publishItem} })(); return p?.label === 'Pending re-review' ? p : null;`,
+    `const p = (() => { ${publishItem} })(); return p?.note === ${JSON.stringify(NOTE)} ? p : null;`,
   );
-  check('an edit saved: the menu says "Pending re-review", with no reload', !!waiting, waiting);
+  check(
+    `an edit saved: Make private, on, with "${NOTE}", with no reload (answer (a))`,
+    waiting?.label === 'Make private' && waiting.disabled === false,
+    waiting,
+  );
+  await ev(page, `__deep('app-breadcrumb').shadowRoot.querySelector('.menu-btn').click(); return 1;`);
+  await pause(400);
+  await page.screenshot({ path: `${OUT}/2e-step5c-make-private-waiting.png` });
+  await ev(page, `__deep('app-breadcrumb').shadowRoot.querySelector('.menu-btn').click(); return 1;`);
   for (let i = 0; i < edit.length; i++) await page.keyboard.press('Backspace');
   await save(page);
-  const back = await until<{ label: string; disabled: boolean }>(
+  const back = await until<{ label: string; disabled: boolean; note: string }>(
     page,
-    `const p = (() => { ${publishItem} })(); return p?.label === 'Make private' ? p : null;`,
+    `const p = (() => { ${publishItem} })(); return p?.label === 'Make private' && !p.note ? p : null;`,
   );
   const queue = await api(true, 'GET', '/admin/queue/rereview');
   check(
-    'back to the approved text: the menu says "Make private" again, and no re-review waits',
+    'back to the approved text: "Make private" with no note, and no re-review waits',
     !!back && !(queue.entries as { workspaceId: string }[]).some((e) => e.workspaceId === firstId),
     { back },
+  );
+
+  // ---- With an edit waiting, the Workspaces page's Make Private says so, and withdraws it ----
+  await page.keyboard.type(edit, { delay: 5 });
+  await save(page);
+  await until(page, `const p = (() => { ${publishItem} })(); return p?.note ? 1 : null;`);
+  toasts.length = 0;
+  await page.goto(`${PAGES_URL}/workspaces`, { waitUntil: 'domcontentloaded' });
+  const firstItem = `__deep('landing-view')?.shadowRoot?.querySelector('.workspace-item[data-id="${firstId}"] [data-action="toggle-publish"]')`;
+  const card = await until<{ text: string }>(
+    page,
+    `const b = ${firstItem}; return b && b.querySelector('small') ? { text: b.textContent } : null;`,
+  );
+  check(`Workspaces page: Make Private with "${NOTE}"`, card?.text === `Make Private${NOTE}`, card);
+  await ev(page, `${firstItem}.click(); return 1;`);
+  for (let i = 0; i < 100 && !toasts.includes('Workspace is now private.'); i++) await pause(200);
+  const withdrawn = await api(true, 'GET', '/admin/queue/rereview');
+  const after = await until<{ text: string }>(
+    page,
+    `const b = ${firstItem}; return b && b.textContent === 'Make Public' ? { text: b.textContent } : null;`,
+  );
+  check(
+    'its Make Private: private, the re-review withdrawn, and the card offers Make Public',
+    !!after && !(withdrawn.entries as { workspaceId: string }[]).some((e) => e.workspaceId === firstId),
+    { after, toasts },
   );
 } finally {
   for (const id of made) await api(false, 'DELETE', `/workspace/${id}`);

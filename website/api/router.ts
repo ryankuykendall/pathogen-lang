@@ -153,7 +153,7 @@ async function getEffectiveStateString(env: Env, workspaceId: string): Promise<s
 // approved workspace whose live code has drifted from the approval
 // snapshot. Surfaced as a separate flag (rather than a state) so the
 // effective state stays 'approved' and matches what visitors actually
-// see on /explore. UI shows "Pending re-review" when this is set.
+// see on /explore. Make private says "An edit is waiting for review" when this is set.
 async function isRereviewPending(env: Env, workspaceId: string): Promise<boolean> {
   try {
     return (await getRereviewQueueEntry(env, workspaceId)) !== null;
@@ -363,6 +363,15 @@ export const apiHandlers: Record<string, (request: Request, env: Env, ...args: s
     try {
       const workspaceIdsJson = await env.WORKSPACES.get(`user:${userId}:workspaces`);
       const workspaceIds: string[] = workspaceIdsJson ? JSON.parse(workspaceIdsJson) : [];
+      // Which of them have an edit waiting for re-review: one read of the queue for the
+      // whole list (the Workspaces page's Make Private says so, 2e step 5c). A queue that
+      // can't be read loses only the note, never the list, as isRereviewPending does.
+      let rereview = new Set<string>();
+      try {
+        rereview = new Set((await listRereviewQueue(env)).map((entry) => entry.workspaceId));
+      } catch {
+        /* no notes this time */
+      }
 
       const workspaces = await Promise.all(
         workspaceIds.map(async (id: string) => {
@@ -383,6 +392,7 @@ export const apiHandlers: Record<string, (request: Request, env: Env, ...args: s
             manualThumbnailAt: meta.manualThumbnailAt,
             autoThumbnailAt: meta.autoThumbnailAt,
             publicationState: publicationState as WorkspaceListing['publicationState'],
+            rereviewPending: rereview.has(ws.id),
             // No program left (step 9a): the record holds the list, so nothing more is read. The
             // playground keeps the list naming every program, and a save can't list a missing file,
             // so an empty list is the playground's own "no program" (workspace-view _hasNoPrograms).

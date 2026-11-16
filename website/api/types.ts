@@ -106,7 +106,7 @@ export interface WorkspaceListing {
   // True when the workspace is approved AND its current code differs from
   // the approved snapshot (queue:rereview membership). publicationState
   // stays 'approved' in this case; this flag carries the "needs re-review"
-  // signal so the UI can render "Pending re-review".
+  // signal, so Make Private says "An edit is waiting for review".
   rereviewPending?: boolean;
   // True when pathogen.json's list is empty: the workspace has no program, so
   // nothing draws. The Workspaces page labels the card "No programs" and holds

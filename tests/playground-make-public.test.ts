@@ -275,6 +275,35 @@ describe("the breadcrumb's Make public", () => {
   });
 });
 
+describe('the workspace’s menu while an edit waits for re-review (answer (a))', () => {
+  afterEach(async () => {
+    const { store } = await import('../playground/state/store.ts');
+    store.update({ currentView: 'landing', workspaceId: null, currentUser: null, workspaceIsPublic: false });
+  });
+
+  it('offers Make private, with "An edit is waiting for review" under it; with nothing waiting, no note', async () => {
+    const { store } = await import('../playground/state/store.ts');
+    await import('../playground/components/app-breadcrumb.ts');
+    store.update({
+      currentView: 'workspace',
+      currentUser: { id: 'u-1', features: ['publishing'] },
+      workspaceId: 'ws-1',
+      workspaceOwnerId: 'u-1',
+      workspaceFiles: { 'main.pathogen': 'M 0 0' },
+      workspaceIsPublic: true,
+      workspacePublicationState: 'approved',
+      workspaceRereviewPending: true,
+    });
+    const el = document.createElement('app-breadcrumb');
+    document.body.appendChild(el);
+    const item = (): HTMLButtonElement =>
+      el.shadowRoot!.querySelector<HTMLButtonElement>('[data-action="toggle-publish"]')!;
+    expect([item().textContent?.trim(), item().disabled]).toEqual(['Make privateAn edit is waiting for review', false]);
+    store.set('workspaceRereviewPending', false);
+    expect([item().textContent?.trim(), item().querySelector('small')]).toEqual(['Make private', null]);
+  });
+});
+
 describe('the Workspaces page', () => {
   async function mount() {
     const { store } = await import('../playground/state/store.ts');
@@ -285,6 +314,8 @@ describe('the Workspaces page', () => {
       workspaces: [
         { id: 'gears', slug: 'gears', name: 'Gears' },
         { id: 'waiting', slug: 'waiting', name: 'Waiting', publicationState: 'pending' },
+        { id: 'edited', slug: 'edited', name: 'Edited', isPublic: true, rereviewPending: true },
+        { id: 'shown', slug: 'shown', name: 'Shown', isPublic: true, rereviewPending: false },
       ],
     });
     const el = document.createElement('landing-view') as HTMLElement & {
@@ -303,6 +334,19 @@ describe('the Workspaces page', () => {
   afterEach(async () => {
     const { store } = await import('../playground/state/store.ts');
     store.update({ workspaces: [], currentUser: null });
+  });
+
+  it('Make Private says when an edit waits for re-review (answer (a)), and takes the answer’s state', async () => {
+    const { el, publish } = await mount();
+    expect([publish('edited').textContent, publish('edited').disabled]).toEqual([
+      'Make PrivateAn edit is waiting for review',
+      false,
+    ]);
+    expect(publish('shown').textContent).toBe('Make Private');
+    updateSpy.mockResolvedValueOnce({ isPublic: false, publicationState: 'unpublished', rereviewPending: false });
+    await el.handleMenuAction('toggle-publish', 'edited');
+    expect(updateSpy).toHaveBeenCalledWith('edited', { isPublic: false });
+    expect(publish('edited').textContent).toBe('Make Public');
   });
 
   it('says "Pending Review" while a submission waits, as the breadcrumb does', async () => {

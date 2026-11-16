@@ -48,15 +48,14 @@ function projectFile(entryPoints: readonly string[], engine: SnapshotFilesEngine
 }
 
 export function snapshotViewerFiles(files: SnapshotFiles, engine: SnapshotFilesEngine | null): SnapshotViewerFiles {
-  // A file the server couldn't read (2e step 5d). Until the viewer can say so in
-  // its place (note 59, requirement 9; its mockup awaits review), the page says
-  // which file it is rather than show it empty.
-  const unreadable = Object.entries(files.files).find(([, file]) => file.unreadable === true);
-  if (unreadable) throw new Error(`${unreadable[0]} couldn't be read.`);
-  const pathogen: SourceFile[] = Object.entries(files.files).map(([path, file]) => {
-    const text = 'text' in file ? file.text : '';
-    return { path, text, kind: kindOf(text, engine) };
-  });
+  // A file the server couldn't read (2e step 5d; note 59, requirement 9) keeps its
+  // place and says so in the viewer; the others show as saved. Its kind can't be
+  // known, so it's drawn with the viewer's warning, not a kind's icon.
+  const pathogen: SourceFile[] = Object.entries(files.files).map(([path, file]) =>
+    'text' in file && file.unreadable !== true
+      ? { path, text: file.text, kind: kindOf(file.text, engine) }
+      : { path, text: '', kind: 'program', unreadable: true },
+  );
   // A snapshot from before phase 2 may answer with its one text alone.
   if (pathogen.length === 0 && files.code !== undefined) {
     pathogen.push({ path: MAIN_FILE, text: files.code, kind: 'program' });

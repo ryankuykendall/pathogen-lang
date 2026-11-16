@@ -42,7 +42,16 @@ export interface SourceFile {
   text: string;
   /** A program or a module, as the tree draws them; pathogen.json is the project file. */
   kind: 'program' | 'library' | 'project';
+  /**
+   * Its bytes couldn't be read (2e step 5d; note 59, requirement 9): it keeps its
+   * place, with a warning, and says so where its code would be. Its text is ''.
+   */
+  unreadable?: boolean;
 }
+
+/** What a file that couldn't be read says where its code would be. */
+export const UNREADABLE_TITLE = 'This file couldn’t be read.';
+export const UNREADABLE_DETAIL = 'The other files show as saved.';
 
 /** A CodeMirror module or object, loaded at run time from esm.sh: no types here. */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -56,12 +65,15 @@ const FOLDED_PX = 120;
 export const SETTLE_MS = 150;
 
 /**
- * The file shown: `open` when it's among the files, else the first program, else the first file.
+ * The file shown: `open` when it's among the files, else the first program that could be
+ * read, else the first file that could, else the first file (2e step 5d: a file that
+ * couldn't be read is opened only when asked for, or when nothing else can be).
  * Exported so a caller that needs the shown file's text (Open in Playground) picks the same one.
  */
 export function shownPathOf(files: readonly SourceFile[], open: string | null): string | null {
   if (open !== null && files.some((f) => f.path === open)) return open;
-  return (files.find((f) => f.kind === 'program') ?? files[0])?.path ?? null;
+  const readable = files.filter((f) => f.unreadable !== true);
+  return (readable.find((f) => f.kind === 'program') ?? readable[0] ?? files[0])?.path ?? null;
 }
 
 const esc = (s: string): string =>
@@ -129,6 +141,11 @@ const styles = `
   .lock svg { width: 13px; }
   .row.empty { padding-left: calc(var(--indent) + 20px); font-family: var(--font-sans, system-ui, sans-serif); font-style: italic;
     font-weight: 400; color: var(--text-tertiary, #9087a0); }
+  /* A file that couldn't be read (2e step 5d): a warning, its name quiet. Doubled classes, so the
+     warning wins over a kind's icon colour (.row.library .icon …) wherever the rules sit. */
+  .row.file.unreadable .name { color: var(--text-tertiary, #9087a0); }
+  .row.file.unreadable.unreadable .icon, .path.unreadable.unreadable .icon, .menu.unreadable.unreadable .icon {
+    color: var(--error-text, #dc2626); }
 
   /* The line naming the open file, and the phone's menu: the tabs' height, 34 px */
   .path, .menu-row { flex: none; display: flex; align-items: stretch; height: 34px; border-bottom: 1px solid var(--border-subtle, rgba(0, 0, 0, 0.06));
@@ -158,6 +175,8 @@ const styles = `
   .float .cp { background: var(--bg-elevated, #fff); border-color: var(--border-color, #e2e8f0); box-shadow: var(--shadow-sm, 0 1px 2px rgba(0, 0, 0, 0.05)); }
   .cp.ok { color: var(--success-color, #10b981); }
   .cp.fail { color: var(--error-text, #dc2626); }
+  .cp:disabled { opacity: 0.4; cursor: default; }
+  .cp:disabled:hover { background: none; color: var(--text-secondary, #64748b); }
   ${COPY_TIP_CSS}
 
   /* The code */
@@ -171,6 +190,12 @@ const styles = `
   .cm .cm-editor.cm-focused { outline: none; }
   .code.loaded .fallback { display: none; }
   .cm { height: 100%; }
+  /* The file shown couldn't be read: it says so in its place, and the code is hidden */
+  .unread { display: none; gap: 6px; align-content: start; padding: 18px 20px; font-family: var(--font-sans, system-ui, sans-serif);
+    font-size: 13px; line-height: 1.45; color: var(--text-secondary, #5a4f6a); }
+  .unread strong { color: var(--text-primary, #1c1722); font-weight: 600; }
+  .code.lost .unread { display: grid; }
+  .code.lost .fallback, .code.lost .cm { display: none; }
 
   /* The phone's sheet: fixed to the window, over a scrim */
   .scrim { position: fixed; inset: 0; z-index: 10040; background: rgba(20, 16, 28, 0.42); }
@@ -388,12 +413,17 @@ export class SourceFiles extends HTMLElement {
     }
     if (row.type === 'input') return '';
     const shown = row.path === this._shownPath();
-    const attrs = `role="treeitem" data-path="${esc(row.path)}" aria-level="${row.level}" aria-selected="${shown}" tabindex="${shown ? 0 : -1}" title="${esc(row.path)}" ${level}`;
+    const lost = this._fileAt(row.path)?.unreadable === true;
+    const title = lost ? `${row.path} couldn't be read` : row.path;
+    // A screen reader hears it in the row's name, not only in a hover title.
+    const label = lost ? ` aria-label="${esc(`${row.name}, couldn't be read`)}"` : '';
+    const attrs = `role="treeitem" data-path="${esc(row.path)}" aria-level="${row.level}" aria-selected="${shown}" tabindex="${shown ? 0 : -1}" title="${esc(title)}"${label} ${level}`;
     if (row.type === 'project') {
       return `<div class="row project${shown ? ' active' : ''}" ${attrs}><span class="chev"></span><span class="icon">${FILE_ICONS.json}</span><span class="name">${nameHtml(row.name)}</span><span class="lock" title="Read-only: written from the program list">${FILE_ICONS.lock}</span></div>`;
     }
     const badge = row.main ? `<span class="badge-main" title="${esc(MAIN_BADGE_TITLE)}">main</span>` : '';
-    return `<div class="row file ${row.kind}${shown ? ' active' : ''}" ${attrs}><span class="chev"></span><span class="icon">${FILE_ICONS[row.kind]}</span><span class="name">${nameHtml(row.name)}</span>${badge}</div>`;
+    const icon = lost ? FILE_ICONS.warning : FILE_ICONS[row.kind];
+    return `<div class="row file ${row.kind}${lost ? ' unreadable' : ''}${shown ? ' active' : ''}" ${attrs}><span class="chev"></span><span class="icon">${icon}</span><span class="name">${nameHtml(row.name)}</span>${badge}</div>`;
   }
 
   private _treeHtml(): string {
@@ -402,8 +432,18 @@ export class SourceFiles extends HTMLElement {
       .join('')}</div>`;
   }
 
+  /** Whether the file shown couldn't be read (2e step 5d). */
+  private _shownLost(): boolean {
+    return this._fileAt(this._shownPath())?.unreadable === true;
+  }
+
   private _copyHtml(): string {
     const path = this._shownPath();
+    // Nothing to copy from a file that couldn't be read: the icon is off and says why.
+    if (this._shownLost()) {
+      const why = "Nothing to copy: this file couldn't be read";
+      return `<button class="cp" type="button" disabled aria-label="${esc(why)}" title="${esc(why)}">${copyIconFor('')}</button>`;
+    }
     const what = this._copyLabel ?? path ?? '';
     const label = `Copy ${what}`;
     const named = this._copyLabel ? esc(this._copyLabel) : `<code>${esc(what)}</code>`;
@@ -411,17 +451,23 @@ export class SourceFiles extends HTMLElement {
   }
 
   private _codeHtml(): string {
-    return `<div class="code"><pre class="fallback"><code>${esc(this.shownText)}</code></pre><div class="cm"></div></div>`;
+    const lost = this._shownLost();
+    return `<div class="code${lost ? ' lost' : ''}"><pre class="fallback"><code>${esc(this.shownText)}</code></pre><div class="cm"></div><div class="unread"><strong>${esc(UNREADABLE_TITLE)}</strong> <span>${esc(UNREADABLE_DETAIL)}</span></div></div>`;
   }
 
   private _headerHtml(): string {
     const path = this._shownPath() ?? '';
     const kind = kindOf(this._fileAt(path));
+    // A file that couldn't be read: its kind can't be known, so the header shows the warning.
+    const lost = this._shownLost();
+    const icon = lost ? FILE_ICONS.warning : iconOf(kind);
+    const cls = `${kind}${lost ? ' unreadable' : ''}`;
+    const title = lost ? `${path} couldn't be read` : path;
     if (this._narrow) {
       const n = this._files.length;
-      return `<div class="menu-row"><button class="menu ${kind}" type="button" aria-haspopup="dialog" aria-expanded="${this._sheet}" title="${esc(path)}"><span class="icon">${iconOf(kind)}</span><span class="p">${pathHtml(path)}</span><span class="cv">${FILE_ICONS.chevron}</span><span class="count">${n} file${n === 1 ? '' : 's'}</span></button><span class="cell">${this._copyHtml()}</span></div>`;
+      return `<div class="menu-row"><button class="menu ${cls}" type="button" aria-haspopup="dialog" aria-expanded="${this._sheet}" title="${esc(title)}"><span class="icon">${icon}</span><span class="p">${pathHtml(path)}</span><span class="cv">${FILE_ICONS.chevron}</span><span class="count">${n} file${n === 1 ? '' : 's'}</span></button><span class="cell">${this._copyHtml()}</span></div>`;
     }
-    return `<div class="path ${kind}" title="${esc(path)}"><span class="icon">${iconOf(kind)}</span><span class="p">${pathHtml(path)}</span><span class="cell">${this._copyHtml()}</span></div>`;
+    return `<div class="path ${cls}" title="${esc(title)}"><span class="icon">${icon}</span><span class="p">${pathHtml(path)}</span><span class="cell">${this._copyHtml()}</span></div>`;
   }
 
   /** Lay everything out again: the files, their shape or the width changed. */
@@ -478,6 +524,7 @@ export class SourceFiles extends HTMLElement {
     if (float) float.innerHTML = this._copyHtml();
     const fallback = root.querySelector('.fallback code');
     if (fallback) fallback.textContent = this.shownText;
+    root.querySelector('.code')?.classList.toggle('lost', this._shownLost());
     this._wireHeader();
     this._showInEditor();
   }
@@ -559,6 +606,8 @@ export class SourceFiles extends HTMLElement {
 
   /** Copy the file shown. "Copied" only once the clipboard has taken it; a refusal says so. */
   private async _copy(): Promise<void> {
+    // Nothing to copy from a file that couldn't be read (its icon is off too).
+    if (this._shownLost()) return;
     const path = this._shownPath();
     let state: CopyState;
     try {
