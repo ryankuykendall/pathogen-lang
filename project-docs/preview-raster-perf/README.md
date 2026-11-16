@@ -123,6 +123,9 @@ In the workspace the grain shows only in the top nav and the breadcrumb bar. In 
 - `measure-toggles.ts`: the table above, for any workspace or the heavy drawing, and any candidate fix.
 - `measure-overlay.ts`: the overlay layout (2026-11-16), with the drawing re-fitted, slid, or slid and scaled.
 - `shoot-grain.ts`: screenshots of the app with the grain texture on and off.
+- Mockups (in `website/bbwp/`, not committed):
+  - `2026-11-16-11:12:44--preview-raster-perf--grain-off-workspace.bbwp.html`: the grain on and off.
+  - `2026-11-16-11:17:18--preview-raster-perf--option-1-overlay-v1.bbwp.html`: option 1, interactive, with today's layout for comparison and five open questions.
 - `trace-summary.ts`: where a Chrome trace's time goes, by thread and event, and what painted.
 - `preview-layer-light.png`, `preview-layer-dark.png`: the heavy drawing with the controls over it.
 - `tests/playground-preview-iframe.test.ts`: the layer, for both kinds of preview.
