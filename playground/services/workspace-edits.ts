@@ -21,6 +21,7 @@
 //   the server's, not a second copy.
 
 import { emptyBoilerplate } from '../utils/examples.js';
+import { PROJECT_FILE } from '../utils/workspace-names.js';
 
 type Lib = Window['PathogenLang'];
 
@@ -104,7 +105,7 @@ export class StaleChangeError extends Error {
   }
 }
 
-export const PROJECT_FILE = 'pathogen.json';
+export { PROJECT_FILE };
 const EXTENSION = '.pathogen';
 /** What New module starts with (mockups v5, example/new-library.pathogen; "module", not "library", since 2026-11-13). */
 const NEW_LIBRARY = 'module;\n\n// Export fns, consts and enums here, for other files to import.\n';

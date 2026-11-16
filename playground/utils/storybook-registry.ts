@@ -2012,6 +2012,61 @@ layer('hex').apply { circle(60, 100, 40) }`,
       `;
     },
   },
+  {
+    id: 'source-files',
+    name: 'Source Files',
+    category: 'Workspace',
+    description:
+      'Read-only code, one file or several (2e, step 3b; note 59, mockups v12 to v14): a list beside the code in the workspace tree’s order and look, the open file’s path above the code with the copy icon in its cell, and the copy icon floating with one file. Narrower than 480 px, the list becomes a menu and a bottom sheet.',
+    notes:
+      'Properties: files ({ path, text, kind: program | library | project }), folders, main, open, copyLabel. activate() loads CodeMirror (esm.sh); until then the text shows plain. Event: source-file-open { path }. Shared by <mini-workspace> and, from step 6, the public page, so it imports nothing that needs the store.',
+    stories: [
+      { name: 'One file', props: { files: 'one' } },
+      { name: 'Several files', props: { files: 'several' } },
+      { name: 'A module open', props: { files: 'several', open: 'parts/gears.pathogen' } },
+      {
+        name: 'The main isn’t main.pathogen',
+        props: { files: 'several', main: 'demos/gears.pathogen', open: 'demos/gears.pathogen' },
+      },
+      { name: 'Narrow: a menu and a sheet', props: { files: 'several', width: 380 } },
+    ],
+    controls: [],
+    render: (container, props) => {
+      const loaded = import('../components/shared/source-files.js').then(async () => {
+        const MAIN =
+          'import { gear } from "./parts/gears.pathogen";\ndefine ViewBox(0, 0, 200, 100);\n\ngear(Point(55, 50), 40);\n';
+        const GEARS =
+          '// A gear: a star outline with a round hub.\nmodule;\n\nexport fn gear(at, r) {\n  star(at.x, at.y, r, r - 6, 12);\n  circle(at.x, at.y, r * 0.3);\n}\n';
+        const KIT = 'module;\n\nimport * as gears from "./gears.pathogen";\n\nexport const gear = gears.gear;\n';
+        const DEMO =
+          'import { gear } from "../parts/gears.pathogen";\ndefine ViewBox(0, 0, 300, 110);\n\nfor (i in 0..2) {\n  gear(Point(50 + i * 100, 50), 34);\n}\n';
+        const main = String(props.main ?? 'main.pathogen');
+        const entry = [main, ...['main.pathogen', 'demos/gears.pathogen'].filter((p) => p !== main)];
+        const several = [
+          { path: 'main.pathogen', text: MAIN, kind: 'program' },
+          { path: 'parts/gears.pathogen', text: GEARS, kind: 'library' },
+          { path: 'parts/kit.pathogen', text: KIT, kind: 'library' },
+          { path: 'demos/gears.pathogen', text: DEMO, kind: 'program' },
+          { path: 'pathogen.json', text: `${JSON.stringify({ entryPoints: entry }, null, 2)}\n`, kind: 'project' },
+        ];
+        const el = document.createElement('source-files') as HTMLElement & {
+          files: unknown[];
+          folders: string[];
+          main: string | null;
+          open: string | null;
+          activate: () => Promise<void>;
+        };
+        el.files = props.files === 'one' ? [several[0]] : several;
+        el.folders = [];
+        el.main = main;
+        el.open = String(props.open ?? main);
+        el.style.cssText = `display: flex; height: 340px; width: ${props.width ? `${props.width}px` : '100%'}; max-width: 720px; border: 1px solid var(--border-color); border-radius: 8px; overflow: hidden;`;
+        container.appendChild(el);
+        return el.activate();
+      });
+      loaded.catch((err: unknown) => console.warn('source-files story:', err));
+    },
+  },
   // === Blog ===
   {
     id: 'mini-workspace',

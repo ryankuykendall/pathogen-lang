@@ -4,8 +4,9 @@
 // Pure, so the order and the folding are tested without a DOM
 // (tests/playground-file-tree.test.ts); components/file-tree.ts draws them.
 
-import { PROJECT_FILE } from '../services/workspace-edits.js';
-import { MAIN_FILE } from '../services/workspace-files.js';
+// No services or store: the shared code viewer (components/shared/source-files.ts)
+// orders files with this on pages without them.
+import { MAIN_FILE, PROJECT_FILE } from './workspace-names.js';
 
 export type TreeFileKind = 'program' | 'library';
 

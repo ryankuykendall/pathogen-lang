@@ -6,9 +6,9 @@
 // open file's entry in `workspaceFiles` lagging behind `code` never matters.
 
 import { store } from '../state/store.js';
-import { PROJECT_FILE } from './workspace-edits.js';
+import { MAIN_FILE, PROJECT_FILE } from '../utils/workspace-names.js';
 
-export const MAIN_FILE = 'main.pathogen';
+export { MAIN_FILE };
 
 /** The workspace at one moment: every file's text, the open file's from the editor. */
 export interface WorkspaceTexts {

@@ -301,6 +301,38 @@ Fixed from it:
   - Start new workspace;
   - a scratch buffer's `code`.
 
+## Step 3b-1, built (2026-11-15)
+
+**`<source-files>`** (`playground/components/shared/source-files.ts`) is the one viewer for code the web app shows but doesn't edit. 3b-2 puts it in `<mini-workspace>`'s code panel, and step 6 on the public page. Drawn as v12 to v14:
+- **several files:** a list beside the code, in the workspace tree's order and look (its rows, icons, `main` badge rule, and pathogen.json last); a 34 px line naming the open file, with the copy icon in a 38 px cell with a border on its left, flush right;
+- **one file:** the code alone, with the copy icon floating in its top right corner;
+- **narrower than 480 px** (its own width, so the review modal's 520 px pane keeps the list): a menu above the code that opens the files as a sheet, fixed to the window's bottom;
+- **copying** copies the file shown, and "Copied" comes only once the clipboard has taken it. A refusal says to select the text and copy it;
+- **keyboard:** the arrow keys, Home and End move between the files, passing over folders; Enter or Space opens one;
+- **CodeMirror** loads on `activate()`. Switching files swaps the document, not the view, and the theme follows `data-active-theme`.
+
+It imports nothing that needs the playground's store. So `MAIN_FILE` and `PROJECT_FILE` moved to `utils/workspace-names.ts`, and the tree's order (`file-tree-rows.ts`) reads them there.
+
+**The code review** found no critical problem. It confirmed every path and text is escaped, no listener is doubled, and the import move has no cycle. Fixed from it:
+- the editor comes back when the viewer is taken out and put back, or activated before it's on the page;
+- a CodeMirror load that fails is tried again;
+- the sheet is `aria-modal`, Escape closes it wherever the keyboard is, and every way of closing it gives the keyboard back to the menu;
+- a second copy keeps its full "Copied";
+- "1 file";
+- a kind it doesn't know draws as a program;
+- the editor keeps its scroll through a re-layout;
+- 8 px of give at the 480 px line.
+
+Left for 3b-2: checking the sheet inside the review modal, where an ancestor's transform would pin `position: fixed` to the modal. For step 6: the public page must load the theme's dark tokens, since the viewer's colours fall back to light ones.
+
+**Tested:**
+- `tests/playground-source-files.test.ts`, 17 tests: escaping hostile paths and texts, the keyboard, the theme, the sheet, copying;
+- the tree's tests, after the move;
+- `project-docs/modules/verify/verify-2e-step3b1.ts`, 19 checks on the served storybook, light and dark. They found two styling bugs, both fixed:
+  - the copy cell was 26 px tall, not the line's full height;
+  - after a re-layout, the editor's line numbers sat one row off until it measured again.
+- Baselines of today's blog viewer, for 3b-2's comparison: `2e-step3b-before-*.png`.
+
 ## What the audits found (2026-11-14)
 
 ### Snapshots, copies, forks
