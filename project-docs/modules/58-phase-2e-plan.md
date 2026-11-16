@@ -843,6 +843,49 @@ The Featured findings are left as they are: they are outside answer 8's list and
   - its Make Private withdraws the re-review.
   - Screenshot `2e-step5c-make-private-waiting.png`.
 
+## Step 5e, the review screen: the plan (2026-11-16)
+
+**Four commits, to the v12 states R1 to R6 and v14:**
+1. **The server:**
+   - one source route, used by the card, the modal and Approve;
+   - the comparison with the approved version, by hash;
+   - the Re-review listing says what changed.
+2. **The viewer's marks** (`<source-files>`):
+   - a badge on each changed row, with a sign and a colour;
+   - a removed file struck out in its place;
+   - a badge on an added empty folder;
+   - the mark in words on the open file's line;
+   - opt-in, so the snapshots page is unchanged.
+3. **The screen:**
+   - **cards:** the main compiled with its imports, "N files", and the re-review's line;
+   - **the modal:** the files, kept across the screen's redraws, with the changes box above;
+   - **Approve:** gates itself on the loaded source and sends that source's drawing; an entry that can't be read is said, with Approve off;
+   - **the ↗:** hidden for every entry (answer B).
+4. **The rest:**
+   - the Approved and Featured tabs reading every file;
+   - the dark-theme colours;
+   - the Rejected and Flagged cards.
+- **Then:** a browser check of R1 to R6, light and dark.
+
+## Step 5e, piece 1: the server (2026-11-16)
+
+- **`GET /admin/review/:id/source?queue=review|rereview`** (admin) gives the named queue's entry: every file with its text, read leniently (an unreadable one marked, 5d), the folders and the programs.
+  - The queue is named, since a workspace can wait in both: a re-review an older server left, then made public again.
+  - A re-review also gives `changes` and `approvedAt`.
+- **`compareManifests`** (`website/api/review-changes.ts`), by hash, reading no text:
+  - a file new, changed, moved, or removed;
+  - a move is one to one, between a path that's gone and a new path with the same bytes, in path order. A renamed and edited file is removed and new; empty files are never paired as moves;
+  - an empty folder added or removed. A folder that holds files is said by their lines, and an empty folder inside it reports itself, not its parent too;
+  - the program list, when it differs, its order alone included (`pathogen.json` changed);
+  - counts for the card's line: new, changed and removed. Moves and `pathogen.json` are left out.
+- **The Re-review listing** carries `changes` and `approvedAt` for each entry. That's one KV read an entry (its approval); both manifests are on the records.
+  - A comparison that fails says so (`changesError`) and is logged, never shown as nothing changed.
+- **Tested:**
+  - `tests/api/review-changes.test.ts` (11): R3's and R4's cases, rename plus edit, duplicates, two moves paired, a new main, a nested empty folder, an empty-file pair, an approval from before phase 2;
+  - `tests/api/review-source.test.ts` (6): a new entry, a re-review and the listing, a failed comparison, both queues, the gates, an unreadable file;
+  - every server test (301);
+  - a code review; its findings are fixed: the failure reported, nested folders, empty files, the cost comment.
+
 ## What the audits found (2026-11-14)
 
 ### Snapshots, copies, forks

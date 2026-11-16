@@ -31,6 +31,8 @@ import {
   refreshIndexCards,
 } from './approval-card.js';
 import { removeFromPublicIndex } from './public-index.js';
+import { compareManifests } from './review-changes.js';
+import type { ReviewChanges } from './review-changes.js';
 import { countSnapshotsForWorkspace, deleteSnapshotsForWorkspace, routeSnapshotRequest } from './snapshots.js';
 import {
   addToFeatured,
@@ -229,19 +231,49 @@ async function resolveQueueOwners(
 // several files carries its manifest. About one R2 read an entry. An entry
 // whose files can't be read is listed with `sourceError`, so one bad entry
 // doesn't hide the queue.
-async function listQueueForAdmin(env: Env, entries: ReviewQueueEntry[]): Promise<Array<Record<string, unknown>>> {
+async function listQueueForAdmin(
+  env: Env,
+  entries: ReviewQueueEntry[],
+  { changes = false }: { changes?: boolean } = {},
+): Promise<Array<Record<string, unknown>>> {
   const withOwners = await resolveQueueOwners(env, entries);
   return Promise.all(
     withOwners.map(async (entry, i) => {
       // A legacy `code` is never passed through: the source says what it is.
       const { code: _legacy, ...rest } = entry;
+      // A re-review's card says what changed since the approved version (2e step 5e):
+      // one KV read an entry (its approval); both manifests are on the records, so no
+      // R2 read and no text.
+      const since = changes ? await changesSinceApproval(env, entries[i]) : null;
       try {
-        return { ...rest, ...(await frozenSource(env, entries[i], 'just-main')) };
+        return { ...rest, ...(await frozenSource(env, entries[i], 'just-main')), ...(since ?? {}) };
       } catch (err) {
-        return { ...rest, sourceError: (err as Error).message };
+        return { ...rest, ...(since ?? {}), sourceError: (err as Error).message };
       }
     }),
   );
+}
+
+/**
+ * What changed between a workspace's approval and a queue entry (2e step 5e;
+ * review-changes.ts), with when it was approved. Null without an approval. A
+ * comparison that fails says so (`changesError`), so the screen never shows "no
+ * changes" for "couldn't compare".
+ */
+async function changesSinceApproval(
+  env: Env,
+  entry: ReviewQueueEntry,
+): Promise<{ approvedAt: string; changes: ReviewChanges } | { changesError: string } | null> {
+  try {
+    const approval = await readApproval(env, entry.workspaceId);
+    if (!approval) return null;
+    const approved = await readStoredFiles(approval, approval.codeHash);
+    const submitted = await readStoredFiles(entry, entry.codeHash);
+    return { approvedAt: approval.approvedAt, changes: compareManifests(approved.manifest, submitted.manifest) };
+  } catch (err) {
+    console.error(`[review] ${entry.workspaceId}: couldn't compare with the approved version:`, err);
+    return { changesError: (err as Error).message };
+  }
 }
 
 // Single-user lookup helper for the Approved/Featured/Rejected listings,
@@ -1460,11 +1492,39 @@ export const apiHandlers: Record<string, (request: Request, env: Env, ...args: s
     }
   },
 
-  // GET /admin/queue/rereview — admin-only.
+  // GET /admin/review/:id/source?queue=review|rereview — admin-only (2e step 5e). The
+  // waiting entry's files with their text, for the review screen's card, its modal and
+  // the drawing Approve sends: all three compile the same frozen source. The queue is
+  // named, since a workspace can wait in both (a re-review, then made public again). A
+  // file that can't be read is marked `unreadable` (filesToShow), and Approve stays off.
+  // A re-review also says what changed since the approved version.
+  async adminReviewSource(request: Request, env: Env, id: string): Promise<Response> {
+    if (!(await isAdminRequest(request, env))) return errorResponse('Unauthorized', 401);
+    const queue = new URL(request.url).searchParams.get('queue');
+    if (queue !== 'review' && queue !== 'rereview') return errorResponse("queue must be 'review' or 'rereview'", 400);
+    try {
+      const entry = queue === 'review' ? await getReviewQueueEntry(env, id) : await getRereviewQueueEntry(env, id);
+      if (!entry) return errorResponse('No entry waiting in that queue for this workspace', 404);
+      const since = queue === 'rereview' ? await changesSinceApproval(env, entry) : null;
+      return jsonResponse({
+        workspaceId: id,
+        name: entry.name,
+        ...(await frozenSource(env, entry, 'all')),
+        ...(since ?? {}),
+      });
+    } catch (err) {
+      return errorResponse('Failed to read the entry: ' + (err as Error).message, 500);
+    }
+  },
+
+  // GET /admin/queue/rereview — admin-only. Each entry says what changed since the
+  // approved version (`changes`, `approvedAt`; 2e step 5e).
   async adminListRereviewQueue(request: Request, env: Env): Promise<Response> {
     if (!(await isAdminRequest(request, env))) return errorResponse('Unauthorized', 401);
     try {
-      return jsonResponse({ entries: await listQueueForAdmin(env, await listRereviewQueue(env)) });
+      return jsonResponse({
+        entries: await listQueueForAdmin(env, await listRereviewQueue(env), { changes: true }),
+      });
     } catch (err) {
       return errorResponse('Failed to read re-review queue: ' + (err as Error).message, 500);
     }
@@ -2271,6 +2331,10 @@ export async function handleApiRequest(request: Request, env: Env, apiPath: stri
   }
   if (apiPath === '/admin/queue/rereview' && method === 'GET') {
     return apiHandlers.adminListRereviewQueue(request, env);
+  }
+  const reviewSourceMatch = apiPath.match(/^\/admin\/review\/([^/]+)\/source$/);
+  if (reviewSourceMatch && method === 'GET') {
+    return apiHandlers.adminReviewSource(request, env, reviewSourceMatch[1]);
   }
   if (apiPath === '/admin/queue/approved' && method === 'GET') {
     return apiHandlers.adminListApproved(request, env);
