@@ -726,6 +726,12 @@ The Featured findings are left as they are: they are outside answer 8's list and
   - **(b)** neither does, as the breadcrumb today: the owner waits for the review, or reverts the edit.
 - Either is a change to a menu, so a mockup comes first.
 
+**Your answer (2026-11-16): (a)**, "Let's go this direction for now."
+- **The mockup:** `website/bbwp/2026-11-16-14:40:36--modules--rereview-make-private-menu.bbwp.html` (localhost:3001).
+  - It shows Today and Proposed side by side, for both menus, in light and dark.
+  - Its images are the real menus on the dev stack, with only the item's words and its note changed (`project-docs/modules/mockups-2e-5c-rereview-menu/capture.ts` and its PNGs).
+- **Waiting for your review before the menus change.** Building it also needs the Workspaces page's listing to carry `rereviewPending` (one read of the re-review queue for the whole list), so the page knows when to show the note.
+
 **Tested:**
 - `tests/playground-make-public.test.ts` (new, 11):
   - each save's answer sets the re-review state, a skipped save's too, and an answer without it leaves it;
