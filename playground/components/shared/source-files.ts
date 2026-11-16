@@ -53,6 +53,30 @@ export interface SourceFile {
 export const UNREADABLE_TITLE = 'This file couldn’t be read.';
 export const UNREADABLE_DETAIL = 'The other files show as saved.';
 
+/**
+ * A re-review's marks (2e step 5e; note 59 answer 4, mockup v12 R3 and R4): what
+ * changed since the approved version. Opt-in: without them the viewer is as before.
+ */
+export interface SourceFileMarks {
+  /** A mark for a file among the files; where a moved one was. */
+  files: Record<string, { mark: 'new' | 'changed' | 'moved'; from?: string }>;
+  /** Files no longer held: shown in their place, struck out, not openable. */
+  removed: string[];
+  /** Empty folders added: a badge on their row. */
+  foldersAdded: string[];
+}
+
+const MARK_CLASS = { new: 'new', changed: 'chg', moved: 'mov', removed: 'gone' } as const;
+type MarkKind = keyof typeof MARK_CLASS;
+
+/**
+ * A file's mark in the list: a small badge with a sign and a colour, the word on hover.
+ * A screen reader hears the word in the row's name instead (the badge is hidden from it).
+ */
+function markDot(mark: MarkKind, word: string): string {
+  return `<span class="mdot ${MARK_CLASS[mark]}" title="${esc(word)}" aria-hidden="true"></span>`;
+}
+
 /** A CodeMirror module or object, loaded at run time from esm.sh: no types here. */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type CmModule = any;
@@ -102,8 +126,8 @@ const kindOf = (file: SourceFile | undefined): SourceFile['kind'] =>
 const styles = `
   :host { display: flex; flex-direction: column; min-width: 0; min-height: 0; height: 100%; }
   * { box-sizing: border-box; }
-  .root { --sf-bg: #ffffff; display: flex; flex: 1; min-height: 0; min-width: 0; background: var(--sf-bg); }
-  .root.dark { --sf-bg: #0d1117; }
+  .root { --sf-bg: #ffffff; --sf-mark-chg: #b45309; display: flex; flex: 1; min-height: 0; min-width: 0; background: var(--sf-bg); }
+  .root.dark { --sf-bg: #0d1117; --sf-mark-chg: #e0a840; }
   .root.several { flex-direction: row; }
   .root.narrow, .root.one { flex-direction: column; }
   .pane { flex: 1; min-width: 0; min-height: 0; display: flex; flex-direction: column; position: relative; }
@@ -141,6 +165,27 @@ const styles = `
   .lock svg { width: 13px; }
   .row.empty { padding-left: calc(var(--indent) + 20px); font-family: var(--font-sans, system-ui, sans-serif); font-style: italic;
     font-weight: 400; color: var(--text-tertiary, #9087a0); }
+  /* A re-review's marks (2e step 5e; mockup v12 R3, R4). In the list a small badge with a sign as
+     well as a colour, so it doesn't rest on colour alone; in words on the open file's line. */
+  .mdot { width: 15px; height: 15px; border-radius: 4px; flex: none; display: inline-grid; place-items: center;
+    font: 700 10px/1 var(--font-sans, system-ui, sans-serif); }
+  .mdot.new { background: var(--success-bg, #ecfdf5); color: var(--success-color, #10b981); }
+  .mdot.new::before { content: '+'; font-size: 12px; }
+  .mdot.chg { background: var(--warning-bg, #fffbeb); color: var(--sf-mark-chg); }
+  .mdot.chg::before { content: '•'; font-size: 15px; }
+  .mdot.mov { background: var(--info-bg, #eff6ff); color: var(--info-color, #3b82f6); }
+  .mdot.mov::before { content: '→'; }
+  .mdot.gone { background: var(--bg-tertiary, rgba(0, 0, 0, 0.05)); color: var(--text-tertiary, #9087a0); }
+  .mdot.gone::before { content: '−'; font-size: 12px; }
+  .mk { flex: none; padding: 0 6px; border-radius: 999px; font: 600 10px/16px var(--font-sans, system-ui, sans-serif); }
+  .mk.new { background: var(--success-bg, #ecfdf5); color: var(--success-color, #10b981); }
+  .mk.chg { background: var(--warning-bg, #fffbeb); color: var(--sf-mark-chg); }
+  .mk.mov { background: var(--info-bg, #eff6ff); color: var(--info-color, #3b82f6); }
+  .row.gone { cursor: default; }
+  .row.gone:hover { background: none; }
+  .row.gone .name { text-decoration: line-through; color: var(--text-tertiary, #9087a0); }
+  .row.gone .icon { color: var(--text-tertiary, #9087a0); }
+
   /* A file that couldn't be read (2e step 5d): a warning, its name quiet. Doubled classes, so the
      warning wins over a kind's icon colour (.row.library .icon …) wherever the rules sit. */
   .row.file.unreadable .name { color: var(--text-tertiary, #9087a0); }
@@ -216,6 +261,9 @@ export class SourceFiles extends HTMLElement {
   private _open: string | null = null;
 
   private _copyLabel: string | null = null;
+
+  /** A re-review's marks (2e step 5e): null shows none. */
+  private _marks: SourceFileMarks | null = null;
 
   private _narrow = false;
 
@@ -295,6 +343,18 @@ export class SourceFiles extends HTMLElement {
   /** For a text that isn't a file (a blog sample): the copy icon's label, "the code". */
   set copyLabel(value: string | null) {
     this._copyLabel = value;
+    this._render();
+  }
+
+  /**
+   * A re-review's marks (2e step 5e): a badge on each file that's new, changed or
+   * moved, a removed file struck out in its place, a badge on an added empty folder,
+   * and the mark in words on the open file's line. Null shows none.
+   */
+  set marks(value: SourceFileMarks | null) {
+    this._marks = value
+      ? { files: { ...value.files }, removed: [...value.removed], foldersAdded: [...value.foldersAdded] }
+      : null;
     this._render();
   }
 
@@ -396,34 +456,66 @@ export class SourceFiles extends HTMLElement {
     return shownPathOf(this._files, this._open);
   }
 
-  /** The rows: the tree's order, with pathogen.json last only when it's among the files. */
+  /**
+   * The rows: the tree's order, with pathogen.json last only when it's among the files.
+   * A re-review's removed files keep their place among them (2e step 5e).
+   */
   private _rows(): TreeRow[] {
     const treeFiles: TreeFile[] = this._files
       .filter((f) => f.kind !== 'project')
       .map((f) => ({ path: f.path, kind: f.kind === 'library' ? 'library' : 'program' }));
+    for (const path of this._removedPaths()) treeFiles.push({ path, kind: 'program' });
     const rows = treeRows(treeFiles, this._folders, { collapsed: new Set(), main: this._main });
     return this._files.some((f) => f.path === PROJECT_FILE) ? rows : rows.filter((r) => r.type !== 'project');
+  }
+
+  /**
+   * The removed files to show struck out: never one that's among the files (the file
+   * wins), nor pathogen.json, which a workspace with files always has.
+   */
+  private _removedPaths(): string[] {
+    return (this._marks?.removed ?? []).filter(
+      (path) => path !== PROJECT_FILE && !this._files.some((f) => f.path === path),
+    );
+  }
+
+  /** A file's mark, with its words: "moved from springs.pathogen". */
+  private _markOf(path: string): { mark: MarkKind; word: string } | null {
+    if (!this._marks) return null;
+    if (this._removedPaths().includes(path)) return { mark: 'removed', word: 'removed' };
+    if (!Object.hasOwn(this._marks.files, path)) return null;
+    const marked = this._marks.files[path];
+    const word = marked.mark === 'moved' && marked.from ? `moved from ${marked.from}` : marked.mark;
+    return { mark: marked.mark, word };
   }
 
   private _rowHtml(row: TreeRow): string {
     const level = `style="--level: ${row.level}"`;
     if (row.type === 'empty') return `<div class="row empty" aria-hidden="true" ${level}>Empty</div>`;
     if (row.type === 'folder') {
-      return `<div class="row folder" role="treeitem" aria-level="${row.level}" aria-expanded="true" ${level}><span class="chev">${FILE_ICONS.chevron}</span><span class="icon">${FILE_ICONS.folder}</span><span class="name">${esc(row.name)}</span></div>`;
+      const added = this._marks?.foldersAdded.includes(row.path) ? markDot('new', 'new') : '';
+      return `<div class="row folder" role="treeitem" aria-level="${row.level}" aria-expanded="true" ${level}><span class="chev">${FILE_ICONS.chevron}</span><span class="icon">${FILE_ICONS.folder}</span><span class="name">${esc(row.name)}</span>${added}</div>`;
     }
     if (row.type === 'input') return '';
+    const marked = this._markOf(row.path);
+    // A removed file: in its place, struck out, not openable (no data-path, so the arrow keys pass it too).
+    if (marked?.mark === 'removed') {
+      return `<div class="row file gone" role="treeitem" aria-level="${row.level}" aria-disabled="true" aria-label="${esc(`${row.name}, removed`)}" title="${esc(`${row.path} was removed`)}" ${level}><span class="chev"></span><span class="icon">${FILE_ICONS.program}</span><span class="name">${nameHtml(row.name)}</span>${markDot('removed', 'removed')}</div>`;
+    }
+    const dot = marked ? markDot(marked.mark, marked.word) : '';
     const shown = row.path === this._shownPath();
     const lost = this._fileAt(row.path)?.unreadable === true;
     const title = lost ? `${row.path} couldn't be read` : row.path;
-    // A screen reader hears it in the row's name, not only in a hover title.
-    const label = lost ? ` aria-label="${esc(`${row.name}, couldn't be read`)}"` : '';
+    // A screen reader hears these in the row's name, not only in a hover title or a badge.
+    const said = [lost ? "couldn't be read" : '', marked?.word ?? ''].filter(Boolean);
+    const label = said.length > 0 ? ` aria-label="${esc([row.name, ...said].join(', '))}"` : '';
     const attrs = `role="treeitem" data-path="${esc(row.path)}" aria-level="${row.level}" aria-selected="${shown}" tabindex="${shown ? 0 : -1}" title="${esc(title)}"${label} ${level}`;
     if (row.type === 'project') {
-      return `<div class="row project${shown ? ' active' : ''}" ${attrs}><span class="chev"></span><span class="icon">${FILE_ICONS.json}</span><span class="name">${nameHtml(row.name)}</span><span class="lock" title="Read-only: written from the program list">${FILE_ICONS.lock}</span></div>`;
+      return `<div class="row project${shown ? ' active' : ''}" ${attrs}><span class="chev"></span><span class="icon">${FILE_ICONS.json}</span><span class="name">${nameHtml(row.name)}</span>${dot}<span class="lock" title="Read-only: written from the program list">${FILE_ICONS.lock}</span></div>`;
     }
     const badge = row.main ? `<span class="badge-main" title="${esc(MAIN_BADGE_TITLE)}">main</span>` : '';
     const icon = lost ? FILE_ICONS.warning : FILE_ICONS[row.kind];
-    return `<div class="row file ${row.kind}${lost ? ' unreadable' : ''}${shown ? ' active' : ''}" ${attrs}><span class="chev"></span><span class="icon">${icon}</span><span class="name">${nameHtml(row.name)}</span>${badge}</div>`;
+    return `<div class="row file ${row.kind}${lost ? ' unreadable' : ''}${shown ? ' active' : ''}" ${attrs}><span class="chev"></span><span class="icon">${icon}</span><span class="name">${nameHtml(row.name)}</span>${badge}${dot}</div>`;
   }
 
   private _treeHtml(): string {
@@ -463,11 +555,19 @@ export class SourceFiles extends HTMLElement {
     const icon = lost ? FILE_ICONS.warning : iconOf(kind);
     const cls = `${kind}${lost ? ' unreadable' : ''}`;
     const title = lost ? `${path} couldn't be read` : path;
+    // A re-review's mark, in words (2e step 5e; the list has the badge).
+    // A removed file is never shown (it isn't among the files), so it never has a pill.
+    const marked = this._markOf(path);
+    const from = marked?.mark === 'moved' ? this._marks?.files[path]?.from : undefined;
+    const pill =
+      marked && marked.mark !== 'removed'
+        ? `<span class="mk ${MARK_CLASS[marked.mark]}"${from ? ` title="${esc(`Moved from ${from}`)}"` : ''}>${marked.mark}</span>`
+        : '';
     if (this._narrow) {
       const n = this._files.length;
-      return `<div class="menu-row"><button class="menu ${cls}" type="button" aria-haspopup="dialog" aria-expanded="${this._sheet}" title="${esc(title)}"><span class="icon">${icon}</span><span class="p">${pathHtml(path)}</span><span class="cv">${FILE_ICONS.chevron}</span><span class="count">${n} file${n === 1 ? '' : 's'}</span></button><span class="cell">${this._copyHtml()}</span></div>`;
+      return `<div class="menu-row"><button class="menu ${cls}" type="button" aria-haspopup="dialog" aria-expanded="${this._sheet}" title="${esc(title)}"><span class="icon">${icon}</span><span class="p">${pathHtml(path)}</span>${pill}<span class="cv">${FILE_ICONS.chevron}</span><span class="count">${n} file${n === 1 ? '' : 's'}</span></button><span class="cell">${this._copyHtml()}</span></div>`;
     }
-    return `<div class="path ${cls}" title="${esc(title)}"><span class="icon">${icon}</span><span class="p">${pathHtml(path)}</span><span class="cell">${this._copyHtml()}</span></div>`;
+    return `<div class="path ${cls}" title="${esc(title)}"><span class="icon">${icon}</span><span class="p">${pathHtml(path)}</span>${pill}<span class="cell">${this._copyHtml()}</span></div>`;
   }
 
   /** Lay everything out again: the files, their shape or the width changed. */

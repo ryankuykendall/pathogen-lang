@@ -2037,7 +2037,7 @@ layer('hex').apply { circle(60, 100, 40) }`,
     description:
       'Read-only code, one file or several (2e, step 3b; note 59, mockups v12 to v14): a list beside the code in the workspace tree’s order and look, the open file’s path above the code with the copy icon in its cell, and the copy icon floating with one file. Narrower than 480 px, the list becomes a menu and a bottom sheet.',
     notes:
-      'Properties: files ({ path, text, kind: program | library | project, unreadable? }), folders, main, open, copyLabel. activate() loads CodeMirror (esm.sh); until then the text shows plain. Event: source-file-open { path }. A file marked unreadable (2e step 5d) keeps its row with a warning, and shown, says so where its code would be, its copy icon off. Shared by <mini-workspace> and, from step 6, the public page, so it imports nothing that needs the store.',
+      'Properties: files ({ path, text, kind: program | library | project, unreadable? }), folders, main, open, copyLabel, marks ({ files: { path: { mark: new | changed | moved, from? } }, removed, foldersAdded }). activate() loads CodeMirror (esm.sh); until then the text shows plain. Event: source-file-open { path }. A file marked unreadable (2e step 5d) keeps its row with a warning, and shown, says so where its code would be, its copy icon off. A re-review’s marks (2e step 5e) put a badge with a sign on each changed row, keep a removed file in its place struck out, and say the mark in words on the open file’s line. Shared by <mini-workspace> and, from step 6, the public page, so it imports nothing that needs the store.',
     stories: [
       { name: 'One file', props: { files: 'one' } },
       { name: 'Several files', props: { files: 'several' } },
@@ -2051,6 +2051,7 @@ layer('hex').apply { circle(60, 100, 40) }`,
         name: 'A file that couldn’t be read, shown',
         props: { files: 'several', lost: 'parts/gears.pathogen', open: 'parts/gears.pathogen' },
       },
+      { name: 'A re-review’s marks', props: { files: 'several', marks: 're-review', open: 'parts/gears.pathogen' } },
     ],
     controls: [],
     render: (container, props) => {
@@ -2085,6 +2086,20 @@ layer('hex').apply { circle(60, 100, 40) }`,
         );
         el.files = props.files === 'one' ? [files[0]] : files;
         el.folders = [];
+        // A re-review's marks (2e step 5e; mockup v12 R3): a changed module, a moved one,
+        // a removed program struck out, pathogen.json changed with the program list.
+        (el as unknown as { marks: unknown }).marks =
+          props.marks === 're-review'
+            ? {
+                files: {
+                  'parts/gears.pathogen': { mark: 'changed' },
+                  'parts/kit.pathogen': { mark: 'moved', from: 'kit.pathogen' },
+                  'pathogen.json': { mark: 'changed' },
+                },
+                removed: ['try-sizes.pathogen'],
+                foldersAdded: [],
+              }
+            : null;
         el.main = main;
         el.open = String(props.open ?? main);
         el.style.cssText = `display: flex; height: 340px; width: ${props.width ? `${props.width}px` : '100%'}; max-width: 720px; border: 1px solid var(--border-color); border-radius: 8px; overflow: hidden;`;

@@ -214,6 +214,31 @@ describe('several files', () => {
     expect([viewer().open, JSON.parse(setItem.mock.calls[1][1]).code]).toEqual(['main.pathogen', MAIN]);
   });
 
+  it('passes a re-review’s marks to its panel (2e step 5e)', () => {
+    const marks = { files: { 'parts/gears.pathogen': { mark: 'changed' as const } }, removed: [], foldersAdded: [] };
+    const { viewer } = mount({ attrs: ['code-open'], files: { ...SEVERAL, marks } });
+    expect(shadow(viewer(), '.row[data-path="parts/gears.pathogen"] .mdot')?.className).toBe('mdot chg');
+  });
+
+  it('openFile shows a file without changing the drawing’s program; re-attached, the panel keeps it', () => {
+    const setItem = vi.spyOn(window.Storage.prototype, 'setItem');
+    vi.spyOn(window, 'open').mockImplementation(() => null);
+    const { el, root, viewer } = mount({ attrs: ['code-open'], files: SEVERAL });
+    (el as Embed & { openFile: (path: string) => void }).openFile('parts/gears.pathogen');
+    expect(viewer().open).toBe('parts/gears.pathogen');
+    root.querySelector<HTMLElement>('.playground-link')!.click();
+    expect(JSON.parse(setItem.mock.calls[0][1]).code).toBe(DEMO);
+    // Taken out and put back (a fresh panel): still the file being read.
+    el.remove();
+    document.body.appendChild(el);
+    expect(viewer().open).toBe('parts/gears.pathogen');
+    // A file clicked in the panel is kept the same way.
+    shadow(viewer(), '.row[data-path="main.pathogen"]')!.click();
+    el.remove();
+    document.body.appendChild(el);
+    expect(viewer().open).toBe('main.pathogen');
+  });
+
   it('the drawing’s program couldn’t be read (2e step 5d): no ↗, since there’s no code to open', () => {
     const lost: MiniWorkspaceFiles = {
       ...SEVERAL,

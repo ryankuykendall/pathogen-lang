@@ -265,6 +265,131 @@ describe('a file that couldn’t be read (2e step 5d; note 59, requirement 9)', 
   });
 });
 
+describe('a re-review’s marks (2e step 5e; mockup v12 R3, R4)', () => {
+  const MARKS = {
+    files: {
+      'parts/gears.pathogen': { mark: 'changed' as const },
+      'parts/kit.pathogen': { mark: 'moved' as const, from: 'kit.pathogen' },
+      'pathogen.json': { mark: 'changed' as const },
+    },
+    removed: ['try-sizes.pathogen'],
+    foldersAdded: ['examples'],
+  };
+  const marked = (open = 'main.pathogen'): SourceFiles => {
+    const el = mount(SEVERAL, { folders: ['examples'], open });
+    el.marks = MARKS;
+    return el;
+  };
+
+  it('a badge with a sign on each marked row, the word on hover; unmarked rows have none', () => {
+    const el = marked();
+    const dot = (path: string) => $(el, `.row[data-path="${path}"] .mdot`);
+    expect([dot('parts/gears.pathogen')?.className, dot('parts/gears.pathogen')?.title]).toEqual([
+      'mdot chg',
+      'changed',
+    ]);
+    expect([dot('parts/kit.pathogen')?.className, dot('parts/kit.pathogen')?.title]).toEqual([
+      'mdot mov',
+      'moved from kit.pathogen',
+    ]);
+    expect(dot('pathogen.json')?.className).toBe('mdot chg');
+    expect(dot('main.pathogen')).toBeNull();
+    // A screen reader hears the word in the row's name; the badge itself is hidden from it.
+    const label = (path: string) => $(el, `.row[data-path="${path}"]`)?.getAttribute('aria-label') ?? null;
+    expect([label('parts/gears.pathogen'), label('parts/kit.pathogen'), label('main.pathogen')]).toEqual([
+      'gears.pathogen, changed',
+      'kit.pathogen, moved from kit.pathogen',
+      null,
+    ]);
+    expect(dot('parts/gears.pathogen')?.getAttribute('aria-hidden')).toBe('true');
+  });
+
+  it('a file both listed removed and among the files is the file: openable, marked as the files say', () => {
+    const el = mount(SEVERAL);
+    el.marks = { files: { 'parts/kit.pathogen': { mark: 'new' } }, removed: ['parts/kit.pathogen'], foldersAdded: [] };
+    expect($$(el, '.row.gone')).toHaveLength(0);
+    const row = $(el, '.row[data-path="parts/kit.pathogen"]')!;
+    expect([row.querySelector('.mdot')?.className, row.getAttribute('aria-label')]).toEqual([
+      'mdot new',
+      'kit.pathogen, new',
+    ]);
+    row.click();
+    expect([el.open, text($(el, '.path .mk'))]).toEqual(['parts/kit.pathogen', 'new']);
+  });
+
+  it('a marked file that couldn’t be read says both; pathogen.json is never shown as removed', () => {
+    const lost = SEVERAL.map((f) =>
+      f.path === 'parts/gears.pathogen' ? { path: f.path, text: '', kind: 'program' as const, unreadable: true } : f,
+    );
+    const el = mount(lost);
+    el.marks = {
+      files: { 'parts/gears.pathogen': { mark: 'changed' } },
+      removed: ['pathogen.json'],
+      foldersAdded: [],
+    };
+    expect($(el, '.row[data-path="parts/gears.pathogen"]')?.getAttribute('aria-label')).toBe(
+      "gears.pathogen, couldn't be read, changed",
+    );
+    expect($$(el, '.row.gone')).toHaveLength(0);
+  });
+
+  it('narrow, the menu names the mark too; marks set before the files apply, and null clears them', () => {
+    const el = document.createElement('source-files') as SourceFiles;
+    el.marks = MARKS;
+    el.files = SEVERAL;
+    el.folders = ['examples'];
+    el.open = 'parts/gears.pathogen';
+    document.body.appendChild(el);
+    el.narrow = true;
+    expect(text($(el, '.menu .mk'))).toBe('changed');
+    el.narrow = false;
+    expect($$(el, '.mdot').length).toBeGreaterThan(0);
+    el.marks = null;
+    expect([$$(el, '.mdot').length, $$(el, '.row.gone').length, $(el, '.path .mk')]).toEqual([0, 0, null]);
+  });
+
+  it('a removed file stays in its place, struck out, not openable, passed by the arrow keys', () => {
+    const el = marked();
+    const gone = $$(el, '.row.gone');
+    expect(gone.map((r) => [text(r), r.getAttribute('aria-label'), r.dataset.path ?? null])).toEqual([
+      ['try-sizes.pathogen', 'try-sizes.pathogen, removed', null],
+    ]);
+    expect(gone[0].querySelector('.mdot')?.className).toBe('mdot gone');
+    // In the tree's order: after main.pathogen, before pathogen.json.
+    expect($$(el, '.list .row.file, .list .row.project').map((r) => r.dataset.path ?? `removed: ${text(r)}`)).toEqual([
+      'demos/gears.pathogen',
+      'parts/gears.pathogen',
+      'parts/kit.pathogen',
+      'main.pathogen',
+      'removed: try-sizes.pathogen',
+      'pathogen.json',
+    ]);
+    gone[0].click();
+    expect(el.open).toBe('main.pathogen');
+    const main = $(el, '.row[data-path="main.pathogen"]')!;
+    main.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
+    expect(el.shadowRoot!.activeElement?.getAttribute('data-path')).toBe('pathogen.json');
+  });
+
+  it('an added empty folder has the new badge', () => {
+    const el = marked();
+    const folder = $$(el, '.row.folder').find((r) => text(r) === 'examples')!;
+    expect(folder.querySelector('.mdot')?.className).toBe('mdot new');
+  });
+
+  it('the open file’s line says the mark in words; a move says where from on hover', () => {
+    expect(text($(marked('parts/gears.pathogen'), '.path .mk'))).toBe('changed');
+    const moved = $(marked('parts/kit.pathogen'), '.path .mk')!;
+    expect([text(moved), moved.title]).toEqual(['moved', 'Moved from kit.pathogen']);
+    expect($(marked('main.pathogen'), '.path .mk')).toBeNull();
+  });
+
+  it('without marks, nothing changes (the snapshots page)', () => {
+    const el = mount(SEVERAL);
+    expect([$$(el, '.mdot').length, $$(el, '.row.gone').length, $(el, '.path .mk')]).toEqual([0, 0, null]);
+  });
+});
+
 describe('copying', () => {
   it('copies the file shown, and says “Copied” only once the clipboard has taken it', async () => {
     let resolve!: () => void;

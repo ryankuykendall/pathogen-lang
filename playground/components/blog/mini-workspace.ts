@@ -21,7 +21,7 @@ import '../shared/pathogen-color-input.js';
 import { shownPathOf } from '../shared/source-files.js';
 import './mini-preview.js';
 
-import type { SourceFile, SourceFiles } from '../shared/source-files.js';
+import type { SourceFile, SourceFileMarks, SourceFiles } from '../shared/source-files.js';
 import type { MiniGrid } from './mini-preview.js';
 
 // Background and Grid in the control bar (2d, step 9c; mockup v7 screen W, approved
@@ -78,6 +78,8 @@ export interface MiniWorkspaceFiles {
   folders: string[];
   main: string | null;
   open: string | null;
+  /** A re-review's marks for the code panel (2e step 5e; the review modal). */
+  marks?: SourceFileMarks | null;
 }
 
 /** A blog sample isn't a file: the copy icon names it so. */
@@ -121,15 +123,33 @@ export class MiniWorkspace extends HTMLElement {
   // setupEventListeners and _injectVarControls).
   private _chipGroupWired: boolean = false;
 
+  /**
+   * The file the reader has open in the code panel, when it isn't the drawing's:
+   * a re-attached embed (a fresh panel) opens on it again (2e step 5e).
+   */
+  private _shownFile: string | null = null;
+
   constructor() {
     super();
     this.attachShadow({ mode: 'open' });
+    this.shadowRoot!.addEventListener('source-file-open', (e) => {
+      // Its own code panel's, not one nested deeper.
+      if (e.target !== this._viewer) return;
+      this._shownFile = (e as CustomEvent<{ path: string }>).detail.path;
+    });
   }
 
   /** Several files for the code panel; null shows the child `<code>`. The panel follows when set later. */
   set sourceFiles(value: MiniWorkspaceFiles | null) {
+    this._shownFile = null;
     this._files = value
-      ? { files: [...value.files], folders: [...value.folders], main: value.main, open: value.open }
+      ? {
+          files: [...value.files],
+          folders: [...value.folders],
+          main: value.main,
+          open: value.open,
+          marks: value.marks ?? null,
+        }
       : null;
     this._sourceCode = this._files ? this._drawingText(this._files) : this._childCode();
     this._readSize();
@@ -610,12 +630,14 @@ export class MiniWorkspace extends HTMLElement {
       viewer.copyLabel = null;
       viewer.folders = this._files.folders;
       viewer.main = this._files.main;
+      viewer.marks = this._files.marks ?? null;
       viewer.files = this._files.files;
-      viewer.open = this._openPath(this._files);
+      viewer.open = this._shownFile ?? this._openPath(this._files);
     } else {
       viewer.copyLabel = SAMPLE_COPY_LABEL;
       viewer.folders = [];
       viewer.main = null;
+      viewer.marks = null;
       viewer.files = [{ path: 'main.pathogen', text: this._sourceCode, kind: 'program' }];
       viewer.open = null;
     }
@@ -637,6 +659,19 @@ export class MiniWorkspace extends HTMLElement {
   private _syncPlaygroundLink(): void {
     const link = this.shadowRoot!.querySelector<HTMLElement>('.playground-link');
     if (link) link.hidden = this.hasAttribute('hide-playground-link') || this._drawingLost();
+  }
+
+  /**
+   * Show one of the files in the code panel, keeping everything else (2e step 5e: the
+   * review modal's changes box opens the files it names). A path not among the
+   * files (a removed one) changes nothing. Setting `sourceFiles` again forgets it,
+   * so call this after.
+   */
+  openFile(path: string): void {
+    if (!this._files?.files.some((f) => f.path === path)) return;
+    // The drawing's program stays what it is (Open in Playground, the size): only the panel moves.
+    this._shownFile = path;
+    if (this._viewer) this._viewer.open = path;
   }
 
   /** The program that drew the image couldn't be read (2e step 5d): there's no code to open in the playground. */

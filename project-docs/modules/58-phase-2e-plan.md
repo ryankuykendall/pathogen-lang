@@ -886,6 +886,38 @@ The Featured findings are left as they are: they are outside answer 8's list and
   - every server test (301);
   - a code review; its findings are fixed: the failure reported, nested folders, empty files, the cost comment.
 
+## Step 5e, piece 2: the viewer's marks (2e, 2026-11-16)
+
+- **`<source-files>` takes `marks`, opt-in.** The snapshots page sets none and is unchanged.
+  - Each new, changed or moved file's row gets a small badge with a sign and a colour (+, •, →), the word on hover and to a screen reader.
+  - A removed file keeps its place in the tree's order, struck out with a − badge. It isn't openable, and the arrow keys pass it.
+  - An added empty folder's row gets the + badge.
+  - The open file's line says the mark in words ("changed"; "moved", with "Moved from …" on hover).
+  - The changed colour, `#b45309` light and `#e0a840` dark (the mockup's `--mark-chg`), is a local token switched with the viewer's own dark class. The others are the theme's success, warning and info tokens.
+- **`<mini-workspace>`:**
+  - passes `marks` to its panel;
+  - `openFile(path)` shows a file without changing the drawing's program, which Open in Playground and the size still use;
+  - it remembers the file being read, opened that way or clicked, so a re-attached embed (a fresh panel) opens on it again. The review modal's changes box will use it.
+- **Storybook:** "A re-review's marks".
+- **From the code review:**
+  - A path both removed and among the files is the file: openable, marked as the files say.
+  - `pathogen.json` is never shown as removed.
+  - A screen reader hears the mark in the row's name ("gears.pathogen, changed"; "…, couldn't be read, changed"), and the badge is hidden from it.
+  - A move with no origin says "moved".
+  - The panel listens only to its own viewer's opens.
+- **Tested:**
+  - `tests/playground-source-files.test.ts` (+8):
+    - the badges and their words, heard in the row's name;
+    - a removed file in its place, struck out, not openable, passed by the arrow keys;
+    - a path both removed and present;
+    - a marked file that couldn't be read;
+    - an added folder;
+    - the open file's line, and the narrow menu;
+    - marks set before the files, and cleared;
+    - nothing without marks;
+  - `tests/mini-workspace-code-panel.test.ts` (+2): the marks passed on; `openFile` and a re-attach keep the file being read without changing what Open in Playground sends;
+  - screenshots from the story (`2e-step5e-marks-{light,dark}.png`, `verify/shoot-2e-step5e-marks.ts`), matching v12 R3.
+
 ## What the audits found (2026-11-14)
 
 ### Snapshots, copies, forks
