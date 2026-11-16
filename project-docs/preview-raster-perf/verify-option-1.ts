@@ -441,6 +441,20 @@ try {
     list,
   );
   await page.keyboard.press('Escape');
+
+  // With reduced motion the drawing jumps: fitted 0.5 s after the click (the inspector's
+  // 0.3 s slide, the 80 ms settle), where the 250 ms move would still be under way.
+  await page.emulateMediaFeatures([{ name: 'prefers-reduced-motion', value: 'reduce' }]);
+  await pause(1000);
+  await ev(page, `__deep('inspector-panel').shadowRoot.querySelector('.close-btn').click(); return 1;`);
+  await pause(500);
+  s = await state(page);
+  check(
+    'with reduced motion the drawing jumps to the gap (fitted 0.5 s after the click)',
+    !s.picture && s.transform === '' && near(s.body.width, s.gap.width, 1) && near(s.drawnCenter, gapCenter(s)),
+    s,
+  );
+  await page.emulateMediaFeatures([]);
 } finally {
   for (const id of ids) await api('DELETE', `/workspace/${id}`);
   d1(`DELETE FROM sessions WHERE user_id = '${USER_ID}'; DELETE FROM users WHERE id = '${USER_ID}';`);

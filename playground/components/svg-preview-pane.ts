@@ -375,8 +375,10 @@ export class SvgPreviewPane extends HTMLElement {
     );
     const still = Math.abs(move.dx) < 0.5 && Math.abs(move.scale - 1) < 0.001;
     if (still && !this._picture) return;
+    // With reduced motion the drawing jumps to the gap, as the tree's slide is turned off.
+    const moveMs = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ? 0 : MOVE_MS;
     frame.style.transformOrigin = `${move.originX}px 50%`;
-    frame.style.transition = `transform ${MOVE_MS}ms ease`;
+    frame.style.transition = moveMs > 0 ? `transform ${moveMs}ms ease` : 'none';
     frame.style.transform = still ? '' : `translateX(${move.dx}px) scale(${move.scale})`;
     this._picture = !still;
     clearTimeout(this._moveTimer);
@@ -384,7 +386,7 @@ export class SvgPreviewPane extends HTMLElement {
       this._moveTimer = undefined;
       frame.style.removeProperty('transition');
       if (this._picture && !heavy) this._fitToGap(true);
-    }, MOVE_MS);
+    }, moveMs);
   }
 
   /**

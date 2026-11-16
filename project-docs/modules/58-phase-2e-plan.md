@@ -156,7 +156,7 @@ Each step: tests first; light and dark; a puppeteer check against `npm run dev:s
      - `snapshots.md`: several files, the no-program reason, the size limit; and from step 3c, Copy code leaves the actions (the icon copies the file shown) and Start new workspace copies "this snapshot's files";
      - `publishing.md`: the main and every file; the menu items' real names; the frozen image, if 9 is yes.
    - A content review, then your approval.
-   - The CHANGELOG, covering 2b to 2e.
+   - The CHANGELOG, covering 2b to 2e. Include the two preview speed fixes made during 2e (`project-docs/preview-raster-perf/`): c3b63c8, the preview's own compositing layer (switching files and tabs no longer redraws the drawing), and 90997bc, option 1 (Files, Console and the inspector slide past a still preview).
 8. **Ship** (note 50, "At shipping"):
    - the push;
    - both deploys live;

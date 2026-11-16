@@ -132,8 +132,19 @@ On the kablammo copy, as built (`measure-overlay.ts … built --repeat-inspector
 
 The one-time inspector freeze is the same one measured above. Its cause still isn't pinned down.
 
+**Narrow windows, your call.** The editor keeps half the room the tree leaves, so with the tree, the console and the inspector all open the preview runs out of room on a smaller window (`measure-gap-widths.ts`, preview pane's width):
+
+| Window | Tree and inspector | Tree, console and inspector |
+|---|---|---|
+| 1024 px | 145 px | **0** (the editor shrinks to 254) |
+| 1280 px | 273 px | **0** (the editor shrinks to 510) |
+| 1440 px | 353 px | 73 px |
+| 1680 px | 473 px | 193 px |
+
+The mockup's 72 px was at 1280 px with a 440 px editor. Built, the editor is 516 px at that width.
+
 **Checks:**
-- **`verify-option-1.ts`**, 22 checks with `heavy-filters.pathogen` and a light two-gear workspace:
+- **`verify-option-1.ts`**, 23 checks with `heavy-filters.pathogen` and a light two-gear workspace (the 23rd, added after the commit: with reduced motion the drawing jumps to the gap instead of sliding):
   - the held iframe and the body's box, with the drawing centered in the gap;
   - loading draws once;
   - Files and Console, no slow frame;
@@ -151,7 +162,8 @@ The one-time inspector freeze is the same one measured above. Its cause still is
 
 - `heavy-filters.pathogen`: the generated heavy drawing.
 - `option-1-build-plan.md`: your answers on the option 1 mockup, the design as built, and why it changed before building.
-- `verify-option-1.ts`: option 1's checks (22, full Chrome at 2x).
+- `verify-option-1.ts`: option 1's checks (23, full Chrome at 2x).
+- `measure-gap-widths.ts`: the preview's width at several window widths, with the panes open.
 - `verify-preview-layer.ts`: the regression check (15 checks, full Chrome at 2x):
   - the layer;
   - no slow frame on opening or switching files, or copying;
