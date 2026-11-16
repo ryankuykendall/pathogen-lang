@@ -537,6 +537,91 @@ Declined:
   - **No Copy Workspace** on someone else's public workspace.
   - The form, light and dark (`2e-step4-copy-form-{light,dark}.png`).
 
+## Step 5, split (2026-11-16)
+
+Step 5 is the largest of 2e. Three read-only maps of the code, of the server, of Make public in the playground, and of the admin tools, split it into six parts, each committed on its own:
+- **5a, the server's publishing rules:**
+  - re-review only while public;
+  - Make private, and going back to the approved files, withdraw a waiting re-review;
+  - an admin reads any file;
+  - the live files closed to visitors (answer 10).
+- **5b, the card image frozen at approval** (answer 9b), with the one-time copy for existing approvals, to run in step 8.
+- **5c, Make public, on the breadcrumb and the Workspaces page:**
+  - it saves first;
+  - it checks the main with its imports;
+  - the Workspaces page follows the breadcrumb's states;
+  - the menu's re-review state after each save.
+- **5d, a file that can't be read says so in its place** (note 59, requirement 9): the server reads the rest, and `<source-files>` shows the file as unreadable.
+- **5e, the review screen:**
+  - the files, compiled with their imports, in the v12 list;
+  - a re-review's marks;
+  - unreadable files said, with Approve off;
+  - the Approved and Featured tabs;
+  - its dark-theme colours;
+  - the ↗ hidden.
+- **5f, the admin thumbnail tool and `backfill-approval-svgs.ts`,** compiling the main with its imports.
+
+**What the maps found besides the audits' list:**
+- **Approving a re-review always sets the workspace public.**
+- **A re-approve without Feature** sets `featuredAt` to null, but leaves the id in `featured:workspaces`.
+- **Owner Make private doesn't take the workspace off Featured.** The Featured page hides it only through its `isPublic` filter.
+- **The Workspaces page reads `code` for its precheck,** which only a workspace that is just `main.pathogen` has. Any other workspace is refused as "Workspace is empty".
+- **`workspacePublicationState` and `workspaceRereviewPending` have no types** in `types/store.d.ts`.
+
+The Featured findings are left as they are: they are outside answer 8's list and need a decision of their own.
+
+## Step 5a, built (2026-11-16)
+
+**The server's publishing rules** (`website/api/router.ts`):
+- **A re-review is only for a public workspace.**
+  - An edit to a private workspace with an approval queues none.
+  - Make private removes a waiting re-review, in the same block that unpublishes.
+  - A save whose files are back to the approved ones removes a waiting re-review.
+- **An admin's Unpublish and Flag remove a waiting re-review too,** and Requeue does, since its review entry holds the files as they are now.
+- **A save re-reads the record just before queuing a re-review,** so a Make private that lands during the save doesn't find the entry queued again.
+- **A re-review waiting for a workspace that isn't public any more,** as an older server could leave one, is withdrawn rather than decided. Approve or Reject answers 409 `{ error: "This workspace isn't public any more, so its re-review was withdrawn.", withdrawn: true }`. Approving it used to make the workspace public again. A submission waiting beside it, which is the owner asking again, is approved as usual.
+- **The review screen** takes a withdrawn re-review off its list and shows the server's reason as a notice, not as "Approve failed".
+- **Every save says whether a re-review is waiting** (`rereviewPending`), the skipped save included, for 5c's menu.
+- **The live files are the owner's and the admins'** (answer 10). This covers `GET /workspace/:id`, the file route and the copy route.
+  - The owner counts signed in, or by the browser's anonymous id.
+  - An admin counts by token, or by a signed-in session in `ADMIN_EMAILS`. Before, `GET` took only the token.
+  - Visitors read a public workspace's approved files through `/approval-source/:id`, which is unchanged.
+  - Only a signed-in admin can copy: a token has no account to copy into.
+- **An admin reads any file a workspace ever named,** public or not. Before, on a public workspace the admin check never ran, so a submission's or an approval's older file answered 404.
+
+**Who loses a read:**
+- Anyone opening someone else's public workspace in the playground, from a link kept before Copy URL went, or from Explore's, a profile's or Featured's fallback link for an index entry with no owner handle (`scripts/backfill-owner-handle.ts`: production has no approvals from before Phase 4, so in production those links are rare or absent).
+- The playground then says "You do not have access to this workspace", as it does for a private one, with nothing armed to save (checked in a browser, below).
+- Whether such a visitor should be sent to the public page instead is a question for you.
+
+**For step 7's docs:**
+- `docs/publishing.md:30` says an edited approved workspace "returns automatically to the re-review queue". It's now only while it's public, and Make private or going back to the approved version withdraws the re-review.
+- Its menu names (answer 8) are already queued.
+
+**For step 8:** a one-time removal of re-review entries whose workspace is private (your go-ahead). Until then the review screen withdraws each one when an admin acts on it.
+
+**Left as they are** (from the code review; all predate 5a):
+- **The re-review queue is one KV list, written read-modify-write.** Two saves of different workspaces at the same moment can lose one's change. 5a adds removals to it, but no new kind of write.
+- **A save that reads the approval just before a first approval is written** queues no re-review for the edit. The next save does.
+- **Flagging a user keeps their workspaces public** (for the unflag), so their re-reviews stay, and approving one puts the workspace back on Explore while the user is flagged.
+- **The live thumbnail is public,** so a public workspace's card can show an edit waiting for review. That is 5b.
+
+**Tested:**
+- `tests/api/publishing-rules.test.ts` (new, 19), with a session user, a second user, a session admin and the token:
+  - an edit queues a re-review, and with a public workspace only;
+  - Make private, going back, an admin's Unpublish or Flag, and Requeue each withdraw it;
+  - Make private then Make public: no re-review, and the edit is the submission;
+  - a skipped save says whether one is waiting, public and private;
+  - a stale re-review's 409 for Approve and for Reject (no rejection recorded), and a submission beside it approved;
+  - a signed-in visitor and a signed-out one get 403 from the three routes, while `/approval-source` still serves them;
+  - the owner, signed in and anonymous, reads and copies;
+  - both admins read the live files and an approval's older file, and a file the workspace never named (another workspace's) is not found;
+  - the session admin copies, the token can't.
+- `tests/playground-admin-review-withdrawn.test.ts` (new, 3): Approve and Reject of a withdrawn re-review drop it with a notice; any other refusal is still an error and the entry stays.
+- Every server test (`tests/api`, 258).
+- `verify-2e-step4.ts` again, 18 checks. Its last check is now "someone else's public workspace: 'You do not have access', no Copy Workspace, nothing saved" (no PUT or POST; the browser's CORS preflight aside). Its open-on-main check now waits for the workspace's files rather than the moment before.
+- A code review. Its three warnings are fixed above (the admin's Unpublish and Flag, the review screen's 409, the race with Make private); the rest is in "Left as they are".
+
 ## What the audits found (2026-11-14)
 
 ### Snapshots, copies, forks

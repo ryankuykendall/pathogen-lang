@@ -149,7 +149,8 @@ async function opened(page: Page, id: string): Promise<{ open: string; tree: str
      const tree = __deep('file-tree'); const tabs = __deep('editor-tabs');
      if (!tree || !tabs || !location.pathname.endsWith(${JSON.stringify(id)})) return null;
      const rows = [...tree.shadowRoot.querySelectorAll('[data-path]')].map((r) => r.dataset.path);
-     return tabs.active && rows.length ? { open: tabs.active, tree: rows } : null;`,
+     // Loaded: the workspace's files, not the moment before (pathogen.json alone).
+     return tabs.active && rows.length > 1 ? { open: tabs.active, tree: rows } : null;`,
   );
 }
 
@@ -361,14 +362,32 @@ try {
     check('Open as new workspace makes a workspace', false, pageB.url());
   }
 
-  // ---- Someone else's public workspace: no Copy Workspace ----
+  // ---- Someone else's public workspace: since 2e step 5a its live files are the owner's
+  // and the admins' (answer 10). The playground says so, offers no copy, and saves nothing.
+  const writesByB: string[] = [];
+  pageB.on('request', (r) => {
+    // A save is a PUT or a POST; OPTIONS is the browser's CORS preflight for the read.
+    if (['PUT', 'POST'].includes(r.method()) && r.url().startsWith(`${DEV_API}/workspace/${publishedId}`)) {
+      writesByB.push(`${r.method()} ${r.url()}`);
+    }
+  });
   await pageB.goto(`${PAGES_URL}/workspace/${slug}--${publishedId}`, { waitUntil: 'domcontentloaded' });
-  const menu = await until<{ copy: boolean; svg: boolean }>(
+  const denied = await until<{ message: string; copy: boolean }>(
     pageB,
-    `const r = __deep('app-breadcrumb')?.shadowRoot; const svg = r?.querySelector('[data-action="copy-svg"]');
-     return svg && __deep('file-tree') ? { copy: !!r.querySelector('[data-action="copy-workspace"]'), svg: true } : null;`,
+    `const panel = __deep('error-panel');
+     // The panel's words, not its style sheet.
+     const text = [...(panel?.shadowRoot?.childNodes ?? [])].filter((n) => n.nodeName !== 'STYLE')
+       .map((n) => n.textContent).join(' ').replace(/\\s+/g, ' ');
+     const r = __deep('app-breadcrumb')?.shadowRoot;
+     return text.includes('You do not have access') && r
+       ? { message: text.trim().slice(0, 80), copy: !!r.querySelector('[data-action="copy-workspace"]') } : null;`,
   );
-  check("someone else's public workspace: the menu has no Copy Workspace", menu?.copy === false, menu);
+  await pause(3000);
+  check(
+    'someone else\'s public workspace: "You do not have access", no Copy Workspace, nothing saved',
+    !!denied && !denied.copy && writesByB.length === 0,
+    { denied, writesByB },
+  );
 
   // ---- The copy form in dark ----
   await pageA.evaluate(`localStorage.setItem('pathogen-theme', 'dark')`);

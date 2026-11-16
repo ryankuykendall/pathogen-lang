@@ -441,6 +441,7 @@ class AdminModerationView extends HTMLElement {
       const body: Record<string, unknown> = { decision: 'approve', feature: false };
       if (svg) body.svg = svg;
       const res = await this._post(`/admin/review/${encodeURIComponent(workspaceId)}`, body);
+      if (this._wasWithdrawn(workspaceId, res)) return;
       if (!res.ok) throw new Error(res.error || 'Request failed');
       this._pending = this._pending.filter((e) => e.workspaceId !== workspaceId);
       this._rereview = this._rereview.filter((e) => e.workspaceId !== workspaceId);
@@ -469,6 +470,11 @@ class AdminModerationView extends HTMLElement {
         decision: 'reject',
         internalNotes: notes,
       });
+      if (this._wasWithdrawn(workspaceId, res)) {
+        this._rejectingId = null;
+        this._rejectionNotes.delete(workspaceId);
+        return;
+      }
       if (!res.ok) throw new Error(res.error || 'Request failed');
       this._pending = this._pending.filter((e) => e.workspaceId !== workspaceId);
       this._rereview = this._rereview.filter((e) => e.workspaceId !== workspaceId);
@@ -483,6 +489,18 @@ class AdminModerationView extends HTMLElement {
       this._busy.delete(workspaceId);
       this.render();
     }
+  }
+
+  /**
+   * A re-review the server withdrew rather than decided, because its workspace
+   * isn't public any more (2e step 5a): it leaves the list, with the server's
+   * reason as a notice rather than an error.
+   */
+  private _wasWithdrawn(workspaceId: string, res: { withdrawn?: boolean; error?: string }): boolean {
+    if (!res.withdrawn) return false;
+    this._rereview = this._rereview.filter((e) => e.workspaceId !== workspaceId);
+    this._toast(res.error || 'This re-review was withdrawn.');
+    return true;
   }
 
   // Send an Approved or Rejected workspace back into the Pending review
@@ -579,7 +597,7 @@ class AdminModerationView extends HTMLElement {
     path: string,
     body: Record<string, unknown> | null,
     method: 'POST' | 'PUT' | 'DELETE' = 'POST',
-  ): Promise<{ ok: boolean; error?: string; slug?: string }> {
+  ): Promise<{ ok: boolean; error?: string; slug?: string; withdrawn?: boolean }> {
     const init: RequestInit = {
       method,
       credentials: 'include',
@@ -587,7 +605,7 @@ class AdminModerationView extends HTMLElement {
     };
     if (body !== null && method !== 'DELETE') init.body = JSON.stringify(body);
     const res = await fetch(`${API_BASE}${path}`, init);
-    let data: { error?: string; slug?: string } = {};
+    let data: { error?: string; slug?: string; withdrawn?: boolean } = {};
     try {
       data = (await res.json()) as typeof data;
     } catch {

@@ -431,7 +431,9 @@ export const apiHandlers: Record<string, (request: Request, env: Env, ...args: s
     }
   },
 
-  // GET /api/workspace/:id — load workspace, with public/admin/owner access checks.
+  // GET /api/workspace/:id — load a workspace's live files: the owner's and the
+  // admins' (2e step 5a, answer 10). Visitors read a public workspace's approved
+  // files through /approval-source/:id; the live ones can hold edits waiting for review.
   async getWorkspace(request: Request, env: Env, id: string): Promise<Response> {
     try {
       const wsJson = await env.WORKSPACES.get(`workspace:${id}`);
@@ -439,11 +441,7 @@ export const apiHandlers: Record<string, (request: Request, env: Env, ...args: s
 
       const workspace: Workspace = JSON.parse(wsJson);
       const userId = await getEffectiveUserId(request, env);
-      const url = new URL(request.url);
-      const adminToken = url.searchParams.get('token');
-      const isAdmin = adminToken && env.ADMIN_TOKEN && adminToken === env.ADMIN_TOKEN;
-
-      if (!isAdmin && !workspace.isPublic && workspace.userId !== userId) {
+      if (workspace.userId !== userId && !(await isAdminRequest(request, env))) {
         return errorResponse('Access denied', 403);
       }
 
@@ -545,6 +543,8 @@ export const apiHandlers: Record<string, (request: Request, env: Env, ...args: s
             ...withoutLegacyCode(workspace, stored.hash),
             rev: currentRev,
             publicationState: priorState,
+            // Every save says whether a re-review is waiting, so the menu can follow it.
+            rereviewPending: await isRereviewPending(env, id),
             skipped: true,
           });
         }
@@ -590,6 +590,8 @@ export const apiHandlers: Record<string, (request: Request, env: Env, ...args: s
           codeHash: stored.hash,
         });
         await unpublishFromIndex(env, id);
+        // A private workspace has nothing to re-review (2e step 5a, answer 8).
+        await removeFromRereviewQueue(env, id);
       }
 
       if (submittingForReview && env.USERS_DB) {
@@ -612,11 +614,21 @@ export const apiHandlers: Record<string, (request: Request, env: Env, ...args: s
       // is pending. Re-edits during re-review just refresh the queue entry;
       // pushRereviewQueue dedupes on workspaceId. The approval's hash is
       // read in today's rule, so an approval from before phase 2 still
-      // matches its unedited workspace.
+      // matches its unedited workspace. Only a public workspace is
+      // re-reviewed: a private one's edits aren't shown to anyone, and
+      // approving them would make it public again (2e step 5a, answer 8).
+      // Going back to the approved files withdraws a waiting re-review.
       if (next && !ownerUnpublish && !submittingForReview) {
         const approval = await readApproval(env, id);
-        if (approval && (await readStoredFiles(approval, approval.codeHash)).hash !== stored.hash) {
-          await pushRereviewQueue(env, makeQueueEntry(workspace, stored, workspace.updatedAt));
+        if (approval) {
+          const backToApproved = (await readStoredFiles(approval, approval.codeHash)).hash === stored.hash;
+          if (backToApproved) await removeFromRereviewQueue(env, id);
+          // Read again just before queuing: a Make private (or an admin's
+          // Unpublish) that landed since this save's write has already removed
+          // the entry, and must not find it queued again.
+          else if (workspace.isPublic && (await readWorkspaceRecord(env, id))?.isPublic) {
+            await pushRereviewQueue(env, makeQueueEntry(workspace, stored, workspace.updatedAt));
+          }
         }
       }
 
@@ -695,8 +707,11 @@ export const apiHandlers: Record<string, (request: Request, env: Env, ...args: s
       const wsJson = await env.WORKSPACES.get(`workspace:${id}`);
       if (!wsJson) return errorResponse('Workspace not found', 404);
 
+      // The owner's and the admins' (2e step 5a, answer 10): a copy is of the live
+      // files. Someone else forks a public workspace from its page, which creates
+      // from the approved files (source.json).
       const original: Workspace = JSON.parse(wsJson);
-      if (!original.isPublic && original.userId !== userId) {
+      if (original.userId !== userId && !(await isAdminRequest(request, env))) {
         return errorResponse('Access denied', 403);
       }
 
@@ -769,14 +784,20 @@ export const apiHandlers: Record<string, (request: Request, env: Env, ...args: s
       if (!/^[0-9a-f]{64}$/.test(sha256)) return errorResponse('File not found', 404);
       const workspace = await readWorkspaceRecord(env, id);
       if (!workspace) return errorResponse('Workspace not found', 404);
+      // The owner reads the files the workspace names; an admin reads any it ever
+      // named (a submission's, an approval's), public or not. Visitors read a public
+      // workspace's approved files through /approval-source/:id (2e step 5a, answer 10).
       const userId = await getEffectiveUserId(request, env);
-      const mayRead = workspace.isPublic || workspace.userId === userId;
-      const admin = mayRead ? false : await isAdminRequest(request, env);
-      if (!mayRead && !admin) return errorResponse('Access denied', 403);
+      const owner = workspace.userId === userId;
+      let admin: boolean | null = owner ? null : await isAdminRequest(request, env);
+      if (!owner && !admin) return errorResponse('Access denied', 403);
 
       const stored = await storedFilesOf(workspace);
       const named = Object.values(stored.manifest.files).some((f) => f.sha256 === sha256);
-      if (!named && !admin) return errorResponse('File not found', 404);
+      if (!named) {
+        admin ??= await isAdminRequest(request, env);
+        if (!admin) return errorResponse('File not found', 404);
+      }
       const headers = {
         'Content-Type': 'text/plain; charset=utf-8',
         'Cache-Control': 'private, max-age=31536000, immutable',
@@ -1183,7 +1204,8 @@ export const apiHandlers: Record<string, (request: Request, env: Env, ...args: s
       // approval record, reject preserves the prior one (re-review fail
       // doesn't unpublish; admin must explicitly flag or owner must
       // unpublish to remove from /explore).
-      const queueEntry = (await getReviewQueueEntry(env, id)) || (await getRereviewQueueEntry(env, id));
+      const reviewEntry = await getReviewQueueEntry(env, id);
+      const queueEntry = reviewEntry || (await getRereviewQueueEntry(env, id));
       if (!queueEntry) return errorResponse('No pending submission for this workspace', 404);
       // The submitted files, in today's hash rule (an entry from before
       // phase 2 carries `code`, read as just main.pathogen).
@@ -1192,6 +1214,19 @@ export const apiHandlers: Record<string, (request: Request, env: Env, ...args: s
       const wsJson = await env.WORKSPACES.get(`workspace:${id}`);
       if (!wsJson) return errorResponse('Workspace not found', 404);
       const workspace: Workspace = JSON.parse(wsJson);
+
+      // A re-review waiting for a workspace that isn't public any more (an older
+      // server left them on Make private, an admin's Unpublish or Flag, and a save
+      // racing one): withdrawn, never decided. Approving it would make the
+      // workspace public again (2e step 5a, answer 8). A submission waiting beside
+      // it is the owner asking again, and is decided as usual.
+      if (!reviewEntry && !workspace.isPublic) {
+        await removeFromRereviewQueue(env, id);
+        return jsonResponse(
+          { error: "This workspace isn't public any more, so its re-review was withdrawn.", withdrawn: true },
+          409,
+        );
+      }
 
       if (decision === 'reject') {
         const rejection: WorkspaceRejection = {
@@ -1599,6 +1634,8 @@ export const apiHandlers: Record<string, (request: Request, env: Env, ...args: s
       if (!workspace) return errorResponse('Workspace not found', 404);
       await unpublishFromIndex(env, id);
       await removeFromFeatured(env, id);
+      // A private workspace has nothing to re-review (2e step 5a).
+      await removeFromRereviewQueue(env, id);
       const adminId = await resolveAdminUserId(request, env);
       await appendState(env.USERS_DB, {
         workspaceId: id,
@@ -1668,6 +1705,8 @@ export const apiHandlers: Record<string, (request: Request, env: Env, ...args: s
       await addToFlaggedWorkspaces(env, id);
       await unpublishFromIndex(env, id);
       await removeFromFeatured(env, id);
+      // A flagged workspace isn't public: nothing to re-review (2e step 5a).
+      await removeFromRereviewQueue(env, id);
       const adminId = await resolveAdminUserId(request, env);
       await appendState(env.USERS_DB, {
         workspaceId: id,
@@ -1753,6 +1792,9 @@ export const apiHandlers: Record<string, (request: Request, env: Env, ...args: s
       const submittedAt = new Date().toISOString();
       await materialize(env, id, stored);
       await pushReviewQueue(env, makeQueueEntry(workspace, stored, submittedAt));
+      // The review entry holds the files as they are now; a re-review beside it
+      // would only repeat an older version (2e step 5a).
+      await removeFromRereviewQueue(env, id);
       const adminId = await resolveAdminUserId(request, env);
       await appendState(env.USERS_DB, {
         workspaceId: id,
