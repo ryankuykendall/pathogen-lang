@@ -42,6 +42,8 @@ Pan and zoom were already handled: during a gesture the drawing moves as a bitma
 
 ## Still open: the toggles that resize the preview (your call)
 
+*Settled 2026-11-16: you chose option 1, built as described in "Option 1, built" below.*
+
 Each option is measured above. The animation was approved with the mockups, so it isn't changed without you.
 1. **The preview keeps its width.** The tree, the console and the inspector take their room from the editor. Every toggle is instant, but the editor and the preview no longer split the room evenly while a panel is open.
 2. **The panes don't animate.** One redraw per toggle: about 1.9 s for this drawing, against 7 to 8 s now.
@@ -110,9 +112,46 @@ In the workspace the grain shows only in the top nav and the breadcrumb bar. In 
 
 **A flaw in the setup:** on the kablammo copy, the drawing was first placed in a 340 px gap instead of 593 px. When the gap was measured, something on the left reached 1,099 px. I haven't chased the cause. Moving a layer costs the same at any size, so the costs stand. The scale factors in the screenshots are larger than they would be.
 
+## 2026-11-16: option 1, built
+
+You chose option 1 and answered the mockup's five questions (`option-1-build-plan.md` has the answers and the design). It's built a little differently from the mockup.
+- **The preview pane stays in the row as the gap.** Only its iframe is held at the row's full width, still on screen, and the pane shows the part of it in the gap.
+- **Why:** taking the whole pane out of the row would have needed a stacking context around the panes, and the editor's popups would then open under the error panel. The plan has the details.
+- **What it looks like:** the same as the mockup. The panes slide; once they stop, the drawing moves to the middle of the gap. An ordinary drawing is then redrawn there, sharp. A heavy one keeps the moved picture, never enlarged, until an edit, a pan or a zoom redraws it in the gap.
+- **Which drawings are heavy:** a drawing is heavy when one of its last three redraws held frames back for over 100 ms.
+
+On the kablammo copy, as built (`measure-overlay.ts … built --repeat-inspector`), full Chrome at 2x:
+
+| Action | Before option 1 | Option 1 |
+|---|---|---|
+| Files on or off | 7.7–7.9 s | **0** |
+| Console on or off | 2.0 s | **0** |
+| Inspector on or off | 7.1–7.8 s | **0**, except 0.17 s once, on the first close after a redraw |
+| Tab switch, opening a file | 0 (since c3b63c8) | 0 |
+| An edit, a pan, a zoom | 1.5–1.9 s | 1.5–1.9 s (the drawing itself) |
+
+The one-time inspector freeze is the same one measured above. Its cause still isn't pinned down.
+
+**Checks:**
+- **`verify-option-1.ts`**, 22 checks with `heavy-filters.pathogen` and a light two-gear workspace:
+  - the held iframe and the body's box, with the drawing centered in the gap;
+  - loading draws once;
+  - Files and Console, no slow frame;
+  - the picture shrinks or slides, never enlarged;
+  - a zoom step and a compile take the gap;
+  - a light drawing is redrawn in the gap;
+  - the controls and the program list stay in the gap;
+  - fullscreen, and leaving it;
+  - below 800 px;
+  - no stacking context added;
+  - light and dark screenshots (`option-1-light.png`, `option-1-dark.png`).
+- **`verify-preview-layer.ts`**, 15 checks, still passing. Its pan now drags in the middle of the pane rather than of the iframe. Its record of the Files and Console toggles is now 0, against about 1.5 s with `heavy-filters.pathogen` before. Its screenshots were taken again, so they show option 1.
+
 ## Files
 
 - `heavy-filters.pathogen`: the generated heavy drawing.
+- `option-1-build-plan.md`: your answers on the option 1 mockup, the design as built, and why it changed before building.
+- `verify-option-1.ts`: option 1's checks (22, full Chrome at 2x).
 - `verify-preview-layer.ts`: the regression check (15 checks, full Chrome at 2x):
   - the layer;
   - no slow frame on opening or switching files, or copying;

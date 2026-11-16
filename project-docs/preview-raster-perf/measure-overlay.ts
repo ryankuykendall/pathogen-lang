@@ -17,6 +17,9 @@
 //                 (the drawing's box changes size, as a real re-fit would)
 //         scale   overlay; the preview's layer slides and scales so the drawing fits the
 //                 gap, from the pixels already drawn (soft when enlarged), without redrawing
+//         clip    the preview pane stays in the row (it is the gap); only its iframe is held
+//                 at the workspace's full width, still on screen, and the pane shows a part
+//                 of it; after the pane stops, the layer slides and scales as in scale
 //         --detail (after the mode) also prints every frame over 25 ms
 //         --inspector-only opens and closes the inspector three times, nothing else
 //         --hide-inspector hides the inspector's contents (display: none) while it's closed
@@ -40,7 +43,7 @@ import type { Page } from 'puppeteer';
 
 const SOURCE = process.argv[2] ?? 'heavy';
 const MODE = process.argv[3] ?? 'built';
-if (!['built', 'static', 'slide', 'refit', 'scale'].includes(MODE)) throw new Error(`unknown mode ${MODE}`);
+if (!['built', 'static', 'slide', 'refit', 'scale', 'clip'].includes(MODE)) throw new Error(`unknown mode ${MODE}`);
 const HIDE = process.argv.includes('--hide-inspector');
 const TRACE = process.argv.includes('--trace');
 const INSPECTOR_ONLY = process.argv.includes('--inspector-only');
@@ -112,7 +115,7 @@ const GAP = `
     window.__shifts.push(Math.round(gap.center) + '/' + Math.round(gap.width));
     if (mode === 'slide') __deep('#preview-frame').style.transform = 'translateX(' + (gap.center - window.__placed.center) + 'px)';
     if (mode === 'refit') window.__fit(gap);
-    if (mode === 'scale') {
+    if (mode === 'scale' || mode === 'clip') {
       // The scale the drawing would have fitted to this gap, over the one it was drawn at.
       const ifr = __deep('#preview-frame');
       const vb = ifr.contentDocument.querySelector('svg#preview').viewBox.baseVal;
@@ -215,7 +218,50 @@ try {
   await pause(6000);
   await ev(page, `${GAP} return 1;`);
 
-  if (MODE !== 'built') {
+  if (MODE === 'clip') {
+    // The preview pane stays in the row and is the gap. Only its iframe is held at the
+    // workspace's full width, still on the screen while the pane's edges move: the pane
+    // shows more or less of it. The editor keeps its width; the console takes 280 px.
+    const editorWidth = await ev<number>(
+      page,
+      `return Math.round(__deep('code-editor-pane').getBoundingClientRect().width);`,
+    );
+    const css = `
+      ::slotted(code-editor-pane), :host(.inspector-open) ::slotted(code-editor-pane) { flex: 0 0 ${editorWidth}px !important; }
+      ::slotted(console-pane.open) { flex: 0 0 280px !important; }
+      ::slotted(svg-preview-pane), :host(.inspector-open) ::slotted(svg-preview-pane) { flex: 1 1 0 !important; transition: none !important; }`;
+    await ev(
+      page,
+      `const s = document.createElement('style'); s.textContent = ${JSON.stringify(css)};
+       __deep('playground-main').shadowRoot.appendChild(s);
+       const main = __deep('playground-main');
+       const ifr = __deep('#preview-frame');
+       const box = ifr.parentElement;
+       ifr.style.position = 'absolute';
+       ifr.style.top = '0';
+       ifr.style.height = '100%';
+       const hold = () => {
+         const m = main.getBoundingClientRect();
+         const c = box.getBoundingClientRect();
+         ifr.style.left = (m.left - c.left) + 'px';
+         ifr.style.width = m.width + 'px';
+       };
+       new ResizeObserver(hold).observe(box);
+       hold();
+       // The gap is the pane itself, in the iframe's coordinates (the iframe starts at the workspace's left).
+       window.__gap = () => {
+         const m = main.getBoundingClientRect();
+         const c = box.getBoundingClientRect();
+         return { center: c.left - m.left + c.width / 2, width: c.width };
+       };
+       return 1;`,
+    );
+    await pause(1000);
+    await ev(page, `window.__placed = window.__gap(); window.__fit(window.__placed); return 1;`);
+    console.log(
+      `editor ${editorWidth} px; drawing placed in ${JSON.stringify(await ev(page, `return window.__placed;`))}`,
+    );
+  } else if (MODE !== 'built') {
     // The editor keeps the width it has now; the console, when open, takes 360 px; the
     // preview leaves the row and fills the workspace behind the panes.
     const editorWidth = await ev<number>(

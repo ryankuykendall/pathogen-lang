@@ -200,10 +200,12 @@ try {
     );
     await page.screenshot({ path: `${DIR}/preview-layer-${theme}.png` });
 
-    // A pan: the view moves, and bakes into the viewBox once the gesture ends.
+    // A pan: the view moves, and bakes into the viewBox once the gesture ends. In the middle
+    // of the pane, not of the iframe: since option 1 the iframe is the whole row's width
+    // (option-1-build-plan.md) and the pane shows the part of it in the gap.
     const box = await ev<{ x: number; y: number; w: number; h: number }>(
       page,
-      `const r = __frame().getBoundingClientRect(); return { x: r.left, y: r.top, w: r.width, h: r.height };`,
+      `const r = __pane().shadowRoot.querySelector('#preview-container').getBoundingClientRect(); return { x: r.left, y: r.top, w: r.width, h: r.height };`,
     );
     const viewBox = (): Promise<string> =>
       ev<string>(page, `return __frame().contentDocument.getElementById('preview').getAttribute('viewBox');`);

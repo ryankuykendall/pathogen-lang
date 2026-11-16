@@ -16,6 +16,17 @@ import { store } from '../state/store.js';
 import { decorateConicGradientsWithCanvasFallback } from '../utils/decorate-conic-gradients.js';
 import { attachFullscreenBehavior, fullscreenButtonHTML, fullscreenStyles } from '../utils/fullscreen-toggle.js';
 import { bootstrapPreviewIframe } from '../utils/preview-iframe.js';
+import {
+  MOVE_MS,
+  SETTLE_MS,
+  gapMove,
+  isHeavyDrawing,
+  rememberRedraw,
+  sameGap,
+  sameSize,
+} from '../utils/preview-gap.js';
+import type { PreviewGap } from '../utils/preview-gap.js';
+import { isNarrow, onNarrowChange } from '../utils/narrow.js';
 import { withFitMargin } from '../utils/preview-fit.js';
 import type { FitCanvas } from '../utils/preview-fit.js';
 import { usesRandomValues } from '../utils/uses-random.js';
@@ -46,6 +57,9 @@ const REFRESH_ICON = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
 const CAMERA_ICON = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>`;
 
 const DOWNLOAD_ICON = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>`;
+
+/** Frames watched after a redraw for the longest gap between them (see _timeRedraw). */
+const REDRAW_FRAMES = 10;
 
 const DEFAULT_STROKE = '#000000';
 const DEFAULT_STROKE_WIDTH = 2;
@@ -186,6 +200,37 @@ export class SvgPreviewPane extends HTMLElement {
 
   private _pendingLayerCall: { layers: LayerInput[]; defsData: DefsData } | null = null;
 
+  // In the workspace (option 1, project-docs/preview-raster-perf/option-1-build-plan.md), the
+  // pane is the gap the other panes leave, and its iframe is held at the whole workspace's
+  // width, still on screen, so opening or closing a pane never resizes the drawing. The
+  // drawing's box (the iframe's body) is the gap; once the panes stop, it moves there.
+  private _stageObserver: ResizeObserver | null = null;
+
+  private _narrowUndo: (() => void) | null = null;
+
+  private _settleTimer: ReturnType<typeof setTimeout> | undefined;
+
+  private _moveTimer: ReturnType<typeof setTimeout> | undefined;
+
+  /** The gap the drawing was last drawn in, in the iframe's coordinates; null: the whole iframe. */
+  private _drawnGap: PreviewGap | null = null;
+
+  /** The iframe's size when the drawing was last drawn. */
+  private _drawnFrame: { width: number; height: number } | null = null;
+
+  /** The drawing shows as a moved picture, to be drawn in the gap at its next redraw. */
+  private _picture = false;
+
+  /** How long the page went without a frame after each recent redraw (ms; the latest last). */
+  private _recentRedraws: number[] = [];
+
+  private _redrawToken = 0;
+
+  /** Compiles drawn, and what the last timed redraw drew: a hook that redrew nothing isn't timed. */
+  private _renders = 0;
+
+  private _timedAs = '';
+
   constructor() {
     super();
     this.attachShadow({ mode: 'open' });
@@ -203,6 +248,14 @@ export class SvgPreviewPane extends HTMLElement {
     this._applyInspectorOpen();
     this._applyCompilationStatus();
     this._applySnapshotChrome();
+    // The pane's size and the stage's are watched on every frame of a pane's slide.
+    if (typeof ResizeObserver !== 'undefined') {
+      this._stageObserver = new ResizeObserver(this._onStageResize);
+      this._stageObserver.observe(this.previewContainer);
+      if (this.parentElement) this._stageObserver.observe(this.parentElement);
+    }
+    this._narrowUndo = onNarrowChange(this._onStageResize);
+    this.addEventListener('fullscreen-change', this._onFullscreenChange);
   }
 
   disconnectedCallback(): void {
@@ -211,6 +264,195 @@ export class SvgPreviewPane extends HTMLElement {
     this._storeUnsubscribes = [];
     this.panZoom?.destroy();
     this.panZoom = null;
+    this._stageObserver?.disconnect();
+    this._stageObserver = null;
+    this._narrowUndo?.();
+    this._narrowUndo = null;
+    this.removeEventListener('fullscreen-change', this._onFullscreenChange);
+    clearTimeout(this._settleTimer);
+    clearTimeout(this._moveTimer);
+    this._moveTimer = undefined;
+  }
+
+  private get _frame(): HTMLIFrameElement | null {
+    return this.shadowRoot!.querySelector<HTMLIFrameElement>('#preview-frame');
+  }
+
+  /**
+   * The box the drawing is held to: the pane's parent when it's marked `data-preview-stage`
+   * (playground-main, the workspace's row of panes). None below 800 px, where the panes
+   * stack, nor in fullscreen.
+   */
+  private _stage(): HTMLElement | null {
+    const parent = this.parentElement;
+    if (!parent?.hasAttribute('data-preview-stage')) return null;
+    if (isNarrow() || this.classList.contains('fullscreen')) return null;
+    return parent;
+  }
+
+  /** The part of the iframe the pane shows, in the iframe's coordinates. Null without a stage. */
+  private _gap(): PreviewGap | null {
+    const stage = this._stage();
+    if (!stage) return null;
+    const box = this.previewContainer.getBoundingClientRect();
+    return { left: box.left - stage.getBoundingClientRect().left, width: box.width };
+  }
+
+  /**
+   * Hold the iframe at the stage's width, still on screen, while the pane's edges move:
+   * the pane (overflow hidden) shows the gap. Without a stage, it fills the pane again.
+   * Runs on every frame of a pane's slide, before paint.
+   */
+  private _holdFrame(): void {
+    const frame = this._frame;
+    if (!frame) return;
+    const stage = this._stage();
+    if (!stage) {
+      for (const prop of ['position', 'top', 'left', 'width']) frame.style.removeProperty(prop);
+      return;
+    }
+    const box = this.previewContainer.getBoundingClientRect();
+    const held = stage.getBoundingClientRect();
+    frame.style.position = 'absolute';
+    frame.style.top = '0';
+    frame.style.left = `${held.left - box.left}px`;
+    frame.style.width = `${held.width}px`;
+  }
+
+  private readonly _onStageResize = (): void => {
+    this._holdFrame();
+    // A move under way was for the gap as it was: its end would draw the drawing in a
+    // gap that's still changing. The transform stays; the next placement retargets it.
+    clearTimeout(this._moveTimer);
+    this._moveTimer = undefined;
+    clearTimeout(this._settleTimer);
+    this._settleTimer = setTimeout(() => this._placeDrawing(), SETTLE_MS);
+  };
+
+  /**
+   * Draw in the gap because the drawing is being redrawn anyway (a compile, the store
+   * driving the view): not during a pan or zoom gesture, whose box the controller has
+   * measured; the gesture's end (onBake) draws it in the gap then.
+   */
+  private _fitUnlessGesture(): void {
+    if (this.panZoom?.isGestureActive()) return;
+    this._fitToGap(false);
+    this._timeRedraw();
+  }
+
+  /** In or out of fullscreen the iframe changes size, so the drawing is redrawn anyway: in its new box at once. */
+  private readonly _onFullscreenChange = (e: Event): void => {
+    if (e.target !== this) return;
+    this._holdFrame();
+    this._fitToGap(true);
+  };
+
+  /**
+   * Once the panes have stopped: move the drawing to the gap's middle as a picture (a
+   * transform on the iframe's layer, from the pixels it has), then, for a light drawing,
+   * redraw it there. A heavy drawing keeps the picture, never enlarged, until it's redrawn
+   * anyway. A first placement, or an iframe of another size (which is redrawn anyway), is
+   * drawn in the gap at once.
+   */
+  private _placeDrawing(): void {
+    const frame = this._frame;
+    const svg = this.preview;
+    if (!frame || !svg) return;
+    const gap = this._gap();
+    const size = { width: frame.clientWidth, height: frame.clientHeight };
+    if (!gap || !this._drawnGap || !sameSize(this._drawnFrame, size)) {
+      this._fitToGap(true);
+      return;
+    }
+    const heavy = isHeavyDrawing(this._recentRedraws);
+    const viewBox = svg.viewBox?.baseVal;
+    const move = gapMove(
+      this._drawnGap,
+      gap,
+      size.height,
+      { width: viewBox?.width ?? 0, height: viewBox?.height ?? 0 },
+      !heavy,
+    );
+    const still = Math.abs(move.dx) < 0.5 && Math.abs(move.scale - 1) < 0.001;
+    if (still && !this._picture) return;
+    frame.style.transformOrigin = `${move.originX}px 50%`;
+    frame.style.transition = `transform ${MOVE_MS}ms ease`;
+    frame.style.transform = still ? '' : `translateX(${move.dx}px) scale(${move.scale})`;
+    this._picture = !still;
+    clearTimeout(this._moveTimer);
+    this._moveTimer = setTimeout(() => {
+      this._moveTimer = undefined;
+      frame.style.removeProperty('transition');
+      if (this._picture && !heavy) this._fitToGap(true);
+    }, MOVE_MS);
+  }
+
+  /**
+   * Draw the drawing in the gap: the iframe's body takes the gap's span (`svg#preview` fills
+   * the body), and any picture transform clears, in one frame. The `svg` element itself gets
+   * no style here: export and thumbnails clone it. `timed`: this is the only redraw, so time
+   * it; the redraw hooks (a compile, a bake, a zoom step) time their own.
+   */
+  private _fitToGap(timed: boolean): void {
+    clearTimeout(this._moveTimer);
+    this._moveTimer = undefined;
+    // Held first: a compile can come before the observer's first report.
+    this._holdFrame();
+    const frame = this._frame;
+    const body = this._iframeDoc?.body;
+    if (!frame || !body) return;
+    const gap = this._gap();
+    const size = { width: frame.clientWidth, height: frame.clientHeight };
+    const drawn = this._drawnGap;
+    const sameBox = gap === null ? drawn === null : drawn !== null && sameGap(gap, drawn);
+    const changed = this._picture || !sameBox || !sameSize(this._drawnFrame, size);
+    for (const prop of ['transition', 'transform', 'transform-origin']) frame.style.removeProperty(prop);
+    this._picture = false;
+    if (gap) {
+      body.style.position = 'absolute';
+      body.style.top = '0';
+      body.style.left = `${gap.left}px`;
+      body.style.width = `${gap.width}px`;
+    } else {
+      for (const prop of ['position', 'top', 'left', 'width']) body.style.removeProperty(prop);
+    }
+    this._drawnGap = gap;
+    this._drawnFrame = size;
+    if (timed && changed) this._timeRedraw();
+  }
+
+  /**
+   * How long the page goes without a frame after a redraw: the longest gap between the next
+   * few frames. A heavy drawing (thousands of filtered layers) holds frames back while it's
+   * rasterized, a frame or two after the change (Chrome starts the next frame before the
+   * last one is rasterized). Only a redraw is timed: something the drawing depends on
+   * changed (a compile, its viewBox, its box, the iframe's size). Not while the page is
+   * hidden, when no frames come.
+   */
+  private _timeRedraw(): void {
+    if (typeof requestAnimationFrame !== 'function' || document.hidden) return;
+    const frame = this._frame;
+    const drawnAs = [
+      this._renders,
+      this.preview?.getAttribute('viewBox'),
+      JSON.stringify(this._drawnGap),
+      frame ? `${frame.clientWidth}x${frame.clientHeight}` : '',
+    ].join('|');
+    if (drawnAs === this._timedAs) return;
+    this._timedAs = drawnAs;
+    const token = ++this._redrawToken;
+    let last = performance.now();
+    let longest = 0;
+    let frames = 0;
+    const tick = (): void => {
+      const at = performance.now();
+      longest = Math.max(longest, at - last);
+      last = at;
+      if (token !== this._redrawToken || document.hidden) return;
+      if (++frames < REDRAW_FRAMES) requestAnimationFrame(tick);
+      else this._recentRedraws = rememberRedraw(this._recentRedraws, longest);
+    };
+    requestAnimationFrame(tick);
   }
 
   /**
@@ -223,6 +465,13 @@ export class SvgPreviewPane extends HTMLElement {
     // first compile's 150ms debounce) but a flash is still possible on slow
     // machines; keeping the overlay visible until ready avoids it.
     this.showLoading();
+    // A new iframe holds no drawing yet: forget the last one's box, picture and timings.
+    this._drawnGap = null;
+    this._drawnFrame = null;
+    this._picture = false;
+    this._timedAs = '';
+    this._recentRedraws = [];
+    this._redrawToken++;
     // Create the iframe programmatically and pre-set srcdoc + sandbox before
     // appending to the DOM. Inserting an iframe via innerHTML and then setting
     // srcdoc after-the-fact triggers an about:blank initial load that emits
@@ -267,6 +516,11 @@ export class SvgPreviewPane extends HTMLElement {
         panY: store.get('panY') as number,
       },
       onChange: (v) => this._onPanZoomChange(v),
+      // A gesture's end redraws the drawing: in the gap, in the same frame.
+      onBake: () => {
+        this._fitToGap(false);
+        this._timeRedraw();
+      },
       options: {
         // Zoom range/step come from the shared DEFAULTS (10%–2000%).
         wheelDampening: 0.002,
@@ -342,6 +596,12 @@ export class SvgPreviewPane extends HTMLElement {
     store.update({ zoomLevel: v.zoom, panX: v.panX, panY: v.panY });
     this._panZoomEcho = false;
     this._refreshZoomChrome(v.zoom);
+    // A zoom step or Fit redraws the drawing at once: in the gap, in the same frame. During
+    // a gesture the drawing moves as a transform, and the gesture's end (onBake) takes over.
+    if (this.panZoom && !this.panZoom.isGestureActive()) {
+      this._fitToGap(false);
+      this._timeRedraw();
+    }
   }
 
   /** Update the zoom % display and the can-pan classes. */
@@ -390,6 +650,7 @@ export class SvgPreviewPane extends HTMLElement {
     // controller is driven only by genuinely-external changes (no feedback loop).
     subscribe(['zoomLevel', 'panX', 'panY'], () => {
       if (this._panZoomEcho || !this.panZoom) return;
+      this._fitUnlessGesture();
       this.panZoom.setView(
         {
           zoom: store.get('zoomLevel') as number,
@@ -544,6 +805,10 @@ export class SvgPreviewPane extends HTMLElement {
       return 0;
     }
 
+    // The drawing is redrawn now anyway: in the gap, in the same frame (the first render
+    // too). Not mid-gesture: the gesture's end does it. Timed below, once it's built.
+    if (!this.panZoom?.isGestureActive()) this._fitToGap(false);
+
     const start = performance.now();
 
     // Get the layers container
@@ -682,6 +947,9 @@ export class SvgPreviewPane extends HTMLElement {
     const renderTime = performance.now() - start;
 
     this.applyLayerVisibility();
+    // Timed from here: the drawing's raster, not the building of its elements.
+    this._renders++;
+    this._timeRedraw();
 
     return renderTime;
   }

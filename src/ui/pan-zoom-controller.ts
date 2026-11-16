@@ -397,6 +397,16 @@ export class PanZoomController {
     this.endSessionAndBake();
   }
 
+  /**
+   * True while a drag, pinch or wheel gesture is under way: a pointer is down, or a
+   * transform session hasn't baked yet. A surface that changes the SVG's box when the view
+   * is redrawn (the playground's preview, fitting its drawing to the space the panes
+   * leave) waits for the bake (`onBake`) instead of changing it mid-gesture.
+   */
+  isGestureActive(): boolean {
+    return this.pointers.size > 0 || this.sessionActive;
+  }
+
   destroy(): void {
     this.destroyed = true;
     const t = this.eventTarget as unknown as EventTarget;

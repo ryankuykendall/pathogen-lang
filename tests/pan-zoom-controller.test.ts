@@ -259,3 +259,58 @@ describe('PanZoomController — shouldStartPan predicate', () => {
     expect(target.count()).toBe(0);
   });
 });
+
+describe('PanZoomController — isGestureActive', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => {
+      cb(0);
+      return 1;
+    });
+    vi.stubGlobal('cancelAnimationFrame', () => {});
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
+  });
+
+  function make() {
+    const target = new FakeTarget();
+    const onBake = vi.fn();
+    const controller = new PanZoomController({
+      svg: fakeSvg(),
+      eventTarget: target as unknown as HTMLElement,
+      mode: 'transform',
+      canvas: { originX: 0, originY: 0, width: 200, height: 200 },
+      view: { zoom: 2, panX: 10, panY: 10 },
+      onBake,
+    });
+    return { target, controller, onBake };
+  }
+
+  it('is true from a press until the released drag bakes, and onBake comes with the end', () => {
+    const { target, controller, onBake } = make();
+    expect(controller.isGestureActive()).toBe(false);
+    target.dispatch('pointerdown', pointerEvent());
+    expect(controller.isGestureActive()).toBe(true);
+    target.dispatch('pointermove', pointerEvent({ clientX: 160, clientY: 160 }));
+    target.dispatch('pointerup', pointerEvent({ clientX: 160, clientY: 160 }));
+    // Released, but the transform session lasts until the idle bake.
+    expect(controller.isGestureActive()).toBe(true);
+    expect(onBake).not.toHaveBeenCalled();
+    vi.advanceTimersByTime(500);
+    expect(controller.isGestureActive()).toBe(false);
+    expect(onBake).toHaveBeenCalledTimes(1);
+    controller.destroy();
+  });
+
+  it('is false for a zoom step and Fit, which redraw at once', () => {
+    const { controller, onBake } = make();
+    controller.zoomIn();
+    expect(controller.isGestureActive()).toBe(false);
+    controller.zoomToFit();
+    expect(controller.isGestureActive()).toBe(false);
+    expect(onBake).not.toHaveBeenCalled();
+    controller.destroy();
+  });
+});

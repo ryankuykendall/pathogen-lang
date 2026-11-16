@@ -5,6 +5,12 @@
 import { store } from '../state/store.js';
 import { focusFilesToggle, isNarrow, onNarrowChange } from '../utils/narrow.js';
 
+/** The file tree's width, open. */
+const TREE_WIDTH = 248;
+
+/** The console's width, open, on a wide screen (a narrow screen stacks it, 200 px high). */
+const CONSOLE_WIDTH = 280;
+
 export class PlaygroundMain extends HTMLElement {
   private _unsubscribe: (() => void) | null = null;
 
@@ -18,6 +24,9 @@ export class PlaygroundMain extends HTMLElement {
   }
 
   connectedCallback(): void {
+    // The preview's drawing is held to this box: the preview pane is the gap the other
+    // panes leave, and its iframe stays this wide (option 1; svg-preview-pane's _stage).
+    this.setAttribute('data-preview-stage', '');
     this.render();
     this._unsubscribe = store.subscribe('inspectorOpen', () => {
       this.classList.toggle('inspector-open', store.get('inspectorOpen') as boolean);
@@ -105,7 +114,7 @@ export class PlaygroundMain extends HTMLElement {
         }
 
         ::slotted(file-tree.open) {
-          flex: 0 0 248px;
+          flex: 0 0 ${TREE_WIDTH}px;
           visibility: visible;
           border-right: 1px solid var(--border-color, #ddd);
           transition:
@@ -156,6 +165,29 @@ export class PlaygroundMain extends HTMLElement {
 
         :host(.inspector-open) ::slotted(svg-preview-pane) {
           flex: 3;
+        }
+
+        /* Wide (option 1, project-docs/preview-raster-perf/option-1-build-plan.md): the
+           editor keeps its width, its width today with the tree open and nothing else, and
+           the preview pane takes what the other panes leave. The pane's iframe stays this
+           whole row's width, so a pane opening or closing never resizes the drawing. The
+           editor gives way only when the panes don't fit. */
+        @media not all and (max-width: 800px) {
+          ::slotted(code-editor-pane),
+          :host(.inspector-open) ::slotted(code-editor-pane) {
+            flex: 0 1 calc((100% - ${TREE_WIDTH}px) / 2);
+            transition: none;
+          }
+
+          ::slotted(console-pane.open) {
+            flex: 0 0 ${CONSOLE_WIDTH}px;
+          }
+
+          ::slotted(svg-preview-pane),
+          :host(.inspector-open) ::slotted(svg-preview-pane) {
+            flex: 1 1 0;
+            transition: none;
+          }
         }
 
         @media (prefers-reduced-motion: reduce) {

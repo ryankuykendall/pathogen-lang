@@ -47,6 +47,12 @@ Deferred work from the modules, data and files effort. Each entry says what it i
 - **Start with:** Workers Analytics Engine, which, as far as I know, takes custom events written from a Worker and answers SQL queries over them. Not checked yet: what it charts on its own, how long it keeps data, and what it costs. Also needed: a privacy note in the docs, if anything about a user is kept.
 - **From:** your answer 7 on note 58, 2026-11-14: "I have identified two scenarios where we might want to capture analytics/telemetry events based on user behavior. Does CloudFlare provide some kind of product for this particular need that we could integrate with, and that would do all of the data storage, summarization, and dashboarding on our behalf? Let's create a follow-up item to do this research after we do the initial release."
 
+### A console "mole", with the errors in it
+- **What:** the console as a narrow bottom sheet over the workspace, like Gmail's chat "mole", instead of a pane in the row. It could also take in the error panel, so logs and errors are one place.
+- **Today (from 2026-11-16):** the preview fills the workspace behind the panes, and the gap the panes leave shows the drawing (`project-docs/preview-raster-perf/`, option 1). The console is a 280 px pane after the editor, so with the tree, the console and the inspector open, a 1280 px window leaves the drawing about 72 px.
+- **Needs:** a mockup first: where the mole sits, how it opens and resizes, and how errors show in it.
+- **From:** your answer 5 on the option 1 mockup, 2026-11-16: "Perhaps we should try to pull the console out of flow as well. In Google's GMail, they have a UI view component call a 'mole'… I think that as a follow-up we should consider mocking up a version of a 'mole' style console, perhaps one that ultimately also combines absorbing errors as well into a unified interface. For now, we will just have to be limited to 72px of viewspace until we are able to circle back on mocking up the new console mole."
+
 ## Publishing and snapshots
 
 After the first release (phase 2 ships with 2e). Each entry comes from your answers on note 58.
