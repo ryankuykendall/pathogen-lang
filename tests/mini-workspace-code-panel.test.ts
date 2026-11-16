@@ -153,6 +153,18 @@ describe('the code open or closed', () => {
   });
 });
 
+describe('the caption', () => {
+  it('follows its attribute while the embed is on the page (a snapshot renamed)', () => {
+    const { el, root } = mount({ attrs: ['code-open'] });
+    const title = (): string | null | undefined => root.querySelector('.mw-title')?.textContent;
+    expect(title()).toBe('Code & Preview');
+    el.setAttribute('caption', 'Gears <#4>');
+    expect(title()).toBe('Gears <#4>');
+    el.removeAttribute('caption');
+    expect(title()).toBe('Code & Preview');
+  });
+});
+
 describe('hide-playground-link', () => {
   it('hides the ↗, set before the embed is on the page or after', () => {
     const hidden = mount({ attrs: ['hide-playground-link'] });

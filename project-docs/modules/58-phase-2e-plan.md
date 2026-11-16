@@ -138,6 +138,7 @@ Each step: tests first; light and dark; a puppeteer check against `npm run dev:s
 5. **Publishing and review:**
    - Make public (the breadcrumb and the Workspaces page) saves first, then checks the main with its imports, through the same compile the preview uses.
    - The review screen loads an entry's files, compiles the main with its imports for the card, the modal and Approve's SVG, and shows the files (v12). An entry whose files can't be read says so.
+   - Note 59's requirement 9, from 3c: a file that can't be read says so in its place in `<source-files>`, and the others still show. The server reads the rest instead of failing all. The snapshots page and the review modal both use it.
    - The admin thumbnail tool and `backfill-approval-svgs.ts` compile the main with its imports.
    - The server fixes, with your answers to 8 to 10:
      - re-review only while public;
@@ -372,6 +373,58 @@ Committed as 1866440.
   - the header's own theme toggle reaching the editor;
   - the phone's icon clear of the ↗;
   - the several-files stories: the list, the ↗ hidden, opening the code passing through narrow widths without the menu showing, and a narrow panel's menu.
+
+Committed as 127ed62.
+
+**Checked after the commit:** the BBWP pages, the one place note 59's requirement 1 lists that 3b-2 hadn't opened.
+- A `.mw.html` page loads `public/components/blog/mini-workspace.js` by a relative path, so the viewer's new imports have to resolve beside it.
+- They do: on `2026-10-20-11:45:36--misc--01-digits.mw.html` (served on :3001), the embed upgrades, its code shows in CodeMirror, the icon says "Copy the code", and no request fails.
+- Evidence: `2e-step3b2-bbwp-light.png`.
+
+## Step 3c, built (2026-11-15)
+
+**The snapshots page shows every file of a snapshot,** drawn as mockup v13's state 5 and v14's file line:
+- **The code panel** lists every file in the tree's order and look. Each file is a program or a module as the engine reads it (`module;`), not by a guess. `pathogen.json` comes last, as the tree writes it.
+- **It opens on the program that drew the image** (answer A).
+- **One file shows the code alone,** as snapshots made before 2e do. Its icon says "Copy main.pathogen".
+- **The panel's icon copies the file shown.** Copy code has left the breadcrumb, so the bug that said "Copied!" before the copy finished (note 59) goes with it.
+- **The ↗ is hidden** (answer B). Start new workspace says it copies "this snapshot's files".
+- **Export's legend lists the program the panel opens on.** One helper (`utils/snapshot-viewer-files.ts`) picks that file for both, so they can't disagree. The API client's own rule (`drawingText`) is gone.
+- **Rename:** the viewer's title follows at once. It used to keep the old name until another snapshot was chosen (note 59).
+- **← and →** step between snapshots, but not from the code panel's list, where they move between files. The page used to step whenever the keys weren't typed into a field or the code, which would have replaced the viewer under the reader.
+- **Each snapshot's files are read and sorted into kinds once.** The engine parses every file to tell modules from programs.
+
+**Still open, given to step 5:** note 59's requirement 9, "a file that can't be read says so in its place, and the other files still show".
+- `/files` is all or nothing. If one stored file is missing, the page says "Couldn't load this snapshot", image included, as before 2e.
+- Step 5 needs a "files can't be read" state for the review screen's Approve anyway. The per-file version, on the server and in `<source-files>`, goes there, and the snapshots page takes it up then.
+
+**The code review** found nothing blocking. Fixed from it:
+- if the engine can't write `pathogen.json`, the page shows the other files rather than failing;
+- an answer without its lists of programs or folders reads as empty ones.
+
+**Tested:**
+- `tests/playground-snapshot-viewer-files.test.ts`, 10 tests (new), with the real engine:
+  - the kinds, and `pathogen.json` as the tree writes it;
+  - a snapshot of another program, and Export's legend;
+  - one file;
+  - an answer with its one text alone;
+  - no program and no main;
+  - an engine that fails, an answer without its lists, and no engine;
+  - the breadcrumb without Copy code;
+  - ← and → owned by the list;
+- `tests/mini-workspace-code-panel.test.ts`: the caption follows its attribute;
+- the playground typecheck: no new errors;
+- `project-docs/modules/verify/verify-2e-step3c.ts`, 13 checks on the dev stack, with snapshots made in the playground:
+  - every file and kind, opening on `demos/gears.pathogen`;
+  - the icon and the clipboard;
+  - Export's legend;
+  - the breadcrumb;
+  - Rename;
+  - ← and → in the list and outside it;
+  - a snapshot of the main, and a one-file snapshot;
+  - no ancestor that would pin the sheet;
+  - a phone's menu, sheet and breadcrumb;
+- step 3a's check again (10): its snapshots-page line now reads the panel's text, since the page no longer adds a `<code>` child.
 
 ## What the audits found (2026-11-14)
 

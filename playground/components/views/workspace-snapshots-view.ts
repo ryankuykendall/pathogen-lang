@@ -2,11 +2,14 @@
 // (docs/snapshots.md "The snapshots page"; mockup v3 screen 3).
 //
 // The stock <mini-workspace> shows the selected snapshot's stored SVG and
-// code — nothing is recompiled. Below it: a quiet name / details / note row,
-// then the <snapshot-filmstrip>. The actions (Copy code · Start new
-// workspace · Export… · ⋯ Rename / Delete) live in <app-breadcrumb> and reach
-// this view as `snapshot-action` events; the breadcrumb reads
-// store.snapshotsPage for its trail.
+// files — nothing is recompiled. Its code panel lists every file, opening on
+// the program that drew the image, and copies the file shown (2e, step 3c;
+// mockups v13 and v14); its ↗ is hidden, since Start new workspace copies
+// every file. Below it: a quiet name / details / note row, then the
+// <snapshot-filmstrip>. The actions (Start new workspace · Export… · ⋯
+// Rename / Delete) live in <app-breadcrumb> and reach this view as
+// `snapshot-action` events; the breadcrumb reads store.snapshotsPage for its
+// trail.
 //
 // Snapshot files are owner-only behind the session cookie, so they're
 // fetched with credentials and handed to <mini-workspace> as a blob: URL —
@@ -18,13 +21,16 @@ import '../blog/mini-workspace.js';
 import '../export-modal.js';
 import '../shared/snapshot-filmstrip.js';
 import type { FilmstripSort, SnapshotFilmstrip } from '../shared/snapshot-filmstrip.js';
-import { drawingText, snapshotApi, workspaceApi } from '../../services/api.js';
+import type { MiniWorkspace } from '../blog/mini-workspace.js';
+import { snapshotApi, workspaceApi } from '../../services/api.js';
 import type { SnapshotRecord } from '../../services/api.js';
 import { store } from '../../state/store.js';
 import { formatBytes } from '../../utils/format-bytes.js';
 import { escapeHtml } from '../../utils/html-escape.js';
 import { buildWorkspaceSlugId, navigateTo, parseWorkspaceSlugId } from '../../utils/router.js';
 import { parseSnapshotSvg } from '../../utils/sanitize-svg-dom.js';
+import { snapshotViewerFiles } from '../../utils/snapshot-viewer-files.js';
+import type { SnapshotFilesEngine, SnapshotViewerFiles } from '../../utils/snapshot-viewer-files.js';
 
 const CARD_FETCH_CONCURRENCY = 4;
 
@@ -39,13 +45,26 @@ function toast(detail: { type?: 'success' | 'error'; title: string; message?: st
   document.dispatchEvent(new CustomEvent('show-toast', { bubbles: true, composed: true, detail }));
 }
 
-function isTypingTarget(e: KeyboardEvent): boolean {
+/**
+ * Whether ← and → belong to what has the keyboard rather than to stepping between
+ * snapshots: a field, the code, or the code panel's list of files (its own keys).
+ */
+export function ownsArrowKeys(e: KeyboardEvent): boolean {
   const el = e.composedPath()[0] as HTMLElement | undefined;
   if (!el) return false;
+  if (e.composedPath().some((node) => (node as Element).localName === 'source-files')) return true;
   const tag = el.tagName?.toLowerCase();
   return (
     tag === 'input' || tag === 'textarea' || tag === 'select' || el.isContentEditable || !!el.closest?.('.cm-editor')
   );
+}
+
+/** The engine's calls the code panel needs, once the library has loaded. */
+function engine(): SnapshotFilesEngine | null {
+  const lib = (window as { PathogenLang?: Partial<SnapshotFilesEngine> }).PathogenLang;
+  return typeof lib?.isModuleSource === 'function' && typeof lib.workspaceProjectFileText === 'function'
+    ? (lib as SnapshotFilesEngine)
+    : null;
 }
 
 const styles = `
@@ -122,7 +141,8 @@ export class WorkspaceSnapshotsView extends HTMLElement {
 
   private _svgText = new Map<string, string>();
 
-  private _code = new Map<string, string>();
+  /** Each snapshot's files as the code panel shows them, read and sorted into kinds once. */
+  private _files = new Map<string, SnapshotViewerFiles>();
 
   private _svgUrl: string | null = null;
 
@@ -131,7 +151,7 @@ export class WorkspaceSnapshotsView extends HTMLElement {
   private _onKeydown = (e: KeyboardEvent): void => {
     if (!this.classList.contains('active') || !this._currentId) return;
     if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
-    if (isTypingTarget(e) || e.metaKey || e.ctrlKey || e.altKey) return;
+    if (ownsArrowKeys(e) || e.metaKey || e.ctrlKey || e.altKey) return;
     const ids = this._filmstrip?.orderedIds() ?? [];
     const i = ids.indexOf(this._currentId);
     const next = ids[i + (e.key === 'ArrowRight' ? 1 : -1)];
@@ -309,9 +329,9 @@ export class WorkspaceSnapshotsView extends HTMLElement {
     this._renderDetail();
 
     try {
-      const [svgText, code] = await Promise.all([this._loadSvg(id), this._loadCode(id)]);
+      const [svgText, files] = await Promise.all([this._loadSvg(id), this._loadFiles(id)]);
       if (token !== this._selectToken) return;
-      this._mountViewer(snap, svgText, code);
+      this._mountViewer(snap, svgText, files);
     } catch (err) {
       if (token !== this._selectToken) return;
       const stage = this.shadowRoot!.querySelector('.stage');
@@ -330,20 +350,20 @@ export class WorkspaceSnapshotsView extends HTMLElement {
   }
 
   /**
-   * The text of the program that drew the snapshot. Read from /files, which
+   * The snapshot's files as the code panel shows them. Read from /files, which
    * answers for every snapshot (2e, step 3): /code answers 409 for one with
    * several files, which would leave the page with neither code nor image.
    */
-  private async _loadCode(id: string): Promise<string> {
-    const cached = this._code.get(id);
-    if (cached != null) return cached;
-    const text = drawingText(await snapshotApi.files(id));
-    this._code.set(id, text);
-    return text;
+  private async _loadFiles(id: string): Promise<SnapshotViewerFiles> {
+    const cached = this._files.get(id);
+    if (cached) return cached;
+    const files = snapshotViewerFiles(await snapshotApi.files(id), engine());
+    this._files.set(id, files);
+    return files;
   }
 
   /** Replace the viewer with a fresh stock <mini-workspace> for this snapshot. */
-  private _mountViewer(snap: SnapshotRecord, svgText: string, code: string): void {
+  private _mountViewer(snap: SnapshotRecord, svgText: string, files: SnapshotViewerFiles): void {
     const stage = this.shadowRoot!.querySelector('.stage');
     if (!stage) return;
     const previous = stage.querySelector('mini-workspace');
@@ -351,13 +371,13 @@ export class WorkspaceSnapshotsView extends HTMLElement {
     if (this._svgUrl) URL.revokeObjectURL(this._svgUrl);
     this._svgUrl = URL.createObjectURL(new Blob([svgText], { type: 'image/svg+xml' }));
 
-    const viewer = document.createElement('mini-workspace');
+    const viewer = document.createElement('mini-workspace') as MiniWorkspace;
     viewer.setAttribute('caption', snap.name);
     viewer.setAttribute('svg-src', this._svgUrl);
+    // Start new workspace copies every file; the ↗ would carry one (note 58, answer B).
+    viewer.setAttribute('hide-playground-link', '');
     if (this._codeOpen) viewer.setAttribute('code-open', '');
-    const codeEl = document.createElement('code');
-    codeEl.textContent = code;
-    viewer.appendChild(codeEl);
+    viewer.sourceFiles = files.viewer;
     stage.replaceChildren(viewer);
   }
 
@@ -372,9 +392,6 @@ export class WorkspaceSnapshotsView extends HTMLElement {
     const stillHere = (): boolean => token === this._loadToken && this._workspaceId != null;
     try {
       switch (action) {
-        case 'copy-code':
-          await navigator.clipboard.writeText(await this._loadCode(snap.id));
-          break;
         case 'start-workspace': {
           const ws = await snapshotApi.startWorkspace(snap.id);
           if (!stillHere()) return;
@@ -406,7 +423,7 @@ export class WorkspaceSnapshotsView extends HTMLElement {
   }
 
   private async _openExport(snap: SnapshotRecord): Promise<void> {
-    const [svgText, code] = await Promise.all([this._loadSvg(snap.id), this._loadCode(snap.id)]);
+    const [svgText, files] = await Promise.all([this._loadSvg(snap.id), this._loadFiles(snap.id)]);
     const svg = parseSnapshotSvg(svgText);
     const width = snap.width ?? (Number(svg.getAttribute('width')) || 200);
     const height = snap.height ?? (Number(svg.getAttribute('height')) || 200);
@@ -414,8 +431,9 @@ export class WorkspaceSnapshotsView extends HTMLElement {
       open: (svgElement: SVGSVGElement, state: Record<string, unknown>) => void;
     };
     // The snapshot is the source of truth: its own size, background and code
-    // (the legend lists the snapshot's code — docs/snapshots.md). It holds no
-    // grid, so the grid option has nothing to add.
+    // (the legend lists the program that drew it, the file the code panel
+    // opens on — docs/snapshots.md). It holds no grid, so the grid option has
+    // nothing to add.
     modal.open(svg, {
       width,
       height,
@@ -426,7 +444,7 @@ export class WorkspaceSnapshotsView extends HTMLElement {
       gridSize: 10,
       workspaceName: snap.name,
       workspaceDescription: snap.note,
-      code,
+      code: files.drawing.text,
     });
   }
 
@@ -444,7 +462,7 @@ export class WorkspaceSnapshotsView extends HTMLElement {
     if (url) URL.revokeObjectURL(url);
     this._cardUrls.delete(snap.id);
     this._svgText.delete(snap.id);
-    this._code.delete(snap.id);
+    this._files.delete(snap.id);
     toast({ type: 'success', title: 'Snapshot deleted' });
     if (!this._snapshots.length) {
       this._currentId = null;
@@ -555,7 +573,7 @@ export class WorkspaceSnapshotsView extends HTMLElement {
     for (const url of this._cardUrls.values()) URL.revokeObjectURL(url);
     this._cardUrls = new Map();
     this._svgText.clear();
-    this._code.clear();
+    this._files.clear();
     if (this._svgUrl) URL.revokeObjectURL(this._svgUrl);
     this._svgUrl = null;
   }

@@ -82,10 +82,12 @@ export interface MiniWorkspaceFiles {
 
 /** A blog sample isn't a file: the copy icon names it so. */
 const SAMPLE_COPY_LABEL = 'the code';
+/** The title when an embed has no caption. */
+const DEFAULT_CAPTION = 'Code & Preview';
 
 export class MiniWorkspace extends HTMLElement {
   static get observedAttributes(): string[] {
-    return ['code-open', 'hide-playground-link'];
+    return ['caption', 'code-open', 'hide-playground-link'];
   }
 
   private _sourceCode: string = '';
@@ -143,6 +145,11 @@ export class MiniWorkspace extends HTMLElement {
     if (!this.shadowRoot?.querySelector('.content-area')) return;
     if (name === 'code-open') this._syncCodeOpen();
     else if (name === 'hide-playground-link') this._syncPlaygroundLink();
+    // A snapshot renamed while it's shown (the snapshots page sets the caption again).
+    else if (name === 'caption') {
+      const title = this.shadowRoot.querySelector('.mw-title');
+      if (title) title.textContent = this.getAttribute('caption') || DEFAULT_CAPTION;
+    }
   }
 
   connectedCallback(): void {
@@ -859,7 +866,7 @@ export class MiniWorkspace extends HTMLElement {
   private render(): void {
     const rawCaption = this.getAttribute('caption');
     // escapeHtml already handles &<> — caption is rendered as text in <h2>.
-    const caption = rawCaption ? escapeHtml(rawCaption) : 'Code &amp; Preview';
+    const caption = escapeHtml(rawCaption || DEFAULT_CAPTION);
     const codeOpen = this.hasAttribute('code-open');
     const chipGroupInner = this._renderChipGroupInner();
 

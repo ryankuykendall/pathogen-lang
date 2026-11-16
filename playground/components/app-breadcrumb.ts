@@ -350,16 +350,17 @@ class AppBreadcrumb extends HTMLElement {
     return `<span class="snapshot-split has-count">${snapBtn}<button id="snapshot-count-btn" class="snapshot-count-btn" title="View snapshots (${count})" aria-label="View snapshots (${count})"><span class="count">${count}</span> ›</button></span>`;
   }
 
-  /** Actions for the snapshots page (the page itself sits below the bar). */
+  /**
+   * Actions for the snapshots page (the page itself sits below the bar). Copying
+   * is the code panel's icon, on the file it shows (2e, step 3c; mockup v13).
+   */
   getSnapshotsPageControlsHtml(): string {
     const page = store.get('snapshotsPage') as SnapshotsPageCrumbs | null;
     if (!page?.currentName) return '';
     return `
       <div class="workspace-controls-wrapper">
         <div class="controls-left">
-          <span id="copy-feedback" class="copy-feedback">Copied!</span>
-          <button class="secondary-btn" data-snapshot-action="copy-code" title="Copy this snapshot's code">Copy code</button>
-          <button class="secondary-btn" data-snapshot-action="start-workspace" title="Create a new workspace with this snapshot's code">+ Start new workspace</button>
+          <button class="secondary-btn" data-snapshot-action="start-workspace" title="Create a new workspace with this snapshot's files">+ Start new workspace</button>
           <button class="secondary-btn" data-snapshot-action="export" title="Export this snapshot as SVG, PNG, or PDF">Export…</button>
         </div>
         <div class="controls-right">
@@ -640,7 +641,6 @@ class AppBreadcrumb extends HTMLElement {
       btn.addEventListener('click', () => {
         const action = btn.dataset.snapshotAction!;
         this.dispatchEvent(new CustomEvent('snapshot-action', { bubbles: true, composed: true, detail: { action } }));
-        if (action === 'copy-code') this.showCopyFeedback();
       });
     });
 

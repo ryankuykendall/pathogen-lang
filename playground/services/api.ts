@@ -276,12 +276,6 @@ export interface SnapshotFiles {
   code?: string;
 }
 
-/** The text of the program that drew a snapshot: its `program`'s, else the main's. */
-export function drawingText(files: SnapshotFiles): string {
-  const path = files.program ?? files.entryPoints[0];
-  return (path !== undefined ? files.files[path]?.text : undefined) ?? files.code ?? '';
-}
-
 const SNAPSHOT_HEADER = { 'X-Pathogen-Snapshot': '1' };
 
 async function snapshotError(response: Response, fallback: string): Promise<ApiError> {

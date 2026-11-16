@@ -262,7 +262,7 @@ try {
     page,
     `const mw = __deep('workspace-snapshots-view')?.shadowRoot.querySelector('mini-workspace');
      const ifr = mw?.shadowRoot?.querySelector('mini-preview')?.shadowRoot?.querySelector('iframe');
-     return ifr?.contentDocument?.querySelector('path[d]') ? mw.querySelector('code')?.textContent ?? 'no code' : null;`,
+     return ifr?.contentDocument?.querySelector('path[d]') ? mw.shadowRoot.querySelector('source-files')?.shownText ?? 'no code' : null;`,
     20_000,
   );
   check('the snapshots page shows its image, with the drawing program’s code', viewer === MAIN, viewer);
