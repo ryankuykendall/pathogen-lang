@@ -60,13 +60,14 @@ describe('the mini-workspace’s Background and Grid (step 9c)', () => {
     const { root } = mount('--bg: #d0d7f0');
     const inner = root.querySelector('.glass-bar-inner')!;
     const order = [...inner.children].map((c) => c.id || c.className).filter((x) => x !== 'glass-divider');
-    expect(order.slice(0, 6)).toEqual([
+    // Copy left the bar for the code panel (2e, step 3b): fullscreen follows Reset.
+    expect(order).toEqual([
       'code-toggle',
       'chip-group',
       'bg-control',
       'grid-control',
       'canvas-reset',
-      'copy-btn',
+      'fullscreen-btn',
     ]);
     expect(root.querySelector('#chip-group #vars-reset, #chip-group #canvas-reset')).toBeNull();
     expect(root.querySelector('#chip-group pathogen-color-input[data-var="--bg"]')).not.toBeNull();

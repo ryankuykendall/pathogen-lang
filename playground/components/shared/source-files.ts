@@ -41,8 +41,21 @@ type CmModule = any;
 
 /** Below this width, the list becomes a menu (the review modal's ~520 px pane keeps the list). */
 export const NARROW_PX = 480;
+/** Narrower than this, the viewer is folded away (a closed code panel), not narrow. */
+const FOLDED_PX = 120;
+/** A width must hold this long before the layout follows it, so a panel opening doesn't flip it midway. */
+export const SETTLE_MS = 150;
 /** How long "Copied" (or the failure) shows. */
 const FEEDBACK_MS = 2000;
+
+/**
+ * The file shown: `open` when it's among the files, else the first program, else the first file.
+ * Exported so a caller that needs the shown file's text (Open in Playground) picks the same one.
+ */
+export function shownPathOf(files: readonly SourceFile[], open: string | null): string | null {
+  if (open !== null && files.some((f) => f.path === open)) return open;
+  return (files.find((f) => f.kind === 'program') ?? files[0])?.path ?? null;
+}
 
 const esc = (s: string): string =>
   s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c] as string);
@@ -129,7 +142,8 @@ const styles = `
   .cell { position: relative; flex: none; display: grid; place-items: center; }
   .path .cell, .menu-row .cell { align-self: stretch; width: 38px; margin-left: auto; border-left: 1px solid var(--border-color, #e2e8f0); }
   .menu-row .cell { margin-left: 0; }
-  .float { position: absolute; top: 6px; right: 8px; z-index: 5; }
+  /* Where the floating icon sits; a host can move it clear of its own controls. */
+  .float { position: absolute; top: var(--source-files-float-top, 6px); right: var(--source-files-float-right, 8px); z-index: 5; }
   .cp { width: 26px; height: 26px; padding: 0; border: 1px solid transparent; border-radius: 6px; background: none; color: var(--text-secondary, #64748b);
     display: grid; place-items: center; cursor: pointer; }
   .cp svg { width: 15px; height: 15px; }
@@ -182,6 +196,8 @@ export class SourceFiles extends HTMLElement {
   private _copied: '' | 'ok' | 'fail' = '';
 
   private _copiedTimer: ReturnType<typeof setTimeout> | null = null;
+
+  private _settleTimer: ReturnType<typeof setTimeout> | null = null;
 
   private _resize: ResizeObserver | null = null;
 
@@ -254,12 +270,13 @@ export class SourceFiles extends HTMLElement {
     this._render();
   }
 
-  /** For tests and callers that measure themselves: the list (false) or the menu (true). */
+  /** The list (false) or the menu (true). The viewer sets it from its own width, once the width settles. */
   set narrow(value: boolean) {
     if (value === this._narrow) return;
     this._narrow = value;
     this._sheet = false;
-    this._render();
+    // One file looks the same at any width.
+    if (this._several()) this._render();
   }
 
   get narrow(): boolean {
@@ -278,13 +295,17 @@ export class SourceFiles extends HTMLElement {
     this._themeWatch.observe(document.documentElement, { attributes: true, attributeFilter: ['data-active-theme'] });
     // Escape closes the sheet wherever the keyboard is.
     document.addEventListener('keydown', this._onDocKey);
+    // Laid out already (not folded away): the first layout fits, with no flip after.
+    const width = this.getBoundingClientRect().width;
+    if (width >= FOLDED_PX) this._narrow = width < NARROW_PX;
     if (typeof ResizeObserver !== 'undefined') {
       this._resize = new ResizeObserver((entries) => {
         const width = entries[entries.length - 1]?.contentRect.width ?? 0;
-        if (width <= 0) return;
-        // A few pixels of give, so a width sitting at the line doesn't flip back and forth.
-        if (width < NARROW_PX) this.narrow = true;
-        else if (width > NARROW_PX + 8) this.narrow = false;
+        if (this._settleTimer) clearTimeout(this._settleTimer);
+        this._settleTimer = setTimeout(() => {
+          this._settleTimer = null;
+          this._fitWidth(width);
+        }, SETTLE_MS);
       });
       this._resize.observe(this);
     }
@@ -301,10 +322,20 @@ export class SourceFiles extends HTMLElement {
     this._themeWatch = null;
     document.removeEventListener('keydown', this._onDocKey);
     if (this._copiedTimer) clearTimeout(this._copiedTimer);
+    if (this._settleTimer) clearTimeout(this._settleTimer);
+    this._settleTimer = null;
     this._view?.destroy?.();
     this._view = null;
     this._viewText = null;
     this._cmLoading = null;
+  }
+
+  /** The list or the menu for this width. Folded away (a closed panel), it keeps the one it has. */
+  private _fitWidth(width: number): void {
+    if (width < FOLDED_PX) return;
+    // A few pixels of give, so a width sitting at the line doesn't flip back and forth.
+    if (width < NARROW_PX) this.narrow = true;
+    else if (width > NARROW_PX + 8) this.narrow = false;
   }
 
   /** Load CodeMirror and show the open file in it (until then the text shows plain). */
@@ -334,8 +365,7 @@ export class SourceFiles extends HTMLElement {
   }
 
   private _shownPath(): string | null {
-    if (this._open !== null && this._fileAt(this._open)) return this._open;
-    return (this._files.find((f) => f.kind === 'program') ?? this._files[0])?.path ?? null;
+    return shownPathOf(this._files, this._open);
   }
 
   /** The rows: the tree's order, with pathogen.json last only when it's among the files. */

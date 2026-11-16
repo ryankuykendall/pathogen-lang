@@ -2073,7 +2073,7 @@ layer('hex').apply { circle(60, 100, 40) }`,
     name: 'Mini Workspace',
     category: 'Blog',
     description:
-      'Display-only code+preview embed for blog posts with pannable/zoomable SVG. Its control bar has the post’s color chips, then Background (the canvas behind the drawing: five swatches, a hex value, Default) and Grid (its size while on), and a Reset for all three (2d, step 9c; mockup v7 screen W).',
+      'Display-only code+preview embed for blog posts with pannable/zoomable SVG. Its control bar has the post’s color chips, then Background (the canvas behind the drawing: five swatches, a hex value, Default) and Grid (its size while on), and a Reset for all three (2d, step 9c; mockup v7 screen W). The code panel is <source-files> (2e, step 3b): a blog sample’s copy icon floats in it and says “Copy the code”; with several files (`sourceFiles`, the snapshots page) it shows the list, or a menu when the panel is narrower than 480 px. `hide-playground-link` hides the ↗.',
     stories: [
       {
         name: 'Default (code closed)',
@@ -2105,9 +2105,63 @@ layer('hex').apply { circle(60, 100, 40) }`,
           caption: 'The bar open, the grid on at 20 px, the background slate; Reset puts all three back.',
         },
       },
+      {
+        name: 'Several files (the snapshots page)',
+        props: {
+          codeOpen: true,
+          several: true,
+          width: 1100,
+          caption: 'Drawn by demos/gears.pathogen: the code opens on it, and the ↗ is hidden.',
+        },
+      },
+      {
+        name: 'Several files, a narrow panel',
+        props: { codeOpen: true, several: true, caption: 'Under 480 px, the list is a menu above the code.' },
+      },
     ],
     controls: [{ name: 'codeOpen', type: 'toggle', label: 'Code Open', default: false }],
     render: (container, props, controls) => {
+      if (props.several) {
+        // The snapshots page's viewer: several files, the ↗ hidden. Defined before sourceFiles is set.
+        const loaded = import('../components/blog/mini-workspace.js').then(() => {
+          const MAIN =
+            'import { gear } from "./parts/gears.pathogen";\ndefine ViewBox(0, 0, 200, 100);\n\ngear(Point(55, 50), 40);\n';
+          const GEARS =
+            '// A gear: a star outline with a round hub.\nmodule;\n\nexport fn gear(at, r) {\n  star(at.x, at.y, r, r - 6, 12);\n  circle(at.x, at.y, r * 0.3);\n}\n';
+          const KIT = 'module;\n\nimport * as gears from "./gears.pathogen";\n\nexport const gear = gears.gear;\n';
+          const DEMO =
+            'import { gear } from "../parts/gears.pathogen";\ndefine ViewBox(0, 0, 300, 110);\n\nfor (i in 0..2) {\n  gear(Point(50 + i * 100, 50), 34);\n}\n';
+          const PJ = '{\n  "entryPoints": [\n    "main.pathogen",\n    "demos/gears.pathogen"\n  ]\n}\n';
+          const el = document.createElement('mini-workspace') as HTMLElement & { sourceFiles: unknown };
+          el.setAttribute('caption', String(props.caption));
+          el.setAttribute('hide-playground-link', '');
+          if (props.codeOpen) el.setAttribute('code-open', '');
+          el.sourceFiles = {
+            files: [
+              { path: 'main.pathogen', text: MAIN, kind: 'program' },
+              { path: 'parts/gears.pathogen', text: GEARS, kind: 'library' },
+              { path: 'parts/kit.pathogen', text: KIT, kind: 'library' },
+              { path: 'demos/gears.pathogen', text: DEMO, kind: 'program' },
+              { path: 'pathogen.json', text: PJ, kind: 'project' },
+            ],
+            folders: [],
+            main: 'main.pathogen',
+            open: 'demos/gears.pathogen',
+          };
+          const rings = [50, 150, 250]
+            .map(
+              (x) =>
+                `<circle cx="${x}" cy="50" r="34" fill="none" stroke="#9461c4" stroke-width="3"/><circle cx="${x}" cy="50" r="10" fill="#9461c4"/>`,
+            )
+            .join('');
+          el.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="300" height="110" viewBox="0 0 300 110">${rings}</svg>`;
+          el.style.maxWidth = `${Number(props.width ?? 700)}px`;
+          container.appendChild(el);
+          controls.on('codeOpen', (value) => el.toggleAttribute('code-open', Boolean(value)));
+        });
+        loaded.catch((err: unknown) => console.warn('mini-workspace story:', err));
+        return;
+      }
       const withVars = Boolean(props.withVars);
 
       const plainCode = `let r = 50;

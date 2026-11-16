@@ -3,15 +3,25 @@
 //
 // Chrome design: details/summary-style header (chevron + title) always visible at 28px.
 // Clicking the summary slides an in-flow glass-blur control bar from 0 → 44px height,
-// exposing the code-toggle, per-var color chips, reset, copy, and playground-launch
-// actions. Suppresses the minimap in embedded mode; minimap appears only when
+// exposing the code-toggle, per-var color chips, Background, Grid, Reset and
+// fullscreen. Suppresses the minimap in embedded mode; minimap appears only when
 // mini-preview goes fullscreen.
+//
+// The code panel is <source-files> (2e, step 3b; mockups v12 to v14): one file, or
+// several through `sourceFiles`, with the copy icon in the panel itself. A blog
+// sample isn't a file, so its icon says "Copy the code". `hide-playground-link`
+// hides the ↗ (the snapshots page, the review modal).
 
-import { themeManager } from '../../utils/theme.js';
+// The theme manager: on a static blog page, nothing else starts it.
+import '../../utils/theme.js';
 import { GRID_COLOR, GRID_SIZE, GRID_SIZES } from '../../utils/canvas-defaults.js';
 import '../shared/pathogen-color-input.js';
+// Statically, so <source-files> is defined before render() puts one in the panel: a
+// property set on an element not yet upgraded would hide the class's setter.
+import { shownPathOf } from '../shared/source-files.js';
 import './mini-preview.js';
 
+import type { SourceFile, SourceFiles } from '../shared/source-files.js';
 import type { MiniGrid } from './mini-preview.js';
 
 // Background and Grid in the control bar (2d, step 9c; mockup v7 screen W, approved
@@ -58,16 +68,26 @@ interface ImportState {
   desc: string;
 }
 
-// CodeMirror module types (lazy loaded from esm.sh at runtime)
-// Using Record<string, any> since modules are fetched via CDN, not installed locally
-interface CmModules {
-  state: Record<string, any>;
-  view: Record<string, any>;
-  language: Record<string, any>;
-  githubTheme: { githubDark: unknown; githubLight: unknown };
+/**
+ * Several files for the code panel (the snapshots page, the review modal): the files,
+ * the workspace's folders and main, and the file to open on, the program that drew
+ * the image. Without it, the panel shows the child `<code>` as one file.
+ */
+export interface MiniWorkspaceFiles {
+  files: SourceFile[];
+  folders: string[];
+  main: string | null;
+  open: string | null;
 }
 
+/** A blog sample isn't a file: the copy icon names it so. */
+const SAMPLE_COPY_LABEL = 'the code';
+
 export class MiniWorkspace extends HTMLElement {
+  static get observedAttributes(): string[] {
+    return ['code-open', 'hide-playground-link'];
+  }
+
   private _sourceCode: string = '';
   private _svgContent: string = '';
   private _width: number = 200;
@@ -88,13 +108,8 @@ export class MiniWorkspace extends HTMLElement {
   // sibling mini-workspaces in the same blog post otherwise.
   private _crossInstanceCloseHandler: (() => void) | null = null;
 
-  // Lazy CodeMirror state
-  private _editor: unknown | null = null;
-  private _cmModules: CmModules | null = null;
-  private _themeCompartment: unknown | null = null;
-  private _themeUnsubscribe: (() => void) | null = null;
-  private _cmLoading: boolean = false;
-  private _onThemeChange: (() => void) | null = null;
+  // Several files for the code panel, when given (see MiniWorkspaceFiles).
+  private _files: MiniWorkspaceFiles | null = null;
 
   // Bar transition handler cleanup
   private _onBarTransitionEnd: ((e: TransitionEvent) => void) | null = null;
@@ -107,6 +122,27 @@ export class MiniWorkspace extends HTMLElement {
   constructor() {
     super();
     this.attachShadow({ mode: 'open' });
+  }
+
+  /** Several files for the code panel; null shows the child `<code>`. The panel follows when set later. */
+  set sourceFiles(value: MiniWorkspaceFiles | null) {
+    this._files = value
+      ? { files: [...value.files], folders: [...value.folders], main: value.main, open: value.open }
+      : null;
+    this._sourceCode = this._files ? this._drawingText(this._files) : this._childCode();
+    this._readSize();
+    this._fillCodePanel();
+  }
+
+  get sourceFiles(): MiniWorkspaceFiles | null {
+    return this._files;
+  }
+
+  attributeChangedCallback(name: string): void {
+    // Before the first render (an upgrade with the attribute already set), connectedCallback does this.
+    if (!this.shadowRoot?.querySelector('.content-area')) return;
+    if (name === 'code-open') this._syncCodeOpen();
+    else if (name === 'hide-playground-link') this._syncPlaygroundLink();
   }
 
   connectedCallback(): void {
@@ -134,15 +170,14 @@ export class MiniWorkspace extends HTMLElement {
       for (const v of this._cssVars) preview.setCssVar(v.name, v.defaultValue);
     }
 
-    if (this.hasAttribute('code-open')) {
-      this._loadCodeMirrorIfNeeded();
-    }
+    // render() built a fresh code panel: it gets its files, and opens if the code is open.
+    this._fillCodePanel();
+    this._syncCodeOpen();
+    this._syncPlaygroundLink();
   }
 
   disconnectedCallback(): void {
     this._closeBackground(false);
-    if (this._themeUnsubscribe) this._themeUnsubscribe();
-    if (this._onThemeChange) document.removeEventListener('theme-change', this._onThemeChange);
     if (this._inspectorOpen) this._closeInspector();
     if (this._crossInstanceCloseHandler) {
       document.removeEventListener('mini-workspace-close-inspector', this._crossInstanceCloseHandler);
@@ -154,10 +189,35 @@ export class MiniWorkspace extends HTMLElement {
     }
   }
 
-  private _captureChildren(): void {
+  /** The child `<code>`'s text: a blog sample, or the program that drew a snapshot. */
+  private _childCode(): string {
     const codeEl = this.querySelector('code') || this.querySelector('pre code');
-    if (codeEl) this._sourceCode = codeEl.textContent || '';
+    return codeEl?.textContent ?? '';
+  }
 
+  private _captureChildren(): void {
+    // With several files, the code is the program that drew the image, wherever it sits.
+    this._sourceCode = this._files ? this._drawingText(this._files) : this._childCode();
+    this._readSize();
+
+    const svgChild = this.querySelector('svg');
+    if (svgChild) {
+      this._svgContent = svgChild.outerHTML;
+      this._extractMetadata(svgChild);
+    }
+
+    const imgChild = this.querySelector('img');
+    if (imgChild && !this._svgContent) {
+      this._imgSrc = imgChild.getAttribute('src') || undefined;
+      if (this._imgSrc) this._fetchSvg(this._imgSrc);
+    }
+
+    const svgSrc = this.getAttribute('svg-src');
+    if (svgSrc && !this._svgContent) this._fetchSvg(svgSrc);
+  }
+
+  /** The drawing's size (what Open in Playground carries): a child <svg>'s, else the code's ViewBox. */
+  private _readSize(): void {
     if (this._sourceCode) {
       // Prefer `define ViewBox(originX, originY, width, height);` — the
       // canonical source-of-truth introduced when viewBox moved out of
@@ -177,25 +237,12 @@ export class MiniWorkspace extends HTMLElement {
         }
       }
     }
-
+    // A child <svg>'s own size wins.
     const svgChild = this.querySelector('svg');
-    if (svgChild) {
-      this._svgContent = svgChild.outerHTML;
-      const w = svgChild.getAttribute('width');
-      const h = svgChild.getAttribute('height');
-      if (w) this._width = parseFloat(w);
-      if (h) this._height = parseFloat(h);
-      this._extractMetadata(svgChild);
-    }
-
-    const imgChild = this.querySelector('img');
-    if (imgChild && !this._svgContent) {
-      this._imgSrc = imgChild.getAttribute('src') || undefined;
-      if (this._imgSrc) this._fetchSvg(this._imgSrc);
-    }
-
-    const svgSrc = this.getAttribute('svg-src');
-    if (svgSrc && !this._svgContent) this._fetchSvg(svgSrc);
+    const w = svgChild?.getAttribute('width');
+    const h = svgChild?.getAttribute('height');
+    if (w) this._width = parseFloat(w);
+    if (h) this._height = parseFloat(h);
   }
 
   private async _fetchSvg(url: string): Promise<void> {
@@ -530,109 +577,58 @@ export class MiniWorkspace extends HTMLElement {
     return vars;
   }
 
-  // --- Lazy CodeMirror ---
+  // --- The code panel: <source-files> ---
 
-  private async _loadCodeMirror(): Promise<CmModules> {
-    if (this._cmModules) return this._cmModules;
-
-    const [state, view, language, githubTheme] = await Promise.all([
-      import('https://esm.sh/@codemirror/state@6'),
-      import('https://esm.sh/@codemirror/view@6'),
-      import('https://esm.sh/@codemirror/language@6'),
-      import('https://esm.sh/@uiw/codemirror-theme-github@4'),
-    ]);
-
-    this._cmModules = { state, view, language, githubTheme } as CmModules;
-    return this._cmModules;
+  private get _viewer(): SourceFiles | null {
+    return this.shadowRoot?.querySelector<SourceFiles>('source-files') ?? null;
   }
 
-  // The REAL Pathogen parser (style-block inner grammar mounted), never
-  // lang-javascript — JS highlighting split on the parse errors Pathogen
-  // isn't, coloring dashed style properties differently from undashed ones.
-  // SPA pages have window.PathogenLang; static pages fall back to the small
-  // highlight bundle (same pattern as detail-source-mount.ts).
-  private async _pathogenLanguageExtension(language: unknown): Promise<unknown> {
-    let parser: unknown =
-      (window as any).PathogenLang?.editorParser ?? (window as any).PathogenLang?.lezerParser;
-    if (!parser) {
-      try {
-        // A variable, so the test runner's bundler doesn't try to load it (it's served, not a module of the repo).
-        const bundle = '/dist/highlight.global.js';
-        const mod = (await import(/* @vite-ignore */ bundle)) as {
-          editorParser?: unknown;
-          lezerParser?: unknown;
-        };
-        parser = mod.editorParser ?? mod.lezerParser;
-      } catch {
-        parser = null;
-      }
+  /** The file the panel opens on: the one named, else the main; the viewer's own rule after that. */
+  private _openPath(files: MiniWorkspaceFiles): string | null {
+    return shownPathOf(files.files, files.open ?? files.main);
+  }
+
+  /** The text of the program that drew the image: the very file the panel shows first. */
+  private _drawingText(files: MiniWorkspaceFiles): string {
+    const path = this._openPath(files);
+    return files.files.find((f) => f.path === path)?.text ?? '';
+  }
+
+  /** Give the panel its files: several when given, else the child `<code>` as one sample. */
+  private _fillCodePanel(): void {
+    const viewer = this._viewer;
+    if (!viewer) return;
+    if (this._files) {
+      viewer.copyLabel = null;
+      viewer.folders = this._files.folders;
+      viewer.main = this._files.main;
+      viewer.files = this._files.files;
+      viewer.open = this._openPath(this._files);
+    } else {
+      viewer.copyLabel = SAMPLE_COPY_LABEL;
+      viewer.folders = [];
+      viewer.main = null;
+      viewer.files = [{ path: 'main.pathogen', text: this._sourceCode, kind: 'program' }];
+      viewer.open = null;
     }
-    if (!parser) return [];
-    const lang = (language as any).LRLanguage.define({
-      parser,
-      languageData: { commentTokens: { line: '//' } },
-    });
-    return new (language as any).LanguageSupport(lang);
   }
 
-  private _getThemeExtensions(): unknown[] {
-    const { githubTheme } = this._cmModules!;
-    const isDark = themeManager.getActiveTheme() === 'dark';
-    return [isDark ? githubTheme.githubDark : githubTheme.githubLight];
+  /**
+   * The code open or closed, whoever set the attribute: the toggle shows it, and the panel
+   * loads its editor. Closed, the panel is out of the keyboard's way (nothing to copy).
+   */
+  private _syncCodeOpen(): void {
+    const open = this.hasAttribute('code-open');
+    const toggle = this.shadowRoot!.querySelector('#code-toggle');
+    toggle?.classList.toggle('active', open);
+    toggle?.setAttribute('aria-pressed', String(open));
+    this.shadowRoot!.querySelector<HTMLElement>('.code-panel')?.toggleAttribute('inert', !open);
+    if (open) this._viewer?.activate().catch(() => undefined);
   }
 
-  private async _createEditor(): Promise<void> {
-    const container = this.shadowRoot!.querySelector('#editor-container');
-    if (!container || this._editor) return;
-
-    const { state, view, language } = await this._loadCodeMirror();
-    const pathogenLang = await this._pathogenLanguageExtension(language);
-
-    this._themeCompartment = new (state as any).Compartment();
-
-    const editorState = (state as any).EditorState.create({
-      doc: this._sourceCode,
-      extensions: [
-        (view as any).lineNumbers(),
-        (view as any).highlightSpecialChars(),
-        (view as any).drawSelection(),
-        (view as any).highlightActiveLine(),
-        (this._themeCompartment as any).of(this._getThemeExtensions()),
-        pathogenLang,
-        (view as any).EditorView.lineWrapping,
-        (state as any).EditorState.readOnly.of(true),
-      ],
-    });
-
-    this._editor = new (view as any).EditorView({
-      state: editorState,
-      parent: container,
-    });
-
-    const fallback = this.shadowRoot!.querySelector('#code-fallback') as HTMLElement | null;
-    if (fallback) fallback.style.display = 'none';
-
-    this._themeUnsubscribe = themeManager.subscribe(() => this._updateEditorTheme());
-    this._onThemeChange = () => this._updateEditorTheme();
-    document.addEventListener('theme-change', this._onThemeChange);
-  }
-
-  private _updateEditorTheme(): void {
-    if (!this._editor || !this._themeCompartment) return;
-    (this._editor as any).dispatch({
-      effects: (this._themeCompartment as any).reconfigure(this._getThemeExtensions()),
-    });
-  }
-
-  private async _loadCodeMirrorIfNeeded(): Promise<void> {
-    if (this._editor || this._cmLoading) return;
-    this._cmLoading = true;
-    try {
-      await this._createEditor();
-    } catch (err) {
-      console.warn('mini-workspace: CodeMirror load failed:', err);
-    }
-    this._cmLoading = false;
+  private _syncPlaygroundLink(): void {
+    const link = this.shadowRoot!.querySelector<HTMLElement>('.playground-link');
+    if (link) link.hidden = this.hasAttribute('hide-playground-link');
   }
 
   // --- "Open in Playground" ---
@@ -798,18 +794,10 @@ export class MiniWorkspace extends HTMLElement {
     // Code toggle (inside glass-bar)
     const codeToggle = this.shadowRoot!.querySelector('#code-toggle');
     if (codeToggle) {
+      // The attribute's change does the rest (_syncCodeOpen).
       codeToggle.addEventListener('click', (e) => {
         e.stopPropagation();
-        if (this.hasAttribute('code-open')) {
-          this.removeAttribute('code-open');
-          codeToggle.classList.remove('active');
-          codeToggle.setAttribute('aria-pressed', 'false');
-        } else {
-          this.setAttribute('code-open', '');
-          codeToggle.classList.add('active');
-          codeToggle.setAttribute('aria-pressed', 'true');
-          this._loadCodeMirrorIfNeeded();
-        }
+        this.toggleAttribute('code-open');
       });
     }
 
@@ -817,22 +805,6 @@ export class MiniWorkspace extends HTMLElement {
     const playgroundLink = this.shadowRoot!.querySelector('.playground-link');
     if (playgroundLink) {
       playgroundLink.addEventListener('click', (e: Event) => this._handlePlaygroundClick(e));
-    }
-
-    // Copy source to clipboard
-    const copyBtn = this.shadowRoot!.querySelector('#copy-btn') as HTMLElement | null;
-    if (copyBtn) {
-      copyBtn.addEventListener('click', async (e) => {
-        e.stopPropagation();
-        const originalTip = copyBtn.getAttribute('data-tip') || 'Copy';
-        try {
-          await navigator.clipboard.writeText(this._sourceCode);
-          copyBtn.setAttribute('data-tip', 'Copied');
-        } catch {
-          copyBtn.setAttribute('data-tip', 'Failed');
-        }
-        setTimeout(() => copyBtn.setAttribute('data-tip', originalTip), 1100);
-      });
     }
 
     // Fullscreen button — delegates to mini-preview's internal toggle so the
@@ -889,7 +861,6 @@ export class MiniWorkspace extends HTMLElement {
     // escapeHtml already handles &<> — caption is rendered as text in <h2>.
     const caption = rawCaption ? escapeHtml(rawCaption) : 'Code &amp; Preview';
     const codeOpen = this.hasAttribute('code-open');
-    const escapedCode = escapeHtml(this._sourceCode);
     const chipGroupInner = this._renderChipGroupInner();
 
     this.shadowRoot!.innerHTML = `
@@ -1295,36 +1266,11 @@ export class MiniWorkspace extends HTMLElement {
           position: relative;
         }
 
-        #editor-container {
+        source-files {
           flex: 1;
-          overflow: auto;
+          min-height: 0;
         }
-        #editor-container .cm-editor {
-          height: 100%;
-          font-size: 13px;
-        }
-        #editor-container .cm-editor .cm-content { cursor: default; }
-        #editor-container .cm-editor .cm-scroller {
-          font-family: var(--font-mono, 'Inconsolata', monospace);
-          font-weight: 500;
-        }
-        #editor-container .cm-editor.cm-focused { outline: none; }
-
-        #code-fallback {
-          margin: 0;
-          flex: 1;
-          overflow: auto;
-        }
-        #code-fallback code {
-          display: block;
-          padding: 0.75rem;
-          font-family: var(--font-mono, 'Inconsolata', monospace);
-          font-size: 13px;
-          line-height: 1.5;
-          white-space: pre;
-          color: var(--text-primary, #1a1a2e);
-          background: none;
-        }
+        .playground-link[hidden] { display: none; }
 
         /* Preview panel */
         .preview-panel {
@@ -1347,6 +1293,10 @@ export class MiniWorkspace extends HTMLElement {
           .code-panel {
             border-right: none;
             border-bottom: 1px solid var(--border-color, #e2e8f0);
+          }
+          /* Stacked, the code meets the embed's corner: its copy icon steps left of the ↗. */
+          :host(:not([hide-playground-link])) source-files {
+            --source-files-float-right: 30px;
           }
         }
       </style>
@@ -1374,9 +1324,6 @@ export class MiniWorkspace extends HTMLElement {
           ${this._renderCanvasControls()}
 
           <span class="glass-divider"></span>
-          <button class="icon-btn" id="copy-btn" type="button" data-tip="Copy">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="8" y="8" width="12" height="12" rx="1"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/></svg>
-          </button>
           <button class="icon-btn" id="fullscreen-btn" type="button" data-tip="Fullscreen">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>
           </button>
@@ -1384,9 +1331,8 @@ export class MiniWorkspace extends HTMLElement {
       </div>
 
       <div class="content-area">
-        <div class="code-panel">
-          <div id="code-fallback"><code>${escapedCode}</code></div>
-          <div id="editor-container"></div>
+        <div class="code-panel"${codeOpen ? '' : ' inert'}>
+          <source-files></source-files>
         </div>
         <div class="preview-panel">
           <mini-preview></mini-preview>

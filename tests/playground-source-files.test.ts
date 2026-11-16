@@ -267,6 +267,78 @@ describe('re-attached', () => {
   });
 });
 
+describe('fitting its width', () => {
+  /** A ResizeObserver the test drives: `resize(w)` reports a new width, as a browser would. */
+  function observeBy(): { resize: (width: number) => void } {
+    let report: ((entries: { contentRect: { width: number } }[]) => void) | null = null;
+    vi.stubGlobal(
+      'ResizeObserver',
+      class {
+        observe = vi.fn();
+
+        disconnect = vi.fn();
+
+        constructor(cb: typeof report) {
+          report = cb;
+        }
+      },
+    );
+    return { resize: (width) => report!([{ contentRect: { width } }]) };
+  }
+
+  afterEach(() => vi.unstubAllGlobals());
+
+  it('follows a width only once it holds, so a panel opening past 480 px never shows the menu midway', async () => {
+    vi.useFakeTimers();
+    const { resize } = observeBy();
+    const { SETTLE_MS } = await import('../playground/components/shared/source-files.js');
+    const el = mount(SEVERAL);
+    // The code panel opening: folded, then wider each frame.
+    for (const width of [1, 60, 180, 320, 470, 560, 640]) {
+      resize(width);
+      vi.advanceTimersByTime(16);
+      expect([el.narrow, $(el, '.list') !== null]).toEqual([false, true]);
+    }
+    vi.advanceTimersByTime(SETTLE_MS);
+    expect([el.narrow, $(el, '.list') !== null]).toEqual([false, true]);
+    // Made narrow, and held: the menu.
+    resize(380);
+    vi.advanceTimersByTime(SETTLE_MS);
+    expect([el.narrow, $(el, '.menu') !== null]).toEqual([true, true]);
+    // Folded away (the panel closed): it keeps what it has, rather than reading 1 px as narrow.
+    resize(1);
+    vi.advanceTimersByTime(SETTLE_MS);
+    resize(640);
+    vi.advanceTimersByTime(SETTLE_MS);
+    resize(1);
+    vi.advanceTimersByTime(SETTLE_MS);
+    expect(el.narrow).toBe(false);
+  });
+
+  it('already laid out when it goes on the page, its first layout fits its width: no flip after', () => {
+    for (const [width, narrow] of [
+      [300, true],
+      [700, false],
+    ] as const) {
+      const el = document.createElement('source-files') as SourceFiles;
+      el.files = SEVERAL;
+      el.main = 'main.pathogen';
+      vi.spyOn(el, 'getBoundingClientRect').mockReturnValue({ width } as DOMRect);
+      document.body.appendChild(el);
+      // No timer has run: this is the first layout.
+      expect([el.narrow, $(el, '.menu') !== null, $(el, '.list') !== null]).toEqual([narrow, narrow, !narrow]);
+      el.remove();
+    }
+  });
+
+  it('one file never re-lays out for its width', () => {
+    const el = mount([{ path: 'main.pathogen', text: MAIN, kind: 'program' }]);
+    const pane = $(el, '.pane');
+    el.narrow = true;
+    expect([$(el, '.pane'), $(el, '.menu')]).toEqual([pane, null]);
+  });
+});
+
 describe('narrow', () => {
   it('a menu names the open file and the count; a tap opens the files as a sheet, a pick closes it', () => {
     const el = mount(SEVERAL);

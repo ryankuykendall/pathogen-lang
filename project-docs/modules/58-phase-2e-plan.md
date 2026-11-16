@@ -333,6 +333,46 @@ Left for 3b-2: checking the sheet inside the review modal, where an ancestor's t
   - after a re-layout, the editor's line numbers sat one row off until it measured again.
 - Baselines of today's blog viewer, for 3b-2's comparison: `2e-step3b-before-*.png`.
 
+Committed as 1866440.
+
+## Step 3b-2, built (2026-11-15)
+
+**`<mini-workspace>`'s code panel is `<source-files>`.** It's used by every blog embed, the snapshots page and the review modal.
+- **Copy moved into the panel.** It's gone from the control bar of every embed. A blog sample's icon floats in the panel's corner and says "Copy the code", since a sample isn't a file.
+- **Several files** come through a new `sourceFiles` property: the files, the folders, the main, and the file to open on. Open in Playground still carries one text, the program that drew the image.
+- **`hide-playground-link`** hides the ↗. Nothing sets it yet: the snapshots page in 3c and the review modal in step 5.
+- **The code open or closed,** set by the toggle, the storybook's control or a page, now loads the editor in each case. Before, setting the attribute alone left plain text. Closed, the panel is `inert`, so its copy icon isn't in the Tab order ("with the code closed, nothing to copy", note 61).
+- **On a phone** the panel stacks under the embed's corner, so its copy icon steps left of the ↗.
+- **In `<source-files>`:** the code panel opens with a 0.3 s animation that passes through narrow widths. So a width now has to hold for 150 ms before the layout follows it, and a folded panel (under 120 px) is ignored. Without this, several files would show the menu, then the list, while the panel opens. One file never re-lays out for its width.
+
+**Expected until 3c:** the snapshots page shows two ways to copy, its breadcrumb's Copy code and the panel's icon, which says "Copy the code" there too. 3c gives that page the several-files viewer and removes the breadcrumb's copy.
+
+**Compared with the baselines** (`2e-step3b-before-*` and `2e-step3b-after-*`): the blog embed with its code open, the storybook, the open bar and a 390 px phone, in light and dark. The code, its colours, line numbers and wrapping are unchanged; the copy icon is new in the panel, and gone from the bar.
+
+**The code review** found no critical problem. It confirmed that the snapshots page and the review modal build their viewers the way the new one reads them. Fixed from it:
+- with no file named to open, the panel and Open in Playground could pick different files. They now share one rule (`shownPathOf`): the main, else the first program;
+- files set later now give Open in Playground the new drawing's size as well as its code;
+- returning to one sample clears the file the panel had open.
+
+**Tested:**
+- `tests/mini-workspace-code-panel.test.ts`, 13 tests:
+  - a blog sample: the icon and what it copies, and no Copy in the bar;
+  - the code closed or open: the panel inert while closed, and the attribute alone opening the editor;
+  - the review modal's way, written into a page's HTML: one editor load;
+  - the hidden ↗;
+  - several files: the list, and what Open in Playground carries (with no file named too);
+  - files set later, their size included;
+  - an embed taken out and put back;
+- `tests/playground-source-files.test.ts`, three more: a width followed only once it holds, the first layout fitting the width it starts at, and one file never re-laid out;
+- `tests/mini-workspace-canvas.test.ts`: the bar's order without Copy;
+- step 3a's check on the dev stack again: the snapshots page still opens a snapshot of several files;
+- `project-docs/modules/verify/verify-2e-step3b2.ts`, 21 checks on the dev stack, light and dark:
+  - the static blog page's embed: CodeMirror, the icon and the clipboard, no Copy in the bar, the closed panel taking no focus;
+  - nothing above the panel that would pin the phone's sheet to an ancestor;
+  - the header's own theme toggle reaching the editor;
+  - the phone's icon clear of the ↗;
+  - the several-files stories: the list, the ↗ hidden, opening the code passing through narrow widths without the menu showing, and a narrow panel's menu.
+
 ## What the audits found (2026-11-14)
 
 ### Snapshots, copies, forks
