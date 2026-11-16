@@ -48,6 +48,40 @@ Each option is measured above. The animation was approved with the mockups, so i
 3. **The drawing keeps its scale when the preview resizes.** More or less of the canvas shows around it, and it's redrawn once afterwards, as a pan or zoom is. It's a larger change to the pan-zoom model, shared with the other previews. Not measured.
 4. **As now.** Heavy drawings make toggles slow.
 
+## 2026-11-16: the preview behind the panes (your proposal)
+
+Your proposal:
+- the preview spans the whole workspace under the headers;
+- the tree, the editor, the console and the inspector sit on top of it;
+- when a pane opens or closes, the drawing moves once to the middle of the space the panes leave (the gap).
+
+`measure-overlay.ts` tries this in the page by injecting CSS, with no code changed. It runs on the same copy of `kablammo-investigations`, in full Chrome at 2x. The drawing moves once each pane has finished moving (0.35 s), in one of three ways. The table gives the longest frame after each action, which is the time the page is frozen.
+
+| Action | Re-fit the drawing to the gap | Slide the preview's layer | Slide and scale the layer |
+|---|---|---|---|
+| Files on or off | 1.45–1.63 s | **0** | **0** |
+| Inspector on or off | 1.75–1.77 s | 0.2–0.3 s * | 0.2 s * |
+| Console on or off | 1.70–1.82 s | **0** | **0** |
+| One raster (a 2% zoom step, which every edit and pan already costs) | 1.47–1.95 s | 1.47–1.95 s | 1.53–1.87 s |
+
+\* Only when the inspector closes, before the drawing moves. This is the inspector's own work: it lists 7,005 layers here. It shows in every mode.
+
+The heavy drawing behaves the same way: a re-fit costs one stall of 0.1 to 0.3 s, and sliding costs none.
+
+**What this shows:**
+- **The panes moving over the preview cost nothing.** The preview has its own layer and keeps its size, so the browser draws the panes over pixels it already has.
+- **Changing the drawing's size inside its layer is what costs.** Re-fitting it once (the "one repaint") is one full raster: 1.5 to 1.9 s for this drawing. That is the same as option 2, "the panes don't animate".
+- **Moving or scaling the whole layer is free.** The browser reuses the pixels it has.
+  - **Slide only:** the drawing keeps its size, so a narrower gap hides its edges under the panes.
+  - **Slide and scale:** the drawing fits the gap at once. When the scaling enlarges it, it looks soft until the next edit, pan or zoom redraws it, and those redraw it anyway. Never enlarging beyond the size it was drawn at would keep it sharp; it would then fill a wider gap only at the next redraw.
+
+**What the layout would also need:**
+- **Fit and pan:** Fit, and the pointer math of pan and zoom, use the drawing's own box. They would have to use the gap instead. That is a change to the shared pan-zoom controller, which the blog viewer and VS Code also use.
+- **The preview's controls** (the zoom pill, the layers button, Snapshot, Export, fullscreen) are placed inside the preview pane, so they would have to follow the gap. Fullscreen still covers everything.
+- **Below 800 px the panes stack,** so this applies to the wide layout only.
+
+**A flaw in the setup:** on the kablammo copy, the drawing was first placed in a 340 px gap instead of 593 px. When the gap was measured, something on the left reached 1,099 px. I haven't chased the cause. Moving a layer costs the same at any size, so the costs stand. The scale factors in the screenshots are larger than they would be.
+
 ## Files
 
 - `heavy-filters.pathogen`: the generated heavy drawing.
@@ -59,6 +93,7 @@ Each option is measured above. The animation was approved with the mockups, so i
   - a pan baking into the viewBox;
   - a blog embed.
 - `measure-toggles.ts`: the table above, for any workspace or the heavy drawing, and any candidate fix.
+- `measure-overlay.ts`: the overlay layout (2026-11-16), with the drawing re-fitted, slid, or slid and scaled.
 - `trace-summary.ts`: where a Chrome trace's time goes, by thread and event, and what painted.
 - `preview-layer-light.png`, `preview-layer-dark.png`: the heavy drawing with the controls over it.
 - `tests/playground-preview-iframe.test.ts`: the layer, for both kinds of preview.
