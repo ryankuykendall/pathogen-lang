@@ -8,7 +8,7 @@
 // working: a workspace that is just main.pathogen still reads and saves as
 // one `code` string.
 
-import { copyFiles, putText, readTexts, storedSize } from './file-store.js';
+import { copyFiles, putText, readTexts, readTextsLeniently, storedSize } from './file-store.js';
 import {
   checkManifest,
   contentHashOf,
@@ -92,6 +92,47 @@ export async function filesWithText(
   };
 }
 
+/** A file a viewer shows: its text, or `unreadable` when its bytes can't be read (note 59, requirement 9). */
+export type ShownFile = FileWithText | (FileEntry & { unreadable: true });
+
+/**
+ * The files with their text for a viewer (a snapshot, an approval), as
+ * filesWithText reads them, except that a file whose bytes can't be read comes
+ * back marked `unreadable`, without text, and the others are still read. The
+ * viewer says so in its place (project-docs/modules/59-phase-2e-several-files-
+ * requirements.md, requirement 9). Never for a load that may save or copy them.
+ */
+export async function filesToShow(
+  env: Env,
+  workspaceId: string,
+  files: StoredFiles,
+): Promise<{
+  files: Record<string, ShownFile>;
+  folders: string[];
+  entryPoints: string[];
+  contentHash: string;
+  code?: string;
+}> {
+  if (files.legacyText !== null) return filesWithText(env, workspaceId, files);
+  const { manifest } = files;
+  const hashes = Object.entries(manifest.files)
+    .filter(([path]) => fileKind(path) === 'pathogen')
+    .map(([, entry]) => entry.sha256);
+  const { texts, missing } = await readTextsLeniently(env, workspaceId, hashes);
+  const shown: Record<string, ShownFile> = {};
+  for (const [path, entry] of Object.entries(manifest.files)) {
+    shown[path] = missing.has(entry.sha256) ? { ...entry, unreadable: true } : { ...entry, text: texts.get(entry.sha256) ?? '' };
+  }
+  const main = shown[MAIN_FILE];
+  return {
+    files: shown,
+    folders: manifest.folders,
+    entryPoints: manifest.entryPoints,
+    contentHash: files.hash,
+    ...(isJustMain(manifest) && main && 'text' in main ? { code: main.text } : {}),
+  };
+}
+
 /** A review-queue entry or an approval: files frozen when it was made, under its workspace's prefix. */
 export interface FrozenRecord extends StoredFileFields {
   workspaceId: string;
@@ -99,7 +140,7 @@ export interface FrozenRecord extends StoredFileFields {
 }
 
 export interface FrozenSource {
-  files: Record<string, FileEntry | FileWithText>;
+  files: Record<string, FileEntry | ShownFile>;
   folders: string[];
   entryPoints: string[];
   /** In today's rule, also for a record from before phase 2. */
@@ -111,11 +152,12 @@ export interface FrozenSource {
 /**
  * A queue entry's or an approval's source, as an admin screen or the detail
  * page reads it. `texts: 'all'` returns every .pathogen file's text (one R2
- * read each). `texts: 'just-main'` is for listings, which must stay near one
- * call an entry: a record that is just main.pathogen gets its text (one read;
- * none for a record from before phase 2), and one with several files comes
- * back as its manifest, whose files an admin reads by hash
- * (GET /workspace/:id/file/:sha256).
+ * read each), for a viewer: a file that can't be read is marked `unreadable`
+ * and the others still show (filesToShow). `texts: 'just-main'` is for
+ * listings, which must stay near one call an entry: a record that is just
+ * main.pathogen gets its text (one read; none for a record from before phase
+ * 2), or fails if it can't be read, and one with several files comes back as
+ * its manifest, whose files an admin reads by hash (GET /workspace/:id/file/:sha256).
  */
 export async function frozenSource(env: Env, record: FrozenRecord, texts: 'all' | 'just-main'): Promise<FrozenSource> {
   const stored = await readStoredFiles(record, record.codeHash);
@@ -123,8 +165,9 @@ export async function frozenSource(env: Env, record: FrozenRecord, texts: 'all' 
   if (texts === 'just-main' && !isJustMain(manifest)) {
     return { files: manifest.files, folders: manifest.folders, entryPoints: manifest.entryPoints, codeHash: stored.hash };
   }
-  const { contentHash, ...withText } = await filesWithText(env, record.workspaceId, stored);
-  return { ...withText, codeHash: contentHash };
+  const { contentHash, ...shown } =
+    texts === 'all' ? await filesToShow(env, record.workspaceId, stored) : await filesWithText(env, record.workspaceId, stored);
+  return { ...shown, codeHash: contentHash };
 }
 
 /**

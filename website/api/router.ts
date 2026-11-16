@@ -1132,12 +1132,14 @@ export const apiHandlers: Record<string, (request: Request, env: Env, ...args: s
       const approval = await readApproval(env, id);
       if (!approval) return errorResponse('No approval record', 404);
       const source = await frozenSource(env, approval, 'all');
+      // A file that couldn't be read (2e step 5d) isn't cached, so a repair shows at once.
+      const lost = Object.values(source.files).some((f) => 'unreadable' in f && f.unreadable);
       return new Response(
         JSON.stringify({ workspaceId: id, name: approval.name, description: approval.description ?? '', ...source }),
         {
           headers: {
             'Content-Type': 'application/json;charset=utf-8',
-            'Cache-Control': 'public, s-maxage=60, max-age=30',
+            'Cache-Control': lost ? 'no-store' : 'public, s-maxage=60, max-age=30',
           },
         },
       );

@@ -8,11 +8,13 @@
 
 import type { WorkspaceApproval } from './api/types.js';
 
-export interface ApprovalSourceFile {
-  sha256?: string;
-  size?: number;
-  text: string;
-}
+/**
+ * A file with its text, or, marked `unreadable`, one whose bytes couldn't be
+ * read: the others still show (note 59, requirement 9).
+ */
+export type ApprovalSourceFile =
+  | { sha256?: string; size?: number; text: string; unreadable?: undefined }
+  | { sha256?: string; size?: number; text?: undefined; unreadable: true };
 
 export interface ApprovalSource {
   files: Record<string, ApprovalSourceFile>;
@@ -33,7 +35,7 @@ function isApprovalSource(value: unknown): value is ApprovalSource {
   return (
     isRecord(value) &&
     isRecord(value.files) &&
-    Object.values(value.files).every((f) => isRecord(f) && typeof f.text === 'string') &&
+    Object.values(value.files).every((f) => isRecord(f) && (typeof f.text === 'string' || f.unreadable === true)) &&
     Array.isArray(value.entryPoints) &&
     Array.isArray(value.folders)
   );
@@ -71,8 +73,14 @@ export async function readApprovalSource(
   }
 }
 
-/** The text the detail page shows: the main program's (the first entry point). */
-export function mainSourceText(source: ApprovalSource): string {
+/**
+ * The text the detail page shows: the main program's (the first entry point).
+ * Null when the main's bytes couldn't be read: the page says so, as when the
+ * source can't be read at all.
+ */
+export function mainSourceText(source: ApprovalSource): string | null {
   const main = source.entryPoints[0];
-  return (main !== undefined ? source.files[main]?.text : undefined) ?? '';
+  const file = main !== undefined ? source.files[main] : undefined;
+  if (file?.unreadable) return null;
+  return file?.text ?? '';
 }

@@ -969,6 +969,31 @@ describe.skipIf(!sqlite)('snapshots API', () => {
       );
       expect((await start(snapshot.id)).status).toBe(500);
     });
+
+    it('/files, for the viewer, marks a file it can’t read and still reads the others (note 59, requirement 9)', async () => {
+      const GEARS = 'module;\nexport fn gear(r) {\n  circle(0, 0, r);\n}\n';
+      const MAIN = 'import { gear } from "./parts/gears.pathogen";\ngear(4);\n';
+      const form = snapshotForm();
+      form.delete('code');
+      form.append(
+        'files',
+        JSON.stringify({ files: { 'main.pathogen': { text: MAIN }, 'parts/gears.pathogen': { text: GEARS } } }),
+      );
+      const { snapshot } = (await (await postSnapshot(ctx, alice, ws, form)).json()) as SnapshotBody;
+      const gears = await entryForText(GEARS);
+      await ctx.r2.delete(`files/${ws}/${gears.sha256}`);
+
+      const res = await call(ctx, 'GET', `/snapshot/${snapshot.id}/files`, { cookie: alice });
+      const body = (await res.json()) as { files: Record<string, unknown>; program: string };
+      expect(res.status).toBe(200);
+      expect(body.files).toEqual({
+        'main.pathogen': { ...(await entryForText(MAIN)), text: MAIN },
+        'parts/gears.pathogen': { ...gears, unreadable: true },
+      });
+      expect(body.program).toBe('main.pathogen');
+      // Starting a workspace from it still reads all or nothing: it would lose the file.
+      expect((await start(snapshot.id)).status).toBe(500);
+    });
   });
 
   describe('snapshots saved before phase 2 (a code.pathogen, no manifest)', () => {

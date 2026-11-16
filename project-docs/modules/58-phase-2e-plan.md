@@ -746,6 +746,57 @@ The Featured findings are left as they are: they are outside answer 8's list and
   - Run again after the review's fixes: all 9 pass.
 - A code review; its three warnings are fixed above.
 
+## Step 5d, the server part (2026-11-16)
+
+**Requirement 9** (note 59: "A file that can't be read says so in its place, and the other files still show"):
+- **The reads that show files read every file they can.** A file whose bytes are missing comes back as `{ sha256, size, unreadable: true }`, without text (`filesToShow`, `readTextsLeniently`). These reads are:
+  - the snapshot's `/files` (the snapshots page);
+  - `/approval-source/:id` (the public page and its `source.json`);
+  - `/admin/approval/:id` (the review screen).
+  Before, one missing file failed the whole read with 500.
+- **The reads that save or copy files still fail rather than lose one.** These are the editor's load, Copy, and a snapshot's Start new workspace.
+  - A fork from `source.json` with an unreadable file refuses, as before: the fork form needs every file's text.
+  - The admin queue listing still reports such an entry with `sourceError`, for 5e's whole-entry state (v12 R5).
+- **The public page:** an unreadable main is no main text, so the page's source panel says the source can't be read, as when the API is down. A missing module leaves the main shown.
+- **The snapshots page, until the viewer's state is approved:** a snapshot with an unreadable file shows the page's load error, naming the file ("Couldn't load this snapshot: parts/gears.pathogen couldn't be read."). Before, it failed with a storage error. No file is ever shown empty.
+- **From the code review:**
+  - The review screen's modal names a lost file ("main.pathogen couldn't be read.") instead of showing an empty source. Regenerate and Set thumbnail refuse with the same reason. 5e rebuilds the modal for several files.
+  - An answer with a lost file isn't cached (`no-store`, the approved source and `source.json`), so a repair shows at once.
+  - The interim no longer says "Try again later": a lost file doesn't come back by itself. The mockup's second line, "Reload the page to try again", has the same problem; for your review.
+
+**The viewer's state, for your review:**
+- **The mockup:** `website/bbwp/2026-11-16-14:53:07--modules--unreadable-file.bbwp.html`.
+  - It shows the real viewer on the dev stack, a snapshot of three files whose module can't be read.
+  - Proposed:
+    - the row keeps its place, with a warning icon and its name muted;
+    - shown, the file says "This file couldn't be read." and "The other files show as saved. Reload the page to try again." where its code would be;
+    - its copy icon is off.
+  - Today, the interim error. For reference, the snapshot with every file read.
+  - The same state would apply in the review modal (5e) and the public page's View source (step 6).
+  - Sources: `project-docs/modules/mockups-2e-5d-unreadable-file/`.
+  - An earlier page, `…14:49:50--modules--unreadable-file.bbwp.html`, has a wrong "Today" (its storage delete missed, below): use the 14:53:07 one.
+
+**Found along the way:**
+- **The local dev API binds the preview R2 bucket** (`svg-path-extended-thumbnails-preview`, `api/wrangler.toml` `preview_bucket_name`), not `svg-path-extended-thumbnails`.
+  - `verify-2e-step3c.ts` named the other one, so its swap to a snapshot made before 2e never reached the dev API. Its check passed anyway, because that snapshot already held only `main.pathogen`.
+  - Fixed, and run again: 15 checks pass, the pre-2e path now really tested.
+- **The snapshots page loads the live workspace too.** A file the live workspace still names going missing fails the whole page ("Couldn't load snapshots"), before any snapshot is chosen. Requirement 9 helps only when the lost file is a snapshot's older copy.
+  - The page needs the workspace's name and owner, not its files. A lighter read is a possible follow-up; noted here, not done.
+
+**Tested:**
+- `tests/api/unreadable-files.test.ts` (new, 7):
+  - `readTextsLeniently`;
+  - the public source and the admin read mark a lost module and still read the main; a source with a lost file isn't cached, a repaired one is;
+  - a just-main approval whose main is lost is marked, with no `code`;
+  - the editor's load still fails;
+  - the public page's reader accepts the mark, gives no main text for a lost main, and still refuses a file with neither.
+- `tests/api/snapshots.test.ts` (+1): `/files` marks the lost file, reads the other, and Start new workspace still fails.
+- `tests/playground-snapshot-viewer-files.test.ts` (+1): the interim names the file.
+- `tests/playground-new-workspace-copy.test.ts` (+1): a fork with an unreadable file says so and makes nothing.
+- `tests/playground-admin-review-unreadable.test.ts` (new, 2): the modal names the lost file; Regenerate refuses.
+- The mockup's capture is itself a dev-stack check of the interim: the storage delete is real, and the page names the file.
+- A code review: no critical findings, its three warnings fixed (above).
+
 ## What the audits found (2026-11-14)
 
 ### Snapshots, copies, forks

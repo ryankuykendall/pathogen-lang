@@ -211,6 +211,25 @@ describe('copies and forks (2e step 4)', () => {
     expect((createSpy.mock.calls[0][0] as { files: unknown }).files).toEqual({ 'main.pathogen': { text: 'M 2 2' } });
   });
 
+  it('a fork with a file the server couldn’t read (2e step 5d) says so, and makes no workspace', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => ({
+        ok: true,
+        json: async () => ({
+          name: 'Gears',
+          files: { 'main.pathogen': { text: MAIN }, 'parts/gears.pathogen': { sha256: 'g', unreadable: true } },
+          folders: ['parts'],
+          entryPoints: ['main.pathogen'],
+        }),
+      })),
+    );
+    const root = await mount({ fromHandle: 'ada', fromSlug: 'gears' });
+    expect(root.textContent).toContain('Failed to load workspace');
+    await submit(root);
+    expect(createSpy).not.toHaveBeenCalled();
+  });
+
   it('a fork whose files can’t be read says so, and makes no workspace', async () => {
     vi.stubGlobal(
       'fetch',

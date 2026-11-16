@@ -40,6 +40,18 @@ import '../thumbnail-crop-modal.js';
 declare const __PATHOGEN_API_BASE__: string;
 const API_BASE = __PATHOGEN_API_BASE__;
 
+/** GET /admin/approval/:id's answer, as far as this screen reads it. */
+interface ApprovalAnswer {
+  code?: string;
+  files?: Record<string, { unreadable?: boolean }>;
+  error?: string;
+}
+
+/** The first file of an approval whose bytes couldn't be read (2e step 5d), if any. */
+function unreadablePath(answer: ApprovalAnswer): string | null {
+  return Object.entries(answer.files ?? {}).find(([, file]) => file.unreadable === true)?.[0] ?? null;
+}
+
 // ─── Tab + card data shapes ───────────────────────────────────────────
 
 interface QueueEntry {
@@ -689,9 +701,12 @@ class AdminModerationView extends HTMLElement {
       const res = await fetch(`${API_BASE}/admin/approval/${encodeURIComponent(workspaceId)}`, {
         credentials: 'include',
       });
-      const data = (await res.json()) as { code?: string; svg?: string; error?: string };
+      const data = (await res.json()) as ApprovalAnswer & { svg?: string };
       if (!res.ok) throw new Error(data.error || 'Failed to load approval');
       if (this._modalKey !== workspaceId) return;
+      // A file whose bytes are lost (2e step 5d) is said, never shown empty.
+      const lost = unreadablePath(data);
+      if (lost) throw new Error(`${lost} couldn't be read.`);
       this._modalCode = data.code ?? '';
       // Frozen SVG preferred. If absent (legacy approval), try a
       // background compile; if THAT fails, fall through to source-only.
@@ -757,8 +772,10 @@ class AdminModerationView extends HTMLElement {
     const res = await fetch(`${API_BASE}/admin/approval/${encodeURIComponent(workspaceId)}`, {
       credentials: 'include',
     });
-    const data = (await res.json()) as { code?: string; error?: string };
+    const data = (await res.json()) as ApprovalAnswer;
     if (!res.ok) throw new Error(data.error || 'Failed to load approval');
+    const lost = unreadablePath(data);
+    if (lost) throw new Error(`${lost} couldn't be read, so it can't be compiled.`);
     const code = (data.code ?? '').trim();
     if (!code) throw new Error('Approval record has no source code');
 

@@ -30,7 +30,7 @@ import { errorResponse, generateNanoId, jsonResponse, slugify } from './utils.js
 import { isJustMain, MAIN_FILE, readStoredFiles } from './workspace-files.js';
 import type { StoredFiles, WorkspaceManifest } from './workspace-files.js';
 import { readTexts } from './file-store.js';
-import { copyStoredFiles, filesFromBody, filesWithText, setFiles, storedFilesOf } from './workspace-store.js';
+import { copyStoredFiles, filesFromBody, filesToShow, filesWithText, setFiles, storedFilesOf } from './workspace-store.js';
 
 export const SNAPSHOT_LIMITS = {
   /** Snapshots per account, across all workspaces. */
@@ -724,14 +724,16 @@ export const snapshotHandlers = {
   // workspace's: every file with its text, folders, entryPoints and the hash
   // (and `code` for one that is just main.pathogen), plus `program`, the
   // path of the program that drew the image. One R2 read per distinct
-  // .pathogen file.
+  // .pathogen file. For the snapshots page's viewer: a file that can't be
+  // read comes back marked `unreadable`, and the others still show
+  // (note 59, requirement 9). Start new workspace still reads all or nothing.
   async getFiles(request: Request, env: Env, snapshotId: string): Promise<Response> {
     const found = await readOwnedSnapshot(request, env, snapshotId);
     if ('error' in found) return found.error;
     return guardedRead(snapshotId, async () => {
       const files = await readSnapshotFiles(env, found.row.workspace_id, snapshotId);
       if (!files) return errorResponse('Snapshot file not found', 404);
-      return jsonResponse({ ...(await filesWithText(env, found.row.workspace_id, files)), program: files.program });
+      return jsonResponse({ ...(await filesToShow(env, found.row.workspace_id, files)), program: files.program });
     });
   },
 

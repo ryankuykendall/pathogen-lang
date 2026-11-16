@@ -45,6 +45,34 @@ export async function readTexts(env: Env, workspaceId: string, hashes: Iterable<
   return new Map(texts);
 }
 
+/**
+ * The texts with these hashes that can be read, and the hashes that can't: a
+ * viewer shows the rest, and says which file is missing in its place
+ * (project-docs/modules/59-phase-2e-several-files-requirements.md, requirement 9).
+ * One read each, as readTexts. Only for reads that show files: anything that
+ * saves or copies them uses readTexts, which fails rather than lose a file.
+ */
+export async function readTextsLeniently(
+  env: Env,
+  workspaceId: string,
+  hashes: Iterable<string>,
+): Promise<{ texts: Map<string, string>; missing: Set<string> }> {
+  const unique = [...new Set(hashes)];
+  const read = await Promise.all(
+    unique.map(async (sha256) => {
+      const object = await env.THUMBNAILS.get(fileKey(workspaceId, sha256));
+      return [sha256, object ? await new Response(object.body).text() : null] as const;
+    }),
+  );
+  const texts = new Map<string, string>();
+  const missing = new Set<string>();
+  for (const [sha256, text] of read) {
+    if (text === null) missing.add(sha256);
+    else texts.set(sha256, text);
+  }
+  return { texts, missing };
+}
+
 /** The stored size of a blob under the workspace, in bytes; null when it isn't there. */
 export async function storedSize(env: Env, workspaceId: string, sha256: string): Promise<number | null> {
   const key = fileKey(workspaceId, sha256);

@@ -274,7 +274,12 @@ export type SnapshotFileKind = 'svg' | 'code' | 'card';
 
 /** GET /snapshot/:sid/files (website/api/snapshots.ts getFiles). */
 export interface SnapshotFiles {
-  files: Record<string, { sha256: string; size: number; text: string }>;
+  /** Each file with its text, or marked `unreadable` when its bytes couldn't be read (2e step 5d). */
+  files: Record<
+    string,
+    | { sha256: string; size: number; text: string; unreadable?: undefined }
+    | { sha256: string; size: number; unreadable: true }
+  >;
   folders: string[];
   entryPoints: string[];
   contentHash: string;

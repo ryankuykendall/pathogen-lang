@@ -553,7 +553,10 @@ async function renderWorkspaceSourceJson(
     {
       headers: {
         'Content-Type': 'application/json;charset=utf-8',
-        'Cache-Control': 'public, s-maxage=60, max-age=30',
+        // A file that couldn't be read (2e step 5d) isn't cached, so a repair shows at once.
+        'Cache-Control': Object.values(source.files).some((f) => f.unreadable)
+          ? 'no-store'
+          : 'public, s-maxage=60, max-age=30',
       },
     },
   );

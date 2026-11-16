@@ -126,6 +126,12 @@ describe('the code panel’s files', () => {
     const { viewer } = snapshotViewerFiles(filesOf(SEVERAL), null);
     expect(viewer.files.map((f) => f.kind)).toEqual(['program', 'program', 'program']);
   });
+
+  it('a file the server couldn’t read is named in the page’s error, never shown empty (2e step 5d)', () => {
+    const answer = filesOf(SEVERAL);
+    answer.files['parts/gears.pathogen'] = { sha256: 'g', size: GEARS.length, unreadable: true };
+    expect(() => snapshotViewerFiles(answer, ENGINE)).toThrow("parts/gears.pathogen couldn't be read.");
+  });
 });
 
 describe('the page', () => {

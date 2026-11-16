@@ -47,8 +47,13 @@ const check = (label: string, ok: boolean, detail?: unknown): void => {
   if (!ok) failures++;
 };
 
-/** The local dev stack's R2 bucket (api/wrangler.toml), and a scratch file for a put. */
-const R2_BUCKET = 'svg-path-extended-thumbnails';
+/**
+ * The local dev stack's R2 bucket: wrangler dev binds the PREVIEW bucket
+ * (api/wrangler.toml preview_bucket_name). Until 2026-11-16 this named the
+ * production bucket, whose local copy the dev API never reads, so the swap
+ * below changed nothing. And a scratch file for a put.
+ */
+const R2_BUCKET = 'svg-path-extended-thumbnails-preview';
 const PRE2E_FILE = 'tmp/verify-2e-step3c-code.pathogen';
 
 function r2(args: string[]): void {
