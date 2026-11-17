@@ -1042,7 +1042,7 @@ The docs (note 63, review record `reviews/phase-2e-step7-docs-review.md`) and th
 3. A rename changes the URL at the next approval: kept as documented.
 4. What a never-approved Rejected or Flagged card opens: deferred to the snapshots work (above, under step 5f).
 
-**Still open, from note 64's list, for step 8:** whether a visitor opening someone else's public workspace should go to its public page; a script for removing the re-review entries of private workspaces (**answered 2026-11-17: no script**; the review screen withdraws each when an admin acts on it, and the CHANGELOG says so). (The preview pane at 0 px with the tree, console and inspector open in 1024 and 1280 px windows was settled on 2026-11-16: left until the console "mole"; `project-docs/preview-raster-perf/README.md`, "Narrow windows". Note 64 missed that.)
+**Still open, from note 64's list, for step 8:** whether a visitor opening someone else's public workspace should go to its public page (**settled 2026-11-17:** the "no access" message ships; the redirect is on the backlog, below under "The count"); a script for removing the re-review entries of private workspaces (**answered 2026-11-17: no script**; the review screen withdraws each when an admin acts on it, and the CHANGELOG says so). (The preview pane at 0 px with the tree, console and inspector open in 1024 and 1280 px windows was settled on 2026-11-16: left until the console "mole"; `project-docs/preview-raster-perf/README.md`, "Narrow windows". Note 64 missed that.)
 
 **Before step 8 (2026-11-17):** the full suite passes (9,378); origin/main is still ecbaabc, so the push is a fast-forward; the files migration's local dry run on today's dev data: 397 to migrate, 8 already holding files, 1 orphan approval, 0 errors, every approval's re-review answer unchanged. The migration copies each record whole and swaps only `code` for the files, so `cardAt` and the other fields added in 5a to 5f survive, and the card copy and the migration can run in either order.
 
@@ -1070,6 +1070,10 @@ After it, any you want public go through Make public and review like any other w
 **Not checked yet:** workspaces with `isPublic: true` and no approval that aren't on Explore have the same stuck Make public. Finding them takes a read-only scan of every production workspace record (about 400 `wrangler` reads). It doesn't block the push, since nothing links visitors to them.
 
 One of the 16 has an id containing "undefined" (`3Yf4qyxq2Pw884m8e9undefinednB`), from an older id generator: today's `generateNanoId` masks into a 64-character alphabet and can't produce it.
+
+Before a `--write` run on production, the script was changed to space its calls 2 s apart. Each Unpublish rewrites `public:workspaces`; KV allows about one write a second to a key, and local KV has no such limit, so the rehearsals can't show it. The dev rehearsal passes again with the change.
+
+**Your answer (2026-11-17): option 2, leave them.** The 16 stay listed, and after the push a visitor clicking one gets "You do not have access to this workspace". So that message is what a blocked visitor sees: the open question from note 64 is settled for this release. The cleanup wasn't run, and neither was the scan. Both are on the backlog ("Public workspaces from before reviews"), with the redirect to an approved workspace's public page as a possible companion.
 
 ## What the audits found (2026-11-14)
 

@@ -105,6 +105,16 @@ After the first release (phase 2 ships with 2e). Each entry comes from your answ
 - **Needs:** the approved and submitted texts of each changed file (the admin can read both from 2e), and a diff view in the review modal.
 - **From:** note 59, question 4, agreed 2026-11-14. Line-by-line differences were put on the backlog there.
 
+### Public workspaces from before reviews
+- **What:** 16 of your own early workspaces are still listed on Explore (places 21–36) but were never reviewed. Each has no approval record, `isPublic: true` and an index entry without an owner handle (note 58, "The count").
+- **Today (from 2e):**
+  - only the owner can open `/workspace/…`, so a visitor clicking one of these cards gets "You do not have access to this workspace";
+  - Make public does nothing for them, since `updateWorkspace` submits only when the record isn't public (`router.ts:618`).
+- **The fix, built and rehearsed but not run:** `tmp/2e-step8/unpublish-unreviewed.ts`, not committed; note 58 has its design and its dev rehearsals. It calls the existing admin Unpublish for each Explore entry without an approval: off Explore, `isPublic` false, and Make public works again. It needs the production admin token.
+- **Not done:** a read-only scan of every production workspace for others in the same state that aren't on Explore. Their owners' Make public is stuck the same way.
+- **Could go with it:** a visitor at an approved workspace's playground link goes to its public page instead of "no access". That doesn't help these 16, which have no public page.
+- **From:** your answer, 2026-11-17: option 2, leave them as they are.
+
 ### Snapshots over 50 MB
 - **What:** a way to snapshot images larger than 50 MB. You've seen an SVG of 80 MB.
 - **Today:** the browser refuses before uploading: "This render is … Snapshots are limited to 50 MB. Try a lower Precision, or export it directly." (`playground/services/snapshot-controller.ts:213-220`). The server checks the same limit (`SNAPSHOT_LIMITS.svgBytes`, `website/api/snapshots.ts`). Nothing records a refusal.
