@@ -1075,6 +1075,17 @@ Before a `--write` run on production, the script was changed to space its calls 
 
 **Your answer (2026-11-17): option 2, leave them.** The 16 stay listed, and after the push a visitor clicking one gets "You do not have access to this workspace". So that message is what a blocked visitor sees: the open question from note 64 is settled for this release. The cleanup wasn't run, and neither was the scan. Both are on the backlog ("Public workspaces from before reviews"), with the redirect to an approved workspace's public page as a possible companion.
 
+**Step 8, the push (2026-11-17, your go-ahead).** `ecbaabc8..8716907f`, 100 commits, a fast-forward.
+- **No setup to do by hand:** no D1 migrations, no new bindings or secrets, no wrangler or workflow changes since ecbaabc. Production's API was running 175fd45, whose API sources match ecbaabc.
+- **Pages** was live at 21:42:19Z.
+- **The API deploy** (run 44182210952) started at 21:40:14Z, sat in `actions/checkout` for about 30 minutes on GitHub's side, and finished at 22:14:39Z. Its usual time is about 40 s.
+- **So the new playground ran against the old API from 21:42 to about 22:14Z,** which note 47 §8's order ("the API learns the new shape first") was meant to avoid. What that old API did with each request:
+  - **Safe:** new workspaces from blank or a template (they send `code`), Copy Workspace and Duplicate (the old copy route, which ignores `description`), and saves of a one-file workspace (`autosave._saveBody` sends `code` while the server holds just main.pathogen).
+  - **At risk:** Open as new workspace (it creates with `files` and no `code`, so the old API makes an empty workspace), and a save after adding a second file (the old API ignores `files` and answers as if saved).
+
+  Whether anyone did either needs a read-only look at the records created or updated in that window. Not run yet.
+- **Live checks** (`tmp/2e-step8/check-live.ts`, no workspace data): the API answers the 5b card image route ("Workspace not found" for a made-up id) and the card copy route (401 without a token); `/docs` has the workspace files page; both screenshots load as PNGs; the 2e playground's `source-files.js` is served; `/explore` loads.
+
 ## What the audits found (2026-11-14)
 
 ### Snapshots, copies, forks
