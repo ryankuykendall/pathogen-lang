@@ -40,18 +40,32 @@ export interface SourceFile {
   /** Its workspace path: `parts/gears.pathogen`, or `pathogen.json`. */
   path: string;
   text: string;
-  /** A program or a module, as the tree draws them; pathogen.json is the project file. */
-  kind: 'program' | 'library' | 'project';
+  /**
+   * A program or a module, as the tree draws them; pathogen.json is the project file.
+   * `file`: not known yet, its text still to come (a plain icon; 2e step 6).
+   */
+  kind: 'program' | 'library' | 'project' | 'file';
   /**
    * Its bytes couldn't be read (2e step 5d; note 59, requirement 9): it keeps its
    * place, with a warning, and says so where its code would be. Its text is ''.
    */
   unreadable?: boolean;
+  /**
+   * Its text hasn't come (2e step 6; mockup v12 P2 and P4): the public page holds the
+   * main's text, and the others load when View source opens. `loading`: a spinner on
+   * its row, and it says so where its code would be. `failed`: a "!" on its row, and
+   * Try again, which sends `source-files-retry`. Its text is ''.
+   */
+  pending?: 'loading' | 'failed';
 }
 
 /** What a file that couldn't be read says where its code would be. */
 export const UNREADABLE_TITLE = 'This file couldn’t be read.';
 export const UNREADABLE_DETAIL = 'The other files show as saved.';
+/** What a file whose text didn't come says (only the public page loads texts later). */
+export const FAILED_TITLE = 'This file’s text didn’t load.';
+export const FAILED_DETAIL = 'Only the main’s text comes with the page.';
+export const FAILED_FOOT = 'The other files couldn’t load.';
 
 /**
  * A re-review's marks (2e step 5e; note 59 answer 4, mockup v12 R3 and R4): what
@@ -117,7 +131,7 @@ export const SETTLE_MS = 150;
  */
 export function shownPathOf(files: readonly SourceFile[], open: string | null): string | null {
   if (open !== null && files.some((f) => f.path === open)) return open;
-  const readable = files.filter((f) => f.unreadable !== true);
+  const readable = files.filter((f) => f.unreadable !== true && f.pending === undefined);
   return (readable.find((f) => f.kind === 'program') ?? readable[0] ?? files[0])?.path ?? null;
 }
 
@@ -140,9 +154,13 @@ function pathHtml(path: string): string {
 }
 
 const iconOf = (kind: SourceFile['kind']): string => (kind === 'project' ? FILE_ICONS.json : FILE_ICONS[kind]);
-/** A file's kind, held to the three the viewer draws (it lands in a class name and picks an icon). */
+/** A file's kind, held to the four the viewer draws (it lands in a class name and picks an icon). */
 const kindOf = (file: SourceFile | undefined): SourceFile['kind'] =>
-  file?.kind === 'library' ? 'library' : file?.kind === 'project' ? 'project' : 'program';
+  file?.kind === 'library' || file?.kind === 'project' || file?.kind === 'file' ? file.kind : 'program';
+
+/** A file's text still to come, or one that didn't (2e step 6). */
+const pendingOf = (file: SourceFile | undefined): 'loading' | 'failed' | null =>
+  file?.pending === 'loading' || file?.pending === 'failed' ? file.pending : null;
 
 const styles = `
   :host { display: flex; flex-direction: column; min-width: 0; min-height: 0; height: 100%; }
@@ -253,6 +271,28 @@ const styles = `
   .code.lost .unread { display: grid; }
   .code.lost .fallback, .code.lost .cm { display: none; }
 
+  /* A text still to come, or one that didn't (2e step 6; mockup v12 P2, P4) */
+  .spin { width: 10px; height: 10px; flex: none; border-radius: 50%; border: 1.5px solid var(--border-strong, rgba(0, 0, 0, 0.18));
+    border-top-color: var(--secondary-accent, #9461c4); animation: sf-spin 0.9s linear infinite; }
+  @keyframes sf-spin { to { transform: rotate(360deg); } }
+  @media (prefers-reduced-motion: reduce) { .spin { animation-duration: 2.7s; } }
+  .bad { width: 14px; height: 14px; flex: none; border-radius: 50%; background: var(--warning-bg, #fffbeb); color: var(--sf-mark-chg);
+    font: 700 10px/1 var(--font-sans, system-ui, sans-serif); display: grid; place-items: center; }
+  .row.file.waiting .name, .row.file.failed .name { color: var(--text-secondary, #64748b); }
+  .waitmsg { display: none; flex: 1; place-items: center; padding: 24px; text-align: center; font-family: var(--font-sans, system-ui, sans-serif);
+    font-size: 13px; line-height: 1.5; color: var(--text-secondary, #64748b); }
+  .waitmsg b { color: var(--text-primary, #1c1722); font-weight: 600; }
+  .waitmsg .spin { display: inline-block; vertical-align: -1px; margin-right: 8px; }
+  .code.waiting .waitmsg.loading, .code.failed .waitmsg.failed { display: grid; height: 100%; box-sizing: border-box; }
+  .code.waiting .fallback, .code.waiting .cm, .code.failed .fallback, .code.failed .cm { display: none; }
+  .retry { margin-top: 6px; padding: 3px 10px; border-radius: 6px; border: 1px solid var(--border-strong, rgba(0, 0, 0, 0.18));
+    background: var(--bg-elevated, #fff); color: var(--text-primary, #1c1722); font: 600 12px/1.4 var(--font-sans, system-ui, sans-serif); cursor: pointer; }
+  .retry:focus-visible { outline: 2px solid var(--focus-ring, rgba(148, 97, 196, 0.5)); outline-offset: 1px; }
+  .foot { padding: 8px 12px; font-family: var(--font-sans, system-ui, sans-serif); font-size: 11.5px; line-height: 1.4;
+    color: var(--text-secondary, #64748b); border-top: 1px solid var(--border-subtle, rgba(0, 0, 0, 0.06)); }
+  .list { display: flex; flex-direction: column; }
+  .list .foot { margin-top: auto; }
+
   /* The phone's sheet: fixed to the window, over a scrim */
   .scrim { position: fixed; inset: 0; z-index: 10040; background: rgba(20, 16, 28, 0.42); }
   .sheet { position: fixed; left: 0; right: 0; bottom: 0; z-index: 10041; max-height: 70vh; overflow: auto; padding: 8px 10px 16px;
@@ -291,6 +331,9 @@ export class SourceFiles extends HTMLElement {
   private _themeWatch: MutationObserver | null = null;
 
   private _dark = false;
+
+  /** What the loading region last said (2e step 6): it speaks only when that changes. */
+  private _loadSaid = '';
 
   private _connected = false;
 
@@ -515,24 +558,49 @@ export class SourceFiles extends HTMLElement {
     }
     const dot = marked ? markDot(marked.mark, marked.word) : '';
     const shown = row.path === this._shownPath();
-    const lost = this._fileAt(row.path)?.unreadable === true;
-    const title = lost ? `${row.path} couldn't be read` : row.path;
+    const file = this._fileAt(row.path);
+    const lost = file?.unreadable === true;
+    const pending = pendingOf(file);
+    const title = lost
+      ? `${row.path} couldn't be read`
+      : pending === 'loading'
+        ? `${row.path}: loading`
+        : pending === 'failed'
+          ? `${row.path}: its text didn't load`
+          : row.path;
     // A screen reader hears these in the row's name, not only in a hover title or a badge.
-    const said = [lost ? "couldn't be read" : '', marked?.word ?? ''].filter(Boolean);
+    const said = [
+      lost ? "couldn't be read" : '',
+      pending === 'loading' ? 'loading' : pending === 'failed' ? "didn't load" : '',
+      marked?.word ?? '',
+    ].filter(Boolean);
     const label = said.length > 0 ? ` aria-label="${esc([row.name, ...said].join(', '))}"` : '';
     const attrs = `role="treeitem" data-path="${esc(row.path)}" aria-level="${row.level}" aria-selected="${shown}" tabindex="${shown ? 0 : -1}" title="${esc(title)}"${label} ${level}`;
     if (row.type === 'project') {
       return `<div class="row project${shown ? ' active' : ''}" ${attrs}><span class="chev"></span><span class="icon">${FILE_ICONS.json}</span><span class="name">${nameHtml(row.name)}</span>${dot}<span class="lock" title="Read-only: written from the program list">${FILE_ICONS.lock}</span></div>`;
     }
     const badge = row.main ? `<span class="badge-main" title="${esc(MAIN_BADGE_TITLE)}">main</span>` : '';
-    const icon = lost ? FILE_ICONS.warning : FILE_ICONS[row.kind];
-    return `<div class="row file ${row.kind}${lost ? ' unreadable' : ''}${shown ? ' active' : ''}" ${attrs}><span class="chev"></span><span class="icon">${icon}</span><span class="name">${nameHtml(row.name)}</span>${badge}${dot}</div>`;
+    // A kind not known yet (its text to come) draws a plain page.
+    const icon = lost ? FILE_ICONS.warning : file?.kind === 'file' ? FILE_ICONS.file : FILE_ICONS[row.kind];
+    const state =
+      pending === 'loading'
+        ? '<span class="spin" aria-hidden="true"></span>'
+        : pending === 'failed'
+          ? '<span class="bad" aria-hidden="true">!</span>'
+          : '';
+    const cls = `${row.kind}${lost ? ' unreadable' : ''}${pending === 'loading' ? ' waiting' : pending === 'failed' ? ' failed' : ''}${shown ? ' active' : ''}`;
+    return `<div class="row file ${cls}" ${attrs}><span class="chev"></span><span class="icon">${icon}</span><span class="name">${nameHtml(row.name)}</span>${badge}${dot}${state}</div>`;
   }
 
   private _treeHtml(): string {
+    // Texts that didn't come: the list says so once, with Try again (mockup v12 P4).
+    const failed = this._files.some((f) => f.pending === 'failed');
+    const foot = failed
+      ? `<div class="foot">${esc(FAILED_FOOT)}<br><button class="retry" type="button">Try again</button></div>`
+      : '';
     return `<div class="head"><span>Files</span><span class="count">${this._files.length}</span></div><div role="tree" aria-label="Files">${this._rows()
       .map((r) => this._rowHtml(r))
-      .join('')}</div>`;
+      .join('')}</div>${foot}`;
   }
 
   /** Whether the file shown couldn't be read (2e step 5d). */
@@ -540,11 +608,21 @@ export class SourceFiles extends HTMLElement {
     return this._fileAt(this._shownPath())?.unreadable === true;
   }
 
+  /** Whether the file shown has no text yet: loading, or it didn't load (2e step 6). */
+  private _shownPending(): 'loading' | 'failed' | null {
+    return pendingOf(this._fileAt(this._shownPath()));
+  }
+
   private _copyHtml(): string {
     const path = this._shownPath();
-    // Nothing to copy from a file that couldn't be read: the icon is off and says why.
-    if (this._shownLost()) {
-      const why = "Nothing to copy: this file couldn't be read";
+    // Nothing to copy from a file that couldn't be read, or whose text hasn't come: the icon is off and says why.
+    const pending = this._shownPending();
+    if (this._shownLost() || pending) {
+      const why = this._shownLost()
+        ? "Nothing to copy: this file couldn't be read"
+        : pending === 'loading'
+          ? "Nothing to copy yet: this file's text is loading"
+          : "Nothing to copy: this file's text didn't load";
       return `<button class="cp" type="button" disabled aria-label="${esc(why)}" title="${esc(why)}">${copyIconFor('')}</button>`;
     }
     const what = this._copyLabel ?? path ?? '';
@@ -553,9 +631,19 @@ export class SourceFiles extends HTMLElement {
     return `<button class="cp ${this._copied}" type="button" aria-label="${esc(label)}" title="${esc(label)}">${copyIconFor(this._copied)}</button>${copyTipHtml(this._copied, named)}`;
   }
 
+  /** The code box's state classes: a file that couldn't be read, or whose text hasn't come. */
+  private _codeClass(): string {
+    const pending = this._shownPending();
+    return `${this._shownLost() ? ' lost' : ''}${pending === 'loading' ? ' waiting' : pending === 'failed' ? ' failed' : ''}`;
+  }
+
+  /** "Loading parts/gears.pathogen…": the shown file's name, for the code box's message. */
+  private _waitHtml(): string {
+    return `<div><span class="spin" aria-hidden="true"></span>Loading <b>${esc(this._shownPath() ?? '')}</b>…</div>`;
+  }
+
   private _codeHtml(): string {
-    const lost = this._shownLost();
-    return `<div class="code${lost ? ' lost' : ''}"><pre class="fallback"><code>${esc(this.shownText)}</code></pre><div class="cm"></div><div class="unread"><strong>${esc(UNREADABLE_TITLE)}</strong> <span>${esc(UNREADABLE_DETAIL)}</span></div></div>`;
+    return `<div class="code${this._codeClass()}"><pre class="fallback"><code>${esc(this.shownText)}</code></pre><div class="cm"></div><div class="unread"><strong>${esc(UNREADABLE_TITLE)}</strong> <span>${esc(UNREADABLE_DETAIL)}</span></div><div class="waitmsg loading">${this._waitHtml()}</div><div class="waitmsg failed"><div><b>${esc(FAILED_TITLE)}</b><br>${esc(FAILED_DETAIL)}<br><button class="retry" type="button">Try again</button></div></div></div>`;
   }
 
   private _headerHtml(): string {
@@ -601,7 +689,8 @@ export class SourceFiles extends HTMLElement {
     // The editor's DOM survives a re-layout: it's moved into the new code box, keeping its place.
     const editorDom = this._view?.dom as HTMLElement | undefined;
     const scrollTop = this._view ? (this._view.scrollDOM.scrollTop as number) : 0;
-    root.innerHTML = `<style>${styles}</style><div class="root ${mode}${this._dark ? ' dark' : ''}">${body}</div>${COPY_STATUS_HTML}`;
+    root.innerHTML = `<style>${styles}</style><div class="root ${mode}${this._dark ? ' dark' : ''}">${body}</div>${COPY_STATUS_HTML}<span class="copy-status load-status" role="status"></span>`;
+    this._sayLoading();
     if (editorDom) {
       root.querySelector('.cm')?.appendChild(editorDom);
       root.querySelector('.code')?.classList.add('loaded');
@@ -614,6 +703,34 @@ export class SourceFiles extends HTMLElement {
       }
     }
     this._wire();
+  }
+
+  /**
+   * Texts still to come, or that didn't, said to a screen reader as they change (2e step 6):
+   * "Loading 2 files", "2 files didn't load", "The files have loaded". The region is new
+   * after each layout, so a change is set a moment after it, which is when it's heard.
+   */
+  private _sayLoading(): void {
+    const loading = this._files.filter((f) => f.pending === 'loading').length;
+    const failed = this._files.filter((f) => f.pending === 'failed').length;
+    const files = (n: number): string => `${n} file${n === 1 ? '' : 's'}`;
+    const said = loading
+      ? `Loading ${files(loading)}`
+      : failed
+        ? `${files(failed)} didn't load`
+        : this._loadSaid
+          ? 'The files have loaded'
+          : '';
+    const region = this.shadowRoot!.querySelector('.load-status');
+    if (!region) return;
+    if (said === this._loadSaid) {
+      region.textContent = said;
+      return;
+    }
+    this._loadSaid = said;
+    setTimeout(() => {
+      if (region.isConnected) region.textContent = said;
+    }, 50);
   }
 
   /** The file shown changed: rows, the header and the code follow, keeping the layout (and focus). */
@@ -635,7 +752,10 @@ export class SourceFiles extends HTMLElement {
     if (float) float.innerHTML = this._copyHtml();
     const fallback = root.querySelector('.fallback code');
     if (fallback) fallback.textContent = this.shownText;
-    root.querySelector('.code')?.classList.toggle('lost', this._shownLost());
+    const code = root.querySelector('.code');
+    if (code) code.className = `code${this._codeClass()}${code.classList.contains('loaded') ? ' loaded' : ''}`;
+    const wait = root.querySelector('.waitmsg.loading');
+    if (wait) wait.innerHTML = this._waitHtml();
     this._wireHeader();
     this._showInEditor();
   }
@@ -672,6 +792,12 @@ export class SourceFiles extends HTMLElement {
     });
     root.querySelector('.scrim')?.addEventListener('click', () => this._closeSheet());
     if (this._sheet) root.querySelector<HTMLElement>('.sheet [aria-selected="true"]')?.focus();
+    // Try again, on the list's foot or in the code box: the host fetches the texts again.
+    root.querySelectorAll('.retry').forEach((button) => {
+      button.addEventListener('click', () => {
+        this.dispatchEvent(new CustomEvent('source-files-retry', { bubbles: true, composed: true }));
+      });
+    });
     this._wireHeader();
   }
 
@@ -717,8 +843,8 @@ export class SourceFiles extends HTMLElement {
 
   /** Copy the file shown. "Copied" only once the clipboard has taken it; a refusal says so. */
   private async _copy(): Promise<void> {
-    // Nothing to copy from a file that couldn't be read (its icon is off too).
-    if (this._shownLost()) return;
+    // Nothing to copy from a file that couldn't be read, or whose text hasn't come (its icon is off too).
+    if (this._shownLost() || this._shownPending()) return;
     const path = this._shownPath();
     let state: CopyState;
     try {

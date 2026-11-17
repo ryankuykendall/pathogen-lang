@@ -2037,7 +2037,7 @@ layer('hex').apply { circle(60, 100, 40) }`,
     description:
       'Read-only code, one file or several (2e, step 3b; note 59, mockups v12 to v14): a list beside the code in the workspace tree’s order and look, the open file’s path above the code with the copy icon in its cell, and the copy icon floating with one file. Narrower than 480 px, the list becomes a menu and a bottom sheet.',
     notes:
-      'Properties: files ({ path, text, kind: program | library | project, unreadable? }), folders, main, open, copyLabel, marks ({ files: { path: { mark: new | changed | moved, from? } }, removed, foldersAdded }). activate() loads CodeMirror (esm.sh); until then the text shows plain. Event: source-file-open { path }. A file marked unreadable (2e step 5d) keeps its row with a warning, and shown, says so where its code would be, its copy icon off. A re-review’s marks (2e step 5e) put a badge with a sign on each changed row, keep a removed file in its place struck out, and say the mark in words on the open file’s line. Shared by <mini-workspace> and, from step 6, the public page, so it imports nothing that needs the store.',
+      'Properties: files ({ path, text, kind: program | library | project | file, unreadable?, pending?: loading | failed }), folders, main, open, copyLabel, marks ({ files: { path: { mark: new | changed | moved, from? } }, removed, foldersAdded }). activate() loads CodeMirror (esm.sh); until then the text shows plain. Events: source-file-open { path }; source-files-retry (Try again). A file marked unreadable (2e step 5d) keeps its row with a warning, and shown, says so where its code would be, its copy icon off. A re-review’s marks (2e step 5e) put a badge with a sign on each changed row, keep a removed file in its place struck out, and say the mark in words on the open file’s line. A text still to come (2e step 6, the public page) spins on its row, and one that didn’t come shows a “!”, with Try again on the list’s foot and in the code; a kind `file` (not known yet) draws a plain page. Shared by <mini-workspace> and the public page, so it imports nothing that needs the store.',
     stories: [
       { name: 'One file', props: { files: 'one' } },
       { name: 'Several files', props: { files: 'several' } },
@@ -2052,6 +2052,11 @@ layer('hex').apply { circle(60, 100, 40) }`,
         props: { files: 'several', lost: 'parts/gears.pathogen', open: 'parts/gears.pathogen' },
       },
       { name: 'A re-review’s marks', props: { files: 'several', marks: 're-review', open: 'parts/gears.pathogen' } },
+      { name: 'The public page: texts loading', props: { files: 'several', pending: 'loading' } },
+      {
+        name: 'The public page: texts that didn’t load',
+        props: { files: 'several', pending: 'failed', open: 'parts/gears.pathogen' },
+      },
     ],
     controls: [],
     render: (container, props) => {
@@ -2081,8 +2086,15 @@ layer('hex').apply { circle(60, 100, 40) }`,
         };
         // A file whose bytes couldn't be read (2e step 5d): no text, marked.
         const lost = props.lost ? String(props.lost) : null;
+        // The public page (2e step 6; mockup v12 P2, P4): the main came with the page, the
+        // others loading or failed; a program's kind from the list, any other's not known yet.
+        const pending = props.pending === 'loading' || props.pending === 'failed' ? props.pending : null;
         const files = several.map((f) =>
-          f.path === lost ? { path: f.path, text: '', kind: 'program', unreadable: true } : f,
+          f.path === lost
+            ? { path: f.path, text: '', kind: 'program', unreadable: true }
+            : pending && f.path !== 'main.pathogen' && f.kind !== 'project'
+              ? { path: f.path, text: '', kind: f.kind === 'program' ? 'program' : 'file', pending }
+              : f,
         );
         el.files = props.files === 'one' ? [files[0]] : files;
         el.folders = [];

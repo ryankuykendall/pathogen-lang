@@ -265,6 +265,109 @@ describe('a file that couldn’t be read (2e step 5d; note 59, requirement 9)', 
   });
 });
 
+describe('texts still to come, or that didn’t (2e step 6; mockup v12 P2, P4)', () => {
+  // The public page: the main's text came with the page; the others load when View source opens.
+  const waiting = (pending: 'loading' | 'failed'): SourceFile[] =>
+    SEVERAL.map((f) =>
+      f.path === 'main.pathogen' || f.path === 'pathogen.json'
+        ? f
+        : { path: f.path, text: '', kind: f.kind === 'program' ? 'program' : 'file', pending },
+    );
+
+  it('loading: a spinner on each row, a kind not known yet drawn as a plain file, and the code box says so', () => {
+    const el = mount(waiting('loading'));
+    const gears = $(el, '.row[data-path="parts/gears.pathogen"]')!;
+    expect([
+      gears.classList.contains('waiting'),
+      Boolean(gears.querySelector('.spin')),
+      gears.getAttribute('aria-label'),
+      gears.title,
+    ]).toEqual([true, true, 'gears.pathogen, loading', 'parts/gears.pathogen: loading']);
+    // The kind isn't known until the text says so: a plain page, not a module's box.
+    expect(gears.querySelector('.icon svg')?.innerHTML).not.toBe(
+      $(el, '.row[data-path="main.pathogen"] .icon svg')?.innerHTML,
+    );
+    // The main came with the page: shown as it is.
+    expect([$(el, '.code')?.className, $(el, '.fallback code')?.textContent, $(el, '.foot')]).toEqual([
+      'code',
+      MAIN,
+      null,
+    ]);
+    gears.click();
+    expect([
+      $(el, '.code')?.className,
+      text($(el, '.waitmsg.loading')),
+      $(el, '.cp')?.hasAttribute('disabled'),
+    ]).toEqual(['code waiting', 'Loading parts/gears.pathogen…', true]);
+  });
+
+  it('failed: a “!” on each row, the list’s foot and the code box offer Try again, which asks the host', () => {
+    const el = mount(waiting('failed'), { open: 'parts/kit.pathogen' });
+    const retries: Event[] = [];
+    document.addEventListener('source-files-retry', (e) => retries.push(e));
+    expect([
+      Boolean($(el, '.row[data-path="parts/kit.pathogen"] .bad')),
+      $(el, '.row[data-path="parts/kit.pathogen"]')?.getAttribute('aria-label'),
+      $(el, '.foot')?.innerHTML,
+      $(el, '.code')?.className,
+      $(el, '.waitmsg.failed')?.innerHTML,
+    ]).toEqual([
+      true,
+      "kit.pathogen, didn't load",
+      'The other files couldn’t load.<br><button class="retry" type="button">Try again</button>',
+      'code failed',
+      '<div><b>This file’s text didn’t load.</b><br>Only the main’s text comes with the page.<br><button class="retry" type="button">Try again</button></div>',
+    ]);
+    $(el, '.foot .retry')!.click();
+    $(el, '.waitmsg.failed .retry')!.click();
+    expect(retries.map((e) => [e.bubbles, e.composed])).toEqual([
+      [true, true],
+      [true, true],
+    ]);
+  });
+
+  it('the texts arrive: the rows lose their state, the kind is known, and the open file shows its text', () => {
+    const el = mount(waiting('loading'), { open: 'parts/gears.pathogen' });
+    el.files = SEVERAL;
+    const gears = $(el, '.row[data-path="parts/gears.pathogen"]')!;
+    expect([
+      gears.className,
+      gears.querySelector('.spin'),
+      $(el, '.code')?.className,
+      $(el, '.fallback code')?.textContent,
+    ]).toEqual(['row file library active', null, 'code', GEARS]);
+  });
+
+  it('a screen reader hears the loading, the failure and the arrival, once each', async () => {
+    const said = (el: SourceFiles): string => $(el, '.load-status')?.textContent ?? '';
+    const wait = async (): Promise<void> => {
+      await new Promise((r) => {
+        setTimeout(r, 80);
+      });
+    };
+    const el = mount(waiting('loading'));
+    await wait();
+    // gears, kit and demos: everything but the main and pathogen.json.
+    expect(said(el)).toBe('Loading 3 files');
+    el.files = waiting('failed');
+    await wait();
+    expect(said(el)).toBe("3 files didn't load");
+    el.files = SEVERAL;
+    await wait();
+    expect(said(el)).toBe('The files have loaded');
+    // A viewer whose texts were all there says nothing.
+    const plain = mount(SEVERAL);
+    await wait();
+    expect(said(plain)).toBe('');
+  });
+
+  it('a file not asked for opens on one that came, never on one still to come', () => {
+    const files = waiting('loading').filter((f) => f.path !== 'main.pathogen');
+    const el = mount(files, { open: 'gone.pathogen' });
+    expect(el.shadowRoot!.querySelector('.path')?.textContent).toContain('pathogen.json');
+  });
+});
+
 describe('a re-review’s marks (2e step 5e; mockup v12 R3, R4)', () => {
   const MARKS = {
     files: {

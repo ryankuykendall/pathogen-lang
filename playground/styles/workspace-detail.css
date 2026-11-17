@@ -441,6 +441,19 @@ body:has(.workspace-detail) main.site-main {
   padding: 0.5rem 0;
 }
 
+/* Several files (2e step 6; mockup v12 P2 to P4): the viewer the snapshots page
+ * uses, the list beside the code. It fills a fixed height and scrolls inside;
+ * at a phone's width it becomes its own menu above the code. */
+.detail-source-files {
+  display: flex;
+  height: min(70vh, 640px);
+  min-height: 320px;
+}
+.detail-source-files source-files {
+  flex: 1;
+  min-width: 0;
+}
+
 /* ── More by @user — three-up rail ──────────────────────── */
 /* Bottom padding lives on body:has(.workspace-detail) main.site-main so
  * the floor is consistent whether or not this section renders. */

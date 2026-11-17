@@ -74,13 +74,41 @@ export async function readApprovalSource(
 }
 
 /**
- * The text the detail page shows: the main program's (the first entry point).
- * Null when the main's bytes couldn't be read: the page says so, as when the
- * source can't be read at all.
+ * The main program: the first entry point the approval holds, as the review screen
+ * compiles and approves it (2e step 5e). Null with no program.
+ */
+export function approvalMainPath(source: ApprovalSource): string | null {
+  return source.entryPoints.find((path) => Object.hasOwn(source.files, path)) ?? null;
+}
+
+/**
+ * The text the detail page shows: the main program's. Null when the main's bytes
+ * couldn't be read: the page says so, as when the source can't be read at all.
  */
 export function mainSourceText(source: ApprovalSource): string | null {
-  const main = source.entryPoints[0];
-  const file = main !== undefined ? source.files[main] : undefined;
+  const main = approvalMainPath(source);
+  const file = main !== null ? source.files[main] : undefined;
   if (file?.unreadable) return null;
   return file?.text ?? '';
+}
+
+/**
+ * What the detail page serves of a workspace of several files (2e step 6; note 59
+ * answer 3a, mockup v12 P1): every file's name, the folders, the programs and the
+ * main. The texts other than the main's load from source.json when View source opens.
+ */
+export interface ServedSource {
+  names: string[];
+  folders: string[];
+  entryPoints: string[];
+  main: string | null;
+}
+
+export function servedSource(source: ApprovalSource): ServedSource {
+  return {
+    names: Object.keys(source.files),
+    folders: [...source.folders],
+    entryPoints: [...source.entryPoints],
+    main: approvalMainPath(source),
+  };
 }

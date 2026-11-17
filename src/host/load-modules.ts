@@ -28,6 +28,7 @@ import {
   notAModuleError,
   unsavedFileImportError,
 } from '../module-messages';
+import { isModuleSource } from '../parser/module-source';
 import { parser as lezerParser } from '../parser/pathogen.generated';
 
 import type { HostReadResult, ProjectFileHost } from './types';
@@ -76,18 +77,8 @@ export function planImports(source: string): PlannedImport[] {
   return imports;
 }
 
-/**
- * Whether a file says it is a module: a `module;` line at its top level
- * (docs/modules.md "Exporting"). One placed after other statements still
- * counts here; the compile then reports where it belongs.
- */
-export function isModuleSource(source: string): boolean {
-  const tree = lezerParser.parse(source);
-  for (let node = tree.topNode.firstChild; node; node = node.nextSibling) {
-    if (node.name === 'ModuleHeader') return true;
-  }
-  return false;
-}
+// Whether a file says it is a module: one home, which the highlight bundle shares.
+export { isModuleSource };
 
 const WEB_ADDRESS = /^[a-z][a-z0-9+.-]*:/i;
 const DRIVE_PATH = /^[A-Za-z]:[\\/]/;

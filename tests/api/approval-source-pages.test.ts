@@ -5,7 +5,7 @@
 
 import { describe, expect, it, vi } from 'vitest';
 
-import { mainSourceText, readApprovalSource } from '../../website/approval-source';
+import { mainSourceText, readApprovalSource, servedSource } from '../../website/approval-source';
 
 const API = 'https://api.example.test';
 const MAIN = 'import { gear } from "./gears.pathogen";\ngear(4);\n';
@@ -72,5 +72,27 @@ describe('mainSourceText', () => {
     const files = { 'app.pathogen': { text: 'A' }, 'main.pathogen': { text: 'M' } };
     expect(mainSourceText({ files, folders: [], entryPoints: ['app.pathogen', 'main.pathogen'] })).toBe('A');
     expect(mainSourceText({ files, folders: [], entryPoints: [] })).toBe('');
+  });
+
+  it('is the first program the approval holds, as the review screen approves it (2e step 6)', () => {
+    const files = { 'main.pathogen': { text: 'M' } };
+    expect(mainSourceText({ files, folders: [], entryPoints: ['gone.pathogen', 'main.pathogen'] })).toBe('M');
+  });
+});
+
+describe('servedSource (2e step 6)', () => {
+  it('every name, the folders, the programs and the main, and no text', () => {
+    const served = servedSource({
+      files: { 'parts/gears.pathogen': { text: GEARS }, 'main.pathogen': { text: MAIN } },
+      folders: ['empty'],
+      entryPoints: ['gone.pathogen', 'main.pathogen'],
+    });
+    expect(served).toEqual({
+      names: ['parts/gears.pathogen', 'main.pathogen'],
+      folders: ['empty'],
+      entryPoints: ['gone.pathogen', 'main.pathogen'],
+      main: 'main.pathogen',
+    });
+    expect(JSON.stringify(served)).not.toContain('gear(');
   });
 });

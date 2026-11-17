@@ -992,6 +992,44 @@ A card's image opens the approved version (`GET /admin/approval/:id`). A workspa
 
 A card once approved (a re-review rejected, or a flagged workspace) keeps opening the approved version, which is what's public. Whichever is chosen, a mockup comes before it's built.
 
+## Step 6, the public page: the plan (2026-11-16)
+
+To mockup v12 P1 to P5 and note 59 answer 3a (the page holds the main's text; the others load when View source opens).
+
+- **Served:**
+  - every file's name, the folders and the programs, in a `data-` attribute (names are the owner's text: escaped, never inside a `<script>`);
+  - the main's text in its `<pre>`, as now, for crawlers and visitors without scripts;
+  - the summary: "Pathogen · N files" (pathogen.json counted, as the viewer counts it), or "Pathogen · N lines" for one file.
+  - The main is the first program the approval holds, as on the review screen (`mainSourceText` took `entryPoints[0]`).
+- **Opened** (several files): the viewer from the snapshots page and the review modal (`<source-files>`, the list beside the code), opening on the main. The other texts load in one request to `source.json`.
+  - The files are `source.json`'s when it arrives, the open file kept if it's still there: a re-approval between the page load and the click can change them.
+  - New viewer states, beside 5d's "couldn't be read": a file loading (a spinner on its row; "Loading <name>…" in the code), and a file that didn't load (a "!" on its row; "This file's text didn't load. Only the main's text comes with the page." in the code; the list's foot "The other files couldn't load." with Try again).
+- **Each file's kind** (program or module) is the engine's call on its text, as everywhere else. The page's parser comes with the code view's own bundle (`/dist/highlight.global.js`), so the call runs in the browser when the texts arrive; the Pages worker stays free of the parser. `isModuleSource` moves to a module of its own that the highlight bundle exports too.
+  - **Unlike the mockup's P2:** while the texts load, the programs (from the list) show the program icon and the others a plain file icon, until their text says which they are.
+- **One file** (P5): today's code view, now following a theme change (note 59, found along the way).
+- **Tested:** the viewer's new states; the served page (every name, the count, no text but the main's); the mount with `source.json` answering, failing and changed; on the dev stack, P1 to P5 in light and dark.
+
+## Step 6, built (2026-11-16)
+
+As planned above, and:
+- `isModuleSource` lives in `src/parser/module-source.ts` (only the generated parser); the module loader re-exports it, and `src/highlight.ts` exports it with `workspaceProjectFileText`, so the public page uses the snapshots page's mapping (`snapshotViewerFiles`) with the highlight bundle as its engine.
+- `website/approval-source.ts`: `approvalMainPath` (the first program held), used by `mainSourceText`; `servedSource` (names, folders, programs, main; no text).
+- `playground/utils/detail-source-files.ts` (pure: the files before and after `source.json`) and `detail-source-mount.ts` `mountSourceFiles` (each attempt answers only for itself; Try again is the viewer's `source-files-retry` event). The highlight bundle's URL is a constant, so bundlers and tests leave the import alone; the mount takes its loader as an argument for tests.
+- `<source-files>`: `pending` (`loading` | `failed`) and the kind `file` (a new plain icon in `file-icons.ts`); two storybook stories.
+- **From the code review:**
+  - Without the highlight bundle the viewer doesn't mount (no kinds, no pathogen.json, so the list wouldn't match the count): the page keeps the main's text, as without scripts.
+  - The main badge is the first program held, before and after the texts come, as the file it opens on.
+  - A screen reader hears "Loading 3 files", "3 files didn't load" and "The files have loaded", once each, from a status region of its own.
+  - An answer that can't be shown counts as failed, with Try again, never a spinner forever; the one-file view's theme watch stops when its editor leaves the page; the source.json URL's parts are encoded.
+  - A file name can hold only letters, digits, `-`, `_` and `.` (`nameProblem`), so no stored name can break out of the served attribute; it's escaped anyway.
+- **Found while checking:** the line numbers looked out of step with their lines in the first screenshots. CodeMirror measures its lines only while the editor is on screen, and the check's window showed View source below the fold. Scrolled into view, as a reader sees it, they line up; the check now asserts that, in light and dark.
+- **Tested:**
+  - `tests/playground-source-files.test.ts` (+5): loading, failed with Try again, the texts arriving, what a screen reader hears, and the default never a file still to come;
+  - `tests/playground-detail-source-files.test.ts` (8): the files before and after, the first program listed not held, the guards, the mount answering, failing then retried, without the highlight bundle, and a re-approval since;
+  - `tests/pages-detail-source.test.ts` (2): the served page (every name, the count, the main's text and no other) and one file as before; `source.json` carries every text;
+  - `tests/api/approval-source-pages.test.ts` (+2): the main is the first program held; `servedSource`;
+  - on the dev stack, `verify/verify-2e-step6.ts` (9): P1 to P5, a phone's width, the line numbers, the theme followed with the page's own toggle (`2e-step6-*.png`).
+
 ## What the audits found (2026-11-14)
 
 ### Snapshots, copies, forks

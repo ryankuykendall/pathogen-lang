@@ -26,6 +26,13 @@ export { lezerParser };
 export { editorParser } from './parser/editor-parser';
 import { editorParser } from './parser/editor-parser';
 
+// A file's kind (program or module), the same call the compiler makes, and
+// pathogen.json as the workspace writes it: the public page's View source shows
+// several files with them (2e step 6), as the snapshots page does with the full
+// bundle's (playground/utils/snapshot-viewer-files.ts).
+export { isModuleSource } from './parser/module-source';
+export { projectFileText as workspaceProjectFileText } from './workspace/files';
+
 // Lookup table: Lezer grammar node names → CSS class names. Mirrors
 // the semantic intent of pathogenHighlighting in src/parser/highlight.ts
 // without importing the @lezer/highlight tag system at the call site.

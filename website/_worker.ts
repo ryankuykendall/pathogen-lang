@@ -15,7 +15,7 @@ import { findUserById, findUserByHandle } from './auth/users.js';
 import { computeUserFeatures } from './auth/features.js';
 import { findApprovalForUserAndSlug } from './api/moderation.js';
 import { readThumbMeta } from './api/utils.js';
-import { mainSourceText, readApprovalSource } from './approval-source.js';
+import { mainSourceText, readApprovalSource, servedSource } from './approval-source.js';
 import { siteHeaderHtml } from '../playground/utils/site-header-template.js';
 import type {
   Env,
@@ -635,12 +635,26 @@ async function renderWorkspaceDetailPage(
     month: 'short', day: 'numeric', year: 'numeric',
   });
   // The approved source, through the API Worker (approval-source.ts). The
-  // page shows the main program; an approval with several files gets its
-  // own view in 2e. When the source can't be read right now, the rest of
-  // the page still renders and the source panel says so.
+  // page holds the main program's text. With several files it also serves
+  // every file's name, and the others' texts load from source.json when View
+  // source opens (2e step 6; note 59 answer 3a, mockup v12 P1). When the
+  // source can't be read right now, the rest of the page still renders and
+  // the source panel says so.
   const source = await readApprovalSource(approval, apiBase(env));
   const sourceText = source ? mainSourceText(source) : null;
   const lineCount = (sourceText ?? '').split('\n').length;
+  const served = source && Object.keys(source.files).length > 1 ? servedSource(source) : null;
+  // pathogen.json is counted, as the viewer's list counts it.
+  const sourceMeta =
+    sourceText === null
+      ? 'Unavailable right now'
+      : served
+        ? `Pathogen &middot; ${served.names.length + 1} files`
+        : `Pathogen &middot; ${lineCount} lines`;
+  // Names are the owner's text: escaped into an attribute, never into a <script>.
+  const servedAttrs = served
+    ? ` data-served="${escapeHtml(JSON.stringify(served))}" data-source-url="/u/${escapeHtml(encodeURIComponent(handle))}/${escapeHtml(encodeURIComponent(slug))}/source.json"`
+    : '';
   const avatarInitial = initialOf(user.display_name).slice(0, 1);
 
   // Italicize the last word of the title — the editorial accent moment.
@@ -821,10 +835,10 @@ async function renderWorkspaceDetailPage(
     </section>
 
     <section class="detail-source">
-      <details class="detail-source-disclosure">
+      <details class="detail-source-disclosure"${servedAttrs}>
         <summary>
           <span class="detail-source-title">View source</span>
-          <span class="detail-source-meta">${sourceText !== null ? `Pathogen &middot; ${lineCount} lines` : 'Unavailable right now'}</span>
+          <span class="detail-source-meta">${sourceMeta}</span>
         </summary>
         ${
           // Without a <pre>, the toggle script below has nothing to highlight.
@@ -888,6 +902,19 @@ async function renderWorkspaceDetailPage(
           const pre = details.querySelector('pre.detail-source-code');
           if (!pre) return;
           const source = pre.textContent || '';
+          // Several files (2e step 6): the files viewer, the main shown at once and
+          // the others loading from source.json. If it can't load, the main's text
+          // gets the one-file editor below.
+          if (details.dataset.served) {
+            try {
+              const mount = await import('/utils/detail-source-mount.js');
+              const served = JSON.parse(details.dataset.served);
+              const result = await mount.mountSourceFiles(pre, served, details.dataset.sourceUrl);
+              if (result && result.mounted) return;
+            } catch {
+              // Fall through to the one-file editor.
+            }
+          }
           // Path 1: CodeMirror read-only editor.
           try {
             const mount = await import('/utils/detail-source-mount.js');
