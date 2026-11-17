@@ -1048,6 +1048,29 @@ The docs (note 63, review record `reviews/phase-2e-step7-docs-review.md`) and th
 
 **Who can load a workspace (your question, 2026-11-17).** Production (ecbaabc) lets anyone load an approved, public workspace's live files: `getWorkspace` denies only `!isAdmin && !workspace.isPublic && workspace.userId !== userId` (router.ts:378), and the copy route the same (:602). That includes edits not reviewed yet. 5a (answer 10) made both the owner's and the admins' only (`router.ts` `getWorkspace`, :551); it ships with this push. Not a regression: private workspaces were always the owner's only. The open question is only what a visitor sees at such a link. It matters for one more case: Explore, Featured and profile cards link to `/workspace/…` when their index entry has no `ownerHandle` or `slug` (`_worker.ts` :183, :407, :1033). After the push, a visitor clicking such a card gets "You do not have access to this workspace". How many production entries lack them needs a read-only count.
 
+**The count (2026-11-17, read-only, your go-ahead).** Probes in `tmp/2e-step8/` (`count-card-fallbacks.ts`, `check-missing-handles.ts`, `check-legacy-entries.ts`, `legacy-entry-names.ts`):
+- **Featured:** 19 cards, all with a handle and a slug. **Profiles:** every index entry has a slug. Neither falls back.
+- **Explore:** 16 of 36 entries have no `ownerHandle`, places 21–36 (4 cards on page 1, 12 on page 2). All 16 are your own early workspaces (@ryan), last edited 2026-02-18 to 2026-09-05. Each one:
+  - has **no approval record**, so no public page exists to send a visitor to (giving the entry a handle would only turn "no access" into "Workspace not found");
+  - has `isPublic: true` on the workspace record, no state row in D1 (so you see it as "unpublished"), and an index entry carrying an older anonymous `userId` (the workspaces were moved to your account later, so your profile page doesn't list them).
+- **They predate reviews.** `scripts/backfill-publication-state.ts` was written for exactly these and was never run on production.
+- **They also block Make public:** `updateWorkspace` submits only when `!workspace.isPublic` (router.ts:618, the same at ecbaabc), so for these Make public does nothing.
+- **Not used:** `backfill-publication-state.ts` (it would approve them unreviewed, in the record shape from before 2e) and `/admin/reconcile-indexes` (it re-sorts `featured:workspaces` and leaves `isPublic` true).
+
+**The fix, ready, waiting on your answer:** `tmp/2e-step8/unpublish-unreviewed.ts` calls the existing admin Unpublish (`POST /admin/unpublish/:id`) for each index entry without an approval record.
+- **What Unpublish does,** without needing an approval at ecbaabc or at HEAD: `isPublic` false, off the public and featured indexes, an "unpublished" state row (HEAD also clears the re-review queue).
+- **The script:** a dry run by default. `--write` needs `--backup-dir` and saves the index and each record first. The token comes from `ADMIN_TOKEN` or `--token-file` and is never printed.
+- **Dev rehearsal,** `tmp/2e-step8/rehearse-legacy-cleanup.ts` (17 checks) and `rehearse-cleanup-script.ts` (16 checks), all pass:
+  - before the cleanup, Explore links the card into the playground, a visitor can't load it, and Make public does nothing;
+  - after it, the card is off Explore, the other entries are kept in order, `isPublic` is false, and Make public sends the workspace to review.
+- **Production dry run:** exactly these 16.
+
+After it, any you want public go through Make public and review like any other workspace.
+
+**Not checked yet:** workspaces with `isPublic: true` and no approval that aren't on Explore have the same stuck Make public. Finding them takes a read-only scan of every production workspace record (about 400 `wrangler` reads). It doesn't block the push, since nothing links visitors to them.
+
+One of the 16 has an id containing "undefined" (`3Yf4qyxq2Pw884m8e9undefinednB`), from an older id generator: today's `generateNanoId` masks into a 64-character alphabet and can't produce it.
+
 ## What the audits found (2026-11-14)
 
 ### Snapshots, copies, forks
