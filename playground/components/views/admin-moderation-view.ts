@@ -20,22 +20,42 @@
 // controls. The "Review" action opens a modal with a full <mini-workspace>
 // embed so the admin can read the code and inspect the rendered SVG before
 // making a decision.
+//
+// A queue entry (2e step 5e; mockups v12 R1 to R6): its source comes from the
+// listing (one file) or GET /admin/review/:id/source, and the card, the modal and
+// Approve all read it. The main is compiled with its imports; Approve waits for
+// the source, stays off while a file can't be read, and names the version it saw.
 
 import { thumbnailApi } from '../../services/api.js';
 import { hasFeature, UserFeature, type CurrentUser } from '../../services/auth.js';
 import compilerWorker from '../../services/compiler-worker.js';
 import thumbnailService from '../../services/thumbnail-service.js';
 import { store } from '../../state/store.js';
+import {
+  changeLines,
+  changesSummary,
+  reviewCompileInput,
+  reviewFileCount,
+  reviewViewerFiles,
+  sourceFromListing,
+  unreadableFiles,
+} from '../../utils/review-entry.js';
 import { dimensionsOrDefault } from '../../utils/source-dimensions.js';
 import { computeOriginNormalization } from '../../utils/svg-origin.js';
 // Side-effect import: register the <mini-workspace> custom element so the
 // review modal can mount one. The component is already loaded for blog
 // pages; pulling it in here keeps the admin route self-sufficient.
 import '../blog/mini-workspace.js';
+import { MARK_CHG_COLOR, MARK_DOT_STYLES, markDot, SourceFiles } from '../shared/source-files.js';
 // Side-effect import: register <thumbnail-crop-modal> for the admin
 // "Set thumbnail" action on Approved/Featured cards.
 import type ThumbnailCropModal from '../thumbnail-crop-modal.js';
 import '../thumbnail-crop-modal.js';
+
+import type { MiniWorkspace, MiniWorkspaceFiles } from '../blog/mini-workspace.js';
+import type { WorkspaceCompileInput } from '../../services/compiler-worker.js';
+import type { ListedEntry, ReviewFile, ReviewSource } from '../../utils/review-entry.js';
+import type { SnapshotFilesEngine } from '../../utils/snapshot-viewer-files.js';
 
 declare const __PATHOGEN_API_BASE__: string;
 const API_BASE = __PATHOGEN_API_BASE__;
@@ -43,9 +63,48 @@ const API_BASE = __PATHOGEN_API_BASE__;
 /** GET /admin/approval/:id's answer, as far as this screen reads it. */
 interface ApprovalAnswer {
   code?: string;
-  files?: Record<string, { unreadable?: boolean }>;
+  files?: Record<string, ReviewFile>;
+  folders?: string[];
+  entryPoints?: string[];
+  codeHash?: string;
   error?: string;
 }
+
+/** The engine's calls the viewer's files need, once the library has loaded. */
+function engine(): SnapshotFilesEngine | null {
+  const lib = (window as { PathogenLang?: Partial<SnapshotFilesEngine> }).PathogenLang;
+  return typeof lib?.isModuleSource === 'function' && typeof lib.workspaceProjectFileText === 'function'
+    ? (lib as SnapshotFilesEngine)
+    : null;
+}
+
+type QueueTab = 'pending' | 'rereview';
+
+/** A queue entry's source, as the screen holds it. */
+type SourceState =
+  { status: 'loading' } | { status: 'ready'; source: ReviewSource } | { status: 'failed'; error: string };
+
+/** The review modal's parts, made when it opens. */
+interface ReviewModal {
+  /** Its entry: _entryKey for a queue entry, _svgKey for a catalog one. */
+  key: string;
+  backdrop: HTMLElement;
+  /** The box saying what changed since the approved version (a re-review). */
+  changes: HTMLElement;
+  /** The drawing and files, or a message. */
+  main: HTMLElement;
+  /** The viewer shown, if any: the box's lines open files in it. */
+  viewer: MiniWorkspace | SourceFiles | null;
+}
+
+/** What the card and the modal say when an entry's files couldn't be read (v12 R5, R6). */
+const LOST_CARD =
+  'The submitted files couldn’t be read, so there’s nothing to review. Approve is off until they load: refresh to try again.';
+const LOST_MODAL =
+  '<b>The submitted files couldn’t be read.</b> There’s nothing to review yet, so Approve is off on the card. Refresh the page to try again.';
+const LOST_APPROVE = 'Approve needs the files, and they couldn’t be read';
+const LOADING_APPROVE = 'Approve waits for the submitted files to load';
+const MARK_WORD = { new: 'new', changed: 'changed', moved: 'moved', removed: 'removed' } as const;
 
 /** The first file of an approval whose bytes couldn't be read (2e step 5d), if any. */
 function unreadablePath(answer: ApprovalAnswer): string | null {
@@ -54,21 +113,19 @@ function unreadablePath(answer: ApprovalAnswer): string | null {
 
 // ─── Tab + card data shapes ───────────────────────────────────────────
 
-interface QueueEntry {
-  workspaceId: string;
+// A Pending review or Re-review entry. An entry that is just main.pathogen carries
+// its text (`code`, and in `files`); one with several files carries its manifest;
+// one whose files the listing couldn't read carries `sourceError`. A re-review says
+// what changed since the approved version (`changes`, or `changesError`).
+interface QueueEntry extends ListedEntry {
   userId: string;
-  // The text of an entry that is just main.pathogen. An entry with several
-  // files (phase 2) carries only its manifest, and an entry whose files
-  // can't be read carries `sourceError`; neither has `code`.
-  code?: string;
-  codeHash: string;
-  name: string;
   description: string;
   slug: string;
   submittedAt: string;
   ownerHandle: string | null;
   ownerDisplayName: string | null;
   ownerFlagged: boolean;
+  sourceError?: string;
 }
 
 interface ApprovedEntry {
@@ -158,25 +215,32 @@ class AdminModerationView extends HTMLElement {
   private _error: string | null = null;
   private _busy: Set<string> = new Set();
 
-  // SVG rendered from each entry's code, used as the card thumbnail and
-  // (for queue entries) reused when the admin approves so we don't
-  // compile twice. Map keyed by `${tab}:${workspaceId}` because the same
-  // workspaceId can appear in Approved + Featured with different code
-  // snapshots in theory (in practice they're identical; the key just
-  // keeps things scoped).
+  // SVG rendered for each card: its thumbnail and, for a queue entry, the drawing
+  // Approve sends, so nothing compiles twice. A catalog card's key is _svgKey
+  // (`${tab}:${workspaceId}`); a queue entry's is _entryKey, which names its version
+  // too, so a resubmitted entry is a new key, never the old drawing. '' is a failure.
   private _svg: Map<string, string> = new Map();
-  private _svgPending: Set<string> = new Set();
+
+  // Compiles running, by key: Approve waits for one rather than starting another.
+  private _svgInFlight = new Map<string, Promise<string | null>>();
+
   private _compilationCounter: number = 0;
 
-  // Modal state — open at most one mini-workspace at a time.
-  // _modalStatus encodes the lifecycle so the modal never gets stuck on
-  // "Compiling…" when the compile fails or the source is missing.
-  private _modalKey: string | null = null;
-  private _modalCode: string = '';
-  private _modalSvg: string | null = null;
-  private _modalTitle: string = '';
-  private _modalStatus: 'idle' | 'loading' | 'ready' | 'failed' = 'idle';
-  private _modalError: string | null = null;
+  // Each queue entry's source (2e step 5e), by _entryKey. A failed load stays failed
+  // until Refresh (a new listing), so a render never refetches.
+  private _sources = new Map<string, SourceState>();
+
+  private _sourceLoads = new Map<string, Promise<SourceState>>();
+
+  // The shadow root's parts: render() rewrites the screen only, so the review modal
+  // (at most one) keeps the file being read while thumbnails finish.
+  private _screen: HTMLElement | null = null;
+
+  private _modalHost: HTMLElement | null = null;
+
+  private _modal: ReviewModal | null = null;
+
+  private _themeWatch: MutationObserver | null = null;
 
   // Reject form state per workspace.
   private _rejectingId: string | null = null;
@@ -221,10 +285,15 @@ class AdminModerationView extends HTMLElement {
       if (detail?.workspaceId) this._reflectThumbnailUpdate(detail.workspaceId, detail.cardAt);
     };
     document.addEventListener('thumbnail-updated', this._onThumbnailUpdated);
+    // The changes box's badges follow the theme (the viewer's own do the same).
+    this._themeWatch = new MutationObserver(() => this._syncTheme());
+    this._themeWatch.observe(document.documentElement, { attributes: true, attributeFilter: ['data-active-theme'] });
     if (store.get('currentView') === 'admin-moderation') this._loadIfAdmin();
   }
 
   disconnectedCallback(): void {
+    this._themeWatch?.disconnect();
+    this._themeWatch = null;
     this._unsubscribe?.();
     this._unsubscribe = null;
     this._unsubscribeUser?.();
@@ -235,6 +304,27 @@ class AdminModerationView extends HTMLElement {
     }
     this._cropModal?.remove();
     this._cropModal = null;
+  }
+
+  /**
+   * The shadow root's three parts, made once: the styles, the screen render() rewrites,
+   * and the review modal's host, which only opening and closing the modal touch.
+   */
+  private _shell(): HTMLElement {
+    if (this._screen) return this._screen;
+    const style = document.createElement('style');
+    style.textContent = this._styles();
+    this._screen = document.createElement('div');
+    this._screen.className = 'screen';
+    this._modalHost = document.createElement('div');
+    this._modalHost.className = 'modal-host';
+    this.shadowRoot!.replaceChildren(style, this._screen, this._modalHost);
+    this._syncTheme();
+    return this._screen;
+  }
+
+  private _syncTheme(): void {
+    this._modalHost?.classList.toggle('dark', document.documentElement.getAttribute('data-active-theme') === 'dark');
   }
 
   // Lazily create the body-mounted crop modal.
@@ -333,6 +423,7 @@ class AdminModerationView extends HTMLElement {
     this.render();
     try {
       await this._fetchTab(tab);
+      this._forgetStaleSources();
     } catch (err) {
       this._error = (err as Error).message;
     } finally {
@@ -348,22 +439,120 @@ class AdminModerationView extends HTMLElement {
     return `${tab}:${workspaceId}`;
   }
 
-  private async _compileSvg(code: string | undefined, key: string): Promise<string | null> {
-    if (this._svg.has(key)) return this._svg.get(key) ?? null;
-    if (this._svgPending.has(key)) return null;
+  /** A queue entry's key: its tab, workspace and version, so a resubmission is a new entry. */
+  private _entryKey(tab: QueueTab, e: QueueEntry): string {
+    return `${tab}:${e.workspaceId}:${e.codeHash}`;
+  }
+
+  private _queueEntries(tab: QueueTab): QueueEntry[] {
+    return tab === 'pending' ? this._pending : this._rereview;
+  }
+
+  /**
+   * After a queue is listed again (Refresh, a tab visit, a decision refused): a load
+   * that failed is tried again, and versions no longer listed are dropped with their
+   * drawings. Files that can't be read come back so, from the server.
+   */
+  private _forgetStaleSources(): void {
+    const listed = new Set(
+      (['pending', 'rereview'] as const).flatMap((tab) => this._queueEntries(tab).map((e) => this._entryKey(tab, e))),
+    );
+    for (const [key, state] of this._sources) {
+      if (state.status === 'loading') continue;
+      if (state.status === 'failed' || !listed.has(key)) {
+        this._sources.delete(key);
+        if (!listed.has(key)) this._svg.delete(key);
+      }
+    }
+  }
+
+  /** The source didn't load, or a file in it couldn't be read: nothing to review. */
+  private _isLost(state: SourceState | undefined): boolean {
+    return state?.status === 'failed' || (state?.status === 'ready' && unreadableFiles(state.source).length > 0);
+  }
+
+  /**
+   * An entry's source: from the listing when it carries the text (one file), else
+   * GET /admin/review/:id/source. Once a version; a failure is kept until Refresh.
+   * The state is set before the first await, so a render right after shows it loading.
+   */
+  private async _entrySource(tab: QueueTab, e: QueueEntry): Promise<SourceState> {
+    const key = this._entryKey(tab, e);
+    const known = this._sources.get(key);
+    if (known && known.status !== 'loading') return known;
+    const running = this._sourceLoads.get(key);
+    if (running) return running;
+    const listed = sourceFromListing(e);
+    if (listed) {
+      const ready: SourceState = { status: 'ready', source: listed };
+      this._sources.set(key, ready);
+      return ready;
+    }
+    this._sources.set(key, { status: 'loading' });
+    const load = this._fetchSource(tab, e.workspaceId).then((state) => {
+      this._sources.set(key, state);
+      this._sourceLoads.delete(key);
+      return state;
+    });
+    this._sourceLoads.set(key, load);
+    return load;
+  }
+
+  private async _fetchSource(tab: QueueTab, workspaceId: string): Promise<SourceState> {
+    const queue = tab === 'pending' ? 'review' : 'rereview';
+    try {
+      const res = await fetch(`${API_BASE}/admin/review/${encodeURIComponent(workspaceId)}/source?queue=${queue}`, {
+        credentials: 'include',
+      });
+      const data = (await res.json()) as ReviewSource & { error?: string };
+      if (!res.ok) return { status: 'failed', error: data.error || `HTTP ${res.status}` };
+      return { status: 'ready', source: data };
+    } catch (err) {
+      return { status: 'failed', error: (err as Error).message };
+    }
+  }
+
+  /** An entry's drawing: its main compiled with its imports. Null with a file unread or no program. */
+  private async _compileSource(key: string, source: ReviewSource): Promise<string | null> {
+    const input = reviewCompileInput(source);
+    if (!input) return null;
+    return this._compileSvg(input.text, key, input.workspace);
+  }
+
+  /**
+   * Compile a program into a card's SVG, once a key; a compile already running is
+   * waited for. A workspace's other files are where its imports come from.
+   */
+  private async _compileSvg(
+    code: string | undefined,
+    key: string,
+    workspace?: WorkspaceCompileInput,
+  ): Promise<string | null> {
+    if (this._svg.has(key)) return this._svg.get(key) || null;
+    const running = this._svgInFlight.get(key);
+    if (running) return running;
     // Empty / whitespace-only code can't produce a meaningful render —
     // generateSvg returns an SVG with an empty <path d="" />. Mark it
     // failed up-front so the modal goes straight to the source-and-error
-    // state instead of showing a blank preview. No code at all is an entry
-    // with several files, or one whose files couldn't be read.
+    // state instead of showing a blank preview.
     if (!code?.trim()) {
       this._svg.set(key, '');
       return null;
     }
-    this._svgPending.add(key);
+    const compile = this._runCompile(code, key, workspace).finally(() => this._svgInFlight.delete(key));
+    this._svgInFlight.set(key, compile);
+    return compile;
+  }
+
+  private async _runCompile(code: string, key: string, workspace?: WorkspaceCompileInput): Promise<string | null> {
     try {
       const id = ++this._compilationCounter;
-      const result = (await compilerWorker.compileWithContext(code, id, undefined)) as Record<string, unknown>;
+      const result = (await compilerWorker.compileWithContext(
+        code,
+        id,
+        undefined,
+        workspace ? { workspace } : undefined,
+      )) as Record<string, unknown>;
       // The global is named `PathogenLang` (tsup.config.ts globalName).
       // generateSvg accepts the CompileResult shape and returns an
       // <svg>…</svg> string. compileWithContext returns a superset of
@@ -392,35 +581,31 @@ class AdminModerationView extends HTMLElement {
       // Cache failure as empty string so we don't retry on every render.
       this._svg.set(key, '');
       return null;
-    } finally {
-      this._svgPending.delete(key);
     }
   }
 
-  // Bounded thumbnail compile for the current tab. Only the queue tabs
-  // (Pending / Re-review) carry inline `code` to compile — they have no
+  // Bounded source load and thumbnail compile for the current tab. Only the
+  // queue tabs (Pending / Re-review) have sources to compile — they have no
   // R2 thumbnail to fall back on, so without this a freshly-submitted
   // card shows only a letter avatar until the admin opens it. The
-  // catalog tabs (Approved/Featured/Rejected/Flagged) have no `code` on
+  // catalog tabs (Approved/Featured/Rejected/Flagged) have no source on
   // the listing and degrade to the R2 thumbnail or avatar via
-  // _renderThumb, so they're skipped entirely.
+  // _renderThumb, so they're skipped entirely. Each job loads the entry's
+  // source first (Approve waits for it), then compiles its main.
   //
   // The previous version compiled every queue card eagerly with no
   // ceiling, so a single slow-to-compile workspace (~14s) blocked the
-  // whole tab. This version caps concurrency at 2 and races each compile
+  // whole tab. This version caps concurrency at 2 and races each job
   // against a ~4s timer: when the timer wins, the slot frees and the
   // card stays on its avatar. The worker call can't truly be cancelled,
   // so the real compile still resolves later, populates `_svg`, and
   // renders the thumbnail late — we just stop blocking on it. The
-  // existing `_svg` / `_svgPending` memoization dedups the late finish.
+  // `_svg` / `_svgInFlight` memoization dedups the late finish.
   private _compileThumbnailsForCurrentTab(): void {
-    const entries =
-      this._tab === 'pending' ? this._pending : this._tab === 'rereview' ? this._rereview : null;
-    if (!entries) return;
+    const tab = this._tab;
+    if (tab !== 'pending' && tab !== 'rereview') return;
 
-    const jobs = entries
-      .map((e) => ({ key: this._svgKey(this._tab, e.workspaceId), code: e.code }))
-      .filter((j) => !this._svg.has(j.key));
+    const jobs = this._queueEntries(tab).filter((e) => !this._svg.has(this._entryKey(tab, e)));
     if (jobs.length === 0) return;
 
     const COMPILE_TIMEOUT_MS = 4000;
@@ -429,10 +614,15 @@ class AdminModerationView extends HTMLElement {
 
     const runWorker = async (): Promise<void> => {
       while (next < jobs.length) {
-        const job = jobs[next++];
-        // Re-render once the real compile finishes regardless of whether
-        // we're still waiting on it — late completions paint the thumb.
-        const compile = this._compileSvg(job.code, job.key).then(() => this.render());
+        const entry = jobs[next++];
+        // Re-render once the source arrives (Approve follows it) and once the
+        // real compile finishes, whether or not we're still waiting on it.
+        const compile = this._entrySource(tab, entry)
+          .then(async (state) => {
+            this.render();
+            return state.status === 'ready' ? this._compileSource(this._entryKey(tab, entry), state.source) : null;
+          })
+          .then(() => this.render());
         const timer = new Promise<void>((resolve) => setTimeout(resolve, COMPILE_TIMEOUT_MS));
         // Stop blocking after the timeout; the card falls back to its
         // avatar until (if ever) the slow compile resolves.
@@ -448,19 +638,25 @@ class AdminModerationView extends HTMLElement {
   // Approve: simplified card — admin clicks Approve. Featuring is a
   // separate action available on the Approved tab.
   private async _approve(workspaceId: string): Promise<void> {
-    if (this._busy.has(workspaceId)) return;
+    const tab = this._tab;
+    if (this._busy.has(workspaceId) || (tab !== 'pending' && tab !== 'rereview')) return;
+    const entry = this._queueEntries(tab).find((e) => e.workspaceId === workspaceId);
+    const key = entry ? this._entryKey(tab, entry) : '';
+    const state = this._sources.get(key);
+    // The button is off until the files have loaded, and while any of them can't be read.
+    if (!entry || state?.status !== 'ready' || this._isLost(state)) return;
     this._busy.add(workspaceId);
     this.render();
     try {
-      const entry =
-        this._pending.find((e) => e.workspaceId === workspaceId) ||
-        this._rereview.find((e) => e.workspaceId === workspaceId);
-      const tab: Tab = this._pending.some((e) => e.workspaceId === workspaceId) ? 'pending' : 'rereview';
-      const svg = entry ? await this._compileSvg(entry.code, this._svgKey(tab, workspaceId)) : null;
-      const body: Record<string, unknown> = { decision: 'approve', feature: false };
+      // The drawing of the files reviewed, and their version: if the owner saved
+      // since, the server decides nothing (`changed`). A drawing that doesn't
+      // compile is approved without one, as before.
+      const svg = await this._compileSource(key, state.source);
+      const body: Record<string, unknown> = { decision: 'approve', feature: false, codeHash: state.source.codeHash };
       if (svg) body.svg = svg;
       const res = await this._post(`/admin/review/${encodeURIComponent(workspaceId)}`, body);
       if (this._wasWithdrawn(workspaceId, res)) return;
+      if (this._hadChanged(res)) return;
       if (!res.ok) throw new Error(res.error || 'Request failed');
       this._pending = this._pending.filter((e) => e.workspaceId !== workspaceId);
       this._rereview = this._rereview.filter((e) => e.workspaceId !== workspaceId);
@@ -482,18 +678,28 @@ class AdminModerationView extends HTMLElement {
   private async _reject(workspaceId: string): Promise<void> {
     if (this._busy.has(workspaceId)) return;
     const notes = this._rejectionNotes.get(workspaceId) || '';
+    // The version reviewed, when its files loaded: a save since decides nothing.
+    const tab = this._tab;
+    const entry =
+      tab === 'pending' || tab === 'rereview'
+        ? this._queueEntries(tab).find((e) => e.workspaceId === workspaceId)
+        : undefined;
+    const state = entry ? this._sources.get(this._entryKey(tab as QueueTab, entry)) : undefined;
     this._busy.add(workspaceId);
     this.render();
     try {
       const res = await this._post(`/admin/review/${encodeURIComponent(workspaceId)}`, {
         decision: 'reject',
         internalNotes: notes,
+        ...(state?.status === 'ready' ? { codeHash: state.source.codeHash } : {}),
       });
       if (this._wasWithdrawn(workspaceId, res)) {
         this._rejectingId = null;
         this._rejectionNotes.delete(workspaceId);
         return;
       }
+      // The notes stay, for the version now waiting.
+      if (this._hadChanged(res)) return;
       if (!res.ok) throw new Error(res.error || 'Request failed');
       this._pending = this._pending.filter((e) => e.workspaceId !== workspaceId);
       this._rereview = this._rereview.filter((e) => e.workspaceId !== workspaceId);
@@ -519,6 +725,18 @@ class AdminModerationView extends HTMLElement {
     if (!res.withdrawn) return false;
     this._rereview = this._rereview.filter((e) => e.workspaceId !== workspaceId);
     this._toast(res.error || 'This re-review was withdrawn.');
+    return true;
+  }
+
+  /**
+   * The owner saved after the entry was opened (2e step 5e): the server decided
+   * nothing, and the tab reloads, so the version waiting now is what's reviewed.
+   */
+  private _hadChanged(res: { changed?: boolean; error?: string }): boolean {
+    if (!res.changed) return false;
+    this._toast(res.error || 'This submission changed after it was opened. Review the version waiting now.');
+    this._closeReview();
+    this._loadTab(this._tab);
     return true;
   }
 
@@ -616,7 +834,7 @@ class AdminModerationView extends HTMLElement {
     path: string,
     body: Record<string, unknown> | null,
     method: 'POST' | 'PUT' | 'DELETE' = 'POST',
-  ): Promise<{ ok: boolean; error?: string; slug?: string; withdrawn?: boolean }> {
+  ): Promise<{ ok: boolean; error?: string; slug?: string; withdrawn?: boolean; changed?: boolean }> {
     const init: RequestInit = {
       method,
       credentials: 'include',
@@ -624,7 +842,7 @@ class AdminModerationView extends HTMLElement {
     };
     if (body !== null && method !== 'DELETE') init.body = JSON.stringify(body);
     const res = await fetch(`${API_BASE}${path}`, init);
-    let data: { error?: string; slug?: string; withdrawn?: boolean } = {};
+    let data: { error?: string; slug?: string; withdrawn?: boolean; changed?: boolean } = {};
     try {
       data = (await res.json()) as typeof data;
     } catch {
@@ -647,108 +865,195 @@ class AdminModerationView extends HTMLElement {
 
   // ─── Modal (mini-workspace review) ──────────────────────────────────
 
-  // Open the review modal with code from a queue entry (pending /
-  // re-review). The code is frozen at submission time. We compile in
-  // the background; if compile fails the modal still shows the source
-  // plus an error banner.
-  private async _openReview(workspaceId: string, tab: Tab, code: string, name: string): Promise<void> {
-    this._modalKey = workspaceId;
-    this._modalCode = code;
-    this._modalTitle = name;
-    this._modalError = null;
-    const key = this._svgKey(tab, workspaceId);
-    const cached = this._svg.get(key);
-    if (cached) {
-      this._modalSvg = cached;
-      this._modalStatus = 'ready';
-    } else if (cached === '') {
-      this._modalSvg = null;
-      this._modalStatus = 'failed';
-      this._modalError = 'Compile failed for this submission.';
-    } else {
-      this._modalSvg = null;
-      this._modalStatus = 'loading';
+  // The modal is made when it opens and lives outside the screen render()
+  // rewrites, so a thumbnail finishing behind it never resets the file being
+  // read (2e step 5e). Opening another entry, or closing, replaces it.
+
+  /** Open the modal on an entry, replacing any other, saying `waiting` until there's more to show. */
+  private _openModal(key: string, title: string, waiting: string): ReviewModal {
+    this._closeReview();
+    this._shell();
+    const backdrop = document.createElement('div');
+    backdrop.className = 'modal-backdrop';
+    backdrop.innerHTML = `<div class="modal" role="dialog" aria-modal="true" aria-label="${this._escapeHtml(`Review: ${title}`)}">
+        <header class="modal-head">
+          <h2>${this._escapeHtml(title)}</h2>
+          <button class="ghost" data-action="close-modal">Close</button>
+        </header>
+        <div class="modal-body"><div class="modal-changes" hidden></div><div class="modal-main"></div></div>
+      </div>`;
+    // The backdrop or Close; a click inside the dialog stays there.
+    backdrop.addEventListener('click', (e) => {
+      if (e.target === backdrop || (e.target as Element).closest?.('[data-action="close-modal"]')) this._closeReview();
+    });
+    const modal: ReviewModal = {
+      key,
+      backdrop,
+      changes: backdrop.querySelector<HTMLElement>('.modal-changes')!,
+      main: backdrop.querySelector<HTMLElement>('.modal-main')!,
+      viewer: null,
+    };
+    // The changes box's lines open the files they name.
+    modal.changes.addEventListener('click', (e) => {
+      const line = (e.target as Element).closest?.<HTMLElement>('[data-file]');
+      if (line?.dataset.file) this._modalOpenFile(line.dataset.file);
+    });
+    this._modal = modal;
+    this._modalHost!.replaceChildren(backdrop);
+    this._modalMessage(modal, `<div class="modal-compiling">${this._escapeHtml(waiting)}</div>`);
+    return modal;
+  }
+
+  private _modalMessage(modal: ReviewModal, html: string): void {
+    modal.viewer = null;
+    modal.main.innerHTML = html;
+  }
+
+  /** The drawing with every file, opening on the program drawn. */
+  private _modalDrawing(modal: ReviewModal, title: string, svg: string, files: MiniWorkspaceFiles): void {
+    const viewer = document.createElement('mini-workspace') as MiniWorkspace;
+    viewer.setAttribute('caption', title);
+    viewer.setAttribute('code-open', '');
+    // Approving publishes every file, and the ↗ would carry one: hidden for
+    // every entry until publishing points at a snapshot (note 61, answer 2).
+    viewer.setAttribute('hide-playground-link', '');
+    // The drawing first: the files' setter reads the size from it. It came
+    // from this screen's own compile.
+    viewer.innerHTML = svg;
+    viewer.sourceFiles = files;
+    modal.main.replaceChildren(viewer);
+    modal.viewer = viewer;
+  }
+
+  /** No drawing (a compile that failed): the reason, and the files to read. */
+  private _modalFilesOnly(modal: ReviewModal, reason: string, files: MiniWorkspaceFiles): void {
+    modal.main.innerHTML = `<div class="modal-failed"><p class="modal-error">${this._escapeHtml(reason)}</p></div>`;
+    const viewer = document.createElement('source-files') as SourceFiles;
+    viewer.className = 'modal-files';
+    viewer.files = files.files;
+    viewer.folders = files.folders;
+    viewer.main = files.main;
+    viewer.open = files.open;
+    viewer.marks = files.marks ?? null;
+    modal.main.querySelector('.modal-failed')!.append(viewer);
+    modal.viewer = viewer;
+  }
+
+  private _modalOpenFile(path: string): void {
+    const viewer = this._modal?.viewer;
+    if (viewer instanceof SourceFiles) viewer.open = path;
+    else viewer?.openFile(path);
+  }
+
+  /** A re-review's box: what changed since the approved version, a line each (v12 R3, R4). */
+  private _modalChanges(modal: ReviewModal, source: ReviewSource): void {
+    const box = modal.changes;
+    if (source.changesError) {
+      box.innerHTML = `<h4>Couldn’t compare with the approved version, so nothing here says what changed.</h4>`;
+      box.hidden = false;
+      return;
     }
-    this.render();
-    if (this._modalStatus === 'loading') {
-      const svg = await this._compileSvg(code, key);
-      if (this._modalKey !== workspaceId) return; // user closed/switched
-      if (svg) {
-        this._modalSvg = svg;
-        this._modalStatus = 'ready';
-      } else {
-        this._modalSvg = null;
-        this._modalStatus = 'failed';
-        this._modalError = 'Compile failed — see source below.';
-      }
-      this.render();
+    if (!source.changes) {
+      box.hidden = true;
+      return;
     }
+    const { counts } = source.changes;
+    const quiet = counts.new + counts.changed + counts.removed === 0;
+    const when = source.approvedAt
+      ? ` <span>(approved ${this._escapeHtml(this._fmtDay(source.approvedAt))})</span>`
+      : '';
+    const lines = changeLines(source.changes).map((line) => {
+      const said = `${markDot(line.mark, MARK_WORD[line.mark])}${line.html}`;
+      return `<li>${line.file ? `<button type="button" class="chg-open" data-file="${this._escapeHtml(line.file)}">${said}</button>` : `<span>${said}</span>`}</li>`;
+    });
+    box.innerHTML = `<h4>What changed since the approved version${when}${quiet ? '<span>. No file’s text changed.</span>' : ''}</h4>${
+      lines.length > 0 ? `<ul>${lines.join('')}</ul>` : ''
+    }`;
+    box.hidden = false;
+  }
+
+  // Open the review modal on a queue entry (Pending review / Re-review): its
+  // files as submitted, the main compiled with its imports, and for a
+  // re-review what changed since the approved version. Files that can't be
+  // read are said, in place of the viewer (v12 R6).
+  private async _openQueueReview(tab: QueueTab, entry: QueueEntry): Promise<void> {
+    const key = this._entryKey(tab, entry);
+    const modal = this._openModal(key, entry.name, 'Loading the submitted files…');
+    const state = await this._entrySource(tab, entry);
+    if (this._modal !== modal) return; // closed, or another opened
+    this.render(); // the card's Approve follows the source
+    if (state.status !== 'ready' || this._isLost(state)) {
+      this._modalMessage(modal, `<div class="why big">${LOST_MODAL}</div>`);
+      return;
+    }
+    const { source } = state;
+    this._modalChanges(modal, source);
+    if (!this._svg.has(key)) this._modalMessage(modal, '<div class="modal-compiling">Compiling preview…</div>');
+    const svg = await this._compileSource(key, source);
+    if (this._modal !== modal) return;
+    this.render(); // the card's thumbnail
+    const files = reviewViewerFiles(source, engine());
+    if (svg) this._modalDrawing(modal, entry.name, svg, files);
+    else this._modalFilesOnly(modal, 'This drawing didn’t compile, so there’s no preview. Its files are below.', files);
   }
 
   // Open the review modal from an Approved/Featured card. Fetches the
-  // frozen approval record via the admin endpoint so we get
-  // approval.code (immutable, what visitors see) plus approval.svg
-  // (when present, pre-rendered by the admin at approval time).
+  // frozen approval record via the admin endpoint so we get its files
+  // (immutable, what visitors see) plus approval.svg (when present,
+  // pre-rendered by the admin at approval time).
   private async _openReviewFromApprovalRecord(workspaceId: string, name: string): Promise<void> {
-    this._modalKey = workspaceId;
-    this._modalTitle = name;
-    this._modalCode = '';
-    this._modalSvg = null;
-    this._modalStatus = 'loading';
-    this._modalError = null;
-    this.render();
+    const key = this._svgKey('approved', workspaceId);
+    const modal = this._openModal(key, name, 'Loading the approved files…');
     try {
       const res = await fetch(`${API_BASE}/admin/approval/${encodeURIComponent(workspaceId)}`, {
         credentials: 'include',
       });
       const data = (await res.json()) as ApprovalAnswer & { svg?: string };
       if (!res.ok) throw new Error(data.error || 'Failed to load approval');
-      if (this._modalKey !== workspaceId) return;
+      if (this._modal !== modal) return;
       // A file whose bytes are lost (2e step 5d) is said, never shown empty.
       const lost = unreadablePath(data);
       if (lost) throw new Error(`${lost} couldn't be read.`);
-      this._modalCode = data.code ?? '';
+      const source: ReviewSource = {
+        workspaceId,
+        name,
+        files: data.files ?? {},
+        folders: data.folders ?? [],
+        entryPoints: data.entryPoints ?? [],
+        codeHash: data.codeHash ?? '',
+        ...(data.code !== undefined ? { code: data.code } : {}),
+      };
+      const files = reviewViewerFiles(source, engine());
       // Frozen SVG preferred. If absent (legacy approval), try a
-      // background compile; if THAT fails, fall through to source-only.
+      // background compile; if THAT fails, fall through to the files alone.
       if (data.svg && data.svg.length > 0) {
-        this._modalSvg = data.svg;
-        this._modalStatus = 'ready';
-        this.render();
+        this._modalDrawing(modal, name, data.svg, files);
         return;
       }
-      const key = this._svgKey('approved', workspaceId);
-      const svg = await this._compileSvg(data.code ?? '', key);
-      if (this._modalKey !== workspaceId) return;
+      this._modalMessage(modal, '<div class="modal-compiling">Compiling preview…</div>');
+      const svg = await this._compileSource(key, source);
+      if (this._modal !== modal) return;
       if (svg) {
-        this._modalSvg = svg;
-        this._modalStatus = 'ready';
+        this._modalDrawing(modal, name, svg, files);
         // Silently backfill approval.svg on the server so the
         // /u/<handle>/<slug> detail page renders the live mini-workspace
         // preview next time someone visits. Best-effort — if the PUT
         // fails (network, KV error, etc.) the modal still works; the
         // backfill just doesn't happen this round.
-        void fetch(
-          `${API_BASE}/admin/approval/${encodeURIComponent(workspaceId)}/svg`,
-          {
-            method: 'PUT',
-            credentials: 'include',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ svg }),
-          },
-        ).catch(() => null);
+        fetch(`${API_BASE}/admin/approval/${encodeURIComponent(workspaceId)}/svg`, {
+          method: 'PUT',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ svg }),
+        }).catch(() => null);
+      } else if (files.files.length > 0) {
+        this._modalFilesOnly(modal, 'No frozen SVG, and the approved files no longer compile. They are below.', files);
       } else {
-        this._modalSvg = null;
-        this._modalStatus = 'failed';
-        this._modalError = data.code
-          ? 'No frozen SVG and the source no longer compiles. Source is shown below.'
-          : 'Approval record is missing its source code.';
+        this._modalMessage(modal, '<p class="modal-error">Approval record is missing its source code.</p>');
       }
-      this.render();
     } catch (err) {
-      if (this._modalKey !== workspaceId) return;
-      this._modalStatus = 'failed';
-      this._modalError = (err as Error).message;
-      this.render();
+      if (this._modal !== modal) return;
+      this._modalMessage(modal, `<p class="modal-error">${this._escapeHtml((err as Error).message)}</p>`);
     }
   }
 
@@ -952,21 +1257,17 @@ class AdminModerationView extends HTMLElement {
   }
 
   private _closeReview(): void {
-    this._modalKey = null;
-    this._modalCode = '';
-    this._modalSvg = null;
-    this._modalTitle = '';
-    this._modalStatus = 'idle';
-    this._modalError = null;
-    this.render();
+    this._modal = null;
+    this._modalHost?.replaceChildren();
   }
 
   // ─── Render ─────────────────────────────────────────────────────────
 
   render(): void {
+    const screen = this._shell();
     if (!this._isAdmin()) {
-      this.shadowRoot!.innerHTML = `
-        <style>${this._styles()}</style>
+      this._closeReview();
+      screen.innerHTML = `
         <main class="container">
           <h1>Moderation</h1>
           <div class="notice">This area is for reviewers only.</div>
@@ -985,8 +1286,7 @@ class AdminModerationView extends HTMLElement {
       >${this._escapeHtml(t.label)}${count >= 0 ? ` (${count})` : ''}</button>`;
     }).join('');
 
-    this.shadowRoot!.innerHTML = `
-      <style>${this._styles()}</style>
+    screen.innerHTML = `
       <main class="container">
         <header class="head">
           <h1>Moderation</h1>
@@ -997,9 +1297,8 @@ class AdminModerationView extends HTMLElement {
         <nav class="tabs" role="tablist">${tabsHtml}</nav>
         <section class="content">${this._renderTab()}</section>
       </main>
-      ${this._renderModal()}
     `;
-    this._wireEvents();
+    this._wireEvents(screen);
   }
 
   private _tabCount(tab: Tab): number {
@@ -1034,17 +1333,26 @@ class AdminModerationView extends HTMLElement {
   }
 
   // Queue card (Pending review + Re-review): two actions — Approve,
-  // Reject. Review is reached by clicking the thumbnail.
-  private _renderQueueCard(e: QueueEntry, tab: 'pending' | 'rereview'): string {
+  // Reject. Review is reached by clicking the thumbnail. The drawing is the
+  // main compiled with its imports; the meta line counts the files; a
+  // re-review says what changed. Approve waits for the files, and stays off
+  // while they can't be read (v12 R1, R2, R5).
+  private _renderQueueCard(e: QueueEntry, tab: QueueTab): string {
     const busy = this._busy.has(e.workspaceId);
     const rejecting = this._rejectingId === e.workspaceId;
     const notesValue = this._rejectionNotes.get(e.workspaceId) || '';
+    const state = this._sources.get(this._entryKey(tab, e));
+    const lost = this._isLost(state);
+    const ready = state?.status === 'ready' && !lost;
+    const approveTitle = lost ? LOST_APPROVE : ready ? '' : LOADING_APPROVE;
     return `<li class="card">
-      ${this._renderClickableThumb(this._svgKey(tab, e.workspaceId), null, e.workspaceId, tab)}
+      ${this._renderClickableThumb(this._entryKey(tab, e), null, e.workspaceId, tab)}
       <div class="card-body">
         <h2 class="card-title">${this._escapeHtml(e.name)} ${this._badge(e.ownerFlagged)}</h2>
-        ${this._renderMeta(e.ownerHandle, e.userId, this._fmtDate(e.submittedAt), e.codeHash)}
+        ${this._renderMeta(e.ownerHandle, e.userId, this._fmtDate(e.submittedAt), e.codeHash, reviewFileCount(e.files))}
         ${e.description ? `<p class="card-desc">${this._escapeHtml(e.description)}</p>` : ''}
+        ${tab === 'rereview' ? this._changesLine(e) : ''}
+        ${lost ? `<p class="why" id="why-${this._escapeHtml(e.workspaceId)}">${LOST_CARD}</p>` : ''}
         ${
           rejecting
             ? `
@@ -1059,13 +1367,22 @@ class AdminModerationView extends HTMLElement {
         `
             : `
           <div class="actions">
-            <button class="primary" data-action="approve" data-id="${this._escapeHtml(e.workspaceId)}" ${busy ? 'disabled' : ''}>${busy ? '…' : 'Approve'}</button>
+            <button class="primary" data-action="approve" data-id="${this._escapeHtml(e.workspaceId)}" ${busy || !ready ? 'disabled' : ''}${approveTitle ? ` title="${this._escapeHtml(approveTitle)}"` : ''}${lost ? ` aria-describedby="why-${this._escapeHtml(e.workspaceId)}"` : ''}>${busy ? '…' : 'Approve'}</button>
             <button class="danger-outline" data-action="reject-start" data-id="${this._escapeHtml(e.workspaceId)}" ${busy ? 'disabled' : ''}>Reject</button>
           </div>
         `
         }
       </div>
     </li>`;
+  }
+
+  /** A re-review card's line: what changed since the approved version, counted (v12 R3, R4). */
+  private _changesLine(e: QueueEntry): string {
+    if (e.changes) {
+      return `<p class="card-chg">Since the approved version: <b>${this._escapeHtml(changesSummary(e.changes))}</b></p>`;
+    }
+    if (e.changesError) return `<p class="card-chg">Couldn’t compare with the approved version.</p>`;
+    return '';
   }
 
   private _renderApprovedGrid(): string {
@@ -1234,65 +1551,28 @@ class AdminModerationView extends HTMLElement {
     return `<span class="badge badge-flag" title="Owner has been flagged">⚑ Flagged user</span>`;
   }
 
-  // Shared card metadata line: handle, optional date, optional short hash.
+  // Shared card metadata line: handle, optional date, optional short hash,
+  // and how many files when there are several (pathogen.json counted, as the
+  // viewer's list counts it).
   private _renderMeta(
     handle: string | null,
     fallbackUserId: string | null | undefined,
     date: string | null,
     codeHash: string | null,
+    files = 0,
   ): string {
     const owner = handle ? `@${handle}` : (fallbackUserId ?? '?').slice(0, 8);
     const parts: string[] = [`<span>${this._escapeHtml(owner)}</span>`];
     if (date) parts.push(`<time>${this._escapeHtml(date)}</time>`);
     if (codeHash) parts.push(`<span class="hash">${this._escapeHtml(codeHash.slice(0, 8))}</span>`);
+    if (files > 1) parts.push(`<span class="files">${files} files</span>`);
     return `<p class="card-meta">${parts.join('<span class="sep">·</span>')}</p>`;
-  }
-
-  private _renderModal(): string {
-    if (!this._modalKey) return '';
-    let body: string;
-    if (this._modalStatus === 'loading') {
-      body = `<div class="modal-compiling">Compiling preview…</div>`;
-    } else if (this._modalStatus === 'ready' && this._modalSvg) {
-      body = `<mini-workspace caption="${this._escapeHtml(this._modalTitle)}" code-open>
-                <code>${this._escapeHtml(this._modalCode)}</code>
-                ${this._modalSvg}
-              </mini-workspace>`;
-    } else {
-      // 'failed' or 'idle' with no svg. Show the error banner + source
-      // so the admin can still review the submitted code and decide.
-      body = `
-        <div class="modal-failed">
-          ${
-            this._modalError
-              ? `<p class="modal-error">${this._escapeHtml(this._modalError)}</p>`
-              : ''
-          }
-          ${
-            this._modalCode
-              ? `<pre class="modal-code"><code>${this._escapeHtml(this._modalCode)}</code></pre>`
-              : `<p class="modal-error">No source available.</p>`
-          }
-        </div>
-      `;
-    }
-    return `
-      <div class="modal-backdrop" data-action="close-modal">
-        <div class="modal" role="dialog" aria-modal="true" aria-label="Workspace review">
-          <header class="modal-head">
-            <h2>${this._escapeHtml(this._modalTitle)}</h2>
-            <button class="ghost" data-action="close-modal">Close</button>
-          </header>
-          <div class="modal-body">${body}</div>
-        </div>
-      </div>
-    `;
   }
 
   // ─── Events ─────────────────────────────────────────────────────────
 
-  private _wireEvents(): void {
-    const root = this.shadowRoot!;
+  // The screen's controls, after each render. The modal wires its own when it opens.
+  private _wireEvents(root: HTMLElement): void {
     root.querySelector('[data-action="refresh"]')?.addEventListener('click', () => this._loadTab(this._tab));
     root.querySelectorAll('[data-tab]').forEach((btn) => {
       btn.addEventListener('click', (e) => {
@@ -1306,12 +1586,9 @@ class AdminModerationView extends HTMLElement {
     root.querySelectorAll('[data-action="review"]').forEach((btn) => {
       btn.addEventListener('click', (e) => {
         const id = (e.currentTarget as HTMLElement).getAttribute('data-id')!;
-        const tab = (e.currentTarget as HTMLElement).getAttribute('data-tab') as 'pending' | 'rereview';
-        const entry =
-          tab === 'pending'
-            ? this._pending.find((p) => p.workspaceId === id)
-            : this._rereview.find((p) => p.workspaceId === id);
-        if (entry) this._openReview(entry.workspaceId, tab, entry.code ?? '', entry.name);
+        const tab = (e.currentTarget as HTMLElement).getAttribute('data-tab') as QueueTab;
+        const entry = this._queueEntries(tab).find((p) => p.workspaceId === id);
+        if (entry) this._openQueueReview(tab, entry);
       });
     });
     root.querySelectorAll('[data-action="review-catalog"]').forEach((btn) => {
@@ -1319,13 +1596,6 @@ class AdminModerationView extends HTMLElement {
         const id = (e.currentTarget as HTMLElement).getAttribute('data-id')!;
         const name = (e.currentTarget as HTMLElement).getAttribute('data-name') || '';
         this._openReviewFromApprovalRecord(id, name);
-      });
-    });
-    root.querySelectorAll('[data-action="close-modal"]').forEach((el) => {
-      el.addEventListener('click', (e) => {
-        // Only close when clicking the backdrop or the explicit close
-        // button — not when clicking inside the modal body.
-        if (e.target === e.currentTarget) this._closeReview();
       });
     });
     root.querySelectorAll('[data-action="approve"]').forEach((btn) => {
@@ -1420,6 +1690,13 @@ class AdminModerationView extends HTMLElement {
     return d.toLocaleString();
   }
 
+  /** A day, for "approved Nov 12, 2026". */
+  private _fmtDay(iso: string): string {
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return iso;
+    return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+  }
+
   private _styles(): string {
     return `
       /* The shell wraps views in a flex container with overflow:hidden so
@@ -1460,7 +1737,14 @@ class AdminModerationView extends HTMLElement {
       .card-meta .sep { color: var(--text-tertiary, #aaa); }
       .card-meta { margin: 0; font: 400 0.75rem/1.4 var(--font-sans, system-ui); color: var(--text-secondary, #666); display: flex; flex-wrap: wrap; gap: 0.35rem; align-items: center; }
       .card-meta .hash { font-family: var(--font-mono, ui-monospace, monospace); }
+      .card-meta .files { color: var(--text-primary, #111); font-weight: 500; }
       .card-desc { margin: 0; font: 400 0.85rem/1.45 var(--font-sans, system-ui); color: var(--text-secondary, #444); }
+      /* A re-review's line, and an entry whose files can't be read (2e step 5e; v12 R3 to R6). */
+      .card-chg { margin: 0; font: 400 0.78rem/1.4 var(--font-sans, system-ui); color: var(--text-secondary, #666); }
+      .card-chg b { color: var(--text-primary, #111); font-weight: 600; }
+      .why { margin: 2px 0 0; padding: 7px 10px; border-radius: var(--radius-sm, 4px); border: 1px solid var(--warning-border, #fde68a);
+        background: var(--warning-bg, #fffbeb); font: 400 0.78rem/1.45 var(--font-sans, system-ui); color: var(--text-primary, #111); }
+      .why.big { margin: 0; padding: 14px 16px; font-size: 0.875rem; }
 
       .actions { display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: center; margin-top: 0.4rem; }
       .feature-toggle { display: inline-flex; align-items: center; gap: 0.3rem; font: 0.8rem var(--font-sans, system-ui); color: var(--text-secondary, #555); }
@@ -1492,7 +1776,25 @@ class AdminModerationView extends HTMLElement {
       .modal-compiling { padding: 3rem 1rem; text-align: center; color: var(--text-secondary, #666); }
       .modal-failed { display: flex; flex-direction: column; gap: 0.85rem; }
       .modal-error { margin: 0; padding: 0.75rem 0.95rem; border: 1px solid #e07070; background: #fff5f5; color: #a83232; border-radius: var(--radius-sm, 4px); font: 0.85rem/1.45 var(--font-sans, system-ui); }
-      .modal-code { margin: 0; padding: 0.85rem 0.95rem; background: var(--bg-primary, #f6f6f6); border: 1px solid var(--border-color, #ddd); border-radius: var(--radius-sm, 4px); overflow: auto; font: 0.82rem/1.45 var(--font-mono, ui-monospace, monospace); color: var(--text-primary, #222); white-space: pre; max-height: 60vh; }
+      /* A compile that failed: the files alone, at the embed's height. */
+      .modal-files { display: flex; height: 60dvh; border: 1px solid var(--border-color, #ddd); border-radius: var(--radius-sm, 4px); overflow: hidden; }
+
+      /* What changed since the approved version (v12 R3, R4). The badges are the viewer's. */
+      .modal-changes { --sf-mark-chg: ${MARK_CHG_COLOR.light}; margin: 0 0 12px; padding: 10px 14px; border: 1px solid var(--info-border, #bfdbfe);
+        background: var(--info-bg, #eff6ff); border-radius: var(--radius-sm, 4px); font: 400 13px/1.5 var(--font-sans, system-ui); color: var(--text-primary, #111); }
+      .modal-host.dark .modal-changes { --sf-mark-chg: ${MARK_CHG_COLOR.dark}; }
+      .modal-changes[hidden] { display: none; }
+      .modal-changes h4 { margin: 0; font-size: 13px; font-weight: 600; }
+      .modal-changes h4 span { font-weight: 400; color: var(--text-secondary, #666); }
+      .modal-changes ul { margin: 4px 0 0; padding: 0; list-style: none; }
+      .modal-changes li { margin: 1px 0; }
+      .modal-changes code { font: 12.5px var(--font-mono, ui-monospace, monospace); }
+      .modal-changes .mdot { vertical-align: -2px; margin-right: 7px; }
+      .modal-changes .chg-open { display: inline; padding: 0; border: 0; border-radius: 2px; background: none; font: inherit; color: inherit; text-align: left; cursor: pointer; }
+      .modal-changes .chg-open code { text-decoration: underline dotted; text-underline-offset: 3px; }
+      .modal-changes .chg-open:hover code { text-decoration-style: solid; }
+      .modal-changes .chg-open:focus-visible { outline: 2px solid var(--accent-color, #5b6bff); outline-offset: 2px; }
+      ${MARK_DOT_STYLES}
     `;
   }
 }

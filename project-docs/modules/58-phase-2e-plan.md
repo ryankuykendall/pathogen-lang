@@ -918,6 +918,45 @@ The Featured findings are left as they are: they are outside answer 8's list and
   - `tests/mini-workspace-code-panel.test.ts` (+2): the marks passed on; `openFile` and a re-attach keep the file being read without changing what Open in Playground sends;
   - screenshots from the story (`2e-step5e-marks-{light,dark}.png`, `verify/shoot-2e-step5e-marks.ts`), matching v12 R3.
 
+## Step 5e, piece 3: the screen (2e, 2026-11-16)
+
+- **One source an entry**, read by the card, the modal and Approve:
+  - it comes from the listing when that carries every file's text (one file), else from `GET /admin/review/:id/source`;
+  - it loads once a version: the key names the entry's `codeHash`, so a resubmitted entry is a new key, with no old thumbnail or drawing;
+  - a failed load stays failed until Refresh.
+- **The cards** (v12 R1, R2, R5):
+  - the main compiled with its imports;
+  - "N files" in the meta line, pathogen.json counted as the viewer counts it;
+  - a re-review's line: "Since the approved version: **1 changed, 1 new, 1 removed**", "no file's text changed", or "Couldn't compare with the approved version." (never "nothing changed");
+  - files that can't be read, or a source that didn't load: the mockup's message, Approve off with its reason on hover, Reject on.
+- **Approve:**
+  - off until the source has loaded, with "Approve waits for the submitted files to load" on hover;
+  - it waits for a compile already running, then sends the drawing and the version it saw (`codeHash`). A drawing that doesn't compile is still approved, without one, as before.
+- **The server's guard (found while building this).** A save replaces a waiting entry (`pushRereviewQueue` overwrites), so Approve could approve files nobody saw, with the old drawing.
+  - `POST /admin/review/:id` takes an optional `codeHash`; a different version answers 409 `{changed: true}` and decides nothing.
+  - The screen says "This submission changed after it was opened. Review the version waiting now.", closes the modal and reloads the tab. Reject sends it too.
+  - A workspace waiting in both queues (an older server's leftover) is decided by its review-queue entry, as before. Approving it from the Re-review tab answers "This workspace also waits in Pending review, with a newer submission. Decide it there." (from the code review: it first said "changed", which a reload never cleared).
+- **From the code review, also:**
+  - a load that failed is tried again whenever the queue is listed again (Refresh, a tab visit, a refused decision), and versions no longer listed are dropped with their drawings; before, only a page reload retried;
+  - an entry from before phase 2 round-trips: the source's `codeHash` is the one the decision checks (both are `readStoredFiles`' hash);
+  - a disabled Approve on a lost entry points a screen reader at the card's reason (`aria-describedby`).
+  - Not changed: the modal has no focus trap or Escape, as before (not a regression); Reject on an entry whose files haven't loaded sends no `codeHash`, so it's unguarded, as before.
+- **The modal** (v12 R2 to R4, R6):
+  - It lives outside the part of the screen `render()` rewrites, so a thumbnail finishing behind it never resets the file being read.
+  - It shows the drawing and every file, opening on the main, with the ↗ hidden for every entry (note 61, answer 2).
+  - A re-review's box says what changed, a line each, with the viewer's badges; the lines that name a file open it.
+  - A compile that failed shows the reason and the files, in the viewer alone.
+  - Files that can't be read are said in place of the viewer.
+  - The Approved and Featured tabs' modal uses the same parts, with every file, and compiles the main with its imports when there's no frozen drawing (Regenerate and Set thumbnail are piece 4).
+- **Shared, not copied:**
+  - the viewer's badges and their colours (`markDot`, `MARK_DOT_STYLES`, `MARK_CHG_COLOR` from source-files);
+  - the snapshots page's file mapping (`snapshotViewerFiles`), told to open on the program compiled.
+- **Tested:**
+  - `tests/playground-admin-review-screen.test.ts` (10): the card's count and line; Approve off until the files load; a failed comparison said; files that can't be read on the card, Approve doing nothing, and in the modal; a failed load retried on Refresh; Approve's compile (the main, with every file) and what it sends; a drawing that doesn't compile; a save since; the modal's files, marks and ↗, kept through redraws; the box's lines opening files; one file needing no fetch;
+  - `tests/playground-review-entry.test.ts` (10): the pure helpers;
+  - `tests/api/review-source.test.ts` (+3): a stale `codeHash`, for Approve and Reject, decides nothing; both queues; an entry from before phase 2;
+  - on the dev stack, `verify/verify-2e-step5e.ts` (12): every state above, the redraw, the stale Approve and then the version waiting approved with its drawing, light and dark (`2e-step5e-{queue,modal-new,modal-changed}-{light,dark}.png`).
+
 ## What the audits found (2026-11-14)
 
 ### Snapshots, copies, forks

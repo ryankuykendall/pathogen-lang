@@ -15,19 +15,36 @@ vi.mock('../playground/components/thumbnail-crop-modal.js', () => ({}));
 
 const REASON = "This workspace isn't public any more, so its re-review was withdrawn.";
 
+interface Entry {
+  workspaceId: string;
+  name: string;
+  codeHash: string;
+  files: Record<string, { sha256: string; size: number; text: string }>;
+  entryPoints: string[];
+}
+
 interface ReviewScreen extends HTMLElement {
-  _rereview: { workspaceId: string; code?: string }[];
+  _tab: string;
+  _rereview: Entry[];
+  _entrySource: (tab: string, e: Entry) => Promise<unknown>;
   _approve: (id: string) => Promise<void>;
   _reject: (id: string) => Promise<void>;
 }
 
+/** Two re-reviews of one empty file each, their sources loaded (Approve waits for them, 2e step 5e). */
 async function screenWithRereview(): Promise<ReviewScreen> {
   await import('../playground/components/views/admin-moderation-view.ts');
   const screen = document.createElement('admin-moderation-view') as ReviewScreen;
-  screen._rereview = [
-    { workspaceId: 'w1', code: '' },
-    { workspaceId: 'w2', code: '' },
-  ];
+  const entry = (id: string): Entry => ({
+    workspaceId: id,
+    name: id,
+    codeHash: `hash-${id}`,
+    files: { 'main.pathogen': { sha256: 'e', size: 0, text: '' } },
+    entryPoints: ['main.pathogen'],
+  });
+  screen._tab = 'rereview';
+  screen._rereview = [entry('w1'), entry('w2')];
+  for (const e of screen._rereview) await screen._entrySource('rereview', e);
   return screen;
 }
 

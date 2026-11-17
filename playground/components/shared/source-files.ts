@@ -67,15 +67,36 @@ export interface SourceFileMarks {
 }
 
 const MARK_CLASS = { new: 'new', changed: 'chg', moved: 'mov', removed: 'gone' } as const;
-type MarkKind = keyof typeof MARK_CLASS;
+export type MarkKind = keyof typeof MARK_CLASS;
 
 /**
  * A file's mark in the list: a small badge with a sign and a colour, the word on hover.
  * A screen reader hears the word in the row's name instead (the badge is hidden from it).
+ * The review screen's changes box draws the same badges.
  */
-function markDot(mark: MarkKind, word: string): string {
+export function markDot(mark: MarkKind, word: string): string {
   return `<span class="mdot ${MARK_CLASS[mark]}" title="${esc(word)}" aria-hidden="true"></span>`;
 }
+
+/** The changed mark's colour (the mockup's --mark-chg), set as `--sf-mark-chg` by whoever draws marks. */
+export const MARK_CHG_COLOR = { light: '#b45309', dark: '#e0a840' } as const;
+
+/**
+ * The badges' styles, shared with the review screen's changes box. A sign as well as a
+ * colour, so a mark doesn't rest on colour alone. Reads `--sf-mark-chg`.
+ */
+export const MARK_DOT_STYLES = `
+  .mdot { width: 15px; height: 15px; border-radius: 4px; flex: none; display: inline-grid; place-items: center;
+    font: 700 10px/1 var(--font-sans, system-ui, sans-serif); }
+  .mdot.new { background: var(--success-bg, #ecfdf5); color: var(--success-color, #10b981); }
+  .mdot.new::before { content: '+'; font-size: 12px; }
+  .mdot.chg { background: var(--warning-bg, #fffbeb); color: var(--sf-mark-chg); }
+  .mdot.chg::before { content: '•'; font-size: 15px; }
+  .mdot.mov { background: var(--info-bg, #eff6ff); color: var(--info-color, #3b82f6); }
+  .mdot.mov::before { content: '→'; }
+  .mdot.gone { background: var(--bg-tertiary, rgba(0, 0, 0, 0.05)); color: var(--text-tertiary, #9087a0); }
+  .mdot.gone::before { content: '−'; font-size: 12px; }
+`;
 
 /** A CodeMirror module or object, loaded at run time from esm.sh: no types here. */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -126,8 +147,8 @@ const kindOf = (file: SourceFile | undefined): SourceFile['kind'] =>
 const styles = `
   :host { display: flex; flex-direction: column; min-width: 0; min-height: 0; height: 100%; }
   * { box-sizing: border-box; }
-  .root { --sf-bg: #ffffff; --sf-mark-chg: #b45309; display: flex; flex: 1; min-height: 0; min-width: 0; background: var(--sf-bg); }
-  .root.dark { --sf-bg: #0d1117; --sf-mark-chg: #e0a840; }
+  .root { --sf-bg: #ffffff; --sf-mark-chg: ${MARK_CHG_COLOR.light}; display: flex; flex: 1; min-height: 0; min-width: 0; background: var(--sf-bg); }
+  .root.dark { --sf-bg: #0d1117; --sf-mark-chg: ${MARK_CHG_COLOR.dark}; }
   .root.several { flex-direction: row; }
   .root.narrow, .root.one { flex-direction: column; }
   .pane { flex: 1; min-width: 0; min-height: 0; display: flex; flex-direction: column; position: relative; }
@@ -165,18 +186,8 @@ const styles = `
   .lock svg { width: 13px; }
   .row.empty { padding-left: calc(var(--indent) + 20px); font-family: var(--font-sans, system-ui, sans-serif); font-style: italic;
     font-weight: 400; color: var(--text-tertiary, #9087a0); }
-  /* A re-review's marks (2e step 5e; mockup v12 R3, R4). In the list a small badge with a sign as
-     well as a colour, so it doesn't rest on colour alone; in words on the open file's line. */
-  .mdot { width: 15px; height: 15px; border-radius: 4px; flex: none; display: inline-grid; place-items: center;
-    font: 700 10px/1 var(--font-sans, system-ui, sans-serif); }
-  .mdot.new { background: var(--success-bg, #ecfdf5); color: var(--success-color, #10b981); }
-  .mdot.new::before { content: '+'; font-size: 12px; }
-  .mdot.chg { background: var(--warning-bg, #fffbeb); color: var(--sf-mark-chg); }
-  .mdot.chg::before { content: '•'; font-size: 15px; }
-  .mdot.mov { background: var(--info-bg, #eff6ff); color: var(--info-color, #3b82f6); }
-  .mdot.mov::before { content: '→'; }
-  .mdot.gone { background: var(--bg-tertiary, rgba(0, 0, 0, 0.05)); color: var(--text-tertiary, #9087a0); }
-  .mdot.gone::before { content: '−'; font-size: 12px; }
+  /* A re-review's marks (2e step 5e; mockup v12 R3, R4): a badge in the list, in words on the open file's line. */
+  ${MARK_DOT_STYLES}
   .mk { flex: none; padding: 0 6px; border-radius: 999px; font: 600 10px/16px var(--font-sans, system-ui, sans-serif); }
   .mk.new { background: var(--success-bg, #ecfdf5); color: var(--success-color, #10b981); }
   .mk.chg { background: var(--warning-bg, #fffbeb); color: var(--sf-mark-chg); }

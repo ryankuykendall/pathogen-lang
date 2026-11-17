@@ -13,8 +13,6 @@ vi.mock('../playground/components/blog/mini-workspace.js', () => ({}));
 vi.mock('../playground/components/thumbnail-crop-modal.js', () => ({}));
 
 interface ReviewScreen extends HTMLElement {
-  _modalError: string | null;
-  _modalStatus: string;
   _openReviewFromApprovalRecord: (id: string, name: string) => Promise<void>;
   _fetchAndCompileApproval: (id: string) => Promise<unknown>;
 }
@@ -49,7 +47,11 @@ describe('an approval with a file that can’t be read', () => {
   it('the modal names the file instead of showing an empty source', async () => {
     const view = await screen();
     await view._openReviewFromApprovalRecord('w1', 'Spiral');
-    expect([view._modalStatus, view._modalError]).toEqual(['failed', "main.pathogen couldn't be read."]);
+    const modal = view.shadowRoot!.querySelector('.modal-main');
+    expect([
+      modal?.querySelector('.modal-error')?.textContent,
+      modal?.querySelector('mini-workspace, source-files'),
+    ]).toEqual(["main.pathogen couldn't be read.", null]);
   });
 
   it('Regenerate and Set thumbnail refuse with the same reason', async () => {

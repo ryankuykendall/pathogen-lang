@@ -1312,7 +1312,9 @@ export const apiHandlers: Record<string, (request: Request, env: Env, ...args: s
   },
 
   // POST /admin/review/:id — admin-only. Body: { decision: 'approve'|'reject',
-  // feature?: bool, internalNotes?: string }.
+  // feature?: bool, internalNotes?: string, svg?: string, codeHash?: string }.
+  // `codeHash` names the version the admin reviewed (2e step 5e): a save replaces a
+  // waiting entry, so a different version answers 409 `{changed: true}`, undecided.
   async adminReviewDecision(request: Request, env: Env, id: string): Promise<Response> {
     if (!(await isAdminRequest(request, env))) return errorResponse('Unauthorized', 401);
     if (!env.USERS_DB) return errorResponse('Moderation DB unavailable', 500);
@@ -1321,6 +1323,7 @@ export const apiHandlers: Record<string, (request: Request, env: Env, ...args: s
       feature?: unknown;
       internalNotes?: unknown;
       svg?: unknown;
+      codeHash?: unknown;
     };
     try {
       body = (await request.json()) as typeof body;
@@ -1380,6 +1383,24 @@ export const apiHandlers: Record<string, (request: Request, env: Env, ...args: s
         await removeFromRereviewQueue(env, id);
         return jsonResponse(
           { error: "This workspace isn't public any more, so its re-review was withdrawn.", withdrawn: true },
+          409,
+        );
+      }
+
+      // Not the version the admin reviewed: the owner saved since it was opened, or
+      // it's the re-review of a workspace whose newer submission waits too (an older
+      // server's leftover), which is decided first, from Pending review. Nothing is
+      // decided unseen.
+      if (typeof body.codeHash === 'string' && body.codeHash !== submitted.hash) {
+        const rereview = reviewEntry ? await getRereviewQueueEntry(env, id) : null;
+        const behind = rereview !== null && (await readStoredFiles(rereview, rereview.codeHash)).hash === body.codeHash;
+        return jsonResponse(
+          {
+            error: behind
+              ? 'This workspace also waits in Pending review, with a newer submission. Decide it there.'
+              : 'This submission changed after it was opened. Review the version waiting now.',
+            changed: true,
+          },
           409,
         );
       }

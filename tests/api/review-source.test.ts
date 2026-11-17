@@ -6,7 +6,8 @@
 import { describe, expect, it, vi } from 'vitest';
 
 import { approve, call, makeHarness, submitted } from './publishing-harness';
-import { entryForText } from '../../website/api/workspace-files';
+import { hashContent } from '../../website/api/utils';
+import { entryForText, readStoredFiles } from '../../website/api/workspace-files';
 
 import type { Harness } from './publishing-harness';
 
@@ -117,6 +118,101 @@ describe('GET /admin/review/:id/source', () => {
     expect((await call(h, 'GET', `/admin/review/${id}/source?queue=rereview`, undefined, 'admin-token')).status).toBe(
       404,
     );
+  });
+
+  it('a decision names the version reviewed: a save since answers 409, undecided', async () => {
+    const h = await makeHarness();
+    const id = await submittedWithFiles(h);
+    const seen = (await call(h, 'GET', `/admin/review/${id}/source?queue=review`, undefined, 'admin-token')).data
+      .codeHash as string;
+    // The owner saves while the admin reads: the waiting entry is replaced.
+    await call(h, 'PUT', `/workspace/${id}`, { files: { ...FILES, 'main.pathogen': { text: `${MAIN}gear(6);\n` } } });
+    expect((await call(h, 'POST', `/workspace/${id}/submit-for-review`)).status).toBe(200);
+    for (const decision of ['approve', 'reject']) {
+      const stale = await call(h, 'POST', `/admin/review/${id}`, { decision, codeHash: seen }, 'admin-token');
+      expect([stale.status, stale.data.changed]).toEqual([409, true]);
+    }
+    expect([await h.kv.get(`approval:${id}`), await h.kv.get(`rejection:${id}`)]).toEqual([null, null]);
+    const now = (await call(h, 'GET', `/admin/review/${id}/source?queue=review`, undefined, 'admin-token')).data
+      .codeHash as string;
+    expect(now).not.toBe(seen);
+    const ok = await call(h, 'POST', `/admin/review/${id}`, { decision: 'approve', codeHash: now }, 'admin-token');
+    expect([ok.status, ok.data.decision]).toEqual([200, 'approve']);
+  });
+
+  it('waiting in both queues: the re-review’s version is told to decide the submission first', async () => {
+    const h = await makeHarness();
+    const id = await submittedWithFiles(h);
+    await approve(h, id);
+    await call(h, 'PUT', `/workspace/${id}`, { files: { ...FILES, 'main.pathogen': { text: `${MAIN}gear(6);\n` } } });
+    const rereviewRaw = await h.kv.get('queue:rereview');
+    await call(h, 'PUT', `/workspace/${id}`, { isPublic: false });
+    await h.kv.put('queue:rereview', rereviewRaw ?? '[]');
+    await call(h, 'PUT', `/workspace/${id}`, { files: { ...FILES, 'main.pathogen': { text: `${MAIN}gear(8);\n` } } });
+    await call(h, 'PUT', `/workspace/${id}`, { isPublic: true });
+    const hashOf = async (queue: string): Promise<string> =>
+      (await call(h, 'GET', `/admin/review/${id}/source?queue=${queue}`, undefined, 'admin-token')).data
+        .codeHash as string;
+    const fromRereview = await call(
+      h,
+      'POST',
+      `/admin/review/${id}`,
+      { decision: 'approve', codeHash: await hashOf('rereview') },
+      'admin-token',
+    );
+    expect([fromRereview.status, fromRereview.data]).toEqual([
+      409,
+      {
+        error: 'This workspace also waits in Pending review, with a newer submission. Decide it there.',
+        changed: true,
+      },
+    ]);
+    const fromPending = await call(
+      h,
+      'POST',
+      `/admin/review/${id}`,
+      { decision: 'approve', codeHash: await hashOf('review') },
+      'admin-token',
+    );
+    expect(fromPending.status).toBe(200);
+  });
+
+  it('an entry from before phase 2: the source’s codeHash is the one the decision checks', async () => {
+    const h = await makeHarness();
+    const id = 'old1';
+    const code = 'M 1 1';
+    const base = {
+      workspaceId: id,
+      userId: 'user-a',
+      code,
+      codeHash: await hashContent(code),
+      slug: 'old',
+      name: 'Old',
+      description: '',
+    };
+    await h.kv.put(
+      `workspace:${id}`,
+      JSON.stringify({
+        id,
+        userId: 'user-a',
+        name: 'Old',
+        slug: 'old',
+        code,
+        contentHash: base.codeHash,
+        isPublic: false,
+      }),
+    );
+    await h.kv.put('queue:review', JSON.stringify([{ ...base, submittedAt: '2026-10-02T00:00:00.000Z' }]));
+    const source = await call(h, 'GET', `/admin/review/${id}/source?queue=review`, undefined, 'admin-token');
+    expect([source.data.code, source.data.codeHash]).toEqual([code, (await readStoredFiles({ code }, undefined)).hash]);
+    const decided = await call(
+      h,
+      'POST',
+      `/admin/review/${id}`,
+      { decision: 'approve', codeHash: source.data.codeHash },
+      'admin-token',
+    );
+    expect([decided.status, decided.data.decision]).toEqual([200, 'approve']);
   });
 
   it('a file that can’t be read is marked, and the others still read', async () => {
