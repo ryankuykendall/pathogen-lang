@@ -88,6 +88,42 @@ export function sourceFromListing(entry: ListedEntry): ReviewSource | null {
   };
 }
 
+/** GET /admin/approval/:id's answer, as far as its source goes. */
+export interface ApprovalFiles {
+  files?: Record<string, ReviewFile>;
+  folders?: string[];
+  entryPoints?: string[];
+  codeHash?: string;
+  code?: string;
+}
+
+/**
+ * An approval's source, for the Approved and Featured tabs' modal, Regenerate and Set
+ * thumbnail: its files, or an approval carrying only its one text read as main.pathogen.
+ */
+export function sourceFromApproval(workspaceId: string, name: string, answer: ApprovalFiles): ReviewSource {
+  const listed = answer.files ?? {};
+  const files: Record<string, ReviewFile> =
+    Object.keys(listed).length > 0 || answer.code === undefined
+      ? listed
+      : { 'main.pathogen': { sha256: '', size: new TextEncoder().encode(answer.code).length, text: answer.code } };
+  const entryPoints =
+    answer.entryPoints && answer.entryPoints.length > 0
+      ? answer.entryPoints
+      : Object.hasOwn(files, 'main.pathogen')
+        ? ['main.pathogen']
+        : [];
+  return {
+    workspaceId,
+    name,
+    files,
+    folders: answer.folders ?? [],
+    entryPoints,
+    codeHash: answer.codeHash ?? '',
+    ...(answer.code !== undefined ? { code: answer.code } : {}),
+  };
+}
+
 /**
  * The viewer's files: every file, pathogen.json with several, opening on the program
  * that's compiled (the snapshots page's mapping), with a re-review's marks.

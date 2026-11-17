@@ -957,6 +957,32 @@ The Featured findings are left as they are: they are outside answer 8's list and
   - `tests/api/review-source.test.ts` (+3): a stale `codeHash`, for Approve and Reject, decides nothing; both queues; an entry from before phase 2;
   - on the dev stack, `verify/verify-2e-step5e.ts` (12): every state above, the redraw, the stale Approve and then the version waiting approved with its drawing, light and dark (`2e-step5e-{queue,modal-new,modal-changed}-{light,dark}.png`).
 
+## Step 5e, piece 4: the Approved tab's actions and the colours (2e, 2026-11-16)
+
+- **Regenerate and Set thumbnail** compile the approval's main with its imports, as the public page draws it. One helper, `sourceFromApproval`, reads the approval's answer for them and for the Approved and Featured modal; an approval carrying only its one text reads as main.pathogen.
+- **The screen's own colours follow the theme.** Local tokens on the screen and the modal, with dark values:
+  - the error panels (the tab's and the modal's);
+  - the owner-flagged and other badges;
+  - Reject (outlined) and Confirm reject (filled).
+  - The primary button's ink is the theme's `--accent-text`: dark on the dark theme's light orange, where it was white and hard to read.
+  - The reject notes box takes the theme's background and ink (from the code review: it had neither).
+  - The drawings' white mat stays: drawings are made on white.
+- **From the code review, also:** an approval carrying only its text gives its size in bytes, not characters.
+- **Tested:**
+  - `tests/playground-review-entry.test.ts` (+2): an approval's source, and one carrying only its text;
+  - `tests/playground-admin-review-screen.test.ts` (+2): Regenerate's compile (the main, with every file); the dark class on the screen and the modal, following a later flip;
+  - on the dev stack, `verify/verify-2e-step5e-4.ts` (6): Regenerate stores the main's drawing with its imports, Set thumbnail crops the same drawing, the Approved card's modal shows every file, and the computed colours in light and dark (`2e-step5e-colours-{light,dark}.png`).
+
+### A question: what the Rejected and Flagged cards open
+
+A card's image opens the approved version (`GET /admin/approval/:id`). A workspace never approved has none, so its modal says "No approval record". The rejection keeps no list of the files it rejected (its record holds the notes; the state row holds a hash), and the files' versions after it replace them in the workspace.
+
+1. **Show the workspace as it is now** (recommended). Admins can read any workspace's files (5a). The modal would say "Never approved. This is the workspace as it is now, which may differ from what was rejected." No server change.
+2. **Keep what was rejected.** A rejection would store the rejected version's file list, and the modal would show exactly that. Older rejections would fall back to 1. The cleanup script would have to keep those files too.
+3. **Nothing to open.** A card never approved would have no clickable image, and would say "Never approved".
+
+A card once approved (a re-review rejected, or a flagged workspace) keeps opening the approved version, which is what's public. Whichever is chosen, a mockup comes before it's built.
+
 ## What the audits found (2026-11-14)
 
 ### Snapshots, copies, forks

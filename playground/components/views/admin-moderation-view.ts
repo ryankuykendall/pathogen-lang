@@ -37,6 +37,7 @@ import {
   reviewCompileInput,
   reviewFileCount,
   reviewViewerFiles,
+  sourceFromApproval,
   sourceFromListing,
   unreadableFiles,
 } from '../../utils/review-entry.js';
@@ -54,19 +55,14 @@ import '../thumbnail-crop-modal.js';
 
 import type { MiniWorkspace, MiniWorkspaceFiles } from '../blog/mini-workspace.js';
 import type { WorkspaceCompileInput } from '../../services/compiler-worker.js';
-import type { ListedEntry, ReviewFile, ReviewSource } from '../../utils/review-entry.js';
+import type { ApprovalFiles, ListedEntry, ReviewSource } from '../../utils/review-entry.js';
 import type { SnapshotFilesEngine } from '../../utils/snapshot-viewer-files.js';
 
 declare const __PATHOGEN_API_BASE__: string;
 const API_BASE = __PATHOGEN_API_BASE__;
 
 /** GET /admin/approval/:id's answer, as far as this screen reads it. */
-interface ApprovalAnswer {
-  code?: string;
-  files?: Record<string, ReviewFile>;
-  folders?: string[];
-  entryPoints?: string[];
-  codeHash?: string;
+interface ApprovalAnswer extends ApprovalFiles {
   error?: string;
 }
 
@@ -323,8 +319,11 @@ class AdminModerationView extends HTMLElement {
     return this._screen;
   }
 
+  /** The screen's own colours (the error panels, badges, Reject, the changes box) follow the theme. */
   private _syncTheme(): void {
-    this._modalHost?.classList.toggle('dark', document.documentElement.getAttribute('data-active-theme') === 'dark');
+    const dark = document.documentElement.getAttribute('data-active-theme') === 'dark';
+    this._screen?.classList.toggle('dark', dark);
+    this._modalHost?.classList.toggle('dark', dark);
   }
 
   // Lazily create the body-mounted crop modal.
@@ -1014,15 +1013,7 @@ class AdminModerationView extends HTMLElement {
       // A file whose bytes are lost (2e step 5d) is said, never shown empty.
       const lost = unreadablePath(data);
       if (lost) throw new Error(`${lost} couldn't be read.`);
-      const source: ReviewSource = {
-        workspaceId,
-        name,
-        files: data.files ?? {},
-        folders: data.folders ?? [],
-        entryPoints: data.entryPoints ?? [],
-        codeHash: data.codeHash ?? '',
-        ...(data.code !== undefined ? { code: data.code } : {}),
-      };
+      const source = sourceFromApproval(workspaceId, name, data);
       const files = reviewViewerFiles(source, engine());
       // Frozen SVG preferred. If absent (legacy approval), try a
       // background compile; if THAT fails, fall through to the files alone.
@@ -1081,17 +1072,24 @@ class AdminModerationView extends HTMLElement {
     if (!res.ok) throw new Error(data.error || 'Failed to load approval');
     const lost = unreadablePath(data);
     if (lost) throw new Error(`${lost} couldn't be read, so it can't be compiled.`);
-    const code = (data.code ?? '').trim();
-    if (!code) throw new Error('Approval record has no source code');
+    // The main, compiled with its imports (2e step 5e): what the public page draws.
+    const name =
+      this._approved.find((x) => x.workspaceId === workspaceId)?.name ??
+      this._featured.find((x) => x.workspaceId === workspaceId)?.name ??
+      '';
+    const input = reviewCompileInput(sourceFromApproval(workspaceId, name, data));
+    if (!input?.text.trim()) throw new Error('Approval record has no source code');
 
     // 2. Compile once; render the full-aspect preview.
     const id = ++this._compilationCounter;
-    const result = (await compilerWorker.compileWithContext(code, id, undefined)) as Record<string, unknown>;
+    const result = (await compilerWorker.compileWithContext(input.text, id, undefined, {
+      workspace: input.workspace,
+    })) as Record<string, unknown>;
     const lib = (
       window as unknown as { PathogenLang?: { generateSvg?: (r: unknown, o: unknown) => string } }
     ).PathogenLang;
     if (!lib?.generateSvg) throw new Error('Compiler not available (PathogenLang.generateSvg missing)');
-    const dims = dimensionsOrDefault(code);
+    const dims = dimensionsOrDefault(input.text);
     const svgString = lib.generateSvg(result, dims);
     if (!svgString || svgString.length === 0) throw new Error('Compile produced no SVG');
     return { result, svgString, dims, generateSvg: lib.generateSvg.bind(lib) };
@@ -1702,6 +1700,20 @@ class AdminModerationView extends HTMLElement {
       /* The shell wraps views in a flex container with overflow:hidden so
          the host element itself must scroll when content overflows. */
       :host { display: block; height: 100%; overflow-y: auto; overflow-x: hidden; }
+      /* The screen's own colours, light and dark (2e step 5e): the theme has no
+         quiet error panel, badge or outlined-danger ink, so they're local. */
+      .screen, .modal-host {
+        --mod-danger-fill: #b8302c; --mod-danger-line: #b8302c;
+        --mod-error-bg: #fff5f5; --mod-error-border: #e07070; --mod-error-text: #a83232;
+        --mod-badge-bg: #fef0c7; --mod-badge-text: #92541a;
+        --mod-flag-bg: #fde2e2; --mod-flag-text: #a83232;
+      }
+      .screen.dark, .modal-host.dark {
+        --mod-danger-fill: #dc2626; --mod-danger-line: #f87171;
+        --mod-error-bg: rgba(239, 68, 68, 0.12); --mod-error-border: rgba(239, 68, 68, 0.45); --mod-error-text: #fca5a5;
+        --mod-badge-bg: rgba(224, 168, 64, 0.15); --mod-badge-text: #e0a840;
+        --mod-flag-bg: rgba(239, 68, 68, 0.15); --mod-flag-text: #fca5a5;
+      }
       .container { max-width: 1200px; margin: 0 auto; padding: 1.25rem 1rem 4rem; }
       .head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; gap: 1rem; }
       h1 { margin: 0; font: 600 1.5rem/1.2 var(--font-sans, system-ui); color: var(--text-primary, #111); }
@@ -1712,7 +1724,7 @@ class AdminModerationView extends HTMLElement {
       .tab.active { color: var(--text-primary, #111); border-bottom-color: var(--accent-color, #5b6bff); }
 
       .notice, .empty, .error { padding: 1.25rem; background: var(--bg-elevated, #fafafa); border: 1px solid var(--border-color, #ddd); border-radius: var(--radius-md, 6px); color: var(--text-secondary, #666); }
-      .error { border-color: #e07070; color: #a83232; background: #fff5f5; }
+      .error { border-color: var(--mod-error-border); color: var(--mod-error-text); background: var(--mod-error-bg); }
 
       .card-grid { list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 1rem; }
       .card-grid.one-col { grid-template-columns: 1fr; }
@@ -1732,8 +1744,8 @@ class AdminModerationView extends HTMLElement {
 
       .card-body { min-width: 0; display: flex; flex-direction: column; gap: 0.35rem; }
       .card-title { margin: 0; font: 600 1rem/1.3 var(--font-sans, system-ui); color: var(--text-primary, #111); display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.5rem; }
-      .badge { font: 500 0.7rem/1 var(--font-sans, system-ui); padding: 0.2rem 0.45rem; border-radius: 999px; background: #fef0c7; color: #92541a; white-space: nowrap; }
-      .badge-flag { background: #fde2e2; color: #a83232; }
+      .badge { font: 500 0.7rem/1 var(--font-sans, system-ui); padding: 0.2rem 0.45rem; border-radius: 999px; background: var(--mod-badge-bg); color: var(--mod-badge-text); white-space: nowrap; }
+      .badge-flag { background: var(--mod-flag-bg); color: var(--mod-flag-text); }
       .card-meta .sep { color: var(--text-tertiary, #aaa); }
       .card-meta { margin: 0; font: 400 0.75rem/1.4 var(--font-sans, system-ui); color: var(--text-secondary, #666); display: flex; flex-wrap: wrap; gap: 0.35rem; align-items: center; }
       .card-meta .hash { font-family: var(--font-mono, ui-monospace, monospace); }
@@ -1750,16 +1762,16 @@ class AdminModerationView extends HTMLElement {
       .feature-toggle { display: inline-flex; align-items: center; gap: 0.3rem; font: 0.8rem var(--font-sans, system-ui); color: var(--text-secondary, #555); }
 
       button, .link { font: inherit; padding: 0.35rem 0.75rem; border-radius: var(--radius-sm, 4px); cursor: pointer; border: 1px solid var(--border-color, #ccc); background: transparent; color: var(--text-primary, #111); text-decoration: none; display: inline-flex; align-items: center; }
-      button.primary { background: var(--accent-color, #5b6bff); color: #fff; border-color: transparent; }
-      button.danger { background: #b8302c; color: #fff; border-color: transparent; }
-      button.danger-outline { color: #b8302c; border-color: #b8302c; }
+      button.primary { background: var(--accent-color, #5b6bff); color: var(--accent-text, #fff); border-color: transparent; }
+      button.danger { background: var(--mod-danger-fill); color: #fff; border-color: transparent; }
+      button.danger-outline { color: var(--mod-danger-line); border-color: var(--mod-danger-line); }
       button.ghost { background: transparent; }
       button.ghost-small { padding: 0.25rem 0.55rem; font-size: 0.78rem; }
       button[disabled] { opacity: 0.55; cursor: default; }
 
       .reject-form { margin-top: 0.5rem; padding-top: 0.75rem; border-top: 1px dashed var(--border-color, #ddd); }
       .reject-form label { display: block; font: 500 0.85rem/1.2 var(--font-sans, system-ui); color: var(--text-secondary, #555); margin-bottom: 0.35rem; }
-      .reject-form textarea { width: 100%; min-height: 4rem; padding: 0.5rem 0.65rem; border: 1px solid var(--border-color, #ccc); border-radius: var(--radius-sm, 4px); font: 0.85rem/1.45 var(--font-mono, ui-monospace, monospace); resize: vertical; box-sizing: border-box; }
+      .reject-form textarea { width: 100%; min-height: 4rem; padding: 0.5rem 0.65rem; border: 1px solid var(--border-color, #ccc); border-radius: var(--radius-sm, 4px); font: 0.85rem/1.45 var(--font-mono, ui-monospace, monospace); resize: vertical; box-sizing: border-box; background: var(--bg-primary, #fff); color: var(--text-primary, #111); }
 
       .modal-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; z-index: 9999; padding: 2rem; }
       .modal { background: var(--bg-elevated, #fff); border-radius: var(--radius-md, 8px); max-width: 1080px; width: 100%; max-height: 90vh; display: grid; grid-template-rows: auto 1fr; box-shadow: 0 12px 40px rgba(0,0,0,0.35); overflow: hidden; }
@@ -1775,7 +1787,7 @@ class AdminModerationView extends HTMLElement {
          correctly; the modal-body just scrolls if the content overflows. */
       .modal-compiling { padding: 3rem 1rem; text-align: center; color: var(--text-secondary, #666); }
       .modal-failed { display: flex; flex-direction: column; gap: 0.85rem; }
-      .modal-error { margin: 0; padding: 0.75rem 0.95rem; border: 1px solid #e07070; background: #fff5f5; color: #a83232; border-radius: var(--radius-sm, 4px); font: 0.85rem/1.45 var(--font-sans, system-ui); }
+      .modal-error { margin: 0; padding: 0.75rem 0.95rem; border: 1px solid var(--mod-error-border); background: var(--mod-error-bg); color: var(--mod-error-text); border-radius: var(--radius-sm, 4px); font: 0.85rem/1.45 var(--font-sans, system-ui); }
       /* A compile that failed: the files alone, at the embed's height. */
       .modal-files { display: flex; height: 60dvh; border: 1px solid var(--border-color, #ddd); border-radius: var(--radius-sm, 4px); overflow: hidden; }
 

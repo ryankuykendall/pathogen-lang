@@ -338,6 +338,53 @@ describe('the review screen', () => {
     expect(($(view, '.modal-main mini-workspace') as Viewer).opened).toEqual(['parts/gears.pathogen']);
   });
 
+  it('Regenerate and Set thumbnail compile the approval’s main with its imports', async () => {
+    answers = () =>
+      new Response(
+        JSON.stringify({ files: SOURCE.files, folders: [], entryPoints: ['main.pathogen'], codeHash: 'h' }),
+        {
+          status: 200,
+        },
+      );
+    const view = await screen();
+    const compiled = await (
+      view as unknown as { _fetchAndCompileApproval: (id: string) => Promise<{ svgString: string }> }
+    )._fetchAndCompileApproval('w1');
+    const [text, , , options] = worker.compileWithContext.mock.calls[0] as [
+      string,
+      number,
+      unknown,
+      { workspace: { files: Map<string, string>; entry: string } },
+    ];
+    expect([compiled.svgString, text, options.workspace.entry, [...options.workspace.files.keys()]]).toEqual([
+      DRAWN,
+      MAIN,
+      'main.pathogen',
+      ['main.pathogen', 'parts/gears.pathogen'],
+    ]);
+  });
+
+  it('its own colours follow the theme: the screen and the modal take the dark class, and follow a flip', async () => {
+    document.documentElement.setAttribute('data-active-theme', 'dark');
+    const view = await screen();
+    const dark = () => [
+      $(view, '.screen')?.classList.contains('dark'),
+      $(view, '.modal-host')?.classList.contains('dark'),
+    ];
+    try {
+      view.render();
+      expect(dark()).toEqual([true, true]);
+      // Connected, it watches the theme: a flip to light follows (a MutationObserver, a microtask later).
+      document.body.append(view);
+      document.documentElement.setAttribute('data-active-theme', 'light');
+      await Promise.resolve();
+      expect(dark()).toEqual([false, false]);
+    } finally {
+      view.remove();
+      document.documentElement.removeAttribute('data-active-theme');
+    }
+  });
+
   it('a first review has no changes box; one file shows the drawing and the file', async () => {
     const view = await screen();
     const rings = {
