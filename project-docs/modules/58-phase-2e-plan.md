@@ -1042,7 +1042,9 @@ The docs (note 63, review record `reviews/phase-2e-step7-docs-review.md`) and th
 3. A rename changes the URL at the next approval: kept as documented.
 4. What a never-approved Rejected or Flagged card opens: deferred to the snapshots work (above, under step 5f).
 
-**Still open, from note 64's list, for step 8:** whether a visitor opening someone else's public workspace should go to its public page; a script for removing the re-review entries of private workspaces; the preview pane at 0 px with the tree, console and inspector open in 1024 and 1280 px windows.
+**Still open, from note 64's list, for step 8:** whether a visitor opening someone else's public workspace should go to its public page; a script for removing the re-review entries of private workspaces. (The preview pane at 0 px with the tree, console and inspector open in 1024 and 1280 px windows was settled on 2026-11-16: left until the console "mole"; `project-docs/preview-raster-perf/README.md`, "Narrow windows". Note 64 missed that.)
+
+**Before step 8 (2026-11-17):** the full suite passes (9,378); origin/main is still ecbaabc, so the push is a fast-forward; the files migration's local dry run on today's dev data: 397 to migrate, 8 already holding files, 1 orphan approval, 0 errors, every approval's re-review answer unchanged. The migration copies each record whole and swaps only `code` for the files, so `cardAt` and the other fields added in 5a to 5f survive, and the card copy and the migration can run in either order.
 
 ## What the audits found (2026-11-14)
 
