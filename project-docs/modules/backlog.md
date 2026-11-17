@@ -73,7 +73,10 @@ After the first release (phase 2 ships with 2e). Each entry comes from your answ
   - how existing approvals move over.
 
   A snapshot already keeps a card image, and from 2e every file as drawn and which program drew it. So it could hold the frozen card that note 58's question 9 is about.
-- **Then also:** bring back the review modal's ↗, hidden in 2e, as a Start new workspace from the snapshot under review, with every file (note 60, your answer 2, 2026-11-14: "suppress the button for the time being, but bring it back at the point where we move publishing to point at a specific snapshot").
+- **Then also:**
+  - bring back the review modal's ↗, hidden in 2e, as a Start new workspace from the snapshot under review, with every file (note 60, your answer 2, 2026-11-14: "suppress the button for the time being, but bring it back at the point where we move publishing to point at a specific snapshot");
+  - **edits made while a submission is pending.** Today they aren't reviewed until the next save after approval (docs/publishing.md). Revisit this when publishing points at a snapshot (note 58, "Step 7, done", your answer 2, 2026-11-17);
+  - **what a never-approved Rejected or Flagged card opens.** Today its modal says "No approval record". You expect option 2 of note 58's question (keep what was rejected), with the rejected snapshot as that record (your answer 4, 2026-11-17).
 - **From:** your answer 2, 2026-11-14: "I am starting to feel like we should only allow publishing from a specific snapshot (or, when whe publish, we would simply create a snapshot as the reference for the state of the generated image and the code at that point in time.) Publishing should be an explicit action, and I would like to see this workflow changed. Let's add this as a post initial release follow-up."
 
 ### Snapshots of every program
