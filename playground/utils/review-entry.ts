@@ -1,16 +1,13 @@
 // The review screen's reading of a queue entry (2e step 5e; note 59, mockups v12 R1 to R6,
 // v14): GET /admin/review/:id/source's answer, turned into what the card, the modal and
-// Approve need. Pure, so tests need no page.
+// Approve need. Pure and DOM-free, so tests need no page and node scripts can import it
+// (scripts/backfill-approval-svgs.ts); the viewer's files are in review-viewer-files.ts.
 // - The main is the first program the entry holds: what's compiled and approved.
 // - A file that can't be read (2e step 5d) keeps Approve off: nobody has seen it.
 // - A re-review's changes become the card's line, the modal's box and the viewer's marks.
 
-import { snapshotViewerFiles } from './snapshot-viewer-files.js';
-
-import type { MiniWorkspaceFiles } from '../components/blog/mini-workspace.js';
 import type { SourceFileMarks } from '../components/shared/source-files.js';
 import type { WorkspaceCompileInput } from '../services/compiler-worker.js';
-import type { SnapshotFilesEngine } from './snapshot-viewer-files.js';
 
 /** One file of an entry: its text, or marked unreadable. */
 export type ReviewFile =
@@ -88,8 +85,8 @@ export function sourceFromListing(entry: ListedEntry): ReviewSource | null {
   };
 }
 
-/** GET /admin/approval/:id's answer, as far as its source goes. */
-export interface ApprovalFiles {
+/** An answer carrying files (GET /admin/approval/:id, GET /workspace/:id), as far as its source goes. */
+export interface FilesAnswer {
   files?: Record<string, ReviewFile>;
   folders?: string[];
   entryPoints?: string[];
@@ -98,10 +95,11 @@ export interface ApprovalFiles {
 }
 
 /**
- * An approval's source, for the Approved and Featured tabs' modal, Regenerate and Set
- * thumbnail: its files, or an approval carrying only its one text read as main.pathogen.
+ * The source an answer carries: an approval's (the Approved and Featured tabs' modal,
+ * Regenerate, Set thumbnail, the approval-SVG backfill) or a workspace's (the admin
+ * thumbnail tool). Its files, or one carrying only its one text read as main.pathogen.
  */
-export function sourceFromApproval(workspaceId: string, name: string, answer: ApprovalFiles): ReviewSource {
+export function sourceFromAnswer(workspaceId: string, name: string, answer: FilesAnswer): ReviewSource {
   const listed = answer.files ?? {};
   const files: Record<string, ReviewFile> =
     Object.keys(listed).length > 0 || answer.code === undefined
@@ -122,25 +120,6 @@ export function sourceFromApproval(workspaceId: string, name: string, answer: Ap
     codeHash: answer.codeHash ?? '',
     ...(answer.code !== undefined ? { code: answer.code } : {}),
   };
-}
-
-/**
- * The viewer's files: every file, pathogen.json with several, opening on the program
- * that's compiled (the snapshots page's mapping), with a re-review's marks.
- */
-export function reviewViewerFiles(source: ReviewSource, engine: SnapshotFilesEngine | null): MiniWorkspaceFiles {
-  const { viewer } = snapshotViewerFiles(
-    {
-      files: source.files,
-      folders: source.folders,
-      entryPoints: source.entryPoints,
-      contentHash: source.codeHash,
-      program: reviewMain(source),
-      ...(source.code !== undefined ? { code: source.code } : {}),
-    },
-    engine,
-  );
-  return { ...viewer, marks: source.changes ? reviewMarks(source.changes) : null };
 }
 
 /** The program that's compiled and approved: the first the entry holds. */

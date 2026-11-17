@@ -2,8 +2,8 @@
 //
 // The review screen's reading of an entry (2e step 5e; playground/utils/review-entry.ts):
 // the main, unreadable files, the compile input, the counts, the card's line, the modal's
-// box (mockup v12 R3, R4), the viewer's files and marks, and a source from the listing
-// or from an approval.
+// box (mockup v12 R3, R4), the viewer's files and marks (review-viewer-files.ts), and a
+// source from the listing or from an answer carrying files (an approval, a workspace).
 
 import { describe, expect, it } from 'vitest';
 
@@ -14,11 +14,11 @@ import {
   reviewFileCount,
   reviewMain,
   reviewMarks,
-  reviewViewerFiles,
-  sourceFromApproval,
+  sourceFromAnswer,
   sourceFromListing,
   unreadableFiles,
 } from '../playground/utils/review-entry.ts';
+import { reviewViewerFiles } from '../playground/utils/review-viewer-files.ts';
 
 import type { ReviewChanges } from '../playground/utils/review-entry.ts';
 
@@ -133,7 +133,7 @@ describe('an entry’s source', () => {
 
   it('an approval’s source: its files, compiled from its main with every file', () => {
     const approval = { files: SOURCE.files, folders: ['empty'], entryPoints: ['main.pathogen'], codeHash: 'h' };
-    const source = sourceFromApproval('w', 'Gears', approval);
+    const source = sourceFromAnswer('w', 'Gears', approval);
     expect(source).toEqual({ workspaceId: 'w', name: 'Gears', codeHash: 'h', ...approval });
     expect(reviewCompileInput(source)?.workspace.files).toEqual(
       new Map([
@@ -144,15 +144,15 @@ describe('an entry’s source', () => {
   });
 
   it('an approval carrying only its one text reads as main.pathogen, its size in bytes', () => {
-    const source = sourceFromApproval('w', 'Old', { code: 'M 1 1' });
+    const source = sourceFromAnswer('w', 'Old', { code: 'M 1 1' });
     expect([source.files, source.entryPoints, reviewCompileInput(source)?.text]).toEqual([
       { 'main.pathogen': { sha256: '', size: 5, text: 'M 1 1' } },
       ['main.pathogen'],
       'M 1 1',
     ]);
     // "é" is one character, two bytes.
-    expect(sourceFromApproval('w', 'Old', { code: '// é' }).files['main.pathogen'].size).toBe(5);
-    expect(reviewCompileInput(sourceFromApproval('w', 'None', {}))).toBeNull();
+    expect(sourceFromAnswer('w', 'Old', { code: '// é' }).files['main.pathogen'].size).toBe(5);
+    expect(reviewCompileInput(sourceFromAnswer('w', 'None', {}))).toBeNull();
   });
 
   it('counts pathogen.json with several files, as the list does', () => {

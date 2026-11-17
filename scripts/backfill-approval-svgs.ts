@@ -6,10 +6,14 @@
 // sweep regenerates the missing ones through the SAME pipeline as the admin
 // moderation view's "Regenerate preview":
 //
-//   compilerWorker.compileWithContext(code)   ← browser worker, Google-Fonts
-//   dimensionsOrDefault(code)                    fetching included
-//   PathogenLang.generateSvg(result, dims)    ← string generator, no metadata
+//   compilerWorker.compileWithContext(main, { workspace })  ← browser worker, Google-Fonts
+//   dimensionsOrDefault(main)                                  fetching included
+//   PathogenLang.generateSvg(result, dims)                  ← string generator, no metadata
 //   PUT /admin/approval/:id/svg { svg }
+//
+// The main is the approval's first program, compiled with its imports from the
+// approval's other files (2e step 5f), through the review screen's own helpers
+// (playground/utils/review-entry.ts: sourceFromAnswer, reviewCompileInput).
 //
 // To reuse those modules verbatim (not an approximation), a headless Chrome
 // page is served the BUILT site (public/ as document root, production layout)
@@ -27,7 +31,8 @@
 //   produce today). Rendering them via the playground GPU pipeline instead
 //   is a possible follow-up.
 // - Approvals whose frozen code no longer compiles (e.g. pre-mandatory-
-//   semicolon sources) are reported and left untouched.
+//   semicolon sources), or holding a file that can't be read, are reported
+//   and left untouched.
 // - SVG only — thumbnails/hero PNGs were generated from the same frozen code
 //   at save time and are not touched.
 //
@@ -45,6 +50,18 @@ import { readFile } from 'fs/promises';
 import { existsSync } from 'fs';
 import { join, resolve, extname, normalize, sep } from 'path';
 import puppeteer, { type Browser, type Page } from 'puppeteer';
+
+import { reviewCompileInput, sourceFromAnswer, unreadableFiles } from '../playground/utils/review-entry.js';
+
+import type { FilesAnswer } from '../playground/utils/review-entry.js';
+
+/** A workspace compile as it crosses into the page: the files' Map as entries. */
+interface PageWorkspace {
+  files: [string, string][];
+  folders: string[];
+  entry: string;
+  label: string;
+}
 
 const PROJECT_ROOT = resolve(import.meta.dirname, '..');
 const PUBLIC_DIR = join(PROJECT_ROOT, 'public');
@@ -67,9 +84,13 @@ const HARNESS_HTML = `<!DOCTYPE html>
 <script type="module">
   import { compileWithContext } from '/services/compiler-worker.js';
   import { dimensionsOrDefault } from '/utils/source-dimensions.js';
-  // Same call sequence as admin-moderation-view.ts _compileSvg/_regenerate.
-  window.__compileApproval = async (code) => {
-    const result = await compileWithContext(code, 1, undefined);
+  // Same call sequence as admin-moderation-view.ts _fetchAndCompileApproval: the
+  // main, its imports read from the approval's files.
+  window.__compileApproval = async (code, workspace) => {
+    const options = {
+      workspace: { files: new Map(workspace.files), folders: workspace.folders, entry: workspace.entry, label: workspace.label },
+    };
+    const result = await compileWithContext(code, 1, undefined, options);
     const dims = dimensionsOrDefault(code);
     const svg = window.PathogenLang.generateSvg(result, dims);
     return { svg, dims };
@@ -195,7 +216,6 @@ program
     const outcome = {
       done: [] as string[],
       skippedGpu: [] as string[],
-      skippedFiles: [] as string[],
       failed: [] as [string, string][],
     };
 
@@ -216,35 +236,49 @@ program
       for (const entry of targets) {
         const label = `${entry.workspaceId} (${entry.ownerHandle ?? '?'}/${entry.slug})`;
         try {
-          // The admin read returns `code` for an approval that is just
-          // main.pathogen. One with several files (phase 2) carries only
-          // `files`; this harness compiles one string, so it's skipped by name.
-          const approval = await fetchJson<{ code?: string; files?: Record<string, unknown> }>(
+          // The approval's files with their text (one with only `code`, from
+          // before phase 2, reads as main.pathogen); its main is compiled with
+          // its imports. A file that can't be read leaves it untouched.
+          const approval = await fetchJson<FilesAnswer>(
             authed(`/admin/approval/${encodeURIComponent(entry.workspaceId)}`),
           );
-          if (approval.code === undefined && Object.keys(approval.files ?? {}).length > 1) {
-            outcome.skippedFiles.push(label);
-            console.log(`⏭  ${label} — holds several files, skipped (this script compiles a one-file program)`);
-            continue;
-          }
-          const code = approval.code ?? '';
-          if (!code.trim()) throw new Error('approval record has no code');
+          const source = sourceFromAnswer(entry.workspaceId, entry.name, approval);
+          const lost = unreadableFiles(source);
+          if (lost.length > 0) throw new Error(`${lost.join(', ')} couldn't be read`);
+          const input = reviewCompileInput(source);
+          if (!input?.text.trim()) throw new Error('approval record has no code');
+          const texts = [...input.workspace.files.values()];
 
-          if (GPU_GRADIENT_RE.test(code) && !opts.includeGpu) {
+          if (texts.some((text) => GPU_GRADIENT_RE.test(text)) && !opts.includeGpu) {
             outcome.skippedGpu.push(label);
             console.log(`⏭  ${label} — GPU gradient source, skipped (see --include-gpu)`);
             continue;
           }
           if (opts.dryRun) {
             outcome.done.push(label);
-            console.log(`·  ${label} — would regenerate (${code.length} chars of source)`);
+            const several = texts.length > 1 ? `, ${input.main} with ${texts.length - 1} more file(s)` : '';
+            console.log(`·  ${label} — would regenerate (${input.text.length} chars of source${several})`);
             continue;
           }
 
-          const { svg, dims } = await page!.evaluate(async (src) => {
-            const fn = (window as unknown as { __compileApproval: (c: string) => Promise<{ svg: string; dims: unknown }> }).__compileApproval;
-            return await fn(src);
-          }, code);
+          const workspace: PageWorkspace = {
+            files: [...input.workspace.files],
+            folders: [...(input.workspace.folders ?? [])],
+            entry: input.workspace.entry,
+            label: input.workspace.label,
+          };
+          const { svg, dims } = await page!.evaluate(
+            async (src, ws) => {
+              const fn = (
+                window as unknown as {
+                  __compileApproval: (c: string, w: PageWorkspace) => Promise<{ svg: string; dims: unknown }>;
+                }
+              ).__compileApproval;
+              return fn(src, ws);
+            },
+            input.text,
+            workspace,
+          );
           if (!svg || !svg.includes('<svg')) throw new Error('compile produced no SVG');
           if (svg.length > SVG_MAX_CHARS) throw new Error(`SVG too large (${svg.length} chars > server cap)`);
 
@@ -277,15 +311,11 @@ program
 
     console.log(
       `\n${opts.dryRun ? 'Dry run' : 'Sweep'} complete: ${outcome.done.length} ${opts.dryRun ? 'candidates' : 'regenerated'}, ` +
-        `${outcome.skippedGpu.length} GPU-skipped, ${outcome.skippedFiles.length} several-file-skipped, ${outcome.failed.length} failed.`,
+        `${outcome.skippedGpu.length} GPU-skipped, ${outcome.failed.length} failed.`,
     );
     if (outcome.skippedGpu.length) {
       console.log('GPU-gradient sources (kept raster hero):');
       for (const s of outcome.skippedGpu) console.log(`  - ${s}`);
-    }
-    if (outcome.skippedFiles.length) {
-      console.log('Approvals holding several files (not compiled here):');
-      for (const s of outcome.skippedFiles) console.log(`  - ${s}`);
     }
     if (outcome.failed.length) {
       console.log('Failed (left untouched):');

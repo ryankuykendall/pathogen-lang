@@ -5,19 +5,22 @@ import { thumbnailApi, workspaceApi } from '../../services/api.js';
 import compilerWorker from '../../services/compiler-worker.js';
 import thumbnailService from '../../services/thumbnail-service.js';
 import { store } from '../../state/store.js';
+import { reviewCompileInput, sourceFromAnswer, unreadableFiles } from '../../utils/review-entry.js';
 import { buildWorkspaceSlugId, navigateTo } from '../../utils/router.js';
 import styles from './admin-thumbnails-view.css';
+
+import type { FilesAnswer } from '../../utils/review-entry.js';
 
 declare const __PATHOGEN_API_BASE__: string;
 const API_BASE = __PATHOGEN_API_BASE__;
 
-interface AdminWorkspace {
+/** GET /workspace/:id's answer (an admin's read): the workspace and its files with their text. */
+interface AdminWorkspace extends FilesAnswer {
   id: string;
   slug?: string;
   name: string;
   userId: string;
   updatedAt?: string;
-  code?: string;
   preferences?: Record<string, unknown>;
 }
 
@@ -115,18 +118,23 @@ class AdminThumbnailsView extends HTMLElement {
       // Fetch workspace data (admin token bypasses ownership check)
       const workspace = (await workspaceApi.get(workspaceId, { adminToken: this._token! })) as AdminWorkspace;
 
-      // Compile the code to get path data
-      const code = workspace.code || '';
-      if (!code.trim()) {
-        console.warn(`Workspace ${workspaceId} has no code, skipping`);
+      // Compile the main to get path data, with its imports (2e step 5f): a workspace of
+      // several files draws as it does in the editor. A file that can't be read fails it;
+      // no program, or an empty one, has nothing to draw.
+      const source = sourceFromAnswer(workspaceId, workspace.name, workspace);
+      const lost = unreadableFiles(source);
+      if (lost.length > 0) throw new Error(`${lost.join(', ')} couldn't be read`);
+      const input = reviewCompileInput(source);
+      if (!input?.text.trim()) {
+        console.warn(`Workspace ${workspaceId} has ${input ? 'an empty main' : 'no program'}, skipping`);
         this._statuses[workspaceId] = 'done';
         this._renderContent();
         return;
       }
 
       const toFixed = (workspace.preferences?.toFixed as number | null) ?? null;
-      const compileOptions = toFixed != null ? { toFixed } : undefined;
-      const result = (await compilerWorker.compileWithContext(code, 0, () => false, compileOptions)) as {
+      const compileOptions = { ...(toFixed != null ? { toFixed } : {}), workspace: input.workspace };
+      const result = (await compilerWorker.compileWithContext(input.text, 0, () => false, compileOptions)) as {
         path?: string;
       };
 

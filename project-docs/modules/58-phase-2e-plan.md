@@ -973,6 +973,15 @@ The Featured findings are left as they are: they are outside answer 8's list and
   - `tests/playground-admin-review-screen.test.ts` (+2): Regenerate's compile (the main, with every file); the dark class on the screen and the modal, following a later flip;
   - on the dev stack, `verify/verify-2e-step5e-4.ts` (6): Regenerate stores the main's drawing with its imports, Set thumbnail crops the same drawing, the Approved card's modal shows every file, and the computed colours in light and dark (`2e-step5e-colours-{light,dark}.png`).
 
+## Step 5f: the admin tools draw every file (2e, 2026-11-16)
+
+- **The thumbnail tool** (`/admin/thumbnails?token=…`) compiled `workspace.code`, which a workspace of several files doesn't carry, so it skipped them as "no code". It now compiles the main with its imports from the workspace's files (`GET /workspace/:id`, an admin's read).
+- **`scripts/backfill-approval-svgs.ts`** skipped an approval of several files by name. It now compiles the main with its imports. An approval with a file that can't be read is reported and left alone, and the GPU-gradient skip looks in every file.
+- Both use the review screen's helpers, `sourceFromAnswer` (renamed from `sourceFromApproval`: an approval's answer and a workspace's have one shape) and `reviewCompileInput`. `review-entry.ts` is DOM-free now, so a node script can import it; the viewer's files moved to `review-viewer-files.ts`.
+- **Tested:**
+  - `tests/playground-admin-thumbnails-imports.test.ts` (3): the tool compiles a workspace of two files from its main, with every file and its `toFixed`, and uploads that path (it skipped them before); a workspace carrying only its text compiles as before; a file that can't be read fails it (from the code review: it was marked done, with no thumbnail);
+  - on the dev stack, `verify/verify-2e-step5f.ts` (6): the backfill run for real on an approval of two files stores the main's drawing with its imports, its dry run names the files, the token never printed; the tool's Auto-generate uploads a thumbnail for a workspace of two files.
+
 ### A question: what the Rejected and Flagged cards open
 
 A card's image opens the approved version (`GET /admin/approval/:id`). A workspace never approved has none, so its modal says "No approval record". The rejection keeps no list of the files it rejected (its record holds the notes; the state row holds a hash), and the files' versions after it replace them in the workspace.

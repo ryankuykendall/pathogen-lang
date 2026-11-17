@@ -36,11 +36,11 @@ import {
   changesSummary,
   reviewCompileInput,
   reviewFileCount,
-  reviewViewerFiles,
-  sourceFromApproval,
+  sourceFromAnswer,
   sourceFromListing,
   unreadableFiles,
 } from '../../utils/review-entry.js';
+import { reviewViewerFiles } from '../../utils/review-viewer-files.js';
 import { dimensionsOrDefault } from '../../utils/source-dimensions.js';
 import { computeOriginNormalization } from '../../utils/svg-origin.js';
 // Side-effect import: register the <mini-workspace> custom element so the
@@ -55,14 +55,14 @@ import '../thumbnail-crop-modal.js';
 
 import type { MiniWorkspace, MiniWorkspaceFiles } from '../blog/mini-workspace.js';
 import type { WorkspaceCompileInput } from '../../services/compiler-worker.js';
-import type { ApprovalFiles, ListedEntry, ReviewSource } from '../../utils/review-entry.js';
+import type { FilesAnswer, ListedEntry, ReviewSource } from '../../utils/review-entry.js';
 import type { SnapshotFilesEngine } from '../../utils/snapshot-viewer-files.js';
 
 declare const __PATHOGEN_API_BASE__: string;
 const API_BASE = __PATHOGEN_API_BASE__;
 
 /** GET /admin/approval/:id's answer, as far as this screen reads it. */
-interface ApprovalAnswer extends ApprovalFiles {
+interface ApprovalAnswer extends FilesAnswer {
   error?: string;
 }
 
@@ -1013,7 +1013,7 @@ class AdminModerationView extends HTMLElement {
       // A file whose bytes are lost (2e step 5d) is said, never shown empty.
       const lost = unreadablePath(data);
       if (lost) throw new Error(`${lost} couldn't be read.`);
-      const source = sourceFromApproval(workspaceId, name, data);
+      const source = sourceFromAnswer(workspaceId, name, data);
       const files = reviewViewerFiles(source, engine());
       // Frozen SVG preferred. If absent (legacy approval), try a
       // background compile; if THAT fails, fall through to the files alone.
@@ -1077,7 +1077,7 @@ class AdminModerationView extends HTMLElement {
       this._approved.find((x) => x.workspaceId === workspaceId)?.name ??
       this._featured.find((x) => x.workspaceId === workspaceId)?.name ??
       '';
-    const input = reviewCompileInput(sourceFromApproval(workspaceId, name, data));
+    const input = reviewCompileInput(sourceFromAnswer(workspaceId, name, data));
     if (!input?.text.trim()) throw new Error('Approval record has no source code');
 
     // 2. Compile once; render the full-aspect preview.
