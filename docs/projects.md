@@ -1,6 +1,6 @@
 # Projects and Files
 
-A Pathogen program can read two kinds of files from your computer: font files named by [`@font`](#path-blocks-font-directive), and other `.pathogen` files named by [`import`](#modules-importing). This page covers where those files may live and how you write their paths. The rules are the same in the CLI and the VS Code preview. The playground can't read files yet — see [In each tool](#projects-in-each-tool).
+A Pathogen program can read two kinds of files from its project: font files named by [`@font`](#path-blocks-font-directive), and other `.pathogen` files named by [`import`](#modules-importing). This page covers where those files may live and how you write their paths. The rules are the same in the CLI, the VS Code preview and a playground workspace, which holds `.pathogen` files but no font files yet — see [In each tool](#projects-in-each-tool).
 
 > **What changed (November 2026):** `pathogen.json`'s `main` key is now `entryPoints`, a list whose first entry is the main: `{ "main": "poster.pathogen" }` becomes `{ "entryPoints": ["poster.pathogen"] }`. A `pathogen.json` that still has `main` gets an error showing the new form, in the CLI and in VS Code. Until you change it, it stops every file in the project that uses `@font` or `import`, and folder compiles. A folder whose `pathogen.json` has no `entryPoints` now compiles its `main.pathogen`; it used to stop with an error. See [pathogen.json](#projects-pathogenjson).
 
@@ -60,7 +60,7 @@ List programs only. A [module](#modules-exporting), a file that starts with `mod
 `entryPoints` is checked in two ways:
 
 - **Whenever `pathogen.json` is read:** `entryPoints` must be a list of paths inside the project folder, ending in `.pathogen` and written with forward slashes. Every tool that reads `pathogen.json` checks this, so a mistake here stops the files that use `@font` or `import` (see [In each tool](#projects-in-each-tool)).
-- **When the list is used:** it can't be empty or name a path twice (`main.pathogen`, `./main.pathogen` and `/main.pathogen` count as the same path), and the main must exist, with its letter case matching, and be a program. Today only the CLI uses the list, when you give it a folder, so a mistake here never stops a file you compile by name.
+- **When the list is used:** it can't be empty or name a path twice (`main.pathogen`, `./main.pathogen` and `/main.pathogen` count as the same path), and the main must exist, with its letter case matching, and be a program. The CLI uses the list when you give it a folder, so a mistake here never stops a file you compile by name. A playground workspace writes its own list as you add programs and set the main ([Files in a Workspace](#workspace-files-pathogenjson)).
 
 Any other key is an error, so a typo such as `"entrypoints"` doesn't go unnoticed. More keys will arrive with later features; an older `pathogen-lang` reports a newer key as unknown, so update it if that happens.
 
@@ -87,7 +87,8 @@ Four rules hold on every operating system:
 
 - **CLI.** The project folder depends on what you compile; see the table below.
 - **VS Code.** The preview and the editor's error checking find the project folder from the file you're editing, as above. The preview shows the file you're editing, not the main. A `pathogen.json` with an error stops the files in its project that use `import` or `@font`, with the same message as the CLI.
-- **Playground.** A workspace is one program for now, with no files beside it, so there is nothing to read. A file path in `@font` produces a warning that suggests a Google Fonts family instead, and an `import` is an error.
+- **Playground.** A workspace is a project folder: `/` paths start at its top, and it writes its own `pathogen.json` ([Files in a Workspace](#workspace-files-files-in-a-workspace)). The preview shows the program you choose with its chip (the main at first), whichever file you're editing ([The preview and the program list](#workspace-files-the-preview-and-the-program-list)). A workspace holds `.pathogen` files only for now, so a file path in `@font` produces a warning that suggests a Google Fonts family instead.
+  - **An unsaved scratch buffer** is code opened from a link, such as a blog example's playground link, and not yet saved as a workspace. It holds one program with no files beside it, so an `import` there is an error. To use imports, copy its code into a new workspace (**+ New Workspace** on your Workspaces page).
 
 In the CLI:
 

@@ -330,12 +330,13 @@ export function moduleNotLoadedError(path: string): string {
 }
 
 /**
- * An import in a program that has no files around it: the playground, an API
- * caller that passed no modules. Phase 1a; docs/modules.md "In each tool".
+ * An import in a program that has no files around it: an unsaved scratch buffer in
+ * the playground, an API caller that passed no modules. docs/modules.md "In each tool"
+ * and "Errors" (a saved workspace holds files since phase 2).
  */
 export function noProjectFolderError(path: string): string {
   return (
     `Cannot import "${path}": this program has no project folder to read files from. ` +
-    'Imports work in the CLI and VS Code; a playground workspace is one program for now.'
+    'Imports work in a saved playground workspace, the CLI and VS Code.'
   );
 }

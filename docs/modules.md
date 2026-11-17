@@ -32,7 +32,7 @@ Compiling `main.pathogen` draws two gears: a 12-tooth gear on the left and an 8-
 
 Think of a module as a workshop that makes tools. `export` puts a tool on the counter for other files to take. The workshop never draws anything itself: its tools draw at your bench, with your pen.
 
-Imports work in the CLI and in VS Code, where files sit side by side on disk. A playground workspace is one program for now, so `import` is an error there; see [In each tool](#modules-in-each-tool).
+Imports work in the CLI and VS Code, where files sit side by side on disk, and in a saved playground workspace, which holds files of its own ([Files in a Workspace](#workspace-files-files-in-a-workspace)); see [In each tool](#modules-in-each-tool).
 
 **Know these before you start:**
 
@@ -358,13 +358,16 @@ In VS Code, the error is shown on the call (or the import) in the file you're ed
   - **The preview:** it shows the file you're editing. A module doesn't draw, so its preview is empty; to see its fns draw, open a program that imports it.
   - **Unsaved files:** an unsaved file can't import, because its paths have no folder to start from.
   - **Renaming and finding references:** F2 on an imported or exported name says it can't rename across files yet, instead of changing only some of its uses; rename it in each file. Find All References lists the uses in the current file only.
-- **Playground.** A workspace is one program with no files beside it, so `import` is an error at the import line. The other module rules hold as in any file: `export` without `module;` is an error, and a workspace that starts with `module;` draws nothing.
+- **Playground.** A workspace holds files like a project folder, so imports work as they do in the CLI: `./` and `../` start at the importing file's folder, and `/` at the top of the workspace.
+  - **Rechecking:** editing a module redraws every program that imports it, and the program list marks them ([Files in a Workspace](#workspace-files-the-preview-and-the-program-list)).
+  - **Errors in other files:** each one sits under its file's name, with links to the file and line ([Errors in other files](#workspace-files-errors-in-other-files)).
+  - **An unsaved scratch buffer**, code opened from a link and not yet saved as a workspace ([In each tool](#projects-in-each-tool)), holds one program with no files beside it, so `import` is an error there, at the import line. To use imports, copy its code into a new workspace.
 
 ## Errors
 
 | Situation | Message |
 |-----------|---------|
-| No project folder (the playground) | `Cannot import "./parts/gears.pathogen": this program has no project folder to read files from. Imports work in the CLI and VS Code; a playground workspace is one program for now.` |
+| No project folder (an unsaved scratch buffer) | `Cannot import "./parts/gears.pathogen": this program has no project folder to read files from. Imports work in a saved playground workspace, the CLI and VS Code.` |
 | An unsaved file in VS Code | `Cannot import "./parts/gears.pathogen" until this file is saved: import paths start at the file's folder.` |
 | A name instead of a path | `import "gears.pathogen" isn't a path. Paths start with ./, ../ or / — did you mean "./gears.pathogen"?` |
 | A package name or web address | `import "@studio/kit": only files in the project folder can be imported. Paths start with ./, ../ or /.` |

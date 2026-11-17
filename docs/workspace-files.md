@@ -1,24 +1,10 @@
 <!--
-NOT PUBLISHED YET, on purpose: this page is not in scripts/build-docs.ts DOC_FILES. Registering it
-('workspace-files.md': 'workspaceFiles') publishes it; that happens in the push that ships the
-multi-file UI, which waits until step 2e is done (decided 2026-11-07, note 48), so publishing, forks
-and snapshots carry every file from the first day. 2h's Copy Debug Info lands with 2d (note 42).
-The page then needs sections for those, and this comment comes out. Export as a project folder (2g) comes later: see "Not yet".
-Copy Code copies the file in the editor (decided 2026-11-09, note 52).
-On publishing, update in the same push: docs/projects.md line 3 ("The playground can't read files
-yet"), its In each tool Playground bullet ("one program for now") with a link to this page, and the
-program-list sentence held back in note 46; docs/modules.md's intro line "A playground workspace is
-one program for now", its In each tool Playground bullet, and its Errors row "No project folder
-(the playground)"; docs/snapshots.md's "When you can't take a snapshot yet" gains "**When the
-workspace has no program.** Add one first: there's nothing to keep." (step 9a's content review);
-"The main"'s first line and Set as main's menu line ("Puts it first in pathogen.json. Thumbnails and
-publishing use the main") must agree on what publishing does with the main, as 2e builds it: the
-page adds "and publishing uses", or the menu drops "publishing" (step 10's review, finding 16).
-At most one screenshot, near the top: the tree, the tabs, and the chip with its list open, taken
-with 2e's final UI (2e changes the menu and Snapshot) and taken again whenever the workspace's
-layout changes (step 10's review, finding 17). The docs can show images since 2026-11-14
-(docs/CLAUDE.md "Images"): add docs/images/workspace-files.png and workspace-files.dark.png, with
-alt text, and list here what it shows.
+Published with phase 2e (2026-11; project-docs/modules/58-phase-2e-plan.md, step 7).
+The screenshot (docs/CLAUDE.md "Images"): images/workspace-files.png and workspace-files.dark.png,
+taken with 2e's UI: a workspace of several files, the tree open, files in tabs, and the program
+chip's list open. Take both again whenever the workspace's layout, the tree, the tabs or the program
+list change (step 10's review, finding 17).
+Export as a project folder (2g) comes later: see "Not yet".
 When data files and fonts can be added (after phase 2): Limits gains data files 5 MB each, fonts
 20 MB each (note 50), and the 50 MB whole-workspace row, which 20 files of 1 MB can't reach today.
 Sources: mockups v1 to v6 and their reviews (project-docs/modules/39- to 46-).
@@ -74,9 +60,11 @@ A workspace can hold several files: programs that draw, and modules they import.
 
 Three parts work together. The **tree** lists the files. The **editor** shows the file you open, in tabs. The **preview** shows one program; with several, the program chip beside its zoom controls chooses which. So you can edit a module while the preview keeps showing a program that uses it, redrawn as you type.
 
+![A workspace with the file tree open beside the editor, three files open in tabs, and the program list open from the chip beside the preview's zoom controls](images/workspace-files.png)
+
 > **Not yet:** a workspace can't be downloaded as a project folder, or made from one; that comes in a later update. To bring a project's files into a workspace, see [Uploading files](#workspace-files-uploading-files).
 
-> **What changed ([month] 2026):** A workspace you made before now holds one program, `main.pathogen`, with its code unchanged, and a `pathogen.json` beside it. It draws as before. **Copy URL** is gone from the workspace's menu, since a link could only hold one file; a link copied before still opens. [If the page publishes with 2e: Older snapshots restore the same way.]
+> **What changed (November 2026):** A workspace you made before now holds one program, `main.pathogen`, with its code unchanged, and a `pathogen.json` beside it. It draws as before, and so do its snapshots and its public page. **Copy URL** is gone from the workspace's menu, since a link could only hold one file; a link copied before still opens.
 
 ## A new workspace
 
@@ -94,7 +82,7 @@ A new workspace holds one program, `main.pathogen`, and `pathogen.json`, a proje
 - The breadcrumb names the open file with its folder: `parts/gears.pathogen`.
 - **Cmd+click** (Ctrl+click on Windows and Linux) a name you imported to open the file it comes from, at its declaration. Cmd+click an import's path, or a `* as` name, to open that file at its top.
 - Each file keeps its own undo history while the workspace is open, even after its tab is closed.
-- **Copy Code** copies the file in the editor. With no file open, it's off, and so is **Format Document** in the workspace's menu.
+- The **copy icon** at the end of the tabs, before the book, copies the file in the editor; its tooltip names the file. With no file open, it isn't there, and **Format Document** in the workspace's menu is off.
 
 ## Programs and modules
 
@@ -103,7 +91,7 @@ A new workspace holds one program, `main.pathogen`, and `pathogen.json`, a proje
 
 ## The main
 
-The workspace's **main** is the program it opens on and the one its thumbnail shows. It's `main.pathogen` unless you choose another.
+The workspace's **main** is the program it opens on, the one its thumbnail shows, and the one [publishing](#workspace-files-snapshots-copies-and-publishing) uses. It's `main.pathogen` unless you choose another.
 
 - **Set as main**, in a program's menu in the tree, makes it the main. A main that isn't `main.pathogen` has a `main` badge in the tree and in the program list (the chip's list, [below](#workspace-files-the-preview-and-the-program-list)).
 - Setting the main doesn't change what the preview shows.
@@ -243,6 +231,16 @@ Line 5: assertion failed: a gear needs at least 3 teeth
 - Every other file, by name, as a program or a module, with its number of lines but not its text.
 - The layers and the canvas settings. The warnings and the `log()` output, each with its file and line. A program that stops at an error has no log output, in the console or the report.
 - A short note for the assistant, which points it to these docs.
+
+## Snapshots, copies and publishing
+
+Each of these carries every file, the folders and `pathogen.json`'s list:
+
+- **A snapshot** keeps every file as it was drawn, and which program drew it. On the snapshots page, its code opens on that program, beside the list of files ([The snapshots page](#snapshots-the-snapshots-page)).
+- **Start new workspace**, on a snapshot's page, makes a workspace of the snapshot's files. It opens on its main; if the snapshot drew another program, choose it with the chip.
+- **Copy Workspace**, in the workspace's menu, copies every file with your latest edits. **Duplicate**, on your Workspaces page, copies every file as last saved.
+- **Make public** checks the main, with the files it imports, before it submits the workspace. The reviewer sees every file. Once approved, the workspace's public page shows the main's drawing, and **View source** shows every file, opening on the main. An edit to any file waits for review before visitors see it ([Publishing](#publishing-editing-a-published-workspace)).
+- **Open as new workspace**, on someone else's public page, makes a workspace of every approved file. It opens on its main.
 
 ## Limits
 

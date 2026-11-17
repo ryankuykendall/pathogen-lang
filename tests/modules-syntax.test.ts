@@ -22,8 +22,9 @@ import { parse } from '../src/parser';
 
 import type { EnumDefinition, FunctionDefinition, ImportDeclaration, LetDeclaration } from '../src/parser/ast';
 
+// docs/modules.md's Errors row, word for word (a saved workspace holds files since phase 2).
 const NO_PROJECT = (path: string): string =>
-  `Cannot import "${path}": this program has no project folder to read files from. Imports work in the CLI and VS Code; a playground workspace is one program for now.`;
+  `Cannot import "${path}": this program has no project folder to read files from. Imports work in a saved playground workspace, the CLI and VS Code.`;
 const IMPORTS_FIRST =
   "import must come before the file's other statements, @font and define included. Only comments and the module; line may come before it.";
 // docs/modules.md "Exporting" and the Errors table (step 5e: modules are libraries).

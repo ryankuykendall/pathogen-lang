@@ -992,6 +992,8 @@ A card's image opens the approved version (`GET /admin/approval/:id`). A workspa
 
 A card once approved (a re-review rejected, or a flagged workspace) keeps opening the approved version, which is what's public. Whichever is chosen, a mockup comes before it's built.
 
+**Your answer (2026-11-17): deferred.** Likely 2 eventually, once snapshots become the foundation for publishing (a rejection would then point at the snapshot it rejected). Until then nothing changes: a never-approved card's modal still says "No approval record".
+
 ## Step 6, the public page: the plan (2026-11-16)
 
 To mockup v12 P1 to P5 and note 59 answer 3a (the page holds the main's text; the others load when View source opens).
@@ -1029,6 +1031,18 @@ As planned above, and:
   - `tests/pages-detail-source.test.ts` (2): the served page (every name, the count, the main's text and no other) and one file as before; `source.json` carries every text;
   - `tests/api/approval-source-pages.test.ts` (+2): the main is the first program held; `servedSource`;
   - on the dev stack, `verify/verify-2e-step6.ts` (9): P1 to P5, a phone's width, the line numbers, the theme followed with the page's own toggle (`2e-step6-*.png`).
+
+## Step 7, done (2026-11-17)
+
+The docs (note 63, review record `reviews/phase-2e-step7-docs-review.md`) and the CHANGELOG entry (note 64, without its "For you to decide" list), approved and committed together.
+
+**Your answers:**
+1. Docs and CHANGELOG: approved.
+2. Edits made while a submission is pending: kept as documented (reviewed at the next save after approval). To revisit once snapshots become the foundation for publishing.
+3. A rename changes the URL at the next approval: kept as documented.
+4. What a never-approved Rejected or Flagged card opens: deferred to the snapshots work (above, under step 5f).
+
+**Still open, from note 64's list, for step 8:** whether a visitor opening someone else's public workspace should go to its public page; a script for removing the re-review entries of private workspaces; the preview pane at 0 px with the tree, console and inspector open in 1024 and 1280 px windows.
 
 ## What the audits found (2026-11-14)
 

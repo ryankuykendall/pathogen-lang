@@ -1,8 +1,8 @@
 # Snapshots
 
-A **snapshot** saves the picture in your preview together with the exact code that drew it. Press **Snapshot**, name it, and save. Think of it as a photo of a moment in your work, with the recipe written on the back. Tweak a value, press Refresh to roll new random values, and when a variation is worth keeping, take a snapshot and carry on. Later you can browse every snapshot of a workspace, export any of them as SVG, PNG or PDF, or start a new workspace from one.
+A **snapshot** saves the picture in your preview together with the exact code that drew it: every file of the workspace, as it was drawn. Press **Snapshot**, name it, and save. Think of it as a photo of a moment in your work, with the recipe written on the back. Tweak a value, press Refresh to roll new random values, and when a variation is worth keeping, take a snapshot and carry on. Later you can browse every snapshot of a workspace, export any of them as SVG, PNG or PDF, or start a new workspace from one.
 
-Snapshots are a Pathogen Studio feature (they aren't available in the CLI or VS Code) and are stored in your account, so you need to be signed in to take them. They're private: only you can see them, and they have nothing to do with [publishing](#publishing-publishing-workspaces) a workspace to Explore. (The publishing page also says "snapshot", meaning the approved version of a workspace that Explore shows. That's a separate thing, and taking snapshots never changes what's published.) Snapshots are deleted along with their workspace, and each account can keep up to 500 (see [Limits](#snapshots-limits)).
+Snapshots are a Pathogen Studio feature (they aren't available in the CLI or VS Code) and are stored in your account, so you need to be signed in to take them. They're private: only you can see them, and they have nothing to do with [publishing](#publishing-publishing-workspaces) a workspace to Explore: taking snapshots never changes what's published. Snapshots are deleted along with their workspace, and each account can keep up to 500 (see [Limits](#snapshots-limits)).
 
 ## Before you start: random values re-roll
 
@@ -13,7 +13,7 @@ So:
 - **The snapshot itself never changes.** Viewing it or exporting it as SVG, PNG or PDF always gives you the image you captured. Nothing is recompiled.
 - **A new workspace started from a snapshot draws a fresh variation.** The code is identical, but the random parts roll again.
 
-If a program uses no randomness, starting a new workspace from its snapshot redraws the same image, as long as current Pathogen runs that code the same way it did when you took the snapshot.
+If a program uses no randomness, starting a new workspace from its snapshot redraws the same image, as long as current Pathogen runs that code the same way it did when you took the snapshot. (The new workspace opens on its main: if the snapshot drew another program, choose that program with the chip.)
 
 ## Taking a snapshot
 
@@ -31,11 +31,14 @@ In fullscreen, each snapshot you take also appears in a small tray in the bottom
 
 A snapshot always pairs the image with the code that **drew that image**, not with whatever is in the editor right now. If you've typed since the preview last finished rendering, the panel tells you so and saves the code from that last render. Your newer edits aren't included.
 
+In a workspace of several files ([Files in a Workspace](#workspace-files-files-in-a-workspace)), the snapshot keeps every file as the preview drew them, the folders and `pathogen.json`'s list, and which program the preview showed. A snapshot of a program other than the main remembers that program.
+
 ### When you can't take a snapshot yet
 
 - **While a compile is running.** The button comes back when rendering finishes, so the image and the code always match.
 - **When the code has an error.** Fix the error first. A snapshot always pairs the image with code that rendered successfully.
 - **When you're signed out.** The button still opens the panel, which asks you to sign in first.
+- **When the workspace has no program.** Add one first: there's nothing to keep.
 
 A snapshot belongs to a workspace. If you take one in an unsaved scratch buffer, the panel offers to save the buffer as a new workspace first and lets you name it.
 
@@ -49,7 +52,9 @@ Each workspace has its own snapshots page at `/workspace/<your workspace>/snapsh
 
 The breadcrumb at the top (`Workspaces / Scatter Rings / Snapshots / …`) takes you back to the editor.
 
-The page shows one snapshot at a time in a preview you can pan and zoom, using the same viewer as code examples elsewhere on the site. **Code** opens the snapshot's source beside the image. Below the preview are the snapshot's name, number, date, dimensions, file size and note. Click the note, or the ✎ pencil if it has none yet, to edit it.
+The page shows one snapshot at a time in a preview you can pan and zoom, using the same viewer as code examples elsewhere on the site. **Code** opens the snapshot's source beside the image, and the **copy icon** at the top right of the code copies it. Below the preview are the snapshot's name, number, date, dimensions, file size and note. Click the note, or the ✎ pencil if it has none yet, to edit it.
+
+With several files, the code opens on the program that drew the image, beside a list of the snapshot's files in the workspace's order; click one to read it, and the copy icon copies the file shown. On a narrow screen, the list is a menu above the code. A snapshot taken before workspaces held files shows its one program, as before.
 
 Along the bottom, a **filmstrip** shows every snapshot of the workspace, newest first and grouped by day. Click a frame, or use the **←** and **→** keys, to step through them. You can also sort oldest first or show only snapshots that have a note. Each snapshot has its own address (`…/snapshots/7`), so you can bookmark one and come straight back to it.
 
@@ -59,9 +64,8 @@ The preview shows the saved image. Nothing is recompiled, so even heavy artwork 
 
 The actions sit at the top right of the snapshots page:
 
-- **Copy code**: copies the snapshot's source to the clipboard.
-- **Start new workspace**: creates a workspace that contains the snapshot's code and opens it in the editor. It's named after the snapshot, such as `Scatter Rings — dense bottom-left`. A snapshot that kept its default name, such as `Scatter Rings #3`, gives a workspace of that name. The snapshot stays with the original workspace. Random values roll again (see [Before you start](#snapshots-before-you-start-random-values-re-roll)).
-- **Export…**: opens the [Export dialog](#exporting-exporting-your-work) on the saved image, with the same SVG, PNG and PDF formats. The legend's source listing is the snapshot's code. The workspace grid isn't part of a snapshot, so it can't be added.
+- **Start new workspace**: creates a workspace of the snapshot's files, folders and program list, and opens it in the editor on its main. If the snapshot drew a program other than the main, choose that program with the chip beside the preview's zoom controls to see it. It's named after the snapshot, such as `Scatter Rings — dense bottom-left`. A snapshot that kept its default name, such as `Scatter Rings #3`, gives a workspace of that name. The snapshot stays with the original workspace. Random values roll again (see [Before you start](#snapshots-before-you-start-random-values-re-roll)).
+- **Export…**: opens the [Export dialog](#exporting-exporting-your-work) on the saved image, with the same SVG, PNG and PDF formats. The legend's source listing is the file of the program that drew the image. The workspace grid isn't part of a snapshot, so it can't be added.
 - **⋯ → Rename**: changes the snapshot's name.
 - **⋯ → Delete snapshot**: removes it permanently.
 
@@ -75,6 +79,6 @@ Copying a workspace doesn't copy its snapshots.
 
 - **500 snapshots per account**, across all workspaces. When you reach the limit, the panel explains why the snapshot can't be saved. To make room, delete snapshots from a workspace's snapshots page. There's no single list of all your snapshots yet, so open each workspace's page in turn. The count on its **Snapshot** button shows how many it holds.
 - **50 MB per snapshot image.** Extremely dense artwork, such as thousands of dashed offset strokes, can produce larger SVGs. The panel reports the size and suggests lowering the workspace **Precision** setting or exporting that render directly instead.
-- **1 MB of code per snapshot.** Programs larger than this can't be saved as snapshots.
+- **Up to 1 MB of edits not saved yet.** Files the workspace has already saved don't count, since the snapshot refers to them; only text you haven't saved yet is sent. If that comes to more than 1 MB, the panel says so: wait for the workspace to save, then take the snapshot again.
 
 If the upload fails, for example because you've gone offline, the panel keeps your name, note and captured image. **Retry** sends it again without re-rendering, or you can download the SVG instead.
