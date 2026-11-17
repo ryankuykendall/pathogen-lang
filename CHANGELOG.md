@@ -166,7 +166,7 @@ Phase 2 of the multi-file playground. Nothing here is pushed yet. It ships as on
     - A full local dry run: 399 records, 0 errors.
     - Until it runs, the server reads a record from before phase 2 as just `main.pathogen`.
   - **`scripts/copy-approval-cards.ts`** gives each approval made before this its card image. Run with `--dry-run` first; a non-local API needs `--confirm`.
-  - **Removing the re-review entries of private workspaces** that an older server left. Until then, the review screen withdraws each one when an admin acts on it.
+  - **No cleanup for the re-review entries of private workspaces** that an older server left: the review screen withdraws each one, with a notice, when an admin acts on it.
 - **Scripts:**
   - `export-workspace-sources.ts` reads files from R2;
   - `backfill-approval-svgs.ts` compiles the main with its imports;
