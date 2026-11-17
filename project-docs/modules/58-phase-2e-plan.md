@@ -1086,6 +1086,13 @@ Before a `--write` run on production, the script was changed to space its calls 
   Whether anyone did either needs a read-only look at the records created or updated in that window. Not run yet.
 - **Live checks** (`tmp/2e-step8/check-live.ts`, no workspace data): the API answers the 5b card image route ("Workspace not found" for a made-up id) and the card copy route (401 without a token); `/docs` has the workspace files page; both screenshots load as PNGs; the 2e playground's `source-files.js` is served; `/explore` loads.
 
+**Step 8, the files migration (2026-11-17, your go-ahead).** `scripts/migrate-workspace-files-kv.ts --env prod`:
+- **The dry run:** 195 workspaces, 20 approvals, `queue:review` (1 entry), `queue:rereview` (5 entries), 2 snapshots. That's 218 to migrate and 1 already holding files: a workspace saved through the new API after it went live, since saves convert records themselves. 0 orphans, 0 errors, and every approval answers the re-review question the same before and after.
+- **The write,** with `--backup-dir tmp/kv-backups/files-prod-2026-11-17`: 218 migrated, 201 blobs written (identical texts share one, such as an unedited workspace and its approval), 0 skipped for a concurrent write, 0 errors, re-review answers unchanged.
+- **The dry run again:** 219 already, 0 to migrate, 0 errors.
+- **The public pages** (`tmp/2e-step8/check-public-pages.ts`, public data only): all 20 `/u/…` pages linked from Explore and Featured load, and each `source.json` carries `files` with the main's text.
+- **The reports** name workspace ids, so they stay in `tmp/2e-step8/` (`prod-dry-run.json`, `prod-write.json`, `prod-dry-run-after.json`).
+
 ## What the audits found (2026-11-14)
 
 ### Snapshots, copies, forks
