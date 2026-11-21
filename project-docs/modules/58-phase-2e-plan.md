@@ -1093,6 +1093,16 @@ Before a `--write` run on production, the script was changed to space its calls 
 - **The public pages** (`tmp/2e-step8/check-public-pages.ts`, public data only): all 20 `/u/…` pages linked from Explore and Featured load, and each `source.json` carries `files` with the main's text.
 - **The reports** name workspace ids, so they stay in `tmp/2e-step8/` (`prod-dry-run.json`, `prod-write.json`, `prod-dry-run-after.json`).
 
+**Step 8, the card copy (2026-11-21, your go-ahead).**
+- **You ran it from the browser, signed in as an admin,** since there was no saved production token: `tmp/2e-step8/copy-cards-console.js`, pasted into the console on pathogen.studio. It makes the same calls as `scripts/copy-approval-cards.ts`; `POST /admin/approval-cards` takes an admin's session as well as the token. It counts, asks before writing, copies, then counts again.
+- **Rehearsed on dev first,** in headless Chrome, running the snippet's own text (`tmp/2e-step8/rehearse-console-snippet.ts`, 14 checks): not signed in (a 401 that says so), Cancel (nothing written; the API still counts 18), OK (18 copied, none left), and a second run ("Nothing to copy"). Dev's 18 approvals now have cards: 5 are on dev's Explore, 1 with an image and 4 with the placeholder, having no thumbnail.
+- **On production:** 20 cards copied in one call, 0 Explore entries repaired; the count after: 0 left, 20 with a card.
+- **The public pages** (`tmp/2e-step8/check-card-images.ts`, public data only):
+  - before, all 30 card images on Explore, Featured and the profile page were live thumbnails;
+  - after, the 20 approved workspaces show their approved card on Explore, Featured (19), the profile page and each of their 20 public pages, and 67 of 67 images load;
+  - two approved workspaces that showed the placeholder now show their picture: their Explore entries had no `thumbnailAt`, though R2 held a thumbnail, and the copy reads R2;
+  - the live thumbnails and placeholders left on Explore (10 and 6) are the 16 never-reviewed entries, which have no approval and so no card.
+
 ## What the audits found (2026-11-14)
 
 ### Snapshots, copies, forks
