@@ -164,12 +164,13 @@ After the first release (phase 2 ships with 2e). Each entry comes from your answ
 
 ### Found in the phase 2 audit (playground and API)
 Existing issues outside the modules work, found while mapping phase 2 (`38-phase-2-audit.md`, "Found along the way"):
-- **"Copy URL" always opens the create form.** It reads `route.params.id`, but the workspace route's parameter is `slugId`, so every link is `/workspace/new?state=…` (`playground/utils/url-state.ts:105`, `utils/router.ts:39`). Decide what the link should open, then fix.
+- **"Copy URL" always opens the create form.** It reads `route.params.id`, but the workspace route's parameter is `slugId`, so every link is `/workspace/new?state=…` (`playground/utils/url-state.ts:105`, `utils/router.ts:39`). Decide what the link should open, then fix. **Moot since fb8a7798** (2d step 9a): Copy URL left the menu; links copied before still open. Its replacement is "Sharing a workspace" (Editor, above).
 - **Admin writes can lose a code save.** Unpublish, flag, unflag, requeue and approve rewrite the whole workspace record without re-reading it (`website/api/router.ts:1087-1088, 1417, 1485, 1514, 1563`).
 - **Deleting a workspace leaves its thumbnail PNGs in R2** (`router.ts:545-590`).
-- **`POST /workspace/:id/copy` copies `flagged`.** The SPA doesn't use it (`router.ts:593-641`).
+- **`POST /workspace/:id/copy` copies `flagged`.** The SPA doesn't use it (`router.ts:593-641`). **Fixed in 80f193f8** (storage step 3): a copy starts unflagged and unpublished (`router.ts:861-865` today).
 - **A dead read:** the client reads `workspace.thumbnailContentHash`, which the server never writes (`workspace-view.ts:530`).
-- **No server-side limit on workspace code size.**
+- **No server-side limit on workspace code size.** **Fixed in 80f193f8:** a save's files are checked against the workspace limits (now 1 MB a file and 20 files), each size taken from what's stored, never from the client (`filesFromBody`, `website/api/workspace-store.ts`).
+- The other three (admin writes, thumbnails left on delete, the dead read) weren't re-checked after phase 2 (2026-11-21); look again before fixing.
 
 ## Performance
 
@@ -181,3 +182,24 @@ Existing issues outside the modules work, found while mapping phase 2 (`38-phase
 
 ### Cache parsed modules across compiles in VS Code
 - Keyed by content hash. Only if large projects get slow (plan 12 follow-ups).
+
+## Storage
+
+After the first release. Both come from note 50 and were moved here on 2026-11-21 (note 65).
+
+### The sweep: file blobs nothing names
+- **What:** delete the blobs under `files/{ws}/` in R2 that no workspace record, approval, review-queue entry or snapshot manifest names.
+- **Today:** nothing deletes them. A save never deletes a blob, and a failed create, copy or start-from-snapshot can leave a prefix with no workspace record. They only cost storage (note 48 §3: "the sweep can wait").
+- **Designed, not built:** note 50, "Step 8, the sweep".
+  - Admin routes in the API Worker (wrangler can't list R2), driven by a script, with a dry run by default.
+  - A mark pass, then a sweep at least 24 hours later that re-reads the references and keeps any blob named or uploaded again since the mark.
+  - The design names its one remaining race: a save landing between the sweep's re-read and its delete, a window of milliseconds that the next save of that text repairs.
+- **From:** your answer, 2026-11-08: "Let's wait until after 2e ships." 2e shipped on 2026-11-17.
+
+### Removing the reader for records from before phase 2
+- **What:** drop the path for a record that holds one `code` string and no files (`legacyText` in `website/api/workspace-store.ts`). Note 50's shipping list: "removing the old-shape reader once nothing old remains".
+- **Today:** production's second dry run after the migration found all 219 records in the new shape (2026-11-17, note 58). The reader is still on every load, copy and save path.
+- **Before removing it:**
+  - check that no write path still makes a record with only `code`;
+  - migrate dev's KV too: its dry run on 2026-11-17 counted 397 records to migrate.
+- **From:** note 50, "At shipping", step 6.
