@@ -1,0 +1,12 @@
+// A sketch, not listed in pathogen.json: one fine gear.
+import { gear, Teeth } from "./parts/gears.pathogen";
+
+define ViewBox(0, 0, 120, 120);
+
+define default PathLayer('gears') #{
+  stroke: #7c3aed;
+  stroke-width: 1.5;
+  fill: none;
+}
+
+gear(Point(60, 60), 50, Teeth.Fine);

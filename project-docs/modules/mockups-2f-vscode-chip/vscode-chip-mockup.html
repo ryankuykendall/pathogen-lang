@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mockup 2f v1: the program chip in VS Code's preview</title>
+<!--
+  2f, mockup v1 (2026-11-21; project-docs/modules/66-phase-2f-plan.md, your answer 3b).
+  The playground's program chip (playground/components/program-chip.ts + .css) in VS Code's
+  preview (packages/vscode-pathogen/src/webview-html.ts), in a VS Code window drawn by hand.
+  Drawings: renders/ (the CLI's output for gears-project/'s programs). Screenshots: shoot.mjs.
+-->
+<style>
+  /* ---------- VS Code's default themes, as the webview's --vscode-* variables ---------- */
+  :root[data-theme='dark'] {
+    --vscode-editor-background: #1f1f1f;
+    --vscode-editor-foreground: #cccccc;
+    --vscode-foreground: #cccccc;
+    --vscode-descriptionForeground: #9d9d9d;
+    --vscode-titleBar-activeBackground: #181818;
+    --vscode-sideBar-background: #181818;
+    --vscode-activityBar-background: #181818;
+    --vscode-statusBar-background: #181818;
+    --vscode-tab-inactiveBackground: #181818;
+    --vscode-tab-activeBackground: #1f1f1f;
+    --vscode-tab-inactiveForeground: #9d9d9d;
+    --vscode-panel-border: #2b2b2b;
+    --vscode-focusBorder: #0078d4;
+    --vscode-button-background: #0078d4;
+    --vscode-button-foreground: #ffffff;
+    --vscode-button-border: #3c3c3c;
+    --vscode-button-hoverBackground: #2a2d2e;
+    --vscode-editorWidget-background: #202020;
+    --vscode-widget-shadow: rgba(0, 0, 0, 0.36);
+    --vscode-list-hoverBackground: #2a2d2e;
+    --vscode-list-activeSelectionBackground: #37373d;
+    --vscode-errorForeground: #f85149;
+    --vscode-editorLineNumber-foreground: #6e7681;
+    --vscode-editor-lineHighlightBackground: #282828;
+    --vscode-inputValidation-warningBackground: #352a05;
+    --vscode-inputValidation-warningBorder: #b89500;
+    --syn-comment: #6a9955; --syn-keyword: #c586c0; --syn-storage: #569cd6; --syn-string: #ce9178;
+    --syn-number: #b5cea8; --syn-fn: #dcdcaa; --syn-color: #ce9178;
+    --page: #0f0f10; --page-text: #d4d4d4; --page-muted: #8b8b8b; --page-card: #19191b; --page-line: #2c2c30;
+  }
+  :root[data-theme='light'] {
+    --vscode-editor-background: #ffffff;
+    --vscode-editor-foreground: #3b3b3b;
+    --vscode-foreground: #3b3b3b;
+    --vscode-descriptionForeground: #616161;
+    --vscode-titleBar-activeBackground: #f8f8f8;
+    --vscode-sideBar-background: #f8f8f8;
+    --vscode-activityBar-background: #f8f8f8;
+    --vscode-statusBar-background: #f8f8f8;
+    --vscode-tab-inactiveBackground: #f8f8f8;
+    --vscode-tab-activeBackground: #ffffff;
+    --vscode-tab-inactiveForeground: #868686;
+    --vscode-panel-border: #e5e5e5;
+    --vscode-focusBorder: #005fb8;
+    --vscode-button-background: #005fb8;
+    --vscode-button-foreground: #ffffff;
+    --vscode-button-border: #d4d4d4;
+    --vscode-button-hoverBackground: #eeeeee;
+    --vscode-editorWidget-background: #f8f8f8;
+    --vscode-widget-shadow: rgba(0, 0, 0, 0.16);
+    --vscode-list-hoverBackground: #f2f2f2;
+    --vscode-list-activeSelectionBackground: #e4e6f1;
+    --vscode-errorForeground: #d1242f;
+    --vscode-editorLineNumber-foreground: #6e7681;
+    --vscode-editor-lineHighlightBackground: #f5f5f5;
+    --vscode-inputValidation-warningBackground: #fff4ce;
+    --vscode-inputValidation-warningBorder: #bf8803;
+    --syn-comment: #008000; --syn-keyword: #af00db; --syn-storage: #0000ff; --syn-string: #a31515;
+    --syn-number: #098658; --syn-fn: #795e26; --syn-color: #a31515;
+    --page: #eceef2; --page-text: #1f2328; --page-muted: #59636e; --page-card: #ffffff; --page-line: #d0d7de;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--page);
+    color: var(--page-text);
+    font: 13px/1.45 -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    padding: 20px;
+  }
+
+  /* ---------- The harness ---------- */
+  .harness { width: 1280px; margin: 0 auto 14px; display: grid; gap: 10px; }
+  .harness h1 { font-size: 17px; font-weight: 650; }
+  .harness h1 span { color: var(--page-muted); font-weight: 500; }
+  .row { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+  .row .label { color: var(--page-muted); margin-right: 4px; font-size: 12px; }
+  .harness button {
+    font: inherit; font-size: 12px; padding: 4px 10px; border-radius: 999px; cursor: pointer;
+    border: 1px solid var(--page-line); background: var(--page-card); color: var(--page-text);
+  }
+  .harness button[aria-pressed='true'] { border-color: #0078d4; box-shadow: inset 0 0 0 1px #0078d4; font-weight: 600; }
+  .caption {
+    background: var(--page-card); border: 1px solid var(--page-line); border-radius: 10px;
+    padding: 10px 14px; min-height: 58px;
+  }
+  .caption b { font-weight: 650; }
+  .caption .variant { color: var(--page-muted); display: block; margin-top: 4px; font-size: 12px; }
+
+  /* ---------- The VS Code window ---------- */
+  .vsc {
+    width: 1280px; height: 760px; margin: 0 auto; overflow: hidden;
+    display: grid; grid-template-rows: 30px minmax(0, 1fr) 22px;
+    border: 1px solid var(--vscode-panel-border); border-radius: 10px;
+    background: var(--vscode-editor-background); color: var(--vscode-foreground);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; font-size: 13px;
+    box-shadow: 0 18px 50px rgba(0, 0, 0, 0.25);
+  }
+  .titlebar {
+    background: var(--vscode-titleBar-activeBackground); border-bottom: 1px solid var(--vscode-panel-border);
+    display: grid; place-items: center; font-size: 12px; color: var(--vscode-descriptionForeground); position: relative;
+  }
+  .titlebar .lights { position: absolute; left: 12px; top: 9px; display: flex; gap: 8px; }
+  .titlebar .lights i { width: 12px; height: 12px; border-radius: 50%; background: #ff5f57; }
+  .titlebar .lights i:nth-child(2) { background: #febc2e; }
+  .titlebar .lights i:nth-child(3) { background: #28c840; }
+  .body { display: grid; grid-template-columns: 48px 228px minmax(0, 1fr); min-height: 0; }
+  .activity { background: var(--vscode-activityBar-background); border-right: 1px solid var(--vscode-panel-border);
+    display: grid; align-content: start; justify-items: center; gap: 18px; padding-top: 12px; }
+  .activity i { width: 22px; height: 22px; border-radius: 4px; border: 2px solid var(--vscode-descriptionForeground); opacity: 0.55; }
+  .activity i:first-child { opacity: 1; border-color: var(--vscode-foreground); }
+  .sidebar { background: var(--vscode-sideBar-background); border-right: 1px solid var(--vscode-panel-border); font-size: 13px; }
+  .sidebar .hd { padding: 10px 20px 8px; font-size: 11px; letter-spacing: 0.04em; color: var(--vscode-descriptionForeground); }
+  .sidebar .sec { padding: 3px 8px; font-size: 11px; font-weight: 700; letter-spacing: 0.03em; }
+  .tree div { padding: 2px 8px; display: flex; gap: 6px; align-items: center; white-space: nowrap; }
+  .tree div.on { background: var(--vscode-list-activeSelectionBackground); }
+  .tree .folder::before { content: '⌄'; width: 10px; color: var(--vscode-descriptionForeground); }
+  .tree .ic { width: 12px; height: 12px; border-radius: 3px; background: #c586c0; opacity: 0.85; flex: none; }
+  .tree .ic.json { background: #cbcb41; }
+  .groups { display: grid; grid-template-columns: 44% 56%; min-width: 0; min-height: 0; }
+  .group { display: grid; grid-template-rows: 35px minmax(0, 1fr); min-width: 0; min-height: 0; border-left: 1px solid var(--vscode-panel-border); }
+  .group:first-child { border-left: 0; }
+  .tabs { display: flex; background: var(--vscode-tab-inactiveBackground); border-bottom: 1px solid var(--vscode-panel-border); min-width: 0; }
+  .tab { display: flex; align-items: center; gap: 6px; padding: 0 10px 0 12px; font-size: 13px; white-space: nowrap;
+    color: var(--vscode-tab-inactiveForeground); border-right: 1px solid var(--vscode-panel-border); }
+  .tab.on { background: var(--vscode-tab-activeBackground); color: var(--vscode-foreground); box-shadow: inset 0 1px 0 var(--vscode-focusBorder); }
+  .tab .ic { width: 12px; height: 12px; border-radius: 3px; background: #c586c0; opacity: 0.85; }
+  .tab .x { opacity: 0.6; font-size: 12px; margin-left: 2px; }
+  .tab .pv { width: 14px; height: 14px; color: var(--vscode-focusBorder); }
+  .tab .dir { color: var(--vscode-descriptionForeground); font-size: 12px; }
+  .tabs .spacer { flex: 1; }
+  .tabs .actions { display: flex; align-items: center; gap: 4px; padding: 0 8px; }
+  .tabs .act { width: 24px; height: 24px; display: grid; place-items: center; border-radius: 5px; color: var(--vscode-foreground); opacity: 0.85; }
+  .tabs .act svg { width: 16px; height: 16px; }
+  .tabs .act.pressed { background: var(--vscode-list-hoverBackground); outline: 1px solid var(--vscode-focusBorder); opacity: 1; }
+  .tabs .act .cursor { position: absolute; }
+
+  /* The code editor */
+  .editor { display: grid; grid-template-rows: 22px minmax(0, 1fr); min-height: 0; background: var(--vscode-editor-background); }
+  .crumbs { padding: 3px 16px; font-size: 12px; color: var(--vscode-descriptionForeground); }
+  .code { font: 13px/19px Menlo, Monaco, 'SF Mono', Consolas, monospace; overflow: hidden; padding-top: 4px; }
+  .ln { display: grid; grid-template-columns: 48px minmax(0, 1fr); white-space: pre; }
+  .ln .n { text-align: right; padding-right: 18px; color: var(--vscode-editorLineNumber-foreground); }
+  .ln.cur { background: var(--vscode-editor-lineHighlightBackground); }
+  .ln.cur .n { color: var(--vscode-foreground); }
+  .t-c { color: var(--syn-comment); } .t-k { color: var(--syn-keyword); } .t-s { color: var(--syn-storage); }
+  .t-str { color: var(--syn-string); } .t-num { color: var(--syn-number); } .t-fn { color: var(--syn-fn); }
+  .caret-bar { display: inline-block; width: 2px; height: 16px; background: var(--vscode-foreground); vertical-align: -3px; margin-left: 1px; }
+
+  .statusbar { background: var(--vscode-statusBar-background); border-top: 1px solid var(--vscode-panel-border);
+    display: flex; gap: 16px; align-items: center; padding: 0 10px; font-size: 12px; color: var(--vscode-descriptionForeground); }
+  .statusbar .sp { flex: 1; }
+
+  /* ---------- The preview webview (webview-html.ts, as it is) ---------- */
+  .webview { display: flex; flex-direction: column; min-height: 0; background: var(--vscode-editor-background); color: var(--vscode-editor-foreground);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; }
+  .toolbar { display: flex; align-items: center; gap: 8px; padding: 4px 8px; background: var(--vscode-titleBar-activeBackground);
+    border-bottom: 1px solid var(--vscode-panel-border); font-size: 11px; flex-shrink: 0; position: relative; z-index: 45; }
+  .toolbar .status { flex: 1; opacity: 0.7; }
+  .toolbar .info { opacity: 0.5; }
+  .toolbar button { background: transparent; border: 1px solid var(--vscode-button-border); color: var(--vscode-foreground);
+    padding: 2px 8px; border-radius: 3px; font-size: 11px; font-family: inherit; }
+  .notices { padding: 4px 8px; font-size: 11px; line-height: 1.5; background: var(--vscode-inputValidation-warningBackground);
+    border-bottom: 1px solid var(--vscode-inputValidation-warningBorder); color: var(--vscode-foreground); }
+  .wmain { flex: 1; display: flex; min-height: 0; }
+  .canvas { flex: 1; position: relative; overflow: hidden; background: #fff; }
+  .canvas > img.drawing { position: absolute; inset: 40px 40px 70px; width: calc(100% - 80px); height: calc(100% - 110px); object-fit: contain; }
+  .navigator { position: absolute; top: 8px; left: 8px; width: 100px; height: 100px; background: #fff; border: 1px solid var(--vscode-panel-border);
+    border-radius: 4px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3); z-index: 10; }
+  .navigator img { position: absolute; inset: 8px; width: calc(100% - 16px); height: calc(100% - 16px); object-fit: contain; }
+  .navigator i { position: absolute; inset: 6px; border: 1px solid var(--vscode-focusBorder); background: rgba(14, 99, 156, 0.08); }
+  .werror { position: absolute; top: 16px; left: 16px; right: 16px; z-index: 30; color: var(--vscode-errorForeground);
+    font-size: 12px; white-space: pre-wrap; word-break: break-word; max-width: 500px; }
+  .werror .title { font-weight: 600; margin-bottom: 6px; }
+
+  /* The zoom pill (src/ui/zoom-pill.ts), drawn by hand: - Fit + 100% */
+  .zp { display: inline-flex; align-items: center; gap: 2px; height: 34px; padding: 3px; border-radius: 999px;
+    background: var(--vscode-editorWidget-background); border: 1px solid var(--vscode-panel-border);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.14); color: var(--vscode-foreground); flex: none; }
+  .zp span { height: 26px; min-width: 26px; padding: 0 8px; border-radius: 999px; display: grid; place-items: center; font-size: 11px; font-weight: 600; }
+  .zp span.big { font-size: 17px; font-weight: 400; }
+  .zp span.pct { font: 500 11px Menlo, monospace; border: 1px solid var(--vscode-panel-border); border-radius: 0; height: 20px; padding: 0 6px; }
+
+  .bottom-group { position: absolute; left: 0; right: 0; bottom: 12px; z-index: 40; display: flex; justify-content: center; align-items: center; gap: 8px; padding: 0 8px; }
+
+  /* ---------- The chip and its list (program-chip.css, with VS Code's colors) ---------- */
+  .chip { position: relative; display: inline-block; max-width: 100%; min-width: 0; }
+  .pick { position: relative; display: inline-flex; align-items: center; gap: 6px; height: 30px; max-width: 240px;
+    padding: 0 9px 0 13px; border-radius: 999px; border: 1px solid var(--vscode-panel-border);
+    background: var(--vscode-editorWidget-background); box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
+    font: 600 12px Menlo, Monaco, 'SF Mono', Consolas, monospace; color: var(--vscode-foreground); white-space: nowrap; }
+  .pick .name { overflow: hidden; text-overflow: ellipsis; }
+  .pick[aria-expanded='true'] { border-color: var(--vscode-focusBorder); box-shadow: 0 0 0 3px color-mix(in srgb, var(--vscode-focusBorder) 22%, transparent); }
+  .pick .caret { display: grid; place-items: center; color: var(--vscode-descriptionForeground); }
+  .pick .caret svg { width: 12px; height: 12px; }
+  .pick .err { position: absolute; top: -3px; right: -3px; width: 10px; height: 10px; border-radius: 50%;
+    background: var(--vscode-errorForeground); box-shadow: 0 0 0 2px var(--vscode-editorWidget-background); }
+  .list { position: absolute; bottom: 38px; right: 0; z-index: 50; width: 292px; display: grid; padding: 6px;
+    border: 1px solid var(--vscode-panel-border); border-radius: 12px; background: var(--vscode-editorWidget-background);
+    box-shadow: 0 12px 32px var(--vscode-widget-shadow); text-align: left; }
+  .list .head { display: flex; gap: 6px; padding: 4px 8px 6px; font-size: 10.5px; font-weight: 600; letter-spacing: 0.06em;
+    text-transform: uppercase; color: var(--vscode-descriptionForeground); }
+  .list .head .cnt { font: 500 10.5px Menlo, monospace; letter-spacing: 0; }
+  .rows { display: grid; gap: 2px; }
+  .prow { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; border-radius: 8px; }
+  .prow.hov { background: var(--vscode-list-hoverBackground); }
+  .prow.on { background: color-mix(in srgb, var(--vscode-focusBorder) 18%, transparent); }
+  .show { display: grid; grid-template-columns: 64px minmax(0, 1fr); gap: 10px; align-items: center; min-width: 0; padding: 5px 6px; }
+  .names .show { grid-template-columns: minmax(0, 1fr); padding: 6px 8px; }
+  .names .tile { display: none; }
+  .tile { position: relative; width: 64px; height: 40px; padding: 3px; border: 1px solid var(--vscode-panel-border); border-radius: 6px; background: #fff; }
+  .prow.on .tile { border-color: var(--vscode-focusBorder); }
+  .tile img { display: block; width: 100%; height: 100%; object-fit: contain; }
+  .prow.err .tile img { opacity: 0.45; filter: grayscale(0.6); }
+  .mbad { position: absolute; top: 3px; right: 3px; width: 14px; height: 14px; border-radius: 50%; display: grid; place-items: center;
+    background: var(--vscode-errorForeground); color: #fff; font: 700 10px system-ui, sans-serif; box-shadow: 0 0 0 2px var(--vscode-editorWidget-background); }
+  .t { display: block; min-width: 0; }
+  .n { display: flex; align-items: center; gap: 5px; overflow: hidden; font: 600 12.5px Menlo, Monaco, monospace; color: var(--vscode-foreground); white-space: nowrap; }
+  .p { display: block; margin-top: 2px; overflow: hidden; font: 11px Menlo, Monaco, monospace; color: var(--vscode-descriptionForeground); white-space: nowrap; text-overflow: ellipsis; }
+  .p .note { font-family: -apple-system, system-ui, sans-serif; }
+  .e { display: block; margin-top: 2px; font-size: 11px; line-height: 1.3; color: var(--vscode-errorForeground); }
+  .badge { flex: none; padding: 1px 7px; border-radius: 999px; font: 600 10px system-ui, sans-serif; line-height: 15px;
+    background: color-mix(in srgb, var(--vscode-focusBorder) 18%, transparent); color: var(--vscode-focusBorder); }
+  .udot { flex: none; width: 6px; height: 6px; border-radius: 50%; background: var(--vscode-focusBorder); }
+  .r { display: flex; align-items: center; gap: 6px; padding-right: 6px; }
+  .chk { display: grid; place-items: center; color: var(--vscode-focusBorder); }
+  .chk svg { width: 16px; height: 16px; }
+  .open { width: 26px; height: 26px; display: grid; place-items: center; border: 1px solid var(--vscode-panel-border); border-radius: 6px;
+    background: var(--vscode-editorWidget-background); color: var(--vscode-foreground); visibility: hidden; }
+  .open svg { width: 14px; height: 14px; }
+  .prow.hov .open { visibility: visible; }
+  .tip { position: absolute; z-index: 60; padding: 3px 8px; font-size: 11px; border-radius: 4px; white-space: nowrap;
+    background: var(--vscode-editorWidget-background); border: 1px solid var(--vscode-panel-border); box-shadow: 0 2px 8px var(--vscode-widget-shadow); }
+
+  /* Variant: the chip at the toolbar's start, its list opening down. */
+  .toolbar .chip .pick { height: 20px; padding: 0 7px 0 9px; font-size: 11px; gap: 4px; box-shadow: none; }
+  .toolbar .chip .list { bottom: auto; top: 26px; right: auto; left: 0; }
+  .toolbar .chip .caret svg { transform: rotate(180deg); }
+</style>
+</head>
+<body>
+<div class="harness">
+  <h1>2f: the program chip in VS Code's preview <span>· mockup v1 · gears-project</span></h1>
+  <div class="row" id="states"><span class="label">State</span></div>
+  <div class="row">
+    <span class="label">Theme</span>
+    <button data-theme-set="dark">Dark Modern</button><button data-theme-set="light">Light Modern</button>
+    <span class="label" style="margin-left:14px">Chip</span>
+    <button data-place="zoom">Beside the zoom controls (as in the playground)</button><button data-place="toolbar">In the toolbar</button>
+    <span class="label" style="margin-left:14px">List</span>
+    <button data-rows="mini">Miniatures (as in the playground)</button><button data-rows="names">Names only</button>
+  </div>
+  <div class="caption" id="caption"></div>
+</div>
+<div class="vsc" id="vsc"></div>
+
+<script>
+const ICON = {
+  chevronUp: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10l4-4 4 4"/></svg>',
+  check: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 8.5l3 3 6-7"/></svg>',
+  code: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4.5L2.5 8 6 11.5M10 4.5L13.5 8 10 11.5"/></svg>',
+  preview: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.2"><rect x="1.5" y="2.5" width="13" height="11" rx="1.5"/><path d="M8 2.5v11"/><circle cx="11.2" cy="7" r="1.8"/><path d="M12.5 8.3l1.3 1.3"/></svg>',
+  split: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.2"><rect x="1.5" y="2.5" width="13" height="11" rx="1.5"/><path d="M8 2.5v11"/></svg>',
+  more: '<svg viewBox="0 0 16 16" fill="currentColor"><circle cx="3.5" cy="8" r="1.2"/><circle cx="8" cy="8" r="1.2"/><circle cx="12.5" cy="8" r="1.2"/></svg>',
+};
+
+// gears-project/, as the files are on disk (state 3 shows gears.pathogen mid-edit).
+const FILES = {
+  'main.pathogen': `// Two gears that mesh.
+import { gear, Teeth } from "./parts/gears.pathogen";
+
+define ViewBox(0, 0, 200, 120);
+
+define default PathLayer('gears') #{
+  stroke: #2563eb;
+  stroke-width: 2;
+  fill: none;
+}
+
+gear(Point(70, 60), 40, Teeth.Standard);
+gear(Point(141, 60), 30, Teeth.Few);`,
+  'parts/gears.pathogen': `// A gear: a star outline with a round hub.
+module;
+
+export const toothDepth = 6;
+
+export enum Teeth { Few = 8, Standard = 12, Fine = 20 }
+
+export fn gear(center, radius, teeth) {
+  star(center.x, center.y, radius, radius - toothDepth, teeth);
+  hub(center, radius);
+}
+
+// Not exported: only this file can use it.
+fn hub(center, radius) {
+  circle(center.x, center.y, radius * 0.3);
+}`,
+  'demos/train.pathogen': `// A gear train: five gears in a row, alternating sizes.
+import { gear, Teeth } from "../parts/gears.pathogen";
+
+define ViewBox(0, 0, 320, 100);
+
+define default PathLayer('gears') #{
+  stroke: #c2410c;
+  stroke-width: 2;
+  fill: none;
+}
+
+for (i in 0..4) {
+  let radius = i % 2 == 0 ? 30 : 22;
+  gear(Point(40 + i * 60, 50), radius, i % 2 == 0 ? Teeth.Standard : Teeth.Few);
+}`,
+  'try-sizes.pathogen': `// Three sizes side by side.
+import { gear, Teeth } from "./parts/gears.pathogen";
+
+define ViewBox(0, 0, 300, 100);
+
+define default PathLayer('gears') #{
+  stroke: #059669;
+  stroke-width: 2;
+  fill: none;
+}
+
+for (i in 0..2) {
+  gear(Point(50 + i * 100, 50), 20 + i * 10, Teeth.Standard);
+}`,
+  'sketch.pathogen': `// A sketch, not listed in pathogen.json: one fine gear.
+import { gear, Teeth } from "./parts/gears.pathogen";
+
+define ViewBox(0, 0, 120, 120);
+
+define default PathLayer('gears') #{
+  stroke: #7c3aed;
+  stroke-width: 1.5;
+  fill: none;
+}
+
+gear(Point(60, 60), 50, Teeth.Fine);`,
+};
+const EDITED_GEARS = FILES['parts/gears.pathogen'].replace('toothDepth = 6', 'toothDepth = 10');
+const BROKEN_TRY = FILES['try-sizes.pathogen'].replace('20 + i * 10, Teeth.Standard', '20 + i * 10');
+
+const DRAWING = {
+  'main.pathogen': 'renders/main.svg',
+  'demos/train.pathogen': 'renders/train.svg',
+  'try-sizes.pathogen': 'renders/try-sizes.svg',
+  'sketch.pathogen': 'renders/sketch.svg',
+};
+const LISTED = ['main.pathogen', 'demos/train.pathogen', 'try-sizes.pathogen'];
+const nameOf = (path) => path.split('/').pop().replace(/\.pathogen$/, '');
+const fileOf = (path) => path.split('/').pop();
+
+// What each state shows. editing: the active tab; shown: the program the preview shows (null: none).
+const STATES = [
+  {
+    id: 'today', label: 'Today: editing a module',
+    caption: '<b>Today, for comparison.</b> You switch to <code>parts/gears.pathogen</code>, a module, and the preview follows you: it’s empty, with “This file is a module…”. The panel is titled <i>Pathogen Preview</i> whatever it shows, and there’s no chip.',
+    editing: 'parts/gears.pathogen', shown: null, today: true,
+    notice: 'This file is a module: a module doesn’t draw, so its preview is empty. To see its fns draw, open a program that imports it.',
+  },
+  {
+    id: 'opened', label: '1 · Opened on the main',
+    caption: '<b>The preview button on <code>main.pathogen</code>’s tab</b> opens the preview on it. The chip, beside the zoom controls as in the playground, names the program shown, and so does the panel’s title. The chip shows when the project has more than one program.',
+    editing: 'main.pathogen', shown: 'main.pathogen',
+  },
+  {
+    id: 'list', label: '2 · The program list',
+    caption: '<b>Click the chip: the program list, as in the playground.</b> The main first, then <code>pathogen.json</code>’s <code>entryPoints</code> in order. Each row has its miniature, name and path; a check marks the program shown. Hovering a row shows <i>Open in the editor</i>, which opens its tab without changing the preview.',
+    editing: 'main.pathogen', shown: 'main.pathogen', listOpen: true, hover: 'demos/train.pathogen',
+  },
+  {
+    id: 'module', label: '3 · Editing a module',
+    caption: '<b>You switch to <code>parts/gears.pathogen</code> and change <code>toothDepth</code> to 10.</b> The preview stays on <code>main</code> and redraws with your edit, deeper teeth and all. With the list open, a dot marks each program that uses the file you’re editing, as in the playground.',
+    editing: 'parts/gears.pathogen', shown: 'main.pathogen', listOpen: true, edited: true,
+  },
+  {
+    id: 'demo', label: '4 · A demo’s preview button',
+    caption: '<b>The preview button on <code>demos/train.pathogen</code>’s tab</b> (your answer 2a) shows that program and makes it the choice. From here, switching tabs leaves the preview on <code>train</code> until you choose another program.',
+    editing: 'demos/train.pathogen', shown: 'demos/train.pathogen', pressed: true,
+  },
+  {
+    id: 'unlisted', label: '5 · A program not in pathogen.json',
+    caption: '<b><code>sketch.pathogen</code> isn’t in <code>pathogen.json</code>.</b> Switching to it leaves the preview on the program shown. The list adds the file you’re editing at the end, marked “not in pathogen.json”, so you can still choose it; its tab’s preview button does the same.',
+    editing: 'sketch.pathogen', shown: 'main.pathogen', listOpen: true, extra: 'sketch.pathogen',
+  },
+  {
+    id: 'error', label: '6 · Another program has an error',
+    caption: '<b><code>try-sizes.pathogen</code> has an error</b> (a <code>gear</code> call without its teeth). The chip’s red dot says another program has one, and its row says where, in the playground’s words. The program shown draws as usual.',
+    editing: 'main.pathogen', shown: 'main.pathogen', listOpen: true, errors: { 'try-sizes.pathogen': 'Error in try-sizes.pathogen line 13' },
+  },
+  {
+    id: 'broken', label: '7 · The main is missing',
+    caption: '<b><code>pathogen.json</code> lists <code>poster.pathogen</code> first, and it doesn’t exist.</b> Opened from a module’s tab, the preview shows the main, so it shows the CLI’s own message for a folder compile. The chip still offers the other programs. <i>The row’s “Not found” is new wording.</i>',
+    editing: 'parts/gears.pathogen', shown: 'poster.pathogen', listOpen: true, broken: true,
+  },
+  {
+    id: 'lone', label: '8 · No pathogen.json: unchanged',
+    caption: '<b>Unchanged: a folder with no <code>pathogen.json</code>, or a single file</b> (your answer 1a). The preview follows the file you’re editing, with no chip, as today. Only the panel’s title is new.',
+    editing: 'sketch.pathogen', shown: 'sketch.pathogen', lone: true,
+  },
+];
+
+const ui = { state: 'opened', theme: 'dark', place: 'zoom', rows: 'mini' };
+try {
+  const saved = JSON.parse(localStorage.getItem('mockup-2f') || '{}');
+  Object.assign(ui, saved);
+} catch { /* first visit */ }
+
+function highlight(src) {
+  const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const re = /(\/\/.*$)|("(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*')|\b(import|from|export|module|define|default|for|in|return|if|else)\b|\b(const|let|fn|enum)\b|(#[0-9a-fA-F]{6}\b|\b\d+(?:\.\d+)?\b)|\b([A-Za-z_]\w*)(?=\()/gm;
+  let out = '';
+  let last = 0;
+  for (const m of src.matchAll(re)) {
+    out += esc(src.slice(last, m.index));
+    const [text, c, s, k, st, num, fn] = m;
+    const cls = c ? 't-c' : s ? 't-str' : k ? 't-k' : st ? 't-s' : num ? 't-num' : fn ? 't-fn' : '';
+    out += `<span class="${cls}">${esc(text)}</span>`;
+    last = m.index + text.length;
+  }
+  return out + esc(src.slice(last));
+}
+
+function codeHtml(src, curLine) {
+  return src.split('\n').map((line, i) =>
+    `<div class="ln${i + 1 === curLine ? ' cur' : ''}"><span class="n">${i + 1}</span><span>${highlight(line)}${i + 1 === curLine ? '<span class="caret-bar"></span>' : ''}</span></div>`,
+  ).join('');
+}
+
+function programsFor(st) {
+  if (st.broken) return ['poster.pathogen', ...LISTED];
+  const list = [...LISTED];
+  if (st.extra && !list.includes(st.extra)) list.push(st.extra);
+  return list;
+}
+
+function rowHtml(st, path) {
+  const on = path === st.shown;
+  const error = st.broken && path === 'poster.pathogen' ? 'Not found' : (st.errors?.[path] ?? null);
+  const uses = st.editing !== st.shown && (path === st.editing ? 'self' : (st.editing === 'parts/gears.pathogen' && path !== 'poster.pathogen') ? 'import' : null);
+  const dotTitle = uses === 'self' ? 'The file you’re editing' : `Uses ${st.editing}, the file you’re editing`;
+  const badge = st.broken && path === 'poster.pathogen' ? '<span class="badge" title="The main">main</span>' : '';
+  const img = DRAWING[path] && !(st.broken && path === 'poster.pathogen')
+    ? `<img src="${path === 'main.pathogen' && st.edited ? 'renders/main-edited.svg' : DRAWING[path]}" alt="">` : '';
+  const sub = error !== null
+    ? `<span class="e">${error}</span>`
+    : `<span class="p">${path}${st.extra === path ? ' <span class="note">· not in pathogen.json</span>' : ''}</span>`;
+  const classes = ['prow', on ? 'on' : '', error !== null ? 'err' : '', st.hover === path ? 'hov' : ''].filter(Boolean).join(' ');
+  return `<div class="${classes}">
+    <div class="show"><span class="tile">${img}${error !== null && img ? '<span class="mbad">!</span>' : ''}</span>
+      <span class="t"><span class="n">${uses ? `<span class="udot" title="${dotTitle}"></span>` : ''}<span class="nm">${nameOf(path)}</span>${badge}</span>${sub}</span></div>
+    <span class="r"><span class="open" title="Open ${path} in the editor">${ICON.code}</span>${on ? `<span class="chk" title="Shown">${ICON.check}</span>` : ''}</span>
+  </div>`;
+}
+
+function chipHtml(st) {
+  const programs = programsFor(st);
+  const alert = Object.keys(st.errors ?? {}).some((p) => p !== st.shown);
+  const list = st.listOpen
+    ? `<div class="list ${ui.rows === 'names' ? 'names' : ''}"><div class="head"><span>Programs</span><span class="cnt">${programs.length}</span></div>
+        <div class="rows">${programs.map((p) => rowHtml(st, p)).join('')}</div></div>`
+    : '';
+  return `<div class="chip">${list}<span class="pick" aria-expanded="${st.listOpen ? 'true' : 'false'}" title="Showing ${st.shown}. Choose a program"><span class="name">${nameOf(st.shown)}</span>${alert ? '<span class="err" title="Another program has an error"></span>' : ''}<span class="caret">${ICON.chevronUp}</span></span></div>`;
+}
+
+function render() {
+  document.documentElement.dataset.theme = ui.theme;
+  const st = STATES.find((s) => s.id === ui.state) ?? STATES[1];
+  for (const b of document.querySelectorAll('#states button')) b.setAttribute('aria-pressed', String(b.dataset.st === st.id));
+  for (const b of document.querySelectorAll('[data-theme-set]')) b.setAttribute('aria-pressed', String(b.dataset.themeSet === ui.theme));
+  for (const b of document.querySelectorAll('[data-place]')) b.setAttribute('aria-pressed', String(b.dataset.place === ui.place));
+  for (const b of document.querySelectorAll('[data-rows]')) b.setAttribute('aria-pressed', String(b.dataset.rows === ui.rows));
+  const variants = [];
+  if (ui.place === 'toolbar') variants.push('Variant: the chip at the start of the preview’s toolbar, its list opening downward.');
+  if (ui.rows === 'names') variants.push('Variant: the list without miniatures (names and paths only).');
+  document.getElementById('caption').innerHTML = st.caption + (variants.length ? `<span class="variant">${variants.join(' ')}</span>` : '');
+
+  const withChip = !st.today && !st.lone;
+  const project = st.lone ? 'sketches' : 'gears-project';
+  const tabsLeft = st.lone
+    ? ['sketch.pathogen']
+    : st.id === 'opened' || st.id === 'list' || st.id === 'error'
+      ? ['main.pathogen']
+      : st.id === 'today' || st.id === 'module' || st.id === 'broken'
+        ? ['main.pathogen', 'parts/gears.pathogen']
+        : st.id === 'demo' ? ['main.pathogen', 'demos/train.pathogen'] : ['main.pathogen', 'sketch.pathogen'];
+  const source = st.editing === 'parts/gears.pathogen' && st.edited ? EDITED_GEARS
+    : st.editing === 'try-sizes.pathogen' && st.errors ? BROKEN_TRY : FILES[st.editing];
+  const curLine = st.edited ? 4 : st.editing === 'main.pathogen' ? 12 : 1;
+  // VS Code adds a tab's folder only when two open tabs share a name; none do here.
+  const tab = (path) => `<div class="tab${path === st.editing ? ' on' : ''}"><span class="ic"></span>${fileOf(path)}<span class="x">×</span></div>`;
+  const treeFiles = st.lone
+    ? [['f', 'sketch.pathogen', 0], ['f', 'waves.pathogen', 0]]
+    : [['d', 'demos', 0], ['f', 'demos/train.pathogen', 1], ['d', 'parts', 0], ['f', 'parts/gears.pathogen', 1],
+       ['f', 'main.pathogen', 0], ['j', 'pathogen.json', 0], ['f', 'sketch.pathogen', 0], ['f', 'try-sizes.pathogen', 0]];
+  const tree = treeFiles.map(([kind, path, depth]) =>
+    `<div class="${kind === 'd' ? 'folder' : ''}${path === st.editing ? ' on' : ''}" style="padding-left:${12 + depth * 14}px">${kind === 'd' ? '' : `<span class="ic${kind === 'j' ? ' json' : ''}"></span>`}${fileOf(path)}</div>`,
+  ).join('');
+
+  const title = st.today ? 'Pathogen Preview' : `Preview ${fileOf(st.shown)}`;
+  const drawing = st.shown && DRAWING[st.shown] ? (st.shown === 'main.pathogen' && st.edited ? 'renders/main-edited.svg' : DRAWING[st.shown]) : null;
+  const errorBlock = st.broken
+    ? `<div class="werror"><div class="title">Compilation Error</div>The main of gears-project, poster.pathogen, doesn't exist (looked for /Users/you/gears-project/poster.pathogen). pathogen.json lists it first in "entryPoints": add the file, or put another program first.</div>`
+    : '';
+  const chip = withChip ? chipHtml(st) : '';
+  const zoom = `<span class="zp"><span class="big">−</span><span>Fit</span><span class="big">+</span><span class="pct">100%</span></span>`;
+  const status = st.broken ? 'Error' : st.today ? 'Compiled' : 'Compiled';
+  const info = st.today || st.broken ? '' : '1 layer · 3 ms';
+
+  document.getElementById('vsc').innerHTML = `
+    <div class="titlebar"><span class="lights"><i></i><i></i><i></i></span>${fileOf(st.editing)} — ${project} — Visual Studio Code</div>
+    <div class="body">
+      <div class="activity"><i></i><i></i><i></i><i></i></div>
+      <div class="sidebar"><div class="hd">EXPLORER</div><div class="sec">⌄ ${project.toUpperCase()}</div><div class="tree">${tree}</div></div>
+      <div class="groups">
+        <div class="group">
+          <div class="tabs">${tabsLeft.map(tab).join('')}<span class="spacer"></span>
+            <span class="actions"><span class="act${st.pressed ? ' pressed' : ''}" title="Pathogen: Open Preview to the Side">${ICON.preview}</span><span class="act">${ICON.split}</span><span class="act">${ICON.more}</span></span></div>
+          <div class="editor"><div class="crumbs">${st.editing.split('/').join(' › ')}</div><div class="code">${codeHtml(source, curLine)}</div></div>
+        </div>
+        <div class="group">
+          <div class="tabs"><div class="tab on"><span class="pv">${ICON.preview}</span>${title}<span class="x">×</span></div><span class="spacer"></span>
+            <span class="actions"><span class="act">${ICON.split}</span><span class="act">${ICON.more}</span></span></div>
+          <div class="webview">
+            <div class="toolbar">${withChip && ui.place === 'toolbar' ? chip : ''}<span class="status">${status}</span><span class="info">${info}</span>
+              <button>&#x21bb;</button><button>Reset</button><button>Inspector</button></div>
+            ${st.notice ? `<div class="notices">${st.notice}</div>` : ''}
+            <div class="wmain"><div class="canvas">
+              ${drawing ? `<img class="drawing" src="${drawing}" alt="">` : ''}
+              ${drawing ? `<div class="navigator"><img src="${drawing}" alt=""><i></i></div>` : ''}
+              ${errorBlock}
+              <div class="bottom-group">${zoom}${withChip && ui.place === 'zoom' ? chip : ''}</div>
+            </div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="statusbar"><span>⎇ main</span><span>⊗ 0 ⚠ 0</span><span class="sp"></span><span>Ln ${curLine}, Col 1</span><span>Spaces: 2</span><span>UTF-8</span><span>Pathogen</span></div>`;
+  try { localStorage.setItem('mockup-2f', JSON.stringify(ui)); } catch { /* a file:// page may refuse */ }
+}
+
+const nav = document.getElementById('states');
+for (const s of STATES) {
+  const b = document.createElement('button');
+  b.dataset.st = s.id;
+  b.textContent = s.label;
+  b.addEventListener('click', () => { ui.state = s.id; render(); });
+  nav.appendChild(b);
+}
+for (const b of document.querySelectorAll('[data-theme-set]')) b.addEventListener('click', () => { ui.theme = b.dataset.themeSet; render(); });
+for (const b of document.querySelectorAll('[data-place]')) b.addEventListener('click', () => { ui.place = b.dataset.place; render(); });
+for (const b of document.querySelectorAll('[data-rows]')) b.addEventListener('click', () => { ui.rows = b.dataset.rows; render(); });
+render();
+</script>
+</body>
+</html>

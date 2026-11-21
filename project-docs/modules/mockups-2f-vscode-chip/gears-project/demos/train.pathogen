@@ -1,0 +1,15 @@
+// A gear train: five gears in a row, alternating sizes.
+import { gear, Teeth } from "../parts/gears.pathogen";
+
+define ViewBox(0, 0, 320, 100);
+
+define default PathLayer('gears') #{
+  stroke: #c2410c;
+  stroke-width: 2;
+  fill: none;
+}
+
+for (i in 0..4) {
+  let radius = i % 2 == 0 ? 30 : 22;
+  gear(Point(40 + i * 60, 50), radius, i % 2 == 0 ? Teeth.Standard : Teeth.Few);
+}

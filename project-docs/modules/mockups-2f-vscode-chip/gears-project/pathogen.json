@@ -1,0 +1,7 @@
+{
+  "entryPoints": [
+    "main.pathogen",
+    "demos/train.pathogen",
+    "try-sizes.pathogen"
+  ]
+}

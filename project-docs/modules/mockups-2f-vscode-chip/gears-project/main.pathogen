@@ -1,0 +1,13 @@
+// Two gears that mesh.
+import { gear, Teeth } from "./parts/gears.pathogen";
+
+define ViewBox(0, 0, 200, 120);
+
+define default PathLayer('gears') #{
+  stroke: #2563eb;
+  stroke-width: 2;
+  fill: none;
+}
+
+gear(Point(70, 60), 40, Teeth.Standard);
+gear(Point(141, 60), 30, Teeth.Few);
