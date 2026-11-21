@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased] - 2026-11-16 (a workspace holds several files)
 
-Phase 2 of the multi-file playground. Nothing here is pushed yet. It ships as one push, then the production migration of every saved workspace (see Development, below). Until then, the publishing problems under Fixed are still live on pathogen.studio.
+Phase 2 of the multi-file playground, live on pathogen.studio since 2026-11-17. Everything saved before then moved to the new storage that day (workspaces, approvals, the review queues and snapshots), and older approvals got their card images on 2026-11-21 (see Development, below).
 
 ### Added
 
@@ -159,13 +159,13 @@ Phase 2 of the multi-file playground. Nothing here is pushed yet. It ships as on
 
 #### Development
 
-- **At ship, each with your go-ahead** (note 50):
+- **Run once on production** (`project-docs/modules/50-storage-decisions-and-plan.md`):
   - **`scripts/migrate-workspace-files-kv.ts`** moves every program saved before phase 2 into R2 and rewrites its record as a manifest: workspaces, approvals, both review queues and snapshots.
     - It's a dry run by default. `--write` needs `--backup-dir`, production needs `--confirm` (a dry run too), and `--only` limits it to one workspace.
     - Each result is checked with the API's own reader, and every approval's re-review answer must come out unchanged.
-    - A full local dry run: 399 records, 0 errors.
-    - Until it runs, the server reads a record from before phase 2 as just `main.pathogen`.
-  - **`scripts/copy-approval-cards.ts`** gives each approval made before this its card image. Run with `--dry-run` first; a non-local API needs `--confirm`.
+    - **It ran on production on 2026-11-17:** 218 records moved (194 workspaces, 20 approvals, the two review queues and 2 snapshots), each backed up first, with no errors. One workspace was already in the new shape, since a save through the new API converts the record. A second dry run found all 219 in the new shape, and all 20 public pages load their files.
+  - **`scripts/copy-approval-cards.ts`** gives each approval made before this release its card image. Run with `--dry-run` first; a non-local API needs `--confirm`.
+    - **The copy ran on production on 2026-11-21** without this script, since no admin token was saved: an admin, signed in, made its `POST /admin/approval-cards` calls from the browser console (the route takes an admin's session as well as the token). 20 cards copied, and a second count found none left.
   - **No cleanup for the re-review entries of private workspaces** that an older server left: the review screen withdraws each one, with a notice, when an admin acts on it.
 - **Scripts:**
   - `export-workspace-sources.ts` reads files from R2;
@@ -263,7 +263,7 @@ Phase 2 of the multi-file playground. Nothing here is pushed yet. It ships as on
 - **Explore's cards no longer show edits waiting for review.** Explore, the profile page, Featured and the public page's image used the live thumbnail. It follows the owner's edits within about 10 minutes, though docs/publishing.md promised a stable image.
   - Approve now copies the thumbnail as the approval's card, and every public page shows the card. The copy is the thumbnail at the moment of approval, so it can include edits made after submitting.
   - Regenerate and Set thumbnail on the review screen write the card. They used to write the owner's live thumbnail from the approved files, over the owner's own.
-  - An approval made before this shows the live thumbnail until the one-time copy reaches it (Development).
+  - Approvals made before this release got their card from the one-time copy on 2026-11-21: the workspace's thumbnail that day, so it can include edits made since the approval (see Development). Two approved workspaces whose Explore card showed a blank placeholder, though they had a thumbnail, now show their picture.
 - **Re-review is only for a public workspace.** After Make private, the next edit queued a re-review, and approving it **made the workspace public again**, against the owner's choice. Now an edit to a private workspace queues none. On an approved, public workspace, any change to its files, folders or program list sends it back for review at the next save: an edit to any file, a file added, renamed, moved or removed, an empty folder added or removed, or a change to the main or the programs' order. Each of these withdraws a waiting re-review:
   - Make private;
   - a save whose files are back to the approved ones;
