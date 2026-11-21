@@ -1083,7 +1083,7 @@ Before a `--write` run on production, the script was changed to space its calls 
   - **Safe:** new workspaces from blank or a template (they send `code`), Copy Workspace and Duplicate (the old copy route, which ignores `description`), and saves of a one-file workspace (`autosave._saveBody` sends `code` while the server holds just main.pathogen).
   - **At risk:** Open as new workspace (it creates with `files` and no `code`, so the old API makes an empty workspace), and a save after adding a second file (the old API ignores `files` and answers as if saved).
 
-  Whether anyone did either needs a read-only look at the records created or updated in that window. Not run yet.
+  Whether anyone did either needs a read-only look at the records created or updated in that window. **Checked 2026-11-21 (read-only, your go-ahead):** `tmp/2e-step8/check-deploy-window.ts --env prod --confirm` read all 195 workspace records, and none was created or last saved between 21:40 and 22:20Z. The files migration keeps each record's times, so it didn't hide one. A record saved in the window and again later would show the later time; that later save went to the new API, which stores every file the playground holds.
 - **Live checks** (`tmp/2e-step8/check-live.ts`, no workspace data): the API answers the 5b card image route ("Workspace not found" for a made-up id) and the card copy route (401 without a token); `/docs` has the workspace files page; both screenshots load as PNGs; the 2e playground's `source-files.js` is served; `/explore` loads.
 
 **Step 8, the files migration (2026-11-17, your go-ahead).** `scripts/migrate-workspace-files-kv.ts --env prod`:
