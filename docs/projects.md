@@ -48,7 +48,7 @@ It can also list the project's programs, in order:
 }
 ```
 
-The first entry is the project's **main**: the program `pathogen-lang <folder>` compiles. Without `entryPoints`, the main is `main.pathogen`, so `{}` and `{ "entryPoints": ["main.pathogen"] }` mean the same thing. Only the first entry is used today. Listing the others is optional; it records the order of the project's programs.
+The first entry is the project's **main**: the program `pathogen-lang <folder>` compiles. Without `entryPoints`, the main is `main.pathogen`, so `{}` and `{ "entryPoints": ["main.pathogen"] }` name the same main. (The VS Code preview treats a `{}` with no `main.pathogen` beside it as a project without a main: see [The preview in VS Code](#projects-the-preview-in-vs-code).) Only the first entry is used today. Listing the others is optional; it records the order of the project's programs.
 
 | Key | Meaning |
 |-----|---------|
@@ -86,7 +86,7 @@ Four rules hold on every operating system:
 ## In each tool
 
 - **CLI.** The project folder depends on what you compile; see the table below.
-- **VS Code.** The preview and the editor's error checking find the project folder from the file you're editing, as above. The preview shows the file you're editing, not the main. A `pathogen.json` with an error stops the files in its project that use `import` or `@font`, with the same message as the CLI.
+- **VS Code.** The preview and the editor's error checking find the project folder from the file you're editing, as above. In a project with a main, the preview stays on the program you choose while you move between the project's files, as in the playground; without one, it shows the file you're editing ([The preview in VS Code](#projects-the-preview-in-vs-code)). A `pathogen.json` with an error stops the files in its project that use `import` or `@font`, with the same message as the CLI.
 - **Playground.** A workspace is a project folder: `/` paths start at its top, and it writes its own `pathogen.json` ([Files in a Workspace](#workspace-files-files-in-a-workspace)). The preview shows the program you choose with its chip (the main at first), whichever file you're editing ([The preview and the program list](#workspace-files-the-preview-and-the-program-list)). A workspace holds `.pathogen` files only for now, so a file path in `@font` produces a warning that suggests a Google Fonts family instead.
   - **An unsaved scratch buffer** is code opened from a link, such as a blog example's playground link, and not yet saved as a workspace. It holds one program with no files beside it, so an `import` there is an error. To use imports, copy its code into a new workspace (**+ New Workspace** on your Workspaces page).
 
@@ -101,6 +101,28 @@ In the CLI:
 | Code from `-e` or standard input, with `--root=<folder>` | The folder you name | The current folder if it's inside the project folder, otherwise the project folder |
 
 A file outside the `--root` folder still compiles, but a file path in its `@font` or `import` is an error, because it has no place in the project to start from. A family name's [`fonts/` folder](#path-blocks-font-loading-by-environment) is looked for starting where `./` paths start. The CLI reads `pathogen.json` only when it needs it, for a folder's main or to find the project folder of a program with `@font` or `import`, so a broken one doesn't stop a program with neither. See also [the CLI reference](#cli-fonts-and-files).
+
+## The preview in VS Code
+
+The preview button at the top right of a `.pathogen` file's tab (**Pathogen: Open Preview to the Side** in the Command Palette) opens the preview beside it. The panel's title names the program it shows, such as `Preview poster.pathogen`.
+
+**A project with a main** has a `pathogen.json` with `entryPoints`, or a `main.pathogen` beside its `pathogen.json`. In such a project, the preview works like this:
+
+- **The preview button chooses what's shown.** From a program's tab, it shows that program. From a module's tab, it shows the program chosen in that project, the main at first.
+- **The preview stays on that program** while you move between the project's files. When you edit a file the program imports, saved or not, the preview redraws, so you can change a module and watch a program that uses it. A file in another project shows that project's chosen program, its main at first, and a file without a main shows itself (below).
+- **The chip** beside the zoom controls names the program shown, when the list has more than one program. Click it for the **program list**: the main, then the other programs in `entryPoints`' order, each with a small drawing, its name and its path. A check marks the one shown; choose another to show it.
+  - A program that `pathogen.json` doesn't list joins the end of the list while you're editing it or it's the one shown, marked "not in pathogen.json".
+  - While you edit a file that isn't the program shown, a dot marks each program that uses it, and the file itself if it's a program.
+  - When a program is too detailed for its small drawing, the drawing is left empty. Hover it to see "Too detailed to draw this small".
+  - When another program has an error, the chip shows a red dot, and that program's row says where it failed.
+  - Hover a program and click **Open in the editor** to open its file without changing the preview.
+- **If the program shown is deleted, or becomes a module,** the preview goes back to the main. If you rename or move it in VS Code, the preview follows it; renamed or moved outside VS Code, it counts as deleted.
+- **If the main can't be shown,** such as when it doesn't exist or is a module, the preview says why with the CLI's message ([Errors](#projects-errors)). The main's row in the list says "Not found", or "A module now, so it can't draw as the main". You can still choose another program.
+- The program you choose lasts while the preview is open. The next preview starts from the tab you open it from.
+
+The playground's preview works the same way: see [The preview and the program list](#workspace-files-the-preview-and-the-program-list).
+
+**Without a main,** the preview shows the file you're editing. That's a file with no `pathogen.json` in its folder or above, or one whose `pathogen.json` has no `entryPoints` and no `main.pathogen` beside it, such as a `{}` that only marks the project folder. A module's preview is empty there; to see its fns draw, open a program that imports it. The same goes while a `pathogen.json` has an error, which shows at the file's first `import` or `@font` ([In each tool](#projects-in-each-tool)).
 
 ## Errors
 

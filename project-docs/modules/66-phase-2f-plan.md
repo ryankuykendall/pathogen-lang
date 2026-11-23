@@ -82,6 +82,22 @@ A playground workspace writes its own `pathogen.json`, and every program is on i
    - State 5's row: `sketch.pathogen · not in pathogen.json`.
    - State 7's row: "Not found", under a main that doesn't exist; the preview shows the CLI's full message.
 
+## Your answers on mockup v1 (2026-11-21)
+
+1. **(a)** Beside the zoom controls, as in the playground.
+2. **(a)** As in the playground: miniatures, and the red dot for another program's error. Each program is compiled in the preview with its imports and fonts.
+3. **OK** to both wordings: `sketch.pathogen · not in pathogen.json`, and "Not found".
+
+**A correction to question 1.** Option (b) said the CLI's folder compile treats a folder with a `main.pathogen` and no `pathogen.json` as a project. It doesn't: it stops with "my-gears is a folder with no pathogen.json. Add one (an empty {} compiles main.pathogen), or compile a file directly." (`docs/projects.md`, Errors). So your answer (a) is the one that matches the CLI.
+
+**Which projects change, made exact while drafting the docs.** A project folder gets a main and the program list when its `pathogen.json` has `entryPoints`, or when there's a `main.pathogen` beside a `pathogen.json` with no `entryPoints`. A `pathogen.json` without either, such as `{}` written only to mark the project folder for `@font` paths, keeps today's behavior. Such a folder declares no main, so it shouldn't get a "main doesn't exist" error. A listed main that's missing does get the error (state 7), since the list names it.
+
+**Settled in the docs' content review** (`reviews/phase-2f-docs-review.md`):
+- **A module's tab** shows the program chosen in that project, the main at first. Its preview button opens or reveals the preview, and never undoes a choice.
+- **An unlisted program** stays in the list while you're editing it, or while it's the one shown.
+- **Renamed or moved outside VS Code,** the program shown counts as deleted, so the preview goes back to the main. VS Code's own rename events don't see those changes; the file watcher sees the delete.
+- **A main that's a module:** its row reuses the playground's wording, "A module now, so it can't draw as the main".
+
 ## The plan, once answered
 
 1. **Docs first,** each with a content review and your approval:

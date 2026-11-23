@@ -355,7 +355,7 @@ In VS Code, the error is shown on the call (or the import) in the file you're ed
 - **VS Code.**
   - **Features across files:** errors, hover, go-to-definition, completion and parameter hints all work across files. Completion offers the exported names inside `import { }`, file paths inside the quotes, and a namespace's names after `gears.`.
   - **Rechecking:** editing or saving an imported file rechecks the open files that import it, and the preview redraws.
-  - **The preview:** it shows the file you're editing. A module doesn't draw, so its preview is empty; to see its fns draw, open a program that imports it.
+  - **The preview:** in a project with a main (a `pathogen.json` with `entryPoints`, or a `main.pathogen` beside its `pathogen.json`), it stays on the program you choose while you edit the modules it imports, and redraws as you type ([The preview in VS Code](#projects-the-preview-in-vs-code)). Without a main, it shows the file you're editing; a module doesn't draw, so its preview is empty there. To see its fns draw, open a program that imports it.
   - **Unsaved files:** an unsaved file can't import, because its paths have no folder to start from.
   - **Renaming and finding references:** F2 on an imported or exported name says it can't rename across files yet, instead of changing only some of its uses; rename it in each file. Find All References lists the uses in the current file only.
 - **Playground.** A workspace holds files like a project folder, so imports work as they do in the CLI: `./` and `../` start at the importing file's folder, and `/` at the top of the workspace.
