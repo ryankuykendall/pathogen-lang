@@ -35,6 +35,10 @@ Answers 3 and 4 meet here. The rule:
 - **The folder name in messages** is the picked folder's or the .zip's name (`gears`), where the CLI names a path on disk.
 - **The rename** reaches the docs, the CHANGELOG and the backlog ("Download workspace on a public page").
 
+## Approved (2026-11-23)
+
+"v2 is approved and go ahead with the push." The mockup round is done: v1 (note 68) with v2's changes is what gets built, under note 69's rule for when the import stops.
+
 ## Next
 
-Your OK on v2. Then docs first: `docs/workspace-files.md` (a section on Download workspace and importing; "Not yet" goes; the "Uploading files" advice for project folders changes) and `docs/projects.md` ("In each tool"), with a content review and your approval.
+Your OK on v2 (given above). Then docs first: `docs/workspace-files.md` (a section on Download workspace and importing; "Not yet" goes; the "Uploading files" advice for project folders changes) and `docs/projects.md` ("In each tool"), with a content review and your approval.
