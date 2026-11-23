@@ -5,6 +5,41 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] - 2026-11-23 (workspaces are read in one format)
+
+Housekeeping after phase 2's storage migration: the API stops reading workspaces in the format from before phase 2 (replaced on 2026-11-17), after a read-only check of production found none left. Nothing changes for anyone using the site. The site and the API both deployed.
+
+### Changed
+
+#### API
+
+- **Only today's workspace format is read.** A workspace, approval, review entry or snapshot stored the old way (one `code` string, with no list of files) is refused (a 500) with a message ending "…stored in a format from before 17 November 2026 that the site no longer reads. Nothing was changed." It's never written over. Production has none: the migration rewrote all of them on 2026-11-17, and today's check found all 228 records in today's format. The branches that read them are gone from loading, copying, saving, reviewing, approving and snapshots, and from the public page's source. A request may still send one `code` string; it's stored in today's format, as before.
+- **Admin lists and actions work on any record.** The Approved, Featured, Flagged and Rejected lists, and an admin's flag, unflag and unpublish, take a record's hash in a way that can't fail. A record the API can't read shows with no hash, and the reason is logged. Without this, one stray old record would have failed the Approved, Featured or Flagged list, and lost its owner and flags in the Rejected list. It would also have stopped a flag, unflag or unpublish halfway: the record changed, the public index and history not, and a 500.
+
+#### Development
+
+- **The migration script reads both formats itself** (`readEitherShape` in `scripts/lib/workspace-files-migration.ts`), so an old backup can still be migrated, and it still checks each result against the API's own reader. Local dev data is being converted with it (backups in `tmp/kv-backups/files-dev-2026-11-23`); that isn't part of the push.
+- **The production check** (approved first, read-only):
+  - **the migration's dry run:** 228 records, all in today's format, 0 errors;
+  - **the export of every workspace's files:** 223 files read from storage, and one reported missing that was there (see Fixed);
+  - **the built-in name check over them:** only the one program already known to declare `GridPatternType`.
+- **Tested:**
+  - the full suite (9,566 tests) and the API tests (306);
+  - one code review, its two should-fix findings taken (`reviews/storage-old-reader-code-review.md`);
+  - against the dev API running this code: `verify-2g.ts` (40 of 40), and an unconverted dev record refused with the message;
+  - on the live site: every approved workspace's source before and after the deploy (20 of 20), and every detail page linked from `/explore` with its `source.json` (20 of 20).
+- **Notes:**
+  - note 71 records the plan, the answers and the check. The sweep of stored files nothing names stays on the backlog by choice: it would save very little today, and it's the only step that deletes data;
+  - note 70 records that 2g shipped (`c752a015`), live in about two minutes, with `check-live-2g.ts` 7 of 7 on pathogen.studio and the hand check;
+  - `backlog.md` marks the reader done and keeps the sweep, with the 2026-11-23 answer;
+  - `reviews/storage-changelog-review.md` records this entry's review.
+
+### Fixed
+
+#### Development
+
+- **`scripts/export-workspace-sources.ts` no longer reports a file as missing when a read just failed.** It counted any failed read as "not in R2": in today's check, one file was reported missing that was there and intact. It now retries twice, and says "couldn't be read" unless storage itself answers that the file doesn't exist.
+
 ## [Unreleased] - 2026-11-23 (download a workspace, or make one from a project)
 
 Phase 2g of the multi-file work: a workspace can leave the playground as a project folder, and a project folder can come in as a workspace. Export, Copy SVG and Snapshot say which program they take. The playground only: no API change and no new built-in names.
