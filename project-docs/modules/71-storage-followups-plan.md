@@ -58,6 +58,7 @@
 - **The code review** (`reviews/storage-old-reader-code-review.md`): no path writes over an old record's files. Two should-fix taken: an admin's flag, unflag and unpublish took the state row's hash after changing the record, so on an old record they'd stop halfway; they now take it with `recordHashOrNull` and finish on any record (tested). The Rejected list uses it too.
 - **Checked:** the API tests (306), the full suite (9,566 tests), a type check of the changed files; `verify-2g.ts` against the dev API running this code (40 of 40); and the dev API answering an unconverted dev record with the message (`tmp/storage/probe-dev-old-record.ts`).
 - **Dev's conversion** (`--write --backup-dir tmp/kv-backups/files-dev-2026-11-23`) is local only and slow (one record every few seconds); it doesn't block the push.
+  - **Done:** 397 records converted, 392 blobs written, 0 errors, every approval's re-review answer unchanged (`tmp/storage/dev-write-2026-11-23.json`). The dry run after it: 0 to convert, 406 already, the 1 orphan approval left as it is, 0 errors (`tmp/storage/dev-dry-run-after-2026-11-23.json`).
 
 ## Shipped (2026-11-23)
 
