@@ -141,9 +141,9 @@ After the first release (phase 2 ships with 2e). Each entry comes from your answ
   2. then a way to take larger uploads. The Worker reads the whole form with `request.formData()`, and a 49 MB upload was checked only against the local runtime.
 - **From:** your answer 7, 2026-11-14: "although that are some snapshots that get quite large (where the SVG was as large as 80MB)...we don't have to accommodate that immediately, but we might want to log when users try to snapshot an image result that exceeds our cap." Later the same day: "50MB for a snapshot's image is a fine limit." So this waits until the refusal counts say otherwise.
 
-### Download source on a public page
-- **What:** a visitor on an approved workspace's public page can download its approved files as a .zip, as the owner's Download source does in the workspace.
-- **Today (2g):** Download source is in the owner's ⋮ menu only. A visitor can read every file on the public page (View source), or copy them all with Open as new workspace, and download that copy.
+### Download workspace on a public page
+- **What:** a visitor on an approved workspace's public page can download its approved files as a .zip, as the owner's Download workspace does in the workspace.
+- **Today (2g):** Download workspace is in the owner's ⋮ menu only. A visitor can read every file on the public page (View source), or copy them all with Open as new workspace, and download that copy.
 - **Needs:** where the link sits on the public page, and the .zip built from the approved files (the `source.json` the fork already reads), not the live ones.
 - **From:** your answer 5 on note 67, 2026-11-23: "Agreed, yes, but add it to the backlog for the time being."
 
