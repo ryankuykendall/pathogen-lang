@@ -65,6 +65,12 @@ Deferred work from the modules, data and files effort. Each entry says what it i
 - **Needs:** a mockup first: where the mole sits, how it opens and resizes, and how errors show in it.
 - **From:** your answer 5 on the option 1 mockup, 2026-11-16: "Perhaps we should try to pull the console out of flow as well. In Google's GMail, they have a UI view component call a 'mole'… I think that as a follow-up we should consider mocking up a version of a 'mole' style console, perhaps one that ultimately also combines absorbing errors as well into a unified interface. For now, we will just have to be limited to 72px of viewspace until we are able to circle back on mocking up the new console mole."
 
+### A program picker in the Export modal
+- **What:** the Export modal lets you choose which program to export (SVG, PNG or PDF), and perhaps several at once, without first showing that program in the preview.
+- **Today (2g):** Export, Copy SVG and Snapshot take the program the preview shows. To export another program, you show it with the chip first.
+- **Needs:** a design first: how the modal lists the programs (the chip's list, with miniatures?), what its preview shows while you choose, and what file name each export gets. Exporting a program that isn't shown means drawing it without the preview, as the thumbnail render queue above would.
+- **From:** your answer 4 on note 67, 2026-11-23: "Copy SVG and Snapshot will be for the currently selected entry point. For the initial release, the same will hold for Export. However, we should add a follow-up item to provide a workflow that supports an entrypoint picker in the export modal."
+
 ## Publishing and snapshots
 
 After the first release (phase 2 ships with 2e). Each entry comes from your answers on note 58.
@@ -134,6 +140,12 @@ After the first release (phase 2 ships with 2e). Each entry comes from your answ
   1. first, a count of refusals ("Usage events", above);
   2. then a way to take larger uploads. The Worker reads the whole form with `request.formData()`, and a 49 MB upload was checked only against the local runtime.
 - **From:** your answer 7, 2026-11-14: "although that are some snapshots that get quite large (where the SVG was as large as 80MB)...we don't have to accommodate that immediately, but we might want to log when users try to snapshot an image result that exceeds our cap." Later the same day: "50MB for a snapshot's image is a fine limit." So this waits until the refusal counts say otherwise.
+
+### Download source on a public page
+- **What:** a visitor on an approved workspace's public page can download its approved files as a .zip, as the owner's Download source does in the workspace.
+- **Today (2g):** Download source is in the owner's ⋮ menu only. A visitor can read every file on the public page (View source), or copy them all with Open as new workspace, and download that copy.
+- **Needs:** where the link sits on the public page, and the .zip built from the approved files (the `source.json` the fork already reads), not the live ones.
+- **From:** your answer 5 on note 67, 2026-11-23: "Agreed, yes, but add it to the backlog for the time being."
 
 ## Language
 
