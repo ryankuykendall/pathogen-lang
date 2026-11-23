@@ -4,7 +4,7 @@ The screenshot (docs/CLAUDE.md "Images"): images/workspace-files.png and workspa
 taken with 2e's UI: a workspace of several files, the tree open, files in tabs, and the program
 chip's list open. Take both again whenever the workspace's layout, the tree, the tabs or the program
 list change (step 10's review, finding 17).
-Export as a project folder (2g) comes later: see "Not yet".
+Downloading a workspace and making one from a project came with 2g (the lines at the end of this comment).
 When data files and fonts can be added (after phase 2): Limits gains data files 5 MB each, fonts
 20 MB each (note 50), and the 50 MB whole-workspace row, which 20 files of 1 MB can't reach today.
 Sources: mockups v1 to v6 and their reviews (project-docs/modules/39- to 46-).
@@ -49,6 +49,11 @@ Reordered 2026-11-14 ("go ahead and apply the review fixes"), as the review's fi
 pathogen.json now follows the program list and Try it, and a new "When the main is gone or can't
 draw" after it holds deleting the last program and a main that's a module. Its content review's
 five findings are applied (step 10's review record, "After your go-ahead").
+Phase 2g (2026-11-23, notes 67 to 69, mockups v1 and v2 approved): "Not yet" goes. Download
+workspace in the ⋮ menu (the name is the owner's: "Export implies a transformation"; small text
+"A .zip of every file"); a new workspace from a project folder or a .zip on the New Workspace page;
+Export, Copy SVG and Snapshot name the program they take. The import stops when pathogen.json can't
+be read (the CLI's parse checks), and drops an entryPoints entry it can't use (note 69's rule).
 -->
 
 
@@ -62,13 +67,13 @@ Three parts work together. The **tree** lists the files. The **editor** shows th
 
 ![A workspace with the file tree open beside the editor, three files open in tabs, and the program list open from the chip beside the preview's zoom controls](images/workspace-files.png)
 
-> **Not yet:** a workspace can't be downloaded as a project folder, or made from one; that comes in a later update. To bring a project's files into a workspace, see [Uploading files](#workspace-files-uploading-files).
+To take a workspace to the CLI or VS Code, download it as a project folder ([Downloading a workspace](#workspace-files-downloading-a-workspace)). To bring a project folder in, make a new workspace from it ([A workspace from a project](#workspace-files-a-workspace-from-a-project)).
 
 > **What changed (November 2026):** A workspace you made before now holds one program, `main.pathogen`, with its code unchanged, and a `pathogen.json` beside it. It draws as before, and so do its snapshots and its public page. **Copy URL** is gone from the workspace's menu, since a link could only hold one file; a link copied before still opens.
 
 ## A new workspace
 
-A new workspace holds one program, `main.pathogen`, and `pathogen.json`, a project file the playground writes for you, which lists the workspace's programs with the main first ([below](#workspace-files-pathogenjson)). With one program, the preview shows it, as before.
+A new workspace holds one program, `main.pathogen`, and `pathogen.json`, a project file the playground writes for you, which lists the workspace's programs with the main first ([below](#workspace-files-pathogenjson)). With one program, the preview shows it, as before. A new workspace can also start from a project folder or a `.zip` ([A workspace from a project](#workspace-files-a-workspace-from-a-project)).
 
 ## The file tree and tabs
 
@@ -105,7 +110,7 @@ The workspace's **main** is the program it opens on, the one its thumbnail shows
 With more than one program, a chip beside the zoom controls names the program the preview shows. Click it for the **program list**: each program with a small drawing, its name and its path. A check marks the one shown. The main comes first, then the others in `pathogen.json`'s order. New programs join at the end, and **Set as main** moves a program to the front without changing the others' order.
 
 - **You choose the program shown with the chip.** Opening a file, editing a module or setting the main leaves the preview on the program you chose.
-- **Export** and **Copy SVG** take the program the preview shows. To export another program, choose it in the list first.
+- **Export**, **Copy SVG** and **Snapshot** take the program the preview shows, and with more than one program, each names it. With `try-sizes.pathogen` shown, the Export dialog's title reads `Export try-sizes`, Copy SVG's line in the workspace's menu reads `The program shown: try-sizes`, and the Snapshot panel reads `Of try-sizes, the program shown`. To export another program, choose it in the list first.
 - Editing a file redraws every program that uses it. In the list, a dot before a name marks those programs, and the file itself if it's a program. While you're editing the program the preview shows, there are no dots: the preview already shows your edits.
 - When a program is too detailed for its small drawing, the drawing is left empty. Hover the empty drawing to see "Too detailed to draw this small". Choose the program to see it in the preview.
 - Hover a program in the list and click **Open in the editor** to open its file without changing the preview.
@@ -171,7 +176,7 @@ The **+** in the Files header opens a menu: New program, New module, New folder,
 - **Only `.pathogen` files** can be added for now. Anything else is left out, and the message says why.
   - Font files can't be added yet. Use a Google Fonts family instead, such as `@font "Raleway" 700;` (see [`@font`](#path-blocks-font-directive)). An `@font` with a file path, such as `@font "./fonts/Raleway-Bold.ttf";` in a project from the CLI or VS Code, gets a warning that suggests the family, as it does in a workspace today.
   - A `pathogen.json` is left out: the playground writes its own.
-- **A project folder from the CLI or VS Code** arrives as a folder with its own name. Its `./` and `../` imports still work, but imports that start with `/` now start at the top of the workspace. Its `pathogen.json` is left out, so its programs join the end of the program list; use **Set as main** for the one you want as the main. To keep `/` imports working, drag what's inside the project folder onto empty space in the tree instead.
+- **A project folder from the CLI or VS Code** can come in whole as a new workspace of its own, which keeps its program list and its `/` imports ([A workspace from a project](#workspace-files-a-workspace-from-a-project)). Uploaded into a workspace, it arrives as a folder with its own name. Its `./` and `../` imports still work, but imports that start with `/` now start at the top of the workspace. Its `pathogen.json` is left out, so its programs join the end of the program list; use **Set as main** for the one you want as the main. To keep `/` imports working in this workspace, drag what's inside the project folder onto empty space in the tree instead.
 - A `.pathogen` file over 1 MB, or one that isn't text, is left out, and the message says why.
 - Files and folders whose names start with a dot, such as `.DS_Store`, are left out without a mention.
 - An upload that would take the workspace past 20 files adds nothing ([Limits](#workspace-files-limits)). Replaced files don't count.
@@ -241,6 +246,49 @@ Each of these carries every file, the folders and `pathogen.json`'s list:
 - **Copy Workspace**, in the workspace's menu, copies every file with your latest edits. **Duplicate**, on your Workspaces page, copies every file as last saved.
 - **Make public** checks the main, with the files it imports, before it submits the workspace. The reviewer sees every file. Once approved, the workspace's public page shows the main's drawing, and **View source** shows every file, opening on the main. An edit to any file waits for review before visitors see it ([Publishing](#publishing-editing-a-published-workspace)).
 - **Open as new workspace**, on someone else's public page, makes a workspace of every approved file. It opens on its main.
+- **Download workspace**, in the workspace's menu, downloads every file as a project folder ([below](#workspace-files-downloading-a-workspace)).
+
+## Downloading a workspace
+
+**Download workspace**, in the workspace's ⋮ menu, downloads a `.zip` of every file. Inside it is one folder, named after the workspace, which holds the workspace's files and folders and its `pathogen.json`:
+
+```text
+Gear-studies/
+  pathogen.json
+  main.pathogen
+  try-sizes.pathogen
+  demos/
+    train.pathogen
+  parts/
+    gears.pathogen
+```
+
+- The `.zip` and the folder take the workspace's name, changed to fit the [name rules](#workspace-files-adding-files-and-folders) as an upload's names are: "Gear studies" downloads as `Gear-studies.zip`.
+- Each file is as the editor holds it, including edits not saved yet. Empty folders are kept.
+- Unzipped, the folder is a project folder. When the workspace's main is a program, `pathogen-lang Gear-studies` compiles it ([In each tool](#projects-in-each-tool)), and VS Code's program list holds the same programs, in the same order ([The preview in VS Code](#projects-the-preview-in-vs-code)).
+- It's in the menu of your own workspaces, as **Copy Workspace** is. An [unsaved scratch buffer](#projects-in-each-tool) doesn't have it.
+
+## A workspace from a project
+
+A new workspace can start from a project folder from the CLI or VS Code, or from a `.zip`, such as one Download workspace made. On the **New Workspace** page (**+ New Workspace** on your Workspaces page), under **Or import a project**, click **Choose folder…** or **Choose .zip…**, or drop a folder or a `.zip` there. On a touch screen, only **Choose .zip…** is offered, with no drop area.
+
+Before you create the workspace, the page lists what will come in: each program, with the main marked, then each module. The name is filled in from the folder or the `.zip`. **Create Workspace** makes the workspace, which opens on its main; **Choose another…** picks again.
+
+- **The program list comes from the project's `pathogen.json`:** the main and the order of the programs. Programs its `entryPoints` doesn't list join the end, in order of their paths. Imports that start with `/` still start at the project's top, which is now the workspace's.
+- **Without a `pathogen.json`,** the workspace writes one, and the page shows it before you create the workspace. `main.pathogen` is the main, and the other programs follow in order of their paths (`demos/train.pathogen` before `sketch.pathogen`); without a `main.pathogen`, the first program in that order is the main. Use **Set as main** afterwards to choose another. A workspace you download later includes this file, so the CLI, which needs one to compile a folder, compiles it.
+- **A `pathogen.json` that can't be read** stops the import, and nothing is added. That's one with broken JSON, something other than an object, an unknown key, the old `main` key, or an `entryPoints` that isn't a list of `.pathogen` paths inside the folder. The page shows the CLI's message for it ([Errors](#projects-errors)), naming the folder or the `.zip` in place of the path on your computer that the CLI names, such as:
+
+  ```text
+  pathogen.json (gears): "main" is now "entryPoints", a list whose first entry is the main. Replace it with "entryPoints": ["main.pathogen"].
+  ```
+
+  For broken JSON, the explanation is your browser's own, so its wording varies. Fix the file, then choose the folder or the `.zip` again.
+- **An `entryPoints` entry the workspace can't use,** naming a file the project doesn't have, a module, or a file left out, is taken out of the list, and the page says so. If it was the first, the next program in the list is the main. An empty `entryPoints` counts as none, and a path listed twice counts once. If no entry is left, the main is chosen as it is without a `pathogen.json`.
+- **What's left out** is what [an upload](#workspace-files-uploading-files) leaves out: anything but `.pathogen` files, files over 1 MB or not text, and a `pathogen.json` below the project's top. The page lists each one and why, under "Not added". Names that start with a dot, such as `.git/` and `.DS_Store`, and the `__MACOSX` folder that macOS puts in a `.zip`, are left out without a mention.
+- **A file or folder name that breaks the [name rules](#workspace-files-adding-files-and-folders)** is changed to fit, and the page lists each change. Unlike an upload, the imports and `entryPoints` entries that name it change to match, so the project still draws and keeps its main. If two names would then be the same, or differ only in letter case (as `Gears.pathogen` and `gears.pathogen` from a Linux computer do), the second in order of their paths gets a number, as **Keep both** gives one: `gears-2.pathogen`, with its imports following.
+- **A project of more than 20 `.pathogen` files,** not counting what's left out, adds nothing: a workspace holds 20 ([Limits](#workspace-files-limits)). To bring part of it in, import a folder that holds fewer.
+- **Empty folders** come in from a `.zip` and from a dropped folder. **Choose folder…** brings only the folders that hold files, because the browser hands over only files.
+- A `.zip` can hold the project in one folder, as Download workspace makes it, or at its top.
 
 ## Limits
 
@@ -252,4 +300,4 @@ Each of these carries every file, the folders and `pathogen.json`'s list:
 | A file or folder name | 100 characters |
 | A path | 255 characters |
 
-A save that would pass a limit is refused with a message that names it, before anything is lost. An upload leaves out files over 1 MB, more than 8 folders deep, or with a path over 255 characters, and adds nothing if it would take the workspace past 20 files.
+A save that would pass a limit is refused with a message that names it, before anything is lost. An upload leaves out files over 1 MB, more than 8 folders deep, or with a path over 255 characters, and adds nothing if it would take the workspace past 20 files. A [project imported](#workspace-files-a-workspace-from-a-project) as a new workspace leaves out the same files, and adds nothing if more than 20 `.pathogen` files are left.

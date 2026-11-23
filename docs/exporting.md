@@ -8,6 +8,8 @@ Pathogen Studio exports any workspace from a single **Export** dialog — open i
 
 Whatever you see in the dialog's live preview is exactly what downloads: the preview shows your artwork, the optional legend, and the branding line as they will appear in the file.
 
+In a workspace of several programs, Export takes the program the preview shows, and the dialog's title names it, such as **Export try-sizes**. To export another program, choose it with the chip beside the preview's zoom controls first ([The preview and the program list](#workspace-files-the-preview-and-the-program-list)). To download the workspace's code rather than a drawing, use **Download workspace** ([Downloading a workspace](#workspace-files-downloading-a-workspace)).
+
 The same dialog opens from a saved [snapshot](#snapshots-snapshots) (**Export…** on the workspace's snapshots page). It exports the image you captured without recompiling, so random values don't change. The legend lists the snapshot's code.
 
 ## The legend (optional)

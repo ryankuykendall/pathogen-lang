@@ -31,7 +31,7 @@ In fullscreen, each snapshot you take also appears in a small tray in the bottom
 
 A snapshot always pairs the image with the code that **drew that image**, not with whatever is in the editor right now. If you've typed since the preview last finished rendering, the panel tells you so and saves the code from that last render. Your newer edits aren't included.
 
-In a workspace of several files ([Files in a Workspace](#workspace-files-files-in-a-workspace)), the snapshot keeps every file as the preview drew them, the folders and `pathogen.json`'s list, and which program the preview showed. A snapshot of a program other than the main remembers that program.
+In a workspace of several files ([Files in a Workspace](#workspace-files-files-in-a-workspace)), the snapshot keeps every file as the preview drew them, the folders and `pathogen.json`'s list, and which program the preview showed. A snapshot of a program other than the main remembers that program. With more than one program, the panel names the one it takes, such as `Of try-sizes, the program shown`.
 
 ### When you can't take a snapshot yet
 
