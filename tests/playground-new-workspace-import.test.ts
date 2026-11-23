@@ -220,6 +220,16 @@ describe('Or import a project (2g)', () => {
     expect(input.getAttributeNames().sort()).toEqual(['autofocus', 'class', 'id', 'name', 'placeholder', 'type', 'value']);
   });
 
+  it('a quote in a link’s title stays in the name field, and adds nothing to the page', async () => {
+    // /workspace/new?state=… is a link anyone can send: its title fills the name.
+    const title = 'x" autofocus onfocus="alert(1)" y="';
+    const state = btoa(encodeURIComponent(JSON.stringify({ code: 'M 0 0;', title })));
+    const root = await mount({ state });
+    const input = root.querySelector<HTMLInputElement>('[name="name"]')!;
+    expect(input.value).toBe(title);
+    expect(input.hasAttribute('onfocus')).toBe(false);
+  });
+
   it('a project picked before is never used once the page opens code from a link', async () => {
     createSpy.mockResolvedValue({ id: 'n2', slug: 'from-a-link' });
     const { store } = await import('../playground/state/store.ts');
