@@ -49,7 +49,11 @@
 
 - `npm run typecheck:playground` reports three errors in files 2g doesn't touch (`svg-preview-pane.ts` lines 712 and 716, `font-loader.ts` line 551). They were there before this work.
 
-## Next
+## Shipped (2026-11-23)
+
+Pushed with the docs and the CHANGELOG (`0a9438c8..c752a015`, Pages only), live about two minutes later; `tmp/2g/check-live-2g.ts` passed its 7 checks on pathogen.studio, the link route's quote included. Your hand check, the same day: "Confirmed that import and export work as expected."
+
+## Next (before the push)
 
 - Your look at the decisions above, and a hand check if you'd like one: download a workspace of yours and open the folder in VS Code; import a project folder of your own, and a `.zip` made by Finder's Compress.
 - The CHANGELOG entry (draft in `tmp/2g/changelog-2g-draft.md`), its content review, and your approval.
