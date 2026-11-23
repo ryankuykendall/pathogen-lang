@@ -16,6 +16,12 @@ Deferred work from the modules, data and files effort. Each entry says what it i
 - **Needs:** the language server's `workspace/willRenameFiles` handler, reading every `.pathogen` file in the project folder (the same index as "Rename and find-references across files" above), and answering with a `WorkspaceEdit`.
 - **From:** 2d step 1 (note 52), 2026-11-09.
 
+### A listed program that's missing or a module, in VS Code's program list
+- **What:** VS Code's program list says why a program that `pathogen.json` lists isn't offered: the file doesn't exist, or it's a module.
+- **Today (2f):** such an entry is left out of the list without a word, as in the playground, where the workspace writes `entryPoints` itself and can't name one. Only the main gets a row that says why ("Not found", or "A module now, so it can't draw as the main"). In VS Code, `pathogen.json` is written by hand, so a typo in an entry goes unnoticed.
+- **Needs:** a row's wording (a mockup), and the same check as the main's for each entry.
+- **From:** the 2f code review, suggestion 4, and note 66 "Decided while building", 2026-11-23.
+
 ### Sharing a workspace
 - **What:** a way to share a workspace with someone, every file of it, that replaces the old Copy URL.
 - **Today:** Copy URL put one program's code in the link (`?state=`), so it can't carry a workspace with several files; it leaves the menu in 2d. Links copied before still open. Publishing to Explore is the only way to share a workspace.
@@ -23,6 +29,12 @@ Deferred work from the modules, data and files effort. Each entry says what it i
 - **From:** your answer on 2026-11-09 (note 52): "let's drop copy URL from the menu. We should probably come up with a more robust sharing solution, but we can save that experience for another time."
 
 ## Playground
+
+### The playground's code kept across a deploy
+- **What:** a returning visitor never runs some of the playground's files from before a deploy with others from after it.
+- **Found:** 2026-11-23, before 2f's push (note 66, "Before the push"). The live site sent JS and CSS with `max-age=14400` (4 hours), with no version in their URLs: the zone's Browser Cache TTL replaces Pages' `max-age=0` for files Cloudflare's edge caches. After 2f, a fresh pan-zoom bundle with an old cached `components/program-chip.js` would define `<program-chip>` twice and stop the workspace view loading. You chose to push 2f as is.
+- **Built, 2026-11-23 (the fixes batch):** the Pages worker sends the playground's code (`.js`, `.mjs`, `.css`, and `.json`, `.wasm`, `.map` beside it) with `Cache-Control: private, no-cache` (`website/_worker.ts` `revalidateEveryLoad`; `tests/pages-asset-cache.test.ts`): kept, but checked on every load, an unchanged file answering 304. HTML needs nothing: live, Pages' pages already come back `max-age=0, must-revalidate`.
+- **To check on the live site after the push:** whether Cloudflare keeps that header (`tmp/2f/check-cache-headers.ts`). The docs don't say whether the Browser Cache TTL replaces `no-cache`; they say `private` isn't cached at the edge and is passed on. If it's replaced anyway: a Cache Rule with Browser TTL "Respect origin" for `.js` and `.css` (a dashboard setting), or versioned URLs in the playground build.
 
 ### A render queue for thumbnails, not tied to the preview
 - **What:** a service anywhere in the app can ask for a workspace's thumbnail (or another raster size: the hero, a miniature, a snapshot) as a job: which workspace, which program (its main), which files at which content hash. The job compiles that program from those files on its own worker, draws it with the engine (`buildSvgTree` / `generateSvg`, the way the CLI and the admin "Regenerate" path do), rasterizes it, and uploads it. What the user does next (shows another program, switches or leaves the workspace, closes a tab) can't cancel it or change what it draws.
@@ -165,7 +177,7 @@ After the first release (phase 2 ships with 2e). Each entry comes from your answ
 ### Found in the phase 2 audit (playground and API)
 Existing issues outside the modules work, found while mapping phase 2 (`38-phase-2-audit.md`, "Found along the way"):
 - **"Copy URL" always opens the create form.** It reads `route.params.id`, but the workspace route's parameter is `slugId`, so every link is `/workspace/new?state=…` (`playground/utils/url-state.ts:105`, `utils/router.ts:39`). Decide what the link should open, then fix. **Moot since fb8a7798** (2d step 9a): Copy URL left the menu; links copied before still open. Its replacement is "Sharing a workspace" (Editor, above).
-- **Admin writes can lose a code save.** Unpublish, flag, unflag, requeue and approve rewrite the whole workspace record without re-reading it (`website/api/router.ts:1087-1088, 1417, 1485, 1514, 1563`).
+- **Admin writes can lose a code save.** Unpublish, flag, unflag, requeue and approve rewrite the whole workspace record without re-reading it (`website/api/router.ts:1087-1088, 1417, 1485, 1514, 1563`). **Fixed in 80f193f8** (storage step 3, 2026-11-08): every write of a workspace record goes through `patchWorkspaceRecord`, which re-reads it and applies only that request's change just before writing (KV has no compare-and-swap, so a read→put gap of a moment remains). The entry wasn't marked then. Pinned on 2026-11-23 by `tests/api/admin-writes-keep-saves.test.ts`: a save that lands while approve or requeue works is kept, and the approve test fails against the old whole-record write.
 - **Deleting a workspace leaves its thumbnail PNGs in R2** (`router.ts:545-590`).
 - **`POST /workspace/:id/copy` copies `flagged`.** The SPA doesn't use it (`router.ts:593-641`). **Fixed in 80f193f8** (storage step 3): a copy starts unflagged and unpublished (`router.ts:861-865` today).
 - **A dead read:** the client reads `workspace.thumbnailContentHash`, which the server never writes (`workspace-view.ts:530`).
@@ -182,6 +194,12 @@ Existing issues outside the modules work, found while mapping phase 2 (`38-phase
 
 ### Cache parsed modules across compiles in VS Code
 - Keyed by content hash. Only if large projects get slow (plan 12 follow-ups).
+
+### VS Code's drawing thread starts again after every stopped draw
+- **What:** the thread that draws the program list's miniatures (`packages/vscode-pathogen/src/programs-thread.ts`) is ended to stop a draw, and the next draw starts a new one, which loads the library and its fonts again.
+- **Today:** an edit to a file a program being drawn reads stops that draw. Typing in a module that many programs import can restart the thread often. The playground's programs worker is stopped the same way.
+- **Needs:** only if it feels slow: a draw that checks a cancel flag between its steps, ending the thread only after a timeout.
+- **From:** the 2f code review, finding 7 (`reviews/phase-2f-code-review.md`), 2026-11-23.
 
 ## Storage
 

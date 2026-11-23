@@ -1,5 +1,5 @@
 import { existsSync } from 'fs';
-import { resolve, dirname } from 'path';
+import { resolve, dirname, sep } from 'path';
 import { defineConfig, type Plugin } from 'vitest/config';
 
 // During .js → .ts migration, some .js files still import siblings via .js
@@ -15,6 +15,11 @@ function jsTsFallback(): Plugin {
       if (existsSync(abs)) return null; // .js exists, nothing to do
       const tsPath = abs.replace(/\.js$/, '.ts');
       if (existsSync(tsPath)) return tsPath;
+      // The blog's generated data (npm run build:blog; not in git): without it,
+      // a stand-in, so the Pages worker's tests run in a fresh checkout.
+      if (abs.endsWith(`${sep}website${sep}generated${sep}blog-data.js`)) {
+        return resolve(import.meta.dirname, 'tests/fakes/blog-data.ts');
+      }
       return null;
     },
   };

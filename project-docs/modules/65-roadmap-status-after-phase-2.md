@@ -2,6 +2,13 @@
 
 2026-11-21. Follows `37-roadmap-status.md` (2026-11-05), which stays as written: it is the record of where things stood when phase 2 began. The plan of record is still `02-decision-log-v1.md`, phase 2's step order is `42-phase-2-order.md`, and deferred items live in `backlog.md`.
 
+> **Update, 2026-11-23.** **2f shipped:** the VS Code preview shows the program you choose in a project, with the playground's program chip (note 66). It was pushed the same day (`0151e11e..b5cefe4b`), with the CHANGELOG entry. Phase 2 has one step left, **2g**. Since then, a small fixes batch:
+> - the phase 2 audit's "Admin writes can lose a code save" turned out fixed since 80f193f8, and is now pinned by a test;
+> - the playground's code is checked on every load;
+> - the Pages worker's tests run in a fresh checkout.
+>
+> 2f's own follow-ups are in `backlog.md`. The tables below are as of 2026-11-21, except the 2f rows.
+
 ## The phases
 
 | Phase | What | Status |
@@ -9,7 +16,7 @@
 | 0b | One shared loader for every surface; fonts in VS Code | Shipped 2026-10-26 |
 | 0a | Language groundwork: lexical named fns, the drawing context follows the call, `const`, built-in names reserved | Shipped 2026-11-02 |
 | 1a | `import`/`export`, `module;` files that never draw, in the CLI and VS Code | Shipped 2026-11-05 |
-| **2** | **Multi-file workspaces in the playground** | **Live on pathogen.studio since 2026-11-17.** Steps 2f and 2g not built (below) |
+| **2** | **Multi-file workspaces in the playground** | **Live on pathogen.studio since 2026-11-17.** 2f shipped 2026-11-23; step 2g not built (below) |
 | 3 | Data imports: JSON, CSV, text | Not started. Waits for the language changes in note 37 |
 | 4 | SVG import | Not started. Its scope needs another look (note 37) |
 | 5 | Globs, sharing modules between workspaces and people, images | Later |
@@ -44,7 +51,7 @@
 | 2c | Compile path and language services against a workspace | Done (note 51) |
 | 2d | The UI | Done (note 52) |
 | 2e | Publishing, forks, snapshots, admin tools, the public page | Done (note 58) |
-| 2f | VS Code parity for what the preview shows | **Not built** |
+| 2f | VS Code parity for what the preview shows | Done, shipped 2026-11-23 (note 66) |
 | 2g | Export and import a project | **Not built** |
 | 2h | Copy Debug Info | Done, in 2d step 8 |
 

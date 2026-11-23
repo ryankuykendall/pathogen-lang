@@ -1421,7 +1421,38 @@ export default {
     }
 
     // For everything else (extension-bearing paths: assets, JS, CSS,
-    // images, favicons, etc.), serve normally.
-    return env.ASSETS.fetch(request);
+    // images, favicons, etc.), serve normally. The playground's code is
+    // checked on every load (revalidateEveryLoad).
+    const asset = await env.ASSETS.fetch(request);
+    return CODE_FILE.test(path) ? revalidateEveryLoad(asset) : asset;
   },
 };
+
+/**
+ * The playground's code: its modules, the library bundles, the vendor chunks,
+ * its styles, and what code loads beside them (data, WebAssembly, source maps).
+ * The site's HTML needs nothing: Cloudflare doesn't hold pages for 4 hours,
+ * and Pages already sends them `max-age=0, must-revalidate`.
+ */
+const CODE_FILE = /\.(?:m?js|css|json|wasm|map)$/i;
+
+/**
+ * Ask the browser to check a code file on every load. Without it, Cloudflare
+ * let browsers keep JS and CSS for 4 hours unasked (the zone's Browser Cache
+ * TTL replaced Pages' `max-age=0`), so a visitor could run some files from
+ * before a deploy with others from after it: a module that a file from the
+ * other version expects to find, or not to find, breaks the page
+ * (project-docs/modules/66-phase-2f-plan.md, "Before the push").
+ *
+ * `no-cache`: the browser keeps the file but asks each time, and an unchanged
+ * file answers 304 with no body (its ETag is kept). `private`: Cloudflare
+ * doesn't cache it at the edge, and passes `private` on to the browser
+ * (developers.cloudflare.com/cache/concepts/cache-control/). The pages this
+ * worker renders, which the edge doesn't cache either, keep the Cache-Control
+ * they set. A 304 stays a 304.
+ */
+export function revalidateEveryLoad(response: Response): Response {
+  const headers = new Headers(response.headers);
+  headers.set('Cache-Control', 'private, no-cache');
+  return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
+}
