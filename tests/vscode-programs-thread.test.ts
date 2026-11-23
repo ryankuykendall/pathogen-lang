@@ -34,13 +34,19 @@ afterAll(() => {
 
 const at = (p: string): string => join(root, ...p.split('/'));
 
-describe.skipIf(!built)('the drawing thread (compiled)', () => {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const { DrawingThread } = require(
-    join(OUT, 'programs-thread.js'),
-  ) as typeof import('../packages/vscode-pathogen/src/programs-thread');
-  const thread = () =>
-    new DrawingThread(join(OUT, 'programs-worker.js'), { lib: join(DIST, 'index.cjs'), node: join(DIST, 'node.cjs') });
+// A tree with no builds (a fresh checkout, a commit tested alone) skips this, saying what it needs.
+describe.skipIf(!built)('the drawing thread (compiled: needs `npm run build:vscode`)', () => {
+  // Loaded when a test runs, not when the file is collected, so a skip never reads out/.
+  const thread = () => {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { DrawingThread } = require(
+      join(OUT, 'programs-thread.js'),
+    ) as typeof import('../packages/vscode-pathogen/src/programs-thread');
+    return new DrawingThread(join(OUT, 'programs-worker.js'), {
+      lib: join(DIST, 'index.cjs'),
+      node: join(DIST, 'node.cjs'),
+    });
+  };
 
   it("draws a program as the sources do, with an open tab's text", async () => {
     const t = thread();

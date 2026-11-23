@@ -7,7 +7,7 @@
  * the library is the extension's bundled copy, as the panel loads it, so this
  * needs `npm run build:vscode` (or, running from source, `npm run build`).
  */
-import { cpSync, mkdirSync, mkdtempSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs';
+import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -18,6 +18,14 @@ import { document, fake, Uri } from './fakes/vscode';
 import type { FakeDocument, FakePanel } from './fakes/vscode';
 
 const EXT = join(__dirname, '..', 'packages', 'vscode-pathogen');
+const DIST = join(__dirname, '..', 'dist');
+// What the panel loads, as preview.ts finds it: the .vsix bundle, or the repo's dist/.
+const built =
+  (existsSync(join(EXT, 'compiler', 'index.global.js')) &&
+    existsSync(join(EXT, 'server', 'node_modules', 'pathogen-lang', 'dist', 'node.cjs'))) ||
+  ['index.global.js', 'index.cjs', 'node.cjs'].every((f) => existsSync(join(DIST, f)));
+// A tree with no builds (a fresh checkout, a commit tested alone) skips this, saying what it needs.
+const needs = built ? '' : ' (skipped: needs `npm run build`)';
 const FIXTURE = join(__dirname, '..', 'project-docs', 'modules', 'mockups-2f-vscode-chip', 'gears-project');
 const TMP = join(__dirname, 'tmp');
 let base = '';
@@ -100,7 +108,7 @@ async function open(p: string): Promise<FakePanel> {
   return panel;
 }
 
-describe('the preview panel in a project with a main', () => {
+describe.skipIf(!built)(`the preview panel in a project with a main${needs}`, () => {
   it("opened from the main's tab: titled for it, its update, and the program list", async () => {
     const p = await open('main.pathogen');
     await until('the main', () => lastUpdate(p)?.source === read('main.pathogen'));
@@ -232,7 +240,7 @@ describe('the preview panel in a project with a main', () => {
   });
 });
 
-describe('without a main', () => {
+describe.skipIf(!built)(`without a main${needs}`, () => {
   it('the file you edit, as before, with no list; a module is empty with its notice', async () => {
     const lone = join(base, `lone-${count}`);
     mkdirSync(lone, { recursive: true });
