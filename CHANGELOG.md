@@ -5,6 +5,85 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] - 2026-11-23 (the VS Code preview shows a project's programs)
+
+Phase 2f of the multi-file work: VS Code's preview works like the playground's. It shows the program you choose in a project, and a program chip beside the zoom controls chooses it. Not released yet: VS Code users build the extension from this repository.
+
+### Added
+
+#### Core
+
+- **For library callers:**
+  - `readProjectMain` (`pathogen-lang/node`) reads and checks a project folder's main as the CLI's folder compile does, with the CLI's messages;
+  - `pathogen-lang/pan-zoom` registers `<program-chip>` beside `<pathogen-zoom-pill>`, and exports `registerProgramChip`, `DEFAULT_BADGE_TITLE` and the types `ProgramChipElement` and `ProgramChipItem`. The chip's colors fall back to VS Code's theme when the playground's aren't there.
+- **No new built-in names.** 2f adds no keywords, standard-library functions, constructors, enums or namespaces.
+
+#### VS Code
+
+- **In a project with a main,** the preview stays on the program you choose while you move between the project's files (docs/projects.md "The preview in VS Code"). That's a project whose `pathogen.json` has `entryPoints`, or one with a `main.pathogen` beside its `pathogen.json`.
+  - **The preview button chooses what's shown.** From a program's tab, it shows that program; from a module's tab, it shows the program chosen in that project, the main at first.
+  - **Editing a module redraws the program shown,** so you can change a module and watch a program that uses it. Before, a module's preview was empty.
+  - **Each project keeps its own choice** while the preview is open. A file in another project shows that project's choice; a file without a main shows itself. The next preview starts from the tab you open it from.
+  - **If the program shown is deleted, or becomes a module,** the preview goes back to the main. If you rename or move it in VS Code, the preview follows it; renamed or moved outside VS Code, it counts as deleted.
+  - **If the main can't be shown,** the preview says why in the CLI's words. You can still choose another program.
+- **The program chip,** beside the zoom controls, names the program shown when the list has more than one program. Click it for the **program list**; a check marks the program shown, and choosing another shows it. The list holds:
+  - the main, then the other programs in `entryPoints`' order, each with a small drawing, its name and its path;
+  - a program `pathogen.json` doesn't list, while you're editing it or it's shown, marked "not in pathogen.json";
+  - a dot on each program that uses the file you're editing, and on that file if it's a program, while it isn't the one shown;
+  - a main that can't be shown, saying "Not found", or "A module now, so it can't draw as the main".
+
+  When another program has an error, the chip shows a red dot, and that program's row says where it failed. A program too detailed for its small drawing gets a blank tile; hover it to see "Too detailed to draw this small". The small drawings are made on a thread of their own, so a slow program never holds up the preview or the editor. Hover a row and click **Open in the editor** to open its file without changing the preview.
+- **Without a main,** the preview works as before: it shows the file you're editing, and a module's preview is empty. That's a file with no `pathogen.json` in its folder or above, or one whose `pathogen.json` has no `entryPoints` and no `main.pathogen` beside it (a `{}` that only marks the project folder), or has an error.
+
+#### Documentation
+
+- **docs/projects.md:**
+  - a new section, "The preview in VS Code";
+  - its VS Code bullet under "In each tool" points to the new section;
+  - under `pathogen.json`, `{}` and `{ "entryPoints": ["main.pathogen"] }` now "name the same main", with a note that the VS Code preview treats a `{}` with no `main.pathogen` beside it as a project without a main.
+- **docs/modules.md:** the VS Code preview bullet under "In each tool" says what the preview shows with and without a main.
+
+#### Development
+
+- **New tests,** each named for what it covers:
+  - `tests/node-project-main.test.ts`
+  - `tests/vscode-preview-programs.test.ts`
+  - `tests/vscode-program-drawing.test.ts`
+  - `tests/vscode-preview-drawings.test.ts`
+  - `tests/vscode-programs-thread.test.ts`
+- **`tests/vscode-preview-parity.test.ts`** pins each playground rule the extension copies (it can't import them) to its original.
+- **`tests/vscode-preview-panel.test.ts`** drives the preview panel's VS Code code against a stand-in for VS Code (`tests/fakes/vscode.ts`, which `vitest.config.ts` aliases as `vscode`).
+- **Updated tests:** `tests/playground-program-chip.test.ts` (the chip from `src/ui`, its note, `popover-only`, badge title and height) and `tests/vscode-preview-modules.test.ts` (one spelling for a deleted file's path).
+- **The tests that need builds** (`vscode-preview-panel`, `vscode-programs-thread`) skip by name in a tree without them, such as a fresh checkout.
+- **`project-docs/modules/verify/verify-2f-preview.mjs`** checks the shipped extension code and the real preview page under its security policy, in Dark and Light Modern.
+- **`project-docs/modules/verify/shoot-2f-chip-height.ts`** measures and shoots the zoom controls and the chip on both surfaces.
+- **Moved:**
+  - The playground's program chip moved from `playground/components/program-chip.ts` and its `.css` to `src/ui/program-chip.ts`. The playground loads it with the pan-zoom bundle and looks and works as before.
+  - The CLI's folder compile checks the main through `readProjectMain`. Its behavior and messages are unchanged.
+- **`packages/vscode-pathogen/CLAUDE.md`** lists the new files and tests.
+- **Tested:**
+  - the full suite (9,463 tests);
+  - `verify-2f-preview.mjs`, 26 of 26 checks;
+  - the playground's chip checks from 2d (steps 5a, 5b and 9b), against the moved chip;
+  - one code review, whose six fixes are in;
+  - the installed `.vsix`, checked by hand in VS Code.
+- **Notes:**
+  - note 65 records where the modules effort stands after phase 2;
+  - note 66 has 2f's design, the design decisions and the build;
+  - `mockups-2f-vscode-chip/` holds the approved mockup;
+  - `reviews/phase-2f-docs-review.md`, `phase-2f-code-review.md` and `phase-2f-changelog-review.md` record the three reviews.
+
+### Changed
+
+#### VS Code
+
+- **The preview's title names the program it shows,** such as `Preview poster.pathogen`. It still says "Pathogen Preview" when there's no program to name: a project whose `entryPoints` is empty or names a file twice.
+- **The zoom controls are their full height,** 34 px, as in the playground. The preview page's own styles had taken their padding, leaving them 28 px.
+
+#### Playground
+
+- **The program chip is the zoom controls' height,** 34 px rather than 30, in the playground and in VS Code. Its open and focus rings are drawn inside it, so it never stands taller than the zoom controls beside it.
+
 ## [Unreleased] - 2026-11-16 (a workspace holds several files)
 
 Phase 2 of the multi-file playground, live on pathogen.studio since 2026-11-17. Everything saved before then moved to the new storage that day (workspaces, approvals, the review queues and snapshots), and older approvals got their card images on 2026-11-21 (see Development, below).
