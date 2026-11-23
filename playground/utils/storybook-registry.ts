@@ -453,8 +453,9 @@ layer('hex').apply { circle(60, 100, 40) }`,
     notes:
       'workspace-view gives it the rows (services/program-list.ts, with each program’s drawing from services/program-drawings.ts), the program shown, the file being edited and the red dot, and acts on show-program and open-file. It says program-list-open when its list opens, which is when the miniatures are drawn. The miniatures here are stand-ins; in the playground each is the program’s own drawing on the canvas colour. Here a row only moves the check.',
     render: (container, props) => {
-      Promise.all([import('../components/program-chip.js'), import('../services/program-list.js')])
-        .then(([, { chipAlert, MODULE_MAIN }]) => {
+      // <program-chip> itself comes with the pan-zoom bundle (src/ui/program-chip.ts), as the zoom pill does.
+      Promise.all([import('../services/program-list.js'), import('../utils/file-icons.js')])
+        .then(([{ chipAlert, MODULE_MAIN }, { MAIN_BADGE_TITLE }]) => {
           type Row = ProgramItem;
           // Stand-in miniatures: circles, as the gears draw at that size.
           const art = (circles: [number, number, number][]): string =>
@@ -528,6 +529,7 @@ layer('hex').apply { circle(60, 100, 40) }`,
           stage.appendChild(bar);
           container.appendChild(stage);
           const draw = (): void => {
+            chip.badgeTitle = MAIN_BADGE_TITLE;
             chip.items = items;
             chip.shown = shown;
             chip.editing = editing;

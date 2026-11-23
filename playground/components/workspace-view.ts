@@ -13,7 +13,6 @@ import './file-tree.js';
 import './inspector-panel.js';
 import './export-modal.js';
 import './playground-main.js';
-import './program-chip.js';
 import './svg-preview-pane.js';
 import './thumbnail-crop-modal.js';
 import './edit-workspace-metadata-modal.js';
@@ -57,7 +56,9 @@ import type { CanvasChangeDetail, CanvasSettings } from './canvas-panel.js';
 import type { EditorTabs } from './editor-tabs.js';
 import type { EntryCheck, FileTree } from './file-tree.js';
 import type { ZeroStateAction } from './editor-zero-state.js';
-import type { ProgramChip } from './program-chip.js';
+// <program-chip> comes with the pan-zoom bundle, shared with VS Code's preview (src/ui/program-chip.ts).
+import type { ProgramChipElement as ProgramChip } from '../../dist/pan-zoom';
+import { MAIN_BADGE_TITLE } from '../utils/file-icons.js';
 import { applyToWorkspace, workspaceState } from '../services/workspace-apply.js';
 import {
   deleteSummary,
@@ -2148,6 +2149,7 @@ export class WorkspaceView extends HTMLElement {
     }
     const shown = programToShow(workspace, store.get('shownProgram') as string | null);
     const items = programItems(programs, { main, mainIsLibrary }, { rows, editing: workspace.openFile, shown });
+    chip.badgeTitle = MAIN_BADGE_TITLE;
     chip.items = items;
     chip.shown = shown;
     chip.editing = workspace.openFile;
@@ -2421,8 +2423,7 @@ export class WorkspaceView extends HTMLElement {
       // Pull viewBox from the compile result (falls back to 200x200 when the
       // source has no `define ViewBox`).
       const compiledViewBox = (result.viewBox as
-        | { originX: number; originY: number; width: number; height: number }
-        | undefined) ?? {
+        { originX: number; originY: number; width: number; height: number } | undefined) ?? {
         originX: 0,
         originY: 0,
         width: 200,

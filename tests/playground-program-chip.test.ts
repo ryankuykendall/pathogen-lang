@@ -5,21 +5,22 @@
 // upward, is the one way to show another. A view: workspace-view gives it the
 // rows and hears show-program and open-file.
 
+//
+// The chip lives in src/ui since 2f, shared with VS Code's preview, and comes
+// with the pan-zoom bundle as the zoom pill does.
+
 import { afterEach, beforeAll, describe, expect, it } from 'vitest';
 
+import { MAIN_BADGE_TITLE } from '../playground/utils/file-icons.js';
+import { DEFAULT_BADGE_TITLE, registerProgramChip } from '../src/ui/program-chip';
+
 import type { ProgramItem } from '../playground/services/program-list.js';
+import type { ProgramChipElement } from '../src/ui/program-chip';
 
-type Chip = HTMLElement & {
-  items: ProgramItem[];
-  shown: string | null;
-  editing: string | null;
-  alert: string | null;
-  readonly isOpen: boolean;
-  close: () => void;
-};
+type Chip = ProgramChipElement;
 
-beforeAll(async () => {
-  await import('../playground/components/program-chip.js');
+beforeAll(() => {
+  registerProgramChip();
 });
 
 afterEach(() => {
@@ -120,13 +121,33 @@ describe('the list', () => {
       ['gears', 'demos/gears.pathogen', false],
     ]);
     const badge = rows(chip)[0].querySelector<HTMLElement>('.badge')!;
-    expect([badge.textContent, badge.title]).toEqual([
-      'main',
+    // The page says what the badge means: VS Code's preview leaves the default.
+    expect([badge.textContent, badge.title]).toEqual(['main', DEFAULT_BADGE_TITLE]);
+    expect(DEFAULT_BADGE_TITLE).toBe('The main: first in pathogen.json’s entryPoints');
+    chip.badgeTitle = MAIN_BADGE_TITLE;
+    expect(rows(chip)[0].querySelector<HTMLElement>('.badge')!.title).toBe(
       'The main: first in pathogen.json’s entryPoints. Thumbnails and publishing use it',
-    ]);
+    );
     expect(root(chip).querySelector<HTMLElement>('.chk')!.title).toBe('Shown');
     expect(showOf(chip, 'main.pathogen').getAttribute('aria-current')).toBe('true');
     expect(openOf(chip, 'demos/gears.pathogen').title).toBe('Open demos/gears.pathogen in the editor');
+  });
+
+  it('a note after a row\'s path (VS Code\'s "not in pathogen.json"), and none in its place when the row has an error', () => {
+    const chip = mount([...ROWS, row('sketch.pathogen', { note: 'not in pathogen.json' })]);
+    button(chip).click();
+    const sketch = rows(chip)[3].querySelector('.p')!;
+    expect(sketch.textContent).toBe('sketch.pathogen · not in pathogen.json');
+    expect(sketch.querySelector('.note')!.textContent).toBe('· not in pathogen.json');
+    expect(rows(chip)[0].querySelector('.note')).toBeNull();
+    chip.items = [
+      ...ROWS,
+      row('sketch.pathogen', { note: 'not in pathogen.json', error: 'Error in sketch.pathogen line 2' }),
+    ];
+    expect(rows(chip)[3].querySelector('.p')).toBeNull();
+    // "line 2" kept together by a no-break space.
+    const nbsp = String.fromCodePoint(0xa0);
+    expect(rows(chip)[3].querySelector('.e')!.textContent).toBe(`Error in sketch.pathogen line${nbsp}2`);
   });
 
   it('says when it opens, once, so the miniatures are drawn then (step 5b)', () => {
@@ -292,6 +313,41 @@ describe('from the keyboard', () => {
     document.body.dispatchEvent(new window.KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
     document.removeEventListener('keydown', listen);
     expect([chip.isOpen, heardAfter]).toEqual([false, ['Escape']]);
+  });
+
+  it('below 800 px a resize leaves the sheet open, unless popover-only (VS Code: a narrow panel is no phone)', () => {
+    const real = window.matchMedia;
+    window.matchMedia = ((query: string) => ({ matches: query === '(max-width: 800px)' })) as typeof window.matchMedia;
+    try {
+      const sheet = mount();
+      button(sheet).click();
+      window.dispatchEvent(new window.Event('resize'));
+      expect(sheet.isOpen).toBe(true);
+      sheet.close();
+      const popover = mount();
+      popover.setAttribute('popover-only', '');
+      button(popover).click();
+      window.dispatchEvent(new window.Event('resize'));
+      expect(popover.isOpen).toBe(false);
+    } finally {
+      window.matchMedia = real;
+    }
+  });
+
+  it('every narrow-window rule (the sheet, its dimming, Open in the editor always shown) is off when popover-only', () => {
+    const chip = mount();
+    const css = [...root(chip).adoptedStyleSheets]
+      .flatMap((s) => [...s.cssRules].map((r) => r.cssText))
+      .concat([...root(chip).querySelectorAll('style')].map((s) => s.textContent ?? ''))
+      .join('\n');
+    // The @media block, up to its own closing brace.
+    const start = css.indexOf('@media (max-width: 800px)');
+    let end = css.indexOf('{', start) + 1;
+    for (let depth = 1; depth > 0; end++) depth += css[end] === '{' ? 1 : css[end] === '}' ? -1 : 0;
+    const narrow = css.slice(css.indexOf('{', start) + 1, end - 1);
+    const selectors = [...narrow.matchAll(/([^{}]+)\{[^{}]*\}/g)].map((m) => m[1].trim());
+    expect(selectors.length).toBeGreaterThanOrEqual(6);
+    for (const selector of selectors) expect(selector).toMatch(/^:host\(:not\(\[popover-only\]\)\) /);
   });
 
   it('Right reaches the row’s Open in the editor, Left goes back', () => {

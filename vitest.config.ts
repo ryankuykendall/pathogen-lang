@@ -28,6 +28,8 @@ export default defineConfig({
     alias: [
       { find: /^pathogen-lang$/, replacement: resolve(import.meta.dirname, 'src/index.ts') },
       { find: /^pathogen-lang\/node$/, replacement: resolve(import.meta.dirname, 'src/node/index.ts') },
+      // The extension's VS Code glue runs against a stand-in (tests/vscode-preview-panel.test.ts).
+      { find: /^vscode$/, replacement: resolve(import.meta.dirname, 'tests/fakes/vscode.ts') },
     ],
   },
   test: {

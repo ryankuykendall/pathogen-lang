@@ -9,18 +9,15 @@ import {
   ensureOpentype,
   formatModuleLoadError,
   generateSvg,
-  isModuleSource,
   planFontDirectives,
   planImports,
   PROJECT_FILE_NAME,
-  projectMain,
   resolveFontsInFiles,
   resolveModules,
   toJsonDocument,
   WARNING_CODES,
 } from '.';
 import { groupWarnings } from './evaluator/warning-groups';
-import { mainCaseMessage, mainIsModuleMessage, mainLeavesMessage, mainMissingMessage } from './host/project';
 import {
   createNodeFontHost,
   createNodeProjectHost,
@@ -30,7 +27,7 @@ import {
   loadProjectFileSync,
   offlineReason,
   projectEntry,
-  readProjectFile,
+  readProjectMain,
 } from './node';
 
 import type {
@@ -414,37 +411,12 @@ async function readInput(arg: string): Promise<{ source: string; sourceFile: str
       `${folder} is a folder with no pathogen.json. Add one (an empty {} compiles main.pathogen), or compile a file directly.`,
     );
   }
-  const parsed = loadProjectFileSync(join(root, PROJECT_FILE_NAME));
-  if (!parsed.ok) fail(parsed.message);
-  const chosen = projectMain(parsed.project, root);
-  if (!chosen.ok) fail(chosen.message);
-
   // The main is read as an import is: its letter case must match the disk, and
-  // a link on its way must not lead outside the project folder.
-  const shown = chosen.path.slice(1);
-  const mainFile = join(folder, ...chosen.path.split('/').filter(Boolean));
-  const read = await readProjectFile(root, chosen.path);
-  if (!read.ok) {
-    const why = (): string => {
-      switch (read.code) {
-        case 'not-found':
-          return mainMissingMessage(folder, shown, chosen.listed, resolve(mainFile));
-        case 'case-mismatch':
-          return mainCaseMessage(folder, shown, read.actual.slice(1));
-        case 'escapes-root':
-          return mainLeavesMessage(folder, shown, root);
-        case 'folder':
-          return `${mainFile} is a folder, not a file.`;
-        case 'unreadable':
-          return `${mainFile} could not be read: ${read.detail}`;
-      }
-    };
-    fail(why());
-  }
-  // Decoded as `readFileSync(file, 'utf-8')` decodes a file named directly, so both compile alike.
-  const source = Buffer.from(read.bytes).toString('utf8');
-  if (isModuleSource(source)) fail(mainIsModuleMessage(folder, shown, chosen.listed));
-  return { source, sourceFile: mainFile, projectRoot: root };
+  // a link on its way must not lead outside the project folder. The VS Code
+  // preview checks a project's main the same way (readProjectMain).
+  const main = await readProjectMain(folder);
+  if (!main.ok) fail(main.message);
+  return { source: main.source, sourceFile: main.file, projectRoot: root };
 }
 
 async function parseArgs(args: string[]): Promise<{

@@ -20,7 +20,15 @@ import {
   withOpenDocuments,
 } from '../host/load-modules';
 import { resolveProjectPath } from '../host/paths';
-import { parseProjectFile, PROJECT_FILE_NAME } from '../host/project';
+import {
+  mainCaseMessage,
+  mainIsModuleMessage,
+  mainLeavesMessage,
+  mainMissingMessage,
+  parseProjectFile,
+  PROJECT_FILE_NAME,
+  projectMain,
+} from '../host/project';
 
 import type { Dirent } from 'node:fs';
 import type { FileHandle } from 'node:fs/promises';
@@ -331,6 +339,98 @@ export function loadProjectFileSync(projectFile: string): ParsedProjectFile {
 /** loadProjectFileSync for callers that expect a promise (the editors). */
 export async function loadProjectFile(projectFile: string): Promise<ParsedProjectFile> {
   return loadProjectFileSync(projectFile);
+}
+
+/** Why a project's main can't be compiled, as readProjectMain finds it. */
+export type ProjectMainProblem =
+  /** pathogen.json itself has an error. */
+  | 'project-file'
+  /** `entryPoints` breaks a rule of the list: empty, or a file named twice. */
+  | 'list'
+  | 'not-found'
+  | 'case-mismatch'
+  | 'escapes-root'
+  | 'folder'
+  | 'unreadable'
+  /** It starts with `module;`. */
+  | 'module';
+
+export type ProjectMainRead =
+  | {
+      ok: true;
+      /** Its project path: "/main.pathogen". */
+      path: string;
+      /** Named first in `entryPoints`, rather than main.pathogen by convention. */
+      listed: boolean;
+      /** Its OS path, under `folder` as given. */
+      file: string;
+      source: string;
+    }
+  | {
+      ok: false;
+      problem: ProjectMainProblem;
+      /** The CLI's own words (docs/projects.md Errors). */
+      message: string;
+      /** The main's project path, when pathogen.json names one or main.pathogen stands in. */
+      path: string | null;
+      listed: boolean;
+    };
+
+/**
+ * A project folder's main, read and checked as the CLI's folder compile does
+ * (docs/projects.md): the first entry in pathogen.json's `entryPoints`, or
+ * main.pathogen; read as an import is, so its letter case must match the disk
+ * and a link on its way must not lead outside the folder; and a program, not
+ * a module. Each problem comes with the CLI's message. The VS Code preview
+ * shows the same message when the main it would show can't be shown.
+ *
+ * `folder` holds pathogen.json, as the user named it; messages name it by
+ * `label` (default: `folder`). `openText` gives an open editor's text for a
+ * file, which then counts over the disk's when telling a module.
+ */
+export async function readProjectMain(
+  folder: string,
+  options: { label?: string; openText?: (absolutePath: string) => string | undefined } = {},
+): Promise<ProjectMainRead> {
+  const label = options.label ?? folder;
+  const root = resolve(folder);
+  const parsed = loadProjectFileSync(join(root, PROJECT_FILE_NAME));
+  if (!parsed.ok) return { ok: false, problem: 'project-file', message: parsed.message, path: null, listed: false };
+  const listed = parsed.project.entryPoints !== undefined;
+  const chosen = projectMain(parsed.project, root);
+  if (!chosen.ok) {
+    const first = parsed.project.entryPoints?.[0]?.path ?? null;
+    return { ok: false, problem: 'list', message: chosen.message, path: first, listed };
+  }
+
+  const shown = chosen.path.slice(1);
+  const file = join(folder, ...chosen.path.split('/').filter(Boolean));
+  const fail = (problem: ProjectMainProblem, message: string): ProjectMainRead => ({
+    ok: false,
+    problem,
+    message,
+    path: chosen.path,
+    listed: chosen.listed,
+  });
+  const read = await readProjectFile(root, chosen.path);
+  if (!read.ok) {
+    switch (read.code) {
+      case 'not-found':
+        return fail('not-found', mainMissingMessage(label, shown, chosen.listed, resolve(file)));
+      case 'case-mismatch':
+        return fail('case-mismatch', mainCaseMessage(label, shown, read.actual.slice(1)));
+      case 'escapes-root':
+        return fail('escapes-root', mainLeavesMessage(label, shown, root));
+      case 'folder':
+        return fail('folder', `${file} is a folder, not a file.`);
+      case 'unreadable':
+        return fail('unreadable', `${file} could not be read: ${read.detail}`);
+    }
+  }
+  // Decoded as `readFileSync(file, 'utf-8')` decodes a file named directly, so both compile alike.
+  const source = options.openText?.(resolve(file)) ?? Buffer.from(read.bytes).toString('utf8');
+  if (isModuleSource(source)) return fail('module', mainIsModuleMessage(label, shown, chosen.listed));
+  return { ok: true, path: chosen.path, listed: chosen.listed, file, source };
 }
 
 // ---------------------------------------------------------------------------

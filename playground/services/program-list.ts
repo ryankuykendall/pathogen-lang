@@ -11,26 +11,13 @@ import { entryPointsAfterEdit } from './workspace-edits.js';
 
 import type { ErrorPlace } from './error-place.js';
 import type { Change, WorkspaceState } from './workspace-edits.js';
+import type { ProgramChipItem } from '../../dist/pan-zoom';
 
-/** One program in the chip's list. */
-export interface ProgramItem {
-  path: string;
-  /** The file's name without `.pathogen`, and its folder when two programs share the name (the tabs' rule). */
-  name: string;
-  hint: string | null;
-  /** The `main` badge: on a main that isn't main.pathogen. */
-  badge: boolean;
-  /** Why it doesn't draw, as its row says it; null when it does. */
-  error: string | null;
-  /** The dot: it's the file you're editing ('self'), or it uses it ('import'). Step 5b. */
-  uses: 'self' | 'import' | null;
-  /** Its miniature is being redrawn after an edit. Step 5b. */
-  updating: boolean;
-  /** Its miniature's URL; null for a blank tile. Step 5b. */
-  miniature: string | null;
-  /** Why its tile is blank, on hover (TOO_DETAILED); none otherwise. Step 5b. */
-  tileNote?: string | null;
-}
+/**
+ * One program in the chip's list. The chip is shared with VS Code's preview
+ * (src/ui/program-chip.ts, since 2f), so its row's shape is defined there.
+ */
+export type ProgramItem = ProgramChipItem;
 
 /** A blank tile's hover text: the drawing is too large to draw small (agreed 2026-11-13, note 52). */
 export const TOO_DETAILED = 'Too detailed to draw this small';

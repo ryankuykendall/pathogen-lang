@@ -98,6 +98,33 @@ A playground workspace writes its own `pathogen.json`, and every program is on i
 - **Renamed or moved outside VS Code,** the program shown counts as deleted, so the preview goes back to the main. VS Code's own rename events don't see those changes; the file watcher sees the delete.
 - **A main that's a module:** its row reuses the playground's wording, "A module now, so it can't draw as the main".
 
+## The docs, approved (2026-11-23)
+
+You approved the docs as drafted, with the three decisions flagged for you (a module tab's button keeps the choice; an unlisted program stays while shown; the module-main row reuses `MODULE_MAIN`). Committed in 10713712.
+
+## The build (2026-11-23)
+
+Built in the plan's order: tests before each piece. A code review's six fixes are in (`reviews/phase-2f-code-review.md`), and the full suite passes. Left: your check of the installed `.vsix` (`dist-vsix/vscode-pathogen.vsix`), and the CHANGELOG entry.
+
+| Plan step | What was built |
+|---|---|
+| The rules | `packages/vscode-pathogen/src/preview-programs.ts`: `readProject`, `ProgramChoices`, `programRows` (`tests/vscode-preview-programs.test.ts`, one test per rule in the docs) |
+| The main's check | `readProjectMain` in `src/node/index.ts`, moved out of `src/cli.ts`: the CLI's folder compile and the preview check the main with one function and one set of messages (`tests/node-project-main.test.ts`; the CLI's 148 tests unchanged) |
+| One chip, not a copy | `src/ui/program-chip.ts`, moved from `playground/components/` and registered by the pan-zoom bundle as the zoom pill is. Three additions: VS Code's colours as each token's second fallback; `popover-only`, which keeps the list a popover at any width; `badgeTitle`, since the playground's "Thumbnails and publishing use it" isn't true in VS Code. The playground's own checks (2d steps 5a, 5b, 9b) pass against it |
+| Miniatures and errors | Each program is drawn on a thread of its own in the extension host (`programs-worker.ts`, `programs-thread.ts`), with its imports and fonts loaded as the CLI loads them (`program-drawing.ts`), by the playground's scheduling rules (`preview-drawings.ts`). They reach the page as `data:` URLs: the webview's CSP allows no blob URLs |
+| The panel | `preview.ts`: the program shown kept apart from the active editor; one refresh at a time re-reads the project; renames and deletes; the page's choices taken only for programs in the list it was sent; the panel titled for what it shows |
+| The page | `webview-html.ts`: the chip beside the zoom controls; a press or wheel on it never pans the drawing |
+| Checks | `tests/vscode-preview-parity.test.ts` pins every rule the extension copies from the playground (it can't import them); `tests/vscode-preview-panel.test.ts` drives `preview.ts` against a stand-in for VS Code; `verify/verify-2f-preview.mjs` runs the shipped `out/` code, the bundled library, the real drawing thread and the real page under its CSP (24 checks, screenshots in `verify/2f-preview/`) |
+
+**Decided while building, say if you disagree:**
+- **A main that can't be read** (wrong letter case, a link out of the folder, a folder, unreadable): its row says "Not found", the only approved word for it. The preview shows the CLI's exact message, which says which.
+- **`entryPoints` breaking a rule of the list** (empty, or a file listed twice): there's no main to badge, so no main row. The preview shows the CLI's message ("is empty", "lists the same file twice"), and the other programs can still be chosen.
+- **A listed program that's missing or a module** isn't offered, as in the playground. Only the main stays, whatever it is.
+- **The tiles are white** in VS Code, the preview's canvas colour, as in the mockup. The playground's tiles are unchanged.
+- **A program that starts failing keeps its last miniature**, faded under its error, as the playground's rows do.
+- **A program shown that's gone for a moment** (a save that replaces the file, a checkout) is kept for 2 seconds. The preview shows the main meanwhile, then the program again if it's back in time. Gone longer, it counts as deleted. This came from the code review.
+- **"not in pathogen.json" is cut short** ("not in p…") in the list's 292 px width, as in the approved mockup. The full words are in the docs.
+
 ## The plan, once answered
 
 1. **Docs first,** each with a content review and your approval:

@@ -10,9 +10,18 @@
  *                             update; `modules` is the files the document imports, `files` as [path, file]
  *                             entries (preview-modules.ts), which compile() takes back as a Map
  *                   `status`  { text } e.g. "Loading fonts…" while a first download runs
+ *                   `programs` { items, shown, editing, alert } the program list for the chip (2f,
+ *                             preview-programs.ts): fewer than two items hides it
  *   webview → host  `ready`        the page loaded (again: a hidden panel reloads)
  *                   `needFonts`    { ids } an update named fonts this page doesn't hold
  *                   `displayFonts` { families } curated families `<text>` names only in a style block
+ *                   `showProgram`  { path } a program chosen in the list
+ *                   `openFile`     { path } a row's Open in the editor
+ *                   `programList`  { open } the list opened or closed (the program shown is drawn small only while open)
+ *
+ * The chip is the shared <program-chip> (src/ui/program-chip.ts), registered
+ * by pan-zoom.global.js as <pathogen-zoom-pill> is; its colours fall back to
+ * the --vscode-* variables, and `popover-only` keeps its list a popover.
  *
  * No `vscode` import, so a browser harness can load the real page under its
  * real CSP (project-docs/modules/verify/verify-vscode-fonts.mjs).
@@ -181,6 +190,37 @@ export function getWebviewContent(compilerUri: string, panZoomUri: string, cspSo
     /* Zoom control is the shared <pathogen-zoom-pill>, registered by the
        already-loaded pan-zoom.global.js bundle. Its theming falls back to
        --vscode-* variables automatically. */
+
+    /* The zoom controls and the program chip (2f; mockup v1, as in the
+       playground's preview), centred together at the bottom. The pill places
+       itself when it's alone; here the group places it. Above the error
+       message, so the list opens over it. */
+    .bottom-group {
+      position: absolute;
+      bottom: 0.75rem;
+      left: 0;
+      right: 0;
+      z-index: 40;
+      padding: 0 0.5rem;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 8px;
+      pointer-events: none;
+    }
+    .bottom-group pathogen-zoom-pill,
+    .bottom-group program-chip {
+      pointer-events: auto;
+    }
+    /* In a narrow preview the chip gives way (its name shortens), not the pill. */
+    .bottom-group program-chip {
+      min-width: 0;
+    }
+    .bottom-group pathogen-zoom-pill {
+      position: static;
+      transform: none;
+      flex: none;
+    }
 
     /* Side panel (layers, vars, palette) */
     .side-panel {
@@ -375,7 +415,10 @@ export function getWebviewContent(compilerUri: string, panZoomUri: string, cspSo
         </svg>
       </div>
 
-      <pathogen-zoom-pill id="zoom-pill"></pathogen-zoom-pill>
+      <div class="bottom-group" id="bottom-group">
+        <pathogen-zoom-pill id="zoom-pill"></pathogen-zoom-pill>
+        <program-chip id="program-chip" popover-only hidden></program-chip>
+      </div>
     </div>
 
     <div class="side-panel" id="side-panel">
@@ -412,6 +455,7 @@ export function getWebviewContent(compilerUri: string, panZoomUri: string, cspSo
     const navigatorPaths = document.getElementById('navigator-paths');
     const navigatorViewport = document.getElementById('navigator-viewport');
     const zoomPill = document.getElementById('zoom-pill');
+    const programChip = document.getElementById('program-chip');
     const sidePanel = document.getElementById('side-panel');
 
     if (typeof PathogenLang === 'undefined') {
@@ -555,6 +599,33 @@ export function getWebviewContent(compilerUri: string, panZoomUri: string, cspSo
 
     // (No scroll hint: plain scroll zooms directly, so the "Ctrl + scroll"
     // hint that blog embeds use isn't needed here.)
+
+    // --- The program chip (2f) ---
+    // Its presses and wheel turns are its own: not a pan or a zoom of the
+    // drawing (the controller listens on the container around it).
+    for (const type of ['pointerdown', 'mousedown']) {
+      programChip.addEventListener(type, (e) => e.stopPropagation());
+    }
+    programChip.addEventListener('wheel', (e) => e.stopPropagation(), { passive: true });
+    programChip.addEventListener('show-program', (e) => vscode.postMessage({ type: 'showProgram', path: e.detail.path }));
+    programChip.addEventListener('open-file', (e) => vscode.postMessage({ type: 'openFile', path: e.detail.path }));
+    programChip.addEventListener('program-list-open', () => vscode.postMessage({ type: 'programList', open: true }));
+    programChip.addEventListener('program-list-close', () => vscode.postMessage({ type: 'programList', open: false }));
+
+    function showPrograms(msg) {
+      const items = Array.isArray(msg.items) ? msg.items : [];
+      // The chip shows when the list has more than one program, as in the playground.
+      if (items.length < 2) {
+        programChip.close();
+        programChip.hidden = true;
+        return;
+      }
+      programChip.items = items;
+      programChip.shown = typeof msg.shown === 'string' ? msg.shown : null;
+      programChip.editing = typeof msg.editing === 'string' ? msg.editing : null;
+      programChip.alert = typeof msg.alert === 'string' ? msg.alert : null;
+      programChip.hidden = false;
+    }
 
     // Grab cursor while panning; navigator drag (driven on the document so it
     // tracks outside the minimap); end any controller gesture released anywhere.
@@ -991,6 +1062,8 @@ export function getWebviewContent(compilerUri: string, panZoomUri: string, cspSo
         applyUpdate(msg);
       } else if (msg.type === 'status' && typeof msg.text === 'string') {
         status.textContent = msg.text;
+      } else if (msg.type === 'programs') {
+        showPrograms(msg);
       }
     });
 

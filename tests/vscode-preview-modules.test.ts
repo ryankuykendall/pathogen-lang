@@ -5,7 +5,7 @@
  * them to the webview as plain data, which the webview hands to compile().
  * Real folders on disk; the library is the sources.
  */
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, realpathSync, rmSync, symlinkSync, unlinkSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
@@ -14,6 +14,7 @@ import {
   MODULE_PREVIEW_NOTICE,
   modulesForCompile,
   previewModules,
+  samePathKey,
 } from '../packages/vscode-pathogen/src/preview-modules';
 import * as lib from '../src';
 import * as node from '../src/node';
@@ -124,6 +125,25 @@ describe('previewModules', () => {
       join(project, 'parts', 'gears.pathogen'),
       join(project, 'parts', 'kit.pathogen'),
     ]);
+  });
+
+  it('samePathKey: one spelling for a file on disk and for one just deleted, even through a link', () => {
+    const real = mkdtempSync(join(TMP, 'same-path-'));
+    const link = `${real}-link`;
+    mkdirSync(join(real, 'parts'));
+    writeFileSync(join(real, 'parts', 'gear.pathogen'), 'module;\n');
+    symlinkSync(real, link);
+    try {
+      const onDisk = samePathKey(join(link, 'parts', 'gear.pathogen'));
+      expect(onDisk).toBe(join(realpathSync.native(real), 'parts', 'gear.pathogen'));
+      rmSync(join(real, 'parts', 'gear.pathogen'));
+      expect(samePathKey(join(link, 'parts', 'gear.pathogen'))).toBe(onDisk);
+      rmSync(join(real, 'parts'), { recursive: true });
+      expect(samePathKey(join(link, 'parts', 'gear.pathogen'))).toBe(onDisk);
+    } finally {
+      unlinkSync(link);
+      rmSync(real, { recursive: true, force: true });
+    }
   });
 
   it('one import that loads and one that does not: the files and the error both come back', async () => {

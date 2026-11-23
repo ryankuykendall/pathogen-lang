@@ -54,7 +54,12 @@ export interface PreviewModules {
   watched: string[];
 }
 
-/** docs/modules.md "In each tool": "A module doesn't draw, so its preview is empty; to see its fns draw, open a program that imports it." */
+/**
+ * docs/modules.md "In each tool": "Without a main, it shows the file you're
+ * editing; a module doesn't draw, so its preview is empty there. To see its
+ * fns draw, open a program that imports it." (In a project with a main, the
+ * preview shows a program instead: preview-programs.ts.)
+ */
 export const MODULE_PREVIEW_NOTICE =
   "This file is a module: a module doesn't draw, so its preview is empty. To see its fns draw, open a program that imports it.";
 
@@ -82,13 +87,24 @@ export async function previewModules(
 /**
  * One spelling per file, for matching an editor's path with a project folder
  * joined to a project path: the real path on disk (links followed, the
- * disk's letter case). A file not on disk keeps its resolved path.
+ * disk's letter case). A file not on disk (deleted, or not made yet) gets its
+ * nearest folder that is, spelled the same way, then the rest as given: so a
+ * file just deleted keeps the spelling it had, even under a link.
  */
 export function samePathKey(filePath: string): string {
-  try {
-    return realpathSync.native(filePath);
-  } catch {
-    return path.resolve(filePath);
+  const resolved = path.resolve(filePath);
+  let dir = resolved;
+  let tail = '';
+  for (;;) {
+    try {
+      const real = realpathSync.native(dir);
+      return tail === '' ? real : path.join(real, tail);
+    } catch {
+      const parent = path.dirname(dir);
+      if (parent === dir) return resolved;
+      tail = tail === '' ? path.basename(dir) : path.join(path.basename(dir), tail);
+      dir = parent;
+    }
   }
 }
 
