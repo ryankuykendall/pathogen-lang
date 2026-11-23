@@ -11,12 +11,13 @@ import {
   migrateQueue,
   migrateRecord,
   migrateSnapshotCode,
+  readEitherShape,
   rereviewWouldTrigger,
 } from '../../scripts/lib/workspace-files-migration';
 import { listRereviewQueue } from '../../website/api/moderation';
 import { handleApiRequest } from '../../website/api/router';
 import { hashContent } from '../../website/api/utils';
-import { entryForText, readStoredFiles } from '../../website/api/workspace-files';
+import { entryForText, storedFilesForText } from '../../website/api/workspace-files';
 import { MemoryKV } from '../auth/helpers';
 
 import type { Env, KVNamespace } from '../../website/api/types';
@@ -73,7 +74,7 @@ describe('migrateRecord', () => {
       files: { 'main.pathogen': main },
       folders: [],
       entryPoints: ['main.pathogen'],
-      contentHash: (await readStoredFiles({ code: CODE }, undefined)).hash,
+      contentHash: (await storedFilesForText(CODE)).hash,
     });
     expect(result.record.rev).toBe(7);
     expect(result.blob).toEqual({ workspaceId: 'w1', sha256: main.sha256, text: CODE });
@@ -89,6 +90,14 @@ describe('migrateRecord', () => {
       kind: 'error',
       message: 'has neither `code` nor `files`',
     });
+  });
+
+  it('reads the old shape itself, now that the API refuses it (note 71): the hash the API had given it', async () => {
+    const read = await readEitherShape({ code: CODE }, await hashContent(CODE));
+    expect(read).toEqual({ ...(await storedFilesForText(CODE)), text: CODE });
+    // Today's shape reads as the API reads it.
+    const stored = await storedFilesForText(CODE);
+    expect(await readEitherShape({ ...stored.manifest }, stored.hash)).toEqual({ ...stored, text: null });
   });
 
   it("gives an approval and its unedited workspace the same hash, so re-review's answer doesn't change", async () => {
@@ -130,7 +139,7 @@ describe('migrateSnapshotCode', () => {
   it('makes the manifest.json the API reads, and the blob', async () => {
     const result = await migrateSnapshotCode(CODE, 'w4');
     if ('error' in result) throw new Error(result.error);
-    const stored = await readStoredFiles({ code: CODE }, undefined);
+    const stored = await storedFilesForText(CODE);
     expect(JSON.parse(result.manifestJson)).toEqual({ ...stored.manifest, contentHash: stored.hash });
     const { sha256 } = stored.manifest.files['main.pathogen'];
     expect(result.blob).toEqual({ workspaceId: 'w4', sha256, text: CODE });

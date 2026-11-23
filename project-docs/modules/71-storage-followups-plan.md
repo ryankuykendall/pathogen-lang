@@ -34,3 +34,27 @@
    - **(c)** Leave it on the backlog for now. Workspaces hold only `.pathogen` texts, at most 20 MB each, so unreferenced blobs are likely a few megabytes. The bucket's total size is on the Cloudflare dashboard (R2, the bucket, Metrics), which tells us without any code. Revisit when data files and fonts arrive (phase 3) and storage can grow.
 
    *Recommended: (c).* Deleting stored files has the only real risk in this work (note 50's design still has a millisecond race), and today it would save almost nothing.
+
+## Your answers (2026-11-23)
+
+"1 yes, 2 yes, 3 (c)": the production check goes ahead; the reader goes if the check finds nothing old; the sweep stays on the backlog until data files and fonts arrive.
+
+## Step 1, the production check (2026-11-23): passed
+
+- **The migration's dry run** (`--env prod --confirm`, report in `tmp/storage/prod-dry-run-2026-11-23.json`): 198 workspaces, 20 approvals, 8 snapshots; 0 to migrate, 228 already in today's shape, 0 orphans, 0 errors; every approval's re-review answer unchanged.
+- **The export** (`scripts/export-workspace-sources.ts --env prod --confirm`): 197 workspaces, 20 approvals and 6 queue entries written; 223 files read from R2; 0 empty; 1 reported unreadable, `workspace:HIyQr_Sks8ajH0CEMF3rh` main.pathogen "(not in R2)".
+- **That one wasn't missing.** Read again (`tmp/storage/inspect-unreadable.ts`, read-only): the blob is there, 1,396 bytes as the record says, and its bytes hash to its name. The export counted any failed read as "not in R2", so a passing network or wrangler failure looked like a lost file. The export now retries twice and reports "couldn't be read: …" apart from "not in R2" (R2's own "The specified key does not exist").
+  - The workspace itself: "Staggering the quad colorized v2 (Copy)", made 2026-03-01, last saved 2026-03-10, migrated 2026-11-17 (rev 1). It's public with no approval, one of the never-reviewed Explore entries you chose to leave (`backlog.md`, "Public workspaces from before reviews").
+- **The built-in name check** over the export (`check-builtin-collisions.ts --kv-dir tmp/kv-sources/prod`, every current built-in name): 1,723 programs. In stored workspaces, only the one program with its own `enum GridPatternType`, left alone on 2026-11-02 because it already failed to parse (CHANGELOG, "built-in names can't be declared"). The rest are project-docs records and docs examples marked invalid, as the check expects.
+- **Dev's dry run** (local): 397 records to migrate, 9 already, 1 orphan approval, 0 errors.
+
+## Step 3, removing the reader: what changed
+
+- `readStoredFiles` reads `files` only. A record without them (`code`, or neither) throws `OLD_SHAPE_MESSAGE`: "This workspace is stored in a format from before November 2026 that the site no longer reads. Nothing was changed." Handlers answer it as "Failed to load workspace: …" (500), and nothing is written. `storedFilesForText(code)` is today's one-file workspace from a text, for a create or a save that sends `code`.
+- `legacyText` and `materialize` are gone from the load, copy, save, review, approval, snapshot and file-read paths. A snapshot with only a `code.pathogen` is refused the same way.
+- **Listings never fail whole for one record:** the Approved, Featured and Flagged lists give a record the reader refuses a null hash, with the reason logged; the review queues already showed a per-entry error.
+- The Pages worker's public page asks the API for every approval's source; the API refuses an old one, and the page shows what it shows for a source it can't get.
+- The migration script reads both shapes itself (`readEitherShape`), and checks each result against the API's reader as before.
+- **The code review** (`reviews/storage-old-reader-code-review.md`): no path writes over an old record's files. Two should-fix taken: an admin's flag, unflag and unpublish took the state row's hash after changing the record, so on an old record they'd stop halfway; they now take it with `recordHashOrNull` and finish on any record (tested). The Rejected list uses it too.
+- **Checked:** the API tests (306), the full suite, a type check of the changed files; `verify-2g.ts` against the dev API running this code (40 of 40); and the dev API answering an unconverted dev record with the message (`tmp/storage/probe-dev-old-record.ts`).
+- **Dev's conversion** (`--write --backup-dir tmp/kv-backups/files-dev-2026-11-23`) is local only and slow (one record every few seconds); it doesn't block the push.

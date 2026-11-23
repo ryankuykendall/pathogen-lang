@@ -34,17 +34,26 @@ import {
   writeApproval,
 } from '../../website/api/moderation';
 import type { Env, Workspace, WorkspaceApproval } from '../../website/api/types';
-import { readStoredFiles } from '../../website/api/workspace-files';
+import { readStoredFiles, storedFilesForText } from '../../website/api/workspace-files';
 import { MemoryD1, MemoryKV } from '../auth/helpers';
+
+/**
+ * A test workspace's files. The fixtures below give each workspace a program
+ * text (`code`), which stands for a workspace of just main.pathogen holding it:
+ * the files and hash a save of that text stores.
+ */
+async function storedOf(ws: { code?: string; files?: Workspace['files']; contentHash?: string }) {
+  return ws.files ? readStoredFiles(ws, ws.contentHash) : storedFilesForText(ws.code ?? '');
+}
 
 /** A queue entry for a workspace record, freezing its files as the API does. */
 async function entryFor(ws: Workspace, submittedAt: string) {
-  return makeQueueEntry(ws, await readStoredFiles(ws, ws.contentHash), submittedAt);
+  return makeQueueEntry(ws, await storedOf(ws), submittedAt);
 }
 
-/** The files a one-program workspace from before phase 2 holds. */
+/** The files a one-program workspace holds. */
 async function filesOfCode(code: string) {
-  return (await readStoredFiles({ code }, undefined)).manifest.files;
+  return (await storedFilesForText(code)).manifest.files;
 }
 
 function makeEnv(): { env: Env; kv: MemoryKV; db: MemoryD1 } {
@@ -129,7 +138,7 @@ describe('review queue (frozen submission snapshot)', () => {
   it('pushReviewQueue stores the snapshot; admin reads the frozen files even if the live workspace later changes', async () => {
     const { env, kv } = makeEnv();
     const ws = makeWorkspace({ code: 'CODE_V1', contentHash: 'v1hash' });
-    const v1 = await readStoredFiles(ws, ws.contentHash);
+    const v1 = await storedOf(ws);
     await pushReviewQueue(env, makeQueueEntry(ws, v1, '2026-05-13T10:00:00.000Z'));
 
     // Owner saves a different version *after* submitting.
@@ -362,7 +371,7 @@ describe('re-review queue (Phase 3)', () => {
     const queue = await listRereviewQueue(env);
     expect(queue).toHaveLength(1);
     expect(queue[0].files).toEqual(await filesOfCode('edit2'));
-    expect(queue[0].codeHash).toBe((await readStoredFiles(edit2, edit2.contentHash)).hash);
+    expect(queue[0].codeHash).toBe((await storedOf(edit2)).hash);
   });
 
   it('getRereviewQueueEntry returns null for workspaces not in the queue', async () => {

@@ -911,12 +911,6 @@ describe.skipIf(!sqlite)('snapshots API', () => {
         delete older.program;
         await ctx.r2.put(`snapshots/${ws}/${id}/manifest.json`, JSON.stringify(older));
         expect(await programOf(id)).toBe('app.pathogen');
-
-        // One saved before phase 2: a code.pathogen, no manifest.
-        const old = await created(await postSnapshot(ctx, alice, ws));
-        await ctx.r2.delete(`snapshots/${ws}/${old}/manifest.json`);
-        await ctx.r2.put(`snapshots/${ws}/${old}/code.pathogen`, '// before phase 2');
-        expect(await programOf(old)).toBe('main.pathogen');
       });
 
       it('calls a manifest whose program names no file of its own damaged', async () => {
@@ -996,6 +990,8 @@ describe.skipIf(!sqlite)('snapshots API', () => {
     });
   });
 
+  // The migration gave every such snapshot a manifest (note 50, step 7); the
+  // reader for one without is gone (note 71). A stray one says so, unchanged.
   describe('snapshots saved before phase 2 (a code.pathogen, no manifest)', () => {
     async function seedLegacy(code: string): Promise<string> {
       const { snapshot } = (await (await postSnapshot(ctx, alice, ws)).json()) as SnapshotBody;
@@ -1005,21 +1001,23 @@ describe.skipIf(!sqlite)('snapshots API', () => {
       return snapshot.id;
     }
 
-    it('serve their code, and start a workspace that holds it', async () => {
-      const old = 'define ViewBox(0, 0, 400, 400);\n// before phase 2\n';
-      const id = await seedLegacy(old);
-      expect(await (await call(ctx, 'GET', `/snapshot/${id}/code`, { cookie: alice })).text()).toBe(old);
-      const files = (await (await call(ctx, 'GET', `/snapshot/${id}/files`, { cookie: alice })).json()) as {
-        code: string;
-      };
-      expect(files.code).toBe(old);
+    const errorOf = async (res: Response): Promise<[number, string]> => [
+      res.status,
+      ((await res.json()) as { error: string }).error,
+    ];
+
+    it("are refused with a message, by every read and by Start new workspace, and aren't changed", async () => {
+      const id = await seedLegacy('define ViewBox(0, 0, 400, 400);\n// before phase 2\n');
+      const before = ctx.r2.keys(`snapshots/${ws}/${id}/`);
+      const message = `Snapshot ${id} is stored in a format from before November 2026 that the site no longer reads. Nothing was changed.`;
+      expect(await errorOf(await call(ctx, 'GET', `/snapshot/${id}/code`, { cookie: alice }))).toEqual([500, message]);
+      expect(await errorOf(await call(ctx, 'GET', `/snapshot/${id}/files`, { cookie: alice }))).toEqual([500, message]);
       const started = await call(ctx, 'POST', `/snapshot/${id}/workspace`, {
         cookie: alice,
         headers: { 'X-Pathogen-Snapshot': '1' },
       });
-      const created = (await started.json()) as { id: string; code: string };
-      expect(created.code).toBe(old);
-      expect(ctx.r2.text(`files/${created.id}/${(await entryForText(old)).sha256}`)).toBe(old);
+      expect(await errorOf(started)).toEqual([500, message]);
+      expect(ctx.r2.keys(`snapshots/${ws}/${id}/`)).toEqual(before);
     });
 
     it('delete their code.pathogen with them', async () => {

@@ -10,8 +10,9 @@
 //   The code is the workspace's own files (project-docs/modules/48-storage-
 //   design-v2.md §4): manifest.json names them by hash, and their bytes are
 //   blobs under files/{workspaceId}/, which saves never delete. An unchanged
-//   file costs a snapshot nothing. A snapshot saved before phase 2 has a
-//   code.pathogen instead, read as just main.pathogen.
+//   file costs a snapshot nothing. A snapshot saved before phase 2 also kept
+//   a code.pathogen; the migration gave it a manifest, and only the manifest
+//   is read (note 71).
 //
 // Access: every route needs a signed-in session (anonymous X-User-Id
 // workspaces can't take snapshots) and is owner-only. Snapshots are deleted
@@ -27,7 +28,7 @@
 import { getSessionUserId, readSessionTokenFromRequest } from '../auth/session.js';
 import type { Env, Workspace } from './types.js';
 import { errorResponse, generateNanoId, jsonResponse, slugify } from './utils.js';
-import { isJustMain, MAIN_FILE, readStoredFiles } from './workspace-files.js';
+import { isJustMain, MAIN_FILE } from './workspace-files.js';
 import type { StoredFiles, WorkspaceManifest } from './workspace-files.js';
 import { readTexts } from './file-store.js';
 import { copyStoredFiles, filesFromBody, filesToShow, filesWithText, setFiles, storedFilesOf } from './workspace-store.js';
@@ -176,9 +177,9 @@ function programProblem(program: unknown, files: unknown): string | null {
 }
 
 /**
- * A snapshot's code: its manifest (the files are the workspace's blobs), or
- * for one saved before phase 2, its code.pathogen read as just main.pathogen.
- * Null when neither is there; SnapshotUnreadable when the manifest is damaged.
+ * A snapshot's code: its manifest (the files are the workspace's blobs). Null
+ * when there's none; SnapshotUnreadable when the manifest is damaged, or the
+ * snapshot has only the code.pathogen of one saved before phase 2.
  */
 async function readSnapshotFiles(env: Env, workspaceId: string, snapshotId: string): Promise<SnapshotFiles | null> {
   const manifestObject = await env.THUMBNAILS.get(r2Key(workspaceId, snapshotId, 'manifest'));
@@ -199,12 +200,16 @@ async function readSnapshotFiles(env: Env, workspaceId: string, snapshotId: stri
     if (!ok) throw new SnapshotUnreadable(`The saved files of snapshot ${snapshotId} are damaged (not a manifest).`);
     const kept = saved as unknown as SnapshotManifest;
     const manifest: WorkspaceManifest = { files: kept.files, folders: kept.folders, entryPoints: kept.entryPoints };
-    return { manifest, hash: kept.contentHash, legacyText: null, program: programOf(manifest, kept.program) };
+    return { manifest, hash: kept.contentHash, program: programOf(manifest, kept.program) };
   }
-  const codeObject = await env.THUMBNAILS.get(r2Key(workspaceId, snapshotId, 'code'));
-  if (!codeObject) return null;
-  const stored = await readStoredFiles({ code: await new Response(codeObject.body).text() }, undefined);
-  return { ...stored, program: programOf(stored.manifest, undefined) };
+  // Saved before phase 2 with only a code.pathogen: the migration gave every
+  // such snapshot a manifest (note 50, step 7), and this reader is gone (note 71).
+  if (await env.THUMBNAILS.get(r2Key(workspaceId, snapshotId, 'code'))) {
+    throw new SnapshotUnreadable(
+      `Snapshot ${snapshotId} is stored in a format from before November 2026 that the site no longer reads. Nothing was changed.`,
+    );
+  }
+  return null;
 }
 
 /**
@@ -703,7 +708,6 @@ export const snapshotHandlers = {
         if (!isJustMain(files.manifest)) {
           return errorResponse('This snapshot holds several files. Reload the page to see them.', 409);
         }
-        if (files.legacyText !== null) return new Response(files.legacyText, { headers });
         const { sha256 } = files.manifest.files[MAIN_FILE];
         const text = (await readTexts(env, workspaceId, [sha256])).get(sha256) ?? '';
         return new Response(text, { headers });
@@ -801,7 +805,7 @@ export const snapshotHandlers = {
     // "<workspace> — <snapshot name>", unless the snapshot name already
     // starts with the workspace name (the default "<workspace> #n").
     const name = source.name && !row.name.startsWith(source.name) ? `${source.name} — ${row.name}` : row.name;
-    const stored: StoredFiles = { ...files, legacyText: null };
+    const stored: StoredFiles = { manifest: files.manifest, hash: files.hash };
     const now = new Date().toISOString();
     const workspace: Workspace = {
       id,

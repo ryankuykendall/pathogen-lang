@@ -1,12 +1,9 @@
 // Reading and writing a workspace's files: the manifest on its KV record and
 // the bytes in R2 (project-docs/modules/48-storage-design-v2.md, 50-…).
-// Records from before phase 2 (one `code` string) are read through
-// readStoredFiles, so every comparison uses today's hash rule, and are
-// rewritten in today's shape the first time their files change.
-//
-// Until step 2e ships the multi-file playground, today's clients keep
-// working: a workspace that is just main.pathogen still reads and saves as
-// one `code` string.
+// Records are read through readStoredFiles, which refuses one from before
+// phase 2 (note 71). A client may still send one `code` string (a blank or
+// template workspace, an old tab): it's stored as just main.pathogen, and a
+// workspace that is just main.pathogen still loads with `code` too.
 
 import { copyFiles, putText, readTexts, readTextsLeniently, storedSize } from './file-store.js';
 import {
@@ -17,6 +14,7 @@ import {
   isJustMain,
   MAIN_FILE,
   readStoredFiles,
+  storedFilesForText,
 } from './workspace-files.js';
 
 import type { Env, Workspace } from './types.js';
@@ -27,7 +25,7 @@ export async function readWorkspaceRecord(env: Env, id: string): Promise<Workspa
   return json ? (JSON.parse(json) as Workspace) : null;
 }
 
-/** A workspace record's files, in either shape. */
+/** A workspace record's files (refused for a record from before phase 2: readStoredFiles). */
 export function storedFilesOf(record: Workspace): Promise<StoredFiles> {
   return readStoredFiles(record, record.contentHash);
 }
@@ -39,15 +37,6 @@ export function setFiles(record: StoredFileFields & { contentHash?: string }, fi
   record.entryPoints = files.manifest.entryPoints;
   record.contentHash = files.hash;
   delete record.code;
-}
-
-/**
- * Make sure a record from before phase 2 has its text in R2, so a manifest
- * copied from it (a review submission, an approval, a copy) points at a blob
- * that exists. One write; nothing for a record in today's shape.
- */
-export async function materialize(env: Env, workspaceId: string, files: StoredFiles): Promise<void> {
-  if (files.legacyText !== null) await putText(env, workspaceId, files.legacyText);
 }
 
 export interface FileWithText extends FileEntry {
@@ -74,10 +63,7 @@ export async function filesWithText(
   const hashes = Object.entries(manifest.files)
     .filter(([path]) => fileKind(path) === 'pathogen')
     .map(([, entry]) => entry.sha256);
-  const texts =
-    files.legacyText !== null
-      ? new Map([[manifest.files[MAIN_FILE].sha256, files.legacyText]])
-      : (known ?? (await readTexts(env, workspaceId, hashes)));
+  const texts = known ?? (await readTexts(env, workspaceId, hashes));
   const withText: Record<string, FileWithText> = {};
   for (const [path, entry] of Object.entries(manifest.files)) {
     withText[path] = { ...entry, text: texts.get(entry.sha256) ?? '' };
@@ -113,7 +99,6 @@ export async function filesToShow(
   contentHash: string;
   code?: string;
 }> {
-  if (files.legacyText !== null) return filesWithText(env, workspaceId, files);
   const { manifest } = files;
   const hashes = Object.entries(manifest.files)
     .filter(([path]) => fileKind(path) === 'pathogen')
@@ -143,7 +128,7 @@ export interface FrozenSource {
   files: Record<string, FileEntry | ShownFile>;
   folders: string[];
   entryPoints: string[];
-  /** In today's rule, also for a record from before phase 2. */
+  /** In today's rule. */
   codeHash: string;
   /** Its one program's text, for a record that is just main.pathogen. */
   code?: string;
@@ -155,9 +140,9 @@ export interface FrozenSource {
  * read each), for a viewer: a file that can't be read is marked `unreadable`
  * and the others still show (filesToShow). `texts: 'just-main'` is for
  * listings, which must stay near one call an entry: a record that is just
- * main.pathogen gets its text (one read; none for a record from before phase
- * 2), or fails if it can't be read, and one with several files comes back as
- * its manifest, whose files an admin reads by hash (GET /workspace/:id/file/:sha256).
+ * main.pathogen gets its text (one read), or fails if it can't be read, and
+ * one with several files comes back as its manifest, whose files an admin
+ * reads by hash (GET /workspace/:id/file/:sha256).
  */
 export async function frozenSource(env: Env, record: FrozenRecord, texts: 'all' | 'just-main'): Promise<FrozenSource> {
   const stored = await readStoredFiles(record, record.codeHash);
@@ -182,8 +167,7 @@ export const COPY_MAX_FILES = 480;
  * Copy files to another workspace's prefix: a duplicate, a fork, a workspace
  * started from a snapshot. Each .pathogen text is read once and written; its
  * text comes back (by sha256), so the caller can answer without reading it
- * again. Other files are copied blob to blob. A record from before phase 2
- * writes its text. Refused, before any call, above COPY_MAX_FILES. Blobs are
+ * again. Other files are copied blob to blob. Refused, before any call, above COPY_MAX_FILES. Blobs are
  * written before the caller stores a manifest naming them; a failure in
  * between leaves blobs nothing names, which the sweep script removes.
  */
@@ -206,10 +190,7 @@ export async function copyStoredFiles(
       .filter(([path]) => fileKind(path) === 'pathogen')
       .map(([, entry]) => entry.sha256),
   );
-  const texts =
-    files.legacyText !== null
-      ? new Map([[manifest.files[MAIN_FILE].sha256, files.legacyText]])
-      : await readTexts(env, fromId, textHashes);
+  const texts = await readTexts(env, fromId, textHashes);
   await Promise.all([...texts.values()].map((text) => putText(env, toId, text)));
   await copyFiles(
     env,
@@ -224,7 +205,6 @@ export async function copyStoredFiles(
 export async function mainText(env: Env, workspaceId: string, files: StoredFiles): Promise<string | null> {
   const main = files.manifest.entryPoints[0];
   if (main === undefined) return null;
-  if (files.legacyText !== null) return files.legacyText;
   const { sha256 } = files.manifest.files[main];
   return (await readTexts(env, workspaceId, [sha256])).get(sha256) ?? null;
 }
@@ -269,25 +249,16 @@ export async function filesFromBody(
       // one string would replace every file, so it's stopped like a conflict.
       return fail('This workspace now holds several files. Reload the page to edit it.', 409);
     }
-    const entry = await entryForText(body.code);
-    const manifest: WorkspaceManifest = { files: { [MAIN_FILE]: entry }, folders: [], entryPoints: [MAIN_FILE] };
-    const checked = checkManifest(manifest);
+    const stored = await storedFilesForText(body.code);
+    const checked = checkManifest(stored.manifest);
     if (!checked.ok) return fail(checked.message);
-    const hash = await contentHashOf(checked.value);
-    if (hash !== current?.hash) await putText(env, workspaceId, body.code);
-    return { ok: true, value: { manifest: checked.value, hash, legacyText: null } };
+    if (stored.hash !== current?.hash) await putText(env, workspaceId, body.code);
+    return { ok: true, value: { manifest: checked.value, hash: stored.hash } };
   }
 
   if (!isRecord(body.files)) return fail('"files" must be an object of files by path.');
-  // What's already stored under the workspace, with its size. A record from
-  // before phase 2 has its one text on the record, not in R2: it's written
-  // if the new manifest names it.
+  // What's already stored under the workspace, with its size.
   const stored = new Map(Object.values(current?.manifest.files ?? {}).map((e) => [e.sha256, e.size]));
-  const legacy =
-    current && current.legacyText !== null
-      ? { sha256: current.manifest.files[MAIN_FILE].sha256, text: current.legacyText }
-      : null;
-  if (legacy) stored.delete(legacy.sha256);
 
   // Texts first, so a file sent by hash can name a text sent in the same save.
   const texts = new Map<string, string>();
@@ -314,10 +285,7 @@ export async function filesFromBody(
   // name costs a call (a head).
   for (const { path, sha256 } of byHash) {
     let size: number | null;
-    if (legacy && sha256 === legacy.sha256) {
-      texts.set(sha256, legacy.text);
-      size = (await entryForText(legacy.text)).size;
-    } else if (textSizes.has(sha256)) size = textSizes.get(sha256)!;
+    if (textSizes.has(sha256)) size = textSizes.get(sha256)!;
     else if (stored.has(sha256)) size = stored.get(sha256)!;
     else if (/^[0-9a-f]{64}$/.test(sha256)) size = await storedSize(env, workspaceId, sha256);
     else size = 0; // checkManifest names the malformed hash
@@ -335,7 +303,7 @@ export async function filesFromBody(
   await Promise.all(
     [...texts.entries()].filter(([sha256]) => !stored.has(sha256)).map(([, text]) => putText(env, workspaceId, text)),
   );
-  return { ok: true, value: { manifest: checked.value, hash: await contentHashOf(checked.value), legacyText: null } };
+  return { ok: true, value: { manifest: checked.value, hash: await contentHashOf(checked.value) } };
 }
 
 /**

@@ -9,7 +9,7 @@ import { MemoryR2 } from './memory-r2';
 import { storedRecord } from './workspace-helpers';
 import { handleApiRequest } from '../../website/api/router';
 import { hashContent } from '../../website/api/utils';
-import { entryForText, readStoredFiles } from '../../website/api/workspace-files';
+import { entryForText, OLD_SHAPE_MESSAGE } from '../../website/api/workspace-files';
 import { createSession, SESSION_COOKIE_NAME } from '../../website/auth/session';
 import { createUserWithDerivedHandle } from '../../website/auth/users';
 import { MemoryD1, MemoryKV } from '../auth/helpers';
@@ -196,21 +196,45 @@ describe('records from before phase 2', () => {
     await h.kv.put('queue:rereview', JSON.stringify([{ ...base, submittedAt: '2026-10-02T00:00:00.000Z' }]));
   }
 
-  it('list and read with their `code`, no R2 reads, and every hash in today’s rule', async () => {
+  // None is left since the migration, and the reader for them is gone (note
+  // 71). A stray one is listed with its error in place, never failing a whole
+  // list, and every read of it says why.
+  it('a stray one: listed with its error in place; each read refused with the message', async () => {
     const h = await makeHarness();
     await seedLegacyApproved(h, 'old1', 'M 1 1');
-    const today = (await readStoredFiles({ code: 'M 1 1' }, undefined)).hash;
-    h.r2.resetCalls();
 
     const [queued] = entries((await call(h, 'GET', '/admin/queue/rereview', undefined, 'admin')).data);
-    expect([queued.code, queued.codeHash]).toEqual(['M 1 1', today]);
+    expect(queued.workspaceId).toBe('old1');
+    expect(String(queued.sourceError)).toBe(OLD_SHAPE_MESSAGE);
+    expect(String(queued.changesError)).toBe(OLD_SHAPE_MESSAGE);
 
     const admin = await call(h, 'GET', '/admin/approval/old1', undefined, 'admin');
-    expect([admin.data.code, admin.data.codeHash]).toEqual(['M 1 1', today]);
+    expect([admin.status, String(admin.data.error).includes(OLD_SHAPE_MESSAGE)]).toEqual([500, true]);
 
     const source = await call(h, 'GET', '/approval-source/old1', undefined, 'visitor');
-    expect([source.data.code, source.data.codeHash]).toEqual(['M 1 1', today]);
-    expect(h.r2.totalCalls()).toBe(0);
+    expect([source.status, String(source.data.error).includes(OLD_SHAPE_MESSAGE)]).toEqual([500, true]);
+  });
+
+  it("an admin can still flag, unflag and unpublish one: each finishes, its state row has no hash, and its code isn't touched", async () => {
+    const h = await makeHarness();
+    await seedLegacyApproved(h, 'old2', 'M 2 2');
+    const db = h.env.USERS_DB as unknown as MemoryD1;
+
+    expect((await call(h, 'POST', '/admin/flag-workspace/old2', { internalNotes: 'spam' }, 'admin')).status).toBe(200);
+    expect(await storedRecord(h.kv, 'old2')).toMatchObject({ flagged: true, isPublic: false, code: 'M 2 2' });
+    // The Flagged list shows it, with no hash, rather than failing.
+    const flagged = await call(h, 'GET', '/admin/queue/flagged-workspaces', undefined, 'admin');
+    expect(entries(flagged.data).map((e) => [e.workspaceId, e.codeHash])).toEqual([['old2', null]]);
+    expect((await call(h, 'DELETE', '/admin/flag-workspace/old2', undefined, 'admin')).status).toBe(200);
+    expect((await call(h, 'POST', '/admin/unpublish/old2', undefined, 'admin')).status).toBe(200);
+
+    expect(db.publicationStates.map((r) => [r.state, r.code_hash])).toEqual([
+      ['flagged', null],
+      ['rejected', null],
+      ['unpublished', null],
+    ]);
+    const record = await storedRecord(h.kv, 'old2');
+    expect([record.code, record.files]).toEqual(['M 2 2', undefined]);
   });
 });
 

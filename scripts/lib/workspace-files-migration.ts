@@ -2,17 +2,19 @@
 // (storage step 7; project-docs/modules/48-storage-design-v2.md §8, note 50).
 // Pure: no KV, R2 or D1. Each function takes a record saved before phase 2
 // (one `code` string) and returns the record in today's shape plus the one
-// blob to write, using the API's own reader and hash (website/api/
-// workspace-files.ts), so the migration can't compute a hash differently
-// from the code that later compares it (note 48 §7).
+// blob to write, using the API's own hash rule (website/api/workspace-files.ts
+// storedFilesForText), so the migration can't compute a hash differently from
+// the code that later compares it (note 48 §7).
 //
-// Each result is checked against the API's reader before it's returned: the
-// new record reads back as the same manifest and the same hash as the old
-// record read through readStoredFiles, and the blob's bytes hash to the name
-// the manifest gives them. An unchanged save is then still skipped, and an
-// approved, unedited workspace still matches its approval.
+// The API no longer reads a record from before phase 2 (note 71), so the
+// reader for both shapes lives here (readEitherShape), for an old backup that
+// may still need migrating. Each result is checked against the API's own
+// reader before it's returned: the new record reads back through
+// readStoredFiles as the same manifest and the same hash, and the blob's bytes
+// hash to the name the manifest gives them. An unchanged save is then still
+// skipped, and an approved, unedited workspace still matches its approval.
 
-import { MAIN_FILE, readStoredFiles, sha256Hex } from '../../website/api/workspace-files';
+import { MAIN_FILE, readStoredFiles, sha256Hex, storedFilesForText } from '../../website/api/workspace-files';
 
 import type { StoredFileFields, StoredFiles, WorkspaceManifest } from '../../website/api/workspace-files';
 
@@ -34,6 +36,21 @@ function sameManifest(a: WorkspaceManifest, b: WorkspaceManifest): boolean {
 }
 
 /**
+ * A record's files in either shape, as the API read them until note 71: one
+ * from before phase 2 reads as just main.pathogen, with its hash in today's
+ * rule and its text (`text`); one in today's shape as the API reads it, with
+ * `text` null.
+ */
+export async function readEitherShape(
+  record: StoredFileFields,
+  storedHash: string | undefined,
+): Promise<StoredFiles & { text: string | null }> {
+  if (record.files) return { ...(await readStoredFiles(record, storedHash)), text: null };
+  const code = record.code ?? '';
+  return { ...(await storedFilesForText(code)), text: code };
+}
+
+/**
  * One record (a workspace, an approval, or a queue entry). `hashField` is
  * where the record keeps its hash: `contentHash` on a workspace, `codeHash`
  * on an approval or queue entry. `workspaceId` names the prefix the blob goes
@@ -45,11 +62,10 @@ export async function migrateRecord<T extends Rec>(
   workspaceId: string,
 ): Promise<Migrated<T>> {
   if (record.files !== undefined) return { kind: 'already' };
-  // The API reads a record with neither as an empty program; the migration
-  // doesn't write one down as that: a damaged record is reported instead.
+  // A record with neither isn't written down as an empty program: a damaged record is reported instead.
   if (record.code === undefined) return { kind: 'error', message: 'has neither `code` nor `files`' };
   if (typeof record.code !== 'string') return { kind: 'error', message: '`code` is not a string' };
-  const before = await readStoredFiles(record, record[hashField] as string | undefined);
+  const before = await readEitherShape(record, record[hashField] as string | undefined);
   const next: Rec = { ...record };
   delete next.code;
   next.files = before.manifest.files;
@@ -66,8 +82,8 @@ export async function migrateRecord<T extends Rec>(
   return { kind: 'migrate', record: next as T, blob, hash: before.hash };
 }
 
-async function blobOf(files: StoredFiles, workspaceId: string): Promise<BlobToWrite | string> {
-  const text = files.legacyText ?? '';
+async function blobOf(files: StoredFiles & { text: string | null }, workspaceId: string): Promise<BlobToWrite | string> {
+  const text = files.text ?? '';
   const sha256 = files.manifest.files[MAIN_FILE].sha256;
   if ((await sha256Hex(text)) !== sha256) return 'the blob would not hash to the name its manifest gives it';
   return { workspaceId, sha256, text };
@@ -109,7 +125,7 @@ export async function migrateSnapshotCode(
   code: string,
   workspaceId: string,
 ): Promise<{ manifestJson: string; blob: BlobToWrite } | { error: string }> {
-  const files = await readStoredFiles({ code }, undefined);
+  const files = await readEitherShape({ code }, undefined);
   const blob = await blobOf(files, workspaceId);
   if (typeof blob === 'string') return { error: blob };
   return { manifestJson: JSON.stringify({ ...files.manifest, contentHash: files.hash }), blob };
@@ -117,11 +133,11 @@ export async function migrateSnapshotCode(
 
 /**
  * The re-review answer the API gives for an approval and its workspace: true
- * when a save would queue a re-review (router.ts compares the two hashes,
- * each read through readStoredFiles).
+ * when a save would queue a re-review (router.ts compares the two hashes).
+ * Either record may be in the old shape here, before its migration.
  */
 export async function rereviewWouldTrigger(approval: Rec, workspace: Rec): Promise<boolean> {
-  const a = await readStoredFiles(approval, approval.codeHash as string | undefined);
-  const w = await readStoredFiles(workspace, workspace.contentHash as string | undefined);
+  const a = await readEitherShape(approval, approval.codeHash as string | undefined);
+  const w = await readEitherShape(workspace, workspace.contentHash as string | undefined);
   return a.hash !== w.hash;
 }

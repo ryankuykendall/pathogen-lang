@@ -7,7 +7,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { approve, call, makeHarness, submitted } from './publishing-harness';
 import { hashContent } from '../../website/api/utils';
-import { entryForText, readStoredFiles } from '../../website/api/workspace-files';
+import { entryForText, OLD_SHAPE_MESSAGE } from '../../website/api/workspace-files';
 
 import type { Harness } from './publishing-harness';
 
@@ -177,7 +177,7 @@ describe('GET /admin/review/:id/source', () => {
     expect(fromPending.status).toBe(200);
   });
 
-  it('an entry from before phase 2: the source’s codeHash is the one the decision checks', async () => {
+  it('an entry from before phase 2 is refused, its source and its decision, and stays in the queue (note 71)', async () => {
     const h = await makeHarness();
     const id = 'old1';
     const code = 'M 1 1';
@@ -202,17 +202,20 @@ describe('GET /admin/review/:id/source', () => {
         isPublic: false,
       }),
     );
-    await h.kv.put('queue:review', JSON.stringify([{ ...base, submittedAt: '2026-10-02T00:00:00.000Z' }]));
+    const queue = JSON.stringify([{ ...base, submittedAt: '2026-10-02T00:00:00.000Z' }]);
+    await h.kv.put('queue:review', queue);
     const source = await call(h, 'GET', `/admin/review/${id}/source?queue=review`, undefined, 'admin-token');
-    expect([source.data.code, source.data.codeHash]).toEqual([code, (await readStoredFiles({ code }, undefined)).hash]);
+    expect([source.status, String(source.data.error).includes(OLD_SHAPE_MESSAGE)]).toEqual([500, true]);
     const decided = await call(
       h,
       'POST',
       `/admin/review/${id}`,
-      { decision: 'approve', codeHash: source.data.codeHash },
+      { decision: 'approve', codeHash: await hashContent(code) },
       'admin-token',
     );
-    expect([decided.status, decided.data.decision]).toEqual([200, 'approve']);
+    expect([decided.status, String(decided.data.error).includes(OLD_SHAPE_MESSAGE)]).toEqual([500, true]);
+    expect(await h.kv.get('queue:review')).toBe(queue);
+    expect(await h.kv.get(`approval:${id}`)).toBeNull();
   });
 
   it('a file that can’t be read is marked, and the others still read', async () => {

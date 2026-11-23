@@ -4,7 +4,8 @@
 // design-v2.md §4). The Pages worker has no R2 binding, on purpose, so it
 // reads them from the API Worker's GET /approval-source/:id, as the page
 // already reads its SVG from /approval-svg/:id. An approval saved before
-// phase 2 still carries its one `code` string and needs no request.
+// phase 2 (one `code` string) is asked for like any other, and the API
+// refuses it (note 71): none is left since the migration.
 
 import type { WorkspaceApproval } from './api/types.js';
 
@@ -23,8 +24,6 @@ export interface ApprovalSource {
   /** The text of an approval that is just main.pathogen. */
   code?: string;
 }
-
-const MAIN_FILE = 'main.pathogen';
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -47,14 +46,10 @@ function isApprovalSource(value: unknown): value is ApprovalSource {
  * decides what a page shows without them.
  */
 export async function readApprovalSource(
-  approval: Pick<WorkspaceApproval, 'workspaceId' | 'code' | 'files'>,
+  approval: Pick<WorkspaceApproval, 'workspaceId'>,
   apiBase: string,
   fetchImpl: typeof fetch = fetch,
 ): Promise<ApprovalSource | null> {
-  if (approval.files === undefined) {
-    const code = approval.code ?? '';
-    return { files: { [MAIN_FILE]: { text: code } }, folders: [], entryPoints: [MAIN_FILE], code };
-  }
   try {
     const res = await fetchImpl(`${apiBase}/approval-source/${encodeURIComponent(approval.workspaceId)}`);
     if (!res.ok) {

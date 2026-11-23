@@ -14,9 +14,11 @@ import {
   isJustMain,
   LIMITS,
   nameProblem,
+  OLD_SHAPE_MESSAGE,
   pathProblem,
   readStoredFiles,
   sha256Hex,
+  storedFilesForText,
 } from '../../website/api/workspace-files';
 
 import type { WorkspaceManifest } from '../../website/api/workspace-files';
@@ -252,33 +254,29 @@ describe('the content hash', () => {
   });
 });
 
-describe('records from before phase 2', () => {
-  it("a record with code and no files reads as just main.pathogen, with today's hash and its text", async () => {
+describe('stored records (the reader for records from before phase 2 is gone: note 71)', () => {
+  it('a record with code and no files is refused, with a message, rather than read', async () => {
+    await expect(readStoredFiles({ code: 'circle(100, 100, 50);\n' }, 'old-hash')).rejects.toThrow(OLD_SHAPE_MESSAGE);
+    // Neither code nor files: refused too, never read as an empty program.
+    await expect(readStoredFiles({}, undefined)).rejects.toThrow(OLD_SHAPE_MESSAGE);
+    expect(OLD_SHAPE_MESSAGE).toBe(
+      'This workspace is stored in a format from before November 2026 that the site no longer reads. Nothing was changed.',
+    );
+  });
+
+  it("storedFilesForText: one program's text as a workspace of just main.pathogen, in today's hash rule", async () => {
     const code = 'circle(100, 100, 50);\n';
-    const read = await readStoredFiles({ code }, 'old-hash');
-    expect(read.manifest).toEqual({
+    const stored = await storedFilesForText(code);
+    expect(stored.manifest).toEqual({
       files: { 'main.pathogen': await entryForText(code) },
       folders: [],
       entryPoints: ['main.pathogen'],
     });
-    expect(read.hash).toBe(await contentHashOf(read.manifest));
-    expect(read.legacyText).toBe(code);
-    expect(isJustMain(read.manifest)).toBe(true);
-  });
-
-  it('an approved, unedited workspace and its approval, both from before, still match', async () => {
-    const code = 'M 0 0 L 10 10\n';
-    const workspace = await readStoredFiles({ code }, await hashContent(code));
-    const approval = await readStoredFiles({ code }, await hashContent(code));
-    expect(workspace.hash).toBe(approval.hash);
-    expect(workspace.hash).not.toBe(await hashContent(code));
-  });
-
-  it('the same workspace, read before and after the migration, has one hash', async () => {
-    const code = 'M 0 0\n';
-    const before = await readStoredFiles({ code }, await hashContent(code));
-    const after = await readStoredFiles({ ...before.manifest }, before.hash);
-    expect(after).toEqual({ ...before, legacyText: null });
+    expect(stored.hash).toBe(await contentHashOf(stored.manifest));
+    expect(stored.hash).not.toBe(await hashContent(code));
+    expect(isJustMain(stored.manifest)).toBe(true);
+    // Stored on a record, it reads back the same.
+    expect(await readStoredFiles({ ...stored.manifest }, stored.hash)).toEqual(stored);
   });
 
   it("a record in today's shape keeps its stored hash", async () => {
@@ -286,7 +284,6 @@ describe('records from before phase 2', () => {
     expect(await readStoredFiles({ files, entryPoints: ['main.pathogen'] }, 'stored')).toEqual({
       manifest: { files, folders: [], entryPoints: ['main.pathogen'] },
       hash: 'stored',
-      legacyText: null,
     });
   });
 

@@ -523,8 +523,7 @@ export async function listApprovalsForUser(
 
 /**
  * Freeze what's being submitted: the workspace's manifest and its hash in
- * today's rule. `files` comes from readStoredFiles; the caller materializes a
- * record from before phase 2 first, so the manifest's one blob exists in R2.
+ * today's rule. `files` comes from readStoredFiles, so its blobs are in R2.
  */
 export function makeQueueEntry(workspace: Workspace, files: StoredFiles, submittedAt: string): ReviewQueueEntry {
   return {

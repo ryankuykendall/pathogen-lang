@@ -58,17 +58,29 @@ function r2Target(env: 'dev' | 'prod'): { bucket: string; flags: string[] } {
   return { bucket: 'svg-path-extended-thumbnails', flags: ['--remote'] };
 }
 
-/** An R2 object's text (a read: `wrangler r2 object get --pipe`), or null when it can't be read. */
-function r2Get(target: { bucket: string; flags: string[] }, key: string): string | null {
-  try {
-    return execFileSync(
-      'npx',
-      ['wrangler', 'r2', 'object', 'get', `${target.bucket}/${key}`, '--pipe', ...target.flags],
-      { cwd: API_DIR, encoding: 'utf-8', maxBuffer: 256 * 1024 * 1024, stdio: ['pipe', 'pipe', 'pipe'] },
-    );
-  } catch {
-    return null;
+/**
+ * An R2 object's text (a read: `wrangler r2 object get --pipe`), or why it
+ * couldn't be read. Only R2's own answer means the object isn't there; any
+ * other failure (a network error, a wrangler hiccup) is tried twice more and
+ * then reported as such, never as a missing file. On 2026-11-23 a passing
+ * failure was reported "not in R2" for a blob that was there (note 71).
+ */
+function r2Get(target: { bucket: string; flags: string[] }, key: string): { text: string } | { missing: true } | { error: string } {
+  let last = '';
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      const text = execFileSync(
+        'npx',
+        ['wrangler', 'r2', 'object', 'get', `${target.bucket}/${key}`, '--pipe', ...target.flags],
+        { cwd: API_DIR, encoding: 'utf-8', maxBuffer: 256 * 1024 * 1024, stdio: ['pipe', 'pipe', 'pipe'] },
+      );
+      return { text };
+    } catch (err) {
+      last = String((err as { stderr?: unknown }).stderr ?? err);
+      if (/The specified key does not exist/i.test(last)) return { missing: true };
+    }
   }
+  return { error: last.trim().split('\n').find((line) => line.trim() !== '') ?? 'unknown error' };
 }
 
 /** A key as a file name: `workspace:abc` → `workspace--abc`. */
@@ -119,12 +131,13 @@ program
       const used = new Set<string>();
       let wrote = false;
       for (const [path, entry] of pathogen) {
-        const text = r2Get(r2, `files/${workspaceId}/${entry.sha256 as string}`);
-        if (text === null) {
+        const read = r2Get(r2, `files/${workspaceId}/${entry.sha256 as string}`);
+        if (!('text' in read)) {
           counts.unreadable++;
-          console.log(`  unreadable ${key} ${path} (not in R2)`);
+          console.log(`  unreadable ${key} ${path} (${'missing' in read ? 'not in R2' : `couldn't be read: ${read.error}`})`);
           continue;
         }
+        const text = read.text;
         if (!text.trim()) {
           counts.empty++;
           continue;

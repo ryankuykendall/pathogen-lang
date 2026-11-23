@@ -1,7 +1,7 @@
 // The Pages worker's read of an approved workspace's source (storage step 6;
 // website/approval-source.ts). The detail page and source.json get an
 // approval's files from the API Worker's GET /approval-source/:id; an
-// approval from before phase 2 carries its `code` and needs no request.
+// approval from before phase 2 is asked for too, and the API refuses it (note 71).
 
 import { describe, expect, it, vi } from 'vitest';
 
@@ -16,16 +16,11 @@ function fetchAnswering(status: number, body: unknown): ReturnType<typeof vi.fn>
 }
 
 describe('readApprovalSource', () => {
-  it('reads an approval from before phase 2 from its `code`, without a request', async () => {
-    const fetchImpl = vi.fn();
-    const source = await readApprovalSource({ workspaceId: 'w1', code: 'M 0 0' }, API, fetchImpl);
-    expect(source).toEqual({
-      files: { 'main.pathogen': { text: 'M 0 0' } },
-      folders: [],
-      entryPoints: ['main.pathogen'],
-      code: 'M 0 0',
-    });
-    expect(fetchImpl).not.toHaveBeenCalled();
+  it('asks the API for an approval from before phase 2 too, and has no source when the API refuses it', async () => {
+    const fetchImpl = fetchAnswering(500, { error: 'Failed to read the approved source' });
+    const approval = { workspaceId: 'w1', code: 'M 0 0' } as { workspaceId: string };
+    expect(await readApprovalSource(approval, API, fetchImpl as unknown as typeof fetch)).toBeNull();
+    expect(fetchImpl).toHaveBeenCalledWith(`${API}/approval-source/w1`);
   });
 
   it("asks the API Worker for an approval's files, by its workspace id", async () => {

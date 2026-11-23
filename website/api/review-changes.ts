@@ -1,8 +1,7 @@
 // What changed since the approved version, for a re-review (2e step 5e; note 59
 // answer 4, mockup v12 R3 and R4): the approved manifest against the submitted
 // one, by hash. No text is read, so a listing can carry it for every entry.
-// Both manifests come through readStoredFiles, so an approval from before phase
-// 2 compares in today's hash rule.
+// Both manifests come through readStoredFiles.
 
 import type { WorkspaceManifest } from './workspace-files.js';
 

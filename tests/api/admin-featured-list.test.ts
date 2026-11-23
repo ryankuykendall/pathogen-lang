@@ -35,7 +35,9 @@ describe('adminListFeatured carries approvedAt', () => {
       JSON.stringify({
         workspaceId: id,
         userId: 'user-1',
-        code: 'circle(5, 5, 4);',
+        files: { 'main.pathogen': { sha256: 'a'.repeat(64), size: 16 } },
+        folders: [],
+        entryPoints: ['main.pathogen'],
         codeHash: 'h1',
         slug: 'flow-field',
         name: 'Flow Field',
@@ -64,5 +66,32 @@ describe('adminListFeatured carries approvedAt', () => {
     expect(body.entries).toHaveLength(1);
     expect(body.entries[0].approvedAt).toBe(approvedAt);
     expect(body.entries[0].featuredAt).toBe(featuredAt);
+  });
+
+  it('a stray approval from before phase 2 is still listed, with no hash, rather than fail the list (note 71)', async () => {
+    const { env, kv } = makeEnv();
+    const store = kv as unknown as KVNamespace;
+    for (const [id, shape] of [
+      ['ws-old', { code: 'circle(5, 5, 4);' }],
+      ['ws-new', { files: { 'main.pathogen': { sha256: 'b'.repeat(64), size: 16 } }, folders: [], entryPoints: ['main.pathogen'] }],
+    ] as const) {
+      await store.put(
+        `approval:${id}`,
+        JSON.stringify({ workspaceId: id, userId: 'user-1', ...shape, codeHash: `h-${id}`, slug: id, name: id, description: '', approvedAt: '2026-06-10T12:00:00.000Z', featuredAt: '2026-06-12T09:30:00.000Z' }),
+      );
+      await store.put(`workspace:${id}`, JSON.stringify({ id, userId: 'user-1', isPublic: true }));
+    }
+    await store.put('featured:workspaces', JSON.stringify(['ws-old', 'ws-new']));
+    const res = await handleApiRequest(
+      new Request(`https://api.pathogen.studio/admin/queue/featured?token=${ADMIN_TOKEN}`, { method: 'GET' }),
+      env,
+      '/admin/queue/featured',
+    );
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { entries: Array<{ workspaceId: string; codeHash: string | null }> };
+    expect(body.entries.map((e) => [e.workspaceId, e.codeHash])).toEqual([
+      ['ws-old', null],
+      ['ws-new', 'h-ws-new'],
+    ]);
   });
 });

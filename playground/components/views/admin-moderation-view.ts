@@ -132,7 +132,8 @@ interface ApprovedEntry {
   slug: string;
   ownerHandle: string | null;
   ownerFlagged: boolean;
-  codeHash: string;
+  /** Null for a record the API can't read (from before phase 2: note 71). */
+  codeHash: string | null;
   approvedAt: string;
   featuredAt: string | null;
   thumbnailAt: string | null;
@@ -159,7 +160,8 @@ interface RejectedEntry {
 interface FlaggedWorkspaceEntry {
   workspaceId: string;
   name: string;
-  codeHash: string;
+  /** Null for a record the API can't read (from before phase 2: note 71). */
+  codeHash: string | null;
   ownerHandle: string | null;
   ownerUserId: string;
   ownerFlagged: boolean;

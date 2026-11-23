@@ -110,16 +110,15 @@ export interface WorkspaceListing {
   rereviewPending?: boolean;
   // True when pathogen.json's list is empty: the workspace has no program, so
   // nothing draws. The Workspaces page labels the card "No programs" and holds
-  // back Make Public (2d, step 9a). Absent otherwise, and for a record from
-  // before phase 2, which is one main.pathogen.
+  // back Make Public (2d, step 9a). Absent otherwise.
   noPrograms?: true;
 }
 
 // A workspace's files (StoredFileFields): `files`, `folders` and
 // `entryPoints`, with the bytes in R2 at files/{id}/{sha256}
-// (project-docs/modules/48-storage-design-v2.md). A record saved before
-// phase 2 has `code` instead, the one program's text, until its files first
-// change or the migration rewrites it; read either through readStoredFiles.
+// (project-docs/modules/48-storage-design-v2.md). Read them through
+// readStoredFiles, which refuses a record saved before phase 2 (`code`, the
+// one program's text, instead): the migration rewrote every one (note 71).
 export interface Workspace extends WorkspaceListing, StoredFileFields {
   userId: string;
   preferences: Record<string, unknown>;
@@ -210,7 +209,8 @@ export interface ReviewQueueEntry extends StoredFileFields {
 }
 
 // The approved files are a manifest frozen from the queue entry
-// (StoredFileFields); approvals from before phase 2 carry `code` instead.
+// (StoredFileFields). Approvals from before phase 2 carried `code` instead;
+// the migration rewrote every one, and readStoredFiles refuses one (note 71).
 export interface WorkspaceApproval extends StoredFileFields {
   workspaceId: string;
   userId: string;

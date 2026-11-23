@@ -1,6 +1,7 @@
 // A workspace that holds files, through the API (storage step 3;
 // project-docs/modules/48-storage-design-v2.md, 50-storage-decisions-and-plan.md).
-// Records from before phase 2 (one `code` string) are seeded straight into KV.
+// Records from before phase 2 (one `code` string) are seeded straight into KV,
+// to check they're refused since the reader for them went (note 71).
 
 import { describe, expect, it } from 'vitest';
 
@@ -9,7 +10,7 @@ import { storedRecord, storedText } from './workspace-helpers';
 import { listRereviewQueue } from '../../website/api/moderation';
 import { handleApiRequest } from '../../website/api/router';
 import { hashContent } from '../../website/api/utils';
-import { contentHashOf, entryForText, readStoredFiles } from '../../website/api/workspace-files';
+import { contentHashOf, entryForText, OLD_SHAPE_MESSAGE } from '../../website/api/workspace-files';
 import { COPY_MAX_FILES, copyStoredFiles } from '../../website/api/workspace-store';
 import { MemoryKV } from '../auth/helpers';
 
@@ -322,77 +323,53 @@ describe('saving', () => {
   });
 });
 
-describe('records from before phase 2', () => {
-  it("load as just main.pathogen, with `code` and today's hash", async () => {
+// Production has none since the migration (note 71: 228 records, all in today's
+// shape, 2026-11-23), so the reader for them is gone. A stray one must say so
+// and stay exactly as it is: nothing reads it as a program, and nothing writes
+// over it.
+describe('a record from before phase 2 is refused, and left as it is', () => {
+  const refused = (data: Record<string, unknown>): boolean => String(data.error ?? '').includes(OLD_SHAPE_MESSAGE);
+
+  it('a load says why it fails', async () => {
     const { env, kv } = makeEnv();
     await seedLegacy(kv, 'old1', 'M 1 1');
-    const { data } = await call(env, 'GET', '/workspace/old1');
-    const read = await readStoredFiles({ code: 'M 1 1' }, undefined);
-    expect(data.code).toBe('M 1 1');
-    expect(data.contentHash).toBe(read.hash);
-    expect(data.files).toEqual({ 'main.pathogen': { ...(await entryForText('M 1 1')), text: 'M 1 1' } });
+    const res = await call(env, 'GET', '/workspace/old1');
+    expect(res.status).toBe(500);
+    expect(refused(res.data)).toBe(true);
   });
 
-  it('an unchanged save is skipped (no rev bump), and the record stays as it was', async () => {
-    const { env, kv } = makeEnv();
+  it('a save, of `code` or of files, a rename and a copy all fail, and write nothing', async () => {
+    const { env, kv, r2 } = makeEnv();
     await seedLegacy(kv, 'old2', 'M 2 2');
     const before = await storedRecord(kv, 'old2');
-    const res = await call(env, 'PUT', '/workspace/old2', { code: 'M 2 2', baseRev: 3 });
-    expect([res.data.skipped, res.data.rev]).toEqual([true, 3]);
+    const attempts = [
+      await call(env, 'PUT', '/workspace/old2', { code: 'M 2 3', baseRev: 3 }),
+      await call(env, 'PUT', '/workspace/old2', {
+        files: { 'main.pathogen': { text: 'M 2 4' }, 'lib.pathogen': { text: 'module;\n' } },
+        baseRev: 3,
+      }),
+      await call(env, 'PUT', '/workspace/old2', { name: 'Renamed' }),
+      await call(env, 'POST', '/workspace/old2/copy', {}),
+    ];
+    for (const res of attempts) {
+      expect(res.status).toBe(500);
+      expect(refused(res.data)).toBe(true);
+    }
     expect(await storedRecord(kv, 'old2')).toEqual(before);
+    expect(r2.keys('files/')).toEqual([]);
+    expect(JSON.parse((await kv.get('user:u1:workspaces'))!)).toEqual(['old2']);
   });
 
-  it("a changed save rewrites the record in today's shape, with its text in R2", async () => {
-    const { env, kv, r2 } = makeEnv();
-    await seedLegacy(kv, 'old3', 'M 3 3');
-    const res = await call(env, 'PUT', '/workspace/old3', { code: 'M 3 4', baseRev: 3 });
-    expect([res.status, res.data.rev]).toEqual([200, 4]);
-    const record = await storedRecord(kv, 'old3');
-    expect(record).not.toHaveProperty('code');
-    expect(record.entryPoints).toEqual(['main.pathogen']);
-    expect(await storedText(kv, r2, 'old3')).toBe('M 3 4');
-  });
-
-  it('a new client may name the old main by its hash: its text is written to R2 then', async () => {
-    const { env, kv, r2 } = makeEnv();
-    await seedLegacy(kv, 'old4', 'M 4 4');
-    const res = await call(env, 'PUT', '/workspace/old4', {
-      files: { 'main.pathogen': await entryForText('M 4 4'), 'lib.pathogen': { text: 'module;\n' } },
-    });
-    expect(res.status).toBe(200);
-    expect(await storedText(kv, r2, 'old4')).toBe('M 4 4');
-    expect(await storedText(kv, r2, 'old4', 'lib.pathogen')).toBe('module;\n');
-  });
-
-  it("a rename keeps the record's `code` and old hash, untouched", async () => {
-    const { env, kv } = makeEnv();
-    await seedLegacy(kv, 'old5', 'M 5 5');
-    await call(env, 'PUT', '/workspace/old5', { name: 'Renamed' });
-    const record = await storedRecord(kv, 'old5');
-    expect([record.code, record.contentHash, record.files]).toEqual(['M 5 5', await hashContent('M 5 5'), undefined]);
-  });
-
-  it("an approved workspace from before, saved unedited, doesn't enter re-review; an edit does, with its files", async () => {
+  it("an approval from before phase 2 doesn't give its source to the public page", async () => {
     const { env, kv } = makeEnv();
     await seedLegacy(kv, 'old6', 'M 6 6', { isPublic: true });
     await kv.put(
       'approval:old6',
-      JSON.stringify({
-        workspaceId: 'old6',
-        userId: 'u1',
-        code: 'M 6 6',
-        codeHash: await hashContent('M 6 6'),
-        slug: 'old',
-      }),
+      JSON.stringify({ workspaceId: 'old6', userId: 'u1', code: 'M 6 6', codeHash: await hashContent('M 6 6'), slug: 'old' }),
     );
-    await call(env, 'PUT', '/workspace/old6', { code: 'M 6 6', baseRev: 3 });
-    expect(await listRereviewQueue(env)).toEqual([]);
-
-    await call(env, 'PUT', '/workspace/old6', { code: 'M 6 7', baseRev: 3 });
-    const [entry] = await listRereviewQueue(env);
-    expect(entry.files).toEqual({ 'main.pathogen': await entryForText('M 6 7') });
-    expect(entry.codeHash).toBe((await storedRecord(kv, 'old6')).contentHash);
-    expect(entry).not.toHaveProperty('code');
+    const res = await call(env, 'GET', '/approval-source/old6', undefined, '');
+    expect(res.status).toBe(500);
+    expect(refused(res.data)).toBe(true);
   });
 });
 
@@ -439,7 +416,7 @@ describe('deleting and copying', () => {
       Array.from({ length: COPY_MAX_FILES + 1 }, async (_, i) => [`f${i}.pathogen`, await entryForText(`// ${i}`)]),
     );
     const manifest = { files: Object.fromEntries(entries), folders: [], entryPoints: ['f0.pathogen'] };
-    const result = await copyStoredFiles(env, 'from', 'to', { manifest, hash: 'h', legacyText: null });
+    const result = await copyStoredFiles(env, 'from', 'to', { manifest, hash: 'h' });
     expect(result).toEqual({
       ok: false,
       message: `This workspace has ${COPY_MAX_FILES + 1} different files; a copy can take at most ${COPY_MAX_FILES} at once.`,
@@ -515,13 +492,6 @@ describe('deleting and copying', () => {
     expect(copy).not.toHaveProperty('rereviewPending');
   });
 
-  it('copying a record from before phase 2 writes its text for the copy', async () => {
-    const { env, kv, r2 } = makeEnv();
-    await seedLegacy(kv, 'old7', 'M 7 7');
-    const res = await call(env, 'POST', '/workspace/old7/copy', {});
-    expect(await storedText(kv, r2, res.data.id as string)).toBe('M 7 7');
-    expect(res.data.code).toBe('M 7 7');
-  });
 });
 
 describe('GET /workspace/:id/file/:sha256', () => {
@@ -556,10 +526,11 @@ describe('GET /workspace/:id/file/:sha256', () => {
     expect([admin.status, admin.data.text]).toEqual([200, GEARS]);
   });
 
-  it('serves a record from before phase 2 from its `code`', async () => {
+  it('refuses a record from before phase 2, with the message', async () => {
     const { env, kv } = makeEnv();
     await seedLegacy(kv, 'old8', 'M 8 8');
     const res = await call(env, 'GET', `/workspace/old8/file/${(await entryForText('M 8 8')).sha256}`);
-    expect([res.status, res.data.text]).toEqual([200, 'M 8 8']);
+    expect(res.status).toBe(500);
+    expect(String(res.data.error)).toContain(OLD_SHAPE_MESSAGE);
   });
 });

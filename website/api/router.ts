@@ -94,7 +94,6 @@ import {
   filesWithText,
   frozenSource,
   mainText,
-  materialize,
   patchWorkspaceRecord,
   readWorkspaceRecord,
   setFiles,
@@ -252,6 +251,26 @@ async function listQueueForAdmin(
       }
     }),
   );
+}
+
+/**
+ * A record's hash in today's rule (no I/O for a record in today's shape), or
+ * null for one the reader refuses (from before phase 2, note 71), with the
+ * reason logged. For what must work on any record: a listing, where one stray
+ * record never fails the whole list, and an admin's flag, unflag or unpublish,
+ * whose state row takes the hash after the record has already changed.
+ */
+async function recordHashOrNull(
+  record: Parameters<typeof readStoredFiles>[0],
+  storedHash: string | undefined,
+  label: string,
+): Promise<string | null> {
+  try {
+    return (await readStoredFiles(record, storedHash)).hash;
+  } catch (err) {
+    console.error(`[stored files] ${label}: ${(err as Error).message}`);
+    return null;
+  }
 }
 
 /**
@@ -703,7 +722,6 @@ export const apiHandlers: Record<string, (request: Request, env: Env, ...args: s
 
       if (submittingForReview && env.USERS_DB) {
         const submittedAt = workspace.updatedAt;
-        await materialize(env, id, stored);
         await pushReviewQueue(env, makeQueueEntry(workspace, stored, submittedAt));
         await appendState(env.USERS_DB, {
           workspaceId: id,
@@ -719,9 +737,7 @@ export const apiHandlers: Record<string, (request: Request, env: Env, ...args: s
       // effective state on the state machine stays 'approved' (no new row
       // appended) — queue membership alone is the signal that a re-review
       // is pending. Re-edits during re-review just refresh the queue entry;
-      // pushRereviewQueue dedupes on workspaceId. The approval's hash is
-      // read in today's rule, so an approval from before phase 2 still
-      // matches its unedited workspace. Only a public workspace is
+      // pushRereviewQueue dedupes on workspaceId. Only a public workspace is
       // re-reviewed: a private one's edits aren't shown to anyone, and
       // approving them would make it public again (2e step 5a, answer 8).
       // Going back to the approved files withdraws a waiting re-review.
@@ -838,7 +854,7 @@ export const apiHandlers: Record<string, (request: Request, env: Env, ...args: s
       const copiedTexts = await copyStoredFiles(env, id, newId, stored);
       if (!copiedTexts.ok) return errorResponse(copiedTexts.message, 413);
       const texts = copiedTexts.value!;
-      const copied = { ...stored, legacyText: null };
+      const copied = stored;
 
       const newWorkspace: Workspace = {
         ...original,
@@ -910,8 +926,6 @@ export const apiHandlers: Record<string, (request: Request, env: Env, ...args: s
         'Cache-Control': 'private, max-age=31536000, immutable',
         'X-Content-Type-Options': 'nosniff',
       };
-      // A record from before phase 2 keeps its one text on the record.
-      if (named && stored.legacyText !== null) return new Response(stored.legacyText, { headers });
       const object = await env.THUMBNAILS.get(fileKey(id, sha256));
       if (!object) return errorResponse('File not found', 404);
       return new Response(object.body, { headers });
@@ -1282,7 +1296,6 @@ export const apiHandlers: Record<string, (request: Request, env: Env, ...args: s
       }
 
       const submittedAt = new Date().toISOString();
-      await materialize(env, id, stored);
       await pushReviewQueue(env, makeQueueEntry(workspace, stored, submittedAt));
       await appendState(env.USERS_DB, {
         workspaceId: id,
@@ -1451,9 +1464,7 @@ export const apiHandlers: Record<string, (request: Request, env: Env, ...args: s
         approvalSvgAt = new Date().toISOString();
       }
       // The approval freezes the submitted manifest; its blobs stay under the
-      // workspace, since saves never delete. An entry from before phase 2 has
-      // its text written to R2 first.
-      await materialize(env, id, submitted);
+      // workspace, since saves never delete.
       // The card image as approved (approval-card.ts, answer 9b). A failed copy
       // keeps the earlier approval's card, if there was one: never the live
       // thumbnail, which can hold the edit under review. A first approval's
@@ -1649,7 +1660,7 @@ export const apiHandlers: Record<string, (request: Request, env: Env, ...args: s
               ownerHandle: a.ownerHandle ?? null,
               ownerFlagged,
               // In today's rule, as every listing shows it (no I/O).
-              codeHash: (await readStoredFiles(a, a.codeHash)).hash,
+              codeHash: await recordHashOrNull(a, a.codeHash, `approval:${a.workspaceId}`),
               approvedAt: a.approvedAt,
               featuredAt: a.featuredAt ?? null,
               thumbnailAt,
@@ -1696,7 +1707,7 @@ export const apiHandlers: Record<string, (request: Request, env: Env, ...args: s
             slug: approval.slug,
             ownerHandle: approval.ownerHandle ?? null,
             ownerFlagged,
-            codeHash: (await readStoredFiles(approval, approval.codeHash)).hash,
+            codeHash: await recordHashOrNull(approval, approval.codeHash, `approval:${id}`),
             // Featured cards render an "approved <date>" meta line (FeaturedEntry
             // extends ApprovedEntry); without approvedAt it showed "Invalid Date".
             approvedAt: approval.approvedAt,
@@ -1738,7 +1749,7 @@ export const apiHandlers: Record<string, (request: Request, env: Env, ...args: s
               name = ws.name;
               userId = ws.userId;
               thumbnailAt = (await readThumbMeta(env, r.workspaceId, ws)).thumbnailAt;
-              codeHash = (await storedFilesOf(ws)).hash;
+              codeHash = await recordHashOrNull(ws, ws.contentHash, `workspace:${r.workspaceId}`);
               workspaceFlagged = Boolean(ws.flagged);
             }
             if (env.USERS_DB && userId) {
@@ -1800,7 +1811,7 @@ export const apiHandlers: Record<string, (request: Request, env: Env, ...args: s
         entries.push({
           workspaceId: wsId,
           name: ws.name,
-          codeHash: (await storedFilesOf(ws)).hash,
+          codeHash: await recordHashOrNull(ws, ws.contentHash, `workspace:${wsId}`),
           ownerHandle: handle,
           ownerUserId: ws.userId,
           ownerFlagged,
@@ -1863,7 +1874,7 @@ export const apiHandlers: Record<string, (request: Request, env: Env, ...args: s
         workspaceId: id,
         state: 'unpublished',
         byUserId: adminId,
-        codeHash: (await storedFilesOf(workspace)).hash,
+        codeHash: await recordHashOrNull(workspace, workspace.contentHash, `workspace:${id}`),
         internalNotes: 'admin unpublish',
       });
       return jsonResponse({ ok: true, isPublic: false });
@@ -1934,7 +1945,7 @@ export const apiHandlers: Record<string, (request: Request, env: Env, ...args: s
         workspaceId: id,
         state: 'flagged',
         byUserId: adminId,
-        codeHash: (await storedFilesOf(workspace)).hash,
+        codeHash: await recordHashOrNull(workspace, workspace.contentHash, `workspace:${id}`),
         internalNotes: notes || null,
       });
       return jsonResponse({ ok: true, flagged: true });
@@ -1975,7 +1986,7 @@ export const apiHandlers: Record<string, (request: Request, env: Env, ...args: s
         workspaceId: id,
         state: 'rejected',
         byUserId: adminId,
-        codeHash: (await storedFilesOf(workspace)).hash,
+        codeHash: await recordHashOrNull(workspace, workspace.contentHash, `workspace:${id}`),
         internalNotes: 'unflagged → rejected',
       });
       return jsonResponse({ ok: true, flagged: false });
@@ -2012,7 +2023,6 @@ export const apiHandlers: Record<string, (request: Request, env: Env, ...args: s
       const frozenMain = await mainText(env, id, stored);
       if (!frozenMain || !frozenMain.trim()) return errorResponse('Workspace has no code to re-review', 400);
       const submittedAt = new Date().toISOString();
-      await materialize(env, id, stored);
       await pushReviewQueue(env, makeQueueEntry(workspace, stored, submittedAt));
       // The review entry holds the files as they are now; a re-review beside it
       // would only repeat an older version (2e step 5a).
