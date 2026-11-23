@@ -17,6 +17,7 @@ import * as playgroundList from '../playground/services/program-list.js';
 import { tabLabels as playgroundTabLabels } from '../playground/services/open-files.js';
 import * as drawing from '../packages/vscode-pathogen/src/program-drawing';
 import * as programs from '../packages/vscode-pathogen/src/preview-programs';
+import { getWebviewContent } from '../packages/vscode-pathogen/src/webview-html';
 
 import type { ProgramItem } from '../playground/services/program-list.js';
 
@@ -111,6 +112,16 @@ describe('the rows', () => {
     const shared = fieldsOf('src/ui/program-chip.ts');
     expect(shared.length).toBeGreaterThanOrEqual(10);
     expect(fieldsOf('packages/vscode-pathogen/src/program-chip-item.ts')).toEqual(shared);
+  });
+});
+
+describe("VS Code's preview page", () => {
+  it('its reset leaves the shared controls alone, so the zoom pill keeps its padding (and its height)', () => {
+    const html = getWebviewContent('c.js', 'p.js', 'vscode-resource:', 'n');
+    expect(html).toMatch(
+      /\*:not\(pathogen-zoom-pill, program-chip\) \{ margin: 0; padding: 0; box-sizing: border-box; \}/,
+    );
+    expect(html).not.toMatch(/^\s*\* \{/m);
   });
 });
 

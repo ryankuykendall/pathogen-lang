@@ -284,9 +284,16 @@ try {
         chipLeft: pick.left,
         pillMid: (pill.top + pill.bottom) / 2,
         chipMid: (pick.top + pick.bottom) / 2,
+        pillHeight: pill.height,
+        chipHeight: pick.height,
         pickBg: getComputedStyle(c.shadowRoot.querySelector('.pick')).backgroundColor,
       };
     });
+    check(
+      `${T}1b [${themeName}] the chip and the zoom controls are one height, 34 px, as in the playground (2026-11-23)`,
+      geometry.pillHeight === 34 && geometry.chipHeight === 34,
+      JSON.stringify({ pill: geometry.pillHeight, chip: geometry.chipHeight }),
+    );
     check(
       `${T}1 [${themeName}] the chip: hidden with fewer than two programs, then beside the zoom controls, naming the program shown, with the red dot`,
       hiddenAlone &&

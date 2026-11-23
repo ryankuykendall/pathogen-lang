@@ -104,7 +104,7 @@ You approved the docs as drafted, with the three decisions flagged for you (a mo
 
 ## The build (2026-11-23)
 
-Built in the plan's order: tests before each piece. A code review's six fixes are in (`reviews/phase-2f-code-review.md`), and the full suite passes. Left: your check of the installed `.vsix` ("The hand check", below), the CHANGELOG entry (reviewed: `reviews/phase-2f-changelog-review.md`), and your choice about cached files before the push ("Before the push").
+Built in the plan's order: tests before each piece. A code review's six fixes are in (`reviews/phase-2f-code-review.md`), and the full suite passes. Left: the CHANGELOG entry (reviewed: `reviews/phase-2f-changelog-review.md`), and your choice about cached files before the push ("Before the push"). Your hand check passed ("After the hand check", below).
 
 | Plan step | What was built |
 |---|---|
@@ -124,6 +124,19 @@ Built in the plan's order: tests before each piece. A code review's six fixes ar
 - **A program that starts failing keeps its last miniature**, faded under its error, as the playground's rows do.
 - **A program shown that's gone for a moment** (a save that replaces the file, a checkout) is kept for 2 seconds. The preview shows the main meanwhile, then the program again if it's back in time. Gone longer, it counts as deleted. This came from the code review.
 - **"not in pathogen.json" is cut short** ("not in p…") in the list's 292 px width, as in the approved mockup. The full words are in the docs.
+
+## After the hand check (2026-11-23)
+
+You checked the installed `.vsix` with `gears-project`: it works as expected. One visual nit: the chip should be the same height as the zoom controls, with the same styling in the playground.
+
+Measured (`verify/shoot-2f-chip-height.ts`): the chip was 30 px on both surfaces, and its open and focus rings were drawn outside it, so it stood taller still. The zoom controls were 34 px in the playground but 28 px in VS Code, where the preview page's reset (`* { padding: 0 }`) took their padding: a page's rule wins over a control's own `:host` rules.
+
+Changed:
+- **One height:** `ZOOM_PILL_HEIGHT` (34 px) in `src/ui/zoom-pill.ts`, which the chip's height and its list's offset now come from.
+- **Rings inside the chip:** the open state's ring is inset, and the keyboard focus outline is drawn 2 px inside.
+- **VS Code's page reset** leaves the two shared controls alone.
+
+Both controls now measure 34 px with the same top edge, closed, open and focused, on both surfaces, light and dark. Shots: `verify/2f-chip-height/` (`before-*` closed and focused; `after-*` closed, open and focused). Checks: `verify-2f-preview.mjs` 26/26 (a new one for the height), the playground's 2d checks 5a and 9b, and the chip's unit tests.
 
 ## The plan, once answered
 

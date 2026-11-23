@@ -36,6 +36,8 @@
 // touch DOM globals at module top level. The element class is defined inside
 // registerProgramChip(), which does nothing outside a browser.
 
+import { ZOOM_PILL_HEIGHT } from './zoom-pill';
+
 /** One program in the chip's list. */
 export interface ProgramChipItem {
   path: string;
@@ -82,8 +84,8 @@ export const DEFAULT_BADGE_TITLE = 'The main: first in pathogen.json’s entryPo
 const LIST_MAX = 460;
 /** Room kept between the list and the preview's edges. */
 const EDGE = 8;
-/** How far above the chip's bottom the list starts: its `bottom` in STYLES. */
-const LIST_BOTTOM = 38;
+/** How far above the chip's bottom the list starts (its `bottom` in STYLES): the chip's height and an 8 px gap. */
+const LIST_BOTTOM = ZOOM_PILL_HEIGHT + 8;
 /** Below this width the list is a sheet, unless `popover-only`. */
 const NARROW_QUERY = '(max-width: 800px)';
 
@@ -150,7 +152,8 @@ const STYLES = `
   align-items: center;
   gap: 6px;
   box-sizing: border-box;
-  height: 30px;
+  /* The zoom controls' height, so the two sit level at every state (the owner's request, 2026-11-23). */
+  height: ${ZOOM_PILL_HEIGHT}px;
   /* A narrow preview shortens the name (it ellipsizes) before the pill and the chip overflow. */
   max-width: min(240px, 100%);
   padding: 0 9px 0 13px;
@@ -175,14 +178,15 @@ const STYLES = `
   border-color: var(--pc-border-strong);
 }
 
+/* Open, and focused from the keyboard: the rings are drawn inside, so the chip never stands taller than the zoom controls. */
 .pick[aria-expanded='true'] {
   border-color: var(--pc-accent);
-  box-shadow: 0 0 0 3px var(--pc-accent-subtle);
+  box-shadow: inset 0 0 0 3px var(--pc-accent-subtle);
 }
 
 .pick:focus-visible {
   outline: 2px solid var(--pc-accent);
-  outline-offset: 2px;
+  outline-offset: -2px;
 }
 
 .caret {
@@ -215,7 +219,7 @@ const STYLES = `
 /* The list, opened upward. */
 .list {
   position: absolute;
-  bottom: 38px;
+  bottom: ${LIST_BOTTOM}px;
   right: 0;
   z-index: 40;
   width: 292px;

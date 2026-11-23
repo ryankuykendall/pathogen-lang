@@ -13,6 +13,7 @@ import { afterEach, beforeAll, describe, expect, it } from 'vitest';
 
 import { MAIN_BADGE_TITLE } from '../playground/utils/file-icons.js';
 import { DEFAULT_BADGE_TITLE, registerProgramChip } from '../src/ui/program-chip';
+import { registerZoomPill, ZOOM_PILL_HEIGHT } from '../src/ui/zoom-pill';
 
 import type { ProgramItem } from '../playground/services/program-list.js';
 import type { ProgramChipElement } from '../src/ui/program-chip';
@@ -348,6 +349,32 @@ describe('from the keyboard', () => {
     const selectors = [...narrow.matchAll(/([^{}]+)\{[^{}]*\}/g)].map((m) => m[1].trim());
     expect(selectors.length).toBeGreaterThanOrEqual(6);
     for (const selector of selectors) expect(selector).toMatch(/^:host\(:not\(\[popover-only\]\)\) /);
+  });
+
+  it("the chip is the zoom controls' height, and its open and focus rings are drawn inside it", () => {
+    registerZoomPill();
+    const chip = mount();
+    const pill = document.createElement('pathogen-zoom-pill');
+    document.body.appendChild(pill);
+    const cssOf = (r: ShadowRoot): string =>
+      [...r.adoptedStyleSheets]
+        .flatMap((s) => [...s.cssRules].map((rule) => rule.cssText))
+        .concat([...r.querySelectorAll('style')].map((s) => s.textContent ?? ''))
+        .join('\n');
+    /** The declarations of the first rule whose selector is exactly `selector`. */
+    const rule = (css: string, selector: string): string =>
+      [...css.matchAll(/([^{}]+)\{([^{}]*)\}/g)].find((m) => m[1].trim() === selector)?.[2] ?? '';
+    const chipCss = cssOf(root(chip));
+    const pillHost = rule(cssOf(pill.shadowRoot!), ':host');
+    expect(ZOOM_PILL_HEIGHT).toBe(34);
+    expect(pillHost).toMatch(/height: 34px/);
+    expect(pillHost).toMatch(/box-sizing: border-box/);
+    expect(rule(chipCss, '.pick')).toMatch(/height: 34px/);
+    expect(rule(chipCss, '.list')).toMatch(/bottom: 42px/);
+    expect(rule(chipCss, ".pick[aria-expanded='true']") || rule(chipCss, '.pick[aria-expanded="true"]')).toMatch(
+      /box-shadow: inset /,
+    );
+    expect(rule(chipCss, '.pick:focus-visible')).toMatch(/outline-offset: -2px/);
   });
 
   it('Right reaches the row’s Open in the editor, Left goes back', () => {

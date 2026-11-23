@@ -48,11 +48,19 @@ declare global {
   }
 }
 
+/**
+ * The pill's height, which the controls beside it match (the program chip,
+ * src/ui/program-chip.ts): 26 px buttons, 3 px of padding and a 1 px border.
+ */
+export const ZOOM_PILL_HEIGHT = 34;
+
 // Theming: playground token → VS Code webview token → literal. The literals
 // mirror theme.css light values (the old chrome carried stale #10b981 green
 // fallbacks from a previous accent — do not reintroduce them).
 const STYLES = `
   :host {
+    box-sizing: border-box;
+    height: ${ZOOM_PILL_HEIGHT}px;
     --zp-bg: var(--bg-elevated, var(--vscode-editorWidget-background, #ffffff));
     --zp-border: var(--border-color, var(--vscode-panel-border, #e2e8f0));
     --zp-text: var(--text-secondary, var(--vscode-foreground, #64748b));

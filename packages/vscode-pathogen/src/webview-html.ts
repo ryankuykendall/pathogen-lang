@@ -58,7 +58,10 @@ export function getWebviewContent(compilerUri: string, panZoomUri: string, cspSo
   <meta http-equiv="Content-Security-Policy" content="${csp}">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
+    /* The reset leaves the shared controls alone: a page's rule wins over a
+       control's own :host rules, and this one took the zoom pill's padding
+       (28 px tall here, 34 px in the playground). */
+    *:not(pathogen-zoom-pill, program-chip) { margin: 0; padding: 0; box-sizing: border-box; }
     body {
       background: var(--vscode-editor-background, #1e1e1e);
       color: var(--vscode-editor-foreground, #d4d4d4);

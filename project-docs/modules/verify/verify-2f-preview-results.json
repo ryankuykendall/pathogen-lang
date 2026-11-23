@@ -2,7 +2,7 @@
   {
     "name": "A1 gears-project is a project with a main: the main, then entryPoints in order",
     "ok": true,
-    "detail": "{\"main\":\"/Users/ryan/claude-code-projects/svg-path-extended/tmp/verify-2f-0oF5Fy/gears-project/main.pathogen\",\"listed\":[\"/Users/ryan/claude-code-projects/svg-path-extended/tmp/verify-2f-0oF5Fy/gears-project/main.pathogen\",\"/Users/ryan/claude-code-projects/svg-path-extended/tmp/verify-2f-0oF5Fy/gears-project/demos/train.pathogen\",\"/Users/ryan/claude-code-projects/svg-path-extended/tmp/verify-2f-0oF5Fy/gears-project/try-sizes.pathogen\"]}"
+    "detail": "{\"main\":\"/Users/ryan/claude-code-projects/svg-path-extended/tmp/verify-2f-2Wdv3Y/gears-project/main.pathogen\",\"listed\":[\"/Users/ryan/claude-code-projects/svg-path-extended/tmp/verify-2f-2Wdv3Y/gears-project/main.pathogen\",\"/Users/ryan/claude-code-projects/svg-path-extended/tmp/verify-2f-2Wdv3Y/gears-project/demos/train.pathogen\",\"/Users/ryan/claude-code-projects/svg-path-extended/tmp/verify-2f-2Wdv3Y/gears-project/try-sizes.pathogen\"]}"
   },
   {
     "name": "A2 the preview button on a module's tab shows the main",
@@ -30,9 +30,14 @@
     "detail": "{\"path\":\"sketch.pathogen\",\"name\":\"sketch\",\"hint\":null,\"badge\":false,\"error\":null,\"uses\":\"self\",\"updating\":false,\"miniature\":\"data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20120%20120%22%20width%3D%22120%22%20height%3D%22120%22%3E%3Crect%20x%3D%220%22%20y%3D%220%22%20width%3D%22120%22%20height%3D%22120%22%20fill%3D%22%23ffffff%22%2F%3E%0A%0A%20%20%3Cpath%20data-layer-name%3D%22gears%22%20d%3D%22M%2060%2010%20l%206.257378601609233%2010.492466376194486%20l%209.193471117138145%20-8.04529219095216%20l%202.708770270834492%2011.91256484722296%20l%2011.229642625041791%20-4.810588751212656%20l%20-1.1049913671617588%2012.166578471285472%20l%2012.166578471285476%20-1.1049913671617588%20l%20-4.810588751212663%2011.229642625041787%20l%2011.912564847222967%202.708770270834499%20l%20-8.045292190952168%209.193471117138138%20l%2010.492466376194486%206.257378601609233%20l%20-10.4924663761945%206.257378601609247%20l%208.045292190952182%209.193471117138117%20l%20-11.912564847222967%202.7087702708345063%20l%204.810588751212663%2011.229642625041791%20l%20-12.166578471285476%20-1.1049913671617588%20l%201.1049913671617588%2012.166578471285476%20l%20-11.229642625041791%20-4.810588751212663%20l%20-2.708770270834492%2011.912564847222967%20l%20-9.193471117138145%20-8.045292190952168%20l%20-6.257378601609233%2010.492466376194486%20l%20-6.257378601609233%20-10.492466376194486%20l%20-9.19347111713816%208.045292190952154%20l%20-2.7087702708344636%20-11.912564847222953%20l%20-11.229642625041794%204.810588751212663%20l%201.1049913671617517%20-12.166578471285476%20l%20-12.166578471285465%201.1049913671617588%20l%204.810588751212649%20-11.229642625041791%20l%20-11.91256484722296%20-2.708770270834492%20l%208.045292190952168%20-9.193471117138145%20l%20-10.492466376194493%20-6.257378601609226%20l%2010.492466376194486%20-6.25737860160924%20l%20-8.045292190952168%20-9.193471117138131%20l%2011.912564847222967%20-2.7087702708345063%20l%20-4.810588751212656%20-11.22964262504178%20l%2012.166578471285462%201.1049913671617517%20l%20-1.1049913671617517%20-12.166578471285465%20l%2011.229642625041784%204.810588751212649%20l%202.708770270834499%20-11.91256484722296%20l%209.193471117138138%208.045292190952168%20z%20M%2045%2060%20a%2015%2015%200%201%201%2030%200%20a%2015%2015%200%201%201%20-30%200%22%20fill%3D%22none%22%20stroke%3D%22%237c3aed%22%20stroke-width%3D%221.5%22%2F%3E%0A%3C%2Fsvg%3E\",\"tileNote\":null,\"note\":\"not in pathogen.json\"}"
   },
   {
+    "name": "B1b [dark] the chip and the zoom controls are one height, 34 px, as in the playground (2026-11-23)",
+    "ok": true,
+    "detail": "{\"pill\":34,\"chip\":34}"
+  },
+  {
     "name": "B1 [dark] the chip: hidden with fewer than two programs, then beside the zoom controls, naming the program shown, with the red dot",
     "ok": true,
-    "detail": "{\"hiddenAlone\":true,\"hiddenOne\":true,\"hidden\":false,\"defined\":true,\"name\":\"main\",\"dot\":\"Another program has an error\",\"pillRight\":400.734375,\"chipLeft\":408.734375,\"pillMid\":533,\"chipMid\":533,\"pickBg\":\"rgb(32, 32, 32)\"}"
+    "detail": "{\"hiddenAlone\":true,\"hiddenOne\":true,\"hidden\":false,\"defined\":true,\"name\":\"main\",\"dot\":\"Another program has an error\",\"pillRight\":403.734375,\"chipLeft\":411.734375,\"pillMid\":531,\"chipMid\":531,\"pillHeight\":34,\"chipHeight\":34,\"pickBg\":\"rgb(32, 32, 32)\"}"
   },
   {
     "name": "B2 [dark] the chip takes VS Code's colours",
@@ -67,7 +72,7 @@
   {
     "name": "B8 [dark] a main that doesn't exist: the CLI's message; its row \"Not found\", with the main badge",
     "ok": true,
-    "detail": "{\"errorText\":\"Compilation ErrorThe main of gears-project, poster.pathogen, doesn't exist (looked for /Users/ryan/claude-code-projects/svg-path-extended/tmp/verify-2f-0oF5Fy/gears-project/poster.pathogen). pathogen.json lists it first in \\\"entryPoints\\\": add the file, or put another program first.\",\"firstRow\":{\"name\":\"poster\",\"sub\":\"Not found\",\"badge\":true}}"
+    "detail": "{\"errorText\":\"Compilation ErrorThe main of gears-project, poster.pathogen, doesn't exist (looked for /Users/ryan/claude-code-projects/svg-path-extended/tmp/verify-2f-2Wdv3Y/gears-project/poster.pathogen). pathogen.json lists it first in \\\"entryPoints\\\": add the file, or put another program first.\",\"firstRow\":{\"name\":\"poster\",\"sub\":\"Not found\",\"badge\":true}}"
   },
   {
     "name": "B9 [dark] no CSP violations, no page errors (miniatures are data: URLs)",
@@ -75,9 +80,14 @@
     "detail": "{\"csp\":[],\"pageErrors\":[]}"
   },
   {
+    "name": "C1b [light] the chip and the zoom controls are one height, 34 px, as in the playground (2026-11-23)",
+    "ok": true,
+    "detail": "{\"pill\":34,\"chip\":34}"
+  },
+  {
     "name": "C1 [light] the chip: hidden with fewer than two programs, then beside the zoom controls, naming the program shown, with the red dot",
     "ok": true,
-    "detail": "{\"hiddenAlone\":true,\"hiddenOne\":true,\"hidden\":false,\"defined\":true,\"name\":\"main\",\"dot\":\"Another program has an error\",\"pillRight\":400.734375,\"chipLeft\":408.734375,\"pillMid\":533,\"chipMid\":533,\"pickBg\":\"rgb(248, 248, 248)\"}"
+    "detail": "{\"hiddenAlone\":true,\"hiddenOne\":true,\"hidden\":false,\"defined\":true,\"name\":\"main\",\"dot\":\"Another program has an error\",\"pillRight\":403.734375,\"chipLeft\":411.734375,\"pillMid\":531,\"chipMid\":531,\"pillHeight\":34,\"chipHeight\":34,\"pickBg\":\"rgb(248, 248, 248)\"}"
   },
   {
     "name": "C2 [light] the chip takes VS Code's colours",
@@ -112,7 +122,7 @@
   {
     "name": "C8 [light] a main that doesn't exist: the CLI's message; its row \"Not found\", with the main badge",
     "ok": true,
-    "detail": "{\"errorText\":\"Compilation ErrorThe main of gears-project, poster.pathogen, doesn't exist (looked for /Users/ryan/claude-code-projects/svg-path-extended/tmp/verify-2f-0oF5Fy/gears-project/poster.pathogen). pathogen.json lists it first in \\\"entryPoints\\\": add the file, or put another program first.\",\"firstRow\":{\"name\":\"poster\",\"sub\":\"Not found\",\"badge\":true}}"
+    "detail": "{\"errorText\":\"Compilation ErrorThe main of gears-project, poster.pathogen, doesn't exist (looked for /Users/ryan/claude-code-projects/svg-path-extended/tmp/verify-2f-2Wdv3Y/gears-project/poster.pathogen). pathogen.json lists it first in \\\"entryPoints\\\": add the file, or put another program first.\",\"firstRow\":{\"name\":\"poster\",\"sub\":\"Not found\",\"badge\":true}}"
   },
   {
     "name": "C9 [light] no CSP violations, no page errors (miniatures are data: URLs)",
