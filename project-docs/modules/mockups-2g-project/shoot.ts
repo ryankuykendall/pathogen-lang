@@ -191,7 +191,7 @@ const importNoProjectFile = `
       { path: 'try-sizes.pathogen', kind: 'program' },
       { path: 'parts/gears.pathogen', kind: 'module' },
     ],
-    'No <code>pathogen.json</code>: <code>main.pathogen</code> is the main, as in the CLI, and the other programs follow by name. Use Set as main to choose another.',
+    'No <code>pathogen.json</code>: <code>main.pathogen</code> is the main, and the other programs follow by name. Use Set as main to choose another.',
   )}
 </div>`;
 

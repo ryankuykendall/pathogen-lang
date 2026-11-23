@@ -39,7 +39,9 @@
 **3. The program named** (question 1; try-sizes is in the preview, main.pathogen in the editor)
 - `3a-copy-svg`: the menu, with Copy SVG's small text "The program shown: try-sizes", beside Download source.
 - `3b-export`: the Export modal titled "Export try-sizes".
-- `3c-snapshot`: the Snapshot popover with "Of try-sizes, the program shown" under the name. Its image is blank only because the mockup's browser isn't signed in.
+- `3c-snapshot`: the Snapshot popover with "Of try-sizes, the program shown" under the name. Its image is blank in the mockup; the real popover shows the drawing.
+
+The shots are taken signed out, so the ⋮ menu has no Rename workspace or Make public.
 
 With one program, the chip isn't shown, and the three stay as they are today.
 
@@ -53,7 +55,7 @@ With one program, the chip isn't shown, and the three stay as they are today.
 ## Questions for you
 
 1. **Name the program?** Should Export's title, Copy SVG's small text and the Snapshot popover name the program they take, when the workspace has more than one (`3a`–`3c`)? *Recommended: yes.* The chip already names it, but only at the bottom of the preview. A Snapshot or an Export of the wrong program is easy to miss until afterwards.
-2. **No `pathogen.json` at the top** (`2e`): the main is `main.pathogen`, as in the CLI, and the other programs follow by name. Without a `main.pathogen`, the first program by name is the main, and a line under the card says so. *Recommended: yes.* The CLI would have no main for such a folder; a workspace needs one to draw.
+2. **No `pathogen.json` at the top** (`2e`): the CLI refuses such a folder ("my-gears is a folder with no pathogen.json. Add one (an empty {} compiles main.pathogen), or compile a file directly."). The playground would take it: the main is `main.pathogen`, as an empty `{}` would make it, and the other programs follow by name. Without a `main.pathogen`, the first program by name is the main, and a line under the card says so. *Recommended: yes.* The workspace writes its own `pathogen.json`, so Download source gives back a folder the CLI compiles.
 3. **A `pathogen.json` that can't be read** (bad JSON, the old `main` key, an `entryPoints` that isn't a list):
    - **(a)** import anyway: the program list is made as in question 2, and "Not added" says why the list couldn't be read, in the CLI's words. *Recommended.*
    - **(b)** refuse the whole import until the file is fixed.
@@ -67,6 +69,7 @@ With one program, the chip isn't shown, and the three stay as they are today.
   - a `pathogen.json` at the top is read, not left out with Upload's "the playground writes this file itself" message;
   - zips made in macOS's Finder hold a `__MACOSX/` folder, which doesn't start with a dot, so the dot rule doesn't catch it.
 - A .zip whose files all sit in one folder, as Download source makes, is read from inside that folder.
+- **A drop that misses the drop area:** the new-workspace page has no guard for it. The workspace's guard is a document listener that works only while `currentView === 'workspace'`. Without one, a .zip dropped on the name field makes the browser open the file and leave the page.
 - **Empty folders:** a browser's folder picker never delivers them, only a drop does. So an empty folder survives a .zip or a dropped folder, but not Choose folder…. The docs say so, and the round-trip test covers the .zip.
 - **Reading a .zip** needs inflate: a small vendor chunk such as `fflate`. Writing one can store files without compressing them.
 - **The icon:** Material Symbols' `folder_zip`, at weight 300, joins the sprite as `folder-zip`.
