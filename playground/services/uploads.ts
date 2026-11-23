@@ -79,7 +79,7 @@ function foldersOf(state: WorkspaceState): string[] {
 }
 
 /** A rule's message without the name it starts with: `"my gear.pathogen" can use only…` → `can use only…`. */
-const withoutName = (message: string): string => message.replace(/^"[^"]*"\s*/, '');
+export const withoutName = (message: string): string => message.replace(/^"[^"]*"\s*/, '');
 
 /** The accents NFD splits off a letter (U+0300 to U+036F), written without an escape in the source. */
 const ACCENTS = new RegExp(`[${String.fromCharCode(0x300)}-${String.fromCharCode(0x36f)}]`, 'g');
@@ -145,8 +145,12 @@ export function fontSuggestion(name: string): string {
   return weight ? `@font "${family}" ${weight};` : `@font "${family}";`;
 }
 
-/** Why a picked file that isn't a .pathogen file is left out (mockup v6 screen U, state 4; screen J, state 5). */
-function kindReason(name: string, folder: string): string {
+/**
+ * Why a picked file that isn't a .pathogen file is left out (mockup v6 screen U,
+ * state 4; screen J, state 5). `folder` is where it would go ('' is the top).
+ * The import of a project (project-import.ts) gives the same reasons.
+ */
+export function kindReason(name: string, folder: string): string {
   if (name.toLowerCase() === PROJECT_FILE) {
     return folder === ''
       ? 'the playground writes this file itself. To change the main, use Set as main on a program.'
@@ -158,6 +162,11 @@ function kindReason(name: string, folder: string): string {
   }
   if (kind === 'data') return 'workspaces hold .pathogen files for now; data files come later.';
   return 'workspaces hold .pathogen files for now.';
+}
+
+/** Why a .pathogen file over the size limit is left out. */
+export function tooLargeReason(): string {
+  return `larger than ${lib().WORKSPACE_LIMITS.fileBytes.pathogen / (1024 * 1024)} MB, the most a .pathogen file can be.`;
 }
 
 /**
@@ -239,7 +248,7 @@ export function sortUpload(
       continue;
     }
     if (file.size > limits.fileBytes.pathogen) {
-      leave(`larger than ${limits.fileBytes.pathogen / (1024 * 1024)} MB, the most a .pathogen file can be.`);
+      leave(tooLargeReason());
       continue;
     }
     const renamed = changed || fitted !== name;

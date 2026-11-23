@@ -1,10 +1,12 @@
 // App Breadcrumb — secondary navigation
 // Left: breadcrumb trail. Right (workspace view only): the console
 // toggle, save status, and the overflow menu containing
-// Export / Format Document / Copy Workspace / Copy SVG /
+// Export / Format Document / Copy Workspace / Download workspace / Copy SVG /
 // Copy Debug Info / Set Thumbnail and (when signed in)
 // Publish/Unpublish workspace. Copy URL left the menu in 2d, step 9a: a link
-// holds one file (note 52); links copied before still open.
+// holds one file (note 52); links copied before still open. Download
+// workspace (2g) is the owner's, as Copy Workspace is; with more than one
+// program, Copy SVG names the program it copies.
 //
 // The overflow menu was relocated here from app-header in Phase 2 so the top
 // nav stays visually invariant across routes (anti-shift contract). Workspace
@@ -15,6 +17,7 @@
 import { workspaceApi } from '../services/api.js';
 import { getUserId } from '../services/user-id.js';
 import { holdsWorkspace, openFileNow, workspaceNow } from '../services/workspace-files.js';
+import { saveBlob, workspaceZip } from '../services/workspace-download.js';
 import { hasFeature, UserFeature } from '../services/auth.js';
 import type { CurrentUser } from '../services/auth.js';
 import { autosave } from '../services/autosave.js';
@@ -129,6 +132,7 @@ class AppBreadcrumb extends HTMLElement {
         'openFile',
         'thumbnailWait',
         'noPrograms',
+        'programNames',
       ],
       () => this.render(),
     );
@@ -427,9 +431,16 @@ class AppBreadcrumb extends HTMLElement {
       menuItems.push(
         `<button data-action="copy-workspace">${materialIcon('content-copy', { size: 16, className: 'menu-icon' })}<span>Copy Workspace</span></button>`,
       );
+      // Every file as a project folder (2g): on with no program too, since modules are still code to take away.
+      menuItems.push(
+        `<button data-action="download-workspace">${materialIcon('folder-zip', { size: 16, className: 'menu-icon' })}<span>Download workspace<small>A .zip of every file</small></span></button>`,
+      );
     }
+    // With more than one program, it names the one it copies (2g).
+    const names = store.get('programNames') as { shown: string } | null;
+    const copySvgNote = names ? `<small>The program shown: ${escHtml(names.shown)}</small>` : '';
     menuItems.push(
-      `<button data-action="copy-svg">${materialIcon('code', { size: 16, className: 'menu-icon' })}<span>Copy SVG</span></button>`,
+      `<button data-action="copy-svg">${materialIcon('code', { size: 16, className: 'menu-icon' })}<span>Copy SVG${copySvgNote}</span></button>`,
     );
     menuItems.push(
       `<button data-action="copy-debug-info">${materialIcon('bug-report', { size: 16, className: 'menu-icon' })}<span>Copy Debug Info</span></button>`,
@@ -678,6 +689,9 @@ class AppBreadcrumb extends HTMLElement {
         }
         break;
       }
+      case 'download-workspace':
+        this.downloadWorkspace();
+        break;
       case 'copy-svg':
         this.dispatchEvent(new CustomEvent('copy-svg', { bubbles: true, composed: true }));
         this.showOverflowFeedback('SVG copied!');
@@ -779,6 +793,29 @@ class AppBreadcrumb extends HTMLElement {
     } catch (err: unknown) {
       console.error('Failed to update workspace visibility:', err);
       this.showOverflowFeedback('Publish failed', true);
+    }
+  }
+
+  /**
+   * Download workspace (2g; docs/workspace-files.md "Downloading a workspace"):
+   * every file as the editor holds it, edits not saved yet included, in a .zip
+   * named after the workspace.
+   */
+  downloadWorkspace(): void {
+    if (!holdsWorkspace()) return;
+    try {
+      const workspace = workspaceNow();
+      const { fileName, bytes } = workspaceZip({
+        name: (store.get('workspaceName') as string | null) ?? '',
+        texts: workspace.texts,
+        folders: workspace.folders,
+        entryPoints: workspace.entryPoints,
+      });
+      saveBlob(new Blob([bytes as Uint8Array<ArrayBuffer>], { type: 'application/zip' }), fileName);
+      this.showOverflowFeedback(`Downloaded ${fileName}`);
+    } catch (err: unknown) {
+      console.error('Download workspace failed:', err);
+      this.showOverflowFeedback('Couldn’t make the .zip. Try again.', true);
     }
   }
 

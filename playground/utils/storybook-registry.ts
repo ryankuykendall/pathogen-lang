@@ -2445,6 +2445,7 @@ dot.apply { circle(100, 100, 14); }`;
         props: { kind: 'naming', staleLine: 5, staleFile: 'parts/gears.pathogen', placement: 'below' },
       },
       { name: 'Files changed since render', props: { kind: 'naming', staleFiles: true, placement: 'below' } },
+      { name: 'Several programs (names the one shown)', props: { kind: 'naming', program: 'try-sizes', placement: 'below' } },
       { name: 'Saving', props: { kind: 'saving', placement: 'below' } },
       { name: 'Saved', props: { kind: 'saved', placement: 'below' } },
       { name: 'Signed out', props: { kind: 'signed-out', placement: 'below' } },
@@ -2481,6 +2482,7 @@ dot.apply { circle(100, 100, 14); }`;
                   : props.staleLine
                     ? { kind: 'line', line: props.staleLine, file: props.staleFile ?? null }
                     : null,
+                program: props.program ?? null,
               }
             : kind === 'saving'
               ? { ...base, kind, sizeLabel: '2.1 MB' }

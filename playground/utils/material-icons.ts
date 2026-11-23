@@ -27,7 +27,8 @@ export type MaterialIconName =
   | 'list'
   | 'share'
   | 'subtitles'
-  | 'edit';
+  | 'edit'
+  | 'folder-zip';
 
 export interface MaterialIconOptions {
   className?: string;

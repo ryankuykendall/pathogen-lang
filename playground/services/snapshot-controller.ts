@@ -268,7 +268,10 @@ export class SnapshotController {
       popover.setState({ kind: 'scratch', thumbUrl: null, workspaceName: 'Untitled', stale: pending.stale });
       return;
     }
-    popover.setState({ kind: 'naming', thumbUrl: null, name: defaultName, stale: pending.stale });
+    // With more than one program, the panel names the one that drew (2g; docs/snapshots.md).
+    const names = state.programNames as { shown: string; byPath: Record<string, string> } | null;
+    const program = names ? (files && names.byPath[files.program]) || names.shown : null;
+    popover.setState({ kind: 'naming', thumbUrl: null, name: defaultName, stale: pending.stale, program });
   }
 
   private _ensurePopover(): SnapshotPopover {

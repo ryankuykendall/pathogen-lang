@@ -32,6 +32,23 @@ export const MODULE_MAIN = "A module now, so it can't draw as the main";
 const byPath = (a: string, b: string): number => (a < b ? -1 : a > b ? 1 : 0);
 
 /**
+ * Each program's name as the chip shows it, and the shown one's, for Export,
+ * Copy SVG and Snapshot to name the program they take (2g;
+ * docs/workspace-files.md "The preview and the program list"): `try-sizes`,
+ * or `gears · demos` when two programs share a name. Null with fewer than two
+ * programs: with one, nothing needs naming.
+ */
+export function programNamesOf(
+  programs: readonly string[],
+  shown: string,
+): { shown: string; byPath: Record<string, string> } | null {
+  if (programs.length < 2) return null;
+  const byPath: Record<string, string> = {};
+  for (const { path, name, hint } of tabLabels(programs)) byPath[path] = hint ? `${name} · ${hint}` : name;
+  return { shown: byPath[shown] ?? tabLabels([shown])[0].name, byPath };
+}
+
+/**
  * The programs the list holds, in its order: pathogen.json's list, the main
  * first even once it's become a library (it stays the main until you choose
  * another), then any program the list doesn't name (an older save), by path.

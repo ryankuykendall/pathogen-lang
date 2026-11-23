@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
   Material Symbols Outlined sprite.
-  Sourced from @material-symbols/svg-400 (Apache 2.0, Google).
+  Sourced from @material-symbols/svg-400 (Apache 2.0, Google); mi-folder-zip is
+  folder_zip at weight 300, as the 2g mockups showed it (note 68).
   Symbol IDs are prefixed `mi-`. Reference from anywhere (incl. shadow DOM) via:
     <svg><use href="/pathogen/assets/material-icons-sprite.svg#mi-NAME"/></svg>
   See playground/utils/material-icons.ts for the typed helper.
@@ -28,5 +29,6 @@
     <symbol id="mi-share" viewBox="0 -960 960 960"><path fill="currentColor" d="M220-80q-24 0-42-18t-18-42v-469q0-24 18-42t42-18h169v60H220v469h520v-469H569v-60h171q24 0 42 18t18 42v469q0 24-18 42t-42 18H220Zm229-267v-457l-88 88-43-43 161-161 161 161-43 43-88-88v457h-60Z"/></symbol>
     <symbol id="mi-subtitles" viewBox="0 -960 960 960"><path fill="currentColor" d="M240-350h360v-60H240v60Zm420 0h60v-60h-60v60ZM240-470h60v-60h-60v60Zm120 0h360v-60H360v60ZM140-160q-24 0-42-18t-18-42v-520q0-24 18-42t42-18h680q24 0 42 18t18 42v520q0 24-18 42t-42 18H140Zm0-60h680v-520H140v520Z"/></symbol>
     <symbol id="mi-edit" viewBox="0 -960 960 960"><path fill="currentColor" d="M200-200h57l391-391-57-57-391 391v57Zm-80 80v-170l528-527q12-11 26.5-17t30.5-6q16 0 31 6t26 18l55 56q12 11 17.5 26t5.5 30q0 16-5.5 30.5T817-647L290-120H120Zm640-584-56-56 56 56Zm-141 85-28-29 57 57-29-28Z"/></symbol>
+    <symbol id="mi-folder-zip" viewBox="0 -960 960 960"><path fill="currentColor" d="M640-480v-80h80v80h-80Zm0 80h-80v-80h80v80Zm0 80v-80h80v80h-80ZM447.38-640l-80-80H172.31q-5.39 0-8.85 3.46t-3.46 8.85v455.38q0 5.39 3.46 8.85t8.85 3.46H560v-80h80v80h147.69q5.39 0 8.85-3.46t3.46-8.85v-375.38q0-5.39-3.46-8.85t-8.85-3.46H640v80h-80v-80H447.38ZM172.31-180Q142-180 121-201q-21-21-21-51.31v-455.38Q100-738 121-759q21-21 51.31-21h219.61l80 80h315.77Q818-700 839-679q21 21 21 51.31v375.38Q860-222 839-201q-21 21-51.31 21H172.31ZM160-240v-480 480Z"/></symbol>
   </defs>
 </svg>

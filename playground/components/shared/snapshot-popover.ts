@@ -33,7 +33,14 @@ function staleLead(stale: Exclude<StaleNote, null>): string {
 }
 
 export type SnapshotPopoverState =
-  | { kind: 'naming'; thumbUrl: string | null; name: string; stale: StaleNote }
+  | {
+      kind: 'naming';
+      thumbUrl: string | null;
+      name: string;
+      stale: StaleNote;
+      /** With more than one program, the name of the one the snapshot takes (2g): "Of try-sizes, the program shown". */
+      program?: string | null;
+    }
   | { kind: 'scratch'; thumbUrl: string | null; workspaceName: string; stale: StaleNote }
   | { kind: 'saving'; thumbUrl: string | null; name: string; sizeLabel: string }
   | { kind: 'saved'; thumbUrl: string | null; name: string; total: number | null }
@@ -163,6 +170,7 @@ const styles = `
   .title { font-weight: 600; font-size: 13px; display: grid; grid-auto-flow: column; justify-content: start; align-items: center; gap: 6px; overflow-wrap: anywhere; }
   .tick { width: 18px; height: 18px; border-radius: 50%; background: var(--success-color, #10b981); color: var(--bg-elevated, #ffffff); display: inline-grid; place-items: center; font-size: 11px; }
   .sub { font-size: 12px; color: var(--text-secondary, #5a4f6a); margin-top: 2px; line-height: 1.4; }
+  .sub.program-shown { margin-top: 6px; }
   .links { display: grid; grid-auto-flow: column; justify-content: start; gap: 12px; margin-top: 6px; font-size: 12px; }
   .links .strong { color: var(--text-primary, #1c1722); font-weight: 600; }
 `;
@@ -304,7 +312,11 @@ export class SnapshotPopover extends HTMLElement {
       case 'naming':
         return `
           <div class="row">${this._thumb(state.thumbUrl)}
-            <div><label for="name">Name</label><input id="name" maxlength="120" value="${escapeHtml(state.name)}" /></div>
+            <div><label for="name">Name</label><input id="name" maxlength="120" value="${escapeHtml(state.name)}" />${
+              state.program
+                ? `<div class="sub program-shown">Of <b>${escapeHtml(state.program)}</b>, the program shown</div>`
+                : ''
+            }</div>
           </div>
           <textarea id="note" maxlength="2000" placeholder="Note (optional)" aria-label="Note"></textarea>
           ${

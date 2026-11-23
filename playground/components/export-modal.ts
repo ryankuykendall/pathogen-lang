@@ -185,7 +185,22 @@ interface WorkspaceState {
   code?: string;
   /** The code that drew the preview being exported (the program shown). */
   renderedCode?: string | null;
+  /** The files that drew, with the program that drew them (store `renderedFiles`). */
+  renderedFiles?: { program: string } | null;
+  /** The programs' names, with more than one (store `programNames`, 2g). */
+  programNames?: { shown: string; byPath: Record<string, string> } | null;
   [key: string]: unknown;
+}
+
+/**
+ * The dialog's title: with more than one program, it names the one exported,
+ * the program that drew the preview (2g; docs/exporting.md): `Export try-sizes`.
+ */
+export function exportTitle(state: Pick<WorkspaceState, 'renderedFiles' | 'programNames'>): string {
+  const names = state.programNames;
+  if (!names) return 'Export';
+  const drew = state.renderedFiles?.program;
+  return `Export ${(drew !== undefined && names.byPath[drew]) || names.shown}`;
 }
 
 interface TextCreateOptions {
@@ -445,6 +460,8 @@ class ExportModal extends HTMLElement {
     this._buildPreviewSvg(svgElement, this._getEffectiveState());
     this._populateForm();
     this._updatePdfUi();
+    const title = this.shadowRoot!.querySelector('.form-header h2');
+    if (title) title.textContent = exportTitle(storeState);
 
     this.classList.add('open');
     this._addDocumentListeners();

@@ -1,8 +1,27 @@
 // New Workspace View - Form for creating new workspaces
 // Route: /workspace/new
+//
+// In blank mode (from + New Workspace), "Or import a project" makes the new
+// workspace from a project folder or a .zip (2g; docs/workspace-files.md "A
+// workspace from a project"; mockups-2g-project and -v2): Choose folder…,
+// Choose .zip…, or a drop on its area. The page lists what comes in before
+// Create Workspace (services/project-import.ts plans it), and a drop anywhere
+// else on the page is stopped, so the browser doesn't open the file and leave.
 
 import { workspaceApi } from '../../services/api.js';
 import { autosave } from '../../services/autosave.js';
+import {
+  droppedSentence,
+  pickFromDrop,
+  pickFromFolderInput,
+  pickFromZip,
+  planImport,
+} from '../../services/project-import.js';
+import { captureDrop, linesHeading } from '../../services/uploads.js';
+import type { ImportPlan, ImportRefusal, PickRefusal, ProjectPick } from '../../services/project-import.js';
+import { FILE_ICONS, MAIN_BADGE_TITLE } from '../../utils/file-icons.js';
+import { materialIcon } from '../../utils/material-icons.js';
+import { isTouch } from '../../utils/narrow.js';
 // Visibility is no longer chosen during workspace creation, so the
 // Publishing-feature gate that used to live here is gone. The
 // currentUser subscription below stays — other parts of the form
@@ -67,6 +86,46 @@ interface ImportState {
   desc?: string;
 }
 
+/** A project picked to make the workspace from (2g): being read, what comes in, or why nothing does. */
+type ProjectState =
+  | { kind: 'reading'; label: string }
+  | { kind: 'plan'; plan: ImportPlan }
+  | { kind: 'refused'; refusal: ImportRefusal }
+  /** Nothing could be picked (two things dropped, a .zip that isn't one): the section stays as it was, with the reason. */
+  | { kind: 'pick-error'; message: string };
+
+const esc = (text: string): string =>
+  text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+const codeHtml = (text: string): string => `<code>${esc(text)}</code>`;
+const PROJECT_FILE = 'pathogen.json';
+const MAIN = 'main.pathogen';
+
+/**
+ * What the card's foot says about the program list: from the project's
+ * pathogen.json, or the one the workspace writes (shown), or why its list
+ * couldn't be used.
+ */
+function projectFootHtml(plan: ImportPlan, isZip: boolean): string {
+  const main = plan.entryPoints[0] ?? null;
+  const others = plan.entryPoints.length > 1;
+  const setMain = 'Use Set as main in the workspace to choose another main.';
+  const mainLine =
+    main === null
+      ? 'With no program here, the workspace has no main until you add one'
+      : main === MAIN
+        ? `${codeHtml(MAIN)} is the main${others ? ', and the other programs follow in order of their paths' : ''}`
+        : `With no ${codeHtml(MAIN)}, ${codeHtml(main)}, the first program in order of their paths, is the main${others ? ', and the others follow' : ''}`;
+  if (plan.list === 'listed') {
+    return `The main and the program list come from its ${codeHtml(PROJECT_FILE)}. Imports between its files work as they did in the folder.`;
+  }
+  if (plan.list === 'unusable') {
+    return `Its ${codeHtml(PROJECT_FILE)} lists no program the workspace can use, so ${mainLine.charAt(0).toLowerCase()}${mainLine.slice(1)}.${main !== null ? ` ${setMain}` : ''}`;
+  }
+  return `This ${isZip ? '.zip' : 'folder'} has no ${codeHtml(PROJECT_FILE)}, so the workspace writes one. ${mainLine}:
+      <pre>${esc((plan.generated ?? '').trimEnd())}</pre>
+      ${main !== null ? setMain : ''}`;
+}
+
 class NewWorkspaceView extends HTMLElement {
   private _unsubscribe: (() => void) | null = null;
   private _unsubscribeUser: (() => void) | null = null;
@@ -94,6 +153,26 @@ class NewWorkspaceView extends HTMLElement {
   private _importKey: string | null = null;
   private _beforeUnloadHandler: (() => void) | null = null;
 
+  // A project to make the workspace from (2g). Each pick counts, so a slow read
+  // that ends after a newer pick (or after the page was left) changes nothing.
+  private _project: ProjectState | null = null;
+  private _projectSeq = 0;
+  /** The name the last pick filled in: the next pick replaces it, unless it was typed over. */
+  private _projectName: string | null = null;
+
+  /**
+   * A file dropped anywhere on this page but the import's drop area is
+   * stopped: the browser would open it and leave the page. The workspace
+   * view guards its own page the same way.
+   */
+  private readonly _onStrayDrop = (e: DragEvent): void => {
+    if (store.get('currentView') !== 'new-workspace') return;
+    if (!e.dataTransfer || !Array.from(e.dataTransfer.types).includes('Files')) return;
+    if (e.composedPath().some((node) => node instanceof HTMLElement && node.classList.contains('drop-zone'))) return;
+    e.preventDefault();
+    if (e.type === 'dragover') e.dataTransfer.dropEffect = 'none';
+  };
+
   constructor() {
     super();
     this.attachShadow({ mode: 'open' });
@@ -108,6 +187,8 @@ class NewWorkspaceView extends HTMLElement {
   }
 
   connectedCallback(): void {
+    document.addEventListener('dragover', this._onStrayDrop, true);
+    document.addEventListener('drop', this._onStrayDrop, true);
     this.loadPreferences();
 
     // Check for copy mode or state mode
@@ -213,8 +294,14 @@ class NewWorkspaceView extends HTMLElement {
   }
 
   disconnectedCallback(): void {
+    document.removeEventListener('dragover', this._onStrayDrop, true);
+    document.removeEventListener('drop', this._onStrayDrop, true);
     this._dropLoad();
     this._cleanupImport();
+    // A pick still being read is dropped with the page: added back, it starts blank.
+    this._projectSeq++;
+    this._project = null;
+    this._projectName = null;
     if (this._unsubscribe) {
       this._unsubscribe();
     }
@@ -385,6 +472,67 @@ class NewWorkspaceView extends HTMLElement {
     this._sourceWorkspace = null;
     this._forkFiles = null;
     this._stateCode = null;
+    this._projectSeq++;
+    this._project = null;
+    this._projectName = null;
+    this.render();
+  }
+
+  /**
+   * Read a picked project and plan what comes in (2g). The name is filled in
+   * from the folder or the .zip, unless one was typed.
+   */
+  private async _takeProject(
+    label: string,
+    pick: () => Promise<ProjectPick | PickRefusal> | ProjectPick | PickRefusal,
+  ): Promise<void> {
+    const seq = ++this._projectSeq;
+    this._project = { kind: 'reading', label };
+    delete this.errors.submit;
+    this.render();
+    let next: ProjectState;
+    try {
+      const picked = await pick();
+      if ('ok' in picked) {
+        next = { kind: 'pick-error', message: picked.message };
+      } else {
+        const result = await planImport(picked);
+        next = result.ok ? { kind: 'plan', plan: result } : { kind: 'refused', refusal: result };
+      }
+    } catch (err: unknown) {
+      console.error('Failed to read the project:', err);
+      next = { kind: 'pick-error', message: 'The project couldn’t be read, so nothing was added. Choose it again.' };
+    }
+    // A newer pick, or the page left, while this one read.
+    if (seq !== this._projectSeq || store.get('currentView') !== 'new-workspace') return;
+    this._project = next;
+    if (next.kind === 'plan' || next.kind === 'refused') {
+      const name = next.kind === 'plan' ? next.plan.name : next.refusal.name;
+      const typed = this.formData.name.trim();
+      if (typed === '' || typed === this._projectName) {
+        this.formData.name = name;
+        this._projectName = name;
+        delete this.errors.name;
+      }
+    }
+    this.render();
+  }
+
+  /**
+   * The project picked, while the page is the blank one that offers the
+   * import: copying a workspace, forking one or opening code from a link never
+   * uses a project picked before (the page is one element, kept between visits).
+   */
+  private _projectInPlay(): ProjectState | null {
+    return this._copyFromId || this._fromApproval || this._stateCode ? null : this._project;
+  }
+
+  /** Choose another…: back to the section's buttons; a name the pick filled in goes too. */
+  private _clearProject(): void {
+    this._projectSeq++;
+    this._project = null;
+    if (this._projectName !== null && this.formData.name.trim() === this._projectName) this.formData.name = '';
+    this._projectName = null;
     this.render();
   }
 
@@ -408,6 +556,9 @@ class NewWorkspaceView extends HTMLElement {
     e.preventDefault();
 
     if (this._isSubmitting || this._loadingSource) return;
+    // A project still being read, or one that adds nothing: Create is off.
+    const project = this._projectInPlay();
+    if (project?.kind === 'reading' || project?.kind === 'refused') return;
     if (!this.validate()) {
       this.render();
       return;
@@ -434,6 +585,18 @@ class NewWorkspaceView extends HTMLElement {
           name,
           description,
           ...this._forkFiles,
+          isPublic: false,
+          preferences: this._newPreferences(),
+        })) as typeof workspace;
+      } else if (project?.kind === 'plan') {
+        // A project folder or a .zip (2g): its files, empty folders and program list, as the page listed them.
+        const { files, folders, entryPoints } = project.plan;
+        workspace = (await workspaceApi.create({
+          name,
+          description,
+          files,
+          folders,
+          entryPoints,
           isPublic: false,
           preferences: this._newPreferences(),
         })) as typeof workspace;
@@ -506,6 +669,8 @@ class NewWorkspaceView extends HTMLElement {
     form.addEventListener('input', (e: Event) => {
       const target = e.target as HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement;
       const { name, value, type } = target;
+      // The import's file pickers have no name: they aren't form fields.
+      if (!name) return;
 
       if (type === 'checkbox') {
         (this.formData as Record<string, unknown>)[name] = (target as HTMLInputElement).checked;
@@ -527,10 +692,171 @@ class NewWorkspaceView extends HTMLElement {
       }
     });
 
-    // Cancel button
-    this.shadowRoot!.querySelector('.secondary-btn')?.addEventListener('click', () => {
+    // Cancel button (the actions' own: the import's buttons are secondary buttons too)
+    this.shadowRoot!.querySelector('.actions .secondary-btn')?.addEventListener('click', () => {
       this.handleCancel();
     });
+
+    this._setupProjectListeners();
+  }
+
+  /** Or import a project (2g): the two pickers, the drop area, and Choose another…. */
+  private _setupProjectListeners(): void {
+    const root = this.shadowRoot!;
+    const folderInput = root.querySelector<HTMLInputElement>('.pick-folder');
+    const zipInput = root.querySelector<HTMLInputElement>('.pick-zip');
+    // _takeProject reports its own failures on the page; this only keeps a bug from passing silently.
+    const take = (label: string, pick: () => Promise<ProjectPick | PickRefusal> | ProjectPick | PickRefusal): void => {
+      this._takeProject(label, pick).catch((err: unknown) => console.error('Failed to import the project:', err));
+    };
+    root.querySelector('[data-project="folder"]')?.addEventListener('click', () => folderInput?.click());
+    root.querySelector('[data-project="zip"]')?.addEventListener('click', () => zipInput?.click());
+    root.querySelector('[data-project="again"]')?.addEventListener('click', () => this._clearProject());
+    folderInput?.addEventListener('change', () => {
+      const files = Array.from(folderInput.files ?? []);
+      folderInput.value = '';
+      if (files.length === 0) return;
+      const top = (files[0].webkitRelativePath || files[0].name).split('/')[0];
+      take(top, () => pickFromFolderInput(files));
+    });
+    zipInput?.addEventListener('change', () => {
+      const file = zipInput.files?.[0] ?? null;
+      zipInput.value = '';
+      if (!file) return;
+      take(file.name, async () => pickFromZip(file));
+    });
+
+    const zone = root.querySelector<HTMLElement>('.drop-zone');
+    if (!zone) return;
+    const carriesFiles = (e: DragEvent): boolean =>
+      !!e.dataTransfer && Array.from(e.dataTransfer.types).includes('Files');
+    const over = (e: DragEvent): void => {
+      if (!carriesFiles(e)) return;
+      e.preventDefault();
+      e.dataTransfer!.dropEffect = 'copy';
+      zone.classList.add('dragging');
+    };
+    zone.addEventListener('dragenter', over);
+    zone.addEventListener('dragover', over);
+    zone.addEventListener('dragleave', (e: DragEvent) => {
+      if (!zone.contains(e.relatedTarget as Node | null)) zone.classList.remove('dragging');
+    });
+    zone.addEventListener('drop', (e: DragEvent) => {
+      if (!carriesFiles(e)) return;
+      e.preventDefault();
+      zone.classList.remove('dragging');
+      // Taken while the drop lasts: after it, the browser empties what it carried.
+      const drop = captureDrop(e.dataTransfer!);
+      const first = drop.entries[0]?.name ?? drop.files[0]?.name ?? 'the project';
+      take(first, async () => pickFromDrop(drop));
+    });
+  }
+
+  /** The import section, idle: its lead, the two pickers (one on a touch screen) and the drop area. */
+  private _importIdleHtml(): string {
+    const touch = isTouch();
+    const lead = touch
+      ? 'A .zip made by Download workspace, or of a project folder from the CLI or VS Code.'
+      : 'A project folder from the CLI or VS Code, or a .zip made by Download workspace.';
+    const error = this._project?.kind === 'pick-error' ? this._project.message : null;
+    return `
+          <div class="form-section import-section">
+            <h2>Or import a project</h2>
+            <p class="import-lead">${lead} Its files, folders and program list come in as they are.</p>
+            ${
+              touch
+                ? '<button type="button" class="secondary-btn" data-project="zip">Choose .zip…</button>'
+                : `<div class="drop-zone">
+              <div class="drop-buttons">
+                <button type="button" class="secondary-btn" data-project="folder">Choose folder…</button>
+                <button type="button" class="secondary-btn" data-project="zip">Choose .zip…</button>
+              </div>
+              <span class="hint">or drop a folder or a .zip here</span>
+              <span class="drop-now">Drop to import this project</span>
+            </div>`
+            }
+            ${touch ? '' : '<input class="pick-folder" type="file" webkitdirectory hidden tabindex="-1">'}
+            <input class="pick-zip" type="file" accept=".zip,application/zip" hidden tabindex="-1">
+            ${error ? `<div class="refused" role="alert"><p>${esc(error)}</p></div>` : ''}
+          </div>`;
+  }
+
+  /** The import section with a project picked: being read, what comes in, or why nothing does. */
+  private _importPickedHtml(project: Exclude<ProjectState, { kind: 'pick-error' }>): string {
+    // Choose another… in every state, reading included: a slow read is never a dead end.
+    const head = (title: string, what: string): string => {
+      const icon = title.endsWith('/') ? FILE_ICONS.folder : materialIcon('folder-zip', { size: 18, className: 'zip' });
+      return `<div class="project-head">${icon}<span><b>${esc(title)}</b><span class="what">${esc(what)}</span></span><button type="button" class="linkish" data-project="again">Choose another…</button></div>`;
+    };
+    if (project.kind === 'reading') {
+      return `
+          <div class="form-section import-section">
+            <h2>Import a project</h2>
+            <div class="project-card">${head(project.label, 'Reading…')}</div>
+          </div>`;
+    }
+    if (project.kind === 'refused') {
+      const { refusal } = project;
+      return `
+          <div class="form-section import-section">
+            <h2>Import a project</h2>
+            <div class="project-card">${head(refusal.title, refusal.what)}</div>
+            <div class="refused" role="alert">
+              <p>${esc(refusal.message).replace(PROJECT_FILE, codeHtml(PROJECT_FILE))}</p>
+              ${refusal.said ? `<p class="said">${esc(refusal.said)}</p>` : ''}
+            </div>
+            ${this._notAddedHtml(
+              [],
+              refusal.leftOut.map((l) => `${codeHtml(l.name)}: ${esc(l.reason)}`),
+            )}
+          </div>`;
+    }
+    const { plan } = project;
+    const isZip = !plan.title.endsWith('/');
+    const programRow = (path: string, i: number): string =>
+      `<li class="program">${FILE_ICONS.program}<span class="p">${codeHtml(path)}${
+        i === 0 ? `<span class="badge-main" title="${esc(MAIN_BADGE_TITLE)}">main</span>` : ''
+      }</span>${
+        plan.unlisted.includes(path)
+          ? `<span class="note">Not in ${esc(PROJECT_FILE)}’s list: it joins the end.</span>`
+          : ''
+      }</li>`;
+    const rows = [
+      ...plan.entryPoints.map(programRow),
+      ...plan.modules.map(
+        (path) =>
+          `<li class="module">${FILE_ICONS.library}<span class="p">${codeHtml(path)}<span class="kind">module</span></span></li>`,
+      ),
+      ...(plan.generated !== null
+        ? [
+            `<li class="json">${FILE_ICONS.json}<span class="p">${codeHtml(PROJECT_FILE)}<span class="new">new</span></span></li>`,
+          ]
+        : []),
+    ];
+    const renamed = plan.renamed.map((r) => `${codeHtml(r.from)} → ${codeHtml(r.to)}`);
+    const notAdded = [
+      ...plan.leftOut.map((l) => `${codeHtml(l.name)}: ${esc(l.reason)}`),
+      ...plan.dropped.map((d) => droppedSentence(d, codeHtml)),
+    ];
+    return `
+          <div class="form-section import-section">
+            <h2>Import a project</h2>
+            <div class="project-card">
+              ${head(plan.title, plan.what)}
+              <ul class="project-files">${rows.join('')}</ul>
+              <div class="project-foot">${projectFootHtml(plan, isZip)}</div>
+            </div>
+            ${this._notAddedHtml(renamed, notAdded)}
+          </div>`;
+  }
+
+  /** The names changed to fit, then what isn't added and why, under the upload's own heading. */
+  private _notAddedHtml(renamed: string[], notAdded: string[]): string {
+    const heading = linesHeading(renamed.length, notAdded.length);
+    if (heading === null) return '';
+    return `<div class="left-out"><div class="head">${esc(heading)}</div><ul>${[...renamed, ...notAdded]
+      .map((line) => `<li>${line}</li>`)
+      .join('')}</ul></div>`;
   }
 
   updateFieldError(fieldName: string): void {
@@ -585,13 +911,21 @@ class NewWorkspaceView extends HTMLElement {
       })
       .join('');
 
+    // Or import a project (2g): offered as + New Workspace reaches the page, not when it copies or opens code.
+    const offersProject = !isCopyMode && !isStateMode;
+    const project = offersProject ? this._projectInPlay() : null;
+    const picked = project && project.kind !== 'pick-error' ? project : null;
+    const projectBlocks = picked?.kind === 'reading' || picked?.kind === 'refused';
+
     const title = isCopyMode ? 'Copy Workspace' : 'New Workspace';
     const subtitle =
       isCopyMode && this._sourceWorkspace
         ? `Creating a copy of "${this.escapeHtml(this._sourceWorkspace.name)}"`
         : isStateMode
           ? 'Create a workspace from imported code'
-          : 'Create a new workspace to start building SVG paths';
+          : picked
+            ? 'Create a workspace from a project'
+            : 'Create a new workspace to start building SVG paths';
     const submitText = this._isSubmitting
       ? isCopyMode
         ? 'Creating Copy...'
@@ -639,7 +973,7 @@ class NewWorkspaceView extends HTMLElement {
           </div>
 
           ${
-            !isCopyMode && !isStateMode
+            offersProject && !picked
               ? `
           <div class="form-section">
             <h2>Starting Template</h2>
@@ -660,6 +994,8 @@ class NewWorkspaceView extends HTMLElement {
           `
               : ''
           }
+
+          ${offersProject ? (picked ? this._importPickedHtml(picked) : this._importIdleHtml()) : ''}
 
           ${
             // Visibility is no longer set during workspace creation —
@@ -683,7 +1019,7 @@ class NewWorkspaceView extends HTMLElement {
           }
 
           <div class="actions">
-            <button type="submit" class="primary-btn" ${this._isSubmitting ? 'disabled' : ''}>
+            <button type="submit" class="primary-btn" ${this._isSubmitting || projectBlocks ? 'disabled' : ''}>
               ${submitText}
             </button>
             <button type="button" class="secondary-btn">Cancel</button>
@@ -695,11 +1031,14 @@ class NewWorkspaceView extends HTMLElement {
     this.setupEventListeners();
   }
 
+  /**
+   * Text for the page's markup, quotes included: the name goes into an
+   * attribute (`value="…"`), and it can come from a picked folder or .zip, or
+   * from someone's public workspace, so a `"` in it must not end the attribute.
+   */
   escapeHtml(text: string | undefined): string {
     if (!text) return '';
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
+    return esc(text);
   }
 }
 

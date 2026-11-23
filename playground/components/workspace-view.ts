@@ -43,7 +43,14 @@ import {
   workspaceFromAnswer,
   workspaceNow,
 } from '../services/workspace-files.js';
-import { chipAlert, programItems, programListChange, programsOf, treeErrorDots } from '../services/program-list.js';
+import {
+  chipAlert,
+  programItems,
+  programListChange,
+  programNamesOf,
+  programsOf,
+  treeErrorDots,
+} from '../services/program-list.js';
 import type { WorkspaceTexts } from '../services/workspace-files.js';
 import {
   currentOpenFileModules,
@@ -2139,15 +2146,18 @@ export class WorkspaceView extends HTMLElement {
     // Each program's failure, as the tree's red dots (step 7c): with one program too.
     const rows = this._drawings.rows();
     this._refreshTreeDots(rows, { main, mainIsLibrary });
+    const programs = this._programsOf(workspace);
+    const shown = programToShow(workspace, store.get('shownProgram') as string | null);
+    // The names Export, Copy SVG and Snapshot give the program they take (2g); set only when they change.
+    const names = programNamesOf(programs, shown);
+    if (JSON.stringify(names) !== JSON.stringify(store.get('programNames'))) store.set('programNames', names);
     const chip = this.programChip;
     if (!chip) return;
-    const programs = this._programsOf(workspace);
     if (programs.length < 2) {
       chip.close();
       chip.hidden = true;
       return;
     }
-    const shown = programToShow(workspace, store.get('shownProgram') as string | null);
     const items = programItems(programs, { main, mainIsLibrary }, { rows, editing: workspace.openFile, shown });
     chip.badgeTitle = MAIN_BADGE_TITLE;
     chip.items = items;

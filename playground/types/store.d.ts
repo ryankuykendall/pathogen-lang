@@ -110,6 +110,15 @@ export interface StoreState {
    * workspace-view, from the same reading as the main.
    */
   noPrograms: boolean;
+  /**
+   * With more than one program, each program's name as the chip shows it
+   * (`try-sizes`, or `gears · demos` when two share a name), and the shown
+   * one's; null with one program or none. Export's title, Copy SVG's line in
+   * the menu and the Snapshot panel name the program they take with it (2g;
+   * docs/workspace-files.md "The preview and the program list"). Set by
+   * workspace-view with the chip.
+   */
+  programNames: { shown: string; byPath: Record<string, string> } | null;
 
   // Compilation results
   pathData: string;

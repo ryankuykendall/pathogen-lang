@@ -162,6 +162,8 @@ export const store = createStore({
   thumbnailWait: null as string | null,
   // A saved workspace with no program (step 9a): see types/store.d.ts.
   noPrograms: false,
+  // The programs' names, with more than one (2g): see types/store.d.ts.
+  programNames: null as { shown: string; byPath: Record<string, string> } | null,
 
   // Compilation results
   pathData: '',
