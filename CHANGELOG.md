@@ -5,6 +5,38 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] - 2026-11-23 (the playground's code is checked on every load)
+
+Three small changes after the VS Code preview work: browsers check the site's code on every load, a test pins an earlier fix to admin actions, and the website's tests run without a blog build.
+
+### Added
+
+#### Development
+
+- **`tests/api/admin-writes-keep-saves.test.ts`** lands an owner's save while an admin approves or requeues a workspace, and checks that the save is kept. It pins the phase 2 audit's "Admin writes can lose a code save", fixed in storage step 3 (80f193f8, 2026-11-08): each write re-reads the workspace and applies only its own change. KV has no compare-and-swap, so there is still a moment between the read and the write.
+- **`tests/pages-asset-cache.test.ts`** checks that code files (`.js`, `.mjs`, `.css`, `.json`, `.wasm`, `.map`, in any case) get `private, no-cache` and keep their ETag. It also checks that the request reaches Pages unchanged, that a 304 stays a 304, and that images, fonts and four HTML routes (the playground's shell, `/docs`, `/blog` and a post) keep Pages' header.
+- **Tested:** the full suite (9,483 tests); one code review, 3 of its 6 findings taken (more file types, the HTML and request checks, the requeue test checked against the old write); the headers and a 304 on the live site after the push.
+- **Notes:**
+  - note 66 records the choice to push 2f as it was, before this fix;
+  - `backlog.md` marks the admin fix, records the cached-code item, and adds two follow-ups from 2f;
+  - note 65 records that 2f shipped, and this batch;
+  - `reviews/fixes-batch-2026-11-23-code-review.md` and `fixes-batch-2026-11-23-changelog-review.md` record the reviews;
+  - notes 67 to 69 hold the design for phase 2g, exporting and importing a project. They cover a **Download workspace** item in the workspace's menu, a new workspace from a project folder or a `.zip`, and Export, Copy SVG and Snapshot naming the program they take, with the approved mockups (`mockups-2g-project/` and `mockups-2g-project-v2/`). Nothing of 2g is built yet. Two of its answers went on the backlog: a program picker in the Export modal, and Download workspace on a public page.
+
+### Fixed
+
+#### Playground
+
+- **Browsers check the site's code on every load.** The site used to let browsers keep its JavaScript and CSS for up to 4 hours without checking. A visitor who came back within those hours, just after an update, could run some files from before it and some from after, and a workspace could fail to open. The playground's code, the site's other scripts and styles, and the data, WebAssembly and source-map files they load now come with `Cache-Control: private, no-cache`. Browsers keep them but ask each time, and a file that hasn't changed isn't downloaded again. Each load makes one small check per file. Checked on pathogen.studio after the push: the files come back `private, no-cache`, and an unchanged file answers 304 Not Modified. Cloudflare's servers no longer keep their own copy of these files (`cf-cache-status: BYPASS`), so each check is answered by Pages.
+
+#### API
+
+- **An admin's action no longer undoes an owner's save.** Approve, requeue, unpublish, flag and unflag wrote back the whole workspace as they had read it, so a save made in between was lost. Fixed with phase 2 (80f193f8), live since 2026-11-17, and not recorded then.
+
+#### Development
+
+- **The Pages worker's tests run in a fresh checkout.** Without the blog's generated data (`npm run build:blog`), `vitest.config.ts` uses a stand-in (`tests/fakes/blog-data.ts`), so `pages-card-images`, `pages-detail-source` and `pages-asset-cache` no longer fail there.
+
 ## [Unreleased] - 2026-11-23 (the VS Code preview shows a project's programs)
 
 Phase 2f of the multi-file work: VS Code's preview works like the playground's. It shows the program you choose in a project, and a program chip beside the zoom controls chooses it. Not released yet: VS Code users build the extension from this repository.
