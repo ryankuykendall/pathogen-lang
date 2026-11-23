@@ -5,6 +5,47 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] - 2026-11-23 (download a workspace, or make one from a project)
+
+Phase 2g of the multi-file work: a workspace can leave the playground as a project folder, and a project folder can come in as a workspace. Export, Copy SVG and Snapshot say which program they take. The playground only: no API change and no new built-in names.
+
+### Added
+
+#### Playground
+
+- **Download workspace**, in the workspace's ⋮ menu under Copy Workspace, saves a `.zip` of the workspace as a project folder, and the menu says "Downloaded Gear-studies.zip". The `.zip` and its one folder take the workspace's name, changed to fit the name rules ("Gear studies" saves `Gear-studies.zip`). The folder holds `pathogen.json`, every file as the editor holds it (edits not saved yet included), and the empty folders. Unzipped, when the main is a program, `pathogen-lang Gear-studies` compiles it, and VS Code lists the same programs in the same order. It's in the menu of your own workspaces only, and stays there when the workspace has no program.
+- **A workspace from a project.** The New Workspace page has a new section, **Or import a project**: Choose folder…, Choose .zip…, or a folder or `.zip` dropped on it. A touch screen offers Choose .zip… only. Before you create the workspace, the page lists the programs (the main marked), the modules, the names changed, and what isn't added and why. The name is filled in from the folder or the `.zip`.
+  - The program list comes from the project's `pathogen.json`; programs it doesn't list join the end. Without a `pathogen.json`, the page shows the one the workspace will write, with `main.pathogen` as the main, or else the first program in order of their paths. A project of modules only comes in with no main, and the page says so.
+  - A `pathogen.json` that can't be read stops the import with the CLI's own message. An `entryPoints` entry naming a missing file, a module, or a file left out is taken out of the list, and the page says so. An entry that differs from its file only in letter case finds the file.
+  - Names that break the name rules are changed to fit, and the imports and `entryPoints` entries that name them change with them. Two file or folder names that would then be the same, or differ only in letter case, get a number as Keep both gives one (`gears-2.pathogen`, `parts-2/`), and their imports follow.
+  - A project of more than 20 `.pathogen` files, not counting what's left out, adds nothing. What's left out is what an upload leaves out; names that start with a dot, such as `.git/`, and macOS's `__MACOSX` folder are left out without a mention.
+  - A `.zip` is read in pieces, so a large one isn't loaded whole, and only its `pathogen.json` and `.pathogen` files are read. Zips made by the `zip` command (Linux and macOS) and by macOS's `ditto`, which Finder's Compress uses, are read, zip64 ones too; so are paths written with backslashes and names in an older encoding. An encrypted file, or one compressed another way, is listed under "Not added".
+  - New messages: a file that isn't a `.zip`, or a damaged, cut-short or split one, is refused ("This .zip can't be read, so nothing was added: …"); dropping two things at once says "Drop one project folder, or one .zip."; a path a `.zip` holds twice brings in the last copy, and the page says so.
+
+#### Documentation
+
+- `docs/workspace-files.md`: two new sections, "Downloading a workspace" and "A workspace from a project"; the intro's pointer to them, in place of the "Not yet" note; a sentence in "A new workspace"; the Download workspace bullet in "Snapshots, copies and publishing"; the Export/Copy SVG/Snapshot bullet; the "Uploading files" advice for project folders, which now points to the import; and the "Limits" paragraph. `projects.md` ("In each tool") and `snapshots.md` gain a sentence each, `exporting.md` a paragraph.
+
+#### Development
+
+- **Tests:** `tests/zip.test.ts` (23: zips made by Info-ZIP's `zip`, with and without zip64 fields, and by macOS's `ditto`, in `tests/fixtures/zips/` from `make-fixtures.ts`; zips built byte by byte for the other shapes and the damaged ones; the writer checked by `unzip -t`), `tests/project-import.test.ts` (34, every plan also passed through the server's own manifest check), `tests/workspace-download.test.ts` (6: unzipped, the CLI compiles the folder to exactly what the project it came from gives, and VS Code's program list matches), `tests/playground-new-workspace-import.test.ts` (15) and `tests/playground-2g-menu-and-names.test.ts` (7).
+- **`project-docs/modules/verify/verify-2g.ts`**: 40 checks on the dev server, signed in, in both themes, with screenshots in `verify/2g/`.
+- **Code:** `playground/services/zip.ts`, `project-import.ts` and `workspace-download.ts` are new. `uploads.ts` now exports its left-out reasons (`kindReason`, `tooLargeReason`) and `withoutName` for the import. A new store key, `programNames`, carries the names the chip shows.
+- **Tested:** the full suite (9,568 tests); one code review and a recheck: the must-fix, the four should-fixes in code and the recheck's one taken, the test gaps where the page can reach them, seven nits left as they are (`reviews/phase-2g-build-code-review.md`); `verify-2g.ts`, 40 of 40.
+- **Notes:** note 70 records the build and ten decisions it made that the notes and docs didn't settle, among them reading `.zip` files with the browser's own `DecompressionStream` instead of a new dependency. `reviews/phase-2g-docs-review.md` and `reviews/phase-2g-changelog-review.md` record the docs' and this entry's reviews.
+
+### Changed
+
+#### Playground
+
+- **Export, Copy SVG and Snapshot name the program** they take, in a workspace of more than one program: the Export dialog's title reads `Export try-sizes`, Copy SVG's line in the menu `The program shown: try-sizes`, and the Snapshot panel `Of try-sizes, the program shown`. With one program, nothing changes.
+
+### Fixed
+
+#### Playground
+
+- **The New Workspace page's name field escapes quotes.** It escaped `<`, `>` and `&` but not `"`, so a name holding a quote could end the field's value and add code that runs on the page. Three things fill that name: a link that opens code in a new workspace (its title), Open as new workspace (someone else's public workspace's name), and now a picked folder or `.zip`. A link is the worst of them, since anyone can send one, and it was open on the live site until this push. Found in 2g's code review; the other escape helpers that write into attributes already escaped quotes.
+
 ## [Unreleased] - 2026-11-23 (the playground's code is checked on every load)
 
 Three small changes after the VS Code preview work: browsers check the site's code on every load, a test pins an earlier fix to admin actions, and the website's tests run without a blog build.
