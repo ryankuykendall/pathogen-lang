@@ -104,7 +104,7 @@ You approved the docs as drafted, with the three decisions flagged for you (a mo
 
 ## The build (2026-11-23)
 
-Built in the plan's order: tests before each piece. A code review's six fixes are in (`reviews/phase-2f-code-review.md`), and the full suite passes. Left: your check of the installed `.vsix` (`dist-vsix/vscode-pathogen.vsix`), and the CHANGELOG entry.
+Built in the plan's order: tests before each piece. A code review's six fixes are in (`reviews/phase-2f-code-review.md`), and the full suite passes. Left: your check of the installed `.vsix` ("The hand check", below), the CHANGELOG entry (reviewed: `reviews/phase-2f-changelog-review.md`), and your choice about cached files before the push ("Before the push").
 
 | Plan step | What was built |
 |---|---|
@@ -141,7 +141,32 @@ Built in the plan's order: tests before each piece. A code review's six fixes ar
    - **One chip, not a copy.** The chip moves to `src/ui/`, as the zoom pill did, and both the playground and the preview load it. Its colors take the playground's tokens first and VS Code's second, as the pill's do. A copy in the webview would drift from the playground's.
 4. **Checks:**
    - `verify-step6d-preview.mjs` extended, or a new 2f check through the shipped `out/` code;
-   - then `npm run build` and `npm run build:vscode`, and the installed `.vsix` checked by hand per `packages/vscode-pathogen/CLAUDE.md`: a project with a main, a module edit, Choose Program, a lone file, and a broken `entryPoints`.
+   - then `npm run build` and `npm run build:vscode`, and the installed `.vsix` checked by hand per `packages/vscode-pathogen/CLAUDE.md`. Superseded on 2026-11-23 by "The hand check" below: the Quick Pick (Choose Program) went with answer 3b.
+
+## Before the push: the playground's cached files
+
+2f moves the playground's program chip into the pan-zoom bundle, so the push changes what pathogen.studio serves. Read-only check of the live site (2026-11-23, `tmp/2f/check-asset-cache.ts`): the playground's module files and `dist/pan-zoom.global.js` are served with `Cache-Control: public, max-age=14400, must-revalidate` and no version in their URLs. So a browser may reuse a copy for up to 4 hours without asking.
+
+A visitor whose cached files straddle the push can get the new `pan-zoom.global.js`, which defines `<program-chip>`, with the old cached `components/program-chip.js`, which defines it again. The second definition throws, and the workspace view doesn't load until the cache runs out (or a hard reload). It needs the copies to have been cached at different times, so it's unlikely, but it's a broken page when it happens. The same risk has been there for every deploy that changed what one module expects of another. This one just has a sure failure in it.
+
+Options, for you to choose before the push:
+1. **Revalidate every time:** serve the playground's files with `Cache-Control: no-cache`, set in the Pages worker (`website/_worker.ts`). A `_headers` file may not apply alongside our own worker; that needs checking first. Each load asks, and an unchanged file answers 304. *Recommended*: it closes the risk for every deploy, at the cost of one request per file per load.
+2. **Version the URLs** in the build (`?v=<build>` on the scripts and imports). Long caching stays, but it's more build work.
+3. **Push as is,** and accept the small window.
+
+## The hand check (for you, in VS Code)
+
+Install with `code --install-extension dist-vsix/vscode-pathogen.vsix --force`, reload the window, and open a copy of `mockups-2f-vscode-chip/gears-project/` as a folder. The automated checks can't reach VS Code itself; these can:
+
+1. **A rename, first.** Show `demos/train.pathogen` (its tab's preview button), then rename it in the Explorer. The panel's title follows the new name. (The order of VS Code's events here is the one thing the code review couldn't check.)
+2. **From a module's tab.** Close the preview, open `parts/gears.pathogen`, and press its preview button. The preview shows `main`, with no flash of the empty module first.
+3. **Editing a module.** Change `toothDepth` in `parts/gears.pathogen`: `main` redraws with deeper teeth, unsaved.
+4. **A demo's button.** Press the preview button on `demos/train.pathogen`'s tab: it shows `train`; switching to other tabs leaves it there.
+5. **The list.** Click the chip; choose a row (the preview shows it); hover a row and click Open in the editor (its tab opens, the preview stays).
+6. **Not listed.** Open `sketch.pathogen`: it joins the end of the list, "not in pathogen.json".
+7. **Deleted outside VS Code.** Delete the program shown in Finder: the preview goes back to `main`.
+8. **No main.** Break `pathogen.json` (a typo in a key), then replace it with `{}` and delete `main.pathogen`: in both, the preview shows the file you're editing, and there's no chip.
+9. **Themes and size.** Dark Modern and Light Modern; a narrow preview panel (the list stays a popover).
 5. **Close out:**
    - a code review, the full suite, and a CHANGELOG entry;
    - `docs/workspace-files.md` needs nothing: it describes the playground.
