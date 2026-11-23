@@ -206,7 +206,7 @@ async function readSnapshotFiles(env: Env, workspaceId: string, snapshotId: stri
   // such snapshot a manifest (note 50, step 7), and this reader is gone (note 71).
   if (await env.THUMBNAILS.get(r2Key(workspaceId, snapshotId, 'code'))) {
     throw new SnapshotUnreadable(
-      `Snapshot ${snapshotId} is stored in a format from before November 2026 that the site no longer reads. Nothing was changed.`,
+      `Snapshot ${snapshotId} is stored in a format from before 17 November 2026 that the site no longer reads. Nothing was changed.`,
     );
   }
   return null;

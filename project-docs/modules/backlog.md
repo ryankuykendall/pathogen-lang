@@ -226,6 +226,7 @@ After the first release. Both come from note 50 and were moved here on 2026-11-2
   - A mark pass, then a sweep at least 24 hours later that re-reads the references and keeps any blob named or uploaded again since the mark.
   - The design names its one remaining race: a save landing between the sweep's re-read and its delete, a window of milliseconds that the next save of that text repairs.
 - **From:** your answer, 2026-11-08: "Let's wait until after 2e ships." 2e shipped on 2026-11-17.
+- **Your answer, 2026-11-23** (note 71, question 3: "(c)"): leave it on the backlog. Workspaces hold only `.pathogen` texts, so unreferenced blobs come to a few megabytes at most, and deleting stored files is the only real risk in this work. Revisit when data files and fonts arrive (phase 3). The bucket's size is on the Cloudflare dashboard (R2, the bucket, Metrics).
 
 ### Removing the reader for records from before phase 2
 - **What:** drop the path for a record that holds one `code` string and no files (`legacyText` in `website/api/workspace-store.ts`). Note 50's shipping list: "removing the old-shape reader once nothing old remains".
@@ -234,3 +235,4 @@ After the first release. Both come from note 50 and were moved here on 2026-11-2
   - check that no write path still makes a record with only `code`;
   - migrate dev's KV too: its dry run on 2026-11-17 counted 397 records to migrate.
 - **From:** note 50, "At shipping", step 6.
+- **Done, 2026-11-23** (note 71; 19ce8ec3): production checked first (228 records, all in today's shape; every stored file readable). The API reads `files` only and refuses an old record with a message, never writing over it; the migration script keeps its own reader. Dev's KV is converted locally with it, with backups in `tmp/kv-backups/files-dev-2026-11-23`.

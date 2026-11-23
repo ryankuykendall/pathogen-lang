@@ -50,11 +50,17 @@
 
 ## Step 3, removing the reader: what changed
 
-- `readStoredFiles` reads `files` only. A record without them (`code`, or neither) throws `OLD_SHAPE_MESSAGE`: "This workspace is stored in a format from before November 2026 that the site no longer reads. Nothing was changed." Handlers answer it as "Failed to load workspace: …" (500), and nothing is written. `storedFilesForText(code)` is today's one-file workspace from a text, for a create or a save that sends `code`.
+- `readStoredFiles` reads `files` only. A record without them (`code`, or neither) throws `OLD_SHAPE_MESSAGE`: "This workspace is stored in a format from before 17 November 2026 that the site no longer reads. Nothing was changed." Handlers answer it as "Failed to load workspace: …" (500), and nothing is written. `storedFilesForText(code)` is today's one-file workspace from a text, for a create or a save that sends `code`.
 - `legacyText` and `materialize` are gone from the load, copy, save, review, approval, snapshot and file-read paths. A snapshot with only a `code.pathogen` is refused the same way.
 - **Listings never fail whole for one record:** the Approved, Featured and Flagged lists give a record the reader refuses a null hash, with the reason logged; the review queues already showed a per-entry error.
 - The Pages worker's public page asks the API for every approval's source; the API refuses an old one, and the page shows what it shows for a source it can't get.
 - The migration script reads both shapes itself (`readEitherShape`), and checks each result against the API's reader as before.
 - **The code review** (`reviews/storage-old-reader-code-review.md`): no path writes over an old record's files. Two should-fix taken: an admin's flag, unflag and unpublish took the state row's hash after changing the record, so on an old record they'd stop halfway; they now take it with `recordHashOrNull` and finish on any record (tested). The Rejected list uses it too.
-- **Checked:** the API tests (306), the full suite, a type check of the changed files; `verify-2g.ts` against the dev API running this code (40 of 40); and the dev API answering an unconverted dev record with the message (`tmp/storage/probe-dev-old-record.ts`).
+- **Checked:** the API tests (306), the full suite (9,566 tests), a type check of the changed files; `verify-2g.ts` against the dev API running this code (40 of 40); and the dev API answering an unconverted dev record with the message (`tmp/storage/probe-dev-old-record.ts`).
 - **Dev's conversion** (`--write --backup-dir tmp/kv-backups/files-dev-2026-11-23`) is local only and slow (one record every few seconds); it doesn't block the push.
+
+## Shipped (2026-11-23)
+
+Pushed `c752a015..19ce8ec3`. The API deployed through GitHub Actions in under a minute (run 45289573610), and Pages' deployment of 19ce8ec is active. Live checks, read-only:
+- every approved workspace's source from `GET /approval-source/:id`: 20 of 20, before and after (`tmp/storage/check-live-sources.ts`);
+- every detail page linked from `/explore` and its `source.json`: 20 of 20 on the new deployment (`tmp/storage/check-live-pages.ts`).

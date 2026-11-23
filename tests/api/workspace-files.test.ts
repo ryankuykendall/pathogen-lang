@@ -260,7 +260,7 @@ describe('stored records (the reader for records from before phase 2 is gone: no
     // Neither code nor files: refused too, never read as an empty program.
     await expect(readStoredFiles({}, undefined)).rejects.toThrow(OLD_SHAPE_MESSAGE);
     expect(OLD_SHAPE_MESSAGE).toBe(
-      'This workspace is stored in a format from before November 2026 that the site no longer reads. Nothing was changed.',
+      'This workspace is stored in a format from before 17 November 2026 that the site no longer reads. Nothing was changed.',
     );
   });
 

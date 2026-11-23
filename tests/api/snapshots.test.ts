@@ -1009,7 +1009,7 @@ describe.skipIf(!sqlite)('snapshots API', () => {
     it("are refused with a message, by every read and by Start new workspace, and aren't changed", async () => {
       const id = await seedLegacy('define ViewBox(0, 0, 400, 400);\n// before phase 2\n');
       const before = ctx.r2.keys(`snapshots/${ws}/${id}/`);
-      const message = `Snapshot ${id} is stored in a format from before November 2026 that the site no longer reads. Nothing was changed.`;
+      const message = `Snapshot ${id} is stored in a format from before 17 November 2026 that the site no longer reads. Nothing was changed.`;
       expect(await errorOf(await call(ctx, 'GET', `/snapshot/${id}/code`, { cookie: alice }))).toEqual([500, message]);
       expect(await errorOf(await call(ctx, 'GET', `/snapshot/${id}/files`, { cookie: alice }))).toEqual([500, message]);
       const started = await call(ctx, 'POST', `/snapshot/${id}/workspace`, {

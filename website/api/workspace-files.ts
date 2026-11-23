@@ -50,7 +50,7 @@ export interface StoredFiles {
 
 /** Why a record from before phase 2 can't be read: a handler's error says so, and nothing is written over it. */
 export const OLD_SHAPE_MESSAGE =
-  'This workspace is stored in a format from before November 2026 that the site no longer reads. Nothing was changed.';
+  'This workspace is stored in a format from before 17 November 2026 that the site no longer reads. Nothing was changed.';
 
 /**
  * Read a stored record's files. `storedHash` is the record's own hash
