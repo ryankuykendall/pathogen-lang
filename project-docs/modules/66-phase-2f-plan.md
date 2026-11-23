@@ -167,6 +167,8 @@ Options, for you to choose before the push:
 2. **Version the URLs** in the build (`?v=<build>` on the scripts and imports). Long caching stays, but it's more build work.
 3. **Push as is,** and accept the small window.
 
+**Your choice (2026-11-23): 3,** push as is. Options 1 and 2 stay open for a later change: they'd close the same window for every deploy, not just this one.
+
 ## The hand check (for you, in VS Code)
 
 Install with `code --install-extension dist-vsix/vscode-pathogen.vsix --force`, reload the window, and open a copy of `mockups-2f-vscode-chip/gears-project/` as a folder. The automated checks can't reach VS Code itself; these can:
