@@ -219,6 +219,12 @@ export const CHANGES_RECEIVER_TYPES: ReadonlySet<string> = new Set(
 export interface FixedOwner {
   file: ModuleIdentity;
   name: string;
+  /**
+   * The value sits inside the one `name` holds (an object in an imported
+   * array), so a copy of that value still holds it: copying is one level
+   * deep (docs/data-import.md "What you import is fixed").
+   */
+  inside?: true;
 }
 
 /** Everything fixed in one compile (docs/modules.md "What you import is fixed"). */
@@ -271,6 +277,35 @@ function heldValues(value: object, tag: string): Iterable<unknown> {
       return (value as { meshGrid?: unknown[][] }).meshGrid?.flat() ?? [];
     default:
       return [];
+  }
+}
+
+/**
+ * Fix a data file's value (docs/data-import.md "What you import is fixed"):
+ * the value itself under the name it was imported by, and every array and
+ * object inside it as inside that name. Numbers, strings, true/false and
+ * null can't change. The walk keeps its own stack, as the reader does, so
+ * deeply nested data can't overflow the call stack here.
+ */
+export function fixData(value: unknown, file: ModuleIdentity, name: string, fixed: FixedValues): void {
+  type Container =
+    { type: 'ArrayValue'; elements: unknown[] } | { type: 'ObjectValue'; properties: Map<string, unknown> };
+  const top: FixedOwner = { file, name };
+  const inside: FixedOwner = { file, name, inside: true };
+  const isContainer = (v: unknown): v is Container =>
+    typeof v === 'object' &&
+    v !== null &&
+    ((v as { type?: unknown }).type === 'ArrayValue' || (v as { type?: unknown }).type === 'ObjectValue');
+  if (!isContainer(value) || fixed.has(value)) return;
+  fixed.set(value, top);
+  const pending: Container[] = [value];
+  for (let next = pending.pop(); next; next = pending.pop()) {
+    const held = next.type === 'ArrayValue' ? next.elements : next.properties.values();
+    for (const child of held) {
+      if (!isContainer(child) || fixed.has(child)) continue;
+      fixed.set(child, inside);
+      pending.push(child);
+    }
   }
 }
 
@@ -336,9 +371,11 @@ export function fixFile(root: Scope, file: ModuleIdentity, fixed: FixedValues): 
     }
     const holder = holders.pop();
     if (holder) {
+      // What a value holds is inside it: one owner for all of it.
+      const inside: FixedOwner = holder.owner.inside ? holder.owner : { ...holder.owner, inside: true };
       for (const held of heldValues(holder.value, holder.tag)) {
         const tag = fixable(held);
-        if (tag) mark(held as object, tag, holder.owner);
+        if (tag) mark(held as object, tag, inside);
       }
       continue;
     }

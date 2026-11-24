@@ -15,7 +15,20 @@ export type HostReadResult =
   | { ok: false; code: 'escapes-root' }
   /** The path names a folder (the project folder itself included), not a file. */
   | { ok: false; code: 'folder' }
+  /** Larger than the read's `maxBytes`, so it wasn't read; `size` is its size in bytes. */
+  | { ok: false; code: 'too-large'; size: number }
   | { ok: false; code: 'unreadable'; detail: string };
+
+/** How to read a project file. */
+export interface ReadOptions {
+  /**
+   * Don't read a file larger than this many bytes: answer `too-large` with
+   * its size instead (a data file's limit, docs/data-import.md). A host that
+   * can't tell a file's size before reading it may read it; the loader
+   * checks the bytes it gets too.
+   */
+  maxBytes?: number;
+}
 
 export interface LocalFontMatch {
   bytes: Uint8Array;
@@ -40,14 +53,14 @@ export interface ProjectFileHost {
   /** The project folder as the user knows it (an OS path), for messages. */
   readonly projectLabel: string;
   /** Read a project file. `path` is a project path from resolveProjectPath (`/parts/gears.pathogen`). */
-  readFile: (path: string) => Promise<HostReadResult>;
+  readFile: (path: string, options?: ReadOptions) => Promise<HostReadResult>;
 }
 
 export interface FontHost {
   /** The project folder as the user knows it (an OS path), for messages. */
   readonly projectLabel: string;
   /** Read a project file. `path` is a project path from resolveProjectPath (`/fonts/a.ttf`). */
-  readFile: (path: string) => Promise<HostReadResult>;
+  readFile: (path: string, options?: ReadOptions) => Promise<HostReadResult>;
   /**
    * Find an installed font file for a family. `nearest: false` matches the
    * requested weight only; `nearest: true` may return another weight.

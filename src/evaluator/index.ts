@@ -5,12 +5,14 @@ import { contextAwareFunctions, stdlib } from '../stdlib';
 import { STATEMENT_BUILTINS } from './constructor-registry';
 import { RESERVED_UNIT_NAMES, reservedNameBindingError, reservedNameReferenceError } from './reserved-names';
 import { BUILTIN_NAMES, builtinNameError, builtinNamespaceType } from '../builtin-names';
+import { singularOf } from '../data/data-files';
 import {
   assignImportedError,
   crossFileIdClashError,
   declaredNotExportedError,
   declareImportedAgainError,
   fileLabel,
+  fixedInsideError,
   fixedNamespaceError,
   fixedValueError,
   fixedVariableError,
@@ -35,6 +37,7 @@ import {
   CHANGES_RECEIVER,
   CHANGES_RECEIVER_TYPES,
   exportsOf,
+  fixData,
   fixFile,
   idPrefixOf,
   importedFromSteps,
@@ -1473,6 +1476,28 @@ function writtenName(expr: Expression | undefined): string | undefined {
 }
 
 /**
+ * How the code spells the place it changes, for copying it: `holes`,
+ * `myGears[0].holes`, `table["rows"]`. Undefined when a part of it is
+ * computed (`a[i]`, `make().x`), which a message can't repeat faithfully.
+ */
+function writtenPlace(expr: Expression | undefined): string | undefined {
+  if (!expr) return undefined;
+  if (expr.type === 'Identifier') return expr.name;
+  if (expr.type === 'MemberExpression') {
+    const object = writtenPlace(expr.object);
+    return object === undefined ? undefined : `${object}.${expr.property}`;
+  }
+  if (expr.type === 'IndexExpression') {
+    const object = writtenPlace(expr.object);
+    const index = expr.index;
+    if (object === undefined) return undefined;
+    if (index.type === 'NumberLiteral' && index.unit === undefined) return `${object}[${index.value}]`;
+    if (index.type === 'StringLiteral') return `${object}[${JSON.stringify(index.value)}]`;
+  }
+  return undefined;
+}
+
+/**
  * The error for changing `value`, when an imported file fixed it or it is a
  * namespace; undefined otherwise. `target` is the expression that names it.
  */
@@ -1489,6 +1514,11 @@ function fixedValueChange(value: Value, target: Expression | undefined, verb: 'c
         ? 'cycler'
         : 'other';
   const own = runningFile?.path === owner.file.path;
+  // An object or array inside an imported value: a copy of that value still
+  // holds it, so the message names what it sits in (docs/data-import.md).
+  if (owner.inside && !own && (kind === 'object' || kind === 'array')) {
+    return fixedInsideError(kind, owner.name, owner.file.label, singularOf(owner.name), writtenPlace(target));
+  }
   return fixedValueError(writtenName(target) ?? owner.name, owner.file.label, kind, own, verb);
 }
 
@@ -3129,6 +3159,7 @@ function sharedProgramState(parent: EvaluationState | undefined) {
     dispatching: parent?.dispatching,
     // An import inside a fn called from a block still finds its file.
     modules: parent?.modules,
+    dataImports: parent?.dataImports,
     // A def made in a block is still a def of the file whose code made it.
     moduleDefs: parent?.moduleDefs,
   } satisfies Partial<EvaluationState> & Record<Exclude<keyof EvaluationState, BlockLocalField>, unknown>;
@@ -11495,10 +11526,18 @@ function evaluateStatementToAccum(stmt: Statement, scope: Scope, accum: PathStor
       }
       const from = moduleOf(scope);
       const resolved = resolveProjectPath(stmt.source, from?.path ?? '/');
+      // A data import (docs/data-import.md): the file's value, read and fixed
+      // before any file ran (loadModules), the same value for every importer.
+      if (stmt.defaultImport) {
+        const value = resolved.ok ? scope.evalState?.dataImports?.get(resolved.path) : undefined;
+        if (value === undefined) {
+          throw new Error(formatError(moduleNotLoadedError(stmt.source), stmt.loc?.line, stmt.loc?.column));
+        }
+        bindImport(scope, stmt.defaultImport.local, value, stmt.source, stmt.defaultImport.loc ?? stmt.loc);
+        return;
+      }
       const record = resolved.ok ? modules.get(resolved.path) : undefined;
-      // A data import (docs/data-import.md): never a module's record. Data
-      // files are read in 3a's step 2 (note 76).
-      if (!record || stmt.defaultImport) {
+      if (!record) {
         throw new Error(formatError(moduleNotLoadedError(stmt.source), stmt.loc?.line, stmt.loc?.column));
       }
       if (stmt.namespace) {
@@ -12494,6 +12533,17 @@ function sealModuleDrawing(state: EvaluationState, accum: PathStore): void {
 function loadModules(graph: ModuleGraph, main: EvaluationState, fixed: FixedValues): void {
   const records = new Map<string, ModuleRecord>();
   main.modules = records;
+  // Data first: a module can import data (docs/data-import.md). Each file's
+  // value is fixed under the name its first import gave it.
+  let dataImports: Map<string, Value> | undefined;
+  if (graph.data && graph.data.size > 0) {
+    dataImports = new Map();
+    for (const [path, file] of graph.data) {
+      fixData(file.value, { path, label: fileLabel(path), entry: false }, file.name, fixed);
+      dataImports.set(path, file.value);
+    }
+    main.dataImports = dataImports;
+  }
   // Ids stay stable only if no two files share a prefix (docs/modules.md "Clashes are errors").
   const prefixes = new Map<string, string>();
   for (const path of graph.order) {
@@ -12508,6 +12558,7 @@ function loadModules(graph: ModuleGraph, main: EvaluationState, fixed: FixedValu
     const identity: ModuleIdentity = { path, label: fileLabel(path), entry: false, idPrefix: idPrefixOf(path) };
     const state = newEvaluationState({ fonts: main.fontRegistry, strictWarnings: main.strictWarnings });
     state.modules = records;
+    state.dataImports = dataImports;
     state.moduleDefs = main.moduleDefs;
     const scope = createScope();
     scope.evalState = state;

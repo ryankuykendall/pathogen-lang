@@ -80,14 +80,16 @@ export function suggestedDataName(written: string): string {
 
 /**
  * One item's name for a list's name, for a message's example code:
- * `cities` → `city`, `boxes` → `box`, `gears` → `gear`. `item` when the name
- * has no plural ending, or when the singular can't be a name (`texts` →
- * `item`: `text` is a keyword).
+ * `gears` → `gear`, `cities` → `city`, `phases` → `phase`. `item` when the
+ * name has no plural ending, or one whose singular can't be told from the
+ * spelling (`boxes`, `matches` but `caches`, `status`, `axis`, `gas`,
+ * `class`), or when the singular can't be a name (`texts` → `item`: `text` is
+ * a keyword). A wrong guess in a message would read as a mistake.
  */
 export function singularOf(name: string): string {
   let singular: string | null = null;
   if (/[^aeiou]ies$/.test(name)) singular = `${name.slice(0, -3)}y`;
-  else if (/(?:ss|x|z|ch|sh)es$/.test(name)) singular = name.slice(0, -2);
-  else if (/[^s]s$/.test(name)) singular = name.slice(0, -1);
+  else if (/(?:x|zz|ch|sh|ss)es$|(?:ss|us|is|as)$/.test(name)) singular = null;
+  else if (name.endsWith('s')) singular = name.slice(0, -1);
   return singular !== null && canBeName(singular) ? singular : 'item';
 }

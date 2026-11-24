@@ -51,6 +51,7 @@ src/
 │   └── load-modules.ts # Imports (docs/modules.md): planImports, resolveModules → ModuleGraph + load errors, withOpenDocuments, unsavedImportErrors
 ├── node/
 │   └── index.ts       # `pathogen-lang/node`: the Node FontHost and ProjectFileHost (project files, font search, file cache, downloads); resolveEditorModules / listProjectModules for the editors. Used by the CLI, VS Code and the LSP
+├── data/              # Data imports (docs/data-import.md): data-files.ts (the data extensions, suggested names), json-reader.ts (our own JSON reader: one message on every surface, keys in file order, builds Pathogen values)
 ├── module-messages.ts # Every import/export/module error and message, one home for the docs, compiler and editors
 ├── cli.ts             # CLI entry point (file, folder, stdin, inline, --output-svg-file, --print-logs)
 ├── index.ts           # Library exports (compile, compileWithContext)
@@ -179,6 +180,7 @@ pathogen-lang --src=<file>     Compile a file (explicit flag)
 
 --root=<folder>                    Project folder for @font paths (default: nearest pathogen.json, else the file's folder)
 --offline                          Never download fonts (PATHOGEN_OFFLINE=1 does the same; tests set it in tests/setup.ts)
+--max-data-size=<MB>               Read data files up to this many megabytes (default 50; docs/cli.md "Data files")
 
 --print-logs                       Print log() output to stderr
 --log-file=<file>                  Write structured log data as JSON to file

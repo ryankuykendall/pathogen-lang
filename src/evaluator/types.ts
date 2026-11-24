@@ -1311,6 +1311,12 @@ export interface EvaluationState {
    * finds its file. Absent when the compile was given no files.
    */
   modules?: Map<string, ModuleRecord>;
+  /**
+   * The compile's imported data files' values, fixed, by project path
+   * (docs/data-import.md). Shared like `modules`; absent when the compile
+   * has no data files.
+   */
+  dataImports?: Map<string, Value>;
   /** Ids across files (docs/modules.md "Ids from other files"). Shared like `modules`; absent without files. */
   moduleDefs?: ModuleDefs;
   /**

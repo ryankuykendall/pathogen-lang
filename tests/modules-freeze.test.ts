@@ -486,12 +486,14 @@ describe('every method the API declares is classified', () => {
 describe('what is fixed', () => {
   const ROWS = { '/kit.pathogen': 'module;\nexport const rows = [[1, 2], [3]];\nexport const sizes = [3, 5];\n' };
 
-  it('an element of an imported array, named as the code writes it', async () => {
+  // Since phase 3a an array or object inside an imported value says so
+  // (docs/data-import.md): copying `rows` wouldn't let you change `rows[0]`.
+  it('an element of an imported array: an array inside it, copied as the code writes it', async () => {
     expect(await errorOf('import { rows } from "./kit.pathogen";\nrows[0].push(9);', ROWS)).toBe(
-      'Line 2, col 1: Cannot change rows — it comes from kit.pathogen, and imported values are fixed. Copy it first: [...rows]',
+      'Line 2, col 1: Cannot change an array inside rows — it comes from kit.pathogen, and imported values are fixed. Copy it first: [...rows[0]]',
     );
     expect(await errorOf('import { rows } from "./kit.pathogen";\nlet first = rows[0];\nfirst.push(9);', ROWS)).toBe(
-      'Line 3, col 1: Cannot change first — it comes from kit.pathogen, and imported values are fixed. Copy it first: [...first]',
+      'Line 3, col 1: Cannot change an array inside rows — it comes from kit.pathogen, and imported values are fixed. Copy it first: [...first]',
     );
   });
 
@@ -581,7 +583,7 @@ describe('what is fixed', () => {
           'module;\nimport { keep } from "./a.pathogen";\nexport const holder = { items: [] };\nexport const g = keep(holder.items);\n',
       }),
     ).toBe(
-      'Line 2, col 1: Cannot change holder.items — it comes from b.pathogen, and imported values are fixed. Copy it first: [...holder.items]',
+      'Line 2, col 1: Cannot change an array inside holder — it comes from b.pathogen, and imported values are fixed. Copy it first: [...holder.items]',
     );
   });
 

@@ -64,7 +64,12 @@ interface CliOptions {
   offline?: boolean;
   /** --root=<folder>: the project folder, overriding the pathogen.json search. */
   root?: string;
+  /** --max-data-size=<MB>: read data files up to this many megabytes (docs/cli.md "Data files"). */
+  maxDataSize?: number;
 }
+
+const MAX_DATA_SIZE_MESSAGE =
+  '--max-data-size needs a whole number of megabytes from 1 up, after =, such as --max-data-size=200.';
 
 function printUsage() {
   console.log(`
@@ -121,6 +126,8 @@ Options:
                                  pathogen.json, else the file's own folder)
   --offline                      Never download fonts from Google Fonts
                                  (PATHOGEN_OFFLINE=1 does the same)
+  --max-data-size=<MB>           Read data files up to this many megabytes
+                                 (default: 50)
 
 Examples:
   pathogen-lang input.svgx
@@ -613,6 +620,14 @@ async function parseArgs(args: string[]): Promise<{
       continue;
     }
 
+    if (arg === '--max-data-size' || arg.startsWith('--max-data-size=')) {
+      const value = arg.slice('--max-data-size='.length);
+      if (!/^[1-9][0-9]*$/.test(value)) fail(MAX_DATA_SIZE_MESSAGE);
+      options.maxDataSize = Number(value);
+      i++;
+      continue;
+    }
+
     if (arg.startsWith('--to-fixed=')) {
       const val = arg.split('=')[1];
       const n = parseInt(val, 10);
@@ -878,7 +893,11 @@ async function loadModulesForCli(
   if (outside && sourceFile) {
     fail(`${sourceFile} is outside the project folder ${root} given by --root, so its import paths can't be followed.`);
   }
-  const { graph, errors } = await resolveModules(source, { host: createNodeProjectHost(root), entry });
+  const { graph, errors } = await resolveModules(source, {
+    host: createNodeProjectHost(root),
+    entry,
+    ...(options.maxDataSize !== undefined ? { maxDataBytes: options.maxDataSize * 1024 * 1024 } : {}),
+  });
   if (errors.length > 0) {
     for (const error of errors) process.stderr.write(`${formatModuleLoadError(error, sourceFile ?? '<inline>')}\n`);
     process.exit(1);

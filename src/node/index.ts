@@ -36,7 +36,7 @@ import type { FileHandle } from 'node:fs/promises';
 import type { HostFetch, HostFetchResponse } from '../host/google-fonts';
 import type { ModuleGraph, ModuleLoadError } from '../host/load-modules';
 import type { ParsedProjectFile } from '../host/project';
-import type { FontCache, FontHost, HostReadResult, LocalFontMatch, ProjectFileHost } from '../host/types';
+import type { FontCache, FontHost, HostReadResult, LocalFontMatch, ProjectFileHost, ReadOptions } from '../host/types';
 
 export interface NodeFontHostOptions {
   /** Absolute OS path of the project folder. */
@@ -67,7 +67,7 @@ export function createNodeFontHost(options: NodeFontHostOptions): FontHost {
   const root = resolve(options.root);
   const host: FontHost = {
     projectLabel: root,
-    readFile: async (path) => readProjectFile(root, path),
+    readFile: async (path, readOptions) => readProjectFile(root, path, readOptions),
     findLocalFont: async (family, weight, { nearest }) =>
       findInstalledFont(family, weight, nearest, [
         ...(options.fontDirs ?? []).flatMap(projectFolders),
@@ -102,7 +102,10 @@ export function createNodeFontHost(options: NodeFontHostOptions): FontHost {
  */
 export function createNodeProjectHost(root: string): ProjectFileHost {
   const resolvedRoot = resolve(root);
-  return { projectLabel: resolvedRoot, readFile: async (path) => readProjectFile(resolvedRoot, path) };
+  return {
+    projectLabel: resolvedRoot,
+    readFile: async (path, readOptions) => readProjectFile(resolvedRoot, path, readOptions),
+  };
 }
 
 /**
@@ -121,8 +124,16 @@ export function createNodeProjectHost(root: string): ProjectFileHost {
  * Every real path comes from the same `realpath` (the system's own), which
  * spells a folder as it is on disk: a project folder written `C:\proj` or
  * `~/MyProj` for `c:\proj` or `~/myproj` is still the same folder.
+ *
+ * With `maxBytes`, a larger file isn't read at all: its size comes from the
+ * file system, so a file of several gigabytes stops with a message rather
+ * than filling memory (docs/data-import.md).
  */
-export async function readProjectFile(root: string, projectPath: string): Promise<HostReadResult> {
+export async function readProjectFile(
+  root: string,
+  projectPath: string,
+  options: ReadOptions = {},
+): Promise<HostReadResult> {
   const segments = projectPath.split('/').filter(Boolean);
   const osPath = join(root, ...segments);
   const unreadable = (err: unknown): HostReadResult => ({ ok: false, code: 'unreadable', detail: errorText(err) });
@@ -169,6 +180,9 @@ export async function readProjectFile(root: string, projectPath: string): Promis
     const stats = statSync(current);
     if (stats.isDirectory()) return { ok: false, code: 'folder' };
     if (!stats.isFile()) return notFound;
+    if (options.maxBytes !== undefined && stats.size > options.maxBytes) {
+      return { ok: false, code: 'too-large', size: stats.size };
+    }
     return { ok: true, bytes: new Uint8Array(await readFile(current)) };
   } catch (err) {
     return unreadable(err);
@@ -425,6 +439,9 @@ export async function readProjectMain(
         return fail('folder', `${file} is a folder, not a file.`);
       case 'unreadable':
         return fail('unreadable', `${file} could not be read: ${read.detail}`);
+      // Only a read with maxBytes answers too-large; this one has none.
+      case 'too-large':
+        return fail('unreadable', `${file} could not be read: it is too large.`);
     }
   }
   // Decoded as `readFileSync(file, 'utf-8')` decodes a file named directly, so both compile alike.

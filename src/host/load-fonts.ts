@@ -286,7 +286,9 @@ async function loadFile(
     } else if (read.code === 'folder') {
       messages.push(at(loc, 'error', `@font path "${written}" is a folder, not a font file.`));
     } else {
-      messages.push(at(loc, 'error', `@font file "${written}" could not be read: ${read.detail}`));
+      // Only a read with maxBytes answers too-large; a font's has none.
+      const why = read.code === 'too-large' ? 'it is too large.' : read.detail;
+      messages.push(at(loc, 'error', `@font file "${written}" could not be read: ${why}`));
     }
     return null;
   }

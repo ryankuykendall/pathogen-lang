@@ -165,6 +165,29 @@ export function fixedValueError(
   return `Cannot ${verb} ${name} — it comes from ${file}, and imported values are fixed. ${advice}`;
 }
 
+/**
+ * A change to an object or array inside an imported value (docs/data-import.md
+ * and docs/modules.md "What you import is fixed"): copying is one level deep,
+ * so a copied array's items are still the file's. `name` is the imported
+ * name the value sits in; `item` names one of its items in the example
+ * (`gear` for `gears`); `written` is how the code names the array changed.
+ */
+export function fixedInsideError(
+  kind: 'object' | 'array',
+  name: string,
+  file: string,
+  item: string,
+  written: string | undefined,
+): string {
+  const clause = `it comes from ${file}, and imported values are fixed.`;
+  if (kind === 'object') {
+    return `Cannot change an object inside ${name} — ${clause} Make new objects: ${name}.map {|${item}| return { ...${item} }; }`;
+  }
+  const advice =
+    written === undefined ? 'Copy it into a new array first, with [...]' : `Copy it first: [...${written}]`;
+  return `Cannot change an array inside ${name} — ${clause} ${advice}`;
+}
+
 /** An exported fn giving one of its file's variables a new value after the file has loaded (decision 29). */
 export function fixedVariableError(name: string, file: string): string {
   return `Cannot assign to ${name} — it belongs to ${file}, whose variables are fixed once it has loaded. Return the new value instead, or pass it in as a parameter`;
@@ -287,6 +310,34 @@ export function importNotImportableError(written: string): string {
 /** Braces or `* as` on a data file; `name` is the one to import it by (docs/data-import.md "Errors"). */
 export function dataNeedsNameError(written: string, name: string): string {
   return `"${written}" is a data file: import it by a name, as import ${name} from "${written}";`;
+}
+
+/**
+ * A file size as messages give it, in megabytes (1 MB = 1,048,576 bytes),
+ * rounded up to one decimal and without a trailing .0: `82 MB`, `5.4 MB`.
+ * Rounded up, so a file just over a limit never reads as the limit itself.
+ */
+export function megabytes(bytes: number): string {
+  const tenths = Math.ceil((bytes * 10) / (1024 * 1024));
+  return `${tenths % 10 === 0 ? tenths / 10 : (tenths / 10).toFixed(1)} MB`;
+}
+
+/** The `--max-data-size` a message suggests for a file this large: the next 50 MB up. */
+export function suggestedMaxDataSize(bytes: number): number {
+  return Math.max(50, Math.ceil(bytes / (1024 * 1024) / 50) * 50);
+}
+
+/** A data file over the limit on disk (docs/data-import.md and docs/cli.md "Data files"). */
+export function dataTooLargeError(written: string, bytes: number, limitBytes: number): string {
+  return (
+    `import file "${written}" is ${megabytes(bytes)}, more than the ${megabytes(limitBytes)} a data file can be. ` +
+    `To read it anyway, pass --max-data-size=${suggestedMaxDataSize(bytes)} (in VS Code, the pathogen.maxDataSize setting).`
+  );
+}
+
+/** A data file whose bytes aren't UTF-8 (docs/data-import.md "Errors"). */
+export function dataNotTextError(written: string): string {
+  return `import file "${written}" isn't UTF-8 text, so it can't be read. Save it as UTF-8.`;
 }
 
 export function importLeavesProjectError(written: string, projectLabel: string): string {

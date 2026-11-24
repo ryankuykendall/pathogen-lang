@@ -47,10 +47,7 @@ const GRAMMAR_KEYWORDS = [
  * error; when that was fixed, the "still needed" test below failed until the
  * entry was removed — which is the point of it.)
  */
-const NODE_TYPE_EXCEPTIONS: Record<string, string> = {
-  DefaultImport:
-    '`import gears from "./data/gears.json";` parses since phase 3a, but compiles only once data files are read (3a step 2), which adds one to the module fixtures and removes this entry',
-};
+const NODE_TYPE_EXCEPTIONS: Record<string, string> = {};
 
 const seenNodeTypes = new Set<string>();
 const errorNodes = [FIXTURE, ...MODULE_FIXTURES].reduce((errors, source) => {

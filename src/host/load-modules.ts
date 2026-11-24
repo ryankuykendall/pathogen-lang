@@ -12,8 +12,11 @@
  */
 import { resolveProjectPath, respell } from './paths';
 import { dataFormatOf, suggestedDataName } from '../data/data-files';
+import { readJson } from '../data/json-reader';
 import {
   dataNeedsNameError,
+  dataNotTextError,
+  dataTooLargeError,
   defaultImportError,
   fileLabel,
   importBackslashError,
@@ -29,6 +32,7 @@ import {
   importNotFoundError,
   importNotImportableError,
   importUnreadableError,
+  megabytes,
   notAModuleError,
   unsavedFileImportError,
 } from '../module-messages';
@@ -38,6 +42,7 @@ import { parser as lezerParser } from '../parser/pathogen.generated';
 import type { SyntaxNode } from '@lezer/common';
 
 import type { HostReadResult, ProjectFileHost } from './types';
+import type { DataValue, JsonReadResult } from '../data/json-reader';
 import type { ImportForm } from '../module-messages';
 
 export type { ImportForm };
@@ -181,13 +186,37 @@ export interface ModuleLoadError {
   importedFrom: ImportSite[];
 }
 
+/** A data file the program imports (docs/data-import.md), read and ready. */
+export interface DataFile {
+  /** Project path: `/data/gears.json`. */
+  path: string;
+  /** Its text, byte-order mark dropped. */
+  text: string;
+  /**
+   * Its value as Pathogen values, read once. Fixed: the compile makes every
+   * change to it an error, so one value can serve every compile that reads
+   * the same text (docs/data-import.md "What you import is fixed").
+   */
+  value: DataValue;
+  /** The imports by which the compile first reached it, nearest first, ending in the compiled file. */
+  importedFrom: ImportSite[];
+  /** The name the first import gave it, which messages about changing it use. */
+  name: string;
+}
+
 export interface ModuleGraph {
   /** Project path of the compiled file (`/main.pathogen`; `/<inline>` for -e). */
   entry: string;
-  /** Every file the program imports, directly or not, by project path. Not the entry. */
+  /** Every module the program imports, directly or not, by project path. Not the entry, not data files. */
   files: Map<string, ModuleFile>;
-  /** The imported files in the order they run: each after everything it imports. */
+  /** The imported modules in the order they run: each after everything it imports. */
   order: string[];
+  /**
+   * Every data file the program imports, directly or through modules, by
+   * project path. Kept apart from `files`: they hold no Pathogen. Absent in a
+   * graph built before data imports, which is one with none.
+   */
+  data?: Map<string, DataFile>;
 }
 
 export interface ResolveModulesResult {
@@ -200,7 +229,52 @@ export interface ResolveModulesOptions {
   host: ProjectFileHost;
   /** Project path of the compiled file. Its `./` paths start in its folder. */
   entry: string;
+  /**
+   * The largest data file to read, in bytes (DEFAULT_MAX_DATA_BYTES unless
+   * raised: `--max-data-size`, VS Code's `pathogen.maxDataSize`).
+   */
+  maxDataBytes?: number;
 }
+
+/** A data file can be up to 50 MB on disk unless raised (docs/data-import.md, docs/cli.md "Data files"). */
+export const DEFAULT_MAX_DATA_BYTES = 50 * 1024 * 1024;
+
+/**
+ * Data files read recently, by project and path, with the text each was read
+ * from: an editor resolves imports on every keystroke, and a data file that
+ * hasn't changed is the same text (note 76, decision 7). A hit hands back the
+ * same value, which is safe because data values are fixed.
+ *
+ * Kept to about DATA_CACHE_HEAP bytes of values, the least recently used
+ * going first; the file just read always stays. A value takes about six times
+ * its text in memory (note 77: 57 MB of records took 360 MB), more for many
+ * tiny objects, so the budget counts VALUE_PER_CHAR bytes for each character.
+ */
+const dataCache = new Map<string, { text: string; result: JsonReadResult }>();
+const DATA_CACHE_HEAP = 512 * 1024 * 1024;
+const VALUE_PER_CHAR = 8;
+
+function readDataText(key: string, text: string): JsonReadResult {
+  const hit = dataCache.get(key);
+  dataCache.delete(key);
+  if (hit?.text === text) {
+    dataCache.set(key, hit);
+    return hit.result;
+  }
+  const result = readJson(text);
+  dataCache.set(key, { text, result });
+  let total = 0;
+  for (const entry of dataCache.values()) total += entry.text.length * VALUE_PER_CHAR;
+  for (const [older, entry] of dataCache) {
+    if (total <= DATA_CACHE_HEAP || older === key) break;
+    dataCache.delete(older);
+    total -= entry.text.length * VALUE_PER_CHAR;
+  }
+  return result;
+}
+
+/** Why a data file couldn't be read: the host's answer, too large, or not UTF-8. */
+type DataReadFailure = Exclude<HostReadResult, { ok: true }> | 'not-text' | { tooLarge: number };
 
 /** Decode a file's bytes as UTF-8 text, or null when they aren't. */
 function decodeText(bytes: Uint8Array): string | null {
@@ -245,7 +319,21 @@ export async function resolveModules(
     if (why.code === 'case-mismatch') return importCaseMismatchError(written, respell(written, why.actual));
     if (why.code === 'not-found') return importNotFoundError(written, why.osPath);
     if (why.code === 'folder') return importFolderError(written);
+    // Only a data file's read has a size limit; kept for completeness.
+    if (why.code === 'too-large') return importUnreadableError(written, `it is ${megabytes(why.size)}`);
     return importUnreadableError(written, why.detail);
+  };
+
+  const maxDataBytes = options.maxDataBytes ?? DEFAULT_MAX_DATA_BYTES;
+  const data = new Map<string, DataFile>();
+  // Why a data file couldn't be read, as `failed` is for modules; 'reported'
+  // for a JSON mistake, which is an error in the file itself, so once is enough.
+  const failedData = new Map<string, DataReadFailure | 'reported'>();
+  const dataFailure = (written: string, why: DataReadFailure): string => {
+    if (why === 'not-text') return dataNotTextError(written);
+    if ('tooLarge' in why) return dataTooLargeError(written, why.tooLarge, maxDataBytes);
+    if (why.code === 'too-large') return dataTooLargeError(written, why.size, maxDataBytes);
+    return readFailure(written, why);
   };
 
   const errorAt = (
@@ -255,6 +343,47 @@ export async function resolveModules(
     importedFrom: ImportSite[],
   ): void => {
     errors.push({ message, file, line: at.line, column: at.column, importedFrom });
+  };
+
+  /**
+   * Read a data file (once) at the project path an import names
+   * (docs/data-import.md). Reading it can fail at the import (too large, not
+   * UTF-8, the path's own mistakes) or in the file (a JSON mistake, at its
+   * line and column, traced back through the imports that led there).
+   */
+  const visitData = async (
+    from: string,
+    planned: PlannedImport,
+    path: string,
+    chain: ImportSite[],
+  ): Promise<string | null> => {
+    if (data.has(path)) return path;
+    const earlier = failedData.get(path);
+    if (earlier !== undefined) {
+      if (earlier !== 'reported') errorAt(dataFailure(planned.written, earlier), from, planned, chain);
+      return null;
+    }
+    const fail = (why: DataReadFailure): null => {
+      failedData.set(path, why);
+      errorAt(dataFailure(planned.written, why), from, planned, chain);
+      return null;
+    };
+    const read = await host.readFile(path, { maxBytes: maxDataBytes });
+    if (!read.ok) return fail(read);
+    if (read.bytes.length > maxDataBytes) return fail({ tooLarge: read.bytes.length });
+    const text = decodeText(read.bytes);
+    if (text === null) return fail('not-text');
+    const importedFrom: ImportSite[] = [{ file: from, line: planned.line, column: planned.column }, ...chain];
+    // By project too: one language server can hold several projects with the same paths.
+    const parsed = readDataText(`${host.projectLabel}\0${path}`, text);
+    if (!parsed.ok) {
+      failedData.set(path, 'reported');
+      errors.push({ message: parsed.message, file: path, line: parsed.line, column: parsed.column, importedFrom });
+      return null;
+    }
+    const name = planned.name ?? suggestedDataName(planned.written);
+    data.set(path, { path, text, value: parsed.value, importedFrom, name });
+    return path;
   };
 
   /**
@@ -279,8 +408,8 @@ export async function resolveModules(
       return null;
     }
     const path = resolved.path;
-    // A data file (docs/data-import.md): read in 3a's step 2 (note 76).
-    if (planned.form === 'default') return null;
+    // A data file imports nothing, so it can't be part of a cycle.
+    if (planned.form === 'default') return visitData(from, planned, path, chain);
     const cycleAt = stack.indexOf(path);
     if (cycleAt !== -1) {
       const cycle = [...stack.slice(cycleAt), path];
@@ -331,7 +460,7 @@ export async function resolveModules(
   for (const planned of planImports(entrySource)) {
     await visit(entry, planned, [entry], []);
   }
-  return { graph: { entry, files, order }, errors };
+  return { graph: { entry, files, order, data }, errors };
 }
 
 /**
@@ -347,9 +476,11 @@ export function withOpenDocuments(
 ): ProjectFileHost {
   return {
     projectLabel: host.projectLabel,
-    readFile: async (path) => {
-      const read = await host.readFile(path);
-      const text = read.ok ? openText(path) : undefined;
+    readFile: async (path, options) => {
+      const read = await host.readFile(path, options);
+      // A file too large on disk is still a file there: its open buffer, which
+      // the loader measures in turn, stands in for it.
+      const text = read.ok || read.code === 'too-large' ? openText(path) : undefined;
       return text === undefined ? read : { ok: true, bytes: new TextEncoder().encode(text) };
     },
   };
