@@ -2,6 +2,7 @@
 
 2026-11-23. What the drafted docs say a workspace does with data files (`docs/workspace-files.md` "Data files", `docs/data-import.md` "In the editor"), drawn on the real playground. The proposals and their questions: note 72, "Proposed in the drafts, to confirm in the mockup round".
 
+- **Review them in the gallery:** `website/bbwp/2026-11-23-16:41:07--modules--3a-data-files-mockups-v1.bbwp.html` (localhost:3001), built by `../mockups-bbwp.ts`. After a re-shoot, run `npx tsx project-docs/modules/mockups-bbwp.ts`, then `npx tsx scripts/update-bbwp-index.ts`.
 - `<state>-light.png`, `<state>-dark.png`: 12 states in both themes.
 - `shoot.ts`: makes them, as 2g's did: a workspace on the dev playground with the proposals added to the real page. Run it with `npm run dev:stack` up: `npx tsx project-docs/modules/mockups-3a-data-files/shoot.ts`. The dev API holds `.pathogen` files only, so the stored `main.pathogen` holds the table inline (the preview draws what the import would), and everything a data file adds is put into the page after it loads. The script's header says what's real and what's made up.
 

@@ -18,7 +18,9 @@
 - `docs/syntax.md`: the string methods (`lines`, `trim`, `replace`, `startsWith`, `endsWith`, `toNumber`; `split` takes a separator). It also corrects `.empty()` and `.includes()`, which return `true`/`false`, not `1`/`0`.
 - `docs/modules.md`, `docs/cli.md`, `docs/projects.md`, `docs/workspace-files.md`: what changes on each.
 
-**The mockups:** `mockups-3a-data-files/` (README lists the 12 states; light and dark). They're the real dev playground with the new parts put into the page.
+**The mockups:** in the gallery, http://localhost:3001/website/bbwp/2026-11-23-16:41:07--modules--3a-data-files-mockups-v1.bbwp.html (every state, a light/dark toggle, and the questions below). The PNGs and `shoot.ts` are in `mockups-3a-data-files/` (README lists the 12 states). They're the real dev playground with the new parts put into the page.
+
+*Added 2026-11-24:* "I don't see the mock-ups listed here: http://localhost:3001/website/bbwp/index.html ...this is where we review all of demos and mock-ups." `mockups-bbwp.ts` now builds a gallery page for each screenshot set: 3a, and the earlier 2f and 2g v1/v2 sets, which hadn't been added either.
 
 **The content review:** `reviews/phase-3a-docs-review.md`, three parts, 18 findings and 2 nits. All were taken except half of one, which came from a stale read, and one optional idea. Each claim about how the language behaves today was checked first. Two findings changed what the docs promise:
 - **Fixed goes all the way in.** `[...gears]` gives an array you can add to, but its objects are still the file's. To change items: `gears.map {|gear| return { ...gear }; }`. This was already true of modules, and modules.md now says so too.
