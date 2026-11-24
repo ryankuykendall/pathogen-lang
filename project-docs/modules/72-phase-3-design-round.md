@@ -56,6 +56,47 @@ If a step ships on all three surfaces at once (question 1), the playground side 
 5. **A data file in the playground's editor.** *Recommended: editable as text,* with simple highlighting for JSON and CSV, its programs redrawing as you type, as a module's do. A table view for CSV can come later. Or read-only, edited elsewhere and uploaded again. Either way, a mockup round comes before any playground change.
 6. **A size cap in the CLI and VS Code.** *Recommended: the workspace's own, 5 MB a data file,* so a project behaves the same on disk and in the playground. Or none on disk.
 
+## Your answers (2026-11-23)
+
+"1 (a), 2 yes, 3 yes, 4 yes, 5 editable, 6 no...I think that we should allow larger file sizes on the command-line, and that we should produce an error in the web app when a users workspace files exceed our maximum file size."
+
+1. **All three surfaces together,** step by step.
+2. **`columnTypes`,** with type names.
+3. **The string methods,** as proposed: `trim()`, `lines()`, `split(separator)`, `replace(find, with)`, `startsWith()`, `endsWith()`, and `toNumber()` giving `null` for text that isn't a number.
+4. **Hover and completion from data** in the step that brings each type.
+5. **A data file is editable** in the playground's editor.
+6. **A larger limit on disk than in the playground.** The playground keeps the workspace's limits (5 MB a data file, 50 MB a workspace), and a file over one is an error that says so: an upload leaves it out with the reason, and a save that would pass it is refused with a message, as for a `.pathogen` file over 1 MB today.
+   - Then: "We should probably have some kind of cap for files on disk, but what would make the most sense?" I recommended 50 MB a data file, with a CLI flag and a VS Code setting to raise it: a 50 MB CSV is about half a million rows, already more than an SVG can show; reading a file into values takes several times its size in memory, so far larger files crash Node with an error that doesn't name the file; and VS Code rereads data files as you type.
+   - **Your answer:** "Let's go with 50 MB, with the flag and setting to raise it." The error names the file, its size and the limit, and how to raise it (`--max-data-size`; a matching VS Code setting).
+   - For the record: the 32,000-step limit applies to number ranges (`for (i in 0..N)`), not to a loop over a list, so a long table loops in full.
+
+## What writing 3a's docs turned up (2026-11-23)
+
+The drafts: `docs/data-import.md` (new, registered in `DOC_FILES` as `dataImport`), the string methods in `docs/syntax.md`, and changes to `docs/modules.md`, `docs/cli.md`, `docs/projects.md` and `docs/workspace-files.md`. Not committed: they wait for the content review and your approval.
+
+**Build items for 3a:**
+- **The docs commit lands with the parser change.** `tests/docs-examples.test.ts` parses every example, and `import gears from "./data/gears.json";` is a parse error today (the default-import message). Those two examples are 3a's first failing tests, so the docs go in with the commit that makes them parse, and nothing is pushed before 3a works.
+- **Our own JSON reader, or at least our own messages.** The page promises one message for a JSON mistake on every surface (`data/gears.json line 3, col 3: expected , or ] after an array item`). `JSON.parse` words its errors differently in V8 and in Safari, as the 2g page already admits for `pathogen.json`.
+- **The workspace's kinds follow the language.** `src/workspace/files.ts` lists `.json .csv .tsv .txt .svg` as data, and lacks `.geojson .topojson .fold`. With 3a a workspace accepts exactly what a program can import then: `.json .geojson .topojson .fold .txt`. CSV and TSV join with 3b; `.svg` waits for SVG imports.
+- **Data files count toward the 20 files** (note 50: the limit caps R2 reads, one a file), so the page says so, and 2g's "more than 20 `.pathogen` files" sentence now counts every file.
+- **Worker memory.** Note 50 left "a load holds every file's text in memory, up to 50 MB, in a 128 MB Worker" unfixed, because `.pathogen` files alone (20 × 1 MB) couldn't reach it. Data files at 5 MB each can (20 × 5 MB is past the 50 MB total, so the total is what binds). The fix note 50 sketched (above a total size, return hashes only and let the client read by hash) is part of 3a's playground work.
+- **The 50 MB limit on disk needs a measurement:** how much memory a 50 MB JSON file takes as Pathogen values, once the loader exists. It's the check behind the number.
+- **`pathogen.maxDataSize` is the VS Code extension's first setting** (it has none today: no `contributes.configuration`).
+- **The `text` keyword:** `text` can't be a variable name (it starts a text line), so the examples avoid it; `.startsWith(prefix)` and `.endsWith(suffix)` name their parameters for the same reason.
+- **A correction found on the way:** strings' `.empty()` and `.includes()` return `true` / `false`, not `1` / `0` as `docs/syntax.md` said. Fixed in the same draft.
+- **Checked:** template literals turn `\n` and `\t` into a line break and a tab; a 90,601-item array loops in full with `for`, `.map` and `.filter` (under 100 ms each), so the 32,000-step limit doesn't touch a long table.
+
+**New names a user sees:** `--max-data-size=<MB>` (CLI), `pathogen.maxDataSize` (VS Code), the string methods `lines`, `trim`, `replace`, `startsWith`, `endsWith`, `toNumber` (and `split` taking a separator), **New data file** in the tree's menus, and the editor's "has no key … Did you mean …?" underline.
+
+**Proposed in the drafts, to confirm in the mockup round** (the docs say these as written; each can change):
+1. **The tree and tabs:** one icon for JSON, one for text; a data file's tab keeps its extension (`gears.json`).
+2. **New data file** in the **+** menu and in a folder's menu: you type the extension. A new JSON file starts as `[]`, a text file empty.
+3. **The editor:** JSON highlighted, and a JSON mistake underlined as you type, with the import's message. Format Document is off for a data file.
+4. **Copy Debug Info:** a data file the imports reach comes with its size and first 20 lines (not its whole text), unless the error is in it.
+5. **Public pages and the review viewer:** View source shows data files with the others ("every file"), as do snapshots, Copy Workspace and Download workspace.
+6. **A save over a limit:** refused with `data/trips.json is 5.4 MB, more than the 5 MB a data file can be in a workspace. Your edits are kept in the editor but not saved.`
+7. **A project over 50 MB in all** adds nothing when it comes in as a new workspace, as more than 20 files does.
+
 ## Next
 
-Your answers. Then 3a's docs page (`docs/data-import.md`), with a content review and your approval, and, if question 1 is (a), the playground mockups for data files alongside it.
+3a's docs, first: a new page, `docs/data-import.md` (JSON and text imports, the value, freezing, errors), the string methods where strings are documented, and the changes to `docs/modules.md`, `docs/workspace-files.md` (data files in a workspace, their limits and errors), `docs/projects.md` and `docs/cli.md` (the 50 MB limit on disk, `--max-data-size`, and VS Code's setting). Alongside them, the playground mockups for data files: the tree, the editor, uploads and the import of a project. A content review, then your approval of both.
