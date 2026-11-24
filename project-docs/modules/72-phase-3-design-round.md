@@ -63,6 +63,7 @@ If a step ships on all three surfaces at once (question 1), the playground side 
 1. **All three surfaces together,** step by step.
 2. **`columnTypes`,** with type names.
 3. **The string methods,** as proposed: `trim()`, `lines()`, `split(separator)`, `replace(find, with)`, `startsWith()`, `endsWith()`, and `toNumber()` giving `null` for text that isn't a number.
+   - *Superseded 2026-11-24 (note 74):* text imports and these methods are on hold ("we would need to support regular expressions and that is too out of scope for the initial round of work"). Drafts in `held-text-imports/`.
 4. **Hover and completion from data** in the step that brings each type.
 5. **A data file is editable** in the playground's editor.
 6. **A larger limit on disk than in the playground.** The playground keeps the workspace's limits (5 MB a data file, 50 MB a workspace), and a file over one is an error that says so: an upload leaves it out with the reason, and a save that would pass it is refused with a message, as for a `.pathogen` file over 1 MB today.

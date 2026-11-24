@@ -98,7 +98,7 @@ const SETS: MockupSet[] = [
     stamp: '2026-11-23-16:41:07',
     slug: '3a-data-files-mockups-v1',
     title: '3a: data files in a workspace',
-    lede: 'Phase 3a, mockups v1 (note 73), for your review with the drafted docs (<code>docs/workspace-files.md</code> “Data files”, <code>docs/data-import.md</code> “In the editor”). The dev playground with the data-file parts put into the page: the dev API holds <code>.pathogen</code> files only, so the stored <code>main.pathogen</code> holds the table inline, and the preview draws what the import would.',
+    lede: 'Phase 3a, mockups v1 (note 73), for your review with the drafted docs (<code>docs/workspace-files.md</code> “Data files”, <code>docs/data-import.md</code> “In the editor”). The dev playground with the data-file parts put into the page: the dev API holds <code>.pathogen</code> files only, so the stored <code>main.pathogen</code> holds the table inline, and the preview draws what the import would. <b>Superseded by v2</b> (note 74, your answers of 2026-11-24): text files on hold, a dialog for New data file…, and a refused save in the error panel.',
     figures: [
       { base: '1a-tree-editor', caption: '1a · The tree and the editor', note: 'data/gears.json and data/profile.txt with their own icons; the gears.json tab keeps its extension; the JSON highlighted. (Question 1.)' },
       { base: '1b-json-error', caption: '1b · A mistake in the JSON', note: 'A comma missing: the editor marks line 3; the error sits under data/gears.json with “imported from main.pathogen line 2”; red dots on gears.json and main.pathogen. The preview keeps its last drawing, as for any error.' },
@@ -124,6 +124,35 @@ const SETS: MockupSet[] = [
       <li><b>Public pages, snapshots and downloads</b> carry data files like every other file. <i>Recommended: yes.</i></li>
       <li><b>Hover and completion</b> (1c, 1d) as shown. <i>Recommended: yes.</i></li>
       <li><b>A project over 50 MB in all</b> adds nothing when it comes in as a new workspace, as one over 20 files does. <i>Recommended: yes.</i></li>
+    </ol>
+  </section>`,
+  },
+  {
+    dir: 'mockups-3a-data-files-v2',
+    stamp: '2026-11-24-11:54:26',
+    slug: '3a-data-files-mockups-v2',
+    title: '3a v2: data files in a workspace',
+    lede: 'Phase 3a, mockups v2 (note 74): your answers to v1. JSON only, since text files (<code>.txt</code>) are on hold; braces for every data file; <b>New data file…</b> opens a dialog for the name and the type, and a new file starts as <code>{}</code>; a save over a limit says why in the error panel. The dialog’s frame is the playground’s own (the Delete… question’s), with the form put into it.',
+    figures: [
+      { base: '1a-tree-editor', caption: '1a · The tree and the editor', note: 'data/gears.json and data/sizes.json, both with the braces; the gears.json tab keeps its extension; the JSON highlighted.' },
+      { base: '1b-json-error', caption: '1b · A mistake in the JSON', note: 'Unchanged from v1 but for the tree.' },
+      { base: '1c-hover', caption: '1c · Hover on an imported name', note: 'As agreed.' },
+      { base: '1d-completion', caption: '1d · Completion after gear.', note: 'As agreed.' },
+      { base: '1e-tree-phone', caption: '1e · The tree on a phone', note: '', phone: true },
+      { base: '2a-plus-menu', caption: '2a · The + menu', note: '<b>Changed:</b> New data file…, with no small text (as New module has none). The ellipsis says it opens a dialog, as Upload files… does.' },
+      { base: '2b-new-data-dialog', caption: '2b · The New data file dialog', note: '<b>New:</b> the name, then the type: JSON, GeoJSON, TopoJSON or FOLD, each with what it’s for. The type adds its extension, and the line under the field shows the file it will make and that it starts as <code>{}</code>. Typing an extension yourself (<code>trips.geojson</code>) chooses that type. Enter or Create makes the file and opens it; Esc cancels.' },
+      { base: '2c-name-taken', caption: '2c · A name that’s taken', note: '<b>New:</b> the tree’s own words for a taken name, “data/ already has gears.json.”, and Create is off. The same goes for a name that breaks the name rules, an extension that isn’t one of the four (<code>trips.txt</code>), and a workspace that already holds 20 files.' },
+      { base: '3a-upload-message', caption: '3a · An upload with data files', note: '<b>Changed:</b> profile.txt is left out now, with the reason: what a workspace holds.' },
+      { base: '3b-save-refused', caption: '3b · A save over the limit', note: '<b>Changed:</b> the error panel at the bottom of the editor says why, under the file’s name (which opens the file): “Not saved: 5.4 MB, more than the 5 MB a data file can be in a workspace. Your edits stay in the editor.” The save status reads “Not saved”. Both stay, with any other errors, until the file saves.' },
+      { base: '4a-import-project', caption: '4a · A workspace from a project', note: '<b>Changed:</b> two JSON files come in; under Not added, data/trips.json (82 MB) and data/profile.txt (not a kind a workspace holds).' },
+    ],
+    after: `
+  <section class="questions">
+    <h2>Still open (note 74)</h2>
+    <ol>
+      <li><b>Which formats, and when.</b> You listed JSON, CSV, TSV, YAML and SVG. <i>Recommended:</i> 3a JSON (with GeoJSON, TopoJSON and FOLD, which are JSON); 3b CSV and TSV, as planned; then YAML as a short step of its own, since it reads into the same values as JSON (it needs a YAML reader in all three tools); SVG stays phase 4, which needs its own design round (note 37: real SVG files lean on transforms and groups).</li>
+      <li><b>A <code>.pathogen</code> file over 1 MB</b> is refused today with the whole sentence in the save status, the surface you turned down. <i>Recommended:</i> every refused save says why in the error panel, as in 3b.</li>
+      <li><b>The dialog</b> (2b, 2c): the type list and its descriptions, and Create off for a taken name. <i>Recommended: as shown.</i></li>
     </ol>
   </section>`,
   },

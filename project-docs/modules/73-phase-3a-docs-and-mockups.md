@@ -56,3 +56,5 @@
 ## Next
 
 Your answers to the seven questions, and your approval of the docs. Then the build, tests first.
+
+*Answered 2026-11-24:* see note 74 (text on hold, a dialog for New data file…, a refused save in the error panel; mockups v2).

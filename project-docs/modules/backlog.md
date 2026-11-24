@@ -161,6 +161,13 @@ After the first release (phase 2 ships with 2e). Each entry comes from your answ
 - **Today:** a module's preview is empty, with the notice "This file is a module: a module doesn't draw, so its preview is empty. To see its fns draw, open a program that imports it."
 - **From:** the step 5e decision (`23-modules-are-libraries-plan.md`). Delayed by you on 2026-11-05: "I am not sure that we need to focus on the demo block."
 
+### Text imports and string methods
+- **What:** `import profile from "./data/profile.txt";` giving the file's text as a string, and string methods for reading it: `lines()`, `trim()`, `split(separator)`, `replace(find, replacement)`, `startsWith()`, `endsWith()`, `toNumber()` (note 72, question 3).
+- **Today:** a `.txt` path is an extension Pathogen doesn't read; `.split()` splits into characters only.
+- **Open:** what to support. Reading text formats well takes regular expressions, which the first round leaves out.
+- **Drafts:** `held-text-imports/` (the docs as drafted, the `profile.txt` example and the string-method sections).
+- **From:** note 74. Held by you on 2026-11-24: "In order to do that adequately, we would need to support regular expressions and that is too out of scope for the initial round of work. So let's put a hold on .txt files for the time being until we have a better idea of what we want to support."
+
 ### Fn and enum bindings fixed in every file
 - **What:** decision 30 option (b): fn and enum names behave like `const` in every file, and enum members can't change. Breaking; needs its own audit and KV check.
 - **Today:** imported fns and enums are fixed; inside one file `f = 3` and `Dir["Up"] = "zz"` still work.
