@@ -65,12 +65,30 @@ describe('names', () => {
 });
 
 describe('paths', () => {
-  it('files are .pathogen only, for now', () => {
-    expect(pathProblem('parts/gears.pathogen', 'file')).toBeNull();
-    expect(pathProblem('data/cities.csv', 'file')).toBe(
-      '"data/cities.csv": a workspace holds .pathogen files for now.',
+  // Phase 3a (docs/workspace-files.md "Data files"): .pathogen files and the
+  // data files a program can import. CSV and TSV join in 3b; text is on hold.
+  it('files are .pathogen files and data files', () => {
+    for (const path of [
+      'parts/gears.pathogen',
+      'data/gears.json',
+      'map.geojson',
+      'b.topojson',
+      'crane.fold',
+      'D.JSON',
+    ]) {
+      expect(pathProblem(path, 'file'), path).toBeNull();
+    }
+    const holds = 'a workspace holds .pathogen files and data files (.json, .geojson, .topojson and .fold).';
+    expect(pathProblem('data/cities.csv', 'file')).toBe(`"data/cities.csv": ${holds}`);
+    expect(pathProblem('notes.txt', 'file')).toBe(`"notes.txt": ${holds}`);
+    expect(pathProblem('README', 'file')).toBe(`"README": ${holds}`);
+    expect(pathProblem('fonts/a.ttf', 'file')).toBe(`"fonts/a.ttf": ${holds}`);
+  });
+
+  it('pathogen.json stays reserved, though it is JSON', () => {
+    expect(pathProblem('data/pathogen.json', 'file')).toBe(
+      '"pathogen.json" is reserved: the playground writes the workspace\'s pathogen.json itself.',
     );
-    expect(pathProblem('README', 'file')).toBe('"README": a workspace holds .pathogen files for now.');
   });
 
   it('every segment follows the name rules, and none may be empty', () => {
@@ -95,14 +113,20 @@ describe('paths', () => {
     expect(pathProblem(long, 'file')).toBe(`"${long}" is longer than 255 characters.`);
   });
 
-  it('kinds come from the extension', () => {
+  it('kinds come from the extension: data is what a program can import (src/data/data-extensions.ts)', () => {
     expect([
       fileKind('a.pathogen'),
-      fileKind('a.CSV'),
+      fileKind('a.JSON'),
+      fileKind('a.geojson'),
+      fileKind('a.topojson'),
+      fileKind('a.fold'),
+      fileKind('a.csv'),
+      fileKind('a.txt'),
+      fileKind('a.svg'),
       fileKind('f/a.woff2'),
       fileKind('a.exe'),
       fileKind('pathogen'),
-    ]).toEqual(['pathogen', 'data', 'font', null, null]);
+    ]).toEqual(['pathogen', 'data', 'data', 'data', 'data', null, null, null, 'font', null, null]);
   });
 });
 
@@ -191,9 +215,23 @@ describe('checkManifest', () => {
     expect(message({ files: { 'a.pathogen': file(SHA_A, LIMITS.fileBytes.pathogen + 1) } })).toBe(
       '"a.pathogen" is larger than 1 MB, the most a file of its kind can be.',
     );
-    // The 50 MB workspace total can't be reached while a workspace holds only
-    // .pathogen files (20 of at most 1 MB each); it comes into play with data
-    // files and fonts, after phase 2, and gets its test then.
+  });
+
+  it('a data file is at most 5 MB (phase 3a)', () => {
+    expect(message({ files: { 'data/trips.json': file(SHA_A, LIMITS.fileBytes.data) } })).toBeNull();
+    expect(message({ files: { 'data/trips.json': file(SHA_A, LIMITS.fileBytes.data + 1) } })).toBe(
+      '"data/trips.json" is larger than 5 MB, the most a file of its kind can be.',
+    );
+  });
+
+  it('the files together are at most 50 MB, data files counted', () => {
+    const data = (n: number, size: number) =>
+      Object.fromEntries(Array.from({ length: n }, (_, i) => [`d${i}.json`, file(SHA_A, size)]));
+    expect(message({ files: data(10, LIMITS.fileBytes.data) })).toBeNull();
+    expect(message({ files: { ...data(10, LIMITS.fileBytes.data), 'main.pathogen': file(SHA_B, 1) } })).toBe(
+      // Rounded up, as every size in a message is: just over never reads as the limit.
+      'A workspace can hold at most 50 MB; this one holds 50.1 MB.',
+    );
   });
 });
 

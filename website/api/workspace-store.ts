@@ -5,7 +5,7 @@
 // template workspace, an old tab): it's stored as just main.pathogen, and a
 // workspace that is just main.pathogen still loads with `code` too.
 
-import { copyFiles, putText, readTexts, readTextsLeniently, storedSize } from './file-store.js';
+import { copyFiles, putText, putTexts, readTexts, readTextsLeniently, storedSize } from './file-store.js';
 import {
   checkManifest,
   contentHashOf,
@@ -44,8 +44,52 @@ export interface FileWithText extends FileEntry {
 }
 
 /**
- * The files with their text, as a load returns them. One R2 read per distinct
- * .pathogen file, unless the caller already holds the texts (`known`, by sha256).
+ * A data file a load doesn't send the text of: the client reads it by its
+ * hash (GET /workspace/:id/file/:sha256), which streams one file.
+ */
+export interface DeferredFile extends FileEntry {
+  deferred: true;
+}
+
+/**
+ * Data files' text a load or a viewer sends with it, in all (phase 3a step
+ * 5). A workspace can hold 50 MB of data, more than a 128 MB Worker can read
+ * as text and write out as JSON again in one request (note 50), so the rest
+ * come back deferred.
+ */
+export const DATA_INLINE_BYTES = 2 * 1024 * 1024;
+
+/**
+ * The most a create's or a save's body can be (phase 3a step 5): 20
+ * .pathogen files of 1 MB with room for JSON's escapes, plus small data. A
+ * client sends larger files first with PUT /workspace/:id/file, one at a
+ * time, and the save names them by hash (note 80).
+ */
+export const SAVE_BODY_BYTES = 24 * 1024 * 1024;
+
+/**
+ * The hashes a load sends the text of: every .pathogen file's (at most 20 MB,
+ * the limits), and data files' in path order while they fit DATA_INLINE_BYTES.
+ */
+function inlinedHashes(manifest: StoredFiles['manifest']): Set<string> {
+  const hashes = new Set<string>();
+  let dataBytes = 0;
+  for (const [path, entry] of Object.entries(manifest.files)) {
+    const kind = fileKind(path);
+    if (kind === 'pathogen') hashes.add(entry.sha256);
+    else if (kind === 'data' && (hashes.has(entry.sha256) || dataBytes + entry.size <= DATA_INLINE_BYTES)) {
+      if (!hashes.has(entry.sha256)) dataBytes += entry.size;
+      hashes.add(entry.sha256);
+    }
+  }
+  return hashes;
+}
+
+/**
+ * The files with their text, as a load returns them: .pathogen files, and data
+ * files up to DATA_INLINE_BYTES, the rest deferred. One R2 read per distinct
+ * file sent, unless the caller already holds the texts (`known`, by sha256):
+ * then a data file whose text it doesn't hold is deferred.
  */
 export async function filesWithText(
   env: Env,
@@ -53,20 +97,22 @@ export async function filesWithText(
   files: StoredFiles,
   known?: ReadonlyMap<string, string>,
 ): Promise<{
-  files: Record<string, FileWithText>;
+  files: Record<string, FileWithText | DeferredFile>;
   folders: string[];
   entryPoints: string[];
   contentHash: string;
   code?: string;
 }> {
   const { manifest } = files;
-  const hashes = Object.entries(manifest.files)
-    .filter(([path]) => fileKind(path) === 'pathogen')
-    .map(([, entry]) => entry.sha256);
-  const texts = known ?? (await readTexts(env, workspaceId, hashes));
-  const withText: Record<string, FileWithText> = {};
+  const sent = inlinedHashes(manifest);
+  const texts = known ?? (await readTexts(env, workspaceId, sent));
+  const withText: Record<string, FileWithText | DeferredFile> = {};
   for (const [path, entry] of Object.entries(manifest.files)) {
-    withText[path] = { ...entry, text: texts.get(entry.sha256) ?? '' };
+    const text = texts.get(entry.sha256);
+    withText[path] =
+      fileKind(path) === 'data' && (!sent.has(entry.sha256) || text === undefined)
+        ? { ...entry, deferred: true }
+        : { ...entry, text: text ?? '' };
   }
   return {
     files: withText,
@@ -74,19 +120,23 @@ export async function filesWithText(
     entryPoints: manifest.entryPoints,
     contentHash: files.hash,
     // Today's playground reads one string: kept for a workspace that is just main.pathogen.
-    ...(isJustMain(manifest) ? { code: withText[MAIN_FILE].text } : {}),
+    ...(isJustMain(manifest) ? { code: (withText[MAIN_FILE] as FileWithText).text } : {}),
   };
 }
 
-/** A file a viewer shows: its text, or `unreadable` when its bytes can't be read (note 59, requirement 9). */
-export type ShownFile = FileWithText | (FileEntry & { unreadable: true });
+/**
+ * A file a viewer shows: its text, `unreadable` when its bytes can't be read
+ * (note 59, requirement 9), or `deferred`, a data file past the budget.
+ */
+export type ShownFile = FileWithText | (FileEntry & { unreadable: true }) | DeferredFile;
 
 /**
  * The files with their text for a viewer (a snapshot, an approval), as
  * filesWithText reads them, except that a file whose bytes can't be read comes
  * back marked `unreadable`, without text, and the others are still read. The
  * viewer says so in its place (project-docs/modules/59-phase-2e-several-files-
- * requirements.md, requirement 9). Never for a load that may save or copy them.
+ * requirements.md, requirement 9). Data files past DATA_INLINE_BYTES come back
+ * deferred, as for a load. Never for a load that may save or copy them.
  */
 export async function filesToShow(
   env: Env,
@@ -100,13 +150,13 @@ export async function filesToShow(
   code?: string;
 }> {
   const { manifest } = files;
-  const hashes = Object.entries(manifest.files)
-    .filter(([path]) => fileKind(path) === 'pathogen')
-    .map(([, entry]) => entry.sha256);
-  const { texts, missing } = await readTextsLeniently(env, workspaceId, hashes);
+  const sent = inlinedHashes(manifest);
+  const { texts, missing } = await readTextsLeniently(env, workspaceId, sent);
   const shown: Record<string, ShownFile> = {};
   for (const [path, entry] of Object.entries(manifest.files)) {
-    shown[path] = missing.has(entry.sha256) ? { ...entry, unreadable: true } : { ...entry, text: texts.get(entry.sha256) ?? '' };
+    if (missing.has(entry.sha256)) shown[path] = { ...entry, unreadable: true };
+    else if (fileKind(path) === 'data' && !sent.has(entry.sha256)) shown[path] = { ...entry, deferred: true };
+    else shown[path] = { ...entry, text: texts.get(entry.sha256) ?? '' };
   }
   const main = shown[MAIN_FILE];
   return {
@@ -185,13 +235,11 @@ export async function copyStoredFiles(
       message: `This workspace has ${hashes.length} different files; a copy can take at most ${COPY_MAX_FILES} at once.`,
     };
   }
-  const textHashes = new Set(
-    Object.entries(manifest.files)
-      .filter(([path]) => fileKind(path) === 'pathogen')
-      .map(([, entry]) => entry.sha256),
-  );
+  // The texts the copy's own load answer sends (.pathogen files, data within
+  // DATA_INLINE_BYTES) are read and written; the rest are copied blob to blob.
+  const textHashes = inlinedHashes(manifest);
   const texts = await readTexts(env, fromId, textHashes);
-  await Promise.all([...texts.values()].map((text) => putText(env, toId, text)));
+  await putTexts(env, toId, texts.values());
   await copyFiles(
     env,
     fromId,
@@ -300,8 +348,10 @@ export async function filesFromBody(
   const checked = checkManifest({ files, folders, entryPoints });
   if (!checked.ok) return fail(checked.message);
 
-  await Promise.all(
-    [...texts.entries()].filter(([sha256]) => !stored.has(sha256)).map(([, text]) => putText(env, workspaceId, text)),
+  await putTexts(
+    env,
+    workspaceId,
+    [...texts.entries()].filter(([sha256]) => !stored.has(sha256)).map(([, text]) => text),
   );
   return { ok: true, value: { manifest: checked.value, hash: await contentHashOf(checked.value) } };
 }

@@ -289,7 +289,8 @@ describe("what's left out is what an upload leaves out", () => {
         reason: 'the playground can\'t load font files yet. Use the Google Fonts family instead: @font "Inter" 400;',
       },
       { name: 'huge.pathogen', reason: 'larger than 1 MB, the most a .pathogen file can be.' },
-      { name: 'out/main.svg', reason: 'workspaces hold .pathogen files for now; data files come later.' },
+      // .svg isn't a data file (note 76); step 8 gives it the docs' reason.
+      { name: 'out/main.svg', reason: 'workspaces hold .pathogen files for now.' },
     ]);
     expect(Object.keys(plan.files).sort()).toEqual([...GEARS_FILES].sort());
     serverAccepts(plan);

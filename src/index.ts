@@ -115,6 +115,7 @@ export {
   entryForText as workspaceFileEntry,
   fileKind as workspaceFileKind,
   isJustMain as isJustMainWorkspace,
+  KINDS_HELD as WORKSPACE_KINDS_HELD,
   LIMITS as WORKSPACE_LIMITS,
   MAIN_FILE as WORKSPACE_MAIN_FILE,
   nameProblem as workspaceNameProblem,

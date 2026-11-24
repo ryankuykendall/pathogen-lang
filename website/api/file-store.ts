@@ -32,6 +32,22 @@ export async function putText(env: Env, workspaceId: string, text: string): Prom
   return entry;
 }
 
+/** At most this many texts are written at once by putTexts. */
+const PUT_CONCURRENCY = 3;
+
+/**
+ * Store several texts, three at a time: a save's new texts can be 24 MB, and
+ * each write encodes its text again, so writing them all at once would hold
+ * every encoding together (phase 3a step 5, note 80).
+ */
+export async function putTexts(env: Env, workspaceId: string, texts: Iterable<string>): Promise<void> {
+  const queue = [...texts];
+  const workers = Array.from({ length: Math.min(PUT_CONCURRENCY, queue.length) }, async () => {
+    for (let text = queue.shift(); text !== undefined; text = queue.shift()) await putText(env, workspaceId, text);
+  });
+  await Promise.all(workers);
+}
+
 /** The texts with these hashes, one read each (duplicates read once). A missing one is an error naming it. */
 export async function readTexts(env: Env, workspaceId: string, hashes: Iterable<string>): Promise<Map<string, string>> {
   const unique = [...new Set(hashes)];

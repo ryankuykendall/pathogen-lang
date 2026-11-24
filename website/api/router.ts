@@ -86,8 +86,9 @@ import {
   slugify,
   writeThumbMeta,
 } from './utils.js';
-import { deletePrefix, deleteWorkspaceFiles, fileKey } from './file-store.js';
-import { readStoredFiles } from './workspace-files.js';
+import { deletePrefix, deleteWorkspaceFiles, fileKey, putText } from './file-store.js';
+import { readCapped, TOO_LARGE } from './request-body.js';
+import { LIMITS, readStoredFiles } from './workspace-files.js';
 import {
   copyStoredFiles,
   filesFromBody,
@@ -96,9 +97,12 @@ import {
   mainText,
   patchWorkspaceRecord,
   readWorkspaceRecord,
+  SAVE_BODY_BYTES,
   setFiles,
   storedFilesOf,
 } from './workspace-store.js';
+
+const SAVE_BODY_MB = SAVE_BODY_BYTES / (1024 * 1024);
 
 /** A record as responses show it: never the legacy `code` field (the files say it), and today's hash. */
 function withoutLegacyCode(workspace: Workspace, hash: string): Omit<Workspace, 'code'> {
@@ -465,7 +469,14 @@ export const apiHandlers: Record<string, (request: Request, env: Env, ...args: s
     if (!userId) return errorResponse('User ID required', 401);
 
     try {
-      const body = (await request.json()) as Record<string, unknown>;
+      const read = await readCapped(request, SAVE_BODY_BYTES, (r) => r.json());
+      if (read === TOO_LARGE) {
+        return errorResponse(
+          `A new workspace can start with at most ${SAVE_BODY_MB} MB. Create it with less, then send larger files one at a time with PUT /workspace/:id/file and save them by their sha256.`,
+          413,
+        );
+      }
+      const body = read as Record<string, unknown>;
       const { name, description, isPublic, preferences } = body as {
         name?: string;
         description?: string;
@@ -613,7 +624,14 @@ export const apiHandlers: Record<string, (request: Request, env: Env, ...args: s
       let workspace: Workspace = JSON.parse(wsJson);
       if (workspace.userId !== userId) return errorResponse('Access denied', 403);
 
-      const body = (await request.json()) as Record<string, unknown>;
+      const read = await readCapped(request, SAVE_BODY_BYTES, (r) => r.json());
+      if (read === TOO_LARGE) {
+        return errorResponse(
+          `A save can send at most ${SAVE_BODY_MB} MB. Send larger files one at a time with PUT /workspace/:id/file, then save them by their sha256.`,
+          413,
+        );
+      }
+      const body = read as Record<string, unknown>;
       const { name, description, isPublic, preferences, baseRev } = body as {
         name?: string;
         description?: string;
@@ -896,12 +914,45 @@ export const apiHandlers: Record<string, (request: Request, env: Env, ...args: s
     }
   },
 
+  // PUT /workspace/:id/file — store one file's text, the raw body, for a save
+  // to name by its hash (phase 3a step 5). A save sends every new text in one
+  // JSON body, and a workspace can hold 50 MB: an upload of large data files
+  // sends them here one at a time instead, so no request holds more than one
+  // file (5 MB, the most a data file can be), read under that cap. Owner
+  // only. Answers the file's `{ sha256, size }`. Nothing names it until a
+  // save does; a file no save names stays stored, as an old version of a
+  // saved file does (note 48 §1 planned a sweep, not written yet; note 80).
+  async putWorkspaceFile(request: Request, env: Env, id: string): Promise<Response> {
+    const userId = await getEffectiveUserId(request, env);
+    if (!userId) return errorResponse('User ID required', 401);
+    try {
+      const workspace = await readWorkspaceRecord(env, id);
+      if (!workspace) return errorResponse('Workspace not found', 404);
+      if (workspace.userId !== userId) return errorResponse('Access denied', 403);
+      const limit = LIMITS.fileBytes.data;
+      const read = await readCapped(request, limit, (r) => r.arrayBuffer());
+      if (read === TOO_LARGE) return errorResponse(`A file can be at most ${limit / (1024 * 1024)} MB.`, 413);
+      const bytes = new Uint8Array(read);
+      let text: string;
+      try {
+        text = new TextDecoder('utf-8', { fatal: true }).decode(bytes);
+      } catch {
+        return errorResponse("The file isn't UTF-8 text.", 400);
+      }
+      return jsonResponse(await putText(env, id, text), 201);
+    } catch (err) {
+      return errorResponse('Failed to store file: ' + (err as Error).message, 500);
+    }
+  },
+
   // GET /workspace/:id/file/:sha256 — one of the workspace's files, by its
-  // hash (note 48 §2). The owner, anyone for a public workspace, and an
-  // admin may read it. Others get 403; a hash the workspace doesn't name is
-  // a 404, except for an admin, who may read a submission's or an
-  // approval's files after the live workspace moved on. Content-addressed
-  // bytes never change, so the browser may keep them for good.
+  // hash (note 48 §2). The owner and an admin may read it; others get 403.
+  // A hash the live workspace doesn't name is a 404, except for an admin,
+  // who may read a submission's or an approval's files after the live
+  // workspace moved on. Visitors read an approval's files through
+  // /approval-source/:id/file/:sha256, and the owner a snapshot's through
+  // /snapshot/:sid/file/:sha256. Content-addressed bytes never change, so the
+  // browser may keep them for good.
   async getWorkspaceFile(request: Request, env: Env, id: string, sha256: string): Promise<Response> {
     try {
       if (!/^[0-9a-f]{64}$/.test(sha256)) return errorResponse('File not found', 404);
@@ -1201,6 +1252,40 @@ export const apiHandlers: Record<string, (request: Request, env: Env, ...args: s
       );
     } catch (err) {
       return errorResponse('Failed to get approval source: ' + (err as Error).message, 500);
+    }
+  },
+
+  // GET /approval-source/:id/file/:sha256 — one of an approved workspace's
+  // files by its hash, for anyone: a data file /approval-source/:id sent
+  // `deferred` (phase 3a step 5). Guarded the same way, and the hash must be
+  // one the APPROVAL names, never a live file waiting for review. The same
+  // short cache, so an unpublish or a flag takes effect quickly.
+  async getApprovalSourceFile(_request: Request, env: Env, id: string, sha256: string): Promise<Response> {
+    try {
+      if (!/^[0-9a-f]{64}$/.test(sha256)) return errorResponse('File not found', 404);
+      const wsJson = await env.WORKSPACES.get(`workspace:${id}`);
+      if (!wsJson) return errorResponse('Workspace not found', 404);
+      const workspace: Workspace & { flagged?: boolean } = JSON.parse(wsJson);
+      if (!workspace.isPublic || workspace.flagged) {
+        return errorResponse('Workspace not available', 404);
+      }
+      const approval = await readApproval(env, id);
+      if (!approval) return errorResponse('No approval record', 404);
+      const { manifest } = await readStoredFiles(approval, approval.codeHash);
+      if (!Object.values(manifest.files).some((f) => f.sha256 === sha256)) {
+        return errorResponse('File not found', 404);
+      }
+      const object = await env.THUMBNAILS.get(fileKey(id, sha256));
+      if (!object) return errorResponse('File not found', 404);
+      return new Response(object.body, {
+        headers: {
+          'Content-Type': 'text/plain; charset=utf-8',
+          'Cache-Control': 'public, s-maxage=60, max-age=30',
+          'X-Content-Type-Options': 'nosniff',
+        },
+      });
+    } catch (err) {
+      return errorResponse('Failed to read file: ' + (err as Error).message, 500);
     }
   },
 
@@ -2301,6 +2386,9 @@ export async function handleApiRequest(request: Request, env: Env, apiPath: stri
   const fileMatch = apiPath.match(/^\/workspace\/([^/]+)\/file\/([^/]+)$/);
   if (fileMatch && method === 'GET') return apiHandlers.getWorkspaceFile(request, env, fileMatch[1], fileMatch[2]);
 
+  const filePutMatch = apiPath.match(/^\/workspace\/([^/]+)\/file$/);
+  if (filePutMatch && method === 'PUT') return apiHandlers.putWorkspaceFile(request, env, filePutMatch[1]);
+
   const copyMatch = apiPath.match(/^\/workspace\/([^/]+)\/copy$/);
   if (copyMatch && method === 'POST') return apiHandlers.copyWorkspace(request, env, copyMatch[1]);
 
@@ -2339,6 +2427,10 @@ export async function handleApiRequest(request: Request, env: Env, apiPath: stri
   const approvalSourceMatch = apiPath.match(/^\/approval-source\/([^/]+)$/);
   if (approvalSourceMatch && method === 'GET') {
     return apiHandlers.getApprovalSource(request, env, approvalSourceMatch[1]);
+  }
+  const approvalFileMatch = apiPath.match(/^\/approval-source\/([^/]+)\/file\/([^/]+)$/);
+  if (approvalFileMatch && method === 'GET') {
+    return apiHandlers.getApprovalSourceFile(request, env, approvalFileMatch[1], approvalFileMatch[2]);
   }
 
   const approvalCardMatch = apiPath.match(/^\/approval-card\/([^/]+)\/([^/]+)$/);

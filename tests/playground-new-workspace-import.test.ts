@@ -143,7 +143,8 @@ describe('Or import a project (2g)', () => {
     );
     expect(text(root.querySelector('.left-out .head'))).toBe('Not added:');
     expect([...root.querySelectorAll('.left-out li')].map(text)).toEqual([
-      'notes.txt: workspaces hold .pathogen files for now; data files come later.',
+      // .txt waits for a later phase (note 76); step 8 gives it the docs' reason.
+      'notes.txt: workspaces hold .pathogen files for now.',
     ]);
     expect(root.querySelector<HTMLInputElement>('[name="name"]')!.value).toBe('Gear-studies');
     expect(root.querySelector<HTMLButtonElement>('.primary-btn')!.disabled).toBe(false);

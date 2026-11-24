@@ -30,7 +30,7 @@ import type { Env, Workspace } from './types.js';
 import { errorResponse, generateNanoId, jsonResponse, slugify } from './utils.js';
 import { isJustMain, MAIN_FILE } from './workspace-files.js';
 import type { StoredFiles, WorkspaceManifest } from './workspace-files.js';
-import { readTexts } from './file-store.js';
+import { fileKey, readTexts } from './file-store.js';
 import { copyStoredFiles, filesFromBody, filesToShow, filesWithText, setFiles, storedFilesOf } from './workspace-store.js';
 
 export const SNAPSHOT_LIMITS = {
@@ -741,6 +741,31 @@ export const snapshotHandlers = {
     });
   },
 
+  // GET /snapshot/:sid/file/:sha256 — one of the snapshot's files by its
+  // hash, for its owner: a data file /snapshot/:sid/files sent `deferred`
+  // (phase 3a step 5). The hash must be one the SNAPSHOT names, which the
+  // live workspace may no longer name. Its bytes never change.
+  async getFileByHash(request: Request, env: Env, snapshotId: string, sha256: string): Promise<Response> {
+    if (!/^[0-9a-f]{64}$/.test(sha256)) return errorResponse('File not found', 404);
+    const found = await readOwnedSnapshot(request, env, snapshotId);
+    if ('error' in found) return found.error;
+    return guardedRead(snapshotId, async () => {
+      const files = await readSnapshotFiles(env, found.row.workspace_id, snapshotId);
+      if (!files || !Object.values(files.manifest.files).some((f) => f.sha256 === sha256)) {
+        return errorResponse('File not found', 404);
+      }
+      const object = await env.THUMBNAILS.get(fileKey(found.row.workspace_id, sha256));
+      if (!object) return errorResponse('File not found', 404);
+      return new Response(object.body, {
+        headers: {
+          'Content-Type': 'text/plain; charset=utf-8',
+          'Cache-Control': 'private, max-age=31536000, immutable',
+          'X-Content-Type-Options': 'nosniff',
+        },
+      });
+    });
+  },
+
   // PUT /snapshot/:sid — { name?, note? }.
   async update(request: Request, env: Env, snapshotId: string): Promise<Response> {
     const found = await readOwnedSnapshot(request, env, snapshotId);
@@ -852,6 +877,9 @@ export async function routeSnapshotRequest(request: Request, env: Env, apiPath: 
 
   const filesMatch = apiPath.match(/^\/snapshot\/([^/]+)\/files$/);
   if (filesMatch && method === 'GET') return snapshotHandlers.getFiles(request, env, filesMatch[1]);
+
+  const byHashMatch = apiPath.match(/^\/snapshot\/([^/]+)\/file\/([^/]+)$/);
+  if (byHashMatch && method === 'GET') return snapshotHandlers.getFileByHash(request, env, byHashMatch[1], byHashMatch[2]);
 
   const startMatch = apiPath.match(/^\/snapshot\/([^/]+)\/workspace$/);
   if (startMatch && method === 'POST') return snapshotHandlers.startWorkspace(request, env, startMatch[1]);

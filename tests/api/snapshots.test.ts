@@ -608,6 +608,38 @@ describe.skipIf(!sqlite)('snapshots API', () => {
       return form;
     }
 
+    it('a data file it names reads by its hash, after the live workspace dropped it (phase 3a step 5)', async () => {
+      const DOTS = '[{ "x": 1 }, { "x": 2 }]';
+      const save = async (files: Record<string, unknown>): Promise<Response> =>
+        call(ctx, 'PUT', `/workspace/${ws}`, {
+          cookie: alice,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ files }),
+        });
+      expect((await save({ 'main.pathogen': { text: CODE }, 'data/dots.json': { text: DOTS } })).status).toBe(200);
+      const dots = await entryForText(DOTS);
+      const res = await postSnapshot(
+        ctx,
+        alice,
+        ws,
+        filesForm({ files: { 'main.pathogen': { text: CODE }, 'data/dots.json': { sha256: dots.sha256 } } }),
+      );
+      expect(res.status).toBe(201);
+      const { snapshot } = (await res.json()) as SnapshotBody;
+      expect((await save({ 'main.pathogen': { text: CODE } })).status).toBe(200);
+
+      // The live workspace no longer names it, so its own route doesn't read it.
+      expect((await call(ctx, 'GET', `/workspace/${ws}/file/${dots.sha256}`, { cookie: alice })).status).toBe(404);
+      const read = await call(ctx, 'GET', `/snapshot/${snapshot.id}/file/${dots.sha256}`, { cookie: alice });
+      expect([read.status, await read.text()]).toEqual([200, DOTS]);
+
+      const unnamed = (await entryForText('[]')).sha256;
+      expect((await call(ctx, 'GET', `/snapshot/${snapshot.id}/file/${unnamed}`, { cookie: alice })).status).toBe(404);
+      const bob = signIn(ctx, 'bob');
+      const stranger = await call(ctx, 'GET', `/snapshot/${snapshot.id}/file/${dots.sha256}`, { cookie: bob });
+      expect(stranger.status).toBe(404);
+    });
+
     it('takes `files` as a save sends them, naming stored files by hash, and reads back through /files', async () => {
       // The workspace already stores gears.pathogen; main.pathogen is unsaved text.
       const saved = await call(ctx, 'PUT', `/workspace/${ws}`, {

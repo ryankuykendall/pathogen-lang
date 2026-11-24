@@ -93,7 +93,8 @@ describe('sortUpload: where each file goes', () => {
     ]);
     expect(sorted.candidates.map((c) => c.path)).toEqual(['springs.pathogen']);
     expect(sorted.leftOut).toEqual([
-      { name: 'cities.csv', reason: 'workspaces hold .pathogen files for now; data files come later.' },
+      // .csv waits for a later phase (note 76); step 8 gives these the docs' reason.
+      { name: 'cities.csv', reason: 'workspaces hold .pathogen files for now.' },
       {
         name: 'Raleway-Bold.ttf',
         reason: 'the playground can\'t load font files yet. Use the Google Fonts family instead: @font "Raleway" 700;',

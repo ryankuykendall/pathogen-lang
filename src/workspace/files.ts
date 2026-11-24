@@ -3,7 +3,11 @@
 // canonical hash. Pure: no bindings, no Node APIs (Web Crypto and
 // TextEncoder only), so the API Worker (website/api/workspace-files.ts
 // re-exports this file) and the playground (through the browser bundle)
-// share one copy and can't drift apart (note 51, piece 1).
+// share one copy and can't drift apart (note 51, piece 1). Its imports
+// import nothing in turn, so the Worker's bundle stays small.
+
+import { DATA_EXTENSIONS } from '../data/data-extensions';
+import { megabytes } from '../module-messages';
 
 export const MAIN_FILE = 'main.pathogen';
 /** Reserved in every folder: in the CLI, a pathogen.json makes its folder a project of its own. */
@@ -11,21 +15,25 @@ export const PROJECT_FILE = 'pathogen.json';
 
 export type FileKind = 'pathogen' | 'data' | 'font';
 
+/**
+ * Data files are the ones a program can import (src/data/data-extensions.ts:
+ * JSON, GeoJSON, TopoJSON, FOLD; CSV and TSV join in phase 3b). Fonts are
+ * known so the limits can name them, but no workspace holds one yet.
+ */
 const KIND_BY_EXTENSION: Record<string, FileKind> = {
   '.pathogen': 'pathogen',
-  '.json': 'data',
-  '.csv': 'data',
-  '.tsv': 'data',
-  '.txt': 'data',
-  '.svg': 'data',
+  ...Object.fromEntries(DATA_EXTENSIONS.map((extension) => [extension, 'data'])),
   '.ttf': 'font',
   '.otf': 'font',
   '.woff': 'font',
   '.woff2': 'font',
 };
 
-/** The kinds a workspace may hold today. Data files and fonts come after phase 2. */
-export const ALLOWED_KINDS: readonly FileKind[] = ['pathogen'];
+/** The kinds a workspace may hold (docs/workspace-files.md "Data files"). Fonts come later. */
+export const ALLOWED_KINDS: readonly FileKind[] = ['pathogen', 'data'];
+
+/** Why a file of another kind can't be in a workspace (an upload says the same: playground/services/uploads.ts). */
+export const KINDS_HELD = `a workspace holds .pathogen files and data files (${DATA_EXTENSIONS.slice(0, -1).join(', ')} and ${DATA_EXTENSIONS[DATA_EXTENSIONS.length - 1]}).`;
 
 export const LIMITS = {
   /**
@@ -100,9 +108,7 @@ export function pathProblem(path: string, kind: 'file' | 'folder'): string | nul
   if (folders > LIMITS.folderDepth) return `"${path}" is more than ${LIMITS.folderDepth} folders deep.`;
   if (kind === 'file') {
     const fileType = fileKind(path);
-    if (fileType === null || !ALLOWED_KINDS.includes(fileType)) {
-      return `"${path}": a workspace holds .pathogen files for now.`;
-    }
+    if (fileType === null || !ALLOWED_KINDS.includes(fileType)) return `"${path}": ${KINDS_HELD}`;
   }
   return null;
 }
@@ -222,11 +228,6 @@ export function checkManifest(input: unknown): Checked<WorkspaceManifest> {
   }
 
   return { ok: true, value: { files, folders, entryPoints } };
-}
-
-function megabytes(bytes: number): string {
-  const mb = bytes / (1024 * 1024);
-  return `${Number.isInteger(mb) ? mb : mb.toFixed(1)} MB`;
 }
 
 /** A workspace that is just main.pathogen, as every workspace was before phase 2. */

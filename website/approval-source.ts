@@ -10,12 +10,15 @@
 import type { WorkspaceApproval } from './api/types.js';
 
 /**
- * A file with its text, or, marked `unreadable`, one whose bytes couldn't be
- * read: the others still show (note 59, requirement 9).
+ * A file with its text; or, marked `unreadable`, one whose bytes couldn't be
+ * read: the others still show (note 59, requirement 9); or, marked
+ * `deferred`, a data file sent without its text, which a reader asks
+ * /approval-source/:id/file/:sha256 for (phase 3a step 5).
  */
 export type ApprovalSourceFile =
-  | { sha256?: string; size?: number; text: string; unreadable?: undefined }
-  | { sha256?: string; size?: number; text?: undefined; unreadable: true };
+  | { sha256?: string; size?: number; text: string; unreadable?: undefined; deferred?: undefined }
+  | { sha256?: string; size?: number; text?: undefined; unreadable: true; deferred?: undefined }
+  | { sha256: string; size: number; text?: undefined; unreadable?: undefined; deferred: true };
 
 export interface ApprovalSource {
   files: Record<string, ApprovalSourceFile>;
@@ -34,7 +37,13 @@ function isApprovalSource(value: unknown): value is ApprovalSource {
   return (
     isRecord(value) &&
     isRecord(value.files) &&
-    Object.values(value.files).every((f) => isRecord(f) && (typeof f.text === 'string' || f.unreadable === true)) &&
+    Object.values(value.files).every(
+      (f) =>
+        isRecord(f) &&
+        (typeof f.text === 'string' ||
+          f.unreadable === true ||
+          (f.deferred === true && typeof f.sha256 === 'string')),
+    ) &&
     Array.isArray(value.entryPoints) &&
     Array.isArray(value.folders)
   );
