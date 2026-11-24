@@ -54,6 +54,14 @@ workspace in the ⋮ menu (the name is the owner's: "Export implies a transforma
 "A .zip of every file"); a new workspace from a project folder or a .zip on the New Workspace page;
 Export, Copy SVG and Snapshot name the program they take. The import stops when pathogen.json can't
 be read (the CLI's parse checks), and drops an entryPoints entry it can't use (note 69's rule).
+Phase 3a (2026-11-23, note 72; DRAFT, awaiting the mockup round and approval): data files (JSON and
+text) in a workspace: the Data files section, uploads, New data file, the limits (5 MB a data file,
+50 MB a workspace, data files count toward the 20), errors, Copy Debug Info, downloads and imports.
+Revised 2026-11-24 (note 74, the first mockup round's answers): JSON only, text (.txt) on hold;
+New data file… opens a dialog for the name and the type, and a new file starts as {}; a refused
+save says why in the error panel, not in the breadcrumb or a toast. The dialog made lighter
+2026-11-24 (note 75, mockups v3): one field, the name and the extension as a dropdown after it.
+Every refused save, a .pathogen file over 1 MB too, says why in the error panel (note 75).
 -->
 
 
@@ -61,7 +69,7 @@ be read (the CLI's parse checks), and drops an entryPoints entry it can't use (n
 
 > **Prerequisites:** This page assumes you know what `import`, `export` and `module;` do ([Modules](#modules-importing)), and what a project folder and its `pathogen.json` are ([Projects and Files](#projects-the-project-folder)).
 
-A workspace can hold several files: programs that draw, and modules they import. It works like a project folder in the CLI or VS Code, with the same `import` paths and the same `pathogen.json`, so a workspace and a folder on your computer have the same shape.
+A workspace can hold several files: programs that draw, modules they import, and data files they read. It works like a project folder in the CLI or VS Code, with the same `import` paths and the same `pathogen.json`, so a workspace and a folder on your computer have the same shape.
 
 Three parts work together. The **tree** lists the files. The **editor** shows the file you open, in tabs. The **preview** shows one program; with several, the program chip beside its zoom controls chooses which. So you can edit a module while the preview keeps showing a program that uses it, redrawn as you type.
 
@@ -78,9 +86,9 @@ A new workspace holds one program, `main.pathogen`, and `pathogen.json`, a proje
 ## The file tree and tabs
 
 - **Files**, beside Console in the breadcrumb, shows or hides the tree. Folders come first, then files.
-- The tree shows each file's full name. Programs and modules have different icons.
+- The tree shows each file's full name. Programs, modules and [data files](#workspace-files-data-files) have different icons.
 - Each file and folder has its own menu: its ⋮ (shown when you hover the row), a right-click, or the menu key. The workspace's own menu is the ⋮ at the right end of the breadcrumb.
-- Click a file to open it in a tab. Tab labels leave out `.pathogen`. When two open files share a name, each tab adds its folder: `gears · parts` and `gears · demos`.
+- Click a file to open it in a tab. Tab labels leave out `.pathogen`; a data file's tab keeps its extension, as `gears.json`. When two open files share a name, each tab adds its folder: `gears · parts` and `gears · demos`.
 - A tab's **×** closes it, and so does a middle-click. You can close every tab. Opening the workspace again opens [the main](#workspace-files-the-main).
 - With no tab open, the editor offers to open the main, or you can click any file in the tree. In a workspace with no programs, it offers **New program** instead.
 - The book at the right end of the tabs shows or hides the docs.
@@ -92,7 +100,22 @@ A new workspace holds one program, `main.pathogen`, and `pathogen.json`, a proje
 ## Programs and modules
 
 - A file that starts with `module;` is a **module**. It holds fns, consts and enums for other files to import, and it never draws (see [Modules](#modules-exporting)).
-- Every other file is a **program**. Any program can be shown in the preview.
+- Every other `.pathogen` file is a **program**. Any program can be shown in the preview.
+
+## Data files
+
+A workspace can hold data files beside its programs: JSON files (`.json`, `.geojson`, `.topojson`, `.fold`). A program imports one by a name, as in the CLI: `import gears from "./data/gears.json";` ([Data Imports](#data-import-data-imports)).
+
+- **A data file opens in the editor,** where you edit it as text. JSON is highlighted, and a mistake in it is underlined as you type, with the message the import would give.
+- **Editing a data file redraws** every program that imports it, as editing a module does, and the program list's dots mark those programs. While the file has a mistake, those programs show the error ([Errors in other files](#workspace-files-errors-in-other-files)) and the preview keeps its last drawing.
+- **New data file…**, in the **+** menu and in a folder's menu, opens a dialog with one field: the file's name, and after it the extension, `.json` unless you choose another.
+  - Type a name, such as `trips`. Adding to `data/`, the line under the field reads `Adds data/trips.json`. A slash makes folders, as for a program.
+  - Click the extension to choose another: `.json`, `.geojson`, `.topojson` or `.fold`. The list says what each one holds, such as "GeoJSON: places and shapes on a map". Typing `trips.geojson` in the name chooses `.geojson` too.
+  - If the name is taken, ends in an extension that isn't one of the four, breaks the [rules for names](#workspace-files-adding-files-and-folders), or the workspace already holds 20 files, the dialog says why, as in `data/ already has trips.json.`, and Create is off.
+  - **Create** (or Enter) makes the file, starting as `{}`, and opens it. Esc cancels.
+- **Upload files…** and dragging onto the tree add data files as they add programs ([Uploading files](#workspace-files-uploading-files)).
+- **Format Document** is off while a data file is open: it formats Pathogen code.
+- **A data file can be up to 5 MB,** and a workspace up to 50 MB and 20 files, data files included. If an edit would take the file or the workspace past a limit, it isn't saved: the save status reads "Not saved", and the error panel at the bottom of the editor says why. Your edits stay in the editor ([Limits](#workspace-files-limits)).
 
 ## The main
 
@@ -157,27 +180,28 @@ Every workspace has a `pathogen.json` at the top: the same project file that the
 
 ## Adding files and folders
 
-The **+** in the Files header opens a menu: New program, New module, New folder, Upload files… and Upload folder…. Its first line says where new files go, such as `Add to parts/`: the folder you last selected in the tree (for a file, its folder), else the folder of the file you're editing, else the top of the workspace. A folder's own menu has the same items, for that folder.
+The **+** in the Files header opens a menu: New program, New module, New data file…, New folder, Upload files… and Upload folder…. Its first line says where new files go, such as `Add to parts/`: the folder you last selected in the tree (for a file, its folder), else the folder of the file you're editing, else the top of the workspace. A folder's own menu has the same items, for that folder.
 
 - **New program** and **New module** put a name field in the tree. Type a name; `.pathogen` is added for you. A slash makes folders: `shapes/star` creates `shapes/` too. Enter creates the file; Esc cancels. If the name is taken, the field says so, and Enter does nothing.
+- **New data file…** opens a dialog instead, where you choose the extension too ([Data files](#workspace-files-data-files)).
 - A new module starts with `module;` and a comment. A new program starts like a new workspace.
 - The new file opens in a tab. The preview doesn't change. A new program goes at the end of the program list.
 - In a workspace with no programs, a new program is the main, and the preview shows it.
 - **New folder** makes an empty folder. It stays, empty, until you put files in it or delete it.
-- **Names** use letters `a`–`z` and `A`–`Z`, digits, `-`, `_` and `.`, and start with a letter or a digit: `gear-train_2.pathogen` works, `my gear.pathogen` doesn't. A name can be up to 100 characters, and a path up to 255. Names Windows keeps for itself, such as `con`, `aux` and `nul`, can't be used, with or without `.pathogen`.
+- **Names** use letters `a`–`z` and `A`–`Z`, digits, `-`, `_` and `.`, and start with a letter or a digit: `gear-train_2.pathogen` works, `my gear.pathogen` doesn't. A name can be up to 100 characters, and a path up to 255. Names Windows keeps for itself, such as `con`, `aux` and `nul`, can't be used, with or without an extension: `con.pathogen` and `con.json` can't be used either.
 - Names in a folder must differ by more than letter case: `Gears.pathogen` and `gears.pathogen` can't both exist, because they would be the same file in a folder on macOS or Windows. The name `pathogen.json` is reserved in every folder: in the CLI, a `pathogen.json` inside a folder makes that folder a project of its own, and its files' `../` imports stop working.
 
 ## Uploading files
 
-- **Upload files…** opens your system's file picker for `.pathogen` files. **Upload folder…** brings in the folder you pick, with the folders inside it: picking `shapes` brings `shapes/round/dot.pathogen` in as `shapes/round/dot.pathogen`. Browsers can pick several files or one folder, but not both at once, so there are two items.
+- **Upload files…** opens your system's file picker for `.pathogen` and [data files](#workspace-files-data-files). **Upload folder…** brings in the folder you pick, with the folders inside it: picking `shapes` brings `shapes/round/dot.pathogen` in as `shapes/round/dot.pathogen`. Browsers can pick several files or one folder, but not both at once, so there are two items.
 - You can also drag files and folders from your computer onto the tree: onto a folder to add them there, onto a file to add them to its folder, or onto empty space to add them at the top. The folder they'll go into lights up (the whole tree, for the top), and a label by the pointer counts what you're dragging, a folder as one item: `Drop 2 items to add to parts/`.
 - A dropped folder keeps its empty folders. Upload folder… keeps only the folders that hold files, because the browser hands over only files.
 - A folder that differs from one already there only in letter case joins it: uploading `Parts/` where `parts/` is adds its files to `parts/`. A file that differs only in case counts as a taken name.
-- **Only `.pathogen` files** can be added for now. Anything else is left out, and the message says why.
+- **`.pathogen` files and data files** (`.json`, `.geojson`, `.topojson` and `.fold`) can be added. Anything else is left out, and the message says why: `profile.txt: a workspace holds .pathogen files and data files (.json, .geojson, .topojson and .fold).`
   - Font files can't be added yet. Use a Google Fonts family instead, such as `@font "Raleway" 700;` (see [`@font`](#path-blocks-font-directive)). An `@font` with a file path, such as `@font "./fonts/Raleway-Bold.ttf";` in a project from the CLI or VS Code, gets a warning that suggests the family, as it does in a workspace today.
   - A `pathogen.json` is left out: the playground writes its own.
 - **A project folder from the CLI or VS Code** can come in whole as a new workspace of its own, which keeps its program list and its `/` imports ([A workspace from a project](#workspace-files-a-workspace-from-a-project)). Uploaded into a workspace, it arrives as a folder with its own name. Its `./` and `../` imports still work, but imports that start with `/` now start at the top of the workspace. Its `pathogen.json` is left out, so its programs join the end of the program list; use **Set as main** for the one you want as the main. To keep `/` imports working in this workspace, drag what's inside the project folder onto empty space in the tree instead.
-- A `.pathogen` file over 1 MB, or one that isn't text, is left out, and the message says why.
+- A `.pathogen` file over 1 MB, a data file over 5 MB, or a file that isn't UTF-8 text, is left out, and the message says why, under "Not added": `trips.json: 6.2 MB, more than the 5 MB a data file can be in a workspace.` An upload that would take the workspace's files past 50 MB in all adds nothing.
 - Files and folders whose names start with a dot, such as `.DS_Store`, are left out without a mention.
 - An upload that would take the workspace past 20 files adds nothing ([Limits](#workspace-files-limits)). Replaced files don't count.
 - A file or folder name that breaks the [name rules](#workspace-files-adding-files-and-folders) is changed to fit them: each run of spaces or other characters they don't allow becomes one dash, and letters lose their accents. `my gear.pathogen` arrives as `my-gear.pathogen`, and `über.pathogen` as `uber.pathogen`. A name Windows keeps for itself gets `-1`: `con.pathogen` arrives as `con-1.pathogen`.
@@ -187,7 +211,7 @@ The **+** in the Files header opens a menu: New program, New module, New folder,
 
 ## Renaming, moving and deleting
 
-- **Rename…** is in each file's and each folder's menu. It changes the name only: not the folder it's in, and not the `.pathogen` at the end.
+- **Rename…** is in each file's and each folder's menu. It changes the name only: not the folder it's in, and not the `.pathogen` or a data file's extension at the end.
 - **Move to…**, in the same menus, moves a file or a folder to another folder or to the top of the workspace.
 - Before you confirm, **Rename…** and **Move to…** say what will change, such as `Updates the imports in 2 files` or `Moving it to demos/ updates the imports in main.pathogen.`
 - You can also drag a file or a folder within the tree: onto a folder to move it there, onto a file to move it to that file's folder, or onto empty space to move it to the top. The folder it'll go into lights up (the whole tree, for the top), and a label says what the move changes: `Move to demos/ · updates the imports in 2 files`.
@@ -196,7 +220,7 @@ The **+** in the Files header opens a menu: New program, New module, New folder,
 - Moving a file also updates its own `./` and `../` import paths, so they still reach the same files.
 - Renaming or moving a folder moves everything in it, with the same updates.
 - After a rename or a move, a message names the files whose imports changed. Its **Undo** puts the names and the imports back together. The import paths a rename or a move changes aren't part of any file's own undo history, so undoing in a file never points an import back at a name that's gone.
-- **Delete…** asks before it deletes. A folder's Delete… deletes the folder and the files in it. The files that imported a deleted module show an error at their `import` line until you change them.
+- **Delete…** asks before it deletes. A folder's Delete… deletes the folder and the files in it. The files that imported a deleted module or data file show an error at their `import` line until you change them.
 - **Duplicate** makes a copy beside the file, named with a number as Keep both does: `gears-2.pathogen`. A copy of a program goes at the end of the program list.
 
 ## On a phone or a tablet
@@ -221,6 +245,7 @@ Line 5: assertion failed: a gear needs at least 3 teeth
   called from main.pathogen line 4
 ```
 
+- An error in a data file, such as a mistake in its JSON, sits under the data file's name in the same way, with an `imported from` line for each import that read it.
 - Click the file's name, `Line 5`, or a `called from` or `imported from` line to open that file at that line. The line is marked: where the error happened, or the call or import that led there.
 - In the console, a `log()` or a warning from another file starts with its place, such as `parts/gears.pathogen line 9:`. Click the place to open the file there.
 - A red dot in the tree marks the file where an error happened, and another marks the program that ran into it. That covers every program, not only the one the preview shows. Hover a dot to see where the program failed. A folded folder shows a dot when a file inside it has one.
@@ -232,14 +257,14 @@ Line 5: assertion failed: a gear needs at least 3 teeth
 - Which program the preview shows, and which file is open in the editor.
 - The errors, if there are any: each one's file and line, and each `called from` or `imported from` line. The first five come with the five lines on each side of where they happened, numbered as in the file.
 - Errors in other programs, one line each, as the program list words them. The first five come with the lines around where they failed.
-- The text of the program shown and of every file its imports reach. The file where the error happened comes first. Each file stops after 200 lines, and the files together after about 1,500, with "…N more lines" where one stops.
-- Every other file, by name, as a program or a module, with its number of lines but not its text.
+- The text of the program shown and of every file its imports reach. The file where the error happened comes first. Each file stops after 200 lines, and the files together after about 1,500, with "…N more lines" where one stops. A data file its imports reach comes with its size and its first 20 lines, unless the error is in it. Lines longer than 200 characters are cut, with "…" where they stop, so a data file written on one line doesn't fill the report.
+- Every other file, by name, but not its text: a program or a module with its number of lines, a data file with its size.
 - The layers and the canvas settings. The warnings and the `log()` output, each with its file and line. A program that stops at an error has no log output, in the console or the report.
 - A short note for the assistant, which points it to these docs.
 
 ## Snapshots, copies and publishing
 
-Each of these carries every file, the folders and `pathogen.json`'s list:
+Each of these carries every file, data files included, the folders and `pathogen.json`'s list:
 
 - **A snapshot** keeps every file as it was drawn, and which program drew it. On the snapshots page, its code opens on that program, beside the list of files ([The snapshots page](#snapshots-the-snapshots-page)).
 - **Start new workspace**, on a snapshot's page, makes a workspace of the snapshot's files. It opens on its main; if the snapshot drew another program, choose it with the chip.
@@ -257,6 +282,8 @@ Gear-studies/
   pathogen.json
   main.pathogen
   try-sizes.pathogen
+  data/
+    gears.json
   demos/
     train.pathogen
   parts/
@@ -272,7 +299,7 @@ Gear-studies/
 
 A new workspace can start from a project folder from the CLI or VS Code, or from a `.zip`, such as one Download workspace made. On the **New Workspace** page (**+ New Workspace** on your Workspaces page), under **Or import a project**, click **Choose folder…** or **Choose .zip…**, or drop a folder or a `.zip` there. On a touch screen, only **Choose .zip…** is offered, with no drop area.
 
-Before you create the workspace, the page lists what will come in: each program, with the main marked, then each module. The name is filled in from the folder or the `.zip`. **Create Workspace** makes the workspace, which opens on its main; **Choose another…** picks again.
+Before you create the workspace, the page lists what will come in: each program, with the main marked, then each module, then each data file. The name is filled in from the folder or the `.zip`. **Create Workspace** makes the workspace, which opens on its main; **Choose another…** picks again.
 
 - **The program list comes from the project's `pathogen.json`:** the main and the order of the programs. Programs its `entryPoints` doesn't list join the end, in order of their paths. Imports that start with `/` still start at the project's top, which is now the workspace's.
 - **Without a `pathogen.json`,** the workspace writes one, and the page shows it before you create the workspace. `main.pathogen` is the main, and the other programs follow in order of their paths (`demos/train.pathogen` before `sketch.pathogen`); without a `main.pathogen`, the first program in that order is the main. Use **Set as main** afterwards to choose another. A workspace you download later includes this file, so the CLI, which needs one to compile a folder, compiles it.
@@ -284,9 +311,9 @@ Before you create the workspace, the page lists what will come in: each program,
 
   For broken JSON, the explanation is your browser's own, so its wording varies. Fix the file, then choose the folder or the `.zip` again.
 - **An `entryPoints` entry the workspace can't use,** naming a file the project doesn't have, a module, or a file left out, is taken out of the list, and the page says so. If it was the first, the next program in the list is the main. An empty `entryPoints` counts as none, and a path listed twice counts once. If no entry is left, the main is chosen as it is without a `pathogen.json`.
-- **What's left out** is what [an upload](#workspace-files-uploading-files) leaves out: anything but `.pathogen` files, files over 1 MB or not text, and a `pathogen.json` below the project's top. The page lists each one and why, under "Not added". Names that start with a dot, such as `.git/` and `.DS_Store`, and the `__MACOSX` folder that macOS puts in a `.zip`, are left out without a mention.
+- **What's left out** is what [an upload](#workspace-files-uploading-files) leaves out: anything but `.pathogen` and data files, a `.pathogen` file over 1 MB, a data file over 5 MB, a file that isn't UTF-8 text, and a `pathogen.json` below the project's top. The page lists each one and why, under "Not added". Names that start with a dot, such as `.git/` and `.DS_Store`, and the `__MACOSX` folder that macOS puts in a `.zip`, are left out without a mention.
 - **A file or folder name that breaks the [name rules](#workspace-files-adding-files-and-folders)** is changed to fit, and the page lists each change. Unlike an upload, the imports and `entryPoints` entries that name it change to match, so the project still draws and keeps its main. If two names would then be the same, or differ only in letter case (as `Gears.pathogen` and `gears.pathogen` from a Linux computer do), the second in order of their paths gets a number, as **Keep both** gives one: `gears-2.pathogen`, with its imports following.
-- **A project of more than 20 `.pathogen` files,** not counting what's left out, adds nothing: a workspace holds 20 ([Limits](#workspace-files-limits)). To bring part of it in, import a folder that holds fewer.
+- **A project of more than 20 files,** `.pathogen` and data files together, or of more than 50 MB in all, not counting what's left out, adds nothing: a workspace holds 20 files and 50 MB ([Limits](#workspace-files-limits)). To bring part of it in, import a folder that holds less.
 - **Empty folders** come in from a `.zip` and from a dropped folder. **Choose folder…** brings only the folders that hold files, because the browser hands over only files.
 - A `.zip` can hold the project in one folder, as Download workspace makes it, or at its top.
 
@@ -295,9 +322,22 @@ Before you create the workspace, the page lists what will come in: each program,
 | | Limit |
 |---|---|
 | A `.pathogen` file | 1 MB |
-| Files in a workspace (`pathogen.json` doesn't count) | 20 |
+| A data file | 5 MB |
+| All the workspace's files together | 50 MB |
+| Files in a workspace, data files included (`pathogen.json` doesn't count) | 20 |
 | Folders inside folders | 8 deep |
 | A file or folder name | 100 characters |
 | A path | 255 characters |
 
-A save that would pass a limit is refused with a message that names it, before anything is lost. An upload leaves out files over 1 MB, more than 8 folders deep, or with a path over 255 characters, and adds nothing if it would take the workspace past 20 files. A [project imported](#workspace-files-a-workspace-from-a-project) as a new workspace leaves out the same files, and adds nothing if more than 20 `.pathogen` files are left.
+If an edit would take a file or the workspace past a limit, the playground doesn't save it, and nothing is lost. The save status in the breadcrumb reads "Not saved", and the error panel at the bottom of the editor says why, under the file's name, with any other errors:
+
+```text
+data/trips.json
+Not saved: 5.4 MB, more than the 5 MB a data file can be in a workspace. Your edits stay in the editor.
+```
+
+Both stay until the file saves. When it fits again, made smaller or with other files deleted to make room, it saves.
+
+An upload leaves out `.pathogen` files over 1 MB, data files over 5 MB, and files more than 8 folders deep or with a path over 255 characters. It adds nothing if it would take the workspace past 20 files or 50 MB. A [project imported](#workspace-files-a-workspace-from-a-project) as a new workspace leaves out the same files, and adds nothing if more than 20 files, or more than 50 MB, are left.
+
+The CLI and VS Code read data files up to 50 MB ([Data files](#cli-data-files)). A project with a data file over 5 MB, such as a 40 MB `trips.json`, compiles on your computer. When it comes into a workspace, that file is left out (listed under "Not added"), and the programs that import it stop at that import. To draw them here, make the file smaller (fewer rows or decimal places), or split it into files of 5 MB or less, within the workspace's 50 MB and 20 files.

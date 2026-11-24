@@ -133,11 +133,9 @@ describe('static rules: each message word for word, at its position', () => {
       'let shape = @{\n  export fn f() { return 1; }\n};',
       'Parse error at line 2, column 3: export must be at the top level of the file, not inside a function or block.',
     ],
-    [
-      'a default import',
-      'import gears from "./parts/gears.pathogen";',
-      'Parse error at line 1, column 1: import gears from "./parts/gears.pathogen" isn\'t supported: Pathogen has no default export. Import its names: import { … } from "./parts/gears.pathogen"; or import * as gears from "./parts/gears.pathogen";',
-    ],
+    // A default import parses since phase 3a (data imports); its path rules,
+    // "no default export" for a .pathogen path included, are in
+    // tests/data-import-syntax.test.ts.
     [
       'export let',
       'export let total = 3;',

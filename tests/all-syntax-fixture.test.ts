@@ -49,7 +49,7 @@ const GRAMMAR_KEYWORDS = [
  */
 const NODE_TYPE_EXCEPTIONS: Record<string, string> = {
   DefaultImport:
-    '`import gears from …` is always an error (Pathogen has no default export), so no fixture that compiles can show it; tests/modules-syntax.test.ts pins its message',
+    '`import gears from "./data/gears.json";` parses since phase 3a, but compiles only once data files are read (3a step 2), which adds one to the module fixtures and removes this entry',
 };
 
 const seenNodeTypes = new Set<string>();

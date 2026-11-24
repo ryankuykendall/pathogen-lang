@@ -309,15 +309,20 @@ describe('where the cursor is: word ends, quotes, paths, `as`', () => {
     }
   });
 
-  it('a file the AST builder rejects (a default import) still has its import paths', async () => {
+  it('a name without braces on a module: the loader says why, and its path leads nowhere until it is fixed', async () => {
+    // Since phase 3a the parser takes `import gears from …` (a data import);
+    // the path rules refuse it for a .pathogen path, at the path.
     const source = 'import gears from "./parts/gears.pathogen";\n';
-    const options = { modules: await graphFor(source) };
+    const { graph, errors } = await resolveModules(source, { host: memoryHost(FILES), entry: '/main.pathogen' });
+    expect(errors.map((e) => `${e.line}:${e.column} ${e.message}`)).toEqual([
+      '1:19 import gears from "./parts/gears.pathogen" isn\'t supported: Pathogen has no default export. Import its names: import { … } from "./parts/gears.pathogen"; or import * as gears from "./parts/gears.pathogen";',
+    ]);
+    const options = { modules: graph };
     const doc = new StringTextDocument(source);
+    // As for every path the loader refuses: it never reads the file, so the
+    // graph doesn't hold it. The underline says what to change.
     expect(getHoverInfo(doc, at(source, 0, 'parts'), options)).toBeNull();
-    expect(getDefinition(doc, at(source, 0, 'parts'), options)).toEqual({
-      file: '/parts/gears.pathogen',
-      range: FILE_START,
-    });
+    expect(getDefinition(doc, at(source, 0, 'parts'), options)).toBeNull();
   });
 
   it('`as` is not a name from another file', async () => {

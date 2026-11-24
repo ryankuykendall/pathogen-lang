@@ -132,7 +132,7 @@ export function importEditsForMoves(
       // A string not closed yet (`from "./pa` while typing) has no path to move.
       if (planned.to - planned.from < 2 || source[planned.to - 1] !== quote) continue;
       const written = planned.written;
-      if (importPathMistake(written) !== null) continue;
+      if (importPathMistake(written, planned.form, planned.name) !== null) continue;
       const resolved = resolveProjectPath(written, file);
       if (!resolved.ok) continue;
       const target = pathAfterMoves(resolved.path, moves);

@@ -129,6 +129,7 @@ export interface Exportable {
 
 // import { gear, Teeth as Kind } from "./parts/gears.pathogen";
 // import * as gears from "./parts/gears.pathogen";
+// import gears from "./data/gears.json";  (a data file: docs/data-import.md)
 export interface ImportDeclaration {
   type: 'ImportDeclaration';
   /**
@@ -141,10 +142,16 @@ export interface ImportDeclaration {
   sourceToken?: string;
   /** Where the path string starts (its opening quote). */
   sourceLoc?: SourceLocation;
-  /** Named imports, in order. Empty for a namespace import. */
+  /** Named imports, in order. Empty for a namespace import and a data import. */
   specifiers: ImportSpecifier[];
   /** `* as gears`: every export under one name. */
   namespace?: { local: string; loc?: SourceLocation };
+  /**
+   * `import gears from "…"`: a name for a data file's content. The path
+   * rules (src/host/load-modules.ts importPathMistake) refuse it for a
+   * `.pathogen` path, which has no default export.
+   */
+  defaultImport?: { local: string; loc?: SourceLocation };
   loc?: SourceLocation;
 }
 

@@ -244,7 +244,7 @@ log(str.length);  // 5
 
 ### `.empty()`
 
-Returns `1` (truthy) if the string has no characters, `0` (falsy) otherwise:
+Returns `true` if the string has no characters, `false` otherwise:
 
 ```
 let str = ``;
@@ -297,7 +297,7 @@ let result = str.prepend(`Hello `);  // "Hello World"
 
 ### `.includes(substring)`
 
-Returns `1` (truthy) if the string contains the given substring, `0` (falsy) otherwise:
+Returns `true` if the string contains the given substring, `false` otherwise:
 
 ```
 let str = `Hello World`;

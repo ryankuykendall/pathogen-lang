@@ -48,7 +48,11 @@ function declaredNames(node: Node): { kind: DeclKind; names: string[]; source?: 
   if (node.type === 'ImportDeclaration') {
     // An imported name is fixed like a const (docs/modules.md); its file names the error.
     const decl = node as unknown as ImportDeclaration;
-    const names = decl.namespace ? [decl.namespace.local] : decl.specifiers.map((s) => s.local);
+    const names = decl.namespace
+      ? [decl.namespace.local]
+      : decl.defaultImport
+        ? [decl.defaultImport.local]
+        : decl.specifiers.map((s) => s.local);
     return { kind: 'import', names, source: decl.source };
   }
   if (node.type !== 'LetDeclaration') return null;

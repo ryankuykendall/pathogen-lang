@@ -397,6 +397,7 @@ function formatStatement(stmt: Statement, depth: number, indent: string, prefix:
       // holding `"` or `\` keeps the quotes it was written with.
       const path = /["\\]/.test(stmt.source) && stmt.sourceToken ? stmt.sourceToken : `"${stmt.source}"`;
       if (stmt.namespace) return `${prefix}import * as ${stmt.namespace.local} from ${path};`;
+      if (stmt.defaultImport) return `${prefix}import ${stmt.defaultImport.local} from ${path};`;
       const names = stmt.specifiers.map((s) => (s.local === s.imported ? s.imported : `${s.imported} as ${s.local}`));
       const list = names.length > 0 ? `{ ${names.join(', ')} }` : '{}';
       return `${prefix}import ${list} from ${path};`;

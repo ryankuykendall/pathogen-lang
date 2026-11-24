@@ -90,6 +90,11 @@ export function unsavedFileImportError(written: string): string {
 export const INCOMPLETE_IMPORT_MESSAGE =
   'Incomplete import — write it as import { name } from "./file.pathogen"; or import * as name from "./file.pathogen";';
 
+/** The same for a data import, whose name is already typed (`import gears`). */
+export function incompleteDataImportError(name: string): string {
+  return `Incomplete import — write it as import ${name} from "./data/${name}.json";`;
+}
+
 export const EXPORT_LET_MESSAGE =
   "export let isn't allowed: an imported file's variables are fixed once it has loaded. Use export const.";
 
@@ -100,9 +105,12 @@ export function defaultImportError(name: string, path: string): string {
   );
 }
 
+/** The ways an import names what it brings in: braces, `* as`, or a name alone (a data file). */
+export type ImportForm = 'named' | 'namespace' | 'default';
+
 /** A local name that an earlier import in the same file already brought in. */
-export function importAgainError(name: string, firstLine: number, namespace: boolean): string {
-  const how = namespace ? '* as …' : `{ ${name} as … }`;
+export function importAgainError(name: string, firstLine: number, form: ImportForm): string {
+  const how = form === 'namespace' ? '* as …' : form === 'default' ? 'import … from' : `{ ${name} as … }`;
   return `Cannot import ${name} again — it is already imported on line ${firstLine}. Import one of them under another name: ${how}`;
 }
 
@@ -266,8 +274,19 @@ export function importNoExtensionError(written: string): string {
   return `import path "${written}" has no .pathogen extension. Write the file's full name: "${written}.pathogen".`;
 }
 
-export function importOtherExtensionError(written: string): string {
-  return `import path "${written}" isn't a .pathogen file. Only .pathogen files can be imported.`;
+/** A data import (a name, no braces) whose path has no extension (docs/data-import.md "Errors"). */
+export function importDataNoExtensionError(written: string): string {
+  return `import path "${written}" has no extension. Write the file's full name, such as "${written}.json".`;
+}
+
+/** A path whose extension is neither `.pathogen` nor a data file's (docs/modules.md and data-import.md "Errors"). */
+export function importNotImportableError(written: string): string {
+  return `import path "${written}" isn't a file Pathogen can import. Imports read .pathogen modules and JSON files (.json, .geojson, .topojson, .fold).`;
+}
+
+/** Braces or `* as` on a data file; `name` is the one to import it by (docs/data-import.md "Errors"). */
+export function dataNeedsNameError(written: string, name: string): string {
+  return `"${written}" is a data file: import it by a name, as import ${name} from "${written}";`;
 }
 
 export function importLeavesProjectError(written: string, projectLabel: string): string {

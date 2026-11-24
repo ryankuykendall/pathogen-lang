@@ -61,7 +61,7 @@ export function analyzeFile(file: ModuleFile): AnalyzedFile {
 /**
  * The document's syntax tree: the one scope analysis kept, else a fresh
  * parse. Scope analysis keeps none when the AST builder rejects the file,
- * and a default import (`import gears from …`) is one such error.
+ * as it does `export let` or an import inside a fn.
  */
 export function syntaxTreeOf(info: ScopeInfo, source: string): Tree {
   return info.tree ?? lezerParser.parse(source);
@@ -100,7 +100,8 @@ const MAX_PASSES = 16;
  * the graph (it couldn't be read; the diagnostics say why).
  */
 export function resolveImport(graph: ModuleGraph, fromFile: string, decl: Declaration): ImportTarget | null {
-  if (decl.kind !== 'import' || !decl.importFrom) return null;
+  // A data import names a data file's content, not a module's export.
+  if (decl.kind !== 'import' || !decl.importFrom || decl.importFrom.data) return null;
   const file = importedFile(graph, fromFile, decl.importFrom.path);
   if (!file) return null;
   if (decl.importFrom.name === undefined) return { kind: 'namespace', file };
@@ -132,7 +133,8 @@ function followPassedOn(graph: ModuleGraph, file: ModuleFile, decl: Declaration,
   } else if (expr.type === 'MemberExpression' && expr.object.type === 'Identifier') {
     source = top.get(expr.object.name);
     // Only a namespace's member: `kit.gear` where kit is `* as kit`.
-    name = source?.importFrom && source.importFrom.name === undefined ? expr.property : undefined;
+    name =
+      source?.importFrom && source.importFrom.name === undefined && !source.importFrom.data ? expr.property : undefined;
   }
   if (source?.kind !== 'import' || !source.importFrom || name === undefined) return null;
   const next = importedFile(graph, file.path, source.importFrom.path);
@@ -176,7 +178,9 @@ export function namespaceReceiverAt(
   const name = source.slice(start, offset - 1);
   if (!/^[A-Za-z_]/.test(name) || (start > 0 && source[start - 1] === '.')) return null;
   const decl = findDeclaration(info, name, position);
-  if (decl?.kind !== 'import' || !decl.importFrom || decl.importFrom.name !== undefined) return null;
+  if (decl?.kind !== 'import' || !decl.importFrom || decl.importFrom.name !== undefined || decl.importFrom.data) {
+    return null;
+  }
   return { decl, path: decl.importFrom.path };
 }
 

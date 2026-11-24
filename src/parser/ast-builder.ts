@@ -73,7 +73,6 @@ import type {
   TextBodyItem,
 } from './ast';
 import {
-  defaultImportError,
   EXPORT_LET_MESSAGE,
   EXPORT_PLACEMENT_MESSAGE,
   MODULE_FIRST_MESSAGE,
@@ -512,12 +511,22 @@ function buildImportDeclaration(cursor: TreeCursor, source: string): ImportDecla
   const path = pathToken.slice(1, -1);
   const sourceLoc = pathNode ? { ...lineColumnAt(source, pathNode.from), offset: pathNode.from } : undefined;
 
-  const defaultImport = node.getChild('DefaultImport');
-  if (defaultImport) {
-    throw parseErrorAt(nodeLoc, defaultImportError(source.slice(defaultImport.from, defaultImport.to), path));
+  const at = (from: number): SourceLocation => ({ ...lineColumnAt(source, from), offset: from });
+  // `import gears from "…"`: a data file (docs/data-import.md). Whether the
+  // path can be one is the path rules' to say, at the path.
+  const defaultName = node.getChild('DefaultImport')?.getChild('VariableName');
+  if (defaultName) {
+    return {
+      type: 'ImportDeclaration',
+      source: path,
+      sourceToken: pathToken,
+      sourceLoc,
+      specifiers: [],
+      defaultImport: { local: source.slice(defaultName.from, defaultName.to), loc: at(defaultName.from) },
+      loc: nodeLoc,
+    };
   }
 
-  const at = (from: number): SourceLocation => ({ ...lineColumnAt(source, from), offset: from });
   const namespaceNode = node.getChild('NamespaceImport');
   if (namespaceNode) {
     const nameNode = namespaceNode.getChild('VariableName');

@@ -198,7 +198,7 @@ export function parse(input: string, options: ParseOptions = {}): Program {
   if (hasErrors) {
     // Lezer-native error messages
     const errOffset = errCur.from;
-    const moduleShape = describeExportPlacement(errCur.node) ?? describeIncompleteImport(errCur.node);
+    const moduleShape = describeExportPlacement(errCur.node) ?? describeIncompleteImport(errCur.node, input);
     if (moduleShape) throw parseErrorAtOffset(input, moduleShape.offset, moduleShape.message);
     const shadow = describeCommandShadowing(input, errCur.node);
     if (shadow) {

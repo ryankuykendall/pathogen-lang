@@ -115,6 +115,7 @@ const DOC_FILES: Record<string, string> = {
   'cli.md': 'cli',
   'projects.md': 'projects',
   'modules.md': 'modules',
+  'data-import.md': 'dataImport',
   'workspace-files.md': 'workspaceFiles',
   'examples.md': 'examples',
   'security.md': 'security',

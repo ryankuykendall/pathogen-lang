@@ -11,19 +11,23 @@
  * the playground with a workspace's files.
  */
 import { resolveProjectPath, respell } from './paths';
+import { dataFormatOf, suggestedDataName } from '../data/data-files';
 import {
+  dataNeedsNameError,
+  defaultImportError,
   fileLabel,
   importBackslashError,
   importCaseMismatchError,
   importComputerPathError,
   importCycleError,
+  importDataNoExtensionError,
   importFolderError,
   importLeavesProjectError,
   importNoExtensionError,
   importNotAFileError,
   importNotAPathError,
   importNotFoundError,
-  importOtherExtensionError,
+  importNotImportableError,
   importUnreadableError,
   notAModuleError,
   unsavedFileImportError,
@@ -31,7 +35,12 @@ import {
 import { isModuleSource } from '../parser/module-source';
 import { parser as lezerParser } from '../parser/pathogen.generated';
 
+import type { SyntaxNode } from '@lezer/common';
+
 import type { HostReadResult, ProjectFileHost } from './types';
+import type { ImportForm } from '../module-messages';
+
+export type { ImportForm };
 
 /** One import as written: the path and where its string is. */
 export interface PlannedImport {
@@ -49,6 +58,21 @@ export interface PlannedImport {
    * of one path apart.
    */
   statementFrom: number;
+  /** How it names what it imports: braces, `* as`, or a name alone (a data file). */
+  form: ImportForm;
+  /** The name a `* as` or a data import binds; absent for braces. */
+  name?: string;
+}
+
+/** The form of an import declaration in the parse tree, and the name it binds for `* as` and a data import. */
+function importFormOf(node: SyntaxNode, source: string): { form: ImportForm; name?: string } {
+  const named = (child: SyntaxNode | null | undefined): string | undefined =>
+    child ? source.slice(child.from, child.to) : undefined;
+  const namespace = node.getChild('NamespaceImport');
+  if (namespace) return { form: 'namespace', name: named(namespace.getChild('VariableName')) };
+  const data = node.getChild('DefaultImport');
+  if (data) return { form: 'default', name: named(data.getChild('VariableName')) };
+  return { form: 'named' };
 }
 
 /**
@@ -72,6 +96,7 @@ export function planImports(source: string): PlannedImport[] {
       from: path.from,
       to: path.to,
       statementFrom: node.from,
+      ...importFormOf(node, source),
     });
   }
   return imports;
@@ -84,28 +109,40 @@ const WEB_ADDRESS = /^[a-z][a-z0-9+.-]*:/i;
 const DRIVE_PATH = /^[A-Za-z]:[\\/]/;
 
 /**
- * A written path that can't be an import, with the message that says how to
- * fix it, or null when it is a well-formed `.pathogen` path (it may still not
- * exist). docs/modules.md "Errors", the path rows.
+ * A written path that can't be an import in this form, with the message that
+ * says how to fix it, or null when it is well formed (the file may still not
+ * exist): a `.pathogen` path for braces or `* as`, a data file's path for a
+ * name alone (docs/modules.md and docs/data-import.md "Errors", the path
+ * rows). `name` is what a `* as` or data import binds, which the messages
+ * reuse.
  */
-export function importPathMistake(written: string): string | null {
+export function importPathMistake(written: string, form: ImportForm = 'named', name?: string): string | null {
   if (DRIVE_PATH.test(written) || written.startsWith('~')) return importComputerPathError(written);
   if (written.includes('\\')) {
     const fixed = written.replace(/\\/g, '/');
     return importBackslashError(written, /^\.{0,2}\//.test(fixed) ? fixed : `./${fixed}`);
   }
   // `.`, `..`, `./`, `./parts/`, `../..`: a folder, however it is spelled.
-  const name = written.slice(written.lastIndexOf('/') + 1);
-  if (name === '' || name === '.' || name === '..') return importFolderError(written);
+  const fileName = written.slice(written.lastIndexOf('/') + 1);
+  if (fileName === '' || fileName === '.' || fileName === '..') return importFolderError(written);
   if (!written.startsWith('./') && !written.startsWith('../') && !written.startsWith('/')) {
     // A file name written without ./ gets the fix; a package name, a scheme
     // (`std:…`) or a web address is something only later releases may mean.
     const looksLikeFile = !written.startsWith('@') && !WEB_ADDRESS.test(written) && /[./]/.test(written);
     return looksLikeFile ? importNotAPathError(written) : importNotAFileError(written);
   }
-  if (!name.includes('.')) return importNoExtensionError(written);
-  if (!name.endsWith('.pathogen')) return importOtherExtensionError(written);
-  return null;
+  const isModulePath = fileName.endsWith('.pathogen');
+  const isDataPath = dataFormatOf(fileName) !== null;
+  if (form === 'default') {
+    if (isModulePath) return defaultImportError(name ?? 'name', written);
+    if (isDataPath) return null;
+    return fileName.includes('.') ? importNotImportableError(written) : importDataNoExtensionError(written);
+  }
+  if (isModulePath) return null;
+  if (isDataPath) {
+    return dataNeedsNameError(written, form === 'namespace' && name ? name : suggestedDataName(written));
+  }
+  return fileName.includes('.') ? importNotImportableError(written) : importNoExtensionError(written);
 }
 
 /** An imported file, read and ready to compile. */
@@ -231,7 +268,7 @@ export async function resolveModules(
     stack: string[],
     chain: ImportSite[],
   ): Promise<string | null> => {
-    const mistake = importPathMistake(planned.written);
+    const mistake = importPathMistake(planned.written, planned.form, planned.name);
     if (mistake) {
       errorAt(mistake, from, planned, chain);
       return null;
@@ -242,6 +279,8 @@ export async function resolveModules(
       return null;
     }
     const path = resolved.path;
+    // A data file (docs/data-import.md): read in 3a's step 2 (note 76).
+    if (planned.form === 'default') return null;
     const cycleAt = stack.indexOf(path);
     if (cycleAt !== -1) {
       const cycle = [...stack.slice(cycleAt), path];

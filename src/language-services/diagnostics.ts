@@ -427,7 +427,7 @@ function describeErrorWithPosition(
 ): { message: string; line: number; character: number } {
   // `export M 0 0`, or an import with no path yet: the same message parse()
   // gives, on the keyword.
-  const moduleShape = describeExportPlacement(errorNode) ?? describeIncompleteImport(errorNode);
+  const moduleShape = describeExportPlacement(errorNode) ?? describeIncompleteImport(errorNode, source);
   if (moduleShape) {
     const at = document.positionAt(moduleShape.offset);
     return { message: moduleShape.message, line: at.line, character: at.character };

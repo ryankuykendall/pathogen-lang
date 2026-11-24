@@ -232,8 +232,9 @@ NamespaceImport {
   "*" asKw VariableName
 }
 
-// `import gears from …` parses so the builder can explain that Pathogen has
-// no default export; it is never evaluated.
+// `import gears from "./data/gears.json";`: a name for a data file's content
+// (docs/data-import.md). A .pathogen path has no default export; the path
+// rules say so (src/host/load-modules.ts importPathMistake).
 DefaultImport { VariableName }
 
 ExportDeclaration {

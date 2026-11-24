@@ -11496,7 +11496,9 @@ function evaluateStatementToAccum(stmt: Statement, scope: Scope, accum: PathStor
       const from = moduleOf(scope);
       const resolved = resolveProjectPath(stmt.source, from?.path ?? '/');
       const record = resolved.ok ? modules.get(resolved.path) : undefined;
-      if (!record) {
+      // A data import (docs/data-import.md): never a module's record. Data
+      // files are read in 3a's step 2 (note 76).
+      if (!record || stmt.defaultImport) {
         throw new Error(formatError(moduleNotLoadedError(stmt.source), stmt.loc?.line, stmt.loc?.column));
       }
       if (stmt.namespace) {

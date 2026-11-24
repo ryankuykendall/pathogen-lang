@@ -54,7 +54,7 @@ cat myfile.pathogen | pathogen-lang -
 
 ## Fonts and Files
 
-The CLI reads the files a program names — fonts in `@font` and other `.pathogen` files in [`import`](#modules-importing) — from inside the program's [project folder](#projects-the-project-folder): the nearest folder with a `pathogen.json`, from the file's own folder upward, stopping before your home folder. If none has one, it's the file's own folder. Paths in `@font` and `import` start with `./`, `../` or `/`, and a leading `/` now means the project folder rather than your computer's root — see [What changed](#projects-projects-and-files).
+The CLI reads the files a program names — fonts in `@font`, other `.pathogen` files in [`import`](#modules-importing), and [data files](#cli-data-files) — from inside the program's [project folder](#projects-the-project-folder): the nearest folder with a `pathogen.json`, from the file's own folder upward, stopping before your home folder. If none has one, it's the file's own folder. Paths in `@font` and `import` start with `./`, `../` or `/`, and a leading `/` now means the project folder rather than your computer's root — see [What changed](#projects-projects-and-files).
 
 ```bash
 pathogen-lang --root=. poster/main.pathogen   # use the current folder as the project folder
@@ -83,6 +83,27 @@ A font that can't be loaded stops the compile with an error at its `@font` line.
 | `PATHOGEN_OFFLINE=1` | Same as `--offline` |
 | `PATHOGEN_FONT_DIRS` | Extra font folders, separated by `:` (`;` on Windows), searched first |
 | `PATHOGEN_CACHE_DIR` | Where downloaded fonts are kept (default: your system's cache folder) |
+| `--max-data-size=<MB>` | Read data files up to this many megabytes (default: 50) |
+
+### Data files
+
+A program's [data imports](#data-import-data-imports), such as `import gears from "./data/gears.json";`, are read from the project folder by the same path rules as modules.
+
+A data file can be up to 50 MB, about half a million short JSON records. Read into Pathogen values, a file takes more memory than its size on disk, and when Node.js runs out of the memory it's allowed, the compile crashes with an error that names no file. The limit makes an oversized file stop first, with a message that names it, at its import line:
+
+```text
+import file "./data/trips.json" is 82 MB, more than the 50 MB a data file can be. To read it anyway, pass --max-data-size=100 (in VS Code, the pathogen.maxDataSize setting).
+```
+
+To read a larger file, raise the limit, in megabytes:
+
+```bash
+pathogen-lang --max-data-size=200 map.pathogen
+```
+
+The value must follow `=` and be a whole number from 1 up. If you raise the limit and then see `JavaScript heap out of memory`, give Node.js more room too: `NODE_OPTIONS=--max-old-space-size=8192 pathogen-lang …`.
+
+The playground has its own, smaller limits: a data file up to 5 MB, and a workspace up to 50 MB and 20 files, data files included ([Limits](#workspace-files-limits)). So a data file over 5 MB is left out when the project comes into a workspace, and a project over 50 MB or 20 files doesn't come in at all.
 
 ## Output Options
 
@@ -267,7 +288,7 @@ Warnings (see [Debug & Console](#debug-warnings)) are printed to stderr as `file
 
 ## File Extensions
 
-By convention, source files use the `.pathogen` extension, but any text file will work.
+The file you compile can have any extension, though `.pathogen` is the convention. Files you import can't: a module's path ends in `.pathogen`, and a data file's extension decides how it's read ([File types](#data-import-file-types)).
 
 ## Examples
 

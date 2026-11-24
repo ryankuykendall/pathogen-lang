@@ -57,8 +57,17 @@ describe('planImports', () => {
     const source =
       '// a library\nimport { gear } from "./parts/gears.pathogen";\nimport * as kit from \'../kit.pathogen\';\nM 0 0';
     expect(planImports(source)).toEqual([
-      { written: './parts/gears.pathogen', line: 2, column: 22, from: 34, to: 58, statementFrom: 13 },
-      { written: '../kit.pathogen', line: 3, column: 22, from: 81, to: 98, statementFrom: 60 },
+      { written: './parts/gears.pathogen', line: 2, column: 22, from: 34, to: 58, statementFrom: 13, form: 'named' },
+      {
+        written: '../kit.pathogen',
+        line: 3,
+        column: 22,
+        from: 81,
+        to: 98,
+        statementFrom: 60,
+        form: 'namespace',
+        name: 'kit',
+      },
     ]);
   });
 
@@ -106,9 +115,10 @@ describe('importPathMistake: the path rules', () => {
       './parts/gears',
       'import path "./parts/gears" has no .pathogen extension. Write the file\'s full name: "./parts/gears.pathogen".',
     ],
+    // Braces on a data file (phase 3a; the other forms are in tests/data-import-syntax.test.ts).
     [
       './data/sizes.json',
-      'import path "./data/sizes.json" isn\'t a .pathogen file. Only .pathogen files can be imported.',
+      '"./data/sizes.json" is a data file: import it by a name, as import sizes from "./data/sizes.json";',
     ],
   ])('%s', (written, message) => {
     expect(importPathMistake(written)).toBe(message);
@@ -129,7 +139,8 @@ describe('importPathMistake: the path rules', () => {
 describe('resolveModules: reading the graph', () => {
   it('reads each file once, follows imports in imported files, and orders dependencies first', async () => {
     const { host, reads } = memoryHost({
-      '/parts/gears.pathogen': 'module;\nimport { tooth } from "./teeth.pathogen";\nexport fn gear() { return tooth(); }',
+      '/parts/gears.pathogen':
+        'module;\nimport { tooth } from "./teeth.pathogen";\nexport fn gear() { return tooth(); }',
       '/parts/teeth.pathogen': 'module;\nexport fn tooth() { return 1; }',
     });
     const main = 'import { gear } from "./parts/gears.pathogen";\nimport { tooth } from "/parts/teeth.pathogen";';
@@ -537,7 +548,10 @@ describe('withOpenDocuments: unsaved editor buffers', () => {
   it('the buffer decides whether the file is a module: deleting `module;` there is the error at once', async () => {
     const { host } = memoryHost({ '/parts/gears.pathogen': 'module;\nexport const saved = 1;' });
     const overlaid = withOpenDocuments(host, () => 'export const unsaved = 2;');
-    const { errors } = await resolveModules('import { unsaved } from "./parts/gears.pathogen";', { host: overlaid, entry });
+    const { errors } = await resolveModules('import { unsaved } from "./parts/gears.pathogen";', {
+      host: overlaid,
+      entry,
+    });
     expect(errors.map((e) => e.message)).toEqual([
       'Cannot import "./parts/gears.pathogen": it isn\'t a module. To make it one, add module; at the top of that file and move its drawing into exported fns.',
     ]);

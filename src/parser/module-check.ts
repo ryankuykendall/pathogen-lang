@@ -23,12 +23,15 @@ import {
   importAgainError,
   IMPORTS_FIRST_MESSAGE,
   INCOMPLETE_IMPORT_MESSAGE,
+  incompleteDataImportError,
   MODULE_DRAWS_MESSAGE,
   MODULE_FIRST_MESSAGE,
   MODULE_VIEWBOX_MESSAGE,
 } from '../module-messages';
 
 import type { SyntaxNode, Tree } from '@lezer/common';
+
+import type { ImportForm } from '../module-messages';
 
 /** Top-level statements that draw, which a module can't have (docs/modules.md "Exporting"). */
 const DRAWING_STATEMENTS = new Set([
@@ -53,13 +56,15 @@ function lineAt(input: string, offset: number): number {
 }
 
 /** The local names an ImportDeclaration binds, each with the node that spells it. */
-function importLocals(decl: SyntaxNode): { node: SyntaxNode; namespace: boolean }[] {
+function importLocals(decl: SyntaxNode): { node: SyntaxNode; form: ImportForm }[] {
   const namespaceName = decl.getChild('NamespaceImport')?.getChild('VariableName');
-  if (namespaceName) return [{ node: namespaceName, namespace: true }];
-  const locals: { node: SyntaxNode; namespace: boolean }[] = [];
+  if (namespaceName) return [{ node: namespaceName, form: 'namespace' }];
+  const dataName = decl.getChild('DefaultImport')?.getChild('VariableName');
+  if (dataName) return [{ node: dataName, form: 'default' }];
+  const locals: { node: SyntaxNode; form: ImportForm }[] = [];
   for (const spec of decl.getChild('ImportSpecifiers')?.getChildren('ImportSpecifier') ?? []) {
     const local = spec.getChild('VariableName') ?? spec.getChild('Identifier');
-    if (local) locals.push({ node: local, namespace: false });
+    if (local) locals.push({ node: local, form: 'named' });
   }
   return locals;
 }
@@ -118,11 +123,11 @@ export function findModuleViolations(tree: Tree, input: string): ModuleViolation
         found.push({ offset: child.from, end: child.from + 'import'.length, message: IMPORTS_FIRST_MESSAGE });
       }
       const line = lineAt(input, child.from);
-      for (const { node, namespace } of importLocals(child)) {
+      for (const { node, form } of importLocals(child)) {
         const name = input.slice(node.from, node.to);
         const first = importedAt.get(name);
         if (first !== undefined) {
-          found.push({ offset: node.from, end: node.to, message: importAgainError(name, first, namespace) });
+          found.push({ offset: node.from, end: node.to, message: importAgainError(name, first, form) });
         } else {
           importedAt.set(name, line);
         }
@@ -159,11 +164,22 @@ export function findModuleViolations(tree: Tree, input: string): ModuleViolation
  * shape instead of "Missing ';'", at the `import` keyword. An error after a
  * complete path is a missing `;`, and the usual message stands.
  */
-export function describeIncompleteImport(errorNode: SyntaxNode): { offset: number; message: string } | null {
+export function describeIncompleteImport(
+  errorNode: SyntaxNode,
+  input: string,
+): { offset: number; message: string } | null {
   for (let node = errorNode.parent; node && node.name !== 'Program'; node = node.parent) {
     if (node.name === 'ImportDeclaration') {
       const path = node.getChild('String');
-      return path && errorNode.from >= path.to ? null : { offset: node.from, message: INCOMPLETE_IMPORT_MESSAGE };
+      if (path && errorNode.from >= path.to) return null;
+      // `import gears from`: a data import, whose name is already typed. A
+      // name on a later line is the next statement (`import` alone, then `M 0 0`).
+      const dataName = node.getChild('DefaultImport')?.getChild('VariableName');
+      const message =
+        dataName && !input.slice(node.from, dataName.from).includes('\n')
+          ? incompleteDataImportError(input.slice(dataName.from, dataName.to))
+          : INCOMPLETE_IMPORT_MESSAGE;
+      return { offset: node.from, message };
     }
   }
   return null;

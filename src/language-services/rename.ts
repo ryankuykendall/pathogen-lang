@@ -67,7 +67,10 @@ export function renameRefusal(document: TextDocument, position: Position): strin
 }
 
 function refusalFor(decl: Declaration): string | null {
-  if (decl.kind === 'import' && decl.importFrom) return renameImportedError(decl.name, decl.importFrom.path);
+  // A data import's name is this file's own choice: no other file uses it.
+  if (decl.kind === 'import' && decl.importFrom && !decl.importFrom.data) {
+    return renameImportedError(decl.name, decl.importFrom.path);
+  }
   if (decl.exported) return renameExportedError(decl.name);
   return null;
 }

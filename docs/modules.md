@@ -34,13 +34,15 @@ Think of a module as a workshop that makes tools. `export` puts a tool on the co
 
 Imports work in the CLI and VS Code, where files sit side by side on disk, and in a saved playground workspace, which holds files of its own ([Files in a Workspace](#workspace-files-files-in-a-workspace)); see [In each tool](#modules-in-each-tool).
 
+A program or a module can also import a data file, such as a JSON file, by a name: `import gears from "./data/gears.json";`. See [Data Imports](#data-import-data-imports).
+
 **Know these before you start:**
 
-- **`module;` makes a file a module.** Only a module can be imported. A file without that line is a program, the kind that draws.
+- **`module;` makes a file a module.** Of `.pathogen` files, only a module can be imported. A file without that line is a program, the kind that draws.
 - **A module makes things; it doesn't draw.** Its top level declares fns, constants and enums, and builds values such as styles, path blocks and gradients. Whatever draws goes in an exported fn, which draws into your drawing when you call it.
 - **What you import is fixed.**
   - You can't give an imported name a new value.
-  - You can't change an imported array, object or [Cycler](#stdlib-cycler). Copy it first (`[...sizes]`), or ask the file for a fn that makes a fresh one.
+  - You can't change an imported array, object or [Cycler](#stdlib-cycler). Copy it first (`[...sizes]`), or ask the file for a fn that makes a fresh one. Copying is one level deep: the objects in `[...sizes]` are still the file's ([Data Imports](#data-import-what-you-import-is-fixed)).
   - An exported fn can't change its own file's variables, or what's in them, once that file has loaded.
 - **A module is shared within its project.** An import can't reach outside the [project folder](#projects-the-project-folder), so to use a module in another project, copy its file into that project.
 - **Imports go first**, before any other statement, `@font` and `define` lines included. In a module, only the `module;` line comes before them.
@@ -125,15 +127,15 @@ log(gears.toothDepth);
 The rules:
 
 - **Imports come first.** They go before any other statement in the file, `@font` and `define` included. Only comments, and a module's `module;` line, may come before them.
-- **Only modules can be imported.** Importing a file without `module;` is an error. Adding the line makes the file a module, so any drawing at its top level must first move into an exported fn, or into the program that imports it.
-- **The path is written in full**, `.pathogen` included, and follows the rules in [Writing paths](#projects-writing-paths):
+- **Of `.pathogen` files, only modules can be imported.** Importing a `.pathogen` file without `module;` is an error. Adding the line makes the file a module, so any drawing at its top level must first move into an exported fn, or into the program that imports it.
+- **The path is written in full**, with its extension (`.pathogen` for a module), and follows the rules in [Writing paths](#projects-writing-paths):
   - `./` and `../` start at the file the import is written in, and `/` at the project folder;
   - forward slashes only, and the letter case must match the file on disk;
   - a path can't leave the project folder.
-- **Only `.pathogen` files can be imported.** A path that doesn't start with `./`, `../` or `/` is an error, whether it's `"gears.pathogen"` or `"@studio/kit"`.
+- **A module's path ends in `.pathogen`.** JSON files are data, imported by a name instead ([Data Imports](#data-import-data-imports)). A path that doesn't start with `./`, `../` or `/` is an error, whether it's `"gears.pathogen"` or `"@studio/kit"`.
 - **An imported name is a declaration**, like `let` or `const`. It can't be a [built-in name](#syntax-built-in-names): `import * as Color …` is an error, so pick another name. It also can't share a name with anything else declared at your file's top level.
 - **Two files can't import each other**, directly or through other files. That's an import cycle, and the error names every file in it. Move what both files need into a third file that both import.
-- **Braces or `* as` are required.** Pathogen has no default export, so `import gears from "./parts/gears.pathogen";` is an error. Import names with braces, or all of them with `* as`.
+- **Braces or `* as` are required for a module.** Pathogen has no default export, so `import gears from "./parts/gears.pathogen";` is an error. Import names with braces, or all of them with `* as`. A name without braces is for [data files](#data-import-data-imports): `import gears from "./data/gears.json";`.
 
 `from` means something only inside an import, and `module` only as the `module;` line at the top of a file. Everywhere else they're ordinary names: a gradient's `.from` property, `let from = bar.start;` and `let module = 3;` keep working. `import` and `export` are [keywords](#syntax-variables), so they can't be names or object keys.
 
@@ -229,6 +231,7 @@ Once a file has finished running, its exports can't change. This means a file be
 | `gear = 5;` | error: an imported name can't be given a new value | declare your own: `let myGear = …` |
 | `sizes.push(9);` on an imported array | error | copy it first: `let mySizes = [...sizes]; mySizes.push(9);` |
 | `style['width'] = 4;` on an imported object | error | `let myStyle = { ...style, width: 4 };` |
+| `mySizes[0]['width'] = 4;` on an object inside a copied array | error: copying is one level deep | make new objects: `let mySizes = sizes.map {\|size\| return { ...size }; };` |
 | `palette.pick()` on an imported Cycler | error: picking moves its position | export a fn that makes one: `export fn palette() { return Cycler([…]); }` |
 | `.stop(…)`, `.set(…)`, `.append(…)`, or setting a property, on an imported gradient, grid, mask or other value | error | make your own, or export a fn that makes one |
 
@@ -371,8 +374,10 @@ In VS Code, the error is shown on the call (or the import) in the file you're ed
 | An unsaved file in VS Code | `Cannot import "./parts/gears.pathogen" until this file is saved: import paths start at the file's folder.` |
 | A name instead of a path | `import "gears.pathogen" isn't a path. Paths start with ./, ../ or / — did you mean "./gears.pathogen"?` |
 | A package name or web address | `import "@studio/kit": only files in the project folder can be imported. Paths start with ./, ../ or /.` |
-| No `.pathogen` at the end | `import path "./parts/gears" has no .pathogen extension. Write the file's full name: "./parts/gears.pathogen".` |
-| Another kind of file | `import path "./data/sizes.json" isn't a .pathogen file. Only .pathogen files can be imported.` |
+| No `.pathogen` at the end, with braces or `* as` | `import path "./parts/gears" has no .pathogen extension. Write the file's full name: "./parts/gears.pathogen".` |
+| No extension, imported by a name | `import path "./data/gears" has no extension. Write the file's full name, such as "./data/gears.json".` |
+| Braces or `* as` on a data file | `"./data/sizes.json" is a data file: import it by a name, as import sizes from "./data/sizes.json";` ([Data Imports](#data-import-errors)) |
+| A kind of file Pathogen can't import | `import path "./notes.md" isn't a file Pathogen can import. Imports read .pathogen modules and JSON files (.json, .geojson, .topojson, .fold).` |
 | The path leaves the project folder | `import path "../../shared/gears.pathogen" leaves the project folder (/Users/you/my-gears). Move the file into the project folder, or move the project's pathogen.json (or add one) to a folder that contains both files, other than your home folder itself.` |
 | The path uses `\` | `import path ".\parts\gears.pathogen" uses a backslash. Write paths with forward slashes on every system: "./parts/gears.pathogen".` |
 | A drive letter or `~` | `import path "C:/parts/gears.pathogen" is a path on your computer. Write paths relative to the file (./ or ../) or the project folder (/).` |

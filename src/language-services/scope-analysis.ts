@@ -72,9 +72,10 @@ export interface Declaration {
   members?: string[];
   /**
    * An imported name: the path as written in the import, and the name the
-   * other file exports. No `name` for `* as`, which names the whole file.
+   * other file exports. No `name` for `* as`, which names the whole file, or
+   * for a data import (`data: true`), which names a data file's content.
    */
-  importFrom?: { path: string; name?: string };
+  importFrom?: { path: string; name?: string; data?: true };
 }
 
 export interface Reference {
@@ -425,6 +426,12 @@ function walkStatement(stmt: Statement, scope: Scope, col: Collector): void {
       };
       if (stmt.namespace) bindImport(stmt.namespace.local, stmt.namespace.loc);
       for (const spec of stmt.specifiers) bindImport(spec.local, spec.localLoc, spec.imported);
+      if (stmt.defaultImport) {
+        // A data file's content (docs/data-import.md): no name in another file stands behind it.
+        const decl = addDecl(scope, stmt.defaultImport.local, 'import', stmt.defaultImport.loc ?? stmt.loc, col);
+        decl.isConst = true;
+        decl.importFrom = { path: stmt.source, data: true };
+      }
       break;
     }
     case 'Comment':
