@@ -5,6 +5,7 @@ import * as path from 'node:path';
 
 import * as vscode from 'vscode';
 
+import { IMPORTABLE_FILES_GLOB, isDataFile } from './data-files';
 import { FontSession } from './font-session';
 import { ProgramDrawings } from './preview-drawings';
 import { previewModules, samePathKey } from './preview-modules';
@@ -147,11 +148,11 @@ class PreviewPanel {
       this.thread = new DrawingThread(path.join(__dirname, 'programs-worker.js'), libs.paths);
       const thread = this.thread;
       this.drawings = new ProgramDrawings({
-        draw: (program, open) => thread.draw(program, open),
+        draw: (program, open) => thread.draw(program, open, maxDataBytes()),
         cancel: () => thread.cancel(),
         openTexts: () =>
           vscode.workspace.textDocuments
-            .filter((doc) => doc.uri.scheme === 'file' && doc.languageId === 'pathogen')
+            .filter(isProjectDocument)
             .map((doc): [string, string] => [doc.uri.fsPath, doc.getText()]),
         programs: () => this.drawable,
         shown: () => (this.shown.kind === 'program' ? this.shown.path : null),
@@ -188,7 +189,8 @@ class PreviewPanel {
     vscode.workspace.onDidChangeTextDocument(
       (e) => {
         const doc = e.document;
-        if (doc.languageId !== 'pathogen') return;
+        // A .pathogen tab, or a data file a program may import (docs/data-import.md).
+        if (doc.languageId !== 'pathogen' && !isProjectDocument(doc)) return;
         if (doc.uri.scheme === 'file') this.drawings?.touched(doc.uri.fsPath);
         // The program on show, or a file it imports (its unsaved text counts):
         // draw it again. An edit elsewhere may still change the list (a
@@ -199,16 +201,23 @@ class PreviewPanel {
       null,
       this.disposables,
     );
-    // A .pathogen file changed, created or deleted on disk (in the workspace
-    // folders): it may be one the program imports, one it couldn't find, the
-    // program shown, or one in the list. A pathogen.json too: it may name
-    // another main, and a broken one stops a program that uses import or
-    // @font (docs/projects.md "In each tool"). Read from disk, so only a
-    // saved change counts.
-    const onDisk = vscode.workspace.createFileSystemWatcher('**/{*.pathogen,pathogen.json}');
+    // A .pathogen or data file changed, created or deleted on disk (in the
+    // workspace folders): it may be one the program imports, one it couldn't
+    // find, the program shown, or one in the list. A pathogen.json too: it
+    // may name another main, and a broken one stops a program that uses
+    // import or @font (docs/projects.md "In each tool"). Read from disk, so
+    // only a saved change counts.
+    const onDisk = vscode.workspace.createFileSystemWatcher(IMPORTABLE_FILES_GLOB);
     const fromDisk = (changed: vscode.Uri) => {
       const isProjectFile = changed.path.endsWith('/pathogen.json');
       this.drawings?.touched(isProjectFile ? null : changed.fsPath);
+      // The watcher sees every JSON file (package.json, build output). A data
+      // file the program shown doesn't read changes nothing here, unless one
+      // of its imports failed: it may be the one that was missing.
+      if (!isProjectFile && isDataFile(changed.fsPath)) {
+        if (this.watched.has(samePathKey(changed.fsPath)) || this.importFailed) this.scheduleRefresh(true);
+        return;
+      }
       const shownFile = this.shownFile();
       const isShown = shownFile !== undefined && samePathKey(changed.fsPath) === samePathKey(shownFile);
       const uses = isProjectFile ? /\bimport\b|@font\b/ : /\bimport\b/;
@@ -228,6 +237,16 @@ class PreviewPanel {
           this.drawings?.touched(oldUri.fsPath);
           this.drawings?.touched(newUri.fsPath);
         }
+        this.scheduleRefresh(true);
+      },
+      null,
+      this.disposables,
+    );
+    // pathogen.maxDataSize changed: read the data files again with it.
+    vscode.workspace.onDidChangeConfiguration(
+      (e) => {
+        if (!e.affectsConfiguration('pathogen.maxDataSize')) return;
+        this.drawings?.touched(null);
         this.scheduleRefresh(true);
       },
       null,
@@ -520,7 +539,7 @@ class PreviewPanel {
     let imported: PreviewModules = { errors: [], notices: [], watched: [] };
     if (this.imports) {
       try {
-        imported = await previewModules(this.imports, filePath, source, openBufferText);
+        imported = await previewModules(this.imports, filePath, source, openBufferText, maxDataBytes());
       } catch (err) {
         imported = { errors: [`Imported files couldn't be read: ${(err as Error).message}`], notices: [], watched: [] };
       }
@@ -590,6 +609,23 @@ class PreviewPanel {
     this.thread?.dispose();
     for (const d of this.disposables.splice(0)) d.dispose();
   }
+}
+
+/** A saved file an import may read: a .pathogen file, or a data file (docs/data-import.md). */
+function isProjectDocument(doc: vscode.TextDocument): boolean {
+  return doc.uri.scheme === 'file' && (doc.languageId === 'pathogen' || isDataFile(doc.uri.fsPath));
+}
+
+/**
+ * The `pathogen.maxDataSize` setting in bytes (docs/data-import.md "In each
+ * tool"), or undefined for the default, 50 MB. A value that isn't a whole
+ * number of megabytes from 1 counts as not set.
+ */
+function maxDataBytes(): number | undefined {
+  const megabytes = vscode.workspace.getConfiguration('pathogen').get<number>('maxDataSize');
+  return typeof megabytes === 'number' && Number.isInteger(megabytes) && megabytes >= 1
+    ? megabytes * 1024 * 1024
+    : undefined;
 }
 
 /** An open tab's text by absolute path, so unsaved edits in an imported file show. */

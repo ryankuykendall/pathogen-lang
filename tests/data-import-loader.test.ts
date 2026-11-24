@@ -120,6 +120,17 @@ describe('mistakes in a data file', () => {
     ]);
   });
 
+  it('the files it tried to read and could not are listed, for an editor to watch', async () => {
+    const { host } = memoryHost({
+      '/data/gears.json': '[1 2]',
+      '/parts/kit.pathogen': 'M 0 0\n',
+    });
+    const main =
+      'import gears from "./data/gears.json";\nimport { n } from "./parts/kit.pathogen";\nimport gone from "./data/gone.json";\n';
+    const { unread } = await resolveModules(main, { host, entry });
+    expect(unread.sort()).toEqual(['/data/gears.json', '/data/gone.json', '/parts/kit.pathogen']);
+  });
+
   it('reported once, however many imports read the file', async () => {
     const { host } = memoryHost({
       '/data/gears.json': '[1 2]',

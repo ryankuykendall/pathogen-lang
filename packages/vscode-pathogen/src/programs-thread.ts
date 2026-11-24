@@ -27,7 +27,7 @@ export class DrawingThread {
     private readonly libraries: WorkerLibraryPaths,
   ) {}
 
-  draw(program: string, open: [string, string][]): Promise<DrawResult> {
+  draw(program: string, open: [string, string][], maxDataBytes?: number): Promise<DrawResult> {
     // One at a time: a draw still running is stopped first.
     if (this.pending) this.cancel();
     const worker = this.start();
@@ -49,7 +49,7 @@ export class DrawingThread {
           reject(e);
         },
       };
-      const request: DrawRequest = { id, program, open };
+      const request: DrawRequest = { id, program, open, ...(maxDataBytes === undefined ? {} : { maxDataBytes }) };
       worker.postMessage(request);
     });
   }

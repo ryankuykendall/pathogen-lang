@@ -13,10 +13,20 @@ import { realpathSync } from 'node:fs';
 import * as path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
-import { editorModulePaths, listProjectModules, resolveEditorModules } from 'pathogen-lang/node';
+import { editorModulePaths, listProjectDataFiles, listProjectModules, resolveEditorModules } from 'pathogen-lang/node';
 
 import type { LanguageServiceOptions, ModuleLoadError } from 'pathogen-lang';
 import type { EditorModules } from 'pathogen-lang/node';
+
+/**
+ * What an import's path may name in a project: its modules (for braces and
+ * `* as`) and its data files (for a name alone), in one sorted list; the
+ * language services offer each import the kind it reads.
+ */
+async function listImportable(root: string): Promise<string[]> {
+  const [modules, data] = await Promise.all([listProjectModules(root), listProjectDataFiles(root)]);
+  return [...modules, ...data].sort();
+}
 
 interface Known {
   modules: EditorModules;
@@ -40,8 +50,16 @@ export class DocumentModules {
   constructor(
     private readonly openText: (absolutePath: string) => string | undefined,
     private readonly resolve: typeof resolveEditorModules = resolveEditorModules,
-    private readonly list: typeof listProjectModules = listProjectModules,
+    private readonly list: (root: string) => Promise<string[]> = listImportable,
   ) {}
+
+  /** The largest data file to read (the `pathogen.maxDataSize` setting); 50 MB until set. */
+  private maxDataBytes: number | undefined;
+
+  /** The setting changed: the next check of each document reads with it. */
+  setMaxDataBytes(bytes: number | undefined): void {
+    this.maxDataBytes = bytes;
+  }
 
   /**
    * Each document's latest refresh, so an older one that finishes later is
@@ -56,7 +74,12 @@ export class DocumentModules {
   async refresh(uri: string, source: string): Promise<EditorModules> {
     const mine = ++this.refreshes;
     this.latest.set(uri, mine);
-    const modules = await this.resolve(filePathOf(uri), source, this.openText);
+    const modules = await this.resolve(
+      filePathOf(uri),
+      source,
+      this.openText,
+      this.maxDataBytes === undefined ? {} : { maxDataBytes: this.maxDataBytes },
+    );
     // A newer refresh started meanwhile, or the document closed: theirs stands.
     if (this.latest.get(uri) === mine) {
       this.byUri.set(uri, { modules, paths: new Set(editorModulePaths(modules).map(samePathKey)) });

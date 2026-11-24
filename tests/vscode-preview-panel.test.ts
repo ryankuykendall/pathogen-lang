@@ -269,9 +269,82 @@ describe.skipIf(!built)(`without a main${needs}`, () => {
     const p = await open('main.pathogen');
     await until('the list', () => lastPrograms(p));
     p.dispose();
-    expect([fake.activeChanged.listeners.size, fake.textChanged.listeners.size, fake.renamed.listeners.size]).toEqual([
-      0, 0, 0,
-    ]);
+    expect([
+      fake.activeChanged.listeners.size,
+      fake.textChanged.listeners.size,
+      fake.renamed.listeners.size,
+      fake.configChanged.listeners.size,
+    ]).toEqual([0, 0, 0, 0]);
     expect(fake.watchers.every((w) => w.disposed)).toBe(true);
+  });
+});
+
+// 3a step 4 (docs/data-import.md "In each tool"): "Editing or saving a data
+// file redraws the preview when its program is shown", and the
+// pathogen.maxDataSize setting raises the 50 MB limit.
+describe.skipIf(!built)(`data files in the preview${needs}`, () => {
+  interface DataUpdate {
+    source: string;
+    errors: string[];
+    modules?: { data?: [string, { text: string }][] };
+  }
+  const lastData = (p: FakePanel) => p.of('update').at(-1) as DataUpdate | undefined;
+  const MAIN = 'import gears from "./data/gears.json";\nfor (gear in gears) {\n  circle(gear.x, gear.y, 5);\n}\n';
+
+  beforeEach(() => {
+    mkdirSync(at('data'), { recursive: true });
+    writeFileSync(at('data/gears.json'), '[{ "x": 50, "y": 50 }]');
+    writeFileSync(at('main.pathogen'), MAIN);
+  });
+
+  it("the main's data file goes to the page as text; an edit to its open tab redraws with the unsaved text", async () => {
+    const p = await open('main.pathogen');
+    const first = await until('the main', () => (lastData(p)?.source === MAIN ? lastData(p) : undefined));
+    expect(first.modules?.data?.map(([path, file]) => [path, file.text])).toEqual([
+      ['/data/gears.json', '[{ "x": 50, "y": 50 }]'],
+    ]);
+    // A data file's tab is JSON in VS Code; switching to it keeps the program shown.
+    const json = document(at('data/gears.json'), '[{ "x": 50, "y": 50 }]', 'json');
+    fake.documents.push(json);
+    json.text = '[{ "x": 50, "y": 50 }, { "x": 150, "y": 50 }]';
+    fake.textChanged.fire({ document: json });
+    const redrawn = await until('the redraw', () => {
+      const u = lastData(p);
+      return u?.modules?.data?.[0]?.[1].text === json.text ? u : undefined;
+    });
+    expect(redrawn.source).toBe(MAIN);
+  });
+
+  it("a JSON file the program reads, saved on disk, redraws; one it doesn't read (package.json) changes nothing", async () => {
+    const pause = async (ms: number): Promise<void> => {
+      await new Promise((r) => {
+        setTimeout(r, ms);
+      });
+    };
+    const p = await open('main.pathogen');
+    await until('the main', () => lastData(p)?.source === MAIN);
+    await pause(300);
+    const before = p.of('update').length;
+    writeFileSync(at('package.json'), '{ "name": "x" }');
+    for (const w of fake.watchers) w.changed.fire(Uri.file(at('package.json')));
+    await pause(400);
+    expect(p.of('update').length).toBe(before);
+    writeFileSync(at('data/gears.json'), '[{ "x": 50, "y": 50 }, { "x": 150, "y": 50 }]');
+    for (const w of fake.watchers) w.changed.fire(Uri.file(at('data/gears.json')));
+    await until('the redraw', () => lastData(p)?.modules?.data?.[0]?.[1].text.includes('150'));
+  });
+
+  it('pathogen.maxDataSize: a file over it stops at its import; raising it draws', async () => {
+    writeFileSync(at('data/gears.json'), `[${'{ "x": 1, "y": 2 },'.repeat(60_000)}{ "x": 1, "y": 2 }]`);
+    fake.settings['pathogen.maxDataSize'] = 1;
+    const p = await open('main.pathogen');
+    const refused = await until('the error', () => (lastData(p)?.errors.length ? lastData(p) : undefined));
+    // 60,001 records of 19 bytes: 1.09 MB, which reads as 1.1 MB (sizes round up).
+    expect(refused.errors[0]).toMatch(
+      /^main\.pathogen:1:19: error: import file "\.\/data\/gears\.json" is 1\.1 MB, more than the 1 MB a data file can be\./,
+    );
+    fake.settings['pathogen.maxDataSize'] = 2;
+    fake.configChanged.fire({ affectsConfiguration: (section) => section === 'pathogen.maxDataSize' });
+    await until('the drawing', () => lastData(p)?.errors.length === 0 && lastData(p)?.modules?.data?.length === 1);
   });
 });

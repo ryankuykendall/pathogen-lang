@@ -9,7 +9,7 @@
  * running from source), so both threads run the same library.
  *
  * Messages:
- *   host → thread  { id, program, open: [path, text][] }
+ *   host → thread  { id, program, open: [path, text][], maxDataBytes? }
  *   thread → host  { id, result: DrawResult } | { id, failed: string }
  */
 import { createRequire } from 'node:module';
@@ -31,6 +31,8 @@ export interface DrawRequest {
   id: number;
   program: string;
   open: [string, string][];
+  /** The `pathogen.maxDataSize` setting, in bytes, when set. */
+  maxDataBytes?: number;
 }
 
 if (parentPort) {
@@ -43,7 +45,7 @@ if (parentPort) {
   port.on('message', (request: DrawRequest) => {
     // By one spelling per file, as the preview matches open tabs (samePathKey).
     const open = new Map(request.open.map(([p, text]) => [samePathKey(p), text]));
-    drawProgram({ lib, node }, fonts, request.program, (p) => open.get(samePathKey(p))).then(
+    drawProgram({ lib, node }, fonts, request.program, (p) => open.get(samePathKey(p)), request.maxDataBytes).then(
       (result) => port.postMessage({ id: request.id, result }),
       (err: unknown) => port.postMessage({ id: request.id, failed: err instanceof Error ? err.message : String(err) }),
     );

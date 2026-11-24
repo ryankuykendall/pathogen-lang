@@ -1,4 +1,5 @@
 import {
+  dataFormatOf,
   DiagnosticSeverity,
   encodeSemanticTokens,
   formatDocument,
@@ -31,6 +32,7 @@ import {
   CompletionItemKind,
   createConnection,
   DiagnosticSeverity as LSPDiagnosticSeverity,
+  FileChangeType,
   InsertTextFormat,
   LSPErrorCodes,
   ProposedFeatures,
@@ -64,14 +66,41 @@ const connection = createConnection(ProposedFeatures.all);
 // Document manager — full sync (sends entire document content on each change)
 const documents = new TextDocuments(TextDocument);
 
+// Open data files' text, by their one spelling (samePathKey), as the client
+// sends it (`pathogen/dataFile`, packages/vscode-pathogen/src/extension.ts):
+// data files aren't this server's documents, but the files that import them
+// read their unsaved text (docs/data-import.md "In each tool").
+const openDataFiles = new Map<string, string>();
+
 // The files each open document imports (docs/modules.md "In each tool"),
 // read through the open buffers so unsaved edits count.
 const documentModules = new DocumentModules((absolutePath) => {
+  const key = samePathKey(absolutePath);
   for (const document of documents.all()) {
     const file = filePathOf(document.uri);
-    if (file !== null && samePathKey(file) === samePathKey(absolutePath)) return document.getText();
+    if (file !== null && samePathKey(file) === key) return document.getText();
   }
-  return undefined;
+  return openDataFiles.get(key);
+});
+
+/** The `pathogen.maxDataSize` setting (megabytes), as the client sends it; null for the default, 50 MB. */
+function applyMaxDataSize(megabytes: unknown): void {
+  const valid = typeof megabytes === 'number' && Number.isInteger(megabytes) && megabytes >= 1;
+  documentModules.setMaxDataBytes(valid ? megabytes * 1024 * 1024 : undefined);
+}
+
+connection.onNotification('pathogen/dataFile', (params: { uri: string; text: string | null }) => {
+  const file = filePathOf(params.uri);
+  if (file === null) return;
+  if (params.text === null) openDataFiles.delete(samePathKey(file));
+  else openDataFiles.set(samePathKey(file), params.text);
+  // The open files that import it, directly or not, check again.
+  for (const dependent of documentModules.dependents(params.uri)) scheduleValidation(dependent, 200);
+});
+
+connection.onNotification('pathogen/settings', (params: { maxDataSize: unknown }) => {
+  applyMaxDataSize(params.maxDataSize);
+  for (const document of documents.all()) scheduleValidation(document.uri, 0);
 });
 
 // Whether the client understands `${1:x}`/`$0` snippet syntax in completions.
@@ -80,6 +109,7 @@ let clientSupportsSnippets = false;
 
 connection.onInitialize((params: InitializeParams): InitializeResult => {
   clientSupportsSnippets = params.capabilities.textDocument?.completion?.completionItem?.snippetSupport === true;
+  applyMaxDataSize((params.initializationOptions as { maxDataSize?: unknown } | undefined)?.maxDataSize);
 
   // Paths in @font resolve per document, from its own URI (fonts.ts), never
   // from a workspace root.
@@ -584,7 +614,21 @@ documents.onDidClose((event) => {
 // A .pathogen file or a pathogen.json created, changed or deleted on disk (the
 // client's file watcher): any open document may import it, or now find a file
 // it couldn't. Check them all; there are rarely more than a few.
-connection.onDidChangeWatchedFiles(() => {
+connection.onDidChangeWatchedFiles((params) => {
+  // The watcher sees every JSON file (package.json, build output). A data
+  // file changed in place matters only to the open documents that read it or
+  // tried to (DocumentModules.dependents); created or deleted, it may be one
+  // an import couldn't find, and the project's file list changes.
+  const isData = (uri: string): boolean => {
+    const file = filePathOf(uri);
+    return file !== null && path.basename(file) !== 'pathogen.json' && dataFormatOf(file) !== null;
+  };
+  if (params.changes.every((change) => isData(change.uri) && change.type === FileChangeType.Changed)) {
+    for (const change of params.changes) {
+      for (const dependent of documentModules.dependents(change.uri)) scheduleValidation(dependent, 200);
+    }
+    return;
+  }
   documentModules.filesChanged();
   for (const document of documents.all()) scheduleValidation(document.uri, 200);
 });
@@ -752,6 +796,8 @@ function toLSPCompletionItem(item: CompletionItem) {
     kind: mapCompletionKind(item.kind),
     detail: item.detail,
     sortText: item.sortText,
+    // A data key in brackets replaces the dot before it: the client matches what was typed against `.key`.
+    ...(item.filterText === undefined ? {} : { filterText: item.filterText }),
     insertText,
     insertTextFormat: useSnippetFormat ? InsertTextFormat.Snippet : InsertTextFormat.PlainText,
   };

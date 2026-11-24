@@ -21,6 +21,17 @@
   },
   "main": "./out/extension.js",
   "contributes": {
+    "configuration": {
+      "title": "Pathogen",
+      "properties": {
+        "pathogen.maxDataSize": {
+          "type": "integer",
+          "default": 50,
+          "minimum": 1,
+          "markdownDescription": "The largest data file an import reads, in megabytes, as the CLI's `--max-data-size` sets it. A larger file stops the program at its import, with a message that names it. A value that isn't a whole number from 1 counts as 50."
+        }
+      }
+    },
     "languages": [
       {
         "id": "pathogen",

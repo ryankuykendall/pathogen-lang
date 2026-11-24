@@ -223,6 +223,12 @@ export interface ResolveModulesResult {
   graph: ModuleGraph;
   /** Every path, read and cycle mistake found, in the order they were met. */
   errors: ModuleLoadError[];
+  /**
+   * The project paths of the files it tried to read and couldn't (missing,
+   * not text, not a module, too large, a JSON mistake): a change to one of
+   * them may fix the program, so an editor checks it again then.
+   */
+  unread: string[];
 }
 
 export interface ResolveModulesOptions {
@@ -460,7 +466,7 @@ export async function resolveModules(
   for (const planned of planImports(entrySource)) {
     await visit(entry, planned, [entry], []);
   }
-  return { graph: { entry, files, order, data }, errors };
+  return { graph: { entry, files, order, data }, errors, unread: [...failed.keys(), ...failedData.keys()] };
 }
 
 /**

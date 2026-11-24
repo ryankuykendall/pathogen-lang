@@ -61,9 +61,10 @@ export interface DrawingNodeLib {
     filePath: string | null,
     source: string,
     openText: (absolutePath: string) => string | undefined,
+    options?: { maxDataBytes?: number },
   ) => Promise<{
     root: string | null;
-    graph: { files: Map<string, unknown>; order: string[]; entry: string };
+    graph: { files: Map<string, unknown>; order: string[]; entry: string; data?: Map<string, unknown> };
     errors: unknown[];
   }>;
   editorModulePaths: (modules: never) => string[];
@@ -80,6 +81,8 @@ export async function drawProgram(
   fonts: Pick<FontSession, 'load' | 'payloads'>,
   program: string,
   openText: (absolutePath: string) => string | undefined,
+  /** The `pathogen.maxDataSize` setting, in bytes; 50 MB unless given. */
+  maxDataBytes?: number,
 ): Promise<DrawResult> {
   let source = openText(program);
   if (source === undefined) {
@@ -89,7 +92,12 @@ export async function drawProgram(
       return { error: NOT_FOUND, miniature: null, tooLarge: false, files: null };
     }
   }
-  const modules = await libs.node.resolveEditorModules(program, source, openText);
+  const modules = await libs.node.resolveEditorModules(
+    program,
+    source,
+    openText,
+    maxDataBytes === undefined ? {} : { maxDataBytes },
+  );
   const files = libs.node.editorModulePaths(modules as never);
   // Its own name, as the error panel and the rows say it: a path in its project folder.
   const own =
@@ -120,7 +128,8 @@ export async function drawProgram(
   try {
     result = libs.lib.compile(source, {
       ...(registry ? { fonts: registry } : {}),
-      ...(modules.graph.files.size > 0 ? { modules: modules.graph } : {}),
+      // Modules or data files: either is a graph the compile needs.
+      ...(modules.graph.files.size > 0 || (modules.graph.data?.size ?? 0) > 0 ? { modules: modules.graph } : {}),
     }) as CompileResultLike;
   } catch (err) {
     return failed(errorPlace(err instanceof Error ? err.message : String(err), own));

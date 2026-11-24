@@ -47,7 +47,7 @@ describe('previewModules', () => {
     expect([found.errors, found.notices, found.watched]).toEqual([[], [], [join(project, 'parts', 'gears.pathogen')]]);
     // What postMessage carries: JSON, no Map.
     const sent = JSON.parse(JSON.stringify(found.message));
-    const result = lib.compile(MAIN, { modules: modulesForCompile(sent) });
+    const result = lib.compile(MAIN, { modules: modulesForCompile(sent, lib.readJson) });
     // The same drawing as one file with gear written in it.
     const oneFile = lib.compile(
       'fn gear(center, radius, teeth) {\n  star(center.x, center.y, radius, radius - 6, teeth);\n}\ngear(Point(55, 50), 40, 12);\n',
@@ -61,7 +61,9 @@ describe('previewModules', () => {
     const found = await previewModules({ lib, node }, main(), MAIN, (path) =>
       path === gearsPath ? edited : undefined,
     );
-    const result = lib.compile(MAIN, { modules: modulesForCompile(JSON.parse(JSON.stringify(found.message))) });
+    const result = lib.compile(MAIN, {
+      modules: modulesForCompile(JSON.parse(JSON.stringify(found.message)), lib.readJson),
+    });
     expect(result.layers[0].data).toBe(lib.compile('circle(55, 50, 40);').layers[0].data);
   });
 

@@ -1,0 +1,77 @@
+[
+  {
+    "name": "A1 a program whose only import is data sends it, as text, and watches it",
+    "ok": true,
+    "detail": "{\"errors\":[],\"data\":[\"/data/gears.json\"],\"watched\":[\"/Users/ryan/claude-code-projects/svg-path-extended/tmp/verify-3a-step4-U0yhu9/data/gears.json\"]}"
+  },
+  {
+    "name": "A2 the setting's limit: a file over it is an error in the CLI's words",
+    "ok": true,
+    "detail": "[\"main.pathogen:1:17: error: import file \\\"./data/big.json\\\" is 1.6 MB, more than the 1 MB a data file can be. To read it anyway, pass --max-data-size=50 (in VS Code, the pathogen.maxDataSize setting).\"]"
+  },
+  {
+    "name": "B1 a program that imports data draws what the CLI draws (within 1e-9)",
+    "ok": true,
+    "detail": "{\"drawn\":1,\"cli\":1}"
+  },
+  {
+    "name": "B2 an unsaved edit to the data file redraws with its text (one gear: a star and its hub)",
+    "ok": true,
+    "detail": "M count 2"
+  },
+  {
+    "name": "B3 no CSP violations, no page errors",
+    "ok": true,
+    "detail": "{\"csp\":[],\"pageErrors\":[]}"
+  },
+  {
+    "name": "C1 a misspelled key is a warning with the key it means",
+    "ok": true,
+    "detail": "[{\"range\":{\"start\":{\"line\":9,\"character\":13},\"end\":{\"line\":9,\"character\":18}},\"severity\":2,\"message\":\"data/gears.json has no key radus. Did you mean radius?\",\"source\":\"pathogen-data\"}]"
+  },
+  {
+    "name": "C2 …as a warning (severity 2), not an error",
+    "ok": true,
+    "detail": "{\"range\":{\"start\":{\"line\":9,\"character\":13},\"end\":{\"line\":9,\"character\":18}},\"severity\":2,\"message\":\"data/gears.json has no key radus. Did you mean radius?\",\"source\":\"pathogen-data\"}"
+  },
+  {
+    "name": "C3 hover on the import says what the file holds",
+    "ok": true,
+    "detail": "{\"contents\":{\"kind\":\"markdown\",\"value\":\"**gears** — *imported data*\\n\\ndata/gears.json · an array of 2 objects: name, x, y, radius, teeth, Notes (2020)\"},\"range\":{\"start\":{\"line\":1,\"character\":7},\"end\":{\"line\":1,\"character\":12}}}"
+  },
+  {
+    "name": "C4 completion after a loop variable's dot: the keys and their types",
+    "ok": true,
+    "detail": "[\"name string\",\"x number\",\"y number\",\"radius number\",\"teeth number\",\"Notes (2020) string\"]"
+  },
+  {
+    "name": "C5 a key that needs brackets replaces the dot, with what the client matches typing against",
+    "ok": true,
+    "detail": "{\"label\":\"Notes (2020)\",\"kind\":10,\"detail\":\"string\",\"sortText\":\"00005Notes (2020)\",\"filterText\":\".Notes (2020)\",\"insertText\":\"[\\\"Notes (2020)\\\"]\",\"insertTextFormat\":1,\"textEdit\":{\"range\":{\"start\":{\"line\":6,\"character\":11},\"end\":{\"line\":6,\"character\":12}},\"newText\":\"[\\\"Notes (2020)\\\"]\"}}"
+  },
+  {
+    "name": "C6 a data import's path is offered the project's data files, not pathogen.json",
+    "ok": true,
+    "detail": "[\"./data/big.json data file\",\"./data/gears.json data file\"]"
+  },
+  {
+    "name": "C7 an unsaved data edit rechecks the file that imports it (the key now exists)",
+    "ok": true,
+    "detail": "[]"
+  },
+  {
+    "name": "C8 closing it reads the file on disk again (the warning is back)",
+    "ok": true,
+    "detail": "[\"data/gears.json has no key radus. Did you mean radius?\"]"
+  },
+  {
+    "name": "C9 pathogen.maxDataSize 1: the 1.5 MB file stops at its import",
+    "ok": true,
+    "detail": "[\"import file \\\"./data/big.json\\\" is 1.6 MB, more than the 1 MB a data file can be. To read it anyway, pass --max-data-size=50 (in VS Code, the pathogen.maxDataSize setting).\"]"
+  },
+  {
+    "name": "C10 raised to 2: it reads",
+    "ok": true,
+    "detail": "[]"
+  }
+]

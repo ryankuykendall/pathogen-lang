@@ -10,11 +10,24 @@
 import { realpathSync } from 'node:fs';
 import * as path from 'node:path';
 
-/** The ModuleGraph as postMessage carries it: `files` as entries. */
+/**
+ * A data file as postMessage carries it (docs/data-import.md): its text, not
+ * its value. A value is Maps all the way down, which postMessage would turn
+ * into `{}`, so the webview reads the text again (modulesForCompile).
+ */
+export interface DataMessage {
+  path: string;
+  text: string;
+  name: string;
+  importedFrom: unknown[];
+}
+
+/** The ModuleGraph as postMessage carries it: `files` and `data` as entries. */
 export interface ModulesMessage {
   entry: string;
   order: string[];
   files: [string, unknown][];
+  data: [string, DataMessage][];
 }
 
 /** A ModuleGraph (pathogen-lang), as far as the preview reads it. */
@@ -22,6 +35,7 @@ interface GraphLike {
   entry: string;
   order: string[];
   files: Map<string, { source: string }>;
+  data?: Map<string, DataMessage & { value: unknown }>;
 }
 
 /** What the preview needs from `pathogen-lang`. */
@@ -36,6 +50,7 @@ export interface PreviewNodeLib {
     filePath: string | null,
     source: string,
     openText: (absolutePath: string) => string | undefined,
+    options?: { maxDataBytes?: number },
   ) => Promise<{ root: string | null; entry: string; graph: GraphLike; errors: unknown[] }>;
   editorModulePaths: (modules: never) => string[];
 }
@@ -68,15 +83,31 @@ export async function previewModules(
   filePath: string | undefined,
   source: string,
   openText: (absolutePath: string) => string | undefined,
+  /** The `pathogen.maxDataSize` setting, in bytes; 50 MB unless given. */
+  maxDataBytes?: number,
 ): Promise<PreviewModules> {
   const notices = libs.lib.isModuleSource(source) ? [MODULE_PREVIEW_NOTICE] : [];
-  const modules = await libs.node.resolveEditorModules(filePath ?? null, source, openText);
+  const modules = await libs.node.resolveEditorModules(
+    filePath ?? null,
+    source,
+    openText,
+    maxDataBytes === undefined ? {} : { maxDataBytes },
+  );
   const typed = filePath ? path.basename(filePath) : 'Untitled';
   const errors = modules.errors.map((error) => libs.lib.formatModuleLoadError(error as never, typed));
   const { graph } = modules;
-  if (graph.files.size === 0) return { errors, notices, watched: [] };
+  const data = [...(graph.data?.values() ?? [])];
+  if (graph.files.size === 0 && data.length === 0) return { errors, notices, watched: [] };
   return {
-    message: { entry: graph.entry, order: [...graph.order], files: [...graph.files.entries()] },
+    message: {
+      entry: graph.entry,
+      order: [...graph.order],
+      files: [...graph.files.entries()],
+      data: data.map(({ path: dataPath, text, name, importedFrom }): [string, DataMessage] => [
+        dataPath,
+        { path: dataPath, text, name, importedFrom },
+      ]),
+    },
     graph,
     errors,
     notices,
@@ -108,11 +139,25 @@ export function samePathKey(filePath: string): string {
   }
 }
 
-/** A `ModulesMessage` back as the graph compile() takes (the webview's script does the same). */
-export function modulesForCompile<T>(message: ModulesMessage): {
+/**
+ * A `ModulesMessage` back as the graph compile() takes, each data file's text
+ * read again with `readJson` (pathogen-lang's; the webview's script does the
+ * same with its bundled copy). The extension host already read it without a
+ * mistake, so a mistake here is left out: the host's load error says why.
+ */
+export function modulesForCompile<T>(
+  message: ModulesMessage,
+  readJson: (text: string) => { ok: true; value: unknown } | { ok: false },
+): {
   entry: string;
   order: string[];
   files: Map<string, T>;
+  data: Map<string, DataMessage & { value: never }>;
 } {
-  return { entry: message.entry, order: message.order, files: new Map(message.files as [string, T][]) };
+  const data = new Map<string, DataMessage & { value: never }>();
+  for (const [dataPath, file] of message.data ?? []) {
+    const read = readJson(file.text);
+    if (read.ok) data.set(dataPath, { ...file, value: read.value as never });
+  }
+  return { entry: message.entry, order: message.order, files: new Map(message.files as [string, T][]), data };
 }

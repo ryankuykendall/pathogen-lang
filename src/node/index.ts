@@ -11,6 +11,7 @@ import { lstat, mkdir, open, readdir, readFile, readlink, realpath, rename, unli
 import { homedir } from 'node:os';
 import { basename, delimiter, dirname, isAbsolute, join, parse, posix, relative, resolve, sep, win32 } from 'node:path';
 
+import { dataFormatOf } from '../data/data-files';
 import { sfntLooksComplete } from '../host/google-fonts';
 import {
   isModuleSource,
@@ -879,6 +880,8 @@ export interface EditorModules {
   graph: ModuleGraph;
   /** What couldn't be loaded, for getDiagnostics' `loadErrors`. */
   errors: ModuleLoadError[];
+  /** The project paths it tried to read and couldn't: an edit to one may fix the document. */
+  unread?: string[];
 }
 
 /**
@@ -899,6 +902,8 @@ export async function resolveEditorModules(
   filePath: string | null,
   source: string,
   openText: (absolutePath: string) => string | undefined,
+  /** The largest data file to read (VS Code's `pathogen.maxDataSize`); 50 MB unless given. */
+  options: { maxDataBytes?: number } = {},
 ): Promise<EditorModules> {
   if (filePath === null) {
     const entry = '/<unsaved>';
@@ -920,15 +925,56 @@ export async function resolveEditorModules(
   const host = withOpenDocuments(createNodeProjectHost(root), (projectPath) =>
     openText(join(root, ...projectPath.split('/').filter(Boolean))),
   );
-  const { graph, errors } = await resolveModules(source, { host, entry });
-  return { root, entry, graph, errors };
+  const { graph, errors, unread } = await resolveModules(source, {
+    host,
+    entry,
+    ...(options.maxDataBytes !== undefined ? { maxDataBytes: options.maxDataBytes } : {}),
+  });
+  return { root, entry, graph, errors, unread };
 }
 
-/** The absolute paths of the files a document imports: a change to any of them changes its results. */
+/**
+ * The absolute paths of the files a document imports, modules and data
+ * files, and the ones it tried to and couldn't (a data file with a JSON
+ * mistake, a module not found): a change to any of them changes its results.
+ */
 export function editorModulePaths(modules: EditorModules): string[] {
   const { root } = modules;
   if (root === null) return [];
-  return [...modules.graph.files.keys()].map((path) => join(root, ...path.split('/').filter(Boolean)));
+  const paths = [...modules.graph.files.keys(), ...(modules.graph.data?.keys() ?? []), ...(modules.unread ?? [])];
+  return paths.map((path) => join(root, ...path.split('/').filter(Boolean)));
+}
+
+/**
+ * The project's data files by project path, for completing a data import's
+ * path (docs/data-import.md): every file with a data extension, skipping
+ * `pathogen.json` (a project file, in any folder), folders named
+ * `node_modules` or starting with a dot, and links. The walk stops after
+ * `maxFiles` data files.
+ */
+export async function listProjectDataFiles(root: string, limits: { maxFiles?: number } = {}): Promise<string[]> {
+  const maxFiles = limits.maxFiles ?? 2000;
+  const found: string[] = [];
+  const queue: string[] = [''];
+  while (queue.length > 0 && found.length < maxFiles) {
+    const folder = queue.shift()!;
+    let entries: Dirent[];
+    try {
+      entries = await readdir(join(root, ...folder.split('/').filter(Boolean)), { withFileTypes: true });
+    } catch {
+      continue;
+    }
+    for (const entry of entries) {
+      if (found.length >= maxFiles) break;
+      if (entry.name.startsWith('.') || entry.name === 'node_modules') continue;
+      const path = `${folder}/${entry.name}`;
+      if (entry.isDirectory()) queue.push(path);
+      else if (entry.isFile() && entry.name !== PROJECT_FILE_NAME && dataFormatOf(entry.name) !== null) {
+        found.push(path);
+      }
+    }
+  }
+  return found.sort();
 }
 
 /**

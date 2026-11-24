@@ -137,6 +137,9 @@ export const fake = {
   activeChanged: new Emitter<{ document: FakeDocument; viewColumn?: number } | undefined>(),
   textChanged: new Emitter<{ document: FakeDocument }>(),
   renamed: new Emitter<{ files: { oldUri: Uri; newUri: Uri }[] }>(),
+  /** Settings by full name (`pathogen.maxDataSize`), as getConfiguration reads them. */
+  settings: {} as Record<string, unknown>,
+  configChanged: new Emitter<{ affectsConfiguration: (section: string) => boolean }>(),
   reset(): void {
     this.documents = [];
     this.activeTextEditor = undefined;
@@ -145,6 +148,7 @@ export const fake = {
     this.opened = [];
     this.warnings = [];
     this.errors = [];
+    this.settings = {};
   },
 };
 
@@ -172,6 +176,10 @@ export const workspace = {
   isTrusted: true,
   onDidChangeTextDocument: fake.textChanged.event,
   onDidRenameFiles: fake.renamed.event,
+  onDidChangeConfiguration: fake.configChanged.event,
+  getConfiguration: (section: string): { get: <T>(key: string) => T | undefined } => ({
+    get: <T>(key: string): T | undefined => fake.settings[`${section}.${key}`] as T | undefined,
+  }),
   createFileSystemWatcher: () => {
     const w = new FakeWatcher();
     fake.watchers.push(w);

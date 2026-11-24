@@ -1013,6 +1013,27 @@ export function getWebviewContent(compilerUri: string, panZoomUri: string, cspSo
     }
 
     // --- Message handling ---
+    // Data files come as text (a value's Maps don't survive postMessage) and
+    // are read again here, once per text: an update that leaves a file as it
+    // was reuses its value (docs/data-import.md).
+    const dataCache = new Map();
+    function dataFromMessage(entries) {
+      const data = new Map();
+      for (const [path, file] of entries || []) {
+        let known = dataCache.get(path);
+        if (!known || known.text !== file.text) {
+          const read = PathogenLang.readJson(file.text);
+          // The extension host read it without a mistake; its error says why otherwise.
+          if (!read.ok) continue;
+          known = { text: file.text, value: read.value };
+          dataCache.set(path, known);
+        }
+        data.set(path, { ...file, value: known.value });
+      }
+      for (const path of [...dataCache.keys()]) if (!data.has(path)) dataCache.delete(path);
+      return data;
+    }
+
     function applyUpdate(msg) {
       const missing = (msg.fontIds || []).filter((id) => !fontStore.has(id));
       if (missing.length) {
@@ -1027,7 +1048,12 @@ export function getWebviewContent(compilerUri: string, panZoomUri: string, cspSo
       lastFontErrors = msg.errors || [];
       lastModules =
         msg.modules && Array.isArray(msg.modules.files)
-          ? { entry: msg.modules.entry, order: msg.modules.order || [], files: new Map(msg.modules.files) }
+          ? {
+              entry: msg.modules.entry,
+              order: msg.modules.order || [],
+              files: new Map(msg.modules.files),
+              data: dataFromMessage(msg.modules.data),
+            }
           : null;
       showNotices(msg.notices || []);
       const ready = lastFontIds.length && opentypeReady ? opentypeReady : Promise.resolve();

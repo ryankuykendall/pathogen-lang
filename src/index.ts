@@ -60,7 +60,7 @@ export type {
   ResolveFontsOptions,
   ResolveFontsResult,
 } from './host/load-fonts';
-export type { FontCache, FontHost, HostReadResult, LocalFontMatch, ProjectFileHost } from './host/types';
+export type { FontCache, FontHost, HostReadResult, LocalFontMatch, ProjectFileHost, ReadOptions } from './host/types';
 // An error raised in an imported file: names that file, then each call or import back to the compiled one.
 export { ModuleTraceError } from './evaluator/module-runtime';
 // Imports (docs/modules.md): read every imported file before the compile, as for fonts.
@@ -74,6 +74,8 @@ export {
   withOpenDocuments,
 } from './host/load-modules';
 export type {
+  DataFile,
+  ImportForm,
   ImportSite,
   ModuleFile,
   ModuleGraph,
@@ -82,6 +84,13 @@ export type {
   ResolveModulesOptions,
   ResolveModulesResult,
 } from './host/load-modules';
+// Data imports (docs/data-import.md): the data extensions, and the JSON reader
+// a graph sent as text (the VS Code preview's webview) reads its data with.
+export { DEFAULT_MAX_DATA_BYTES } from './host/load-modules';
+export { DATA_EXTENSIONS, dataFormatOf } from './data/data-files';
+export type { DataFormat } from './data/data-files';
+export { readJson } from './data/json-reader';
+export type { DataValue, JsonReadResult } from './data/json-reader';
 export {
   classifyFontSource,
   GENERIC_FONT_FAMILIES,
