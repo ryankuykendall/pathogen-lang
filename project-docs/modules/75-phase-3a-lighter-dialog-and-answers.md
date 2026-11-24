@@ -65,3 +65,5 @@ The Limits paragraph already covered every limit, so answer 2 needs no change th
 ## Next
 
 With both, 3a's build starts, tests first: the parser change for the default import comes first, with the docs commit.
+
+*Answered 2026-11-24:* "The dialog design meets my expectations and I approve of the updated docs." Both approved; the build starts (note 76).
