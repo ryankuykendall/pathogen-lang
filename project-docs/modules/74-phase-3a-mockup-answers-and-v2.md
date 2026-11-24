@@ -79,3 +79,5 @@ Your answers to note 73's questions:
 ## Next
 
 Your answers to these, then the build, tests first. Nothing is pushed until 3a works on all three surfaces.
+
+*Answered 2026-11-24:* see note 75 (1: the formats' order agreed; 2: every refused save in the error panel; 3: a lighter dialog, mockups v3). Question 4, the docs, is still open.

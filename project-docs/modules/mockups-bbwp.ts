@@ -132,7 +132,7 @@ const SETS: MockupSet[] = [
     stamp: '2026-11-24-11:54:26',
     slug: '3a-data-files-mockups-v2',
     title: '3a v2: data files in a workspace',
-    lede: 'Phase 3a, mockups v2 (note 74): your answers to v1. JSON only, since text files (<code>.txt</code>) are on hold; braces for every data file; <b>New data file…</b> opens a dialog for the name and the type, and a new file starts as <code>{}</code>; a save over a limit says why in the error panel. The dialog’s frame is the playground’s own (the Delete… question’s), with the form put into it.',
+    lede: 'Phase 3a, mockups v2 (note 74): your answers to v1. JSON only, since text files (<code>.txt</code>) are on hold; braces for every data file; <b>New data file…</b> opens a dialog for the name and the type, and a new file starts as <code>{}</code>; a save over a limit says why in the error panel. The dialog’s frame is the playground’s own (the Delete… question’s), with the form put into it. <b>The dialog (2b, 2c) is superseded by v3,</b> a lighter one: the name with the extension as a dropdown after it.',
     figures: [
       { base: '1a-tree-editor', caption: '1a · The tree and the editor', note: 'data/gears.json and data/sizes.json, both with the braces; the gears.json tab keeps its extension; the JSON highlighted.' },
       { base: '1b-json-error', caption: '1b · A mistake in the JSON', note: 'Unchanged from v1 but for the tree.' },
@@ -155,6 +155,18 @@ const SETS: MockupSet[] = [
       <li><b>The dialog</b> (2b, 2c): the type list and its descriptions, and Create off for a taken name. <i>Recommended: as shown.</i></li>
     </ol>
   </section>`,
+  },
+  {
+    dir: 'mockups-3a-data-files-v3',
+    stamp: '2026-11-24-12:09:07',
+    slug: '3a-data-files-mockups-v3',
+    title: '3a v3: a lighter New data file dialog',
+    lede: 'Phase 3a, mockups v3 (note 75). Your answer to v2’s dialog: “a little lighter weight … the text field on the left and the extension selection as a select/dropdown (almost suffix like) on the right. When the user clicks on the extension drop down, we can use progressive disclosure to provide hints about the contents of the files.” Only the dialog’s states; the rest of v2 stands.',
+    figures: [
+      { base: '2b-new-data-dialog', caption: '2b · The dialog', note: 'One field: the name, and the extension after it as a dropdown (<code>.json</code> first). The line under it says what it adds: <code>data/trips.json</code>. Typing <code>trips.geojson</code> chooses <code>.geojson</code>. Enter or Create makes the file, starting as <code>{}</code>; Esc cancels.' },
+      { base: '2c-extension-list', caption: '2c · The extension’s list', note: 'Opened from the extension: each one with what it holds, in the + menu’s look (its small text under each item). Arrow keys move, Enter chooses, Esc closes the list and leaves the dialog open.' },
+      { base: '2d-name-taken', caption: '2d · A name that’s taken', note: 'The tree’s own words, and Create is off. The same for a name that breaks the name rules, an extension that isn’t one of the four (<code>trips.txt</code>), and a workspace that already holds 20 files.' },
+    ],
   },
 ];
 
