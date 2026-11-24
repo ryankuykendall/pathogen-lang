@@ -555,8 +555,10 @@ describe('completion inside an import path', () => {
     expect(afterQuote.filter((i) => i.kind === 'file')).toEqual([]);
   });
 
-  it('a default import (an error the compile explains) still completes its path', async () => {
-    expect(labels(await completeAt('import gears from "./parts/g|";'))).toEqual(['./parts/gears.pathogen']);
+  // Since phase 3a a name alone imports a data file, so it is offered data
+  // files (tests/data-import-editors.test.ts), and this project has none.
+  it('a name alone is not offered modules: it reads a data file', async () => {
+    expect(labels(await completeAt('import gears from "./parts/g|";'))).toEqual([]);
   });
 });
 

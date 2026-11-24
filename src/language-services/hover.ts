@@ -1,4 +1,5 @@
 import { STDLIB_COMPLETIONS, TYPE_ELEMENT_TYPES, TYPE_PROPERTY_TYPES } from './completion-data.generated';
+import { dataOfDeclaration, describeData } from './data-shapes';
 import { regexNameResolver, resolveMemberAccess } from './member-resolution';
 import {
   declarationSignature,
@@ -70,7 +71,7 @@ export const KEYWORD_HOVER: Record<string, string> = {
   // No `from` entry: it's contextual, and KEYWORD_HOVER is checked before scope
   // resolution, so it would shadow the hover of a variable named `from`.
   import:
-    '**import** — Use names a module exports\n```\nimport { gear, Teeth as Kind } from "./parts/gears.pathogen";\nimport * as gears from "./parts/gears.pathogen";\n```\nImports come first in the file. Only a module (a file that starts with `module;`) can be imported; only its exports reach you, and they can\'t be changed. Works in the CLI and VS Code.',
+    '**import** — Use names a module exports, or what a data file holds\n```\nimport { gear, Teeth as Kind } from "./parts/gears.pathogen";\nimport * as gears from "./parts/gears.pathogen";\nimport sizes from "./data/sizes.json";\n```\nImports come first in the file. A module (a file that starts with `module;`) is imported with braces or `* as`, and only its exports reach you; a data file (JSON) by a name. What you import can\'t be changed.',
   export:
     '**export** — Offer a top-level `const`, `fn` or `enum` to files that import this one\n```\nmodule;\n\nexport const toothDepth = 6;\nexport fn gear(center, radius, teeth) { ... }\n```\nOnly works in a module: a file that starts with `module;`.',
   calc: '**calc()** — Wrap arithmetic expressions for path arguments\n```\nM calc(x + 10) calc(y * 2)\n```',
@@ -297,6 +298,13 @@ export function getHoverInfo(
   }
   if (!matched) matched = findDeclaration(getScopeInfo(), word.text, position);
   if (matched) {
+    // A data import (docs/data-import.md "In the editor"): what the file holds.
+    if (matched.kind === 'import' && matched.importFrom?.data) {
+      const reach = graph ? dataOfDeclaration(matched, graph) : null;
+      const header = `**${matched.name}** — *imported data*`;
+      const contents = reach ? `${header}\n\n${reach.file} · ${describeData(reach.values[0])}` : header;
+      return { contents, range: word.range };
+    }
     if (graph && matched.kind === 'import') {
       const target = resolveImport(graph, graph.entry, matched);
       if (target) return { contents: importTargetHover(matched.name, target), range: word.range };

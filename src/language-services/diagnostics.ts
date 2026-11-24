@@ -1,7 +1,13 @@
+import { chainEndingAt, dataOfExpression, keysOfReach, nearestKey, reachIsObjects } from './data-shapes';
+import { StringTextDocument } from './document';
+import { analyzeScopes } from './scope-analysis';
+import { findDeclaration } from './type-inference-ast';
+import { DiagnosticSeverity } from './types';
 import { evaluate } from '../evaluator';
 import { ModuleTraceError } from '../evaluator/module-runtime';
 import { groupWarnings } from '../evaluator/warning-groups';
 import { describeInImportedFile } from '../host/load-modules';
+import { dataNoKeyWarning } from '../module-messages';
 import {
   parse,
   detectMissingSemicolon,
@@ -10,16 +16,17 @@ import {
   isLegacyStyleOpenerError,
   LEGACY_STYLE_OPENER_MESSAGE,
 } from '../parser';
-import { StringTextDocument } from './document';
 import { describeExportPlacement, describeIncompleteImport, findModuleViolations } from '../parser/module-check';
 import { parser as lezerParser } from '../parser/pathogen.generated';
 import { findReservedBindings } from '../parser/reserved-bindings';
 
+import type { Tree } from '@lezer/common';
+
 import type { TextDocument } from './document';
+import type { ScopeInfo } from './scope-analysis';
 import type { Diagnostic } from './types';
 import type { FontRegistry } from '../evaluator/types';
 import type { ModuleGraph, ModuleLoadError } from '../host/load-modules';
-import { DiagnosticSeverity } from './types';
 
 /**
  * What a host that loaded the document's fonts passes in — with the same
@@ -100,6 +107,55 @@ function loadErrorDiagnostic(error: ModuleLoadError, document: TextDocument): Di
     message: here ? error.message : describeInImportedFile(error.file, error, error.message, error.importedFrom),
     source: 'pathogen-modules',
   };
+}
+
+/**
+ * A key no item in an imported data file has, read with a dot or in brackets
+ * (`gear.radus`, `gears[0]["teth"]`): a warning at the key, with the nearest
+ * one (docs/data-import.md "In the editor"). Reading it gives null, so the
+ * program still runs. A key only some items have may be optional, so it isn't
+ * underlined; neither is anything when a list is too long to check whole.
+ */
+function dataKeyDiagnostics(tree: Tree, source: string, document: TextDocument, graph: ModuleGraph): Diagnostic[] {
+  const found: Diagnostic[] = [];
+  let info: ScopeInfo | null = null;
+  const check = (receiverEnd: number, key: string, from: number, to: number): void => {
+    // Read in place: once for every key in the file, so never a copy of all before it.
+    const receiver = chainEndingAt(source, receiverEnd);
+    if (!receiver) return;
+    const at = document.positionAt(receiverEnd);
+    info ??= analyzeScopes(document);
+    const scopes = info;
+    const reach = dataOfExpression(receiver, (name) => findDeclaration(scopes, name, at), graph);
+    if (!reach?.complete || !reachIsObjects(reach)) return;
+    const keys = keysOfReach(reach);
+    if (keys.has(key)) return;
+    found.push({
+      range: { start: document.positionAt(from), end: document.positionAt(to) },
+      severity: DiagnosticSeverity.Warning,
+      message: dataNoKeyWarning(reach.file, key, nearestKey(key, keys.keys())),
+      source: 'pathogen-data',
+    });
+  };
+  tree.iterate({
+    enter(node) {
+      if (node.name !== '.' && node.name !== '[') return;
+      const next = node.node.nextSibling;
+      if (!next) return;
+      const after = next.nextSibling;
+      if (node.name === '.') {
+        // `.key`, not a method call (`.has("x")`, `.map {|…| }`), and not `.length`, an object's key count.
+        if (next.name !== 'Identifier' || after?.name === 'ArgList' || after?.name === 'TrailingBlock') return;
+        const key = source.slice(next.from, next.to);
+        if (key !== 'length') check(node.from, key, next.from, next.to);
+      } else if (next.name === 'String' && after?.name === ']') {
+        const written = source.slice(next.from, next.to);
+        // Only a plain string: a key with escapes or `${…}` is left alone.
+        if (/^"[^"\\]*"$/.test(written)) check(node.from, written.slice(1, -1), next.from, next.to);
+      }
+    },
+  });
+  return found;
 }
 
 function diagnose(document: TextDocument, options: DiagnosticsOptions, runEvaluator: boolean): Diagnostic[] {
@@ -223,6 +279,7 @@ function diagnose(document: TextDocument, options: DiagnosticsOptions, runEvalua
       source: 'pathogen-fonts',
     });
   }
+  if (options.modules?.data?.size) diagnostics.push(...dataKeyDiagnostics(tree, source, document, options.modules));
   if (!runEvaluator) return diagnostics;
   //
   // Without a font registry from the host, any program that uses

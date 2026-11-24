@@ -281,29 +281,49 @@ function heldValues(value: object, tag: string): Iterable<unknown> {
 }
 
 /**
- * Fix a data file's value (docs/data-import.md "What you import is fixed"):
- * the value itself under the name it was imported by, and every array and
- * object inside it as inside that name. Numbers, strings, true/false and
- * null can't change. The walk keeps its own stack, as the reader does, so
+ * Which data file an array or object comes from, and whether it sits inside
+ * the file's value rather than being that value. Unlike a module's values,
+ * which are fixed anew by each compile, a data file's value is shared by every
+ * compile that reads the same text (the loader's cache), so it is marked once
+ * and the marks last as long as the value: a keystroke's compile doesn't walk
+ * 500,000 records again (note 77).
+ */
+export interface DataMark {
+  /** Project path of the data file: `/data/gears.json`. */
+  path: string;
+  inside: boolean;
+}
+
+const dataMarks = new WeakMap<object, DataMark>();
+
+/** The data file a value comes from, when it is an array or object read from one. */
+export function dataMarkOf(value: object): DataMark | undefined {
+  return dataMarks.get(value);
+}
+
+/**
+ * Mark a data file's value as fixed (docs/data-import.md "What you import is
+ * fixed"): the value itself, and every array and object inside it as inside.
+ * Numbers, strings, true/false and null can't change. A value already marked
+ * is left as it is. The walk keeps its own stack, as the reader does, so
  * deeply nested data can't overflow the call stack here.
  */
-export function fixData(value: unknown, file: ModuleIdentity, name: string, fixed: FixedValues): void {
+export function markData(value: unknown, path: string): void {
   type Container =
     { type: 'ArrayValue'; elements: unknown[] } | { type: 'ObjectValue'; properties: Map<string, unknown> };
-  const top: FixedOwner = { file, name };
-  const inside: FixedOwner = { file, name, inside: true };
   const isContainer = (v: unknown): v is Container =>
     typeof v === 'object' &&
     v !== null &&
     ((v as { type?: unknown }).type === 'ArrayValue' || (v as { type?: unknown }).type === 'ObjectValue');
-  if (!isContainer(value) || fixed.has(value)) return;
-  fixed.set(value, top);
+  if (!isContainer(value) || dataMarks.has(value)) return;
+  const inside: DataMark = { path, inside: true };
+  dataMarks.set(value, { path, inside: false });
   const pending: Container[] = [value];
   for (let next = pending.pop(); next; next = pending.pop()) {
     const held = next.type === 'ArrayValue' ? next.elements : next.properties.values();
     for (const child of held) {
-      if (!isContainer(child) || fixed.has(child)) continue;
-      fixed.set(child, inside);
+      if (!isContainer(child) || dataMarks.has(child)) continue;
+      dataMarks.set(child, inside);
       pending.push(child);
     }
   }
@@ -344,7 +364,10 @@ export function fixFile(root: Scope, file: ModuleIdentity, fixed: FixedValues): 
   const fixable = (value: unknown): string | undefined => {
     if (typeof value !== 'object' || value === null || !('type' in value)) return undefined;
     const tag = value.type;
-    return typeof tag === 'string' && !NOT_FIXED.has(tag) && !fixed.has(value) ? tag : undefined;
+    // A value from a data file stays that file's, held by a module or not (markData).
+    return typeof tag === 'string' && !NOT_FIXED.has(tag) && !fixed.has(value) && !dataMarks.has(value)
+      ? tag
+      : undefined;
   };
   const mark = (value: object, tag: string, owner: FixedOwner): void => {
     if (DRAWING_TYPES.has(tag)) throw new Error(`${MODULE_DRAWS_MESSAGE} (${owner.name} holds a part of a drawing.)`);

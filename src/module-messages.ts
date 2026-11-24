@@ -335,6 +335,14 @@ export function dataTooLargeError(written: string, bytes: number, limitBytes: nu
   );
 }
 
+/**
+ * A key no item in a data file has (docs/data-import.md "In the editor"):
+ * an editor's warning, since reading it gives null rather than an error.
+ */
+export function dataNoKeyWarning(file: string, key: string, meant: string | null): string {
+  return `${file} has no key ${key}.${meant === null ? '' : ` Did you mean ${meant}?`}`;
+}
+
 /** A data file whose bytes aren't UTF-8 (docs/data-import.md "Errors"). */
 export function dataNotTextError(written: string): string {
   return `import file "${written}" isn't UTF-8 text, so it can't be read. Save it as UTF-8.`;

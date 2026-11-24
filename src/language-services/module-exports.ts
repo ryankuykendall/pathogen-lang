@@ -222,8 +222,12 @@ export type ImportCompletionContext =
   | { kind: 'names'; path?: string; listed: Set<string>; prefix: string }
   /** After `as`: a new name, so there's nothing to offer. */
   | { kind: 'alias' }
-  /** Inside the path's quotes: what is typed so far, which starts at offset `from`. */
-  | { kind: 'path'; typed: string; from: number };
+  /**
+   * Inside the path's quotes: what is typed so far, which starts at offset
+   * `from`. `data` when the import is a name alone, which reads a data file
+   * (docs/data-import.md); braces and `* as` read a module.
+   */
+  | { kind: 'path'; typed: string; from: number; data: boolean };
 
 /** The completion context at `offset` when it is inside an import, else null. */
 export function importCompletionContextAt(tree: Tree, source: string, offset: number): ImportCompletionContext | null {
@@ -232,8 +236,9 @@ export function importCompletionContextAt(tree: Tree, source: string, offset: nu
   for (let at: SyntaxNode | null = node; at; at = at.parent) {
     if (at.name === 'String' && at.parent?.name === 'ImportDeclaration') {
       // Strings in the tree are closed: inside means before the closing quote.
+      const data = at.parent.getChild('DefaultImport') !== null;
       return offset > at.from && offset < at.to
-        ? { kind: 'path', typed: source.slice(at.from + 1, offset), from: at.from + 1 }
+        ? { kind: 'path', typed: source.slice(at.from + 1, offset), from: at.from + 1, data }
         : null;
     }
     if (at.name === 'ImportSpecifier') specifier = at;
@@ -245,8 +250,11 @@ export function importCompletionContextAt(tree: Tree, source: string, offset: nu
   // A path whose closing quote isn't typed yet doesn't parse as a string (the
   // tree breaks the import apart), so it's read from the line.
   const lineStart = source.lastIndexOf('\n', offset - 1) + 1;
-  const open = /^\s*import\b[^"\n]*\bfrom\s*"([^"\n]*)$/.exec(source.slice(lineStart, offset));
-  return open ? { kind: 'path', typed: open[1], from: offset - open[1].length } : null;
+  const line = source.slice(lineStart, offset);
+  const open = /^\s*import\b[^"\n]*\bfrom\s*"([^"\n]*)$/.exec(line);
+  if (!open) return null;
+  const data = /^\s*import\s+[A-Za-z_][A-Za-z0-9_]*\s+from\b/.test(line);
+  return { kind: 'path', typed: open[1], from: offset - open[1].length, data };
 }
 
 function namesContext(

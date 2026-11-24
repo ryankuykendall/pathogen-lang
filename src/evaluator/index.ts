@@ -5,7 +5,7 @@ import { contextAwareFunctions, stdlib } from '../stdlib';
 import { STATEMENT_BUILTINS } from './constructor-registry';
 import { RESERVED_UNIT_NAMES, reservedNameBindingError, reservedNameReferenceError } from './reserved-names';
 import { BUILTIN_NAMES, builtinNameError, builtinNamespaceType } from '../builtin-names';
-import { singularOf } from '../data/data-files';
+import { singularOf, suggestedDataName } from '../data/data-files';
 import {
   assignImportedError,
   crossFileIdClashError,
@@ -36,16 +36,17 @@ import type { ImportSite, ModuleGraph } from '../host/load-modules';
 import {
   CHANGES_RECEIVER,
   CHANGES_RECEIVER_TYPES,
+  dataMarkOf,
   exportsOf,
-  fixData,
   fixFile,
   idPrefixOf,
+  markData,
   importedFromSteps,
   ModuleTraceError,
   moduleOf,
   splitPosition,
 } from './module-runtime';
-import type { FixedValues } from './module-runtime';
+import type { FixedOwner, FixedValues } from './module-runtime';
 import { splitSubpaths } from './subpaths';
 import { dispatchSubscriptions } from './subscriptions';
 import { CALLBACK_METHODS } from '../callback-methods';
@@ -1476,6 +1477,22 @@ function writtenName(expr: Expression | undefined): string | undefined {
 }
 
 /**
+ * The compile's data files by project path, with the name each was first
+ * imported by (loadModules): the name a message about changing one uses.
+ * Undefined in a compile without data, like fixedValues.
+ */
+let dataNames: Map<string, string> | undefined;
+
+/** Who a value from a data file belongs to in this compile, when it is one (markData). */
+function dataOwner(value: object): FixedOwner | undefined {
+  const mark = dataMarkOf(value);
+  if (!mark) return undefined;
+  const name = dataNames?.get(mark.path) ?? suggestedDataName(mark.path);
+  const file: ModuleIdentity = { path: mark.path, label: fileLabel(mark.path), entry: false };
+  return mark.inside ? { file, name, inside: true } : { file, name };
+}
+
+/**
  * How the code spells the place it changes, for copying it: `holes`,
  * `myGears[0].holes`, `table["rows"]`. Undefined when a part of it is
  * computed (`a[i]`, `make().x`), which a message can't repeat faithfully.
@@ -1504,7 +1521,7 @@ function writtenPlace(expr: Expression | undefined): string | undefined {
 function fixedValueChange(value: Value, target: Expression | undefined, verb: 'change' | 'pick from' = 'change'): string | undefined {
   if (fixedValues === undefined || typeof value !== 'object' || value === null) return undefined;
   if (isModuleNamespace(value)) return fixedNamespaceError(writtenName(target) ?? value.label, value.label);
-  const owner = fixedValues.get(value);
+  const owner = fixedValues.get(value) ?? dataOwner(value);
   if (!owner) return undefined;
   const kind: FixedValueKind = isArrayValue(value)
     ? 'array'
@@ -12493,6 +12510,7 @@ function programRootScope(evalState: EvaluationState, modules: ModuleGraph | und
   runningFile = undefined;
   lastStatementLine = undefined;
   fixedValues = undefined;
+  dataNames = undefined;
   if (modules) {
     scope.module = { path: modules.entry, label: fileLabel(modules.entry), entry: true };
     evalState.moduleDefs = {
@@ -12534,15 +12552,19 @@ function loadModules(graph: ModuleGraph, main: EvaluationState, fixed: FixedValu
   const records = new Map<string, ModuleRecord>();
   main.modules = records;
   // Data first: a module can import data (docs/data-import.md). Each file's
-  // value is fixed under the name its first import gave it.
+  // value is fixed (marked once, however many compiles share it), and
+  // messages name it by the name its first import gave it.
   let dataImports: Map<string, Value> | undefined;
   if (graph.data && graph.data.size > 0) {
     dataImports = new Map();
+    const names = new Map<string, string>();
     for (const [path, file] of graph.data) {
-      fixData(file.value, { path, label: fileLabel(path), entry: false }, file.name, fixed);
+      markData(file.value, path);
       dataImports.set(path, file.value);
+      names.set(path, file.name);
     }
     main.dataImports = dataImports;
+    dataNames = names;
   }
   // Ids stay stable only if no two files share a prefix (docs/modules.md "Clashes are errors").
   const prefixes = new Map<string, string>();
@@ -12612,7 +12634,7 @@ export function evaluate(
 ): CompileResult {
   setNumberFormat(options?.toFixed);
   let annotateState: EvaluationState | undefined;
-  const outer = { file: runningFile, line: lastStatementLine, fixed: fixedValues };
+  const outer = { file: runningFile, line: lastStatementLine, fixed: fixedValues, dataNames };
   try {
     const evalState = newEvaluationState({
       fonts: options?.fonts,
@@ -12644,6 +12666,7 @@ export function evaluate(
     runningFile = outer.file;
     lastStatementLine = outer.line;
     fixedValues = outer.fixed;
+    dataNames = outer.dataNames;
   }
 }
 
@@ -12699,7 +12722,7 @@ export function evaluateWithContext(
 ): EvaluateWithContextResult {
   setNumberFormat(options.toFixed);
   let annotateState: EvaluationState | undefined;
-  const outer = { file: runningFile, line: lastStatementLine, fixed: fixedValues };
+  const outer = { file: runningFile, line: lastStatementLine, fixed: fixedValues, dataNames };
   try {
     const evalState = newEvaluationState({
       fonts: options.fonts,
@@ -12765,6 +12788,7 @@ export function evaluateWithContext(
     runningFile = outer.file;
     lastStatementLine = outer.line;
     fixedValues = outer.fixed;
+    dataNames = outer.dataNames;
   }
 }
 

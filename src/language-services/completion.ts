@@ -13,6 +13,8 @@ import {
   STDLIB_COMPLETIONS,
   TYPE_MEMBERS,
 } from './completion-data.generated';
+import { dataOfExpression, isDotKey, keysOfReach, reachIsObjects, receiverBeforeDot } from './data-shapes';
+import { StringTextDocument } from './document';
 import { displayTypeName } from './hover';
 import { inferObjectProperties, regexNameResolver, resolveMemberAccess } from './member-resolution';
 import {
@@ -28,13 +30,14 @@ import {
 import { analyzeScopes } from './scope-analysis';
 import { inferRhsType } from './type-inference';
 import { findDeclaration, inferDeclType, inferExprElementType } from './type-inference-ast';
+import { dataFormatOf } from '../data/data-files';
 import { FILTER_CONSTRUCTORS } from '../evaluator/constructor-registry';
 import { fileLabel } from '../module-messages';
 
 import type { CompletionEntry } from './completion-data-static';
 import type { TextDocument } from './document';
 import type { ImportCompletionContext, LanguageServiceOptions } from './module-exports';
-import type { ScopeInfo } from './scope-analysis';
+import type { Declaration, ScopeInfo } from './scope-analysis';
 import type { Position, Range } from './types';
 import type { ModuleFile, ModuleGraph } from '../host/load-modules';
 
@@ -47,9 +50,12 @@ export interface CompletionItem {
   isSnippet?: boolean;
   /**
    * The text the item replaces, when it isn't the word before the cursor:
-   * an import's path (`./parts/ge`) has slashes and dots in it.
+   * an import's path (`./parts/ge`) has slashes and dots in it, and a data
+   * key in brackets replaces the dot before it.
    */
   range?: Range;
+  /** What an editor matches the typed text against, when `range` takes in more than the label: `.length`. */
+  filterText?: string;
 }
 
 /**
@@ -276,9 +282,12 @@ export function getCompletions(
   }
 
   // Member access (dot completions, call chains, deep property access) —
-  // shared with hover via member-resolution.ts. A namespace's members first.
+  // shared with hover via member-resolution.ts. A namespace's members first,
+  // then an imported data file's keys.
   const namespace = namespaceMembers();
   if (namespace) return namespace;
+  const keys = dataKeyCompletions(textBefore, offset, position, document, options, () => getScopeInfo());
+  if (keys) return keys;
   const memberAccess = resolveMemberAccess(textBefore, source, resolveName, resolveElementType);
   if (memberAccess) {
     return filterByPrefix(
@@ -392,11 +401,19 @@ function importCompletions(
   if (!options.projectFiles) return [];
   const range = { start: document.positionAt(context.from), end: position };
   const fromRoot = context.typed.startsWith('/');
+  // A name alone reads a data file; braces and `* as`, a module (docs/data-import.md).
+  const fits = (path: string): boolean => (context.data ? dataFormatOf(path) !== null : path.endsWith('.pathogen'));
   const items = options.projectFiles
-    .filter((path) => path !== graph.entry)
+    .filter((path) => path !== graph.entry && fits(path))
     .map((path): CompletionItem => {
       const label = fromRoot ? path : relativeImportPath(graph.entry, path);
-      return { label, kind: 'file', detail: 'module', sortText: sortKey(50, label), range };
+      return {
+        label,
+        kind: 'file',
+        detail: context.data ? 'data file' : 'module',
+        sortText: sortKey(50, label),
+        range,
+      };
     });
   return filterByPrefix(items, context.typed);
 }
@@ -583,6 +600,61 @@ function toCompletionItem(entry: CompletionEntry): CompletionItem {
     insertText: entry.insertText,
     isSnippet: entry.isSnippet,
   };
+}
+
+/**
+ * After a dot on imported data (docs/data-import.md "In the editor"): the
+ * keys of the objects there, in the order each first appears, with the type
+ * of its value. `gear.` in a loop over `gears`, `gears[0].`, `first.` for
+ * `let first = gears[0]`. A key that isn't a name, is a keyword, or is
+ * `length` (on an object, `.length` counts its keys) comes in its bracket
+ * form, which replaces the dot. Null when the dot isn't after data.
+ */
+function dataKeyCompletions(
+  textBefore: string,
+  offset: number,
+  position: Position,
+  document: TextDocument,
+  options: LanguageServiceOptions,
+  getScopeInfo: () => ScopeInfo,
+): CompletionItem[] | null {
+  const graph = options.modules;
+  if (!graph?.data?.size) return null;
+  const prefix = /[A-Za-z0-9_]*$/.exec(textBefore)?.[0] ?? '';
+  const afterDot = offset - prefix.length;
+  const receiver = receiverBeforeDot(textBefore.slice(0, afterDot));
+  if (!receiver) return null;
+  // A half-typed `gear.` inside a block (`.map {|gear| return gear.; }`) can
+  // stop the block from parsing, and its parameter with it: then the names
+  // are read again from the text with a placeholder key after the dot.
+  // Only for a name written as a block's parameter (`{|gear|`): any other
+  // name without a declaration (`ctx.`, an enum's) isn't worth a second analysis.
+  let patched: ScopeInfo | null = null;
+  const lookup = (name: string): Declaration | null => {
+    const found = findDeclaration(getScopeInfo(), name, position);
+    if (found) return found;
+    if (!new RegExp(`\\{\\|[^|]*\\b${name}\\b[^|]*\\|`).test(textBefore)) return null;
+    const source = document.getText();
+    patched ??= analyzeScopes(new StringTextDocument(`${source.slice(0, offset)}x${source.slice(offset)}`));
+    return findDeclaration(patched, name, position);
+  };
+  const reach = dataOfExpression(receiver, lookup, graph);
+  if (!reach || !reachIsObjects(reach)) return null;
+  const dotRange: Range = { start: document.positionAt(afterDot - 1), end: position };
+  const items = [...keysOfReach(reach)].map(([key, type], index): CompletionItem => {
+    const sortText = `${String(index).padStart(5, '0')}${key}`;
+    if (isDotKey(key)) return { label: key, kind: 'property', detail: type, sortText };
+    return {
+      label: key,
+      kind: 'property',
+      detail: type,
+      sortText,
+      insertText: `[${JSON.stringify(key)}]`,
+      range: dotRange,
+      filterText: `.${key}`,
+    };
+  });
+  return filterByPrefix(items, prefix);
 }
 
 function sortKey(boost: number, label: string): string {
