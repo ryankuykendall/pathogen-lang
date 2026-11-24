@@ -30,8 +30,9 @@ function networkErrorMessage(base: string): string {
   return `Could not reach the API at ${base}. Check your network connection and the browser DevTools Network tab for details.`;
 }
 
-// Make API request with user ID header
-async function apiRequest(path: string, options: RequestInit = {}): Promise<unknown> {
+// Fetch from the API with the user ID header; a request that never lands is
+// an ApiError of kind 'network'.
+async function apiFetch(path: string, options: RequestInit = {}): Promise<Response> {
   const userId = getUserId();
   const url = `${API_BASE}${path}`;
 
@@ -62,6 +63,12 @@ async function apiRequest(path: string, options: RequestInit = {}): Promise<unkn
     });
     throw error;
   }
+  return response;
+}
+
+// Make API request with user ID header
+async function apiRequest(path: string, options: RequestInit = {}): Promise<unknown> {
+  const response = await apiFetch(path, options);
 
   // Parse response
   const data = await response.json();
@@ -130,6 +137,32 @@ export const workspaceApi = {
       method: 'POST',
       body: JSON.stringify({ name, description }),
     });
+  },
+
+  // One file's text by its hash: a data file a load left for the client to
+  // read (`deferred`, docs/data-import.md). The browser may keep it, since a
+  // hash's bytes never change.
+  async fileText(id: string, sha256: string): Promise<string> {
+    const response = await apiFetch(`/workspace/${id}/file/${sha256}`);
+    if (!response.ok) {
+      const data = (await response.json().catch(() => ({}))) as { error?: string };
+      throw Object.assign(new Error(data.error || 'Could not read the file'), {
+        kind: 'http' as const,
+        status: response.status,
+        data,
+      });
+    }
+    return response.text();
+  },
+
+  // Store one file's text, for a save to name by its hash: a large data file
+  // goes this way, one per request, rather than in a save's body.
+  async storeFile(id: string, text: string): Promise<{ sha256: string; size: number }> {
+    return apiRequest(`/workspace/${id}/file`, {
+      method: 'PUT',
+      body: text,
+      headers: { 'Content-Type': 'text/plain; charset=utf-8' },
+    }) as Promise<{ sha256: string; size: number }>;
   },
 };
 

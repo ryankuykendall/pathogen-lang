@@ -13,7 +13,7 @@
 // rebuilding per keystroke would re-analyze every file).
 
 import { store } from '../state/store.js';
-import { isWorkspaceFile, workspaceNow } from './workspace-files.js';
+import { isDataFile, isWorkspaceFile, workspaceNow } from './workspace-files.js';
 
 import type { WorkspaceTexts } from './workspace-files.js';
 
@@ -26,7 +26,12 @@ type ModuleLoadError = Resolved['errors'][number];
 export interface OpenFileModules {
   modules: ModuleGraph;
   loadErrors: ModuleLoadError[];
-  /** Every library in the workspace, by project path: what an import path can complete to. */
+  /**
+   * The project paths it tried to read and couldn't (a missing file, a JSON
+   * mistake): editing one may fix the program, so it counts as an input.
+   */
+  unread: string[];
+  /** Every module and data file in the workspace, by project path: what an import path can complete to. */
   projectFiles: string[];
 }
 
@@ -47,12 +52,33 @@ function lib(): Lib | null {
 let current: { key: string; value: OpenFileModules } | null = null;
 let building: { key: string; done: Promise<OpenFileModules | null> } | null = null;
 
+/**
+ * Each file's text as last keyed, with a number that changes when its text
+ * does. The key names other files by these numbers, not their texts: a
+ * workspace can hold 50 MB of data files, and writing them into a key after
+ * every keystroke took 83 ms (phase 3a step 6, note 81).
+ */
+const textVersions = new Map<string, { text: string; version: number }>();
+let lastVersion = 0;
+
+function versionOf(path: string, text: string): number {
+  const known = textVersions.get(path);
+  // Typing replaces only the open file's text, so the others are the same
+  // strings as last time, and compare at once.
+  if (known?.text === text) return known.version;
+  lastVersion += 1;
+  textVersions.set(path, { text, version: lastVersion });
+  return lastVersion;
+}
+
 /** What the graph depends on: the open file, its import lines, and every other file's text. */
 export function graphKey(workspace: WorkspaceTexts, planImports: (source: string) => { written: string }[]): string {
   const open = workspace.openFile !== null ? (workspace.texts.get(workspace.openFile) ?? '') : '';
+  for (const path of textVersions.keys()) if (!workspace.texts.has(path)) textVersions.delete(path);
   const others = [...workspace.texts]
     .filter(([path]) => path !== workspace.openFile)
-    .sort(([a], [b]) => (a < b ? -1 : 1));
+    .sort(([a], [b]) => (a < b ? -1 : 1))
+    .map(([path, text]) => [path, versionOf(path, text)]);
   return JSON.stringify([workspace.openFile, planImports(open).map((p) => p.written), others, workspace.folders]);
 }
 
@@ -60,12 +86,24 @@ export function graphKey(workspace: WorkspaceTexts, planImports: (source: string
 async function build(workspace: WorkspaceTexts, entry: string, l: Lib, label: string): Promise<OpenFileModules> {
   const host = l.createMemoryProjectHost(workspace.texts, { label, folders: workspace.folders });
   const source = workspace.texts.get(entry) ?? '';
-  const { graph, errors } = await l.resolveModules(source, { host, entry: `/${entry}` });
+  const { graph, errors, unread } = await l.resolveModules(source, { host, entry: `/${entry}` });
+  // Modules and data files: the engine offers data files to a name alone
+  // (`import gears from "…"`) and modules to braces and `* as`.
   const projectFiles = [...workspace.texts]
-    .filter(([path, text]) => path !== entry && l.isModuleSource(text))
+    .filter(([path, text]) => path !== entry && (isDataFile(path) || l.isModuleSource(text)))
     .map(([path]) => `/${path}`)
     .sort();
-  return { modules: graph, loadErrors: errors, projectFiles };
+  return { modules: graph, loadErrors: errors, unread: unread ?? [], projectFiles };
+}
+
+/**
+ * Every workspace file a program's drawing depends on, beside the program:
+ * the modules it imports, the data files it reads, and the files it tried to
+ * read and couldn't (fixing one may fix it). Paths without the leading slash.
+ */
+export function filesUsed(graph: OpenFileModules): string[] {
+  const paths = new Set([...graph.modules.files.keys(), ...(graph.modules.data?.keys() ?? []), ...graph.unread]);
+  return [...paths].map((path) => path.replace(/^\/+/, ''));
 }
 
 /**
@@ -77,10 +115,11 @@ export async function refreshOpenFileModules(
 ): Promise<OpenFileModules | null> {
   const l = lib();
   if (!l) return null;
-  // pathogen.json in the editor has no imports, and with no file open there's no
-  // file to ask about: keep the last graph rather than build one.
+  // pathogen.json and a data file in the editor have no imports, and with no
+  // file open there's no file to ask about: keep the last graph rather than
+  // build one (a data file is never read as Pathogen).
   const open = workspace.openFile;
-  if (!isWorkspaceFile(open)) return current?.value ?? null;
+  if (!isWorkspaceFile(open) || isDataFile(open)) return current?.value ?? null;
   const key = graphKey(workspace, l.planImports);
   if (current?.key === key) return current.value;
   if (building?.key === key) return building.done;

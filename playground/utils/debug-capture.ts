@@ -11,8 +11,9 @@
 // places, the import graph, which files are modules).
 
 import { errorRowText, readMessage } from '../services/error-place.js';
-import { programToShow, shownProgramText, workspaceNow } from '../services/workspace-files.js';
+import { isDataFile, programToShow, shownProgramText, workspaceNow } from '../services/workspace-files.js';
 import { store } from '../state/store.js';
+import { formatBytes, utf8Length } from './format-bytes.js';
 
 import type { ErrorPlace, ErrorReading } from '../services/error-place.js';
 import type { CompileWarning, LayerOutput, LogEntry } from '../types/compiler.js';
@@ -47,12 +48,22 @@ function clip(text: string, limit = CAPTURE_TEXT_LIMIT): string {
   return `${text.slice(0, limit)}… (${plural(text.length - limit, 'more character')})`;
 }
 
+/** A data file in the reach comes with this many lines, unless the error is in it. */
+export const CAPTURE_DATA_LINES = 20;
+
+/** Lines of a file longer than this are cut, so a data file on one line doesn't fill the report. */
+export const CAPTURE_LINE_CHARS = 200;
+
 export interface CaptureFile {
   /** A workspace path. */
   path: string;
   text: string;
-  kind: 'program' | 'module';
+  kind: 'program' | 'module' | 'data';
 }
+
+/** A line of a file, cut at CAPTURE_LINE_CHARS with "…" where it stops. */
+const cutLine = (line: string): string =>
+  line.length > CAPTURE_LINE_CHARS ? `${line.slice(0, CAPTURE_LINE_CHARS)}…` : line;
 
 export interface CaptureInput {
   timestamp: string;
@@ -103,12 +114,29 @@ function fenceFor(text: string): string {
   return '`'.repeat(Math.max(3, longest + 1));
 }
 
+/** The most characters of one line an excerpt shows. */
+const EXCERPT_LINE_CHARS = 300;
+
+/**
+ * A line of an excerpt: whole, or cut to EXCERPT_LINE_CHARS. The error's own
+ * line is cut around its column (1-based), so a mistake far along a data file
+ * written on one line still shows.
+ */
+function aroundColumn(text: string, column: number | null): string {
+  if (text.length <= EXCERPT_LINE_CHARS || column === null || column <= EXCERPT_LINE_CHARS / 2) {
+    return clip(text, EXCERPT_LINE_CHARS);
+  }
+  const start = Math.min(column - 1 - EXCERPT_LINE_CHARS / 2, text.length - EXCERPT_LINE_CHARS);
+  const end = start + EXCERPT_LINE_CHARS;
+  return `…${text.slice(start, end)}${end < text.length ? '…' : ''}`;
+}
+
 /**
  * The lines around `line` (1-based) in `file`, numbered as in the file, the
  * line itself marked; or why they can't be shown: the file is gone, or the
  * line is past its end (it changed since that compile).
  */
-function excerpt(file: string, text: string | undefined, line: number): string {
+function excerpt(file: string, text: string | undefined, line: number, column: number | null = null): string {
   if (text === undefined) return `(${file} isn't in the workspace now.)\n`;
   const all = linesOf(text);
   if (line < 1 || line > all.length) {
@@ -120,7 +148,8 @@ function excerpt(file: string, text: string | undefined, line: number): string {
   const width = Math.max(2, String(to).length);
   const rows: string[] = [];
   for (let n = from; n <= to; n++) {
-    rows.push(`${n === line ? '>' : ' '} ${String(n).padStart(width)} | ${clip(all[n - 1], 300)}`);
+    const text = aroundColumn(all[n - 1], n === line ? column : null);
+    rows.push(`${n === line ? '>' : ' '} ${String(n).padStart(width)} | ${text}`);
   }
   const body = rows.join('\n');
   const fence = fenceFor(body);
@@ -138,7 +167,7 @@ function errorsSection(input: CaptureInput, textOf: (path: string) => string | u
     out += `\n### ${place}\n${clip(r.text)}\n`;
     for (const step of r.steps) out += `  ${step.kind} ${step.file} line ${step.line}\n`;
     // The first few get their lines; the rest their place, which is enough to find them.
-    if (r.line !== null && i < EXCERPT_LIMIT) out += `\n${excerpt(r.file, textOf(r.file), r.line)}`;
+    if (r.line !== null && i < EXCERPT_LIMIT) out += `\n${excerpt(r.file, textOf(r.file), r.line, r.column)}`;
   }
   if (input.readings.length > CAPTURE_LINE_LIMIT) {
     out += `\n… ${input.readings.length - CAPTURE_LINE_LIMIT} more errors\n`;
@@ -168,24 +197,34 @@ function filesSection(input: CaptureInput): string {
   for (const path of input.reach ?? []) take(path);
   let out = '## Files\nThe program shown and the files its imports reach, the file where the error happened first.\n';
   let budget = CAPTURE_FILES_LIMIT;
+  const errorIn = new Set(input.readings.map((r) => r.file));
   for (const path of order) {
     const file = byPath.get(path)!;
     const all = linesOf(file.text);
-    const what = path === input.shown ? 'the program shown' : file.kind;
-    out += `\n### ${path} (${what}, ${plural(all.length, 'line')})\n`;
-    const kept = Math.max(0, Math.min(all.length, CAPTURE_LINE_LIMIT, budget));
+    const data = file.kind === 'data';
+    const what = path === input.shown ? 'the program shown' : data ? 'data file' : file.kind;
+    const size = data ? `${formatBytes(utf8Length(file.text))}, ` : '';
+    out += `\n### ${path} (${what}, ${size}${plural(all.length, 'line')})\n`;
+    // A data file shows its first lines, unless the error is in it (a JSON mistake).
+    const most = data && !errorIn.has(path) ? CAPTURE_DATA_LINES : CAPTURE_LINE_LIMIT;
+    const kept = Math.max(0, Math.min(all.length, most, budget));
     budget -= kept;
     if (kept > 0) {
-      const body = all.slice(0, kept).join('\n');
+      const body = all.slice(0, kept).map(cutLine).join('\n');
       const fence = fenceFor(body);
-      out += `${fence}pathogen\n${body}\n${fence}\n`;
+      out += `${fence}${data ? 'json' : 'pathogen'}\n${body}\n${fence}\n`;
     }
     if (kept < all.length) out += `…${plural(all.length - kept, 'more line')}\n`;
   }
   const rest = input.files.filter((f) => !order.includes(f.path));
   if (rest.length > 0) {
     out += '\nOther files, not included:\n';
-    for (const f of rest) out += `- ${f.path}: ${f.kind}, ${plural(linesOf(f.text).length, 'line')}\n`;
+    for (const f of rest) {
+      out +=
+        f.kind === 'data'
+          ? `- ${f.path}: data file, ${formatBytes(utf8Length(f.text))}\n`
+          : `- ${f.path}: ${f.kind}, ${plural(linesOf(f.text).length, 'line')}\n`;
+    }
   }
   return out;
 }
@@ -333,8 +372,14 @@ export interface CaptureContext {
   readings?: readonly ErrorReading[];
   others?: readonly { program: string; place: ErrorPlace }[];
   reach?: readonly string[] | null;
-  kindOf?: (path: string, text: string) => 'program' | 'module';
+  kindOf?: (path: string, text: string) => CaptureFile['kind'];
   notes?: readonly string[];
+}
+
+/** Without workspace-view's reading: a data file by its extension, a module by its header. */
+function defaultKindOf(path: string, text: string): CaptureFile['kind'] {
+  if (isDataFile(path)) return 'data';
+  return /^\s*module;/.test(text) ? 'module' : 'program';
 }
 
 /** The report for the workspace as it stands, read from the store and from what workspace-view gives. */
@@ -342,7 +387,7 @@ export function buildDebugCapture(context: CaptureContext = {}): string {
   const state = store.getAll();
   const workspace = workspaceNow();
   const shown = programToShow(workspace, state.shownProgram ?? null);
-  const kindOf = context.kindOf ?? ((_path: string, text: string) => (/^\s*module;/.test(text) ? 'module' : 'program'));
+  const kindOf = context.kindOf ?? defaultKindOf;
   const files: CaptureFile[] = [...workspace.texts].map(([path, text]) => ({ path, text, kind: kindOf(path, text) }));
   // A scratch link holds no workspace files: its one program is what the preview shows.
   if (!workspace.texts.has(shown)) {

@@ -6,7 +6,13 @@
 import type { HostFetch } from './google-fonts';
 
 export type HostReadResult =
-  | { ok: true; bytes: Uint8Array }
+  /**
+   * `text`, when the host holds the file as text already (the playground's
+   * workspace in memory): the loader reads it rather than decoding `bytes`,
+   * which such a host makes only when asked (phase 3a step 6: a 5 MB data file
+   * read on every keystroke).
+   */
+  | { ok: true; bytes: Uint8Array; text?: string }
   /** `osPath` is where the host looked, for the message. */
   | { ok: false; code: 'not-found'; osPath: string }
   /** The file exists with different letter case; `actual` is the project path as it is on disk. */

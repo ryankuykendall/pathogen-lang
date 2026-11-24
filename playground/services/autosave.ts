@@ -4,12 +4,15 @@
 import { workspaceApi } from './api.js';
 import { isWorkspaceFile, MAIN_FILE, withOpenFileText, workspaceNow } from './workspace-files.js';
 import { store } from '../state/store.js';
+import { utf8Length } from '../utils/format-bytes.js';
 
 import type { WorkspaceTexts } from './workspace-files.js';
 
 // Autosave configuration
 const DEBOUNCE_MS = 5000; // 5 seconds after last change
 const MIN_INTERVAL_MS = 30000; // 30 seconds minimum between saves
+// Bytes a save's request adds to its files' body (baseRev): kept free under the server's cap.
+const SAVE_BODY_SLACK = 1024;
 // Under the browsers' 64 KB cap on a keepalive request (fetch's keepalive).
 const KEEPALIVE_MAX_BYTES = 60_000;
 
@@ -180,6 +183,12 @@ class AutosaveManager {
   _savedShas: Map<string, string>;
   _savedTexts: Map<string, string>;
 
+  // Texts stored by PUT /workspace/:id/file ahead of a save (_withinSaveCap),
+  // by path, with their hash: a save that failed after storing one names it
+  // by hash on its retry rather than sending it again. Kept apart from
+  // _savedShas, which says what a landed save holds.
+  _storedTexts: Map<string, { text: string; sha256: string }>;
+
   // Whether the server holds just main.pathogen (see SavedFiles.justMain).
   _serverJustMain: boolean;
 
@@ -224,6 +233,7 @@ class AutosaveManager {
     this._flushPromise = null;
     this._savedShas = new Map();
     this._savedTexts = new Map();
+    this._storedTexts = new Map();
     this._serverJustMain = true;
     this._requests = new Set();
     this._queue = Promise.resolve();
@@ -249,6 +259,7 @@ class AutosaveManager {
     this._lastSavedHash = initialHash;
     this._savedShas = new Map(Object.entries(saved.shas ?? {}));
     this._savedTexts = new Map(Object.entries(saved.texts ?? {}));
+    this._storedTexts = new Map();
     this._serverJustMain = saved.justMain ?? true;
     this._baseRev = initialRev;
     this._conflicted = false;
@@ -456,6 +467,47 @@ class AutosaveManager {
     return { files, folders: [...workspace.folders], entryPoints: [...workspace.entryPoints] };
   }
 
+  /**
+   * A save's body within the server's cap (LIMITS.saveBodyBytes, phase 3a):
+   * while its JSON would pass it, the largest text still in it is stored first
+   * through PUT /workspace/:id/file and named by its hash. Only data files
+   * (up to 5 MB each) make a body that large in practice. `savedShas` gets
+   * each stored file's hash, so the next save names it by hash too.
+   */
+  async _withinSaveCap(
+    workspaceId: string,
+    body: Record<string, unknown>,
+    savedShas: Map<string, string>,
+  ): Promise<Record<string, unknown>> {
+    const lib = window.PathogenLang as { WORKSPACE_LIMITS?: { saveBodyBytes?: number } } | undefined;
+    const limit = lib?.WORKSPACE_LIMITS?.saveBodyBytes;
+    const sent = body.files as Record<string, { text: string } | { sha256: string }> | undefined;
+    if (limit === undefined || sent === undefined) return body;
+    // Room for what the request adds to the body (its baseRev).
+    const cap = limit - SAVE_BODY_SLACK;
+    const json = JSON.stringify(body);
+    // UTF-8 takes at most 3 bytes a UTF-16 unit: a short body needs no count.
+    if (json.length * 3 <= cap) return body;
+    let size = utf8Length(json);
+    if (size <= cap) return body;
+    const files = { ...sent };
+    const largest = Object.entries(sent)
+      .filter((entry): entry is [string, { text: string }] => 'text' in entry[1])
+      .map(([path, file]) => ({ path, text: file.text, bytes: utf8Length(JSON.stringify(file)) }))
+      .sort((a, b) => b.bytes - a.bytes);
+    for (const { path, text, bytes } of largest) {
+      if (size <= cap) break;
+      // Stored already by a save that then failed: its hash is enough.
+      const stored = this._storedTexts.get(path);
+      const sha256 = stored?.text === text ? stored.sha256 : (await workspaceApi.storeFile(workspaceId, text)).sha256;
+      this._storedTexts.set(path, { text, sha256 });
+      files[path] = { sha256 };
+      savedShas.set(path, sha256);
+      size -= bytes - utf8Length(JSON.stringify(files[path]));
+    }
+    return { ...body, files };
+  }
+
   /** Whether this autosave holds `workspaceId` now, knowing which of its files the server has. */
   holds(workspaceId: string | null): boolean {
     return this._isEnabled && workspaceId !== null && workspaceId === this._workspaceId;
@@ -553,13 +605,16 @@ class AutosaveManager {
     const crossing = this._requests.size > 0;
     const answered = this._requestOut(workspace);
     try {
-      const result = (await workspaceApi.update(workspaceId, {
-        ...this._saveBody(workspace, shas),
-        baseRev: this._baseRev,
-      })) as Record<string, unknown>;
+      // The revision this save is based on, read before any wait: a page-leave
+      // save answered while a large file was being stored moves _baseRev on,
+      // and this older text must then 409, not land over the newer one.
+      const baseRev = this._baseRev;
+      const savedShas = new Map(shas);
+      const body = await this._withinSaveCap(workspaceId, this._saveBody(workspace, shas), savedShas);
+      const result = (await workspaceApi.update(workspaceId, { ...body, baseRev })) as Record<string, unknown>;
       if (!this._bound(token)) return false;
       // The server now stores these files.
-      this._recordSaved(workspace, shas);
+      this._recordSaved(workspace, savedShas);
       this._crossingRetried = false;
 
       // Advance our base revision from the server's authoritative value so the

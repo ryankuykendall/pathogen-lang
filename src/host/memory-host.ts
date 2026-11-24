@@ -47,7 +47,17 @@ export function createMemoryProjectHost(
       const path = projectPath.replace(/^\/+/, '');
       if (path === '') return { ok: false, code: 'folder' };
       const text = texts.get(path);
-      if (text !== undefined) return { ok: true, bytes: encoder.encode(text) };
+      if (text !== undefined) {
+        // The text itself, so the loader needn't encode and decode it again;
+        // the bytes only if something asks for them.
+        return {
+          ok: true,
+          text,
+          get bytes(): Uint8Array {
+            return encoder.encode(text);
+          },
+        };
+      }
       if (foldersNow().has(path)) return { ok: false, code: 'folder' };
       const lower = path.toLowerCase();
       for (const existing of texts.keys()) {

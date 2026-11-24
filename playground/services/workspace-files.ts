@@ -43,10 +43,74 @@ export function mainOf(files: Record<string, string>, entryPoints: readonly stri
 
 /** What a load answers (website/api: `files` with each text, or `code` from a server before phase 2). */
 export interface WorkspaceAnswer {
-  files?: Record<string, { text?: string }>;
+  files?: Record<string, AnsweredFile>;
   folders?: string[];
   entryPoints?: string[];
   code?: string;
+}
+
+/**
+ * Whether a workspace path is a data file (`.json`, `.geojson`, `.topojson`,
+ * `.fold`), by its extension: never a program or a module, whatever its text.
+ */
+export function isDataFile(path: string): boolean {
+  if (typeof window === 'undefined') return false;
+  return window.PathogenLang?.workspaceFileKind?.(path) === 'data';
+}
+
+/**
+ * A file as a load answers it: its text, or, for a data file past the load's
+ * budget (phase 3a step 5, note 80), `deferred`, to read by its hash.
+ */
+export interface AnsweredFile {
+  text?: string;
+  sha256?: string;
+  size?: number;
+  deferred?: boolean;
+}
+
+/** At most this many deferred files are read at once. */
+const DEFERRED_READS = 4;
+
+/**
+ * The load's answer with each deferred file's text, read by its hash with
+ * `read` (GET /workspace/:id/file/:sha256), a few at a time. The same text at
+ * two paths is read once. A file that can't be read fails the load, naming
+ * it: a workspace opened without it would drop it at the next save.
+ */
+export async function withDeferredTexts(
+  answer: WorkspaceAnswer,
+  read: (sha256: string) => Promise<string>,
+): Promise<WorkspaceAnswer> {
+  if (!answer.files) return answer;
+  const deferred = Object.entries(answer.files).filter(
+    ([, file]) => file.deferred === true && typeof file.text !== 'string' && typeof file.sha256 === 'string',
+  );
+  if (deferred.length === 0) return answer;
+  const pathOf = new Map<string, string>();
+  for (const [path, file] of deferred) if (!pathOf.has(file.sha256!)) pathOf.set(file.sha256!, path);
+  const queue = [...pathOf.keys()];
+  const texts = new Map<string, string>();
+  const reader = async (): Promise<void> => {
+    for (let sha256 = queue.shift(); sha256 !== undefined; sha256 = queue.shift()) {
+      try {
+        texts.set(sha256, await read(sha256));
+      } catch (err) {
+        // A new error, without the request's status: a 404 here is a lost
+        // file, not a missing workspace.
+        throw new Error(
+          `Couldn't read ${pathOf.get(sha256)} (${(err as Error).message}). Reload the page to try again.`,
+        );
+      }
+    }
+  };
+  await Promise.all(Array.from({ length: Math.min(DEFERRED_READS, queue.length) }, reader));
+  const files: Record<string, AnsweredFile> = {};
+  for (const [path, file] of Object.entries(answer.files)) {
+    const text = file.deferred === true && file.sha256 !== undefined ? texts.get(file.sha256) : undefined;
+    files[path] = text === undefined ? file : { sha256: file.sha256, size: file.size, text };
+  }
+  return { ...answer, files };
 }
 
 /** The store's workspace fields for a loaded workspace, and the file the editor opens (none for an empty one). */
@@ -74,11 +138,11 @@ export function workspaceFromAnswer(answer: WorkspaceAnswer): {
 }
 
 /**
- * Files a load answered without their text: not .pathogen (a data file or a
- * font, after phase 2). This playground can't hold them, and a save sends
+ * Files a load answered without their text, after withDeferredTexts: a kind
+ * this playground can't hold as text (a font, in a later phase). A save sends
  * every file the workspace keeps, so it mustn't save a workspace holding any.
- * None can exist yet: the server takes only .pathogen files and returns each
- * one's text.
+ * None can exist yet: the server takes .pathogen and data files, and a data
+ * file's text is read by its hash.
  */
 export function filesWithoutText(answer: WorkspaceAnswer): string[] {
   return Object.entries(answer.files ?? {})
@@ -97,7 +161,9 @@ export function fileToOpen(files: Record<string, string>, entryPoints: readonly 
   const main = entryPoints.find((p) => p in files);
   if (main !== undefined) return main;
   if (MAIN_FILE in files) return MAIN_FILE;
-  return Object.keys(files).sort()[0] ?? null;
+  // A .pathogen file first; a data file only when the workspace holds nothing else.
+  const paths = Object.keys(files).sort();
+  return paths.find((p) => !isDataFile(p)) ?? paths[0] ?? null;
 }
 
 /**
@@ -144,18 +210,20 @@ export function workspaceTexts(state: {
 
 /**
  * The program the preview shows: the one chosen (the chip, in 2d), else the
- * main, else the open file, else the first file. A chosen program that no
- * longer exists falls back to the main (docs/workspace-files.md: "If the
- * program shown is deleted, the preview goes back to the main"). Always one
- * of the workspace's files when it has any: never pathogen.json. With none,
- * main.pathogen, which has no text: the preview draws nothing.
+ * main, else the open file, else the first file, never a data file. A chosen
+ * program that no longer exists falls back to the main (docs/workspace-files.md:
+ * "If the program shown is deleted, the preview goes back to the main"). One
+ * of the workspace's files when it has any but data: never pathogen.json.
+ * Otherwise main.pathogen, which has no text: the preview draws nothing.
  */
 export function programToShow(workspace: WorkspaceTexts, chosen: string | null): string {
   if (chosen !== null && workspace.texts.has(chosen)) return chosen;
   const main = workspace.entryPoints.find((p) => workspace.texts.has(p));
   if (main !== undefined) return main;
-  if (workspace.openFile !== null && workspace.texts.has(workspace.openFile)) return workspace.openFile;
-  return [...workspace.texts.keys()].sort()[0] ?? MAIN_FILE;
+  // Never a data file: it isn't a program, and compiling JSON as one only gives an error.
+  const open = workspace.openFile;
+  if (open !== null && workspace.texts.has(open) && !isDataFile(open)) return open;
+  return [...workspace.texts.keys()].filter((p) => !isDataFile(p)).sort()[0] ?? MAIN_FILE;
 }
 
 /**

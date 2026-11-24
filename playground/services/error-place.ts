@@ -49,11 +49,32 @@ export interface DiagnosticLike {
 
 const OWN_RUNTIME = /^Line (\d+)(?:, col (\d+))?: ?([\s\S]*)$/;
 const OWN_PARSE = /^Parse error at line (\d+), column (\d+): ?([\s\S]*)$/;
-// A workspace path has no spaces (its name rules), so words before ".pathogen line" aren't a file.
-const OTHER_FILE = /^(\S+?\.pathogen) line (\d+)(?:, col (\d+))?: ?([\s\S]*)$/;
-// A file with no line: errorText's own words for an error with no place in it ("main.pathogen: …").
-const FILE_ONLY = /^(\S+?\.pathogen): ([\s\S]*)$/;
+// Only .pathogen files import, so the steps back name only them.
 const STEP = /^\s+(called from|imported from) (.+?\.pathogen) line (\d+)\s*$/;
+
+/**
+ * The patterns for an error in another file: a .pathogen file, or a data
+ * file with a JSON mistake (`data/gears.json line 3, col 3: expected …`).
+ * The data extensions are the engine's own list, so a kind added later (3b's
+ * .csv) is read without a change here.
+ */
+let filePatterns: { key: string; other: RegExp; fileOnly: RegExp } | null = null;
+function patterns(): { other: RegExp; fileOnly: RegExp } {
+  const lib = typeof window === 'undefined' ? undefined : window.PathogenLang;
+  const data = lib?.DATA_EXTENSIONS ?? [];
+  const key = data.join(' ');
+  if (filePatterns?.key !== key) {
+    const extensions = ['.pathogen', ...data].map((e) => e.slice(1).replace(/[^a-z0-9]/gi, '')).join('|');
+    filePatterns = {
+      key,
+      // A workspace path has no spaces (its name rules), so words before ".pathogen line" aren't a file.
+      other: new RegExp(`^(\\S+?\\.(?:${extensions})) line (\\d+)(?:, col (\\d+))?: ?([\\s\\S]*)$`, 'i'),
+      // A file with no line: errorText's own words for an error with no place in it ("main.pathogen: …").
+      fileOnly: new RegExp(`^(\\S+?\\.(?:${extensions})): ([\\s\\S]*)$`, 'i'),
+    };
+  }
+  return filePatterns;
+}
 
 /** A path as the workspace names it: project paths (`/parts/gears.pathogen`) lose their slash. */
 const workspacePath = (path: string): string => path.replace(/^\/+/, '');
@@ -94,7 +115,7 @@ function readOne(lines: readonly string[], program: string): ErrorReading {
       site: null,
     };
   }
-  const other = OTHER_FILE.exec(first);
+  const other = patterns().other.exec(first);
   if (other) {
     const file = workspacePath(other[1]);
     return {
@@ -106,7 +127,7 @@ function readOne(lines: readonly string[], program: string): ErrorReading {
       site: file === program ? null : siteFromSteps(steps, program),
     };
   }
-  const fileOnly = FILE_ONLY.exec(first);
+  const fileOnly = patterns().fileOnly.exec(first);
   if (fileOnly) {
     const file = workspacePath(fileOnly[1]);
     return { file, line: null, column: null, text: words(fileOnly[2]), steps, site: null };
@@ -116,7 +137,7 @@ function readOne(lines: readonly string[], program: string): ErrorReading {
 
 /** Whether a line starts an error: it names a place ("Line 2, col 9:", "parts/gears.pathogen line 7:", a parse error's). */
 const startsError = (line: string): boolean =>
-  OWN_RUNTIME.test(line) || OWN_PARSE.test(line) || OTHER_FILE.test(line) || FILE_ONLY.test(line);
+  OWN_RUNTIME.test(line) || OWN_PARSE.test(line) || patterns().other.test(line) || patterns().fileOnly.test(line);
 
 /**
  * Read a compile's message: one reading for each error in it (a message can

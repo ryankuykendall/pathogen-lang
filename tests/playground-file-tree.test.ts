@@ -621,6 +621,20 @@ describe('renaming and moving', () => {
     expect(hint().textContent).toBe('Updates the imports in 2 files · Enter to rename, Esc to cancel');
   });
 
+  it('a data file’s field holds its name without its own extension, which follows it (phase 3a)', async () => {
+    const global = window as unknown as { PathogenLang?: unknown };
+    const before = global.PathogenLang;
+    global.PathogenLang = await import('../src');
+    try {
+      tree.files = [...GEARS, { path: 'data/dots.json', kind: 'library' }];
+      dots('data/dots.json').click();
+      choose('Rename…');
+      expect([field()!.value, $('.row.input .ext')!.textContent]).toEqual(['dots', '.json']);
+    } finally {
+      global.PathogenLang = before;
+    }
+  });
+
   it('a taken name is refused in place; Enter renames a good one; the same name just closes the field', () => {
     dots('parts/gears.pathogen').click();
     choose('Rename…');

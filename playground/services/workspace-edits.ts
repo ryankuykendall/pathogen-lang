@@ -22,6 +22,7 @@
 
 import { emptyBoilerplate } from '../utils/examples.js';
 import { PROJECT_FILE } from '../utils/workspace-names.js';
+import { isDataFile } from './workspace-files.js';
 
 type Lib = Window['PathogenLang'];
 
@@ -144,9 +145,18 @@ function takenIn(state: WorkspaceState, folder: string, name: string, except?: s
   return null;
 }
 
-/** A typed file name without the .pathogen the field adds. */
-const stripExtension = (typed: string): string =>
-  typed.toLowerCase().endsWith(EXTENSION) ? typed.slice(0, -EXTENSION.length) : typed;
+/** A data file (`.json`, `.geojson`, `.topojson`, `.fold`), by its extension. */
+const isData = (path: string): boolean => isDataFile(path);
+
+/**
+ * The extension a file keeps through Rename…: a data file's own (`.json`),
+ * else `.pathogen` (docs/workspace-files.md "Rename…").
+ */
+export const extensionFor = (path: string): string => (isData(path) ? path.slice(path.lastIndexOf('.')) : EXTENSION);
+
+/** A typed file name without the extension the field adds (`.pathogen` unless another is given). */
+const stripExtension = (typed: string, extension = EXTENSION): string =>
+  typed.toLowerCase().endsWith(extension.toLowerCase()) ? typed.slice(0, -extension.length) : typed;
 
 /** Why the typed name (one or more names joined by "/") can't be used, or null. */
 function typedNameProblem(typed: string): string | null {
@@ -157,7 +167,12 @@ function typedNameProblem(typed: string): string | null {
   return null;
 }
 
-const isLibrary = (text: string): boolean => lib().isModuleSource(text);
+/**
+ * A program: a `.pathogen` file without `module;`. A data file never is,
+ * whatever its text (phase 3a: typing in `gears.json` once added it to the
+ * program list, and every save after was refused).
+ */
+const isProgram = (path: string, text: string): boolean => !isData(path) && !lib().isModuleSource(text);
 
 const nameList = (paths: string[]): string =>
   paths.length > 1 ? `${paths.slice(0, -1).join(', ')} and ${paths[paths.length - 1]}` : (paths[0] ?? '');
@@ -562,15 +577,20 @@ export function moveLabel(change: Change, toFolder: string): string {
   return `Move to ${dest} · updates the imports in ${count} ${count === 1 ? 'file' : 'files'}`;
 }
 
-/** Where Rename… puts a file or folder given the name `typed`: a file keeps its `.pathogen`, typed or not. */
+/**
+ * Where Rename… puts a file or folder given the name `typed`: a file keeps its
+ * extension (`.pathogen`, or a data file's own), typed or not.
+ */
 export function renamedPath(path: string, typed: string, folder: boolean): string {
   const trimmed = typed.trim();
-  return join(parentOf(path), folder ? trimmed : `${stripExtension(trimmed)}${EXTENSION}`);
+  if (folder) return join(parentOf(path), trimmed);
+  const extension = extensionFor(path);
+  return join(parentOf(path), `${stripExtension(trimmed, extension)}${extension}`);
 }
 
 /**
  * Rename… on a file or a folder: the name only. Not the folder it's in (that's
- * Move to…), and not a file's `.pathogen`, which the field doesn't hold.
+ * Move to…), and not a file's extension, which the field doesn't hold.
  */
 export function planRename(state: WorkspaceState, path: string, typed: string): Planned {
   if (path === PROJECT_FILE) return refuse("pathogen.json can't be renamed: the playground writes it.");
@@ -580,9 +600,10 @@ export function planRename(state: WorkspaceState, path: string, typed: string): 
   if (trimmed.includes('/')) {
     return refuse("A name can't hold a slash. To move it to another folder, use Move to….");
   }
-  const stem = folder ? trimmed : stripExtension(trimmed);
-  const name = folder ? stem : `${stem}${EXTENSION}`;
-  // The name as typed first ("can't be empty"), then whole, .pathogen and all (its length).
+  const extension = folder ? '' : extensionFor(path);
+  const stem = folder ? trimmed : stripExtension(trimmed, extension);
+  const name = `${stem}${extension}`;
+  // The name as typed first ("can't be empty"), then whole, extension and all (its length).
   const problem = lib().workspaceNameProblem(stem) ?? lib().workspaceNameProblem(name);
   if (problem) return refuse(problem);
   const to = renamedPath(path, typed, folder);
@@ -623,7 +644,7 @@ export function planDuplicate(state: WorkspaceState, path: string): Planned {
   if (full) return refuse(full);
   const copy = join(parentOf(path), keepBothName(state, parentOf(path), baseOf(path)));
   const text = state.files[path];
-  const entryPoints = isLibrary(text) ? state.entryPoints : [...state.entryPoints, copy];
+  const entryPoints = isProgram(copy, text) ? [...state.entryPoints, copy] : state.entryPoints;
   return finish(state, [{ kind: 'add', path: copy, text }], state.folders, entryPoints, {});
 }
 
@@ -707,7 +728,7 @@ export function planUpload(
     const path = existing === undefined ? entry.path : join(at, keepBothName(working, at, baseOf(entry.path)));
     steps.push({ kind: 'add', path, text: entry.text });
     added.push(path);
-    if (!isLibrary(entry.text)) entryPoints = [...entryPoints, path];
+    if (isProgram(path, entry.text)) entryPoints = [...entryPoints, path];
     working = { ...working, files: { ...working.files, [path]: entry.text } };
   }
   const limit = lib().WORKSPACE_LIMITS.files;
@@ -734,9 +755,11 @@ export function deleteSummary(state: WorkspaceState, path: string): { files: str
   const folder = isFolder(state, path);
   const gone = Object.keys(state.files).filter((p) => (folder ? isUnder(p, path) : p === path));
   const goneSet = new Set(gone.map((p) => `/${p}`));
+  // Only .pathogen files import: a data file (up to 5 MB) is never parsed as Pathogen here.
   const importers = Object.keys(state.files).filter(
     (p) =>
       !goneSet.has(`/${p}`) &&
+      !isData(p) &&
       closedImports(state.files[p]).some((imp) => {
         const resolved = lib().resolveProjectPath(imp.written, `/${p}`);
         return resolved.ok && goneSet.has(resolved.path);
@@ -772,7 +795,8 @@ export function planDelete(state: WorkspaceState, path: string): Planned {
 /** Set as main: the program goes to the front of the list; the others keep their order. */
 export function planSetMain(state: WorkspaceState, path: string): Planned {
   if (!(path in state.files)) return refuse(`${path} isn't a file in the workspace.`);
-  if (isLibrary(state.files[path])) return refuse("A module can't be the main.");
+  if (isData(path)) return refuse("A data file can't be the main.");
+  if (!isProgram(path, state.files[path])) return refuse("A module can't be the main.");
   if (state.entryPoints[0] === path) return nothing();
   return finish(state, [], state.folders, [path, ...state.entryPoints.filter((p) => p !== path)], {});
 }
@@ -783,8 +807,9 @@ export function planSetMain(state: WorkspaceState, path: string): Planned {
  * mockups). A program that gains `module;` leaves the
  * list, and goes back at the end when it loses it. The main stays first either
  * way, and the playground shows an error on it until `module;` comes out or
- * another program is set as main. Null when the list doesn't change. Call it for
- * a .pathogen file of the workspace (the editor's), after each edit to it.
+ * another program is set as main. Null when the list doesn't change. Call it
+ * after each edit to a file of the workspace (the editor's); a data file's
+ * edits never change the list.
  */
 export function entryPointsAfterEdit(
   state: WorkspaceState,
@@ -792,8 +817,9 @@ export function entryPointsAfterEdit(
   text: string,
 ): { entryPoints: string[]; show?: string } | null {
   if (state.entryPoints[0] === path) return null;
+  if (isData(path)) return null;
   const listed = state.entryPoints.includes(path);
-  const library = isLibrary(text);
+  const library = !isProgram(path, text);
   if (library && listed) return { entryPoints: state.entryPoints.filter((p) => p !== path) };
   if (!library && !listed) {
     const entryPoints = [...state.entryPoints, path];

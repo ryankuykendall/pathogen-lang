@@ -16,6 +16,7 @@ import { afterAll, describe, expect, it } from 'vitest';
 
 import { singularOf } from '../src/data/data-files';
 import { DEFAULT_MAX_DATA_BYTES, formatModuleLoadError, resolveModules } from '../src/host/load-modules';
+import { createMemoryProjectHost } from '../src/host/memory-host';
 import { dataTooLargeError, megabytes, suggestedMaxDataSize } from '../src/module-messages';
 import { createNodeProjectHost } from '../src/node';
 
@@ -160,6 +161,44 @@ describe('mistakes in a data file', () => {
 
   it('the limit is 50 MB unless raised', () => {
     expect(DEFAULT_MAX_DATA_BYTES).toBe(50 * MB);
+  });
+});
+
+describe('a workspace in memory answers with its text (phase 3a step 6)', () => {
+  const SMALL = '[{ "x": 1 }]';
+
+  it('the loader reads the text and never asks for the bytes', async () => {
+    const texts = new Map([
+      ['main.pathogen', MAIN],
+      ['data/gears.json', SMALL],
+    ]);
+    const inner = createMemoryProjectHost(texts, { label: 'Gears' });
+    // A host whose answers refuse to give bytes: reading them would fail the test.
+    const host: ProjectFileHost = {
+      projectLabel: 'Gears',
+      readFile: async (path, options) => {
+        const read = await inner.readFile(path, options);
+        if (!read.ok) return read;
+        return {
+          ok: true,
+          text: read.text,
+          get bytes(): Uint8Array {
+            throw new Error(`the bytes of ${path} were asked for`);
+          },
+        };
+      },
+    };
+    const { errors, graph } = await resolveModules(MAIN, { host, entry });
+    expect(errors).toEqual([]);
+    expect(graph.data?.get('/data/gears.json')?.text).toBe(SMALL);
+  });
+
+  it('a text that could pass the limit is counted in UTF-8 bytes, as on disk', async () => {
+    // 400,000 characters of "é": 800,000 bytes, under 1 MB as text length but over 0.5 MB in bytes.
+    const text = `"${'é'.repeat(400_000)}"`;
+    const host = createMemoryProjectHost({ 'main.pathogen': MAIN, 'data/gears.json': text }, { label: 'Gears' });
+    const { errors } = await resolveModules(MAIN, { host, entry, maxDataBytes: MB / 2 });
+    expect(errors.map((e) => e.message)).toEqual([dataTooLargeError('./data/gears.json', 800_002, MB / 2)]);
   });
 });
 

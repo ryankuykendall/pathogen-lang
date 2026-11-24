@@ -66,6 +66,8 @@ export { ModuleTraceError } from './evaluator/module-runtime';
 // Imports (docs/modules.md): read every imported file before the compile, as for fonts.
 export {
   formatModuleLoadError,
+  graphForMessage,
+  graphFromMessage,
   importPathMistake,
   isModuleSource,
   planImports,
@@ -75,10 +77,12 @@ export {
 } from './host/load-modules';
 export type {
   DataFile,
+  DataFileMessage,
   ImportForm,
   ImportSite,
   ModuleFile,
   ModuleGraph,
+  ModuleGraphMessage,
   ModuleLoadError,
   PlannedImport,
   ResolveModulesOptions,

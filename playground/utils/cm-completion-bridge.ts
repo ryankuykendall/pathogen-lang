@@ -103,6 +103,22 @@ function manualSnippetApply(template: string) {
 }
 
 /**
+ * A data key that can't follow a dot (`Population (2020)`, `length`, a
+ * keyword) is offered by its name, filtered as you type after the dot, and
+ * inserted in brackets in place of the dot: `city.Pop` becomes
+ * `city["Population (2020)"]` (docs/data-import.md "In the editor"). `before`
+ * is how far the dot is before where the completion starts: read from the
+ * start CodeMirror gives when it's chosen, which follows any edit made since.
+ */
+function bracketApply(insert: string, before: number) {
+  return (view: unknown, _completion: unknown, from: number, to: number) => {
+    const editor = view as { dispatch: (tr: { changes: object; selection: object }) => void };
+    const start = from - before;
+    editor.dispatch({ changes: { from: start, to, insert }, selection: { anchor: start + insert.length } });
+  };
+}
+
+/**
  * The path typed so far when the cursor is inside an import's quotes
  * (`import { gear } from "./pa|`), else null. There the shared engine
  * completes the workspace's libraries (completion.ts importCompletions), each
@@ -181,10 +197,11 @@ export function makeSharedCompletionSource(snippetFn?: CmSnippetFn) {
     const items = getCompletions(doc, { line, character }, languageServiceOptions());
     if (items.length === 0) return null;
 
-    // An item with its own range (an import's path, `kind: 'file'`) replaces
-    // exactly that range: the whole path typed so far, slashes and dots
-    // included. Inside an import's quotes nothing else applies.
-    const ranged = items.find((item) => item.range);
+    // An import's path (`kind: 'file'`) replaces exactly its own range: the
+    // whole path typed so far, slashes and dots included. Inside an import's
+    // quotes nothing else applies. (A data key in brackets has a range too, but
+    // only for its own insert: see bracketApply.)
+    const ranged = items.find((item) => item.range && item.kind === 'file');
     if (inImportPath && !ranged) return null;
 
     // The `from` position controls which span of text CodeMirror's filter
@@ -215,7 +232,9 @@ export function makeSharedCompletionSource(snippetFn?: CmSnippetFn) {
           ? {
               apply: snippetFn ? snippetFn(toCmSnippetTemplate(item.insertText)) : manualSnippetApply(item.insertText),
             }
-          : {}),
+          : item.insertText && item.range && item.kind !== 'file'
+            ? { apply: bracketApply(item.insertText, from - offsetOf(source, item.range.start)) }
+            : {}),
       })),
       validFor: ranged ? /^[-\w./]*$/ : hyphenAware ? /^[-\w]*$/ : /^[@&$#\w.]*$/,
     };

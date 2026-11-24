@@ -12,6 +12,7 @@ import {
   entryForText,
   fileKind,
   isJustMain,
+  LIMITS,
   MAIN_FILE,
   readStoredFiles,
   storedFilesForText,
@@ -60,12 +61,10 @@ export interface DeferredFile extends FileEntry {
 export const DATA_INLINE_BYTES = 2 * 1024 * 1024;
 
 /**
- * The most a create's or a save's body can be (phase 3a step 5): 20
- * .pathogen files of 1 MB with room for JSON's escapes, plus small data. A
- * client sends larger files first with PUT /workspace/:id/file, one at a
- * time, and the save names them by hash (note 80).
+ * The most a create's or a save's body can be: the shared rule, which the
+ * playground's autosave keeps to (LIMITS.saveBodyBytes, note 80).
  */
-export const SAVE_BODY_BYTES = 24 * 1024 * 1024;
+export const SAVE_BODY_BYTES = LIMITS.saveBodyBytes;
 
 /**
  * The hashes a load sends the text of: every .pathogen file's (at most 20 MB,

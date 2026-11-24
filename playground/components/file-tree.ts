@@ -54,7 +54,7 @@
 // the editor (opening a file resets the row), else the top of the workspace.
 
 import { captureDrop, pickedFromInput } from '../services/uploads.js';
-import { renamedPath } from '../services/workspace-edits.js';
+import { extensionFor, renamedPath } from '../services/workspace-edits.js';
 import { FILE_ICONS, MAIN_BADGE_TITLE } from '../utils/file-icons.js';
 import { treeRows } from '../utils/file-tree-rows.js';
 import { canDragRows, isNarrow, isTouch, onNarrowChange } from '../utils/narrow.js';
@@ -241,7 +241,9 @@ function rowHtml(row: TreeRow): string {
   }
   if (row.type === 'input') {
     const icon = row.kind === 'folder' ? FILE_ICONS.folder : FILE_ICONS[row.kind];
-    const ext = row.kind === 'folder' ? '' : '<span class="ext">.pathogen</span>';
+    // A file keeps its extension: `.pathogen`, or a data file's own (`.json`).
+    const extension = row.renaming !== undefined ? extensionFor(row.renaming) : '.pathogen';
+    const ext = row.kind === 'folder' ? '' : `<span class="ext">${esc(extension)}</span>`;
     const label =
       row.renaming !== undefined
         ? `New name for ${row.name}${row.kind === 'folder' ? '/' : ''}`
@@ -269,8 +271,12 @@ function rowHtml(row: TreeRow): string {
 const parentOf = (path: string): string => (path.includes('/') ? path.slice(0, path.lastIndexOf('/')) : '');
 const baseOf = (path: string): string => path.slice(path.lastIndexOf('/') + 1);
 const join = (folder: string, name: string): string => (folder ? `${folder}/${name}` : name);
-/** A file's name without `.pathogen`: what Rename…'s field holds. */
-const stemOf = (name: string): string => (name.endsWith('.pathogen') ? name.slice(0, -'.pathogen'.length) : name);
+/** A file's name without its extension (`.pathogen`, or a data file's own): what Rename…'s field holds. */
+const stemOf = (path: string): string => {
+  const name = baseOf(path);
+  const extension = extensionFor(path);
+  return name.toLowerCase().endsWith(extension.toLowerCase()) ? name.slice(0, -extension.length) : name;
+};
 
 /** The name field's line when nothing's wrong (mockup v6 screen N; v7 screen X for a first program). */
 function defaultHint(kind: NewEntryKind, firstProgram: boolean): string {
@@ -1238,7 +1244,7 @@ export class FileTree extends HTMLElement {
     const folder = this._isFolder(path);
     const file = this._files.find((f) => f.path === path);
     if (!folder && !file) return;
-    const original = folder ? baseOf(path) : stemOf(baseOf(path));
+    const original = folder ? baseOf(path) : stemOf(path);
     this._naming = {
       kind: folder ? 'folder' : file!.kind,
       folder: parentOf(path),

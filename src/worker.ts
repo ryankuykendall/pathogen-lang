@@ -2,6 +2,7 @@
 // Offloads interpreter execution from main thread
 
 import { compile, compileWithContext, createFontRegistry, addFont } from '.';
+import { graphFromMessage } from './host/load-modules';
 
 import type { CompileOptions, FontRegistry } from '.';
 
@@ -55,9 +56,12 @@ self.onmessage = (event: MessageEvent<WorkerRequest>) => {
       ? buildRegistryFromBuffers(fontBuffers)
       : undefined;
 
-    const compileOpts: CompileOptions | undefined = fontRegistry || options
-      ? { ...options, ...(fontRegistry ? { fonts: fontRegistry } : {}) }
-      : undefined;
+    // Data files came as text (graphForMessage); read them again, once per text.
+    const modules = options?.modules ? graphFromMessage(options.modules, 'worker') : undefined;
+    const compileOpts: CompileOptions | undefined =
+      fontRegistry || options
+        ? { ...options, ...(fontRegistry ? { fonts: fontRegistry } : {}), ...(modules ? { modules } : {}) }
+        : undefined;
 
     let result: unknown;
 

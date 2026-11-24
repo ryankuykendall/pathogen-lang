@@ -282,6 +282,24 @@ function readDataText(key: string, text: string): JsonReadResult {
 /** Why a data file couldn't be read: the host's answer, too large, or not UTF-8. */
 type DataReadFailure = Exclude<HostReadResult, { ok: true }> | 'not-text' | { tooLarge: number };
 
+const BYTE_ORDER_MARK = String.fromCharCode(0xfeff);
+
+/** A file's text: the host's own when it holds one (a workspace in memory), else its bytes decoded; null when they aren't UTF-8. */
+function textOf(read: { bytes: Uint8Array; text?: string }): string | null {
+  if (read.text === undefined) return decodeText(read.bytes);
+  return read.text.startsWith(BYTE_ORDER_MARK) ? read.text.slice(1) : read.text;
+}
+
+/**
+ * A file's size to compare with `max`. A text the host holds counts only when
+ * it could pass `max` (UTF-8 takes at most 3 bytes a UTF-16 unit); short of
+ * that its length is enough to know it doesn't.
+ */
+function sizeAgainst(read: { bytes: Uint8Array; text?: string }, max: number): number {
+  if (read.text !== undefined && read.text.length * 3 <= max) return read.text.length;
+  return read.bytes.length;
+}
+
 /** Decode a file's bytes as UTF-8 text, or null when they aren't. */
 function decodeText(bytes: Uint8Array): string | null {
   try {
@@ -376,8 +394,9 @@ export async function resolveModules(
     };
     const read = await host.readFile(path, { maxBytes: maxDataBytes });
     if (!read.ok) return fail(read);
-    if (read.bytes.length > maxDataBytes) return fail({ tooLarge: read.bytes.length });
-    const text = decodeText(read.bytes);
+    const size = sizeAgainst(read, maxDataBytes);
+    if (size > maxDataBytes) return fail({ tooLarge: size });
+    const text = textOf(read);
     if (text === null) return fail('not-text');
     const importedFrom: ImportSite[] = [{ file: from, line: planned.line, column: planned.column }, ...chain];
     // By project too: one language server can hold several projects with the same paths.
@@ -439,7 +458,7 @@ export async function resolveModules(
       errorAt(readFailure(planned.written, read), from, planned, chain);
       return null;
     }
-    const source = decodeText(read.bytes);
+    const source = textOf(read);
     if (source === null) {
       failed.set(path, 'not-text');
       errorAt(readFailure(planned.written, 'not-text'), from, planned, chain);
@@ -467,6 +486,50 @@ export async function resolveModules(
     await visit(entry, planned, [entry], []);
   }
   return { graph: { entry, files, order, data }, errors, unread: [...failed.keys(), ...failedData.keys()] };
+}
+
+/** A data file as a message carries it: its text, not its value. */
+export type DataFileMessage = Omit<DataFile, 'value'>;
+
+/** A ModuleGraph as a message carries it (graphForMessage). */
+export interface ModuleGraphMessage extends Omit<ModuleGraph, 'data'> {
+  data?: Map<string, DataFileMessage | DataFile>;
+}
+
+/**
+ * A graph for postMessage: data files as text only (phase 3a step 6). A
+ * structured clone would copy each data value, several times its file's
+ * size, on every compile; the text is one string, and graphFromMessage reads
+ * it again once per text.
+ */
+export function graphForMessage(graph: ModuleGraph): ModuleGraphMessage {
+  if (!graph.data || graph.data.size === 0) return graph;
+  const data = new Map<string, DataFileMessage>();
+  for (const [path, file] of graph.data) {
+    const { value: _value, ...asText } = file;
+    data.set(path, asText);
+  }
+  return { ...graph, data };
+}
+
+/**
+ * A graph a message carried, ready to compile: each data file's text read
+ * again, through the loader's cache under `cacheLabel` (the reader's own
+ * name for the project), so a text already read gives the same value. A data
+ * file whose text doesn't read is left out: the sender's load error says why.
+ */
+export function graphFromMessage(message: ModuleGraphMessage, cacheLabel: string): ModuleGraph {
+  if (!message.data || message.data.size === 0) return message as ModuleGraph;
+  const data = new Map<string, DataFile>();
+  for (const [path, file] of message.data) {
+    if ('value' in file) {
+      data.set(path, file);
+      continue;
+    }
+    const read = readDataText(`${cacheLabel}\0${path}`, file.text);
+    if (read.ok) data.set(path, { ...file, value: read.value });
+  }
+  return { ...message, data };
 }
 
 /**

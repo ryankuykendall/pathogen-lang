@@ -131,6 +131,7 @@ export async function resolveWorkspaceImports(
           graph: { files: Map<string, { source: string }>; order: string[] };
           errors: LoadError[];
         }>;
+        graphForMessage?: (graph: unknown) => unknown;
       }
     | undefined;
   if (!lib?.createMemoryProjectHost || !lib.resolveModules) {
@@ -140,7 +141,9 @@ export async function resolveWorkspaceImports(
   const { graph, errors } = await lib.resolveModules(source, { host, entry: `/${workspace.entry}` });
   if (errors.length > 0) throw new WorkspaceLoadError(errors);
   return {
-    modules: graph,
+    // Data files as text (docs/data-import.md): the worker reads them again,
+    // once per text, rather than structured clone copying every value.
+    modules: lib.graphForMessage ? lib.graphForMessage(graph) : graph,
     fontFiles: [
       { source, label: null },
       ...graph.order.map((path) => ({ source: graph.files.get(path)!.source, label: path.replace(/^\/+/, '') })),
@@ -368,7 +371,8 @@ export class CompilerWorkerClient {
     options?: Record<string, unknown>,
   ): Promise<unknown> {
     // A workspace's program: its imports are read here, on the main thread,
-    // and posted as `modules` (the graph's Maps survive structured clone).
+    // and posted as `modules` (the graph's Maps survive structured clone;
+    // data files go as text, graphForMessage).
     // Load errors stop the compile. Without a workspace, nothing changes.
     let compileOptions = options;
     let fontFiles: FontSourceFile[] = [{ source, label: null }];

@@ -49,6 +49,13 @@ export const LIMITS = {
   pathLength: 255,
   workspaceBytes: 50 * 1024 * 1024,
   fileBytes: { pathogen: 1024 * 1024, data: 5 * 1024 * 1024, font: 20 * 1024 * 1024 } as Record<FileKind, number>,
+  /**
+   * The most a create's or a save's JSON body can be (phase 3a, note 80): 20
+   * .pathogen files of 1 MB with room for JSON's escapes. A client sends
+   * larger texts first, one at a time, with PUT /workspace/:id/file, and the
+   * save names them by hash.
+   */
+  saveBodyBytes: 24 * 1024 * 1024,
 } as const;
 
 /** One file of a workspace: its bytes are in R2 under the workspace, at this hash. */

@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 
 import { store } from '../playground/state/store';
 import { buildCapture, buildDebugCapture, CAPTURE_LINE_LIMIT } from '../playground/utils/debug-capture';
+import { formatBytes } from '../playground/utils/format-bytes';
 import { compile } from '../src';
 import { groupWarnings } from '../src/evaluator/warning-groups';
 
@@ -336,5 +337,54 @@ describe('the capture of a workspace (step 8)', () => {
     );
     expect(files).toContain('### main.pathogen (the program shown, 1 line)');
     expect(files).not.toContain('Other files');
+  });
+
+  describe('data files (phase 3a step 6; docs/workspace-files.md "Copy Debug Info")', () => {
+    // 30 records, one a line, then a one-line file of 300 records.
+    const record = (i: number): string => `  { "x": ${i}, "label": "gear ${i}" },`;
+    const GEARS_JSON = ['[', ...Array.from({ length: 30 }, (_, i) => record(i + 1)), '  { "x": 0 }', ']'].join('\n');
+    const ONE_LINE = `[${Array.from({ length: 300 }, (_, i) => `{"x":${i}}`).join(',')}]`;
+    const USES = 'import gears from "./data/gears.json";\nlog(gears.length);\n';
+    const withData = (over: Partial<CaptureInput> = {}): CaptureInput =>
+      input({
+        files: [
+          { path: 'main.pathogen', text: USES, kind: 'program' },
+          { path: 'data/gears.json', text: GEARS_JSON, kind: 'data' },
+          { path: 'data/wide.json', text: ONE_LINE, kind: 'data' },
+          { path: 'data/spare.json', text: '[1, 2, 3]', kind: 'data' },
+        ],
+        reach: ['data/gears.json', 'data/wide.json'],
+        readings: [],
+        status: 'completed',
+        ...over,
+      });
+
+    it('a data file it reaches: its size and its first 20 lines, as JSON; a long line cut at 200 characters', () => {
+      const files = section(buildCapture(withData()), 'Files');
+      const gearsSize = formatBytes(new TextEncoder().encode(GEARS_JSON).byteLength);
+      expect(files).toContain(`### data/gears.json (data file, ${gearsSize}, 33 lines)\n\`\`\`json\n[\n`);
+      expect(files).toContain(`${record(19)}\n\`\`\`\n…13 more lines`);
+      expect(files).toContain(`### data/wide.json (data file, ${formatBytes(ONE_LINE.length)}, 1 line)`);
+      expect(files).toContain(`\`\`\`json\n${ONE_LINE.slice(0, 200)}…\n\`\`\``);
+      expect(files).toContain('Other files, not included:\n- data/spare.json: data file, 9 B');
+    });
+
+    it('the error in a data file: the file comes whole (to 200 lines), and its excerpt centres on the column', () => {
+      const mistake: ErrorReading = {
+        file: 'data/wide.json',
+        line: 1,
+        column: 2000,
+        text: 'expected , or ] where reading stopped',
+        steps: [{ kind: 'imported from', file: 'main.pathogen', line: 1 }],
+        site: { line: 1, column: 19 },
+      };
+      const capture = buildCapture(withData({ readings: [mistake], status: 'error' }));
+      const errors = section(capture, 'Errors');
+      expect(errors).toContain(`>  1 | …${ONE_LINE.slice(1849, 2149)}…`);
+      const files = section(capture, 'Files');
+      expect(files.split('\n').find((l) => l.startsWith('### '))).toBe(
+        `### data/wide.json (data file, ${formatBytes(ONE_LINE.length)}, 1 line)`,
+      );
+    });
   });
 });

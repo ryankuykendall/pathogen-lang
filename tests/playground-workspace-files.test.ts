@@ -18,6 +18,7 @@ import {
 import {
   filesWithoutText,
   programToShow,
+  withDeferredTexts,
   workspaceFromAnswer,
   workspaceTexts,
 } from '../playground/services/workspace-files.js';
@@ -25,8 +26,8 @@ import { graphKey, refreshOpenFileModules } from '../playground/services/workspa
 import { store } from '../playground/state/store.js';
 
 // vitest hoists these above the imports.
-const { updateSpy } = vi.hoisted(() => ({ updateSpy: vi.fn() }));
-vi.mock('../playground/services/api.js', () => ({ workspaceApi: { update: updateSpy } }));
+const { updateSpy, storeSpy } = vi.hoisted(() => ({ updateSpy: vi.fn(), storeSpy: vi.fn() }));
+vi.mock('../playground/services/api.js', () => ({ workspaceApi: { update: updateSpy, storeFile: storeSpy } }));
 
 const GEARS = 'module;\nexport fn gear(r) {\n  circle(0, 0, r);\n}\n';
 const MAIN = 'import { gear } from "./parts/gears.pathogen";\ngear(4);\n';
@@ -249,6 +250,86 @@ describe('autosave', () => {
     expect(autosave._pendingWorkspace).toBeNull();
   });
 
+  it('a save past the server’s cap stores its largest new texts first, then names them by hash (phase 3a)', async () => {
+    const MB = 1024 * 1024;
+    // Five data files of 5 MB: 25 MB of text, past the 24 MB a save can send.
+    const data: Record<string, string> = {};
+    for (const name of ['a', 'b', 'c', 'd', 'e']) data[`data/${name}.json`] = `"${name.repeat(5 * MB - 2)}"`;
+    data['data/f.json'] = '"f"'; // a small one stays as text
+    const texts = { 'main.pathogen': MAIN, ...data };
+    store.update({ ...twoFiles, workspaceFiles: texts, code: MAIN });
+    autosave.init('ws-cap', null, 3, { justMain: false });
+    storeSpy.mockReset();
+    storeSpy.mockImplementation(async (_id: string, text: string) => engine.workspaceFileEntry(text));
+    updateSpy.mockResolvedValueOnce({ rev: 4, updatedAt: 'now' });
+    autosave.onChange(MAIN);
+    await autosave.saveNow();
+
+    // One file stored by itself is enough: 20 MB of text fits.
+    const stored = storeSpy.mock.calls as [string, string][];
+    expect(stored.map(([id, text]) => [id, text.length])).toEqual([['ws-cap', 5 * MB]]);
+    const sent = updateSpy.mock.calls[0][1] as { files: Record<string, { text?: string; sha256?: string }> };
+    const byHash = Object.entries(sent.files)
+      .filter(([, f]) => f.sha256 !== undefined)
+      .map(([path]) => path);
+    expect(byHash).toHaveLength(1);
+    expect(sent.files['data/f.json']).toEqual({ text: '"f"' });
+    // The next save names it by hash without storing it again.
+    expect(autosave._savedShas.get(byHash[0])).toBe((await engine.workspaceFileEntry(texts[byHash[0]])).sha256);
+  });
+
+  describe('a save that stores a large file first (code review, note 81)', () => {
+    const MB = 1024 * 1024;
+    const bigWorkspace = (): Record<string, string> => {
+      const texts: Record<string, string> = { 'main.pathogen': MAIN };
+      for (const name of ['a', 'b', 'c', 'd', 'e']) texts[`data/${name}.json`] = `"${name.repeat(5 * MB - 2)}"`;
+      return texts;
+    };
+
+    it('keeps the revision it began from, though a page-leave save moved it on meanwhile', async () => {
+      store.update({ ...twoFiles, workspaceFiles: bigWorkspace(), code: MAIN });
+      autosave.init('ws-race', null, 3, { justMain: false });
+      let stored: (entry: { sha256: string; size: number }) => void = () => undefined;
+      storeSpy.mockReset();
+      storeSpy.mockReturnValueOnce(
+        new Promise((resolve) => {
+          stored = resolve;
+        }),
+      );
+      updateSpy.mockResolvedValueOnce({ rev: 4, updatedAt: 'now' });
+      autosave.onChange(MAIN);
+      const saving = autosave.saveNow();
+      await vi.waitFor(() => expect(storeSpy).toHaveBeenCalledTimes(1));
+      // A page-leave save's answer, while the large file is still being stored.
+      autosave._baseRev = 9;
+      stored({ sha256: 'f'.repeat(64), size: 5 * MB });
+      await saving;
+      expect((updateSpy.mock.calls[0][1] as { baseRev: number }).baseRev).toBe(3);
+    });
+
+    it('a retry names a file it stored already by hash, without storing it again', async () => {
+      store.update({ ...twoFiles, workspaceFiles: bigWorkspace(), code: MAIN });
+      autosave.init('ws-retry', null, 3, { justMain: false });
+      storeSpy.mockReset();
+      storeSpy.mockImplementation(async (_id: string, text: string) => engine.workspaceFileEntry(text));
+      updateSpy.mockRejectedValueOnce(Object.assign(new Error('Server error'), { status: 500 }));
+      autosave.onChange(MAIN);
+      await autosave.saveNow();
+      expect(storeSpy).toHaveBeenCalledTimes(1);
+      updateSpy.mockResolvedValueOnce({ rev: 4, updatedAt: 'now' });
+      await autosave.saveNow();
+      expect(storeSpy).toHaveBeenCalledTimes(1);
+      const files = (updateSpy.mock.calls[1][1] as { files: Record<string, { sha256?: string }> }).files;
+      expect(Object.values(files).filter((f) => f.sha256 !== undefined)).toHaveLength(1);
+    });
+  });
+
+  it('counts UTF-8 bytes as the server does', async () => {
+    const { utf8Length } = await import('../playground/utils/format-bytes.js');
+    const sample = ['a', 'é', 'あ', String.fromCodePoint(0x1f600)].join('');
+    expect(utf8Length(sample)).toBe(new TextEncoder().encode(sample).byteLength);
+  });
+
   it('a save that answers after another workspace loaded leaves the new one alone', async () => {
     store.update({ ...twoFiles, code: MAIN });
     let answer: (value: unknown) => void = () => undefined;
@@ -317,12 +398,108 @@ describe('import-path completion (the editor bridge)', () => {
     expect(labels).toEqual(['./parts/cogs.pathogen', './parts/gears.pathogen']);
   });
 
+  describe('with a data file (phase 3a step 6, docs/data-import.md "In the editor")', () => {
+    const CITIES = '[{ "name": "Lyon", "Population (2020)": 522000 }]';
+    const USES = 'import cities from "./data/cities.json";\nlet city = cities[0];\n';
+
+    beforeEach(async () => {
+      store.update({
+        workspaceFiles: { 'main.pathogen': USES, 'data/cities.json': CITIES, 'parts/gears.pathogen': GEARS },
+        openFile: 'main.pathogen',
+        code: USES,
+      });
+      await refreshOpenFileModules();
+    });
+
+    it('a name alone is offered the data files; braces the modules', async () => {
+      const { sharedCompletionSource } = await import('../playground/utils/cm-completion-bridge.js');
+      const labels = (source: string): string[] =>
+        sharedCompletionSource(contextFor(source))!.options.map((o) => o.label);
+      expect(labels('import cities from "./')).toEqual(['./data/cities.json']);
+      expect(labels('import { gear } from "./')).toEqual(['./parts/gears.pathogen']);
+    });
+
+    it('keys complete after the dot; one that can’t follow a dot goes in brackets in its place', async () => {
+      const { sharedCompletionSource } = await import('../playground/utils/cm-completion-bridge.js');
+      const source = `${USES}city.`;
+      store.update({ workspaceFiles: { ...(store.get('workspaceFiles') as object), 'main.pathogen': source } });
+      const result = sharedCompletionSource(contextFor(source))!;
+      // Filtered by the key's name, typed after the dot.
+      expect(result.from).toBe(source.length);
+      const byLabel = new Map(result.options.map((o) => [o.label, o]));
+      expect(byLabel.get('name')?.apply).toBeUndefined();
+      const bracketed = byLabel.get('Population (2020)');
+      const dispatched: { changes: { from: number; to: number; insert: string }; selection: { anchor: number } }[] = [];
+      const view = { dispatch: (tr: (typeof dispatched)[number]) => dispatched.push(tr) };
+      bracketed!.apply!(view, null, result.from, source.length);
+      const dot = source.length - 1;
+      const insert = '["Population (2020)"]';
+      expect(dispatched).toEqual([
+        { changes: { from: dot, to: source.length, insert }, selection: { anchor: dot + insert.length } },
+      ]);
+    });
+  });
+
   it('knows when the cursor is inside an import path, and only then', async () => {
     const { importPathBeforeCursor } = await import('../playground/utils/cm-completion-bridge.js');
     expect(importPathBeforeCursor('import { gear } from "./parts/')).toBe('./parts/');
     expect(importPathBeforeCursor("import { gear } from '")).toBe('');
     expect(importPathBeforeCursor('let label = "from here')).toBeNull();
     expect(importPathBeforeCursor('import { gear } from "./parts/gears.pathogen";')).toBeNull();
+  });
+});
+
+describe('a data file is never the program shown or the file opened first (phase 3a step 6)', () => {
+  const texts = { 'data/dots.json': '[1]', 'parts/gears.pathogen': GEARS };
+
+  it('with no main, the preview takes a .pathogen file, even with the data file open', () => {
+    const workspace = workspaceTexts({
+      workspaceFiles: texts,
+      workspaceFolders: [],
+      workspaceEntryPoints: [],
+      openFile: 'data/dots.json',
+      code: '[1]',
+    });
+    expect(programToShow(workspace, null)).toBe('parts/gears.pathogen');
+    expect(programToShow({ ...workspace, texts: new Map([['data/dots.json', '[1]']]) }, null)).toBe('main.pathogen');
+  });
+
+  it('a load opens a .pathogen file first, and a data file only when that is all there is', () => {
+    expect(workspaceFromAnswer({ files: { 'a.json': { text: '1' }, 'z.pathogen': { text: GEARS } } }).openFile).toBe(
+      'z.pathogen',
+    );
+    expect(workspaceFromAnswer({ files: { 'a.json': { text: '1' } } }).openFile).toBe('a.json');
+  });
+});
+
+describe('data files a load sends by hash (phase 3a step 6)', () => {
+  const DOTS = '[{ "x": 1 }]';
+  const answer = {
+    files: {
+      'main.pathogen': { sha256: 'm', size: 5, text: 'M 0 0' },
+      'data/a.json': { sha256: 'd', size: DOTS.length, deferred: true },
+      'data/b.json': { sha256: 'd', size: DOTS.length, deferred: true },
+    },
+    entryPoints: ['main.pathogen'],
+  };
+
+  it('are read by their hash, once per text, and the store gets their text', async () => {
+    const read = vi.fn(async () => DOTS);
+    const whole = await withDeferredTexts(answer, read);
+    expect(read.mock.calls).toEqual([['d']]);
+    expect(filesWithoutText(whole)).toEqual([]);
+    expect(workspaceFromAnswer(whole).workspaceFiles).toEqual({
+      'main.pathogen': 'M 0 0',
+      'data/a.json': DOTS,
+      'data/b.json': DOTS,
+    });
+  });
+
+  it('one that can’t be read fails the load, naming it, with no request status', async () => {
+    const lost = Object.assign(new Error('File not found'), { status: 404 });
+    const failed = withDeferredTexts(answer, async () => Promise.reject(lost));
+    await expect(failed).rejects.toThrow("Couldn't read data/a.json (File not found). Reload the page to try again.");
+    await expect(failed).rejects.not.toHaveProperty('status');
   });
 });
 

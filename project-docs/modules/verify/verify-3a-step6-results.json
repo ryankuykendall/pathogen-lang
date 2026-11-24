@@ -1,0 +1,49 @@
+{
+  "date": "2026-11-24T23:43:20.188Z",
+  "results": [
+    {
+      "check": "the dev API creates a workspace with data files",
+      "ok": true
+    },
+    {
+      "check": "the load sends big.json by hash (deferred)",
+      "ok": true
+    },
+    {
+      "check": "the main draws the gears from data/gears.json",
+      "ok": true
+    },
+    {
+      "check": "no \"files this version can’t edit\" message: big.json was read by its hash",
+      "ok": true
+    },
+    {
+      "check": "data/gears.json’s row is not a program",
+      "ok": true
+    },
+    {
+      "check": "editing gears.json redraws the main with the new radius",
+      "ok": true
+    },
+    {
+      "check": "a JSON mistake shows in the error panel at data/gears.json line 3, imported from the main",
+      "ok": true
+    },
+    {
+      "check": "autosave saved the edited data file",
+      "ok": true
+    },
+    {
+      "check": "the program list is still just the main (typing in a data file doesn’t add it)",
+      "ok": true
+    },
+    {
+      "check": "no refused save",
+      "ok": true
+    },
+    {
+      "check": "no page errors",
+      "ok": true
+    }
+  ]
+}

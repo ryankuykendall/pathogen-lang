@@ -666,3 +666,49 @@ describe('more folders, names and limits', () => {
     expect(change.message).toBe('Deleted try-sizes.pathogen.');
   });
 });
+
+describe('a data file is never a program (phase 3a step 6)', () => {
+  const DOTS = '[{ "x": 1 }]';
+  const USES = `import dots from "./data/dots.json";\n${MAIN}`;
+  const withData = (): WorkspaceState => {
+    const state = gearsWorkspace();
+    return { ...state, files: { ...state.files, 'main.pathogen': USES, 'data/dots.json': DOTS } };
+  };
+
+  it('typing in it never adds it to the program list, even an empty one', () => {
+    const state = withData();
+    expect(entryPointsAfterEdit(state, 'data/dots.json', '[{ "x": 2 }]')).toBeNull();
+    expect(entryPointsAfterEdit({ ...state, entryPoints: [] }, 'data/dots.json', '[]')).toBeNull();
+  });
+
+  it('Rename… keeps its extension, typed or not, and its importers follow', () => {
+    for (const typed of ['points', 'points.json', 'points.JSON']) {
+      const state = withData();
+      const { after } = made(state, planRename(state, 'data/dots.json', typed));
+      expect(Object.keys(after.files).filter((p) => p.startsWith('data/'))).toEqual(['data/points.json']);
+      expect(after.files['main.pathogen'].split('\n')[0]).toBe('import dots from "./data/points.json";');
+    }
+    // A capital extension stays as it was.
+    const upper = { ...withData(), files: { ...withData().files, 'data/MAP.GEOJSON': '{}' } };
+    const { after } = made(upper, planRename(upper, 'data/MAP.GEOJSON', 'world'));
+    expect('data/world.GEOJSON' in after.files).toBe(true);
+  });
+
+  it('Duplicate makes a data file beside it, and the program list stays as it was', () => {
+    const state = withData();
+    const { after } = made(state, planDuplicate(state, 'data/dots.json'));
+    expect(after.files['data/dots-2.json']).toBe(DOTS);
+    expect(after.entryPoints).toEqual(state.entryPoints);
+  });
+
+  it('it can’t be the main', () => {
+    const state = withData();
+    expect(refusal(planSetMain(state, 'data/dots.json'))).toBe("A data file can't be the main.");
+  });
+
+  it('Delete… names the files that import it, and never reads a data file as Pathogen', () => {
+    // Text that would be an import in a .pathogen file is only text in a data file.
+    const state = { ...withData(), files: { ...withData().files, 'data/notes.json': 'import x from "./dots.json";' } };
+    expect(deleteSummary(state, 'data/dots.json')).toEqual({ files: ['data/dots.json'], importers: ['main.pathogen'] });
+  });
+});

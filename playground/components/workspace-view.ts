@@ -34,11 +34,13 @@ import { closeFile, lastTabStays, openFile, tabItems } from '../services/open-fi
 import {
   filesWithoutText,
   holdsWorkspace,
+  isDataFile,
   isWorkspaceFile,
   MAIN_FILE,
   mainOf,
   openFileNow,
   programToShow,
+  withDeferredTexts,
   withOpenFileText,
   workspaceFromAnswer,
   workspaceNow,
@@ -51,9 +53,10 @@ import {
   programsOf,
   treeErrorDots,
 } from '../services/program-list.js';
-import type { WorkspaceTexts } from '../services/workspace-files.js';
+import type { WorkspaceAnswer, WorkspaceTexts } from '../services/workspace-files.js';
 import {
   currentOpenFileModules,
+  filesUsed,
   programModules,
   resetOpenFileModules,
   watchOpenFileModules,
@@ -200,8 +203,8 @@ export class WorkspaceView extends HTMLElement {
     graph: async (program, workspace) => {
       const graph = await programModules(program, workspace);
       if (!graph) return null;
-      const files = [...graph.modules.files.keys()].map((key) => key.replace(/^\/+/, ''));
-      return { files, complete: graph.loadErrors.length === 0 };
+      // Data files too (docs/data-import.md): editing one redraws its programs.
+      return { files: filesUsed(graph), complete: graph.loadErrors.length === 0 };
     },
     compile: async (program, workspace) =>
       (await programsCompiler.compile(workspace.texts.get(program) ?? '', 0, undefined, {
@@ -812,7 +815,10 @@ export class WorkspaceView extends HTMLElement {
     this._loadingWorkspace = true;
 
     try {
-      const workspace = (await workspaceApi.get(id)) as any;
+      // Data files past the load's budget come by hash (docs/data-import.md):
+      // read before anything opens, so a save never drops one.
+      const answer = (await workspaceApi.get(id)) as WorkspaceAnswer;
+      const workspace = (await withDeferredTexts(answer, async (sha256) => workspaceApi.fileText(id, sha256))) as any;
       const userId = getUserId();
       // Every file's text (or, from a server before phase 2, the one `code`),
       // and the file the editor opens: the main.
@@ -858,7 +864,8 @@ export class WorkspaceView extends HTMLElement {
       // The editor starts over with the file it opens on: no other file's
       // state, and no undo history, from the workspace before.
       this.editorPane.resetFiles(files.openFile, openCode);
-      this.offerLegacyStyleOpenerMigration(openCode);
+      // Pathogen's old `${` opener only; a data file's text is never read as Pathogen.
+      if (files.openFile === null || !isDataFile(files.openFile)) this.offerLegacyStyleOpenerMigration(openCode);
 
       // Update URL with slug if not already present
       this.updateUrlWithSlug(workspace.id, workspace.slug);
@@ -1705,7 +1712,8 @@ export class WorkspaceView extends HTMLElement {
     return {
       main: mainOf(files, entryPoints),
       noFiles: paths.length === 0,
-      onlyLibraries: paths.length > 0 && paths.every((p) => this._isLibrary(p, files[p])),
+      // With data files too, "no main yet" is the line that's true.
+      onlyLibraries: paths.length > 0 && paths.every((p) => !isDataFile(p) && this._isLibrary(p, files[p])),
       filesHidden: !(store.get('filesOpen') as boolean),
     };
   }
@@ -1728,9 +1736,10 @@ export class WorkspaceView extends HTMLElement {
     tree.classList.toggle('open', open);
     if (!open) return;
     const workspace = workspaceNow();
+    // A data file isn't a program (no Set as main); its own icon comes with step 7.
     tree.files = [...workspace.texts].map(([path, text]) => ({
       path,
-      kind: this._isLibrary(path, text) ? 'library' : 'program',
+      kind: this._isProgram(path, text) ? 'program' : 'library',
     }));
     tree.folders = workspace.folders;
     tree.main = workspace.entryPoints[0] ?? null;
@@ -2122,7 +2131,7 @@ export class WorkspaceView extends HTMLElement {
     if (!this._applyWorkspaceChange(change, { focusEditor: false })) return;
     const listed = store.get('workspaceEntryPoints') as string[];
     const text = shown === null ? undefined : workspaceNow().texts.get(shown);
-    if (shown !== null && text !== undefined && !listed.includes(shown) && this._isLibrary(shown, text)) {
+    if (shown !== null && text !== undefined && !listed.includes(shown) && !this._isProgram(shown, text)) {
       store.set('shownProgram', null);
       this.updatePreview();
     }
@@ -2170,7 +2179,7 @@ export class WorkspaceView extends HTMLElement {
   /** The chip's programs: in a saved workspace, pathogen.json's order, the main first even as a module. */
   private _programsOf(workspace: WorkspaceTexts): string[] {
     if (!holdsWorkspace()) return [];
-    return programsOf(workspace.texts, workspace.entryPoints, (path, text) => this._isLibrary(path, text));
+    return programsOf(workspace.texts, workspace.entryPoints, (path, text) => !this._isProgram(path, text));
   }
 
   /**
@@ -2255,7 +2264,7 @@ export class WorkspaceView extends HTMLElement {
   /** The workspace's main (its first program still there), and whether `module;` has made it a library. */
   private _mainNow(workspace: WorkspaceTexts = workspaceNow()): { main: string | null; mainIsLibrary: boolean } {
     const main = workspace.entryPoints.find((p) => workspace.texts.has(p)) ?? null;
-    return { main, mainIsLibrary: main !== null && this._isLibrary(main, workspace.texts.get(main) ?? '') };
+    return { main, mainIsLibrary: main !== null && !this._isProgram(main, workspace.texts.get(main) ?? '') };
   }
 
   /**
@@ -2270,6 +2279,15 @@ export class WorkspaceView extends HTMLElement {
     if (mainIsLibrary) return 'The main is a module now';
     if (this._renderedProgram !== main) return 'Show the main first';
     return null;
+  }
+
+  /**
+   * Whether a file is a program: a .pathogen file without `module;`. A data
+   * file never is, whatever its text (phase 3a): it isn't listed, drawn, made
+   * the main or offered Set as main.
+   */
+  private _isProgram(path: string, text: string): boolean {
+    return !isDataFile(path) && !this._isLibrary(path, text);
   }
 
   /** Whether a file is a library (starts with `module;`), read once per text. */
@@ -2341,7 +2359,9 @@ export class WorkspaceView extends HTMLElement {
     // so completion/signature-help popups have time to appear before the
     // error panel covers them. Trigger set matches the LSP server's
     // mid-expression predicate in packages/pathogen-language-server/src/server.ts.
-    const code = this.editorPane?.code || '';
+    // A data file has no popups to wait for: its edits redraw at the usual pace.
+    const open = openFileNow();
+    const code = open !== null && isDataFile(open) ? '' : this.editorPane?.code || '';
     const trimmed = code.trimEnd();
     const lastChar = trimmed.slice(-1);
     const cursorMidExpression = lastChar === '.' || lastChar === '(' || lastChar === ',' || lastChar === '{';
@@ -2830,9 +2850,8 @@ export class WorkspaceView extends HTMLElement {
     const workspace = workspaceNow();
     const shown = programToShow(workspace, store.get('shownProgram') as string | null);
     const graph = holdsWorkspace() ? await this._modulesFor(shown, workspace) : null;
-    const reach = graph
-      ? [...graph.modules.files.keys()].map((key) => key.replace(/^\/+/, '')).filter((path) => path !== shown)
-      : null;
+    // Its modules and data files (docs/workspace-files.md "Copy Debug Info").
+    const reach = graph ? filesUsed(graph).filter((path) => path !== shown) : null;
     const others = [...this._drawings.rows()].flatMap(([program, row]) =>
       program !== shown && row.place ? [{ program, place: row.place }] : [],
     );
@@ -2841,7 +2860,7 @@ export class WorkspaceView extends HTMLElement {
       readings: this._shownFailure()?.readings ?? [],
       others,
       reach,
-      kindOf: (path, text) => (this._isLibrary(path, text) ? 'module' : 'program'),
+      kindOf: (path, text) => (isDataFile(path) ? 'data' : this._isLibrary(path, text) ? 'module' : 'program'),
       notes: note
         ? [
             `The main, ${workspace.entryPoints.find((p) => workspace.texts.has(p))}, is a module: a module can't draw as the main.`,

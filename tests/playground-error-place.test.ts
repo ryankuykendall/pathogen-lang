@@ -25,6 +25,48 @@ const failure = (f: () => unknown): string => {
   throw new Error('it compiled');
 };
 
+describe('a JSON mistake in a data file (phase 3a step 6)', () => {
+  it('is read at its file, line and column, with the import that led there', async () => {
+    const engine = await import('../src');
+    const global = globalThis as { window?: unknown };
+    const before = global.window;
+    global.window = { PathogenLang: engine };
+    try {
+      const files = new Map([
+        ['main.pathogen', 'import gears from "./data/gears.json";\nlog(gears);\n'],
+        ['data/gears.json', '[\n  { "x": 1 }\n  { "x": 2 }\n]\n'],
+      ]);
+      const { errors } = await engine.resolveModules(files.get('main.pathogen')!, {
+        host: createMemoryProjectHost(files, { label: 'test' }),
+        entry: '/main.pathogen',
+      });
+      // As the compile worker puts it (WorkspaceLoadError): the data file's place, then the import.
+      const { WorkspaceLoadError } = await import('../playground/services/compiler-worker.js');
+      const message = new WorkspaceLoadError(errors).message;
+      expect(message.split('\n')).toEqual([
+        expect.stringMatching(/^data\/gears\.json line 3, col 3: /),
+        '  imported from main.pathogen line 1',
+      ]);
+      expect(readMessage(message, 'main.pathogen')).toEqual([
+        {
+          file: 'data/gears.json',
+          line: 3,
+          column: 3,
+          text: errors[0].message,
+          steps: [{ kind: 'imported from', file: 'main.pathogen', line: 1 }],
+          site: { line: 1, column: 1 },
+        },
+      ]);
+      expect(errorPlace(message, 'main.pathogen')).toEqual({ file: 'data/gears.json', line: 3 });
+      // Words that only mention such a name are still the program's own error.
+      expect(readMessage('values.json could not be read', 'main.pathogen')[0].file).toBe('main.pathogen');
+      expect(readMessage('the file gears.json line 2 is wrong', 'main.pathogen')[0].file).toBe('main.pathogen');
+    } finally {
+      global.window = before;
+    }
+  });
+});
+
 describe('errorPlace', () => {
   it("an error in the program's own code: its line", () => {
     const message = failure(() => compile('M 0 0\nL nope 0\n'));

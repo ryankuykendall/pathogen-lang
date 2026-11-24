@@ -52,16 +52,16 @@ export function programNamesOf(
  * The programs the list holds, in its order: pathogen.json's list, the main
  * first even once it's become a library (it stays the main until you choose
  * another), then any program the list doesn't name (an older save), by path.
- * Libraries never.
+ * Libraries and data files never: `notProgram` says which files those are.
  */
 export function programsOf(
   texts: ReadonlyMap<string, string>,
   entryPoints: readonly string[],
-  isLibrary: (path: string, text: string) => boolean,
+  notProgram: (path: string, text: string) => boolean,
 ): string[] {
   const listed = entryPoints.filter((p) => texts.has(p));
-  const kept = listed.filter((p, i) => i === 0 || !isLibrary(p, texts.get(p)!));
-  const unlisted = [...texts.keys()].filter((p) => !listed.includes(p) && !isLibrary(p, texts.get(p)!)).sort(byPath);
+  const kept = listed.filter((p, i) => i === 0 || !notProgram(p, texts.get(p)!));
+  const unlisted = [...texts.keys()].filter((p) => !listed.includes(p) && !notProgram(p, texts.get(p)!)).sort(byPath);
   return [...kept, ...unlisted];
 }
 
