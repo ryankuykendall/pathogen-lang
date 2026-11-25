@@ -1736,10 +1736,10 @@ export class WorkspaceView extends HTMLElement {
     tree.classList.toggle('open', open);
     if (!open) return;
     const workspace = workspaceNow();
-    // A data file isn't a program (no Set as main); its own icon comes with step 7.
+    // A data file has its own kind: the braces, and no Set as main.
     tree.files = [...workspace.texts].map(([path, text]) => ({
       path,
-      kind: this._isProgram(path, text) ? 'program' : 'library',
+      kind: isDataFile(path) ? 'data' : this._isProgram(path, text) ? 'program' : 'library',
     }));
     tree.folders = workspace.folders;
     tree.main = workspace.entryPoints[0] ?? null;

@@ -21,6 +21,7 @@ import { importPathBeforeCursor, makeSharedCompletionSource } from './cm-complet
 import { otherFileDefinition } from './definition-target.js';
 import { hoverTooltipExtension } from './cm-hover-tooltip.js';
 import { errorHighlightExtension } from './cm-error-highlight.js';
+import type { ErrorPosition } from './cm-error-highlight.js';
 import { perfSpan } from './perf-marks.js';
 import { languageServiceOptions } from '../services/workspace-modules.js';
 import { openFileNow, workspaceNow } from '../services/workspace-files.js';
@@ -569,8 +570,8 @@ function positionToOffset(source: string, pos: { line: number; character: number
 
 export interface ErrorHighlightHandle {
   extension: unknown[];
-  setError: (editorView: unknown, position: { line: number; column: number }) => void;
-  setErrors: (editorView: unknown, positions: { line: number; column: number }[]) => void;
+  setError: (editorView: unknown, position: ErrorPosition) => void;
+  setErrors: (editorView: unknown, positions: ErrorPosition[]) => void;
   clearError: (editorView: unknown) => void;
 }
 

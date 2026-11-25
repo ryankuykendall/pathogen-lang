@@ -401,6 +401,17 @@ describe('the row menus', () => {
     expect(labels()).toEqual(['Rename…', 'Move to…', 'Duplicate', '—', 'Delete…']);
   });
 
+  it('a data file: the braces, and a menu without Set as main (phase 3a)', async () => {
+    const { FILE_ICONS } = await import('../playground/utils/file-icons.js');
+    tree.files = [...GEARS, { path: 'data/gears.json', kind: 'data' }];
+    expect(row('data/gears.json').className).toBe('row file data');
+    const parsed = document.createElement('span');
+    parsed.innerHTML = FILE_ICONS.data;
+    expect(row('data/gears.json').querySelector('.icon')!.innerHTML).toBe(parsed.innerHTML);
+    dots('data/gears.json')!.click();
+    expect(labels()).toEqual(['Rename…', 'Move to…', 'Duplicate', '—', 'Delete…']);
+  });
+
   it('openMenu: a program’s menu opens from outside the tree, its folder unfolded, the keyboard on Set as main (step 7)', () => {
     row('demos').click();
     expect(row('demos').getAttribute('aria-expanded')).toBe('false');

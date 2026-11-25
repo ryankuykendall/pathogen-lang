@@ -15,8 +15,8 @@ import { store } from '../state/store.js';
 import { PROJECT_FILE, projectFileText } from './workspace-edits.js';
 import { holdsWorkspace, isWorkspaceFile, openFileNow } from './workspace-files.js';
 
-/** What a tab's icon shows. */
-export type TabKind = 'program' | 'library' | 'json';
+/** What a tab's icon shows: `json` is pathogen.json (read-only), `data` a data file. */
+export type TabKind = 'program' | 'library' | 'json' | 'data';
 
 /** One tab: its file, its icon, and its label. */
 export interface TabItem {
@@ -114,7 +114,10 @@ export function tabItems(
 ): TabItem[] {
   return tabLabels(openFiles).map(({ path, name, hint }) => {
     const text = textOf(path) ?? '';
-    const kind: TabKind = !path.endsWith(PATHOGEN_EXT) ? 'json' : isLibrary(path, text) ? 'library' : 'program';
+    let kind: TabKind;
+    if (path === PROJECT_FILE) kind = 'json';
+    else if (!path.endsWith(PATHOGEN_EXT)) kind = 'data';
+    else kind = isLibrary(path, text) ? 'library' : 'program';
     return { path, kind, name, hint };
   });
 }

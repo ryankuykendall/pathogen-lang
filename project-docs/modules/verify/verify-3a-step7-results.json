@@ -1,0 +1,77 @@
+{
+  "date": "2026-11-25T01:31:07.068Z",
+  "results": [
+    {
+      "check": "data/gears.json’s tree row is a data row (light)",
+      "ok": true
+    },
+    {
+      "check": "its tab keeps .json, has the data kind, and no lock (light)",
+      "ok": true
+    },
+    {
+      "check": "the JSON is highlighted: a string and a number in colors of their own (light)",
+      "ok": true
+    },
+    {
+      "check": "typing in it offers no Pathogen completions (light)",
+      "ok": true
+    },
+    {
+      "check": "Format Document is off, and says why (light)",
+      "ok": true
+    },
+    {
+      "check": "a mistake in gears.json is marked at line 3, with the message on hover (light)",
+      "ok": true
+    },
+    {
+      "check": "a mistake in sizes.json, which no program imports, is marked too (light)",
+      "ok": true
+    },
+    {
+      "check": "a minified 4 MB file is shown plain, a keystroke 71.3 ms at worst (light)",
+      "ok": true
+    },
+    {
+      "check": "no page errors (light)",
+      "ok": true
+    },
+    {
+      "check": "data/gears.json’s tree row is a data row (dark)",
+      "ok": true
+    },
+    {
+      "check": "its tab keeps .json, has the data kind, and no lock (dark)",
+      "ok": true
+    },
+    {
+      "check": "the JSON is highlighted: a string and a number in colors of their own (dark)",
+      "ok": true
+    },
+    {
+      "check": "typing in it offers no Pathogen completions (dark)",
+      "ok": true
+    },
+    {
+      "check": "Format Document is off, and says why (dark)",
+      "ok": true
+    },
+    {
+      "check": "a mistake in gears.json is marked at line 3, with the message on hover (dark)",
+      "ok": true
+    },
+    {
+      "check": "a mistake in sizes.json, which no program imports, is marked too (dark)",
+      "ok": true
+    },
+    {
+      "check": "a minified 4 MB file is shown plain, a keystroke 71.4 ms at worst (dark)",
+      "ok": true
+    },
+    {
+      "check": "no page errors (dark)",
+      "ok": true
+    }
+  ]
+}

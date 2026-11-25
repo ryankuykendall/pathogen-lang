@@ -58,6 +58,8 @@ describe('tab labels', () => {
       'main.pathogen': 'circle(0, 0, 4);',
       'parts/gears.pathogen': 'module;\nexport const n = 1;',
       'pathogen.json': '{}\n',
+      // A data file keeps its extension, and isn't pathogen.json (no lock): phase 3a.
+      'data/gears.json': '[]',
     };
     const items = tabItems(
       Object.keys(texts),
@@ -68,6 +70,7 @@ describe('tab labels', () => {
       ['main', 'program'],
       ['gears', 'library'],
       ['pathogen.json', 'json'],
+      ['gears.json', 'data'],
     ]);
   });
 });

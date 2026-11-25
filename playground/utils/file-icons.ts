@@ -7,6 +7,11 @@
 const icon = (body: string): string =>
   `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">${body}</svg>`;
 
+/** Curly braces: JSON, for pathogen.json and data files alike. */
+const BRACES = icon(
+  '<path d="M8 3H7a2 2 0 0 0-2 2v5a2 2 0 0 1-2 2 2 2 0 0 1 2 2v5a2 2 0 0 0 2 2h1M16 3h1a2 2 0 0 1 2 2v5a2 2 0 0 0 2 2 2 2 0 0 0-2 2v5a2 2 0 0 1-2 2h-1"/>',
+);
+
 export const FILE_ICONS = {
   /** A program: a page with a drawn wave. */
   program: icon(
@@ -17,9 +22,9 @@ export const FILE_ICONS = {
   /** A file whose kind isn't known yet, its text still loading (2e step 6): a plain page. */
   file: icon('<path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6"/>'),
   /** pathogen.json. */
-  json: icon(
-    '<path d="M8 3H7a2 2 0 0 0-2 2v5a2 2 0 0 1-2 2 2 2 0 0 1 2 2v5a2 2 0 0 0 2 2h1M16 3h1a2 2 0 0 1 2 2v5a2 2 0 0 0 2 2 2 2 0 0 0-2 2v5a2 2 0 0 1-2 2h-1"/>',
-  ),
+  json: BRACES,
+  /** A data file (`.json`, `.geojson`, `.topojson`, `.fold`): the same braces (phase 3a mockups v2, 1a). */
+  data: BRACES,
   lock: icon('<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>'),
   /** A file that couldn't be read (2e step 5d; mockup project-docs/modules/mockups-2e-5d-unreadable-file/). */
   warning:

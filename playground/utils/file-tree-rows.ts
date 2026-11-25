@@ -8,12 +8,16 @@
 // orders files with this on pages without them.
 import { MAIN_FILE, PROJECT_FILE } from './workspace-names.js';
 
-export type TreeFileKind = 'program' | 'library';
+/** A file's kind in the tree: a program, a module (`library`), or a data file (phase 3a). */
+export type TreeFileKind = 'program' | 'library' | 'data';
 
-/** What the + menu adds. */
-export type NewEntryKind = TreeFileKind | 'folder';
+/** What the + menu names in the tree's own field (New data file… asks in a dialog). */
+export type NewEntryKind = 'program' | 'library' | 'folder';
 
-/** A .pathogen file of the workspace, by its workspace path (no leading slash). */
+/** What the tree's name field holds: a new entry, or a renamed file of any kind (a data file too). */
+export type FieldKind = NewEntryKind | 'data';
+
+/** A file of the workspace, by its workspace path (no leading slash). */
 export interface TreeFile {
   path: string;
   kind: TreeFileKind;
@@ -41,7 +45,7 @@ export type TreeRow =
    * in its folder. Or Rename…'s (step 4c-2): in place of the row it renames,
    * `renaming` its path and `name` its name. Not a tree item.
    */
-  | { type: 'input'; path: string; name: string; level: number; kind: NewEntryKind; renaming?: string }
+  | { type: 'input'; path: string; name: string; level: number; kind: FieldKind; renaming?: string }
   /** pathogen.json: read-only, written from the entry points. */
   | (RowBase & { type: 'project' });
 
@@ -68,12 +72,12 @@ export function treeRows(
   options: {
     collapsed: ReadonlySet<string>;
     main: string | null;
-    naming?: { folder: string; kind: NewEntryKind; renaming?: string } | null;
+    naming?: { folder: string; kind: FieldKind; renaming?: string } | null;
   },
 ): TreeRow[] {
   const renaming = options.naming?.renaming ?? null;
   const naming = renaming === null ? (options.naming ?? null) : null;
-  const renameField = (path: string, level: number, kind: NewEntryKind): TreeRow => ({
+  const renameField = (path: string, level: number, kind: FieldKind): TreeRow => ({
     type: 'input',
     path,
     name: baseOf(path),

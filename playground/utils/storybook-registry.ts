@@ -210,7 +210,7 @@ layer('hex').apply { circle(60, 100, 40) }`,
     name: 'File Tree',
     category: 'Editor',
     description:
-      "The workspace's files beside the editor (docs/workspace-files.md, mockup v6 screens O, J and N). Folders first, then files, each by name; .pathogen quiet; a module's box icon; the main's badge when it isn't main.pathogen; pathogen.json last, with a lock. Click a folder to fold it, a file to open it. One Tab stop: Up and Down move, Right and Left unfold and fold, Space opens a file, Enter opens it and goes to the editor. The + adds a program, a module or a folder to the folder clicked last, else the folder of the file in the editor, else the top: a name field appears first in that folder; a taken name is refused in place; Enter creates, Esc cancels. Each row's ⋮ (or a right-click, or Shift+F10) opens its menu: Rename… turns the row into a field holding its name, and Move to… lists the top and the folders, the one it's in marked. A file or folder dragged onto a folder (or empty space, for the top) moves there: the row dims, the folder lights up, and the label by the pointer says what the move changes, or why it can't go there. A red dot on a row's icon marks a program that fails, and the file it fails in; hovering the icon says where (a folded folder takes a dot for a file inside it).",
+      "The workspace's files beside the editor (docs/workspace-files.md, mockup v6 screens O, J and N). Folders first, then files, each by name; .pathogen quiet; a module's box icon, a data file's braces; the main's badge when it isn't main.pathogen; pathogen.json last, with a lock. Click a folder to fold it, a file to open it. One Tab stop: Up and Down move, Right and Left unfold and fold, Space opens a file, Enter opens it and goes to the editor. The + adds a program, a module or a folder to the folder clicked last, else the folder of the file in the editor, else the top: a name field appears first in that folder; a taken name is refused in place; Enter creates, Esc cancels. Each row's ⋮ (or a right-click, or Shift+F10) opens its menu: Rename… turns the row into a field holding its name, and Move to… lists the top and the folders, the one it's in marked. A file or folder dragged onto a folder (or empty space, for the top) moves there: the row dims, the folder lights up, and the label by the pointer says what the move changes, or why it can't go there. A red dot on a row's icon marks a program that fails, and the file it fails in; hovering the icon says where (a folded folder takes a dot for a file inside it).",
     stories: [
       { name: 'A workspace with folders', props: { set: 'gears', active: 'demos/gears.pathogen' } },
       { name: 'A new workspace', props: { set: 'new', active: 'main.pathogen' } },
@@ -232,6 +232,9 @@ layer('hex').apply { circle(60, 100, 40) }`,
         props: { set: 'gears', active: 'main.pathogen', open: 'drag:parts/gears.pathogen>demos' },
       },
       { name: 'Red dots', props: { set: 'gears', active: 'main.pathogen', open: 'dots' } },
+      // Phase 3a, mockups v2 1a: data files with the braces, and their menu (no Set as main).
+      { name: 'Data files', props: { set: 'data', active: 'data/gears.json' } },
+      { name: 'A data file’s menu', props: { set: 'data', active: 'main.pathogen', open: 'row:data/gears.json' } },
     ],
     controls: [],
     notes:
@@ -239,7 +242,7 @@ layer('hex').apply { circle(60, 100, 40) }`,
     render: (container, props) => {
       import('../components/file-tree.js')
         .then(() => {
-          type Kind = 'program' | 'library';
+          type Kind = 'program' | 'library' | 'data';
           const GEARS: [string, Kind][] = [
             ['main.pathogen', 'program'],
             ['try-sizes.pathogen', 'program'],
@@ -261,6 +264,16 @@ layer('hex').apply { circle(60, 100, 40) }`,
                 ['main.pathogen', 'program'],
                 ['shapes/a-rather-long-name-for-a-star.pathogen', 'program'],
                 ['shapes/round/and-another-long-library-name.pathogen', 'library'],
+              ],
+              folders: [],
+              main: 'main.pathogen',
+            },
+            data: {
+              files: [
+                ['main.pathogen', 'program'],
+                ['parts/gears.pathogen', 'library'],
+                ['data/gears.json', 'data'],
+                ['data/sizes.json', 'data'],
               ],
               folders: [],
               main: 'main.pathogen',

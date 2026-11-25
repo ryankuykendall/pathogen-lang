@@ -6,6 +6,8 @@ export interface ErrorPosition {
   line: number;
   column: number;
   severity?: 'error' | 'warning';
+  /** Words shown on hover over the mark: a data file's JSON mistake, as its import would give it. */
+  message?: string;
 }
 
 /**
@@ -31,6 +33,13 @@ export function dedupeHighlightPositions(positions: ErrorPosition[], max = MAX_H
     if (out.length >= max) break;
   }
   return out;
+}
+
+/** The document, as much as the decorations read. */
+interface DocLike {
+  lines: number;
+  line: (n: number) => { from: number; to: number; length: number };
+  sliceString: (from: number, to: number) => string;
 }
 
 interface ErrorState {
@@ -66,8 +75,10 @@ interface CmStateModule {
 interface CmViewModule {
   Decoration: {
     none: unknown;
-    line(spec: { class: string }): { range(from: number): unknown };
-    mark(spec: { class: string }): { range(from: number, to: number): unknown };
+    line: (spec: { class: string; attributes?: Record<string, string> }) => { range: (from: number) => unknown };
+    mark: (spec: { class: string; attributes?: Record<string, string> }) => {
+      range: (from: number, to: number) => unknown;
+    };
     set(decorations: unknown[], sort?: boolean): unknown;
   };
   EditorView: {
@@ -85,13 +96,23 @@ export function errorHighlightExtension(cmStateModule: CmStateModule, cmViewModu
   const clearErrorEffect = StateEffect.define<null>();
 
   // Build decorations for a single error position
-  function buildDecosForPosition(doc: { lines: number; line(n: number): { from: number; to: number; length: number }; sliceString(from: number, to: number): string }, line: number, column: number, decos: unknown[], severity: 'error' | 'warning' = 'error'): void {
+  function buildDecosForPosition(
+    doc: DocLike,
+    line: number,
+    column: number,
+    decos: unknown[],
+    severity: 'error' | 'warning' = 'error',
+    message?: string,
+  ): void {
     if (line < 1 || line > doc.lines) return;
 
     const lineObj = doc.line(line);
+    // A message shows on hover over the whole line too: a mistake at the end
+    // of a file is placed on an empty line, which has no character to mark.
+    const attributes = message !== undefined ? { attributes: { title: message } } : {};
 
     // Line highlight
-    decos.push(Decoration.line({ class: `cm-${severity}-line` }).range(lineObj.from));
+    decos.push(Decoration.line({ class: `cm-${severity}-line`, ...attributes }).range(lineObj.from));
 
     // Character/token mark — clamp column to line length, scan for word boundary
     const col = Math.max(1, Math.min(column, lineObj.length));
@@ -106,7 +127,7 @@ export function errorHighlightExtension(cmStateModule: CmStateModule, cmViewModu
     // Fall back to single char if no word found
     const effectiveTo = charTo > charFrom ? charTo : Math.min(charFrom + 1, lineObj.to);
     if (charFrom < effectiveTo) {
-      decos.push(Decoration.mark({ class: `cm-${severity}-char` }).range(charFrom, effectiveTo));
+      decos.push(Decoration.mark({ class: `cm-${severity}-char`, ...attributes }).range(charFrom, effectiveTo));
     }
   }
 
@@ -114,8 +135,8 @@ export function errorHighlightExtension(cmStateModule: CmStateModule, cmViewModu
   function buildDecorations(doc: Parameters<typeof buildDecosForPosition>[0], errors: ErrorPosition[]): unknown {
     if (errors.length === 0) return Decoration.none;
     const decos: unknown[] = [];
-    for (const { line, column, severity } of dedupeHighlightPositions(errors)) {
-      buildDecosForPosition(doc, line, column, decos, severity);
+    for (const { line, column, severity, message } of dedupeHighlightPositions(errors)) {
+      buildDecosForPosition(doc, line, column, decos, severity, message);
     }
     return decos.length > 0 ? Decoration.set(decos, true) : Decoration.none;
   }

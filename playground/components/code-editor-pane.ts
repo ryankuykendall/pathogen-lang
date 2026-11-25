@@ -9,6 +9,7 @@ import {
   type ErrorHighlightHandle,
 } from '../utils/cm-language-services.js';
 import { PROJECT_FILE } from '../services/workspace-edits.js';
+import { isDataFile } from '../services/workspace-files.js';
 import { changedLinesExtension, editedLines, spanChange } from '../utils/cm-changed-lines.js';
 import type { ChangedLines } from '../utils/cm-changed-lines.js';
 import { colorPickerExtension } from '../utils/cm-color-picker.js';
@@ -57,6 +58,11 @@ interface CmViewModule {
   rectangularSelection(): unknown;
   highlightActiveLine(): unknown;
   keymap: { of(bindings: unknown[]): unknown };
+  ViewPlugin: {
+    define: (
+      create: (view: CmEditorView) => { update?: (update: CmViewUpdate) => void; destroy?: () => void },
+    ) => unknown;
+  };
   hoverTooltip(source: unknown, options?: unknown): unknown;
   showTooltip: {
     computeN(deps: unknown[], read: (state: unknown) => readonly unknown[]): unknown;
@@ -104,6 +110,21 @@ const READ_ONLY_NOTE =
 /** What the tip at the cursor says when you type in it. */
 const READ_ONLY_TIP = 'Read-only. Set as main changes this list';
 const READ_ONLY_HINT_MS = 2000;
+// A data file's JSON is read again this long after typing pauses, as a compile waits (a 5 MB file takes about 50 ms).
+const DATA_LINT_MS = 150;
+// A data file with a line longer than this is shown plain: no highlighting, no wrapping (_dataExtensions).
+const LONG_DATA_LINE = 20_000;
+
+/** The length of `text`'s longest line. */
+function longestLine(text: string): number {
+  let longest = 0;
+  let start = 0;
+  for (let end = text.indexOf('\n'); end !== -1; end = text.indexOf('\n', start)) {
+    longest = Math.max(longest, end - start);
+    start = end + 1;
+  }
+  return Math.max(longest, text.length - start);
+}
 
 interface CmTransaction {
   isUserEvent(type: string): boolean;
@@ -249,6 +270,15 @@ export class CodeEditorPane extends HTMLElement {
   /** Whether the file shown can't be typed in: pathogen.json, which the playground writes. */
   get readOnly(): boolean {
     return this._activePath === PROJECT_FILE;
+  }
+
+  /**
+   * Whether the file shown is a data file (phase 3a): JSON, edited as text,
+   * with none of Pathogen's language services. Its marks are its own JSON
+   * mistake's (_dataLint), never a compile's.
+   */
+  get isData(): boolean {
+    return this._activePath !== null && isDataFile(this._activePath);
   }
 
   /** Put the keyboard in the editor (after a tab is clicked), or, with no file open, on the zero-state's first button. */
@@ -501,10 +531,103 @@ export class CodeEditorPane extends HTMLElement {
   }
 
   private _newState(text: string, path: string): CmEditorState {
-    return this._cmModules!.state.EditorState.create({
-      doc: text,
-      extensions: path === PROJECT_FILE ? this._readOnlyExtensions() : this._buildExtensions(),
-    }) as CmEditorState;
+    let extensions: unknown[];
+    if (path === PROJECT_FILE) extensions = this._readOnlyExtensions();
+    else if (isDataFile(path)) extensions = this._dataExtensions(text);
+    else extensions = this._buildExtensions();
+    return this._cmModules!.state.EditorState.create({ doc: text, extensions }) as CmEditorState;
+  }
+
+  /**
+   * A data file's state (phase 3a; docs/workspace-files.md "Data files"):
+   * JSON, highlighted and editable, with its own undo history and the update
+   * listener, so an edit reaches the store, autosave and the programs that
+   * read it. None of Pathogen's language services, keys or pickers: its
+   * completions, hover, rename and Format Document are Pathogen's. Its JSON
+   * mistake is marked as you type, with the message its import would give
+   * (_dataLint).
+   *
+   * A file written on long lines (minified JSON, up to 5 MB on one line) is
+   * shown without highlighting or wrapping: CodeMirror highlights and lays
+   * out a line whole, so each keystroke would go through all of it.
+   */
+  private _dataExtensions(text: string): unknown[] {
+    const { view, commands, language, autocomplete } = this._cmModules!;
+    const plain = longestLine(text) > LONG_DATA_LINE;
+    return [
+      view.lineNumbers(),
+      view.highlightActiveLineGutter(),
+      view.highlightSpecialChars(),
+      commands.history(),
+      view.drawSelection(),
+      view.rectangularSelection(),
+      view.highlightActiveLine(),
+      language.indentOnInput(),
+      language.bracketMatching(),
+      autocomplete.closeBrackets(),
+      // No completions; the field stays present for a completion pending from
+      // the file just left (as in pathogen.json's state).
+      autocomplete.autocompletion({ override: [], activateOnTyping: false }),
+      this._themeCompartment!.of(this._getThemeExtensions()),
+      ...(plain ? [] : [jsonLanguage(language)]),
+      view.keymap.of([
+        ...autocomplete.closeBracketsKeymap,
+        ...commands.defaultKeymap,
+        ...commands.historyKeymap,
+        commands.indentWithTab,
+      ]),
+      ...(this._errorHighlight?.extension ?? []),
+      ...(this._changedLines?.extension ?? []),
+      this._updateExtension(),
+      this._blurExtension(),
+      this._dataLint(),
+      ...(plain ? [] : [view.EditorView.lineWrapping]),
+    ];
+  }
+
+  /**
+   * A data file's JSON mistake, marked with the message its import would give
+   * (the engine's own reader): when the file shows, and after each pause in
+   * typing. A compile's marks pass a data file by (highlightErrors), so these
+   * stay until the JSON reads.
+   */
+  private _dataLint(): unknown {
+    const { view } = this._cmModules!;
+    return view.ViewPlugin.define((editor: CmEditorView) => {
+      let timer: ReturnType<typeof setTimeout> | null = null;
+      const schedule = (delay: number): void => {
+        if (timer) clearTimeout(timer);
+        timer = setTimeout(() => {
+          timer = null;
+          this._markJsonMistake(editor);
+        }, delay);
+      };
+      schedule(0);
+      return {
+        update: (update: CmViewUpdate) => {
+          if (update.docChanged) schedule(DATA_LINT_MS);
+        },
+        destroy: () => {
+          if (timer) clearTimeout(timer);
+        },
+      };
+    });
+  }
+
+  // (setState destroys a state's plugins, so a timer from a file no longer shown never fires.)
+  private _markJsonMistake(editor: CmEditorView): void {
+    const readJson = window.PathogenLang?.readJson;
+    if (!this._errorHighlight || typeof readJson !== 'function') return;
+    const read = readJson(editor.state.doc.toString());
+    if (read.ok) this._errorHighlight.clearError(editor);
+    else this._errorHighlight.setErrors(editor, [{ line: read.line, column: read.column, message: read.message }]);
+    // The same words for a screen reader, which can't reach the mark's hover text.
+    this._setDataStatus(read.ok ? '' : `Line ${read.line}: ${read.message}`);
+  }
+
+  private _setDataStatus(text: string): void {
+    const status = this.shadowRoot?.querySelector<HTMLElement>('.data-status');
+    if (status && status.textContent !== text) status.textContent = text;
   }
 
   /**
@@ -584,6 +707,7 @@ export class CodeEditorPane extends HTMLElement {
   private _clearMarks(): void {
     this._pendingError = null;
     this._pendingWarnings = [];
+    this._setDataStatus('');
     if (this._editor && this._errorHighlight) this._errorHighlight.clearError(this._editor);
   }
 
@@ -617,6 +741,36 @@ export class CodeEditorPane extends HTMLElement {
     return [language.syntaxHighlighting(language.defaultHighlightStyle)];
   }
 
+  /** An edit reaches the store and workspace-view (`code-change`): a Pathogen file's or a data file's. */
+  private _updateExtension(): unknown {
+    const { view } = this._cmModules!;
+    return view.EditorView.updateListener.of((update: CmViewUpdate) => {
+      if (update.docChanged && !this._quiet) {
+        store.set('isModified', true);
+        store.set('code', this._editor!.state.doc.toString());
+        this.dispatchEvent(
+          new CustomEvent<{ code: string }>('code-change', {
+            bubbles: true,
+            composed: true,
+            detail: { code: this._editor!.state.doc.toString() },
+          }),
+        );
+      }
+    });
+  }
+
+  // Flush any pending autosave when focus leaves the editor — shrinks the
+  // window where an edit sits unsaved between the debounce and the next save.
+  private _blurExtension(): unknown {
+    const { view } = this._cmModules!;
+    return view.EditorView.domEventHandlers({
+      blur: () => {
+        this.dispatchEvent(new CustomEvent('editor-blur', { bubbles: true, composed: true }));
+        return false;
+      },
+    });
+  }
+
   /**
    * The full extension set for an EditorState. Called for the initial state
    * AND for every fresh one (resetFiles, and each file shown for the first
@@ -630,31 +784,8 @@ export class CodeEditorPane extends HTMLElement {
    */
   private _buildExtensions(): unknown[] {
     const { view, commands, language, autocomplete } = this._cmModules!;
-
-    const updateExtension = view.EditorView.updateListener.of((update: CmViewUpdate) => {
-      if (update.docChanged && !this._quiet) {
-        store.set('isModified', true);
-        store.set('code', this._editor!.state.doc.toString());
-        this.dispatchEvent(
-          new CustomEvent<{ code: string }>('code-change', {
-            bubbles: true,
-            composed: true,
-            detail: { code: this._editor!.state.doc.toString() },
-          }),
-        );
-      }
-    });
-
-    // Flush any pending autosave when focus leaves the editor — shrinks the
-    // window where an edit sits unsaved between the debounce and the next save.
-    const blurExtension = view.EditorView.domEventHandlers({
-      blur: () => {
-        this.dispatchEvent(
-          new CustomEvent('editor-blur', { bubbles: true, composed: true }),
-        );
-        return false;
-      },
-    });
+    const updateExtension = this._updateExtension();
+    const blurExtension = this._blurExtension();
 
     return [
       view.lineNumbers(),
@@ -792,9 +923,13 @@ export class CodeEditorPane extends HTMLElement {
     });
   }
 
-  /** Format the current document via the shared language-services formatter (not pathogen.json). */
+  /**
+   * Format the current document via the shared language-services formatter:
+   * not pathogen.json, and not a data file, since it formats Pathogen code
+   * (docs/workspace-files.md "Data files").
+   */
   formatDocument(): void {
-    if (!this._editor || this.readOnly || this._activePath === null) return;
+    if (!this._editor || this.readOnly || this.isData || this._activePath === null) return;
     runFormatDocument(this._editor);
   }
 
@@ -822,16 +957,17 @@ export class CodeEditorPane extends HTMLElement {
   }
 
   // Marks need a file: with none open there's nothing to mark (a file shown
-  // later gets its marks from workspace-view).
+  // later gets its marks from workspace-view). A data file's marks are its own
+  // JSON mistake's (_dataLint): a compile's marks and clears pass it by.
   highlightError(line: number, column: number): void {
-    if (this._activePath === null) return;
+    if (this._activePath === null || this.isData) return;
     this._pendingError = { line, column };
     if (!this._editor || !this._errorHighlight) return;
     this._applyPendingError();
   }
 
   highlightErrors(errors: Array<{ line: number; column: number }>): void {
-    if (errors.length === 0 || this._activePath === null) return;
+    if (errors.length === 0 || this._activePath === null || this.isData) return;
     this._pendingError = errors[0];
     if (!this._editor || !this._errorHighlight) return;
     this._errorHighlight.setErrors(this._editor, errors);
@@ -839,7 +975,7 @@ export class CodeEditorPane extends HTMLElement {
 
   /** Compiler warnings: same field as errors, rendered with the cm-warning-* classes. */
   highlightWarnings(warnings: Array<{ line: number; column: number }>): void {
-    if (this._activePath === null) return;
+    if (this._activePath === null || this.isData) return;
     this._pendingWarnings = warnings;
     if (!this._editor || !this._errorHighlight) return;
     if (warnings.length === 0) {
@@ -855,7 +991,7 @@ export class CodeEditorPane extends HTMLElement {
   clearError(): void {
     this._pendingError = null;
     this._pendingWarnings = [];
-    if (!this._editor || !this._errorHighlight) return;
+    if (!this._editor || !this._errorHighlight || this.isData) return;
     this._errorHighlight.clearError(this._editor);
   }
 
@@ -885,6 +1021,7 @@ export class CodeEditorPane extends HTMLElement {
       <div id="editor-container"></div>
       <editor-zero-state hidden></editor-zero-state>
       <div class="read-only-tip" role="status" hidden></div>
+      <div class="data-status" role="status" aria-live="polite"></div>
     `;
     this._syncReadOnly();
     this._syncZeroState();

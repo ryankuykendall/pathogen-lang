@@ -62,7 +62,7 @@ import './clash-prompt.js';
 import styles from './file-tree.css';
 
 import type { ClashAnswer, ClashQuestion } from './clash-prompt.js';
-import type { NewEntryKind, TreeFile, TreeRow } from '../utils/file-tree-rows.js';
+import type { FieldKind, NewEntryKind, TreeFile, TreeRow } from '../utils/file-tree-rows.js';
 
 const esc = (s: string): string =>
   s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -221,10 +221,12 @@ function menuHtml(head: string | null, entries: MenuEntry[]): string {
   return `${head !== null ? `<div class="menu-head" role="presentation">${head}</div>` : ''}${items.join('')}${foot}`;
 }
 
-const FIELD_LABELS: Record<NewEntryKind, string> = {
+// A data file is only ever renamed here (New data file… names it in its dialog), so its label never shows.
+const FIELD_LABELS: Record<FieldKind, string> = {
   program: 'New program name',
   library: 'New module name',
   folder: 'New folder name',
+  data: 'New data file name',
 };
 
 /** A file's name with its extension quiet: `kit` and `.pathogen`. */
@@ -320,7 +322,7 @@ export class FileTree extends HTMLElement {
    * named, or while Rename… renames `renaming` (whose name was `original`).
    */
   private _naming: {
-    kind: NewEntryKind;
+    kind: FieldKind;
     folder: string;
     value: string;
     error: string | null;
@@ -1286,7 +1288,8 @@ export class FileTree extends HTMLElement {
       naming.error = check.message ?? null;
       line = `${check.hint ? `${check.hint} · ` : ''}${RENAME_KEYS_HINT}`;
     } else {
-      naming.error = name === '' ? null : (this.checkName?.(naming.kind, naming.folder, name) ?? null);
+      // Not renaming: a new program, module or folder (a data file is named in its dialog).
+      naming.error = name === '' ? null : (this.checkName?.(naming.kind as NewEntryKind, naming.folder, name) ?? null);
     }
     const bad = naming.error !== null;
     field.setAttribute('aria-invalid', String(bad));
@@ -1299,7 +1302,7 @@ export class FileTree extends HTMLElement {
     hint.classList.toggle('bad', bad);
     if (bad) hint.textContent = naming.error;
     else if (naming.renaming !== null) hint.textContent = line;
-    else hint.innerHTML = defaultHint(naming.kind, this._main === null);
+    else hint.innerHTML = defaultHint(naming.kind as NewEntryKind, this._main === null);
   }
 
   /** The typed name, if it can be used now. */
@@ -1443,7 +1446,8 @@ export class FileTree extends HTMLElement {
     const chip = this.shadowRoot!.querySelector<HTMLElement>('.drag-chip')!;
     const icon = row.querySelector('.icon')?.innerHTML ?? '';
     const folder = this._isFolder(path);
-    chip.dataset.kind = folder ? 'folder' : row.classList.contains('library') ? 'library' : 'program';
+    const kinds = ['library', 'data'] as const;
+    chip.dataset.kind = folder ? 'folder' : (kinds.find((k) => row.classList.contains(k)) ?? 'program');
     chip.innerHTML = `<span class="icon">${icon}</span><span class="name">${esc(baseOf(path))}${folder ? '/' : ''}</span>`;
     // Shown under the pointer for the moment the browser takes its picture, then hidden.
     chip.style.left = `${e.clientX - 10}px`;

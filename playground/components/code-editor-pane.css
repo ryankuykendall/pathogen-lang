@@ -116,6 +116,16 @@ editor-zero-state {
   pointer-events: none;
 }
 
+/* A data file's JSON mistake, for a screen reader: the mark's hover text says it to the eye (phase 3a). */
+.data-status {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .read-only-note {
     transition: none;

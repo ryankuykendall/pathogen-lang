@@ -53,6 +53,18 @@ describe('<editor-tabs>', () => {
     expect(tabFor(tabs, 'pathogen.json').querySelector('.lock')).not.toBeNull();
   });
 
+  it('a data file’s tab: the braces, its extension, and no lock (phase 3a)', async () => {
+    const { FILE_ICONS } = await import('../playground/utils/file-icons.js');
+    const data: TabItem = { path: 'data/gears.json', kind: 'data', name: 'gears.json', hint: null };
+    const { tabs } = mount([...ITEMS, data], 'data/gears.json');
+    const tab = tabFor(tabs, 'data/gears.json');
+    expect([tab.textContent.trim(), tab.className]).toEqual(['gears.json', 'tab data']);
+    const parsed = document.createElement('span');
+    parsed.innerHTML = FILE_ICONS.data;
+    expect(tab.querySelector('.icon')!.innerHTML).toBe(parsed.innerHTML);
+    expect(tab.querySelector('.lock')).toBeNull();
+  });
+
   it('a click chooses a tab and hands focus to the editor; its × closes it', () => {
     const { tabs, events } = mount();
     tabFor(tabs, 'parts/gears.pathogen').querySelector<HTMLElement>('.label')!.click();

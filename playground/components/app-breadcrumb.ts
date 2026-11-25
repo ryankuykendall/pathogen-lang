@@ -16,7 +16,7 @@
 
 import { workspaceApi } from '../services/api.js';
 import { getUserId } from '../services/user-id.js';
-import { holdsWorkspace, openFileNow, workspaceNow } from '../services/workspace-files.js';
+import { holdsWorkspace, isDataFile, openFileNow, workspaceNow } from '../services/workspace-files.js';
 import { saveBlob, workspaceZip } from '../services/workspace-download.js';
 import { hasFeature, UserFeature } from '../services/auth.js';
 import type { CurrentUser } from '../services/auth.js';
@@ -413,11 +413,18 @@ class AppBreadcrumb extends HTMLElement {
         : `<button data-action="export" title="Export as SVG, PNG, or PDF (Ctrl+Shift+E)">${exportIcon}<span>Export</span></button>`,
     );
     // It formats the file in the editor, as the tabs' copy icon copies it (mockup v7, screen K).
-    menuItems.push(
-      openFileNow() === null
-        ? `<button data-action="format-document" disabled title="No file open">${materialIcon('format-left', { size: 16, className: 'menu-icon' })}<span>Format Document</span></button>`
-        : `<button data-action="format-document" title="Format the current document (Ctrl/Cmd+Shift+F)">${materialIcon('format-left', { size: 16, className: 'menu-icon' })}<span>Format Document<small>The file in the editor</small></span></button>`,
-    );
+    // Off for a data file: it formats Pathogen code (docs/workspace-files.md "Data files").
+    const formatIcon = materialIcon('format-left', { size: 16, className: 'menu-icon' });
+    const open = openFileNow();
+    let formatItem: string;
+    if (open === null) {
+      formatItem = `<button data-action="format-document" disabled title="No file open">${formatIcon}<span>Format Document</span></button>`;
+    } else if (isDataFile(open)) {
+      formatItem = `<button data-action="format-document" disabled>${formatIcon}<span>Format Document<small>It formats Pathogen code</small></span></button>`;
+    } else {
+      formatItem = `<button data-action="format-document" title="Format the current document (Ctrl/Cmd+Shift+F)">${formatIcon}<span>Format Document<small>The file in the editor</small></span></button>`;
+    }
+    menuItems.push(formatItem);
     if (hasWorkspace && isOwner) {
       menuItems.push(
         `<button data-action="rename-workspace" title="Edit workspace name and description">${materialIcon('edit', { size: 16, className: 'menu-icon' })}<span>Rename workspace</span></button>`,
