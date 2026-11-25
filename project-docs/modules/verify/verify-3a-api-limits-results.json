@@ -1,0 +1,25 @@
+{
+  "date": "2026-11-25T02:10:14.201Z",
+  "results": [
+    {
+      "check": "a workspace to try them on",
+      "ok": true
+    },
+    {
+      "check": "5 MB exactly, in pieces, is stored",
+      "ok": true
+    },
+    {
+      "check": "a save of 20 MB of two-byte text is saved (345 ms)",
+      "ok": true
+    },
+    {
+      "check": "a save just past 24 MB is refused, 413, with how to send large files (102 ms)",
+      "ok": true
+    },
+    {
+      "check": "a 6 MB file sent in pieces is refused, 413",
+      "ok": true
+    }
+  ]
+}
