@@ -369,6 +369,45 @@ try {
     );
     check(say('Enter makes data/trips.json, starting as {}, open in its tab'), created !== null, created);
 
+    // 7c. A save past a limit (mockup v2 3b): "Not saved", and the reason in the panel under the
+    //     file's name, until it fits again. Autosave waits a few seconds after an edit.
+    const tooBig = `[${Array.from({ length: 290_000 }, (_, i) => `{"x":${i},"t":"trip"}`).join(',\n')}]`;
+    await setText(page, tooBig);
+    const refused = await waitFor(
+      'the save refused',
+      async () =>
+        page.evaluate(`(() => {
+          const status = ${CRUMB}.querySelector('.save-status');
+          const panel = ${WV}.shadowRoot.querySelector('error-panel');
+          if (!status || status.textContent !== 'Not saved' || !panel.classList.contains('visible')) return null;
+          return [...panel.shadowRoot.querySelectorAll(':not(style)')]
+            .filter((n) => n.children.length === 0).map((n) => n.textContent).join(' ').replace(/\\s+/g, ' ').trim();
+        })()`),
+      60_000,
+    );
+    check(
+      say('a data file past 5 MB: "Not saved", and the reason under its name in the panel'),
+      typeof refused === 'string' &&
+        refused.includes(`data/trips-${theme}.json`) &&
+        /Not saved: \d+(\.\d)? MB, more than the 5 MB a data file can be in a workspace\. Your edits stay in the editor\./.test(
+          refused,
+        ),
+      refused,
+    );
+    await shot(page, '3b-save-refused', theme);
+    await setText(page, '{}');
+    const fits = await waitFor(
+      'the save to go through',
+      async () =>
+        page.evaluate(`(() => {
+          const status = ${CRUMB}.querySelector('.save-status')?.textContent;
+          const panel = ${WV}.shadowRoot.querySelector('error-panel');
+          return status === 'Saved' && !panel.classList.contains('visible');
+        })()`),
+      75_000,
+    );
+    check(say('made smaller, it saves, and the panel goes'), fits === true);
+
     await pause(1500);
     check(say('no page errors'), pageErrors.length === 0, pageErrors);
     await page.close();

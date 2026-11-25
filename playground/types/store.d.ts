@@ -68,8 +68,10 @@ export interface StoreState {
   snapshotsPage: { workspaceName: string; workspaceSlugId: string; currentName: string | null } | null;
 
   // Save status
-  saveStatus: 'idle' | 'modified' | 'saving' | 'saved' | 'error';
+  saveStatus: 'idle' | 'modified' | 'saving' | 'saved' | 'error' | 'not-saved';
   saveError: string | null;
+  /** A save past a limit, not sent (services/save-limits.ts): the error panel's section until a save fits. */
+  saveRefusal: { file: string; message: string } | null;
 
   // User preferences
   preferences: Preferences;

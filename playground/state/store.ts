@@ -131,8 +131,10 @@ export const store = createStore({
   snapshotsPage: null as null | { workspaceName: string; workspaceSlugId: string; currentName: string | null },
 
   // Save status for autosave
-  saveStatus: 'idle', // 'idle', 'modified', 'saving', 'saved', 'error'
+  saveStatus: 'idle', // 'idle', 'modified', 'saving', 'saved', 'error', 'not-saved'
   saveError: null as string | null, // Error message if save failed
+  // A save past a limit, not sent (services/save-limits.ts): the error panel says why until a save fits.
+  saveRefusal: null as { file: string; message: string } | null,
   multiTabWarning: false, // True when same workspace is open in another tab
   fontWarnings: [], // Formatted font-weight substitution messages (see font-loader formatFontSubstitutions)
 

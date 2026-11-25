@@ -324,6 +324,64 @@ describe('autosave', () => {
     });
   });
 
+  it('a save past a limit isn’t sent: "Not saved", the reason kept for the panel, until a save fits (phase 3a step 7c)', async () => {
+    const MB = 1024 * 1024;
+    const tooBig = `"${'x'.repeat(5 * MB + 100)}"`;
+    store.update({ ...twoFiles, workspaceFiles: { 'main.pathogen': MAIN, 'data/trips.json': tooBig }, code: MAIN });
+    autosave.init('ws-limit', null, 1, { justMain: false });
+    updateSpy.mockReset();
+    autosave.onChange(MAIN);
+    await autosave.saveNow();
+    expect(updateSpy).not.toHaveBeenCalled();
+    expect(store.get('saveStatus')).toBe('not-saved');
+    expect((store.get('saveRefusal') as { file: string }).file).toBe('data/trips.json');
+    expect(autosave.hasUnsavedChanges()).toBe(true);
+    // The page-leave save doesn't send it either.
+    expect(await autosave.saveNow({ keepalive: true })).toBe(false);
+    expect(updateSpy).not.toHaveBeenCalled();
+
+    // Made smaller: the next change saves, and the refusal goes.
+    store.update({ workspaceFiles: { 'main.pathogen': MAIN, 'data/trips.json': '[]' } });
+    updateSpy.mockResolvedValueOnce({ rev: 2, updatedAt: 'now' });
+    autosave.onChange(MAIN);
+    await autosave.saveNow();
+    expect(updateSpy).toHaveBeenCalledTimes(1);
+    expect([store.get('saveStatus'), store.get('saveRefusal')]).toEqual(['saved', null]);
+  });
+
+  it('a refusal stays while typing, goes on an Undo back to what is saved, and goes with the session (code review, note 82)', async () => {
+    const MB = 1024 * 1024;
+    const saved = { 'main.pathogen': MAIN, 'data/trips.json': '[]' };
+    const savedHash = await serverHash(saved, ['main.pathogen']);
+    store.update({ ...twoFiles, workspaceFiles: saved, code: MAIN });
+    const shas: Record<string, string> = {};
+    for (const [path, text] of Object.entries(saved)) shas[path] = (await engine.workspaceFileEntry(text)).sha256;
+    autosave.init('ws-undo', savedHash, 1, { justMain: false, shas, texts: saved });
+    updateSpy.mockReset();
+
+    store.update({ workspaceFiles: { ...saved, 'data/trips.json': `"${'x'.repeat(5 * MB)}"` } });
+    autosave.onChange(MAIN);
+    await autosave.saveNow();
+    expect(store.get('saveStatus')).toBe('not-saved');
+    // Typing again: still "Not saved", as the panel still says why.
+    autosave.onChange(MAIN);
+    expect(store.get('saveStatus')).toBe('not-saved');
+    // Make public's save: false at once, the refusal there to say why.
+    expect(await autosave.saveAndSettle('ws-undo')).toBe(false);
+
+    // Undo: back to what the server holds, so nothing to send, and the refusal goes.
+    store.update({ workspaceFiles: saved });
+    autosave.onChange(MAIN);
+    await autosave.saveNow();
+    expect(updateSpy).not.toHaveBeenCalled();
+    expect([store.get('saveStatus'), store.get('saveRefusal')]).toEqual(['saved', null]);
+
+    // Another session starts clean.
+    store.set('saveRefusal', { file: 'data/trips.json', message: 'x' });
+    autosave.init('ws-next', null, 1, {});
+    expect(store.get('saveRefusal')).toBeNull();
+  });
+
   it('counts UTF-8 bytes as the server does', async () => {
     const { utf8Length } = await import('../playground/utils/format-bytes.js');
     const sample = ['a', 'é', 'あ', String.fromCodePoint(0x1f600)].join('');

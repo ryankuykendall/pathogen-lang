@@ -1,5 +1,5 @@
 {
-  "date": "2026-11-25T01:40:35.663Z",
+  "date": "2026-11-25T02:02:08.139Z",
   "results": [
     {
       "check": "data/gears.json’s tree row is a data row (light)",
@@ -30,7 +30,7 @@
       "ok": true
     },
     {
-      "check": "a minified 4 MB file is shown plain, a keystroke 74.6 ms at worst (light)",
+      "check": "a minified 4 MB file is shown plain, a keystroke 83.5 ms at worst (light)",
       "ok": true
     },
     {
@@ -55,6 +55,14 @@
     },
     {
       "check": "Enter makes data/trips.json, starting as {}, open in its tab (light)",
+      "ok": true
+    },
+    {
+      "check": "a data file past 5 MB: \"Not saved\", and the reason under its name in the panel (light)",
+      "ok": true
+    },
+    {
+      "check": "made smaller, it saves, and the panel goes (light)",
       "ok": true
     },
     {
@@ -90,7 +98,7 @@
       "ok": true
     },
     {
-      "check": "a minified 4 MB file is shown plain, a keystroke 75.1 ms at worst (dark)",
+      "check": "a minified 4 MB file is shown plain, a keystroke 81.3 ms at worst (dark)",
       "ok": true
     },
     {
@@ -115,6 +123,14 @@
     },
     {
       "check": "Enter makes data/trips.json, starting as {}, open in its tab (dark)",
+      "ok": true
+    },
+    {
+      "check": "a data file past 5 MB: \"Not saved\", and the reason under its name in the panel (dark)",
+      "ok": true
+    },
+    {
+      "check": "made smaller, it saves, and the panel goes (dark)",
       "ok": true
     },
     {

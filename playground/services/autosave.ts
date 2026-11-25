@@ -5,6 +5,7 @@ import { workspaceApi } from './api.js';
 import { isWorkspaceFile, MAIN_FILE, withOpenFileText, workspaceNow } from './workspace-files.js';
 import { store } from '../state/store.js';
 import { utf8Length } from '../utils/format-bytes.js';
+import { saveRefusal } from './save-limits.js';
 
 import type { WorkspaceTexts } from './workspace-files.js';
 
@@ -23,6 +24,8 @@ export const SaveStatus = {
   SAVING: 'saving',
   SAVED: 'saved',
   ERROR: 'error',
+  /** Past a limit, so not sent (save-limits.ts): the error panel says why, until it saves. */
+  NOT_SAVED: 'not-saved',
 };
 
 // The rule for a page served with a library older than the shared hash below:
@@ -270,6 +273,7 @@ class AutosaveManager {
     store.update({
       saveStatus: SaveStatus.IDLE,
       saveError: null,
+      saveRefusal: null,
     });
   }
 
@@ -277,6 +281,8 @@ class AutosaveManager {
   stop(): void {
     this._isEnabled = false;
     this._workspaceId = null;
+    // A refused save was this session's: it goes with it.
+    if (store.get('saveRefusal') !== null) store.set('saveRefusal', null);
     if (this._debounceTimer) {
       clearTimeout(this._debounceTimer);
       this._debounceTimer = null;
@@ -305,7 +311,8 @@ class AutosaveManager {
     }
 
     this._pendingWorkspace = typeof change === 'string' ? workspaceWith(change) : change;
-    store.set('saveStatus', SaveStatus.MODIFIED);
+    // "Not saved" stays with its reason in the panel until a save fits (docs: "Both stay until the file saves").
+    store.set('saveStatus', store.get('saveRefusal') !== null ? SaveStatus.NOT_SAVED : SaveStatus.MODIFIED);
     this._scheduleSave(DEBOUNCE_MS);
   }
 
@@ -377,7 +384,9 @@ class AutosaveManager {
       if (hash === this._lastSavedHash) {
         // Content unchanged, skip save
         this._settle(workspace);
-        if (unchangedIsSaved) store.set('saveStatus', SaveStatus.SAVED);
+        // Back to what the server holds (an Undo after a refused edit): it fits, so a refusal goes.
+        if (store.get('saveRefusal') !== null) store.update({ saveRefusal: null, saveStatus: SaveStatus.SAVED });
+        else if (unchangedIsSaved) store.set('saveStatus', SaveStatus.SAVED);
         return true;
       }
       // Wrapped, so the queue doesn't wait for the answer.
@@ -525,6 +534,8 @@ class AutosaveManager {
     const token = this._token();
     await this.saveNow();
     await this._requestsAnswered();
+    // Past a limit: nothing more to try (the caller says why, from saveRefusal).
+    if (store.get('saveRefusal') !== null) return false;
     // A page-teardown save that crossed this one and failed leaves the edit
     // pending: once more, as flush does.
     if (this._bound(token) && this._pendingWorkspace && !this._conflicted) {
@@ -589,6 +600,16 @@ class AutosaveManager {
       return false;
     }
 
+    // Past a limit (a file, or the workspace): not sent. It stays pending, the
+    // save status reads "Not saved", and the error panel says why until a save
+    // fits (docs/workspace-files.md "Limits"); the next change tries again.
+    const refusal = saveRefusal(workspace);
+    if (refusal !== null) {
+      this._pendingWorkspace ??= workspace;
+      store.update({ saveStatus: SaveStatus.NOT_SAVED, saveError: null, saveRefusal: refusal });
+      return false;
+    }
+
     store.update({
       saveStatus: SaveStatus.SAVING,
       saveError: null,
@@ -631,11 +652,13 @@ class AutosaveManager {
       this._lastSavedHash = hash;
       this._settle(workspace);
       const status = this._pendingWorkspace ? SaveStatus.MODIFIED : SaveStatus.SAVED;
+      // A refusal said earlier goes once a save fits.
       if (result.skipped) {
-        store.update({ saveStatus: status, ...publishingFrom(result) });
+        store.update({ saveStatus: status, saveRefusal: null, ...publishingFrom(result) });
       } else {
         (store as any).update({
           saveStatus: status,
+          saveRefusal: null,
           workspaceUpdatedAt: result.updatedAt,
           ...publishingFrom(result),
         });
@@ -800,6 +823,8 @@ class AutosaveManager {
       if (!this.hasUnsavedChanges() || this._conflicted) {
         return true;
       }
+      // Past a limit: not sent here either (the server would refuse it); the edits stay in the editor.
+      if (saveRefusal(workspace) !== null) return false;
       // A request out now already carries the latest edit: nothing more to
       // send (a second one, from the same revision, would 409 against it).
       const out = [...this._requests];

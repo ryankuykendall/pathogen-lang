@@ -111,6 +111,7 @@ import { ensureChromeFontRules, getChromeFontRulesIfReady } from '../utils/expor
 import { updateWorkspaceSlugUrl } from '../utils/workspace-slug-url.js';
 import './shared/error-panel.js';
 import type { ErrorPanel, ErrorPanelSection } from './shared/error-panel.js';
+import type { SaveRefusal } from '../services/save-limits.js';
 import { errorMarks, errorText, readDiagnostics, readMessage } from '../services/error-place.js';
 import type { DiagnosticLike, ErrorReading } from '../services/error-place.js';
 import type { CaptureContext } from '../utils/debug-capture.js';
@@ -292,6 +293,8 @@ export class WorkspaceView extends HTMLElement {
 
   private _multiTabUnsubscribe: (() => void) | null = null;
   private _fontWarningsUnsubscribe: (() => void) | null = null;
+
+  private _saveRefusalUnsubscribe: (() => void) | null = null;
   private _dismissedFontWarnings = '';
 
   private _inspectorDataUnsubscribe: (() => void) | null = null;
@@ -848,6 +851,8 @@ export class WorkspaceView extends HTMLElement {
         snapshotCount: typeof workspace.snapshotCount === 'number' ? workspace.snapshotCount : null,
         code: openCode,
         ...files,
+        // A refused save was the last workspace's.
+        saveRefusal: null,
         openFiles: files.openFile === null ? [] : [files.openFile],
         shownProgram: null,
         currentFileName: workspace.name,
@@ -1450,6 +1455,9 @@ export class WorkspaceView extends HTMLElement {
       this._updateFontWarningBanner();
     });
 
+    // A save past a limit, or one that fits again: the error panel's section comes and goes (phase 3a).
+    this._saveRefusalUnsubscribe = store.subscribe(['saveRefusal'], () => this._renderErrors());
+
     // Feed inspector panel data from store. The post-compile store.set
     // cluster in updatePreview() notifies most of these keys back-to-back;
     // coalesce to a single setData per microtask so the inspector re-renders
@@ -1567,6 +1575,8 @@ export class WorkspaceView extends HTMLElement {
       document.removeEventListener('defs-visibility-change', this._handleDefsVisibilityChange);
     if (this._multiTabUnsubscribe) this._multiTabUnsubscribe();
     if (this._fontWarningsUnsubscribe) this._fontWarningsUnsubscribe();
+    this._saveRefusalUnsubscribe?.();
+    this._saveRefusalUnsubscribe = null;
     if (this._inspectorDataUnsubscribe) this._inspectorDataUnsubscribe();
     if (this._inspectorOpenUnsubscribe) this._inspectorOpenUnsubscribe();
     if (this._sizeTriggerUnsubscribe) this._sizeTriggerUnsubscribe();
@@ -2838,6 +2848,16 @@ export class WorkspaceView extends HTMLElement {
       }
       section.errors.push({ line: r.line, column: r.column, text: r.text, steps: r.steps });
     }
+    // A save past a limit (phase 3a; docs/workspace-files.md "Limits"): under its
+    // file's name, with any other errors, until a save fits. Its heading opens the file.
+    const refusal = named ? (store.get('saveRefusal') as SaveRefusal | null) : null;
+    // (A refused file deleted or renamed since is the next save's to say again.)
+    if (refusal && workspaceNow().texts.has(refusal.file)) {
+      const error = { line: null, column: null, text: refusal.message, steps: [] };
+      const section = sections.find((s) => s.file === refusal.file);
+      if (section) section.errors.push(error);
+      else sections.push({ heading: refusal.file, file: refusal.file, errors: [error] });
+    }
     const note = this._mainNote();
     if (note) sections.push(note);
     // With nothing else to show, a plain message (a workspace that didn't load) shows until another loads.
@@ -2904,8 +2924,13 @@ export class WorkspaceView extends HTMLElement {
       program !== shown && row.place ? [{ program, place: row.place }] : [],
     );
     const note = this._mainNote();
+    // A refused save is in the report, as it is in the panel (phase 3a).
+    const refusal = holdsWorkspace() ? (store.get('saveRefusal') as SaveRefusal | null) : null;
+    const refused: ErrorReading[] = refusal
+      ? [{ file: refusal.file, line: null, column: null, text: refusal.message, steps: [], site: null }]
+      : [];
     return {
-      readings: this._shownFailure()?.readings ?? [],
+      readings: [...(this._shownFailure()?.readings ?? []), ...refused],
       others,
       reach,
       kindOf: (path, text) => (isDataFile(path) ? 'data' : this._isLibrary(path, text) ? 'module' : 'program'),

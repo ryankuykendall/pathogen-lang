@@ -105,6 +105,10 @@ export class PlaygroundHeader extends HTMLElement {
         statusEl.textContent = error ? `Error: ${error}` : 'Save failed';
         statusEl.title = error || 'Save failed';
         break;
+      // Past a limit (phase 3a): the reason is in the error panel, under the file's name.
+      case 'not-saved':
+        statusEl.textContent = 'Not saved';
+        break;
       default:
         statusEl.textContent = '';
         statusEl.classList.add('hidden');

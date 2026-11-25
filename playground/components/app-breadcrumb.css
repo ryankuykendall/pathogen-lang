@@ -297,6 +297,12 @@
   cursor: help;
 }
 
+/* A save past a limit (phase 3a, mockup v2 3b): its reason is in the error panel. */
+.save-status.not-saved {
+  background: var(--error-bg, #f8d7da);
+  color: var(--error-color, #721c24);
+}
+
 /* ---------- Overflow menu ---------- */
 .menu-container {
   position: relative;

@@ -63,6 +63,44 @@ Also: Tab from the open list goes on from the extension button; tests for an out
 3. **The message for another extension** is new: `A data file ends in .json, .geojson, .topojson or .fold, not .txt. To keep .txt in its name, add one: trips.txt.json.` (the docs say the dialog says why, but not in which words).
 4. **An empty field** shows no line and Create is off, rather than a placeholder file name.
 
+## 7c: a refused save, in the error panel
+
+| | Before | After |
+|---|---|---|
+| An edit that takes a file past its limit | Sent; the server refused it, and the save status read the whole sentence, "Error: "data/trips.json" is larger than 5 MB, the most a file of its kind can be." | Not sent (`services/save-limits.ts`, the server's own limits): the save status reads **Not saved**, and the error panel says why under the file's name, with any other errors: `Not saved: 5.4 MB, more than the 5 MB a data file can be in a workspace. Your edits stay in the editor.` (the docs' Limits example, word for word) |
+| A `.pathogen` file over 1 MB | The same sentence in the save status | The same panel section, as note 75 agreed: `Not saved: 1.2 MB, more than the 1 MB a .pathogen file can be in a workspace. Your edits stay in the editor.` |
+| The workspace past 50 MB | Refused by the server | `Not saved: the workspace's files would be 55.1 MB, more than the 50 MB a workspace can hold. Your edits stay in the editor.`, under the file in the editor (the one whose edit took it there) |
+| After | — | The edits stay pending (a page-leave save doesn't send them either, and the page still asks before leaving). Each later save tries again, after an edit or any change to the files, such as deleting others to make room; the first that fits clears the section and the status. A load of another workspace clears it. Copy Debug Info carries it |
+
+The section is merged with the compile's: one heading per file. Its heading opens the file, as every section's does. Sizes are the engine's `megabytes` (rounded up to a tenth, so a file just over a limit never reads as at it), now exported from the library.
+
+### In the real playground
+
+`verify-3a-step7.ts`: a new data file pushed past 5 MB shows **Not saved** and the panel's section under `data/trips-light.json`; made `{}` again, it saves and the panel goes. Screenshots `3a-step7/3b-save-refused-*.png`, beside mockup v2 3b.
+
+### Code review
+
+The design held (a refusal never spins: no timer re-arms, the page still asks before leaving, the queue doesn't wait on it). Its lifetime and its words didn't, and the first tests caught none of it. Taken, each tested:
+1. **An Undo back to what the server holds** skipped the save (the hash is unchanged) and left "Not saved" and the panel's section. The skip now clears both.
+2. **A refusal outlived its session:** `init` and `stop` clear it, not only a load.
+3. **Make public** said "Couldn't save your latest changes, so it wasn't submitted". It now says `Not submitted: data/trips.json can't be saved. The error panel says why.`; its save gives up at once instead of trying twice.
+4. **Typing** set "Modified" over "Not saved" while the panel still said why. The docs: "Both stay until the file saves". Typing keeps "Not saved" while a refusal stands.
+5. **A refused file deleted or renamed** kept its section until the next save; the panel drops it at once.
+6. **Every save counted every byte** of the workspace on the main thread. Bytes are now counted only where they could matter (UTF-8 takes at most 3 bytes a UTF-16 unit), so a usual workspace costs a sum of lengths.
+7. **A library too old to say** (no `megabytes`): the save goes, and the server's own limits refuse it, as before 7c. Deliberate, and tested.
+
+The tree-alone run before these fixes failed `playground-autosave-keepalive`: that test has no `window`, and the size check read it unguarded, so the page-leave save threw before sending. Guarded as `isDataFile` is.
+
+**For you (a docs change):** the 50 MB message below isn't in docs/workspace-files.md "Limits", which gives only the per-file example. Adding it needs your approval of the docs.
+
+### Decided while building (confirm or overrule)
+
+5. **The 50 MB message** is new (the docs give only the per-file one): `Not saved: the workspace's files would be 55.1 MB, more than the 50 MB a workspace can hold. Your edits stay in the editor.`, under the file in the editor.
+
+### Tests (7c)
+
+`tests/playground-save-limits.test.ts` (a data file over 5 MB in the docs' words; a `.pathogen` file over 1 MB; the workspace over 50 MB under the file in the editor; 5 MB exactly is fine, counted in UTF-8 bytes); `tests/playground-workspace-files.test.ts` (a refused save isn't sent, by a normal or a page-leave save; "Not saved" and the refusal kept; made smaller, it saves and both go).
+
 ### Tests (7a)
 
 `tests/playground-editor-data-file.test.ts` (the data state's extensions and keymap; the mistake marked with its message when the file shows and 150 ms after typing, cleared when it reads; a compile's marks and clears and Format Document do nothing on a data file); `tests/playground-open-files.test.ts` (`gears.json` is a `data` tab, `pathogen.json` still `json`); `tests/playground-editor-tabs.test.ts` (the braces, the label, no lock); `tests/playground-file-tree.test.ts` (the row's class and braces, its menu).

@@ -127,6 +127,8 @@ export {
   projectFileText as workspaceProjectFileText,
 } from './workspace/files';
 export type { FileEntry as WorkspaceFileEntry, WorkspaceManifest } from './workspace/files';
+// Sizes as every message says them (rounded up to a tenth): the playground's refused saves too.
+export { megabytes } from './module-messages';
 export {
   CURATED_GOOGLE_FONTS,
   curatedVariants,

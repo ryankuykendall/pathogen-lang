@@ -291,6 +291,10 @@ class AppBreadcrumb extends HTMLElement {
       case 'error':
         statusText = error ? `Error: ${error}` : 'Save failed';
         break;
+      // Past a limit (phase 3a): the reason is in the error panel, under the file's name.
+      case 'not-saved':
+        statusText = 'Not saved';
+        break;
       default:
         statusClass = 'hidden';
     }
@@ -748,7 +752,14 @@ class AppBreadcrumb extends HTMLElement {
       // saved first, and every save still out has answered (2e step 5c):
       // before, an edit made within the autosave delay was left out.
       if (!(await autosave.saveAndSettle(workspaceId))) {
-        this.showOverflowFeedback("Couldn't save your latest changes, so it wasn't submitted", true);
+        // Past a limit (phase 3a): the error panel says why, under the file's name.
+        const refusal = store.get('saveRefusal') as { file: string } | null;
+        this.showOverflowFeedback(
+          refusal
+            ? `Not submitted: ${refusal.file} can't be saved. The error panel says why.`
+            : "Couldn't save your latest changes, so it wasn't submitted",
+          true,
+        );
         return;
       }
       // The main, with its imports, whichever file the editor shows. The main
