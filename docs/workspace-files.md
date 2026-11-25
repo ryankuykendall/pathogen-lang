@@ -5,8 +5,8 @@ taken with 2e's UI: a workspace of several files, the tree open, files in tabs, 
 chip's list open. Take both again whenever the workspace's layout, the tree, the tabs or the program
 list change (step 10's review, finding 17).
 Downloading a workspace and making one from a project came with 2g (the lines at the end of this comment).
-When data files and fonts can be added (after phase 2): Limits gains data files 5 MB each, fonts
-20 MB each (note 50), and the 50 MB whole-workspace row, which 20 files of 1 MB can't reach today.
+When fonts can be added: Limits gains fonts 20 MB each (note 50). Data files' 5 MB and the 50 MB
+whole-workspace row came with phase 3a.
 Sources: mockups v1 to v6 and their reviews (project-docs/modules/39- to 46-).
 The [TO CONFIRM] items (undo per file, clicking an error to open its file, a moved file's own
 imports, folder Rename/Delete, Duplicate's naming) were confirmed 2026-11-09 (note 52). Limits and
@@ -62,6 +62,9 @@ New data file… opens a dialog for the name and the type, and a new file starts
 save says why in the error panel, not in the breadcrumb or a toast. The dialog made lighter
 2026-11-24 (note 75, mockups v3): one field, the name and the extension as a dropdown after it.
 Every refused save, a .pathogen file over 1 MB too, says why in the error panel (note 75).
+Added 2026-11-25 (the user: "Yes, please add the three 50MB refusal messages"; note 85): Limits
+quotes the 50 MB refusals of a save, an upload and an import, each as built and as tests pin it
+(playground-save-limits, playground-uploads, project-import). Their wordings differ, as built.
 -->
 
 
@@ -336,8 +339,26 @@ data/trips.json
 Not saved: 5.4 MB, more than the 5 MB a data file can be in a workspace. Your edits stay in the editor.
 ```
 
-Both stay until the file saves. When it fits again, made smaller or with other files deleted to make room, it saves.
+When it's all the workspace's files together that would pass 50 MB, the message is under the file you're editing:
 
-An upload leaves out `.pathogen` files over 1 MB, data files over 5 MB, and files more than 8 folders deep or with a path over 255 characters. It adds nothing if it would take the workspace past 20 files or 50 MB. A [project imported](#workspace-files-a-workspace-from-a-project) as a new workspace leaves out the same files, and adds nothing if more than 20 files, or more than 50 MB, are left.
+```text
+data/routes.json
+Not saved: the workspace's files would be 50.4 MB, more than the 50 MB a workspace can hold. Your edits stay in the editor.
+```
+
+The status and the message stay until the file saves. When it fits again, made smaller or with other files deleted to make room, it saves.
+
+An upload leaves out `.pathogen` files over 1 MB, data files over 5 MB, and files more than 8 folders deep or with a path over 255 characters. It adds nothing if it would take the workspace past 20 files or 50 MB, and a message headed "Nothing was added" says why:
+
+```text
+Nothing was added
+A workspace can hold at most 50 MB: its files are 46.2 MB, and the upload would make them 52.7 MB.
+```
+
+A [project imported](#workspace-files-a-workspace-from-a-project) as a new workspace leaves out the same files, and adds nothing if more than 20 files, or more than 50 MB, are left. The New Workspace page says why in place of the list of what would come in:
+
+```text
+A workspace holds at most 50 MB, and this project’s files are 61.3 MB. Nothing was added. To bring part of it in, import a folder holding less.
+```
 
 The CLI and VS Code read data files up to 50 MB ([Data files](#cli-data-files)). A project with a data file over 5 MB, such as a 40 MB `trips.json`, compiles on your computer. When it comes into a workspace, that file is left out (listed under "Not added"), and the programs that import it stop at that import. To draw them here, make the file smaller (fewer rows or decimal places), or split it into files of 5 MB or less, within the workspace's 50 MB and 20 files.

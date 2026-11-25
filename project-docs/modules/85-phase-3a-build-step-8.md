@@ -76,3 +76,15 @@ Note 83's last row: done when each carrier round-trips a workspace with data fil
 - the .zip **imported** as a new workspace; **Copy Workspace**; a **snapshot** then **Start new workspace** from it; **Upload files…** of the unzipped data files; **Open as new workspace** after approval: the same files, each.
 
 No code changed for 8e. Step 8 is done; what's left of 3a is step 9 (note 76): the three-surface comparison, the CHANGELOG (for the user's approval), the npm package and the VS Code extension. Noted, not changed: the owner's load now reports a lost file after the other reads finish; a record with a file carrying neither text nor a mark (none since 2e step 5d) now keeps Approve off rather than compiling it as empty.
+
+## Pushed (2026-11-25)
+
+The user: "Go ahead and push." 8a to 8e touch nothing under `api/`, `website/api/` or `website/auth/`, so one `git push origin main` (75a7a2dc..ac20def9), Pages only, no API deploy. Read-only checks of production (`tmp/phase3/prod-step8-probe.ts`): `/utils/deferred-files.js` served; the homepage and /explore 200; three public source.json answers each name their `workspaceId`.
+
+## The 50 MB refusals in the docs (2026-11-25)
+
+The user: "Yes, please add the three 50MB refusal messages." docs/workspace-files.md "Limits" quotes each as built: the save's in the error panel under the file being edited, the upload's under "Nothing was added", the import's on the New Workspace page. Their wordings differ ("a workspace can hold", "can hold at most", "holds at most"); the docs quote them as they are.
+
+## Files a PUT stores that no save names (the user asked, 2026-11-25)
+
+Checked for the explanation: deleting a workspace removes every file stored under it (`deleteWorkspaceFiles`, by the workspace's prefix), so such a file lasts only as long as its workspace, and a create that fails after its PUTs (`createWorkspace`) deletes them with the workspace.
