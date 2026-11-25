@@ -1,0 +1,50 @@
+{
+  "ran": "2026-11-25T03:56:29.892Z",
+  "failures": 0,
+  "results": [
+    {
+      "check": "the setup: approved through the admin route",
+      "ok": true
+    },
+    {
+      "check": "source.json names its workspace, carries a.json and leaves b.json deferred",
+      "ok": true
+    },
+    {
+      "check": "light: View source lists both data files as data",
+      "ok": true
+    },
+    {
+      "check": "light: b.json, read by its hash, shows whole, highlighted as JSON",
+      "ok": true
+    },
+    {
+      "check": "light: no page errors",
+      "ok": true
+    },
+    {
+      "check": "dark: View source lists both data files as data",
+      "ok": true
+    },
+    {
+      "check": "dark: b.json, read by its hash, shows whole, highlighted as JSON",
+      "ok": true
+    },
+    {
+      "check": "dark: no page errors",
+      "ok": true
+    },
+    {
+      "check": "Open as new workspace makes the copy",
+      "ok": true
+    },
+    {
+      "check": "the copy holds both data files whole",
+      "ok": true
+    },
+    {
+      "check": "its main draws both circles",
+      "ok": true
+    }
+  ]
+}

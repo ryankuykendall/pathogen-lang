@@ -4,7 +4,7 @@
 
 import { describe, expect, it } from 'vitest';
 
-import { fetchReader, isDeferred, readDeferredFiles } from '../playground/utils/deferred-files.js';
+import { fetchReader, isDeferred, readApprovalFiles, readDeferredFiles } from '../playground/utils/deferred-files.js';
 
 describe('readDeferredFiles', () => {
   it('reads each deferred file by its hash, once a hash, and leaves the rest as they are', async () => {
@@ -73,6 +73,45 @@ describe('readDeferredFiles', () => {
     expect(isDeferred({ deferred: true })).toBe(false);
     expect(isDeferred({ sha256: 'a', text: '[]' })).toBe(false);
     expect(isDeferred(null)).toBe(false);
+  });
+});
+
+describe('readApprovalFiles (a visitor’s route)', () => {
+  it('reads a deferred file from /approval-source/:id/file/:sha256 without cookies', async () => {
+    const calls: [string, RequestInit | undefined][] = [];
+    const fake = (async (url: string, init?: RequestInit) => {
+      calls.push([url, init]);
+      return new Response('[3]');
+    }) as unknown as typeof fetch;
+    const read = await readApprovalFiles(
+      {
+        workspaceId: 'w 1',
+        files: { 'main.pathogen': { text: 'M 0 0' }, 'data/b.json': { sha256: 'b1', deferred: true } },
+      },
+      'https://api.test',
+      fake,
+    );
+    expect(read).toEqual({
+      files: { 'main.pathogen': { text: 'M 0 0' }, 'data/b.json': { sha256: 'b1', text: '[3]' } },
+    });
+    expect(calls).toEqual([['https://api.test/approval-source/w%201/file/b1', { credentials: 'omit' }]]);
+  });
+
+  it('nothing deferred: nothing asked; no workspace named, or a read that fails: why', async () => {
+    const never = (async () => {
+      throw new Error('not asked');
+    }) as unknown as typeof fetch;
+    const plain = { files: { 'main.pathogen': { text: 'M 0 0' } } };
+    expect(await readApprovalFiles(plain, 'https://api.test', never)).toEqual({ files: plain.files });
+    const deferred = { files: { 'data/b.json': { sha256: 'b1', deferred: true } } };
+    expect(await readApprovalFiles(deferred, 'https://api.test', never)).toEqual({
+      failed: 'its larger data files couldn’t be read yet. Try again in a minute.',
+    });
+    const missing = (async () =>
+      new Response(JSON.stringify({ error: 'File not found' }), { status: 404 })) as unknown as typeof fetch;
+    expect(await readApprovalFiles({ ...deferred, workspaceId: 'w1' }, 'https://api.test', missing)).toEqual({
+      failed: 'data/b.json couldn’t be read (File not found).',
+    });
   });
 });
 

@@ -8,7 +8,7 @@
 //   file open stays open if it's still there, else the main.
 // Pure: the engine's two calls come in as an argument (the highlight bundle's here).
 
-import { snapshotViewerFiles } from './snapshot-viewer-files.js';
+import { isDataPath, snapshotViewerFiles, sourceFileKind } from './snapshot-viewer-files.js';
 import { PROJECT_FILE } from './workspace-names.js';
 
 import type { MiniWorkspaceFiles } from '../components/blog/mini-workspace.js';
@@ -24,9 +24,14 @@ export interface ServedSource {
   main: string | null;
 }
 
-/** source.json's answer, as far as the viewer reads it. */
+/**
+ * source.json's answer, as far as the viewer reads it. A data file past the 2 MB
+ * of data it carries comes `deferred` (phase 3a): the page reads it from the API's
+ * /approval-source/:workspaceId/file/:sha256 before showing the files.
+ */
 export interface SourceJson {
-  files: Record<string, { text?: string; unreadable?: boolean }>;
+  workspaceId?: string;
+  files: Record<string, { text?: string; unreadable?: boolean; deferred?: boolean; sha256?: string; size?: number }>;
   folders: string[];
   entryPoints: string[];
   code?: string;
@@ -53,18 +58,14 @@ export function isSourceJson(value: unknown): value is SourceJson {
   return (
     isRecord(value) &&
     isRecord(value.files) &&
-    Object.values(value.files).every((f) => isRecord(f) && (typeof f.text === 'string' || f.unreadable === true)) &&
+    Object.values(value.files).every(
+      (f) =>
+        isRecord(f) &&
+        (typeof f.text === 'string' || f.unreadable === true || (f.deferred === true && typeof f.sha256 === 'string')),
+    ) &&
     isStrings(value.folders) &&
     isStrings(value.entryPoints)
   );
-}
-
-function kindOf(text: string, engine: SnapshotFilesEngine | null): SourceFile['kind'] {
-  try {
-    return engine?.isModuleSource(text) ? 'library' : 'program';
-  } catch {
-    return 'program';
-  }
 }
 
 function projectFile(entryPoints: readonly string[], engine: SnapshotFilesEngine | null): SourceFile | null {
@@ -84,10 +85,13 @@ export function waitingFiles(
   pending: 'loading' | 'failed',
   open: string | null = null,
 ): MiniWorkspaceFiles {
+  // A data file is known by its name: the braces show before its text comes.
+  const waitingKind = (path: string): SourceFile['kind'] =>
+    isDataPath(path, engine) ? 'data' : served.entryPoints.includes(path) ? 'program' : 'file';
   const files: SourceFile[] = served.names.map((path) =>
     path === served.main
-      ? { path, text: mainText, kind: kindOf(mainText, engine) }
-      : { path, text: '', kind: served.entryPoints.includes(path) ? 'program' : 'file', pending },
+      ? { path, text: mainText, kind: sourceFileKind(path, mainText, engine) }
+      : { path, text: '', kind: waitingKind(path), pending },
   );
   const project = files.length > 1 ? projectFile(served.entryPoints, engine) : null;
   const list = project ? [...files, project] : files;

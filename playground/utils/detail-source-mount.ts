@@ -24,6 +24,7 @@
 // viewer the snapshots page and the review modal use (<source-files>), opening
 // on the main: mountSourceFiles below.
 
+import { readApprovalFiles } from './deferred-files.js';
 import { arrivedFiles, isSourceJson, waitingFiles } from './detail-source-files.js';
 
 import type { MiniWorkspaceFiles } from '../components/blog/mini-workspace.js';
@@ -45,6 +46,14 @@ const isDarkTheme = (): boolean => document.documentElement.getAttribute('data-a
 const HIGHLIGHT_BUNDLE = '/dist/highlight.global.js';
 const loadHighlightBundle = async (): Promise<unknown> => import(/* @vite-ignore */ HIGHLIGHT_BUNDLE);
 
+// Set by the playground build (scripts/build-playground.ts); undefined in a test.
+declare const __PATHOGEN_API_BASE__: string;
+
+/** The API's base, as the build set it (a test passes its own). */
+function defaultApiBase(): string {
+  return typeof __PATHOGEN_API_BASE__ === 'string' ? __PATHOGEN_API_BASE__ : '';
+}
+
 /** The highlight bundle's engine calls (a file's kind, pathogen.json), when it loaded. */
 function engineOf(mod: unknown): SnapshotFilesEngine | null {
   const lib = mod as Partial<SnapshotFilesEngine> | null;
@@ -63,14 +72,19 @@ export async function mountSourceFiles(
   served: ServedSource,
   sourceUrl: string,
   loadHighlight: () => Promise<unknown> = loadHighlightBundle,
+  apiBase: string = defaultApiBase(),
 ): Promise<MountResult> {
   const mainText = preElement.textContent ?? '';
+  // source.json, with any data file it left deferred read from the API (phase 3a): the
+  // files show when every text is here; a file that can't be read fails the load, with Try again.
   const fetchSource = async (): Promise<SourceJson | null> => {
     try {
       const res = await fetch(sourceUrl, { credentials: 'same-origin' });
       if (!res.ok) return null;
       const body: unknown = await res.json();
-      return isSourceJson(body) ? body : null;
+      if (!isSourceJson(body)) return null;
+      const read = await readApprovalFiles(body, apiBase);
+      return 'failed' in read ? null : { ...body, files: read.files };
     } catch {
       return null;
     }

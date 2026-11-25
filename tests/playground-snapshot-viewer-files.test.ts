@@ -11,8 +11,8 @@
 
 import { afterEach, beforeAll, describe, expect, it } from 'vitest';
 
-import { snapshotViewerFiles } from '../playground/utils/snapshot-viewer-files.ts';
-import { isModuleSource, workspaceProjectFileText } from '../src';
+import { snapshotViewerFiles, sourceFileKind } from '../playground/utils/snapshot-viewer-files.ts';
+import { isModuleSource, workspaceFileKind, workspaceProjectFileText } from '../src';
 
 import type { SnapshotFiles } from '../playground/services/api.ts';
 
@@ -58,6 +58,44 @@ describe('the code panel’s files', () => {
       'main.pathogen',
       { path: 'main.pathogen', text: MAIN },
     ]);
+  });
+
+  it('a data file (phase 3a) is data by its name, never parsed as Pathogen', () => {
+    const parsed: string[] = [];
+    const engine = {
+      ...ENGINE,
+      workspaceFileKind,
+      isModuleSource: (text: string) => {
+        parsed.push(text);
+        return isModuleSource(text);
+      },
+    };
+    const { viewer } = snapshotViewerFiles(
+      filesOf({ 'main.pathogen': MAIN, 'data/gears.json': '[{ "r": 4 }]', 'data/map.geojson': '{}' }),
+      engine,
+    );
+    expect(viewer.files.map((f) => [f.path, f.kind])).toEqual([
+      ['main.pathogen', 'program'],
+      ['data/gears.json', 'data'],
+      ['data/map.geojson', 'data'],
+      ['pathogen.json', 'project'],
+    ]);
+    expect(parsed).toEqual([MAIN]);
+  });
+
+  it('a highlight bundle from before data files: a text past 1 MB, longer than a .pathogen file can be, isn’t parsed', () => {
+    const parsed: number[] = [];
+    const old = {
+      workspaceProjectFileText,
+      isModuleSource: (text: string) => {
+        parsed.push(text.length);
+        return isModuleSource(text);
+      },
+    };
+    const big = `[${'1,'.repeat(600_000)}1]`;
+    expect(sourceFileKind('data/big.json', big, old)).toBe('program');
+    expect(sourceFileKind('main.pathogen', MAIN, old)).toBe('program');
+    expect(parsed).toEqual([MAIN.length]);
   });
 
   it('a snapshot drawn by another program opens on it, and Export’s legend lists it (answer A)', () => {

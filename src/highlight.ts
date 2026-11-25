@@ -32,6 +32,9 @@ import { editorParser } from './parser/editor-parser';
 // bundle's (playground/utils/snapshot-viewer-files.ts).
 export { isModuleSource } from './parser/module-source';
 export { projectFileText as workspaceProjectFileText } from './workspace/files';
+// A data file (phase 3a) by its extension, the workspace's own rule: shown with
+// the braces and JSON highlighting, never read as Pathogen.
+export { fileKind as workspaceFileKind } from './workspace/files';
 
 // Lookup table: Lezer grammar node names → CSS class names. Mirrors
 // the semantic intent of pathogenHighlighting in src/parser/highlight.ts

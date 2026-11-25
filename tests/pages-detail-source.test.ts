@@ -62,7 +62,7 @@ describe('the public page’s View source', () => {
   });
 
   it('several files: every name and the count served, the main’s text, and no other text', async () => {
-    await published(h, 'Gears', {
+    const id = await published(h, 'Gears', {
       files: {
         'main.pathogen': { text: MAIN },
         'parts/gears.pathogen': { text: GEARS },
@@ -87,12 +87,14 @@ describe('the public page’s View source', () => {
 
     // source.json carries every text, for the page to load.
     const json = await page(h, '/u/ada/gears/source.json');
-    const files = (JSON.parse(json.text) as { files: Record<string, { text: string }> }).files;
-    expect(Object.fromEntries(Object.entries(files).map(([path, f]) => [path, f.text]))).toEqual({
+    const answer = JSON.parse(json.text) as { workspaceId: string; files: Record<string, { text: string }> };
+    expect(Object.fromEntries(Object.entries(answer.files).map(([path, f]) => [path, f.text]))).toEqual({
       'main.pathogen': MAIN,
       'parts/gears.pathogen': GEARS,
       'try-sizes.pathogen': SIZES,
     });
+    // Whose files: a deferred data file is read by its hash from the API (phase 3a).
+    expect(answer.workspaceId).toBe(id);
   });
 
   it('one file: its lines counted, as before, and nothing more served', async () => {

@@ -29,6 +29,7 @@ import {
   copyStatusText,
   copyTipHtml,
 } from '../../utils/copy-feedback.js';
+import { jsonLanguage, viewerLanguage } from '../../utils/cm-json-language.js';
 import { FILE_ICONS, MAIN_BADGE_TITLE } from '../../utils/file-icons.js';
 import { treeRows } from '../../utils/file-tree-rows.js';
 import { PROJECT_FILE } from '../../utils/workspace-names.js';
@@ -41,10 +42,11 @@ export interface SourceFile {
   path: string;
   text: string;
   /**
-   * A program or a module, as the tree draws them; pathogen.json is the project file.
+   * A program or a module, as the tree draws them; pathogen.json is the project file;
+   * `data`, a data file (phase 3a): the braces, and its JSON highlighted.
    * `file`: not known yet, its text still to come (a plain icon; 2e step 6).
    */
-  kind: 'program' | 'library' | 'project' | 'file';
+  kind: 'program' | 'library' | 'project' | 'data' | 'file';
   /**
    * Its bytes couldn't be read (2e step 5d; note 59, requirement 9): it keeps its
    * place, with a warning, and says so where its code would be. Its text is ''.
@@ -154,9 +156,11 @@ function pathHtml(path: string): string {
 }
 
 const iconOf = (kind: SourceFile['kind']): string => (kind === 'project' ? FILE_ICONS.json : FILE_ICONS[kind]);
-/** A file's kind, held to the four the viewer draws (it lands in a class name and picks an icon). */
+/** A file's kind, held to the five the viewer draws (it lands in a class name and picks an icon). */
 const kindOf = (file: SourceFile | undefined): SourceFile['kind'] =>
-  file?.kind === 'library' || file?.kind === 'project' || file?.kind === 'file' ? file.kind : 'program';
+  file?.kind === 'library' || file?.kind === 'project' || file?.kind === 'data' || file?.kind === 'file'
+    ? file.kind
+    : 'program';
 
 /** A file's text still to come, or one that didn't (2e step 6). */
 const pendingOf = (file: SourceFile | undefined): 'loading' | 'failed' | null =>
@@ -347,7 +351,14 @@ export class SourceFiles extends HTMLElement {
   };
 
   // CodeMirror, loaded by activate(): modules from esm.sh, untyped here as in <mini-workspace>.
-  private _cm: { state: CmModule; view: CmModule; language: CmModule; github: CmModule; lang: unknown } | null = null;
+  private _cm: {
+    state: CmModule;
+    view: CmModule;
+    language: CmModule;
+    github: CmModule;
+    lang: unknown;
+    json: unknown;
+  } | null = null;
 
   private _cmLoading: Promise<void> | null = null;
 
@@ -517,7 +528,7 @@ export class SourceFiles extends HTMLElement {
   private _rows(): TreeRow[] {
     const treeFiles: TreeFile[] = this._files
       .filter((f) => f.kind !== 'project')
-      .map((f) => ({ path: f.path, kind: f.kind === 'library' ? 'library' : 'program' }));
+      .map((f) => ({ path: f.path, kind: f.kind === 'library' || f.kind === 'data' ? f.kind : 'program' }));
     for (const path of this._removedPaths()) treeFiles.push({ path, kind: 'program' });
     const rows = treeRows(treeFiles, this._folders, { collapsed: new Set(), main: this._main });
     return this._files.some((f) => f.path === PROJECT_FILE) ? rows : rows.filter((r) => r.type !== 'project');
@@ -919,11 +930,18 @@ export class SourceFiles extends HTMLElement {
           language.LRLanguage.define({ parser, languageData: { commentTokens: { line: '//' } } }),
         )
       : [];
-    this._cm = { state, view, language, github, lang };
+    // JSON from the same @codemirror/language: a second copy from the CDN would be refused by CodeMirror.
+    this._cm = { state, view, language, github, lang, json: jsonLanguage(language) };
   }
 
-  private _stateFor(text: string): unknown {
-    const { state, view, lang } = this._cm!;
+  /**
+   * A read-only state for a file's text. JSON (a data file, pathogen.json) is
+   * highlighted as JSON, never as Pathogen; a data file with a line too long to
+   * lay out whole is shown plain and unwrapped, as the editor shows it.
+   */
+  private _stateFor(text: string, kind: SourceFile['kind']): unknown {
+    const { state, view, lang, json } = this._cm!;
+    const shown = viewerLanguage(kind, text);
     return state.EditorState.create({
       doc: text,
       extensions: [
@@ -932,11 +950,16 @@ export class SourceFiles extends HTMLElement {
         view.drawSelection(),
         view.highlightActiveLine(),
         this._themeCompartment.of(this._themeExtension()),
-        lang,
-        view.EditorView.lineWrapping,
+        shown === 'plain' ? [] : shown === 'json' ? json : lang,
+        shown === 'plain' ? [] : view.EditorView.lineWrapping,
         state.EditorState.readOnly.of(true),
       ],
     });
+  }
+
+  /** The kind of the file shown, for its highlighting. */
+  private _shownKind(): SourceFile['kind'] {
+    return kindOf(this._fileAt(this._shownPath()));
   }
 
   private _mountEditor(): void {
@@ -945,7 +968,10 @@ export class SourceFiles extends HTMLElement {
     if (!host || this._view) return;
     this._themeCompartment = new this._cm.state.Compartment();
     this._viewText = this.shownText;
-    this._view = new this._cm.view.EditorView({ state: this._stateFor(this._viewText), parent: host });
+    this._view = new this._cm.view.EditorView({
+      state: this._stateFor(this._viewText, this._shownKind()),
+      parent: host,
+    });
     this.shadowRoot!.querySelector('.code')?.classList.add('loaded');
   }
 
@@ -953,7 +979,7 @@ export class SourceFiles extends HTMLElement {
   private _showInEditor(): void {
     if (!this._view || !this._cm) return;
     this._viewText = this.shownText;
-    this._view.setState(this._stateFor(this._viewText));
+    this._view.setState(this._stateFor(this._viewText, this._shownKind()));
     this._view.scrollDOM.scrollTop = 0;
   }
 }

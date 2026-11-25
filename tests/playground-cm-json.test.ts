@@ -4,7 +4,27 @@
 
 import { describe, expect, it } from 'vitest';
 
-import { nextJsonToken } from '../playground/utils/cm-json-language.js';
+import { longestLine, nextJsonToken, viewerLanguage } from '../playground/utils/cm-json-language.js';
+
+describe('the read-only viewer’s language (phase 3a)', () => {
+  it('JSON for a data file and pathogen.json, Pathogen for the rest', () => {
+    expect([
+      viewerLanguage('data', '[1, 2]'),
+      viewerLanguage('project', '{ "entryPoints": [] }'),
+      viewerLanguage('program', 'M 0 0'),
+      viewerLanguage('library', 'module;'),
+    ]).toEqual(['json', 'json', 'pathogen', 'pathogen']);
+  });
+
+  it('a data file with a line past 20,000 characters is plain, as the editor shows it', () => {
+    const line = (n: number): string => `[${'1,'.repeat(n)}1]`;
+    expect(longestLine(`{\n${line(9_998)}\n}`)).toBe(19_999);
+    expect(viewerLanguage('data', `{\n${line(9_998)}\n}`)).toBe('json');
+    expect(viewerLanguage('data', `{\n${line(10_000)}\n}`)).toBe('plain');
+    // pathogen.json is never that long, and keeps its highlighting.
+    expect(viewerLanguage('project', line(10_000))).toBe('json');
+  });
+});
 
 /** A line's tokens as [text, tag], whitespace left out. */
 function tokens(line: string): [string, string][] {

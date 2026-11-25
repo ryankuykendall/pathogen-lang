@@ -19,6 +19,7 @@ import {
 } from '../../services/project-import.js';
 import { captureDrop, linesHeading } from '../../services/uploads.js';
 import { createWorkspace } from '../../services/workspace-create.js';
+import { readApprovalFiles } from '../../utils/deferred-files.js';
 import type { ImportPlan, ImportRefusal, PickRefusal, ProjectPick } from '../../services/project-import.js';
 import { FILE_ICONS, MAIN_BADGE_TITLE } from '../../utils/file-icons.js';
 import { materialIcon } from '../../utils/material-icons.js';
@@ -53,6 +54,9 @@ interface SourceWorkspace {
   isPublic?: boolean;
   preferences?: Record<string, unknown>;
 }
+
+// Set by the playground build (scripts/build-playground.ts); read only where it's used, as a test may not define it.
+declare const __PATHOGEN_API_BASE__: string;
 
 /** An approved workspace's files, as Open as new workspace sends them: each as text. */
 interface ForkFiles {
@@ -387,7 +391,17 @@ class NewWorkspaceView extends HTMLElement {
       const data = (await resp.json()) as Record<string, unknown> & {
         name?: string;
         description?: string;
+        workspaceId?: string;
+        files?: Record<string, unknown>;
       };
+      // A data file past the 2 MB of data source.json carries is read from the API first
+      // (phase 3a): the copy holds every file whole, or isn't made.
+      if (data.files && typeof data.files === 'object') {
+        const apiBase = typeof __PATHOGEN_API_BASE__ === 'string' ? __PATHOGEN_API_BASE__ : '';
+        const read = await readApprovalFiles({ workspaceId: data.workspaceId, files: data.files }, apiBase);
+        if ('failed' in read) throw new Error(read.failed);
+        data.files = read.files;
+      }
       files = forkFilesOf(data);
       if (!files) throw new Error('its files could not be read');
       source = { name: data.name || 'Untitled', description: data.description, isPublic: false };

@@ -4,6 +4,35 @@
 // which the editor already loads with @codemirror/language, rather than a
 // second package from the CDN for one read-only file the playground writes.
 
+/**
+ * A data file with a line longer than this is shown plain, with no
+ * highlighting and no wrapping (phase 3a): CodeMirror highlights and lays out
+ * a line whole, and minified JSON can be 5 MB on one line. The editor and the
+ * read-only viewer (<source-files>) keep to it.
+ */
+export const LONG_DATA_LINE = 20_000;
+
+/** The length of `text`'s longest line. */
+export function longestLine(text: string): number {
+  let longest = 0;
+  let start = 0;
+  for (let end = text.indexOf('\n'); end !== -1; end = text.indexOf('\n', start)) {
+    longest = Math.max(longest, end - start);
+    start = end + 1;
+  }
+  return Math.max(longest, text.length - start);
+}
+
+/**
+ * How the read-only viewer (<source-files>) shows a file: JSON for a data file
+ * and pathogen.json, Pathogen for the rest, and a data file with a line too
+ * long to lay out whole plain (no highlighting, no wrapping), as the editor.
+ */
+export function viewerLanguage(kind: string, text: string): 'json' | 'plain' | 'pathogen' {
+  if (kind === 'data') return longestLine(text) > LONG_DATA_LINE ? 'plain' : 'json';
+  return kind === 'project' ? 'json' : 'pathogen';
+}
+
 /** The token at `pos` in a line: where it ends, and its highlight tag (null for spaces). */
 export function nextJsonToken(text: string, pos: number): { end: number; style: string | null } {
   const rest = text.slice(pos);

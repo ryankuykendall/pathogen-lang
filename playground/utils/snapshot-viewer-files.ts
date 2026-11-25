@@ -16,10 +16,12 @@ import type { MiniWorkspaceFiles } from '../components/blog/mini-workspace.js';
 import type { SourceFile } from '../components/shared/source-files.js';
 import type { SnapshotFiles } from '../services/api.js';
 
-/** What the engine (window.PathogenLang) tells about files. */
+/** What the engine (window.PathogenLang, or the public page's highlight bundle) tells about files. */
 export interface SnapshotFilesEngine {
   isModuleSource: (text: string) => boolean;
   workspaceProjectFileText: (entryPoints: readonly string[]) => string;
+  /** A file's kind by its extension: `data` for a data file (phase 3a). An older bundle may lack it. */
+  workspaceFileKind?: (path: string) => string | null;
 }
 
 export interface SnapshotViewerFiles {
@@ -29,7 +31,28 @@ export interface SnapshotViewerFiles {
   drawing: { path: string | null; text: string };
 }
 
-function kindOf(text: string, engine: SnapshotFilesEngine | null): SourceFile['kind'] {
+/** More characters than a .pathogen file's 1 MB can hold (a character is at least one byte). */
+const PATHOGEN_FILE_CHARS = 1024 * 1024;
+
+/** Whether a file is a data file, by the engine's rule. */
+export function isDataPath(path: string, engine: SnapshotFilesEngine | null): boolean {
+  try {
+    return engine?.workspaceFileKind?.(path) === 'data';
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * A file's kind as the viewer draws it: a data file by its extension, never
+ * parsed as Pathogen (it can be 5 MB of JSON); else a module or a program, the
+ * engine's call.
+ */
+export function sourceFileKind(path: string, text: string, engine: SnapshotFilesEngine | null): SourceFile['kind'] {
+  if (isDataPath(path, engine)) return 'data';
+  // A .pathogen file is 1 MB at most: a longer text (a data file, with a highlight bundle
+  // cached from before it knew data files) isn't parsed on the main thread.
+  if (text.length > PATHOGEN_FILE_CHARS) return 'program';
   try {
     return engine?.isModuleSource(text) ? 'library' : 'program';
   } catch {
@@ -53,7 +76,7 @@ export function snapshotViewerFiles(files: SnapshotFiles, engine: SnapshotFilesE
   // known, so it's drawn with the viewer's warning, not a kind's icon.
   const pathogen: SourceFile[] = Object.entries(files.files).map(([path, file]) =>
     typeof file.text === 'string'
-      ? { path, text: file.text, kind: kindOf(file.text, engine) }
+      ? { path, text: file.text, kind: sourceFileKind(path, file.text, engine) }
       : { path, text: '', kind: 'program', unreadable: true },
   );
   // A snapshot from before phase 2 may answer with its one text alone.

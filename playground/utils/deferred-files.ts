@@ -77,6 +77,34 @@ export async function readDeferredFiles<F>(
 }
 
 /**
+ * An approved workspace's files as a visitor gets them (the Pages worker's
+ * source.json), every deferred one read from the API's public
+ * /approval-source/:id/file/:sha256: either every file with its text, or why
+ * not. A source.json without `workspaceId` (one cached from before it named it,
+ * for up to a minute) can't have its deferred files read.
+ */
+export async function readApprovalFiles<F>(
+  answer: { workspaceId?: string; files: Record<string, F> },
+  apiBase: string,
+  fetchImpl: typeof fetch = fetch,
+): Promise<{ files: Record<string, F | ReadFile> } | { failed: string }> {
+  if (!Object.values(answer.files).some(isDeferred)) return { files: answer.files };
+  const id = answer.workspaceId;
+  if (!id) return { failed: 'its larger data files couldn’t be read yet. Try again in a minute.' };
+  const { files, failed } = await readDeferredFiles(
+    answer.files as Record<string, F | DeferredFile>,
+    fetchReader(
+      (sha256) => `${apiBase}/approval-source/${encodeURIComponent(id)}/file/${sha256}`,
+      // A public route: no cookies needed.
+      { credentials: 'omit' },
+      fetchImpl,
+    ),
+  );
+  const [lost] = [...failed].sort(([a], [b]) => (a < b ? -1 : 1));
+  return lost ? { failed: `${lost[0]} couldn’t be read (${lost[1]}).` } : { files };
+}
+
+/**
  * A reader over fetch: the response's text, or an error with the server's
  * message. `url` builds the address for a hash.
  */

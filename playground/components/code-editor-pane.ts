@@ -13,7 +13,7 @@ import { isDataFile } from '../services/workspace-files.js';
 import { changedLinesExtension, editedLines, spanChange } from '../utils/cm-changed-lines.js';
 import type { ChangedLines } from '../utils/cm-changed-lines.js';
 import { colorPickerExtension } from '../utils/cm-color-picker.js';
-import { jsonLanguage } from '../utils/cm-json-language.js';
+import { jsonLanguage, LONG_DATA_LINE, longestLine } from '../utils/cm-json-language.js';
 import { FILE_ICONS } from '../utils/file-icons.js';
 import { styleRefRecolorExtension } from '../utils/cm-style-ref-recolor.js';
 import { textLayerEditorExtension } from '../utils/cm-textlayer-editor.js';
@@ -112,19 +112,7 @@ const READ_ONLY_TIP = 'Read-only. Set as main changes this list';
 const READ_ONLY_HINT_MS = 2000;
 // A data file's JSON is read again this long after typing pauses, as a compile waits (a 5 MB file takes about 50 ms).
 const DATA_LINT_MS = 150;
-// A data file with a line longer than this is shown plain: no highlighting, no wrapping (_dataExtensions).
-const LONG_DATA_LINE = 20_000;
-
-/** The length of `text`'s longest line. */
-function longestLine(text: string): number {
-  let longest = 0;
-  let start = 0;
-  for (let end = text.indexOf('\n'); end !== -1; end = text.indexOf('\n', start)) {
-    longest = Math.max(longest, end - start);
-    start = end + 1;
-  }
-  return Math.max(longest, text.length - start);
-}
+// A data file with a line longer than LONG_DATA_LINE is shown plain: no highlighting, no wrapping (_dataExtensions).
 
 interface CmTransaction {
   isUserEvent(type: string): boolean;

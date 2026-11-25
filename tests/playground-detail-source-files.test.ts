@@ -12,6 +12,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { arrivedFiles, isServedSource, isSourceJson, waitingFiles } from '../playground/utils/detail-source-files.ts';
+import { workspaceFileKind } from '../src';
 
 import type { SourceFiles } from '../playground/components/shared/source-files.js';
 
@@ -90,7 +91,23 @@ describe('the files shown', () => {
       isSourceJson(SOURCE),
       isSourceJson({ ...SOURCE, files: { 'a.pathogen': { size: 1 } } }),
       isSourceJson({ error: 'x' }),
-    ]).toEqual([true, false, false]);
+      // Phase 3a: a data file left deferred, named by its hash.
+      isSourceJson({ ...SOURCE, files: { 'data/b.json': { sha256: 'b', size: 9, deferred: true } } }),
+      isSourceJson({ ...SOURCE, files: { 'data/b.json': { size: 9, deferred: true } } }),
+    ]).toEqual([true, false, false, true, false]);
+  });
+
+  it('a data file (phase 3a): the braces before its text comes, and data after', () => {
+    const engine = { ...ENGINE, workspaceFileKind };
+    const served = { ...SERVED, names: [...SERVED.names, 'data/gears.json'] };
+    expect(waitingFiles(served, MAIN, engine, 'loading').files.find((f) => f.path === 'data/gears.json')).toEqual({
+      path: 'data/gears.json',
+      text: '',
+      kind: 'data',
+      pending: 'loading',
+    });
+    const source = { ...SOURCE, files: { ...SOURCE.files, 'data/gears.json': { text: '[1]' } } };
+    expect(arrivedFiles(source, engine, null).files.find((f) => f.path === 'data/gears.json')?.kind).toBe('data');
   });
 });
 
@@ -115,7 +132,7 @@ describe('mountSourceFiles', () => {
     document.body.innerHTML = '';
   });
 
-  async function mounted(): Promise<SourceFiles> {
+  async function mounted(served = SERVED, engine: object = ENGINE): Promise<SourceFiles> {
     const { mountSourceFiles } = await import('../playground/utils/detail-source-mount.ts');
     const details = document.createElement('details');
     const pre = document.createElement('pre');
@@ -123,8 +140,10 @@ describe('mountSourceFiles', () => {
     pre.textContent = MAIN;
     details.append(pre);
     document.body.append(details);
-    // The highlight bundle the page serves, as the engine's two calls.
-    expect(await mountSourceFiles(pre, SERVED, '/u/ada/gears/source.json', async () => ENGINE)).toEqual({
+    // The highlight bundle the page serves, as the engine's calls.
+    expect(
+      await mountSourceFiles(pre, served, '/u/ada/gears/source.json', async () => engine, 'https://api.test'),
+    ).toEqual({
       mounted: true,
     });
     return details.querySelector('.detail-source-files source-files') as SourceFiles;
@@ -189,5 +208,46 @@ describe('mountSourceFiles', () => {
     await settle();
     expect(viewer.files.map((f) => f.path)).toContain('parts/springs.pathogen');
     expect(viewer.files.some((f) => f.pending !== undefined)).toBe(false);
+  });
+
+  // Phase 3a: a data file past the 2 MB of data source.json carries comes deferred.
+  const DEFERRED = {
+    ...SOURCE,
+    workspaceId: 'w1',
+    files: { ...SOURCE.files, 'data/big.json': { sha256: 'b1', size: 3, deferred: true } },
+  };
+  const withData = { ...SERVED, names: [...SERVED.names, 'data/big.json'] };
+
+  it('a deferred data file is read from the API’s approval route, then shown with the rest, as data', async () => {
+    answers.push(new Response(JSON.stringify(DEFERRED), { status: 200 }), new Response('[7]', { status: 200 }));
+    const viewer = await mounted(withData, { ...ENGINE, workspaceFileKind });
+    await settle();
+    expect(asked).toEqual(['/u/ada/gears/source.json', 'https://api.test/approval-source/w1/file/b1']);
+    expect(viewer.files.find((f) => f.path === 'data/big.json')).toEqual({
+      path: 'data/big.json',
+      text: '[7]',
+      kind: 'data',
+    });
+    expect(viewer.files.some((f) => f.pending !== undefined)).toBe(false);
+  });
+
+  it('one that can’t be read fails the load, with Try again; so does a source.json that doesn’t name its workspace', async () => {
+    answers.push(
+      new Response(JSON.stringify(DEFERRED), { status: 200 }),
+      new Response(JSON.stringify({ error: 'File not found' }), { status: 404 }),
+    );
+    const viewer = await mounted(withData, { ...ENGINE, workspaceFileKind });
+    await settle();
+    expect(viewer.files.filter((f) => f.pending === 'failed').map((f) => f.path)).toEqual([
+      'parts/gears.pathogen',
+      'try-sizes.pathogen',
+      'data/big.json',
+    ]);
+    // A source.json cached from before it named its workspace: nothing to read the file from.
+    answers.push(new Response(JSON.stringify({ ...DEFERRED, workspaceId: undefined }), { status: 200 }));
+    viewer.dispatchEvent(new Event('source-files-retry', { bubbles: true, composed: true }));
+    await settle();
+    expect(asked.length).toBe(3);
+    expect(viewer.files.filter((f) => f.pending === 'failed').length).toBe(3);
   });
 });

@@ -541,6 +541,9 @@ async function renderWorkspaceSourceJson(
   }
   return new Response(
     JSON.stringify({
+      // Whose files these are: a data file past the 2 MB of data the source carries comes
+      // `deferred`, and the page reads it from the API's /approval-source/:id/file/:sha256 (phase 3a).
+      workspaceId: approval.workspaceId,
       name: approval.name,
       description: approval.description || '',
       ...(source.code !== undefined ? { code: source.code } : {}),

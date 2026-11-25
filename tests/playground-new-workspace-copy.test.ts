@@ -230,6 +230,51 @@ describe('copies and forks (2e step 4)', () => {
     expect(createSpy).not.toHaveBeenCalled();
   });
 
+  // Phase 3a: a data file past the 2 MB of data source.json carries comes deferred.
+  const DEFERRED_SOURCE = {
+    workspaceId: 'w1',
+    name: 'Gears',
+    files: {
+      'main.pathogen': { text: 'import g from "./data/gears.json";\ncircle(0, 0, g.r);\n' },
+      'data/gears.json': { sha256: 'b1', size: 9, deferred: true },
+    },
+    folders: ['data'],
+    entryPoints: ['main.pathogen'],
+  };
+
+  it('Open as new workspace reads a deferred data file from the API first, and the copy holds it whole', async () => {
+    const fetchSpy = vi.fn(async (url: string) =>
+      url.endsWith('/source.json')
+        ? new Response(JSON.stringify(DEFERRED_SOURCE), { status: 200 })
+        : new Response('{ "r": 4 }', { status: 200 }),
+    );
+    vi.stubGlobal('fetch', fetchSpy);
+    createSpy.mockResolvedValue({ id: 'f3', slug: 'gears-copy' });
+    const root = await mount({ fromHandle: 'ada', fromSlug: 'gears' });
+    await vi.waitFor(() => expect(fetchSpy).toHaveBeenCalledTimes(2));
+    expect(fetchSpy.mock.calls[1][0]).toBe('http://localhost:8787/approval-source/w1/file/b1');
+    await submit(root);
+    expect((createSpy.mock.calls[0][0] as { files: unknown }).files).toEqual({
+      'main.pathogen': { text: DEFERRED_SOURCE.files['main.pathogen'].text },
+      'data/gears.json': { text: '{ "r": 4 }' },
+    });
+  });
+
+  it('a deferred data file that can’t be read: said, naming it, and no workspace is made', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string) =>
+        url.endsWith('/source.json')
+          ? new Response(JSON.stringify(DEFERRED_SOURCE), { status: 200 })
+          : new Response(JSON.stringify({ error: 'File not found' }), { status: 404 }),
+      ),
+    );
+    const root = await mount({ fromHandle: 'ada', fromSlug: 'gears' });
+    await vi.waitFor(() => expect(root.textContent).toContain('data/gears.json couldn’t be read (File not found).'));
+    await submit(root);
+    expect(createSpy).not.toHaveBeenCalled();
+  });
+
   it('a fork whose files can’t be read says so, and makes no workspace', async () => {
     vi.stubGlobal(
       'fetch',
