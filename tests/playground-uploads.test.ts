@@ -90,22 +90,27 @@ describe('sortUpload: where each file goes', () => {
       picked('pathogen.json'),
       picked('shapes/pathogen.json'),
       picked('big.pathogen', PROGRAM, 1024 * 1024 + 1),
+      // Phase 3a: data files go in, up to 5 MB.
+      picked('data/gears.json', '[]'),
+      picked('data/trips.json', '[]', Math.floor(6.2 * 1024 * 1024)),
     ]);
-    expect(sorted.candidates.map((c) => c.path)).toEqual(['springs.pathogen']);
+    expect(sorted.candidates.map((c) => c.path)).toEqual(['springs.pathogen', 'data/gears.json']);
+    // The docs' reasons (docs/workspace-files.md "Uploading files").
+    const holds = 'a workspace holds .pathogen files and data files (.json, .geojson, .topojson and .fold).';
     expect(sorted.leftOut).toEqual([
-      // .csv waits for a later phase (note 76); step 8 gives these the docs' reason.
-      { name: 'cities.csv', reason: 'workspaces hold .pathogen files for now.' },
+      { name: 'cities.csv', reason: holds },
       {
         name: 'Raleway-Bold.ttf',
         reason: 'the playground can\'t load font files yet. Use the Google Fonts family instead: @font "Raleway" 700;',
       },
-      { name: 'notes', reason: 'workspaces hold .pathogen files for now.' },
+      { name: 'notes', reason: holds },
       {
         name: 'pathogen.json',
         reason: 'the playground writes this file itself. To change the main, use Set as main on a program.',
       },
       { name: 'shapes/pathogen.json', reason: 'inside a folder, it would make that folder a project of its own.' },
-      { name: 'big.pathogen', reason: 'larger than 1 MB, the most a .pathogen file can be.' },
+      { name: 'big.pathogen', reason: '1.1 MB, more than the 1 MB a .pathogen file can be in a workspace.' },
+      { name: 'data/trips.json', reason: '6.2 MB, more than the 5 MB a data file can be in a workspace.' },
     ]);
   });
 
@@ -159,7 +164,7 @@ describe('sortUpload: where each file goes', () => {
     ]);
     expect(sorted.candidates.map((c) => c.path)).toEqual(['Empty.pathogen']);
     expect(sorted.leftOut.map((l) => [l.name, l.reason])).toEqual([
-      ['empty', 'workspaces hold .pathogen files for now.'],
+      ['empty', 'a workspace holds .pathogen files and data files (.json, .geojson, .topojson and .fold).'],
       ['main.pathogen/x.pathogen', "main.pathogen is a file, so it can't hold a folder."],
     ]);
   });
@@ -309,6 +314,61 @@ describe('empty folders (your answer 7)', () => {
       'try-sizes.pathogen',
     ]);
   });
+
+  it('a data file goes in, and never joins the program list, whatever its text (phase 3a)', () => {
+    // `[1, 2]` has no `module;`: as a .pathogen file it would be a program.
+    const planned = planUpload(state(), [{ path: 'data/gears.json', text: '[1, 2]', whenTaken: 'keep-both' }], 'data');
+    if (!planned.ok) throw new Error(planned.message);
+    const after = applyChange(state(), planned.change);
+    expect([after.files['data/gears.json'], after.entryPoints]).toEqual(['[1, 2]', state().entryPoints]);
+    // Replaced by an upload, it stays out of the list too.
+    const again = planUpload(after, [{ path: 'data/gears.json', text: '[3]', whenTaken: 'replace' }], 'data');
+    if (!again.ok) throw new Error(again.message);
+    expect(applyChange(after, again.change).entryPoints).toEqual(state().entryPoints);
+  });
+
+  it('an upload that would take the workspace past 50 MB adds nothing; a replaced file counts as replaced', () => {
+    const MB = 1024 * 1024;
+    // Nine data files just under 5 MB: the workspace is 45 MB (rounded up to a tenth), 13 files.
+    const big = (): string => 'x'.repeat(5 * MB - 1024);
+    const files: Record<string, string> = { ...state().files };
+    for (let i = 0; i < 9; i++) files[`data/d${i}.json`] = big();
+    const full: WorkspaceState = { ...state(), files };
+    const entry = (path: string, whenTaken: 'keep-both' | 'replace' = 'keep-both') => ({
+      path,
+      text: big(),
+      whenTaken,
+    });
+    // One more: just under 50 MB.
+    expect(planUpload(full, [entry('data/d9.json')], 'data').ok).toBe(true);
+    // Two more: 55 MB.
+    const refused = planUpload(full, [entry('data/d9.json'), entry('data/d10.json')], 'data');
+    expect(refused).toEqual({
+      ok: false,
+      message: 'A workspace can hold at most 50 MB: its files are 45 MB, and the upload would make them 55 MB.',
+    });
+    // Replacing one of the nine, and adding one: still under 50 MB.
+    expect(planUpload(full, [entry('data/d0.json', 'replace'), entry('data/d9.json')], 'data').ok).toBe(true);
+  });
+
+  it('the 50 MB are bytes of UTF-8, not characters', () => {
+    const MB = 1024 * 1024;
+    // é is 2 bytes: each file is just under 5 MB, and 2.5 million characters.
+    const accented = (): string => 'é'.repeat((5 * MB) / 2 - 512);
+    const files: Record<string, string> = { ...state().files };
+    for (let i = 0; i < 9; i++) files[`data/d${i}.json`] = accented();
+    const full: WorkspaceState = { ...state(), files };
+    const entries = ['data/d9.json', 'data/d10.json'].map((path) => ({
+      path,
+      text: accented(),
+      whenTaken: 'keep-both' as const,
+    }));
+    // 27.5 million characters, 55 MB.
+    expect(planUpload(full, entries, 'data')).toEqual({
+      ok: false,
+      message: 'A workspace can hold at most 50 MB: its files are 45 MB, and the upload would make them 55 MB.',
+    });
+  });
 });
 
 describe('fontSuggestion', () => {
@@ -334,10 +394,18 @@ describe('textOf: a file’s bytes as a .pathogen text', () => {
 
   it('bytes that aren’t text are refused', () => {
     expect(textOf(new Uint8Array([0xff, 0xfe, 0x00, 0x41]).buffer)).toEqual({
-      problem: "isn't text, so it can't be a .pathogen file.",
+      problem: "isn't UTF-8 text, so it can't be a .pathogen file.",
     });
     expect(textOf(encode(`M 0 0${String.fromCharCode(0)}`))).toEqual({
-      problem: "isn't text, so it can't be a .pathogen file.",
+      problem: "isn't UTF-8 text, so it can't be a .pathogen file.",
+    });
+  });
+
+  it('a data file’s bytes are read the same way, and named as a data file when they aren’t text (phase 3a)', () => {
+    const bom = String.fromCharCode(0xfeff);
+    expect(textOf(encode(`${bom}{"teeth":\r\n12}`), 'data/gears.json')).toEqual({ text: '{"teeth":\n12}' });
+    expect(textOf(new Uint8Array([0xff, 0xfe, 0x00, 0x41]).buffer, 'data/gears.json')).toEqual({
+      problem: "isn't UTF-8 text, so it can't be a data file.",
     });
   });
 });

@@ -1,0 +1,98 @@
+{
+  "ran": "2026-11-25T02:37:45.963Z",
+  "failures": 0,
+  "results": [
+    {
+      "check": "light: Upload files…’s picker offers .pathogen and data files",
+      "ok": true
+    },
+    {
+      "check": "light: data/sizes.json is in the tree, a data row",
+      "ok": true
+    },
+    {
+      "check": "light: the message says what was added and what was left out, with the docs’ reasons",
+      "ok": true
+    },
+    {
+      "check": "light: the one file added opens in a tab",
+      "ok": true
+    },
+    {
+      "check": "light: it saves, and stays out of the program list",
+      "ok": true
+    },
+    {
+      "check": "light: the card lists the programs, the module, then the data files with the braces",
+      "ok": true
+    },
+    {
+      "check": "light: \"Not added\" gives each left out file the docs’ reason",
+      "ok": true
+    },
+    {
+      "check": "Create Workspace opens the new workspace",
+      "ok": true
+    },
+    {
+      "check": "it holds the data files, outside the program list",
+      "ok": true
+    },
+    {
+      "check": "its main draws the gears from data/gears.json",
+      "ok": true
+    },
+    {
+      "check": "a 27 MB project lists its 9 files",
+      "ok": true
+    },
+    {
+      "check": "Create Workspace makes it, past the create's 24 MB (0.7 s)",
+      "ok": true
+    },
+    {
+      "check": "it holds every file, each whole, outside the program list",
+      "ok": true
+    },
+    {
+      "check": "its main draws",
+      "ok": true
+    },
+    {
+      "check": "light: no page errors",
+      "ok": true
+    },
+    {
+      "check": "dark: Upload files…’s picker offers .pathogen and data files",
+      "ok": true
+    },
+    {
+      "check": "dark: data/sizes.json is in the tree, a data row",
+      "ok": true
+    },
+    {
+      "check": "dark: the message says what was added and what was left out, with the docs’ reasons",
+      "ok": true
+    },
+    {
+      "check": "dark: the one file added opens in a tab",
+      "ok": true
+    },
+    {
+      "check": "dark: it saves, and stays out of the program list",
+      "ok": true
+    },
+    {
+      "check": "dark: the card lists the programs, the module, then the data files with the braces",
+      "ok": true
+    },
+    {
+      "check": "dark: \"Not added\" gives each left out file the docs’ reason",
+      "ok": true
+    },
+    {
+      "check": "dark: no page errors",
+      "ok": true
+    }
+  ]
+}

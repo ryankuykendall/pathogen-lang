@@ -319,6 +319,7 @@ h1 {
 }
 
 .project-files li.module svg,
+.project-files li.data svg,
 .project-files li.json svg {
   color: var(--text-tertiary);
 }

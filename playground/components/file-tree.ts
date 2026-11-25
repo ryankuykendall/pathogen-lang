@@ -199,6 +199,15 @@ const MOVE_FILE: MenuItem = {
 };
 const MOVE_FOLDER: MenuItem = { ...MOVE_FILE, detail: 'Into another folder, or to the top' };
 
+/**
+ * What Upload files…'s picker offers: .pathogen files and data files
+ * (docs/workspace-files.md "Uploading files"), the engine's own list.
+ */
+function pickAccept(): string {
+  const data = (typeof window === 'undefined' ? undefined : window.PathogenLang?.DATA_EXTENSIONS) ?? [];
+  return ['.pathogen', ...data].join(',');
+}
+
 /** "Add to parts/" or "Add at the top": where a New item puts the file. */
 const addHead = (folder: string): string => (folder ? `Add to <code>${esc(folder)}/</code>` : 'Add at the top');
 
@@ -428,7 +437,7 @@ export class FileTree extends HTMLElement {
       <p class="drawer-hint">${DRAWER_HINT}</p>
       <div class="sheet-scrim" aria-hidden="true" hidden></div>
       <div class="menu" id="add-menu" role="menu" aria-label="Add" hidden></div>
-      <input class="pick-files" type="file" multiple accept=".pathogen" hidden tabindex="-1">
+      <input class="pick-files" type="file" multiple accept="${esc(pickAccept())}" hidden tabindex="-1">
       <input class="pick-folder" type="file" webkitdirectory hidden tabindex="-1">
       <div class="drop-label" aria-hidden="true" hidden></div>
       <div class="drag-chip" aria-hidden="true" hidden></div>

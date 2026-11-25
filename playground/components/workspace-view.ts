@@ -2061,7 +2061,7 @@ export class WorkspaceView extends HTMLElement {
     for (const candidate of sorted.candidates) {
       let read: ReturnType<typeof textOf>;
       try {
-        read = textOf(await candidate.file.read());
+        read = textOf(await candidate.file.read(), candidate.path);
       } catch {
         read = { problem: "couldn't be read." };
       }

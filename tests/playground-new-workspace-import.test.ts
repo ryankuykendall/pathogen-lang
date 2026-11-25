@@ -32,6 +32,7 @@ vi.mock('../playground/utils/router.js', async (importOriginal) => ({
 const MAIN = 'import { gear } from "./parts/gears.pathogen";\ngear(4);\n';
 const GEARS = 'module;\nexport fn gear(r) {\n  circle(0, 0, r);\n}\n';
 const SKETCH = 'circle(10, 10, 4);\n';
+const SIZES = '[4, 6, 8]\n';
 const encode = (text: string): Uint8Array => new TextEncoder().encode(text);
 
 /** A .zip as Download workspace makes it: one folder, pathogen.json, the files, an empty folder. */
@@ -45,6 +46,8 @@ function gearsZip(projectFile = '{\n  "entryPoints": ["main.pathogen"]\n}\n'): F
     { path: 'Gear-studies/sketch.pathogen', bytes: encode(SKETCH) },
     { path: 'Gear-studies/drafts/' },
     { path: 'Gear-studies/notes.txt', bytes: encode('to do') },
+    // Phase 3a: a data file comes in too.
+    { path: 'Gear-studies/data/sizes.json', bytes: encode(SIZES) },
   ]);
   return new File([bytes], 'Gear-studies.zip', { type: 'application/zip' });
 }
@@ -132,19 +135,22 @@ describe('Or import a project (2g)', () => {
     expect(root.querySelector('[name="template"]')).toBeNull();
     expect(text(root.querySelector('.import-section h2'))).toBe('Import a project');
     expect(text(root.querySelector('.project-head b'))).toBe('Gear-studies.zip');
-    expect(text(root.querySelector('.project-head .what'))).toBe('3 files in 2 folders');
+    expect(text(root.querySelector('.project-head .what'))).toBe('4 files in 3 folders');
+    // Each program, the main marked, then each module, then each data file (mockup v2 4a).
     expect([...root.querySelectorAll('.project-files li')].map(row)).toEqual([
       'main.pathogen main',
       'sketch.pathogen Not in pathogen.json’s list: it joins the end.',
       'parts/gears.pathogen module',
+      'data/sizes.json data',
     ]);
+    expect(root.querySelector('.project-files li.data svg')).not.toBeNull();
     expect(text(root.querySelector('.project-foot'))).toBe(
       'The main and the program list come from its pathogen.json. Imports between its files work as they did in the folder.',
     );
     expect(text(root.querySelector('.left-out .head'))).toBe('Not added:');
     expect([...root.querySelectorAll('.left-out li')].map(text)).toEqual([
-      // .txt waits for a later phase (note 76); step 8 gives it the docs' reason.
-      'notes.txt: workspaces hold .pathogen files for now.',
+      // .txt isn't a data file (note 76).
+      'notes.txt: a workspace holds .pathogen files and data files (.json, .geojson, .topojson and .fold).',
     ]);
     expect(root.querySelector<HTMLInputElement>('[name="name"]')!.value).toBe('Gear-studies');
     expect(root.querySelector<HTMLButtonElement>('.primary-btn')!.disabled).toBe(false);
@@ -159,6 +165,7 @@ describe('Or import a project (2g)', () => {
         'main.pathogen': { text: MAIN },
         'parts/gears.pathogen': { text: GEARS },
         'sketch.pathogen': { text: SKETCH },
+        'data/sizes.json': { text: SIZES },
       },
       folders: ['drafts'],
       entryPoints: ['main.pathogen', 'sketch.pathogen'],
@@ -281,7 +288,7 @@ describe('Or import a project (2g)', () => {
     await submit(root);
     expect(createSpy).not.toHaveBeenCalled();
     release();
-    await vi.waitFor(() => expect(text(root.querySelector('.project-head .what'))).toBe('3 files in 2 folders'));
+    await vi.waitFor(() => expect(text(root.querySelector('.project-head .what'))).toBe('4 files in 3 folders'));
     expect(root.querySelector<HTMLButtonElement>('.primary-btn')!.disabled).toBe(false);
   });
 

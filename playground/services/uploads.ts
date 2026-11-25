@@ -146,7 +146,20 @@ export function fontSuggestion(name: string): string {
 }
 
 /**
- * Why a picked file that isn't a .pathogen file is left out (mockup v6 screen U,
+ * Whether a picked file's kind can go in a workspace: a .pathogen file or a
+ * data file (phase 3a; docs/workspace-files.md "Uploading files"). Not a
+ * pathogen.json, though it ends in .json: the playground writes the
+ * workspace's own, and one in a folder would make that folder a project
+ * (kindReason says which).
+ */
+export const canHold = (name: string): boolean => {
+  if (name.toLowerCase() === PROJECT_FILE) return false;
+  const kind = lib().workspaceFileKind(name);
+  return kind === 'pathogen' || kind === 'data';
+};
+
+/**
+ * Why a picked file a workspace can't hold is left out (mockup v6 screen U,
  * state 4; screen J, state 5). `folder` is where it would go ('' is the top).
  * The import of a project (project-import.ts) gives the same reasons.
  */
@@ -160,14 +173,30 @@ export function kindReason(name: string, folder: string): string {
   if (kind === 'font') {
     return `the playground can't load font files yet. Use the Google Fonts family instead: ${fontSuggestion(name)}`;
   }
-  if (kind === 'data') return 'workspaces hold .pathogen files for now; data files come later.';
-  return 'workspaces hold .pathogen files for now.';
+  // The docs' words: "a workspace holds .pathogen files and data files (.json, .geojson, .topojson and .fold)."
+  return lib().WORKSPACE_KINDS_HELD;
 }
 
-/** Why a .pathogen file over the size limit is left out. */
-export function tooLargeReason(): string {
-  return `larger than ${lib().WORKSPACE_LIMITS.fileBytes.pathogen / (1024 * 1024)} MB, the most a .pathogen file can be.`;
+const KIND_NAMES: Record<string, string> = { pathogen: 'a .pathogen file', data: 'a data file' };
+
+/**
+ * Why a file over its kind's limit is left out, as the docs give it:
+ * `6.2 MB, more than the 5 MB a data file can be in a workspace.` (1 MB a
+ * .pathogen file). Sizes as every message gives them, rounded up.
+ */
+export function tooLargeReason(name: string, bytes: number): string {
+  // Callers pass only names canHold takes, so the fallback never names the wrong kind.
+  const kind = lib().workspaceFileKind(name) ?? 'pathogen';
+  const limit = lib().WORKSPACE_LIMITS.fileBytes[kind];
+  const mb = lib().megabytes;
+  return `${mb(bytes)}, more than the ${mb(limit)} ${KIND_NAMES[kind] ?? 'a file'} can be in a workspace.`;
 }
+
+/** Whether a file of `bytes` is over its kind's limit. */
+export const overLimit = (name: string, bytes: number): boolean => {
+  const kind = lib().workspaceFileKind(name);
+  return kind !== null && bytes > lib().WORKSPACE_LIMITS.fileBytes[kind];
+};
 
 /**
  * Sort the files picked for `folder` ('' is the top): where each goes, which
@@ -186,7 +215,6 @@ export function sortUpload(
   picked: readonly PickedFile[],
   emptyFolders: readonly string[] = [],
 ): SortedUpload {
-  const limits = lib().WORKSPACE_LIMITS;
   const existingFolders = foldersOf(state);
   const folderSpelling = new Map(existingFolders.map((f) => [f.toLowerCase(), f]));
   const fileSpelling = new Map(Object.keys(state.files).map((p) => [p.toLowerCase(), p]));
@@ -232,7 +260,7 @@ export function sortUpload(
       leftOut.push({ name: file.path, reason });
     };
     const { at, changed, blocked } = placeFolders(segments.slice(0, -1));
-    if (lib().workspaceFileKind(name) !== 'pathogen') {
+    if (!canHold(name)) {
       leave(kindReason(name, at));
       continue;
     }
@@ -247,8 +275,8 @@ export function sortUpload(
       leave(withoutName(pathProblem));
       continue;
     }
-    if (file.size > limits.fileBytes.pathogen) {
-      leave(tooLargeReason());
+    if (overLimit(name, file.size)) {
+      leave(tooLargeReason(name, file.size));
       continue;
     }
     const renamed = changed || fitted !== name;
@@ -303,18 +331,20 @@ const NUL = String.fromCharCode(0);
 const utf8 = new TextDecoder('utf-8', { fatal: true });
 
 /**
- * A .pathogen file's text from its bytes, or why it can't be one. A byte-order
- * mark is dropped and line ends become `\n`, as the editor keeps them, so the
- * text saved is the text shown.
+ * A file's text from its bytes (a .pathogen file's, or a data file's), or why
+ * it can't be one. A byte-order mark is dropped and line ends become `\n`, as
+ * the editor keeps them, so the text saved is the text shown.
  */
-export function textOf(bytes: ArrayBuffer): { text: string } | { problem: string } {
+export function textOf(bytes: ArrayBuffer, name = 'x.pathogen'): { text: string } | { problem: string } {
+  const kind = KIND_NAMES[lib().workspaceFileKind(name) ?? 'pathogen'] ?? 'a .pathogen file';
+  const problem = `isn't UTF-8 text, so it can't be ${kind}.`;
   let text: string;
   try {
     text = utf8.decode(bytes);
   } catch {
-    return { problem: "isn't text, so it can't be a .pathogen file." };
+    return { problem };
   }
-  if (text.includes(NUL)) return { problem: "isn't text, so it can't be a .pathogen file." };
+  if (text.includes(NUL)) return { problem };
   if (text.charCodeAt(0) === BOM) text = text.slice(1);
   return { text: text.replace(/\r\n?/g, '\n') };
 }

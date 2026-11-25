@@ -24,9 +24,11 @@
 
 import { readZip, ZipError } from './zip.js';
 import {
+  canHold,
   fittedName,
   kindReason,
   MAX_PICKED,
+  overLimit,
   pickedFromDrop,
   pickedFromInput,
   textOf,
@@ -93,6 +95,8 @@ export interface ImportPlan extends Summary {
   /** Every program, the main first. */
   entryPoints: string[];
   modules: string[];
+  /** The data files (phase 3a): listed after the modules. */
+  dataFiles: string[];
   /** Where the program list came from: the project's pathogen.json, none, or one whose list held nothing usable. */
   list: 'listed' | 'none' | 'unusable';
   /** With a list: the programs it doesn't name, which join the end. */
@@ -116,7 +120,7 @@ export interface ImportRefusal extends Summary {
 }
 
 const DROP_ONE = 'Drop one project folder, or one .zip.';
-const NOTHING = 'There’s no .pathogen file here that a workspace can take, so nothing was added.';
+const NOTHING = 'There’s no file here that a workspace can take, so nothing was added.';
 const PROJECT_FILE = 'pathogen.json';
 const MAIN = 'main.pathogen';
 const MACOS_FOLDER = '__MACOSX';
@@ -295,7 +299,7 @@ export async function planImport(pick: ProjectPick): Promise<ImportPlan | Import
       projectFile = file;
       continue;
     }
-    if (l.workspaceFileKind(fileName) !== 'pathogen') {
+    if (!canHold(fileName)) {
       leftOut.push({ name: path, reason: kindReason(fileName, segments.slice(0, -1).join('/')) });
       continue;
     }
@@ -303,8 +307,8 @@ export async function planImport(pick: ProjectPick): Promise<ImportPlan | Import
       leftOut.push({ name: path, reason: file.problem });
       continue;
     }
-    if (file.size > limits.fileBytes.pathogen) {
-      leftOut.push({ name: path, reason: tooLargeReason() });
+    if (overLimit(fileName, file.size)) {
+      leftOut.push({ name: path, reason: tooLargeReason(fileName, file.size) });
       continue;
     }
     candidates.push({ picked: path, file });
@@ -364,29 +368,39 @@ export async function planImport(pick: ProjectPick): Promise<ImportPlan | Import
     entries = parsed.project.entryPoints;
   }
 
-  // 3. The limit, counted before any file is read, as an upload counts.
+  // 3. The limits, counted before any file is read, as an upload counts:
+  //    20 files and 50 MB, .pathogen and data files together, not counting what's left out.
+  //    A file found not to be UTF-8 text only when it's read (step 4) has counted.
+  const counted = (): string =>
+    whatOf(
+      candidates.length,
+      folderCount(
+        candidates.map((c) => c.picked),
+        [],
+      ),
+    );
   if (candidates.length > limits.files) {
     return refuse(
       `A workspace holds at most ${limits.files} files, and this project has ${candidates.length}. Nothing was added. To bring part of it in, import a folder holding fewer files.`,
       null,
-      whatOf(
-        candidates.length,
-        folderCount(
-          candidates.map((c) => c.picked),
-          [],
-        ),
-        '.pathogen file',
-        '.pathogen files',
-      ),
+      counted(),
+    );
+  }
+  const bytes = candidates.reduce((sum, c) => sum + c.file.size, 0);
+  if (bytes > limits.workspaceBytes) {
+    return refuse(
+      `A workspace holds at most ${l.megabytes(limits.workspaceBytes)}, and this project’s files are ${l.megabytes(bytes)}. Nothing was added. To bring part of it in, import a folder holding less.`,
+      null,
+      counted(),
     );
   }
 
-  // 4. Read each file as a .pathogen text.
+  // 4. Read each file's text: a .pathogen file's or a data file's.
   const texts = new Map<string, string>();
   for (const candidate of candidates) {
     let read: ReturnType<typeof textOf>;
     try {
-      read = textOf(await candidate.file.read());
+      read = textOf(await candidate.file.read(), candidate.picked);
     } catch (err) {
       read = { problem: err instanceof ZipError ? err.message : 'couldn’t be read.' };
     }
@@ -466,14 +480,20 @@ export async function planImport(pick: ProjectPick): Promise<ImportPlan | Import
     }
   }
 
-  // 7. Programs and modules; the program list from pathogen.json, or as without one.
-  const isModule = new Map(kept.map((k) => [k.path, l.isModuleSource(k.text)]));
+  // 7. Programs, modules and data files; the program list from pathogen.json, or as without one.
+  //    A data file is never a program, and never read as Pathogen.
+  const isData = (path: string): boolean => l.workspaceFileKind(path) === 'data';
+  const isModule = new Map(kept.map((k) => [k.path, !isData(k.path) && l.isModuleSource(k.text)]));
   const programs = kept
-    .filter((k) => !isModule.get(k.path))
+    .filter((k) => !isData(k.path) && !isModule.get(k.path))
     .map((k) => k.path)
     .sort(byPath);
   const modules = kept
     .filter((k) => isModule.get(k.path))
+    .map((k) => k.path)
+    .sort(byPath);
+  const dataFiles = kept
+    .filter((k) => isData(k.path))
     .map((k) => k.path)
     .sort(byPath);
   const exact = new Map(kept.map((k) => [k.picked, k]));
@@ -518,6 +538,7 @@ export async function planImport(pick: ProjectPick): Promise<ImportPlan | Import
     folders: keptFolders,
     entryPoints,
     modules,
+    dataFiles,
     list,
     unlisted: list === 'listed' ? programs.filter((p) => !listed.includes(p)) : [],
     generated: list === 'none' ? l.workspaceProjectFileText(entryPoints) : null,

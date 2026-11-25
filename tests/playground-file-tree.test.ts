@@ -1166,6 +1166,22 @@ describe('uploads', () => {
     expect(uploads.map((u) => [u.folder, u.picked.map((p) => p.path)])).toEqual([['parts', ['springs.pathogen']]]);
   });
 
+  it('with the library loaded, as in the browser, the picker offers data files too (phase 3a)', async () => {
+    const global = window as unknown as { PathogenLang?: unknown };
+    const before = global.PathogenLang;
+    global.PathogenLang = await import('../src');
+    try {
+      const fresh = document.createElement('file-tree') as TreeWithUploads;
+      document.body.appendChild(fresh);
+      fresh.files = GEARS;
+      expect(fresh.shadowRoot!.querySelector<HTMLInputElement>('.pick-files')!.accept).toBe(
+        '.pathogen,.json,.geojson,.topojson,.fold',
+      );
+    } finally {
+      global.PathogenLang = before;
+    }
+  });
+
   it('Upload folder… picks a folder, for the folder whose menu it was', () => {
     const uploads: { folder: string }[] = [];
     tree.addEventListener('upload-files', (e) => uploads.push((e as CustomEvent).detail));

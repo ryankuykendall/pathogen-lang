@@ -21,6 +21,7 @@
 //   the server's, not a second copy.
 
 import { emptyBoilerplate } from '../utils/examples.js';
+import { utf8Length } from '../utils/format-bytes.js';
 import { PROJECT_FILE } from '../utils/workspace-names.js';
 import { isDataFile } from './workspace-files.js';
 
@@ -812,11 +813,33 @@ export function planUpload(
       `A workspace can hold at most ${limit} files: this one has ${count}, and the upload would make ${count + added.length}.`,
     );
   }
+  // 50 MB in all, replaced files counted as replaced (docs/workspace-files.md "Uploading files").
+  const after = workspaceBytesPast(working.files);
+  if (after !== null) {
+    const mb = lib().megabytes;
+    const before = Object.values(state.files).reduce((n, text) => n + utf8Length(text), 0);
+    return refuse(
+      `A workspace can hold at most ${mb(lib().WORKSPACE_LIMITS.workspaceBytes)}: its files are ${mb(before)}, and the upload would make them ${mb(after)}.`,
+    );
+  }
   const all = [...added, ...replaced];
   return finish(state, steps, [...state.folders, ...newFolders], entryPoints, {
     message: uploadMessage(folder, added, replaced, newFolders),
     ...(all.length === 1 ? { open: all[0] } : {}),
   });
+}
+
+/**
+ * The files' UTF-8 bytes when they're past the 50 MB a workspace holds, else
+ * null. UTF-8 takes 1 to 3 bytes a UTF-16 unit, so texts whose lengths times 3
+ * fit aren't counted (as save-limits counts).
+ */
+function workspaceBytesPast(files: Record<string, string>): number | null {
+  const limit = lib().WORKSPACE_LIMITS.workspaceBytes;
+  const texts = Object.values(files);
+  if (texts.reduce((n, text) => n + text.length * 3, 0) <= limit) return null;
+  const bytes = texts.reduce((n, text) => n + utf8Length(text), 0);
+  return bytes > limit ? bytes : null;
 }
 
 /** The files an upload's change added or replaced, in the order of its entries (one add step each). */

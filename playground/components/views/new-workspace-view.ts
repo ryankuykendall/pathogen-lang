@@ -18,6 +18,7 @@ import {
   planImport,
 } from '../../services/project-import.js';
 import { captureDrop, linesHeading } from '../../services/uploads.js';
+import { createWorkspace } from '../../services/workspace-create.js';
 import type { ImportPlan, ImportRefusal, PickRefusal, ProjectPick } from '../../services/project-import.js';
 import { FILE_ICONS, MAIN_BADGE_TITLE } from '../../utils/file-icons.js';
 import { materialIcon } from '../../utils/material-icons.js';
@@ -579,19 +580,20 @@ class NewWorkspaceView extends HTMLElement {
         await autosave.awaitPendingFlush();
         workspace = (await workspaceApi.copy(this._copyFromId, { name, description })) as typeof workspace;
       } else if (this._fromApproval) {
-        // Open as new workspace: the approved files, each as text.
+        // Open as new workspace: the approved files, each as text; past what a
+        // create can send, the largest data files follow it (phase 3a).
         if (!this._forkFiles) throw new Error('The workspace to copy could not be loaded.');
-        workspace = (await workspaceApi.create({
+        workspace = await createWorkspace({
           name,
           description,
           ...this._forkFiles,
           isPublic: false,
           preferences: this._newPreferences(),
-        })) as typeof workspace;
+        });
       } else if (project?.kind === 'plan') {
         // A project folder or a .zip (2g): its files, empty folders and program list, as the page listed them.
         const { files, folders, entryPoints } = project.plan;
-        workspace = (await workspaceApi.create({
+        workspace = await createWorkspace({
           name,
           description,
           files,
@@ -599,7 +601,7 @@ class NewWorkspaceView extends HTMLElement {
           entryPoints,
           isPublic: false,
           preferences: this._newPreferences(),
-        })) as typeof workspace;
+        });
       } else {
         // From a state param, a picked template, or the empty boilerplate (just
         // `define ViewBox` and the canonical default PathLayer, no demo content).
@@ -826,6 +828,11 @@ class NewWorkspaceView extends HTMLElement {
       ...plan.modules.map(
         (path) =>
           `<li class="module">${FILE_ICONS.library}<span class="p">${codeHtml(path)}<span class="kind">module</span></span></li>`,
+      ),
+      // Phase 3a (mockup v2 4a): the data files, after the modules, with the braces.
+      ...plan.dataFiles.map(
+        (path) =>
+          `<li class="data">${FILE_ICONS.data}<span class="p">${codeHtml(path)}<span class="kind">data</span></span></li>`,
       ),
       ...(plan.generated !== null
         ? [

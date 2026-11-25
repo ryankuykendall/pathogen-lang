@@ -33,6 +33,9 @@ const GEARS = join(__dirname, '..', 'project-docs', 'modules', 'mockups-2f-vscod
 const gears = (path: string): string => readFileSync(join(GEARS, path), 'utf8');
 const GEARS_FILES = ['main.pathogen', 'demos/train.pathogen', 'try-sizes.pathogen', 'sketch.pathogen', 'parts/gears.pathogen'];
 
+/** Why a file of another kind is left out: the docs' words (docs/workspace-files.md "Uploading files"). */
+const HOLDS = 'a workspace holds .pathogen files and data files (.json, .geojson, .topojson and .fold).';
+
 const encode = (text: string): Uint8Array => new TextEncoder().encode(text);
 const file = (path: string, text: string, size?: number): PickedFile => ({
   path,
@@ -113,7 +116,7 @@ describe('a project folder comes in as it is', () => {
       expect(plan.files['main.pathogen'].text).toBe(gears('main.pathogen'));
       expect(plan.entryPoints).toEqual(['main.pathogen', 'demos/train.pathogen', 'try-sizes.pathogen', 'sketch.pathogen']);
       expect(plan.folders).toEqual(['empty']);
-      expect(plan.leftOut).toEqual([{ name: 'README.md', reason: 'workspaces hold .pathogen files for now.' }]);
+      expect(plan.leftOut).toEqual([{ name: 'README.md', reason: HOLDS }]);
       serverAccepts(plan);
     });
   }
@@ -230,7 +233,9 @@ describe("an entryPoints entry the workspace can't use is dropped, and the page 
       'pathogen.json lists parts/gears.pathogen, which is a module, so the program list leaves it out.',
       'pathogen.json lists big.pathogen, which isn’t added, so the program list leaves it out.',
     ]);
-    expect(plan.leftOut).toEqual([{ name: 'big.pathogen', reason: 'larger than 1 MB, the most a .pathogen file can be.' }]);
+    expect(plan.leftOut).toEqual([
+      { name: 'big.pathogen', reason: '2 MB, more than the 1 MB a .pathogen file can be in a workspace.' },
+    ]);
     serverAccepts(plan);
   });
 
@@ -281,16 +286,16 @@ describe("what's left out is what an upload leaves out", () => {
       ),
     );
     expect(plan.leftOut).toEqual([
-      { name: 'README.md', reason: 'workspaces hold .pathogen files for now.' },
-      { name: 'binary.pathogen', reason: "isn't text, so it can't be a .pathogen file." },
+      { name: 'README.md', reason: HOLDS },
+      { name: 'binary.pathogen', reason: "isn't UTF-8 text, so it can't be a .pathogen file." },
       { name: 'demos/pathogen.json', reason: 'inside a folder, it would make that folder a project of its own.' },
       {
         name: 'fonts/Inter-Regular.ttf',
         reason: 'the playground can\'t load font files yet. Use the Google Fonts family instead: @font "Inter" 400;',
       },
-      { name: 'huge.pathogen', reason: 'larger than 1 MB, the most a .pathogen file can be.' },
-      // .svg isn't a data file (note 76); step 8 gives it the docs' reason.
-      { name: 'out/main.svg', reason: 'workspaces hold .pathogen files for now.' },
+      { name: 'huge.pathogen', reason: '1.1 MB, more than the 1 MB a .pathogen file can be in a workspace.' },
+      // .svg isn't a data file (note 76).
+      { name: 'out/main.svg', reason: HOLDS },
     ]);
     expect(Object.keys(plan.files).sort()).toEqual([...GEARS_FILES].sort());
     serverAccepts(plan);
@@ -312,9 +317,49 @@ describe("what's left out is what an upload leaves out", () => {
   });
 });
 
-// ---------- the 20-file limit, and nothing to import ----------
+// ---------- data files (phase 3a; mockup v2 4a) ----------
 
-describe('more than 20 .pathogen files adds nothing', () => {
+describe('data files come in, after the modules, and are never programs', () => {
+  it('the gears project with its data: listed as data; a file too large and one of another kind left out', async () => {
+    const plan = planned(
+      await planImport(
+        gearsPick([
+          file('data/gears.json', '[{"teeth": 12}]'),
+          file('data/sizes.json', '[4, 6]'),
+          file('data/trips.json', '[]', 82 * 1024 * 1024),
+          file('data/profile.txt', 'x'),
+        ]),
+      ),
+    );
+    expect(plan.what).toBe('7 files in 3 folders');
+    expect(plan.dataFiles).toEqual(['data/gears.json', 'data/sizes.json']);
+    expect(plan.files['data/gears.json'].text).toBe('[{"teeth": 12}]');
+    // `[4, 6]` has no `module;`: as a .pathogen file it would be a program.
+    expect(plan.entryPoints).toEqual([
+      'main.pathogen',
+      'demos/train.pathogen',
+      'try-sizes.pathogen',
+      'sketch.pathogen',
+    ]);
+    expect(plan.modules).toEqual(['parts/gears.pathogen']);
+    expect(plan.leftOut).toEqual([
+      { name: 'data/profile.txt', reason: HOLDS },
+      { name: 'data/trips.json', reason: '82 MB, more than the 5 MB a data file can be in a workspace.' },
+    ]);
+    serverAccepts(plan);
+  });
+
+  it('a data file that isn’t UTF-8 text is left out, named as a data file', async () => {
+    const plan = planned(await planImport(gearsPick([file('data/gears.json', '[1]\u0000')])));
+    expect(plan.leftOut).toEqual([
+      { name: 'data/gears.json', reason: "isn't UTF-8 text, so it can't be a data file." },
+    ]);
+  });
+});
+
+// ---------- the limits, and nothing to import ----------
+
+describe('more than 20 files, or 50 MB, adds nothing', () => {
   const many = (n: number): PickedFile[] => Array.from({ length: n }, (_, i) => file(`shapes/s${i}.pathogen`, 'M 0 0;'));
 
   it('21 refuses the whole import; what is left out does not count', async () => {
@@ -322,16 +367,40 @@ describe('more than 20 .pathogen files adds nothing', () => {
     expect(refusal.message).toBe(
       'A workspace holds at most 20 files, and this project has 21. Nothing was added. To bring part of it in, import a folder holding fewer files.',
     );
-    expect(refusal.what).toBe('21 .pathogen files in 1 folder');
+    expect(refusal.what).toBe('21 files in 1 folder');
     const plan = planned(await planImport(pick([...many(20), file('README.md', 'x'), file('big.pathogen', 'M', 2 * 1024 * 1024)])));
     expect(Object.keys(plan.files)).toHaveLength(20);
     serverAccepts(plan);
   });
 
-  it('no .pathogen file a workspace can take: nothing to import', async () => {
+  it('.pathogen and data files count together toward the 20', async () => {
+    const data = Array.from({ length: 11 }, (_, i) => file(`data/d${i}.json`, '[]'));
+    const refusal = refused(await planImport(pick([...many(10), ...data])));
+    expect(refusal.message).toMatch(/^A workspace holds at most 20 files, and this project has 21\./);
+  });
+
+  it('past 50 MB refuses the whole import, counted before any file is read; what is left out does not count', async () => {
+    const MB = 1024 * 1024;
+    // Eleven data files just under 5 MB: 55 MB.
+    const data = (n: number): PickedFile[] =>
+      Array.from({ length: n }, (_, i) => file(`data/d${i}.json`, '[]', 5 * MB - 1));
+    const refusal = refused(await planImport(pick([file('main.pathogen', 'M 0 0;'), ...data(11)])));
+    expect(refusal.message).toBe(
+      'A workspace holds at most 50 MB, and this project’s files are 55 MB. Nothing was added. To bring part of it in, import a folder holding less.',
+    );
+    expect(refusal.what).toBe('12 files in 1 folder');
+    // Nine, and a 60 MB file left out: 45 MB comes in.
+    const plan = planned(
+      await planImport(pick([file('main.pathogen', 'M 0 0;'), ...data(9), file('data/big.json', '[]', 60 * MB)])),
+    );
+    expect(plan.dataFiles).toHaveLength(9);
+    expect(plan.leftOut.map((l) => l.name)).toEqual(['data/big.json']);
+  });
+
+  it('nothing a workspace can take: nothing to import', async () => {
     const refusal = refused(await planImport(pick([file('README.md', 'x')])));
-    expect(refusal.message).toBe('There’s no .pathogen file here that a workspace can take, so nothing was added.');
-    expect(refusal.leftOut).toEqual([{ name: 'README.md', reason: 'workspaces hold .pathogen files for now.' }]);
+    expect(refusal.message).toBe('There’s no file here that a workspace can take, so nothing was added.');
+    expect(refusal.leftOut).toEqual([{ name: 'README.md', reason: HOLDS }]);
   });
 });
 
