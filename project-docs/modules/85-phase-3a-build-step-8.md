@@ -83,8 +83,10 @@ The user: "Go ahead and push." 8a to 8e touch nothing under `api/`, `website/api
 
 ## The 50 MB refusals in the docs (2026-11-25)
 
-The user: "Yes, please add the three 50MB refusal messages." docs/workspace-files.md "Limits" quotes each as built: the save's in the error panel under the file being edited, the upload's under "Nothing was added", the import's on the New Workspace page. Their wordings differ ("a workspace can hold", "can hold at most", "holds at most"); the docs quote them as they are.
+The user: "Yes, please add the three 50MB refusal messages." docs/workspace-files.md "Limits" quotes each as built: the save's in the error panel under the file being edited, the upload's under "Nothing was added", the import's on the New Workspace page. Their wordings differ ("a workspace can hold", "can hold at most", "holds at most"); the docs quote them as they are. Content review: `reviews/phase-3a-50mb-docs-review.md`. Pushed 522aca07 at the user's word.
+
+Then the user: "make the import message change". The import's two refusals (20 files, 50 MB) say "A workspace can hold at most …", as the upload's, New program's and the server's do; `project-import.test.ts` and the docs' quote follow. The 2g mockup's copy (`mockups-2g-project/shoot.ts`) is left as it was shot.
 
 ## Files a PUT stores that no save names (the user asked, 2026-11-25)
 
-Checked for the explanation: deleting a workspace removes every file stored under it (`deleteWorkspaceFiles`, by the workspace's prefix), so such a file lasts only as long as its workspace, and a create that fails after its PUTs (`createWorkspace`) deletes them with the workspace.
+Checked for the explanation: deleting a workspace removes every file stored under it (`deleteWorkspaceFiles`, by the workspace's prefix), so such a file lasts only as long as its workspace, and a create that fails after its PUTs (`createWorkspace`) deletes them with the workspace. The user: "hold off on the clean-up script for the moment (save this as a follow-up on our list.)" Recorded in `backlog.md`, Storage, "The sweep".

@@ -381,7 +381,7 @@ export async function planImport(pick: ProjectPick): Promise<ImportPlan | Import
     );
   if (candidates.length > limits.files) {
     return refuse(
-      `A workspace holds at most ${limits.files} files, and this project has ${candidates.length}. Nothing was added. To bring part of it in, import a folder holding fewer files.`,
+      `A workspace can hold at most ${limits.files} files, and this project has ${candidates.length}. Nothing was added. To bring part of it in, import a folder holding fewer files.`,
       null,
       counted(),
     );
@@ -389,7 +389,7 @@ export async function planImport(pick: ProjectPick): Promise<ImportPlan | Import
   const bytes = candidates.reduce((sum, c) => sum + c.file.size, 0);
   if (bytes > limits.workspaceBytes) {
     return refuse(
-      `A workspace holds at most ${l.megabytes(limits.workspaceBytes)}, and this project’s files are ${l.megabytes(bytes)}. Nothing was added. To bring part of it in, import a folder holding less.`,
+      `A workspace can hold at most ${l.megabytes(limits.workspaceBytes)}, and this project’s files are ${l.megabytes(bytes)}. Nothing was added. To bring part of it in, import a folder holding less.`,
       null,
       counted(),
     );

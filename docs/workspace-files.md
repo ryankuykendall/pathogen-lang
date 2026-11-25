@@ -64,7 +64,9 @@ save says why in the error panel, not in the breadcrumb or a toast. The dialog m
 Every refused save, a .pathogen file over 1 MB too, says why in the error panel (note 75).
 Added 2026-11-25 (the user: "Yes, please add the three 50MB refusal messages"; note 85): Limits
 quotes the 50 MB refusals of a save, an upload and an import, each as built and as tests pin it
-(playground-save-limits, playground-uploads, project-import). Their wordings differ, as built.
+(playground-save-limits, playground-uploads, project-import). The import's two refusals then said
+"holds at most"; at the user's word ("make the import message change") they say "can hold at
+most", as the upload's do (the content review's finding 3).
 -->
 
 
@@ -358,7 +360,7 @@ A workspace can hold at most 50 MB: its files are 46.2 MB, and the upload would 
 A [project imported](#workspace-files-a-workspace-from-a-project) as a new workspace leaves out the same files, and adds nothing if more than 20 files, or more than 50 MB, are left. The New Workspace page says why in place of the list of what would come in:
 
 ```text
-A workspace holds at most 50 MB, and this project’s files are 61.3 MB. Nothing was added. To bring part of it in, import a folder holding less.
+A workspace can hold at most 50 MB, and this project’s files are 61.3 MB. Nothing was added. To bring part of it in, import a folder holding less.
 ```
 
 The CLI and VS Code read data files up to 50 MB ([Data files](#cli-data-files)). A project with a data file over 5 MB, such as a 40 MB `trips.json`, compiles on your computer. When it comes into a workspace, that file is left out (listed under "Not added"), and the programs that import it stop at that import. To draw them here, make the file smaller (fewer rows or decimal places), or split it into files of 5 MB or less, within the workspace's 50 MB and 20 files.

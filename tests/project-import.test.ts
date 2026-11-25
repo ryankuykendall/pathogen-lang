@@ -365,7 +365,7 @@ describe('more than 20 files, or 50 MB, adds nothing', () => {
   it('21 refuses the whole import; what is left out does not count', async () => {
     const refusal = refused(await planImport(pick([...many(21), file('README.md', 'x')])));
     expect(refusal.message).toBe(
-      'A workspace holds at most 20 files, and this project has 21. Nothing was added. To bring part of it in, import a folder holding fewer files.',
+      'A workspace can hold at most 20 files, and this project has 21. Nothing was added. To bring part of it in, import a folder holding fewer files.',
     );
     expect(refusal.what).toBe('21 files in 1 folder');
     const plan = planned(await planImport(pick([...many(20), file('README.md', 'x'), file('big.pathogen', 'M', 2 * 1024 * 1024)])));
@@ -376,7 +376,7 @@ describe('more than 20 files, or 50 MB, adds nothing', () => {
   it('.pathogen and data files count together toward the 20', async () => {
     const data = Array.from({ length: 11 }, (_, i) => file(`data/d${i}.json`, '[]'));
     const refusal = refused(await planImport(pick([...many(10), ...data])));
-    expect(refusal.message).toMatch(/^A workspace holds at most 20 files, and this project has 21\./);
+    expect(refusal.message).toMatch(/^A workspace can hold at most 20 files, and this project has 21\./);
   });
 
   it('past 50 MB refuses the whole import, counted before any file is read; what is left out does not count', async () => {
@@ -386,7 +386,7 @@ describe('more than 20 files, or 50 MB, adds nothing', () => {
       Array.from({ length: n }, (_, i) => file(`data/d${i}.json`, '[]', 5 * MB - 1));
     const refusal = refused(await planImport(pick([file('main.pathogen', 'M 0 0;'), ...data(11)])));
     expect(refusal.message).toBe(
-      'A workspace holds at most 50 MB, and this project’s files are 55 MB. Nothing was added. To bring part of it in, import a folder holding less.',
+      'A workspace can hold at most 50 MB, and this project’s files are 55 MB. Nothing was added. To bring part of it in, import a folder holding less.',
     );
     expect(refusal.what).toBe('12 files in 1 folder');
     // Nine, and a 60 MB file left out: 45 MB comes in.
