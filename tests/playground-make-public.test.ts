@@ -12,14 +12,15 @@
 
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { updateSpy, getSpy, compileSpy } = vi.hoisted(() => ({
+const { updateSpy, getSpy, compileSpy, fileTextSpy } = vi.hoisted(() => ({
   updateSpy: vi.fn(),
   getSpy: vi.fn(),
   compileSpy: vi.fn(),
+  fileTextSpy: vi.fn(),
 }));
 vi.mock('../playground/services/api.js', async (importOriginal) => ({
   ...(await importOriginal<Record<string, unknown>>()),
-  workspaceApi: { update: updateSpy, get: getSpy },
+  workspaceApi: { update: updateSpy, get: getSpy, fileText: fileTextSpy },
 }));
 vi.mock('../playground/services/compiler-worker.js', async (importOriginal) => ({
   ...(await importOriginal<Record<string, unknown>>()),
@@ -373,5 +374,59 @@ describe('the Workspaces page', () => {
     );
     expect(updateSpy).toHaveBeenCalledWith('gears', { isPublic: true });
     expect([publish('gears').textContent, publish('gears').disabled]).toEqual(['Pending Review', true]);
+  });
+
+  it('a data file the load left deferred (phase 3a) is read by its hash, and the check compiles with it', async () => {
+    const { el } = await mount();
+    const MAIN_DATA = 'import g from "./data/gears.json";\ncircle(0, 0, g.r);\n';
+    getSpy.mockResolvedValueOnce({
+      files: {
+        'main.pathogen': { sha256: 'm', text: MAIN_DATA },
+        'data/gears.json': { sha256: 'g1', size: 10, deferred: true },
+      },
+      folders: ['data'],
+      entryPoints: ['main.pathogen'],
+    });
+    fileTextSpy.mockResolvedValueOnce('{ "r": 4 }');
+    updateSpy.mockResolvedValueOnce({ isPublic: false, publicationState: 'pending' });
+    compileSpy.mockClear();
+    await el.handleMenuAction('toggle-publish', 'gears');
+    expect(fileTextSpy).toHaveBeenCalledWith('gears', 'g1');
+    expect((compileSpy.mock.calls[0][3] as { workspace: { files: Map<string, string> } }).workspace.files).toEqual(
+      new Map([
+        ['main.pathogen', MAIN_DATA],
+        ['data/gears.json', '{ "r": 4 }'],
+      ]),
+    );
+    expect(updateSpy).toHaveBeenCalledWith('gears', { isPublic: true });
+  });
+
+  it('a deferred data file that can’t be read: said, naming it, and nothing is submitted', async () => {
+    const { el } = await mount();
+    getSpy.mockResolvedValueOnce({
+      files: {
+        'main.pathogen': { sha256: 'm', text: 'import g from "./data/gears.json";\n' },
+        'data/gears.json': { sha256: 'g1', size: 10, deferred: true },
+      },
+      folders: ['data'],
+      entryPoints: ['main.pathogen'],
+    });
+    fileTextSpy.mockRejectedValueOnce(new Error('File not found'));
+    updateSpy.mockClear();
+    const alerts: string[] = [];
+    const alertSpy = vi.spyOn(window, 'alert').mockImplementation((message?: unknown) => {
+      alerts.push(String(message));
+    });
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    try {
+      await el.handleMenuAction('toggle-publish', 'gears');
+      expect(alerts).toEqual([
+        "Failed to update visibility: Couldn't read data/gears.json (File not found). Reload the page to try again.",
+      ]);
+      expect(updateSpy).not.toHaveBeenCalled();
+    } finally {
+      alertSpy.mockRestore();
+      errorSpy.mockRestore();
+    }
   });
 });

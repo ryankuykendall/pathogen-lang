@@ -11,7 +11,7 @@ import {
   toastPublishBlocked,
   toastPublishSuccess,
 } from '../../services/publish-precheck.js';
-import { workspaceFromAnswer } from '../../services/workspace-files.js';
+import { withDeferredTexts, workspaceFromAnswer } from '../../services/workspace-files.js';
 import { store } from '../../state/store.js';
 import { materialIcon } from '../../utils/material-icons.js';
 import { buildWorkspaceSlugId, navigateTo } from '../../utils/router.js';
@@ -249,7 +249,12 @@ class LandingView extends HTMLElement {
           // of any edit left behind in the editor, which is what's submitted.
           if (newIsPublic) {
             await autosave.awaitPendingFlush();
-            const full = (await workspaceApi.get(id)) as Parameters<typeof workspaceFromAnswer>[0];
+            // A data file past the 2 MB of data a load carries is read by its hash (phase 3a):
+            // without it, the main's import of it would fail the check.
+            const full = await withDeferredTexts(
+              (await workspaceApi.get(id)) as Parameters<typeof workspaceFromAnswer>[0],
+              async (sha256) => workspaceApi.fileText(id, sha256),
+            );
             const files = workspaceFromAnswer(full);
             const precheck = await precheckWorkspace(
               {

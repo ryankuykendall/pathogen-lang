@@ -418,6 +418,13 @@ export const snapshotApi = {
     return response.json() as Promise<SnapshotFiles>;
   },
 
+  /** One of the snapshot's files by its hash: a data file /files sent `deferred` (phase 3a). */
+  async fileText(id: string, sha256: string): Promise<string> {
+    const response = await snapshotFetch(`${API_BASE}/snapshot/${id}/file/${sha256}`, { method: 'GET' });
+    if (!response.ok) throw await snapshotError(response, 'Could not read the file');
+    return response.text();
+  },
+
   /** Fetch one stored file with the session cookie. */
   async file(id: string, kind: SnapshotFileKind): Promise<Blob> {
     const response = await snapshotFetch(`${API_BASE}/snapshot/${id}/${kind}`, { method: 'GET' });

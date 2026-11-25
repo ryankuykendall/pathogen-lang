@@ -23,8 +23,9 @@ import '../shared/snapshot-filmstrip.js';
 import type { FilmstripSort, SnapshotFilmstrip } from '../shared/snapshot-filmstrip.js';
 import type { MiniWorkspace } from '../blog/mini-workspace.js';
 import { snapshotApi, workspaceApi } from '../../services/api.js';
-import type { SnapshotRecord } from '../../services/api.js';
+import type { SnapshotFiles, SnapshotRecord } from '../../services/api.js';
 import { store } from '../../state/store.js';
+import { readDeferredFiles } from '../../utils/deferred-files.js';
 import { formatBytes } from '../../utils/format-bytes.js';
 import { escapeHtml } from '../../utils/html-escape.js';
 import { buildWorkspaceSlugId, navigateTo, parseWorkspaceSlugId } from '../../utils/router.js';
@@ -358,9 +359,17 @@ export class WorkspaceSnapshotsView extends HTMLElement {
     const cached = this._files.get(id);
     if (cached) return cached;
     const lib = engine();
-    const files = snapshotViewerFiles(await snapshotApi.files(id), lib);
-    // Read before the engine loaded, every file passes for a program: read them again next time.
-    if (lib) this._files.set(id, files);
+    const answer = await snapshotApi.files(id);
+    // A data file past the 2 MB of data the answer carries, read by its hash (phase 3a);
+    // one that can't be read says so in its place, and the others show.
+    const { files: read, failed } = await readDeferredFiles(answer.files, async (sha256) =>
+      snapshotApi.fileText(id, sha256),
+    );
+    // Each file read keeps its hash and size; one that failed is `unreadable`, as the type has it.
+    const files = snapshotViewerFiles({ ...answer, files: read as SnapshotFiles['files'] }, lib);
+    // Read before the engine loaded, every file passes for a program; a file that couldn't
+    // be read may read next time: read them again then.
+    if (lib && failed.size === 0) this._files.set(id, files);
     return files;
   }
 
