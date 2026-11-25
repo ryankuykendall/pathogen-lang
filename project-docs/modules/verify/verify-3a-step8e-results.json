@@ -1,0 +1,54 @@
+{
+  "ran": "2026-11-25T04:07:29.333Z",
+  "failures": 0,
+  "results": [
+    {
+      "check": "the original holds its four files",
+      "ok": true
+    },
+    {
+      "check": "Download workspace saves the .zip",
+      "ok": true
+    },
+    {
+      "check": "the .zip holds every file whole, the empty folder and pathogen.json",
+      "ok": true
+    },
+    {
+      "check": "the CLI compiles the unzipped folder, reading its data files (both circles)",
+      "ok": true
+    },
+    {
+      "check": "the .zip imported: the same files",
+      "ok": true
+    },
+    {
+      "check": "Copy Workspace: the same files",
+      "ok": true
+    },
+    {
+      "check": "a snapshot is saved",
+      "ok": true
+    },
+    {
+      "check": "Start new workspace from the snapshot: the same files",
+      "ok": true
+    },
+    {
+      "check": "Upload files…: the data files arrive whole",
+      "ok": true
+    },
+    {
+      "check": "approved through the admin route",
+      "ok": true
+    },
+    {
+      "check": "Open as new workspace: the same files",
+      "ok": true
+    },
+    {
+      "check": "no page errors",
+      "ok": true
+    }
+  ]
+}
