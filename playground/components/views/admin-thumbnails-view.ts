@@ -5,7 +5,8 @@ import { thumbnailApi, workspaceApi } from '../../services/api.js';
 import compilerWorker from '../../services/compiler-worker.js';
 import thumbnailService from '../../services/thumbnail-service.js';
 import { store } from '../../state/store.js';
-import { reviewCompileInput, sourceFromAnswer, unreadableFiles } from '../../utils/review-entry.js';
+import { fetchReader } from '../../utils/deferred-files.js';
+import { reviewCompileInput, sourceFromAnswer, unreadableFiles, withFilesRead } from '../../utils/review-entry.js';
 import { buildWorkspaceSlugId, navigateTo } from '../../utils/router.js';
 import styles from './admin-thumbnails-view.css';
 
@@ -116,7 +117,16 @@ class AdminThumbnailsView extends HTMLElement {
 
     try {
       // Fetch workspace data (admin token bypasses ownership check)
-      const workspace = (await workspaceApi.get(workspaceId, { adminToken: this._token! })) as AdminWorkspace;
+      const loaded = (await workspaceApi.get(workspaceId, { adminToken: this._token! })) as AdminWorkspace;
+      // Its deferred data files (phase 3a), read by hash with the admin token.
+      const token = encodeURIComponent(this._token!);
+      const workspace = await withFilesRead(
+        loaded,
+        fetchReader(
+          (sha256) => `${API_BASE}/workspace/${encodeURIComponent(workspaceId)}/file/${sha256}?token=${token}`,
+          { credentials: 'include' },
+        ),
+      );
 
       // Compile the main to get path data, with its imports (2e step 5f): a workspace of
       // several files draws as it does in the editor. A file that can't be read fails it;

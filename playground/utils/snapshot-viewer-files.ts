@@ -52,7 +52,7 @@ export function snapshotViewerFiles(files: SnapshotFiles, engine: SnapshotFilesE
   // place and says so in the viewer; the others show as saved. Its kind can't be
   // known, so it's drawn with the viewer's warning, not a kind's icon.
   const pathogen: SourceFile[] = Object.entries(files.files).map(([path, file]) =>
-    'text' in file && file.unreadable !== true
+    typeof file.text === 'string'
       ? { path, text: file.text, kind: kindOf(file.text, engine) }
       : { path, text: '', kind: 'program', unreadable: true },
   );

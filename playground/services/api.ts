@@ -307,11 +307,16 @@ export type SnapshotFileKind = 'svg' | 'code' | 'card';
 
 /** GET /snapshot/:sid/files (website/api/snapshots.ts getFiles). */
 export interface SnapshotFiles {
-  /** Each file with its text, or marked `unreadable` when its bytes couldn't be read (2e step 5d). */
+  /**
+   * Each file with its text, or marked `unreadable` when its bytes couldn't be read
+   * (2e step 5d), or `deferred`: a data file past the 2 MB of data an answer carries,
+   * read by its hash (phase 3a; utils/deferred-files.ts).
+   */
   files: Record<
     string,
-    | { sha256: string; size: number; text: string; unreadable?: undefined }
-    | { sha256: string; size: number; unreadable: true }
+    | { sha256: string; size: number; text: string; unreadable?: undefined; deferred?: undefined }
+    | { sha256: string; size: number; text?: undefined; unreadable: true; deferred?: undefined }
+    | { sha256: string; size: number; text?: undefined; unreadable?: undefined; deferred: true }
   >;
   folders: string[];
   entryPoints: string[];

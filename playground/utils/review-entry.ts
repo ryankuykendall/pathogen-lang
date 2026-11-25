@@ -6,13 +6,36 @@
 // - A file that can't be read (2e step 5d) keeps Approve off: nobody has seen it.
 // - A re-review's changes become the card's line, the modal's box and the viewer's marks.
 
+import { readDeferredFiles } from './deferred-files.js';
+
 import type { SourceFileMarks } from '../components/shared/source-files.js';
 import type { WorkspaceCompileInput } from '../services/compiler-worker.js';
 
-/** One file of an entry: its text, or marked unreadable. */
+/**
+ * One file of an entry: its text, marked unreadable, or `deferred` (phase 3a):
+ * a data file past the 2 MB of data an answer carries, which the admin reads
+ * by its hash (withFilesRead) before anything is shown or compiled.
+ */
 export type ReviewFile =
-  | { sha256: string; size: number; text: string; unreadable?: undefined }
-  | { sha256: string; size: number; text?: undefined; unreadable: true };
+  | { sha256: string; size: number; text: string; unreadable?: undefined; deferred?: undefined }
+  | { sha256: string; size: number; text?: undefined; unreadable: true; deferred?: undefined }
+  | { sha256: string; size: number; text?: undefined; unreadable?: undefined; deferred: true };
+
+/**
+ * The answer with its deferred files read by `read` (for an admin, GET
+ * /workspace/:id/file/:sha256, which serves any file the workspace ever
+ * named). One that couldn't be read is marked unreadable, as a lost file is:
+ * the screens say so, and Approve stays off.
+ */
+export async function withFilesRead<T extends { files?: Record<string, ReviewFile> }>(
+  answer: T,
+  read: (sha256: string) => Promise<string>,
+): Promise<T> {
+  if (!answer.files) return answer;
+  const { files } = await readDeferredFiles(answer.files, read);
+  // Each file read keeps its hash and size, as ReviewFile has them.
+  return { ...answer, files: files as Record<string, ReviewFile> };
+}
 
 /** website/api/review-changes.ts's ReviewChanges, as the answer carries it. */
 export interface ReviewChanges {
@@ -127,17 +150,21 @@ export function reviewMain(source: Pick<ReviewSource, 'files' | 'entryPoints'>):
   return source.entryPoints.find((path) => Object.hasOwn(source.files, path)) ?? null;
 }
 
-/** The files that couldn't be read, in path order. */
+/**
+ * The files that couldn't be read, in path order. A deferred file not read yet
+ * counts: nobody has seen it, so it mustn't be approved.
+ */
 export function unreadableFiles(source: Pick<ReviewSource, 'files'>): string[] {
   return Object.entries(source.files)
-    .filter(([, file]) => file.unreadable === true)
+    .filter(([, file]) => typeof file.text !== 'string')
     .map(([path]) => path)
     .sort();
 }
 
 /**
  * What compiles the entry's drawing: the main's text and the workspace it imports
- * from, as the preview compiles it. Null with no main, or with any file unread.
+ * from, as the preview compiles it. Null with no main, or with any file whose text
+ * isn't here (unread, or deferred and not read: never compiled as empty).
  */
 export function reviewCompileInput(
   source: Pick<ReviewSource, 'files' | 'folders' | 'entryPoints' | 'name'>,

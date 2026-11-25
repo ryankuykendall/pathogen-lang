@@ -51,7 +51,13 @@ import { existsSync } from 'fs';
 import { join, resolve, extname, normalize, sep } from 'path';
 import puppeteer, { type Browser, type Page } from 'puppeteer';
 
-import { reviewCompileInput, sourceFromAnswer, unreadableFiles } from '../playground/utils/review-entry.js';
+import { fetchReader } from '../playground/utils/deferred-files.js';
+import {
+  reviewCompileInput,
+  sourceFromAnswer,
+  unreadableFiles,
+  withFilesRead,
+} from '../playground/utils/review-entry.js';
 
 import type { FilesAnswer } from '../playground/utils/review-entry.js';
 
@@ -239,8 +245,10 @@ program
           // The approval's files with their text (one with only `code`, from
           // before phase 2, reads as main.pathogen); its main is compiled with
           // its imports. A file that can't be read leaves it untouched.
-          const approval = await fetchJson<FilesAnswer>(
-            authed(`/admin/approval/${encodeURIComponent(entry.workspaceId)}`),
+          // Its deferred data files (phase 3a), read by hash as an admin.
+          const approval = await withFilesRead(
+            await fetchJson<FilesAnswer>(authed(`/admin/approval/${encodeURIComponent(entry.workspaceId)}`)),
+            fetchReader((sha256) => authed(`/workspace/${encodeURIComponent(entry.workspaceId)}/file/${sha256}`)),
           );
           const source = sourceFromAnswer(entry.workspaceId, entry.name, approval);
           const lost = unreadableFiles(source);

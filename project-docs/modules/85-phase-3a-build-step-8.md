@@ -22,3 +22,20 @@ The user, after the first push (note 84): "Let's push what we have then move ont
 **Review** (code-reviewer): approve, nothing serious. Taken: a comment on the kind fallback in `tooLargeReason`, a two-byte 50 MB test, and a comment that a file found not to be text only when read has counted toward the import's limits (the docs' "not counting what's left out" is about what's left out before reading; a binary `.json` that tips a project over is the rare case). Not taken: `pathogen.json`'s own "isn't text" message, which `textOf`'s wording doesn't reach.
 
 **Left for the rest of step 8**: note 83's rows for the source readers (Open as new workspace reading deferred files by hash first, View source, the review screen, the admin views), snapshots, Make public's check, and the round trip.
+
+## 8b: the admin side reads deferred files (2026-11-24)
+
+The order of the rest of step 8, from the advisor: what's broken in production first. The review screen was: `reviewCompileInput` read a deferred file as `''`, so a submission whose drawing needs a data file past the answer's 2 MB would be approved with a wrong drawing, or none.
+
+**What changed**
+- **New: `utils/deferred-files.ts`**, DOM-free (the backfill script imports it): `readDeferredFiles` reads each deferred file by its hash, once a hash, four at a time; one that can't be read is marked `unreadable`, and `failed` says why. `isDeferred`, `fetchReader` (the server's `error`, never the URL, in a thrown message).
+- `utils/review-entry.ts`: `ReviewFile` has a `deferred` variant; `withFilesRead(answer, read)`; `unreadableFiles` and `reviewCompileInput` count any file without its text as unread, so a deferred file is never compiled as empty and Approve stays off.
+- The admin readers, each through `GET /workspace/:id/file/:sha256` (an admin reads any file the workspace ever named): the review screen's source, the Approved modal, Regenerate and Set thumbnail (`admin-moderation-view.ts`, the session cookie); the thumbnail tool (`admin-thumbnails-view.ts`, the token); `scripts/backfill-approval-svgs.ts` (the token).
+- `services/workspace-files.ts`: the owner's `withDeferredTexts` is built on the same reader. Its message is the same; it now names the first failing path in path order, after every read has finished (before: the first to fail, at once).
+- `SnapshotFiles`' type has the `deferred` variant; the snapshot viewer shows such a file as unreadable until 8c reads it (it showed it as unreadable before too, by a looser test).
+
+**Checks**
+- Tests: `playground-deferred-files.test.ts` (once a hash, failures marked with why, four at once, `isDeferred`, `fetchReader`), a deferred case in `playground-review-entry.test.ts` (never compiled as empty; read, it compiles; a failed read keeps it off).
+- `verify-3a-step8b.ts`, 5/5 on the dev stack as the seed admin: a workspace whose main draws from `data/a.json` (1.5 MB) and `data/b.json` (1 MB, so deferred, as the review source confirms); the card draws both circles with Approve on; Approve's SVG has both; the backfill script regenerates it reading `b.json` by hash.
+
+**Review** (code-reviewer): approve, nothing serious; every admin path covered; the token never reaches a message. Noted, not changed: the owner's load now reports a lost file after the other reads finish; a record with a file carrying neither text nor a mark (none since 2e step 5d) now keeps Approve off rather than compiling it as empty.

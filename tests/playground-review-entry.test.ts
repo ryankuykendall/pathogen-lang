@@ -17,6 +17,7 @@ import {
   sourceFromAnswer,
   sourceFromListing,
   unreadableFiles,
+  withFilesRead,
 } from '../playground/utils/review-entry.ts';
 import { reviewViewerFiles } from '../playground/utils/review-viewer-files.ts';
 
@@ -83,6 +84,30 @@ describe('an entry’s source', () => {
     };
     expect([unreadableFiles(lost), reviewCompileInput(lost)]).toEqual([['parts/gears.pathogen'], null]);
     expect(reviewCompileInput({ ...SOURCE, entryPoints: [] })).toBeNull();
+  });
+
+  it('a deferred data file (phase 3a): never compiled as empty; read by its hash, it compiles with the rest', async () => {
+    const GEARS_JSON = '[{ "r": 4 }]';
+    const deferred = {
+      ...SOURCE,
+      files: { ...SOURCE.files, 'data/gears.json': { sha256: 'd1', size: 12, deferred: true as const } },
+    };
+    // Not read yet: counted with the files nobody has seen, and nothing to compile.
+    expect([unreadableFiles(deferred), reviewCompileInput(deferred)]).toEqual([['data/gears.json'], null]);
+    const asked: string[] = [];
+    const read = await withFilesRead(deferred, async (sha256) => {
+      asked.push(sha256);
+      return GEARS_JSON;
+    });
+    expect(asked).toEqual(['d1']);
+    expect(read.files['data/gears.json']).toEqual({ sha256: 'd1', size: 12, text: GEARS_JSON });
+    expect(reviewCompileInput(read)!.workspace.files.get('data/gears.json')).toBe(GEARS_JSON);
+    // A read that fails: marked unreadable, so the screens say so and Approve stays off.
+    const failed = await withFilesRead(deferred, async () => {
+      throw new Error('File not found');
+    });
+    expect(failed.files['data/gears.json']).toEqual({ sha256: 'd1', size: 12, unreadable: true });
+    expect(reviewCompileInput(failed)).toBeNull();
   });
 
   it('the viewer’s files: each file’s kind, pathogen.json last, opening on the program compiled, with the marks', () => {

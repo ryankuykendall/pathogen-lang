@@ -1,0 +1,26 @@
+{
+  "ran": "2026-11-25T02:47:54.960Z",
+  "failures": 0,
+  "results": [
+    {
+      "check": "the setup: the review source carries a.json and leaves b.json deferred",
+      "ok": true
+    },
+    {
+      "check": "the card draws both circles, the one from the deferred b.json among them, and Approve is on",
+      "ok": true
+    },
+    {
+      "check": "Approve approves it with its drawing, both circles in the approved SVG",
+      "ok": true
+    },
+    {
+      "check": "the backfill script regenerates it from every file, b.json read by hash",
+      "ok": true
+    },
+    {
+      "check": "no page errors",
+      "ok": true
+    }
+  ]
+}

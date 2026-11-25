@@ -39,7 +39,9 @@ import {
   sourceFromAnswer,
   sourceFromListing,
   unreadableFiles,
+  withFilesRead,
 } from '../../utils/review-entry.js';
+import { fetchReader } from '../../utils/deferred-files.js';
 import { reviewViewerFiles } from '../../utils/review-viewer-files.js';
 import { dimensionsOrDefault } from '../../utils/source-dimensions.js';
 import { computeOriginNormalization } from '../../utils/svg-origin.js';
@@ -65,6 +67,16 @@ const API_BASE = __PATHOGEN_API_BASE__;
 interface ApprovalAnswer extends FilesAnswer {
   error?: string;
 }
+
+/**
+ * An admin's reader of a workspace's files by hash: a data file an answer
+ * left deferred (phase 3a). The route serves an admin any file the workspace
+ * ever named, a submission's or an approval's.
+ */
+const adminFileReader = (workspaceId: string): ((sha256: string) => Promise<string>) =>
+  fetchReader((sha256) => `${API_BASE}/workspace/${encodeURIComponent(workspaceId)}/file/${sha256}`, {
+    credentials: 'include',
+  });
 
 /** The engine's calls the viewer's files need, once the library has loaded. */
 function engine(): SnapshotFilesEngine | null {
@@ -104,7 +116,8 @@ const MARK_WORD = { new: 'new', changed: 'changed', moved: 'moved', removed: 're
 
 /** The first file of an approval whose bytes couldn't be read (2e step 5d), if any. */
 function unreadablePath(answer: ApprovalAnswer): string | null {
-  return Object.entries(answer.files ?? {}).find(([, file]) => file.unreadable === true)?.[0] ?? null;
+  // A deferred file not read counts: it's never shown or compiled as empty.
+  return Object.entries(answer.files ?? {}).find(([, file]) => typeof file.text !== 'string')?.[0] ?? null;
 }
 
 // ─── Tab + card data shapes ───────────────────────────────────────────
@@ -507,7 +520,8 @@ class AdminModerationView extends HTMLElement {
       });
       const data = (await res.json()) as ReviewSource & { error?: string };
       if (!res.ok) return { status: 'failed', error: data.error || `HTTP ${res.status}` };
-      return { status: 'ready', source: data };
+      // Its deferred data files, read by hash; one that can't be read keeps Approve off.
+      return { status: 'ready', source: await withFilesRead(data, adminFileReader(workspaceId)) };
     } catch (err) {
       return { status: 'failed', error: (err as Error).message };
     }
@@ -1009,8 +1023,9 @@ class AdminModerationView extends HTMLElement {
       const res = await fetch(`${API_BASE}/admin/approval/${encodeURIComponent(workspaceId)}`, {
         credentials: 'include',
       });
-      const data = (await res.json()) as ApprovalAnswer & { svg?: string };
-      if (!res.ok) throw new Error(data.error || 'Failed to load approval');
+      const answer = (await res.json()) as ApprovalAnswer & { svg?: string };
+      if (!res.ok) throw new Error(answer.error || 'Failed to load approval');
+      const data = await withFilesRead(answer, adminFileReader(workspaceId));
       if (this._modal !== modal) return;
       // A file whose bytes are lost (2e step 5d) is said, never shown empty.
       const lost = unreadablePath(data);
@@ -1070,8 +1085,9 @@ class AdminModerationView extends HTMLElement {
     const res = await fetch(`${API_BASE}/admin/approval/${encodeURIComponent(workspaceId)}`, {
       credentials: 'include',
     });
-    const data = (await res.json()) as ApprovalAnswer;
-    if (!res.ok) throw new Error(data.error || 'Failed to load approval');
+    const answer = (await res.json()) as ApprovalAnswer;
+    if (!res.ok) throw new Error(answer.error || 'Failed to load approval');
+    const data = await withFilesRead(answer, adminFileReader(workspaceId));
     const lost = unreadablePath(data);
     if (lost) throw new Error(`${lost} couldn't be read, so it can't be compiled.`);
     // The main, compiled with its imports (2e step 5e): what the public page draws.

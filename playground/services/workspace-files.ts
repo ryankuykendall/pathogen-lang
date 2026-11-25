@@ -6,6 +6,7 @@
 // open file's entry in `workspaceFiles` lagging behind `code` never matters.
 
 import { store } from '../state/store.js';
+import { isDeferred, readDeferredFiles } from '../utils/deferred-files.js';
 import { MAIN_FILE, PROJECT_FILE } from '../utils/workspace-names.js';
 
 export { MAIN_FILE };
@@ -69,47 +70,22 @@ export interface AnsweredFile {
   deferred?: boolean;
 }
 
-/** At most this many deferred files are read at once. */
-const DEFERRED_READS = 4;
-
 /**
  * The load's answer with each deferred file's text, read by its hash with
- * `read` (GET /workspace/:id/file/:sha256), a few at a time. The same text at
- * two paths is read once. A file that can't be read fails the load, naming
- * it: a workspace opened without it would drop it at the next save.
+ * `read` (GET /workspace/:id/file/:sha256), a few at a time
+ * (utils/deferred-files.ts). The same text at two paths is read once. A file
+ * that can't be read fails the load, naming it: a workspace opened without it
+ * would drop it at the next save.
  */
 export async function withDeferredTexts(
   answer: WorkspaceAnswer,
   read: (sha256: string) => Promise<string>,
 ): Promise<WorkspaceAnswer> {
-  if (!answer.files) return answer;
-  const deferred = Object.entries(answer.files).filter(
-    ([, file]) => file.deferred === true && typeof file.text !== 'string' && typeof file.sha256 === 'string',
-  );
-  if (deferred.length === 0) return answer;
-  const pathOf = new Map<string, string>();
-  for (const [path, file] of deferred) if (!pathOf.has(file.sha256!)) pathOf.set(file.sha256!, path);
-  const queue = [...pathOf.keys()];
-  const texts = new Map<string, string>();
-  const reader = async (): Promise<void> => {
-    for (let sha256 = queue.shift(); sha256 !== undefined; sha256 = queue.shift()) {
-      try {
-        texts.set(sha256, await read(sha256));
-      } catch (err) {
-        // A new error, without the request's status: a 404 here is a lost
-        // file, not a missing workspace.
-        throw new Error(
-          `Couldn't read ${pathOf.get(sha256)} (${(err as Error).message}). Reload the page to try again.`,
-        );
-      }
-    }
-  };
-  await Promise.all(Array.from({ length: Math.min(DEFERRED_READS, queue.length) }, reader));
-  const files: Record<string, AnsweredFile> = {};
-  for (const [path, file] of Object.entries(answer.files)) {
-    const text = file.deferred === true && file.sha256 !== undefined ? texts.get(file.sha256) : undefined;
-    files[path] = text === undefined ? file : { sha256: file.sha256, size: file.size, text };
-  }
+  if (!answer.files || !Object.values(answer.files).some(isDeferred)) return answer;
+  const { files, failed } = await readDeferredFiles(answer.files, read);
+  const [lost] = [...failed].sort(([a], [b]) => (a < b ? -1 : 1));
+  // A new error, without the request's status: a 404 here is a lost file, not a missing workspace.
+  if (lost) throw new Error(`Couldn't read ${lost[0]} (${lost[1]}). Reload the page to try again.`);
   return { ...answer, files };
 }
 
