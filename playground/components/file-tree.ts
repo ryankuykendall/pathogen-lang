@@ -15,6 +15,8 @@
 //                   focusEditor }        accepted: Enter (focusEditor), or
 //                                        leaving the field (the keyboard stays
 //                                        where you went)
+//   new-data-file { folder }             New data file… chosen (phase 3a):
+//                                        workspace-view asks in its dialog
 //   file-action   { action, path }       a row's own menu (step 4c): set-main,
 //                                        duplicate or delete; workspace-view
 //                                        asks before a delete
@@ -104,6 +106,7 @@ const MOVE_TYPE = 'application/x-pathogen-path';
 export type MenuAction =
   | 'new-program'
   | 'new-library'
+  | 'new-data'
   | 'new-folder'
   | 'upload-files'
   | 'upload-folder'
@@ -150,6 +153,8 @@ function addItems(): MenuEntry[] {
   return [
     { action: 'new-program', label: 'New program', detail: 'A file that draws', icon: FILE_ICONS.program },
     { action: 'new-library', label: 'New module', icon: FILE_ICONS.library },
+    // Phase 3a (mockups v2 2a): the ellipsis says it asks in a dialog, as Upload files… does.
+    { action: 'new-data', label: 'New data file…', icon: FILE_ICONS.data },
     { action: 'new-folder', label: 'New folder', icon: FILE_ICONS.folderPlus },
     'divider',
     // Files are dropped on the tree only where rows can be dragged (step 9b).
@@ -1098,6 +1103,12 @@ export class FileTree extends HTMLElement {
     if (action === 'move-here' && path !== null) {
       this._closeMenu(false);
       this._moveEntry(path, item?.dataset.folder ?? '');
+      return;
+    }
+    if (action === 'new-data') {
+      // workspace-view asks in its dialog, for the folder the menu adds to.
+      this._closeMenu(false);
+      this._emit('new-data-file', { folder: target });
       return;
     }
     if (action === 'upload-files' || action === 'upload-folder') {

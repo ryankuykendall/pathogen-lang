@@ -71,6 +71,7 @@ import type { ProgramChipElement as ProgramChip } from '../../dist/pan-zoom';
 import { MAIN_BADGE_TITLE } from '../utils/file-icons.js';
 import { applyToWorkspace, workspaceState } from '../services/workspace-apply.js';
 import {
+  dataFileNameParts,
   deleteSummary,
   isFolder,
   keepBothName,
@@ -80,6 +81,7 @@ import {
   planDelete,
   planDuplicate,
   planMove,
+  planNewDataFile,
   planNewFile,
   planNewFolder,
   planRename,
@@ -91,6 +93,8 @@ import {
 import type { Change, Planned, UploadEntry } from '../services/workspace-edits.js';
 import './shared/confirm-dialog.js';
 import type { ConfirmDialog } from './shared/confirm-dialog.js';
+import './shared/new-data-file-dialog.js';
+import type { NewDataFileDialog } from './shared/new-data-file-dialog.js';
 import { deleteQuestion } from '../utils/delete-question.js';
 import type { NewEntryKind } from '../utils/file-tree-rows.js';
 import { parseWorkspaceSlugId } from '../utils/router.js';
@@ -151,7 +155,7 @@ export class WorkspaceView extends HTMLElement {
   private _canvasUnsubscribe: (() => void) | null = null;
 
   // A question the workspace asked (Delete…), withdrawn if the view goes while it's open.
-  private _openDialog: ConfirmDialog | null = null;
+  private _openDialog: ConfirmDialog | NewDataFileDialog | null = null;
 
   // Each file's hash for the thumbnail's change check, by its text (_contentHash).
   private _fileHashes = new Map<string, { text: string; hash: string }>();
@@ -1101,6 +1105,13 @@ export class WorkspaceView extends HTMLElement {
         if (made && kind !== 'folder' && isNarrow()) store.set('filesOpen', false);
       } else this._toastError('Couldn’t add it', plan.message ?? 'The workspace changed.');
     });
+    // New data file… (phase 3a, mockups v3): its dialog asks for the name and the
+    // extension, by the same rules; the file starts as {} and opens.
+    this.shadowRoot!.addEventListener('new-data-file', (e: Event) => {
+      this._newDataFile((e as CustomEvent<{ folder: string }>).detail.folder).catch((err: unknown) =>
+        this._toastError('Couldn’t add it', err instanceof Error ? err.message : String(err)),
+      );
+    });
     // Rename… and Move to… (2d, step 4c-2): what a name or a folder would do, by the
     // plans; making it, with Undo in its toast.
     if (tree) {
@@ -1761,6 +1772,43 @@ export class WorkspaceView extends HTMLElement {
     if (!tree) return;
     // The same reading of the main the chip's list takes (_refreshPrograms passes it).
     tree.errors = holdsWorkspace() ? treeErrorDots(rows, mainNow) : new Map();
+  }
+
+  /**
+   * New data file…: the dialog (components/shared/new-data-file-dialog.ts),
+   * checking each name against the workspace as it stands; Create makes the
+   * file and opens it. The keyboard goes back to the tree on Cancel.
+   */
+  private async _newDataFile(folder: string): Promise<void> {
+    const plan = (typed: string, extension: string) => {
+      try {
+        return planNewDataFile(workspaceState(), folder, typed, extension);
+      } catch (err) {
+        return { ok: false as const, message: err instanceof Error ? err.message : String(err) };
+      }
+    };
+    const dialog = document.createElement('new-data-file-dialog');
+    document.body.append(dialog);
+    this._openDialog = dialog;
+    const answer = await dialog.ask({
+      read: (typed) => dataFileNameParts(typed),
+      check: (typed, extension) => {
+        const planned = plan(typed, extension);
+        return planned.ok ? { path: planned.change.open ?? '' } : { problem: planned.message };
+      },
+    });
+    if (this._openDialog === dialog) this._openDialog = null;
+    if (answer === null) {
+      this.fileTree?.focusTabStop();
+      return;
+    }
+    const planned = plan(answer.typed, answer.extension);
+    if (!planned.ok) {
+      this._toastError('Couldn’t add it', planned.message);
+      return;
+    }
+    const made = this._applyWorkspaceChange(planned.change, { focusEditor: true });
+    if (made && isNarrow()) store.set('filesOpen', false);
   }
 
   /** New program, New module or New folder, planned on the workspace as it stands: the change, or why not. */

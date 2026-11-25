@@ -443,25 +443,99 @@ export function planNewFile(
   kind: 'program' | 'library',
 ): Planned {
   const name = stripExtension(typed.trim());
-  // Each name as typed first ("can't be empty"), then the file's whole, .pathogen and all (its length).
-  const problem = typedNameProblem(name) ?? lib().workspaceNameProblem(`${baseOf(name)}${EXTENSION}`);
-  if (problem) return refuse(problem);
-  const path = join(folder, `${name}${EXTENSION}`);
-  // The first name already taken on the way down, a folder or the file.
+  const where = newFilePath(state, folder, name, EXTENSION);
+  if (!where.ok) return refuse(where.message);
+  const path = where.path;
+  const text = kind === 'library' ? NEW_LIBRARY : emptyBoilerplate;
+  const entryPoints = kind === 'program' ? [...state.entryPoints, path] : state.entryPoints;
+  return finish(state, [{ kind: 'add', path, text }], state.folders, entryPoints, { open: path });
+}
+
+/**
+ * Where a new file named `name` (folders and all, without its extension) goes
+ * in `folder`, or why it can't: the name rules, the first name already taken
+ * on the way down (a folder or the file), the workspace's 20 files.
+ */
+function newFilePath(
+  state: WorkspaceState,
+  folder: string,
+  name: string,
+  extension: string,
+): { ok: true; path: string } | { ok: false; message: string } {
+  // Each name as typed first ("can't be empty"), then the file's whole, extension and all (its length).
+  const problem = typedNameProblem(name) ?? lib().workspaceNameProblem(`${baseOf(name)}${extension}`);
+  if (problem) return { ok: false, message: problem };
+  const path = join(folder, `${name}${extension}`);
   const parts = path.split('/');
   for (let i = 1; i <= parts.length; i++) {
     const inFolder = parts.slice(0, i - 1).join('/');
     const taken = takenIn(state, inFolder, parts[i - 1]);
     const isLast = i === parts.length;
     if (taken && (isLast || !isFolder(state, join(inFolder, parts[i - 1])))) {
-      return refuse(`${where(inFolder)} already has ${taken}.`);
+      return { ok: false, message: `${where(inFolder)} already has ${taken}.` };
     }
   }
   const full = checkFileCount(state, 1);
-  if (full) return refuse(full);
-  const text = kind === 'library' ? NEW_LIBRARY : emptyBoilerplate;
-  const entryPoints = kind === 'program' ? [...state.entryPoints, path] : state.entryPoints;
-  return finish(state, [{ kind: 'add', path, text }], state.folders, entryPoints, { open: path });
+  if (full) return { ok: false, message: full };
+  return { ok: true, path };
+}
+
+/** The data extensions, as the engine lists them (`.json`, `.geojson`, `.topojson`, `.fold`). */
+export const dataExtensions = (): readonly string[] => lib().DATA_EXTENSIONS;
+
+/**
+ * New data file…'s field as typed (docs/workspace-files.md "Data files"): the
+ * name, and the extension it gets. A data extension typed at the end
+ * (`trips.geojson`) is the one it gets; any other (`trips.txt`) is `unknown`,
+ * which the dialog refuses; otherwise `chosen`, the dialog's own.
+ */
+export function readDataFileName(
+  typed: string,
+  chosen: string,
+): { name: string; extension: string; unknown: string | null } {
+  const trimmed = typed.trim();
+  const end = /\.([a-z][a-z0-9]*)$/i.exec(trimmed);
+  if (end === null) return { name: trimmed, extension: chosen, unknown: null };
+  const extension = end[0].toLowerCase();
+  if (dataExtensions().includes(extension)) {
+    return { name: trimmed.slice(0, -end[0].length), extension, unknown: null };
+  }
+  return { name: trimmed, extension: chosen, unknown: end[0] };
+}
+
+/** New data file…'s reading of its field: the name, and the data extension typed at its end, if any. */
+export function dataFileNameParts(typed: string): { name: string; extension: string | null } {
+  const read = readDataFileName(typed, '');
+  return { name: read.name, extension: read.extension === '' ? null : read.extension };
+}
+
+/**
+ * Why a typed extension can't make a data file, and how to keep it as part
+ * of the name: `report.final` may be a dotted name, not a wrong extension.
+ */
+export const unknownDataExtension = (extension: string, typed: string): string => {
+  const known = dataExtensions();
+  const name = typed.trim().split('/').pop() ?? typed;
+  return (
+    `A data file ends in ${known.slice(0, -1).join(', ')} or ${known[known.length - 1]}, not ${extension}. ` +
+    `To keep ${extension} in its name, add one: ${name}${known[0]}.`
+  );
+};
+
+/**
+ * New data file… (docs/workspace-files.md "Data files"): `typed` in `folder`,
+ * with `extension` unless the name ends in a data extension of its own. A
+ * slash makes folders, as for a program. It starts as `{}`, isn't a program,
+ * and opens.
+ */
+export function planNewDataFile(state: WorkspaceState, folder: string, typed: string, extension: string): Planned {
+  const read = readDataFileName(typed, extension);
+  if (read.unknown !== null) return refuse(unknownDataExtension(read.unknown, typed));
+  const where = newFilePath(state, folder, read.name, read.extension);
+  if (!where.ok) return refuse(where.message);
+  return finish(state, [{ kind: 'add', path: where.path, text: '{}' }], state.folders, state.entryPoints, {
+    open: where.path,
+  });
 }
 
 /** New folder: kept, empty, until files go in or it's deleted. A slash makes folders inside folders. */

@@ -431,6 +431,7 @@ describe('the row menus', () => {
     expect(labels()).toEqual([
       'New program',
       'New module',
+      'New data file…',
       'New folder',
       '—',
       'Upload files…',
@@ -864,11 +865,24 @@ describe('adding files and folders', () => {
     expect(labels).toEqual([
       ['New program', 'A file that draws'],
       ['New module', ''],
+      // Phase 3a (mockups v2 2a): no small text, as New module has none.
+      ['New data file…', ''],
       ['New folder', ''],
       ['Upload files…', 'Or drop them on the tree'],
       ['Upload folder…', 'Keeps the folders inside it'],
     ]);
     expect(focused()).toBe(items[0]);
+  });
+
+  it('New data file… asks workspace-view, for the folder the menu adds to (phase 3a)', () => {
+    const asked: unknown[] = [];
+    tree.addEventListener('new-data-file', (e) => asked.push((e as Event & { detail: unknown }).detail));
+    plus().click();
+    [...tree.shadowRoot!.querySelectorAll<HTMLElement>('[role="menuitem"]')]
+      .find((i) => i.textContent?.startsWith('New data file…'))!
+      .click();
+    expect(asked).toEqual([{ folder: 'parts' }]);
+    expect(menu()!.hidden).toBe(true);
   });
 
   it('adds to the folder clicked last, to the top, or, once another file opens, to its folder', () => {

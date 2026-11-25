@@ -6,7 +6,8 @@
 // Cancel has the first focus, so a stray Enter never confirms. Every name goes
 // in as text.
 
-const styles = `
+/** The dialog's frame: its title bar, body and buttons. New data file… (new-data-file-dialog.ts) wears it too. */
+export const DIALOG_STYLES = `
   /* Modal, the dialog is in the top layer: above the page, its overlays and the toasts. */
   :host(.inline) { display: block; }
   :host(.inline) dialog { position: static; margin: 0; }
@@ -115,7 +116,7 @@ export class ConfirmDialog extends HTMLElement {
     count += 1;
     const titleId = `confirm-title-${count}`;
     const root = this.shadowRoot!;
-    root.innerHTML = `<style>${styles}</style>
+    root.innerHTML = `<style>${DIALOG_STYLES}</style>
       <dialog aria-labelledby="${titleId}">
         <div class="head"><h2 id="${titleId}"></h2><button type="button" class="close" aria-label="Close">×</button></div>
         <div class="body"><p class="message"></p></div>

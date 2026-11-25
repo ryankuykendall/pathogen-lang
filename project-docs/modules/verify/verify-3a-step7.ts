@@ -299,6 +299,76 @@ try {
       keystroke,
     );
     await setText(page, BIG);
+
+    // 7b. New data file… (mockups v2 2a, v3 2b to 2d), with gears.json open so the + adds to data/.
+    await openFile(page, 'data/gears.json', GEARS);
+    await click(page, TREE, '.add');
+    const plusItems = (await page.evaluate(
+      `[...${TREE}.querySelectorAll('[role="menuitem"] .label')].map((l) => l.textContent)`,
+    )) as string[];
+    check(
+      say('the + menu offers New data file… after New module'),
+      plusItems.indexOf('New data file…') === plusItems.indexOf('New module') + 1,
+      plusItems,
+    );
+    await shot(page, '2a-plus-menu', theme);
+    await click(page, TREE, '[data-action="new-data"]');
+    const DIALOG = `window.__find('new-data-file-dialog').shadowRoot`;
+    await waitFor('the dialog', async () => page.evaluate(`!!window.__find('new-data-file-dialog')`));
+    await page.keyboard.type('trips', { delay: 30 });
+    const dialogView = async (): Promise<{ ext: string; hint: string; create: boolean }> =>
+      (await page.evaluate(`(() => ({
+        ext: ${DIALOG}.querySelector('.ext-button .ext').textContent,
+        hint: ${DIALOG}.querySelector('.hint').textContent,
+        create: !${DIALOG}.querySelector('.confirm').disabled,
+      }))()`)) as { ext: string; hint: string; create: boolean };
+    const typed = await dialogView();
+    check(
+      say('the dialog: trips with .json, "Adds data/trips.json", Create on'),
+      typed.ext === '.json' && typed.hint === 'Adds data/trips.json' && typed.create,
+      typed,
+    );
+    await shot(page, '2b-new-data-dialog', theme);
+    await click(page, DIALOG, '.ext-button');
+    const listed = (await page.evaluate(
+      `[...${DIALOG}.querySelectorAll('[role="option"]')].map((o) => o.textContent)`,
+    )) as string[];
+    check(say('its list: the four extensions, each with what it holds'), listed.length === 4, listed);
+    await shot(page, '2c-extension-list', theme);
+    await page.keyboard.press('Escape');
+    await pause(200);
+    const listClosed = (await page.evaluate(
+      `!!window.__find('new-data-file-dialog') && ${DIALOG}.querySelector('.ext-list').hidden`,
+    )) as boolean;
+    check(say('Esc closes the list, and the dialog stays'), listClosed);
+    await page.evaluate(`(() => {
+      const input = ${DIALOG}.querySelector('input');
+      input.focus();
+      input.value = '';
+      input.dispatchEvent(new Event('input'));
+    })()`);
+    await page.keyboard.type('gears', { delay: 30 });
+    const taken = await dialogView();
+    check(
+      say('a taken name: "data/ already has gears.json.", Create off'),
+      taken.hint === 'data/ already has gears.json.' && !taken.create,
+      taken,
+    );
+    await shot(page, '2d-name-taken', theme);
+    await page.evaluate(`(() => {
+      const input = ${DIALOG}.querySelector('input');
+      input.value = 'trips-${theme}';
+      input.dispatchEvent(new Event('input'));
+    })()`);
+    await page.keyboard.press('Enter');
+    const created = await waitFor('the new file in the editor', async () =>
+      page.evaluate(`(() => {
+        const tab = ${TABS}.querySelector('[data-path="data/trips-${theme}.json"]');
+        return tab && ${PANE}._editor.state.doc.toString() === '{}' ? tab.className : null;
+      })()`),
+    );
+    check(say('Enter makes data/trips.json, starting as {}, open in its tab'), created !== null, created);
+
     await pause(1500);
     check(say('no page errors'), pageErrors.length === 0, pageErrors);
     await page.close();

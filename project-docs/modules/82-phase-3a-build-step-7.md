@@ -34,6 +34,39 @@ Also: a test that only checked for a throw now checks the data state holds none 
 1. **The message shows on hover over the mark** (the mark's `title`). The docs say a mistake is "underlined as you type, with the message the import would give"; the panel says it only when the program shown imports the file, so the mark carries it itself.
 2. **Format Document stays in the menu, greyed, with a reason,** as Export does when nothing draws, rather than leaving the menu.
 
-### Tests
+## 7b: New data file…
+
+The **+** menu and a folder's menu have **New data file…** after New module, with no small text (mockup v2 2a). It opens a dialog (`components/shared/new-data-file-dialog.ts`, mockups v3 2b to 2d):
+- one field, the name with the extension after it as a dropdown, `.json` unless another is chosen; the list says what each holds (its texts are the mockup's, and a test pins that the list is the engine's `DATA_EXTENSIONS`);
+- the line under the field: `Adds data/trips.json`, or why not, and then Create is off: a taken name in the tree's words (`data/ already has gears.json.`), another extension (`A data file ends in .json, .geojson, .topojson or .fold, not .txt.`), the name rules, a full workspace;
+- typing `trips.geojson` chooses `.geojson`; choosing from the list replaces an extension typed;
+- Enter or Create makes the file, starting as `{}`, and opens it; Esc closes the list first, then cancels; Cancel puts the keyboard back in the tree.
+
+The frame is `confirm-dialog`'s: its styles are exported (`DIALOG_STYLES`), not copied. The rules are workspace-edits' (`planNewDataFile`, `readDataFileName`, `dataFileNameParts`), sharing New program's name and taken-name walk (`newFilePath`). The dialog has a storybook entry with the four states.
+
+### In the real playground
+
+`verify-3a-step7.ts`, now 30/30 in both themes: the + menu's order, the dialog's line and Create, its list of four, Esc closing the list but not the dialog, the taken name, and Enter making `data/trips-light.json` (`trips-dark.json`) as `{}` in its own tab. Screenshots `3a-step7/2a-plus-menu-*.png`, `2b-new-data-dialog-*.png`, `2c-extension-list-*.png`, `2d-name-taken-*.png`, beside mockups v2 2a and v3 2b to 2d.
+
+### Code review
+
+No critical findings. Taken:
+1. **A dialog the browser closes itself** (a second Escape, which Chrome won't let a page hold back) would have closed without an answer: no file, the element left behind, the keyboard nowhere. Its `close` now answers "no file" (tested).
+2. **Taken out of the page some other way,** it left its outside-click listener on the document. It now removes it and answers "no file" when it leaves (tested).
+3. **The list could go off a small screen:** it keeps 8 px from the left edge, opens above the button when there's no room below (a phone held sideways, or with its keyboard up), and is never wider than the screen.
+4. **A dotted name** (`report.final`) was refused as a wrong extension with no way out. The message now says how to keep it: `A data file ends in .json, .geojson, .topojson or .fold, not .final. To keep .final in its name, add one: report.final.json.`; typing that makes `report.final.json` (tested, with a folder named `raw.json` and a name ending in a dot, which New program's rules decide alike).
+
+Also: Tab from the open list goes on from the extension button; tests for an outside click, Home and End.
+
+### Decided while building (confirm or overrule)
+
+3. **The message for another extension** is new: `A data file ends in .json, .geojson, .topojson or .fold, not .txt. To keep .txt in its name, add one: trips.txt.json.` (the docs say the dialog says why, but not in which words).
+4. **An empty field** shows no line and Create is off, rather than a placeholder file name.
+
+### Tests (7a)
 
 `tests/playground-editor-data-file.test.ts` (the data state's extensions and keymap; the mistake marked with its message when the file shows and 150 ms after typing, cleared when it reads; a compile's marks and clears and Format Document do nothing on a data file); `tests/playground-open-files.test.ts` (`gears.json` is a `data` tab, `pathogen.json` still `json`); `tests/playground-editor-tabs.test.ts` (the braces, the label, no lock); `tests/playground-file-tree.test.ts` (the row's class and braces, its menu).
+
+### Tests (7b)
+
+`tests/playground-workspace-edits.test.ts` (New data file… makes `{}` and opens it, off the program list; an extension typed; folders; the four refusals; reading a typed name); `tests/playground-new-data-file-dialog.test.ts` (the list is the engine's extensions; the line, Create and Enter; a typed extension chosen, another refused, a taken name; the list's states and a typed extension replaced; the list's keyboard and Esc twice); `tests/playground-file-tree.test.ts` (the menus' order; New data file… asks for its folder).

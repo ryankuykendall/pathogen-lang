@@ -22,11 +22,13 @@ import {
   planDelete,
   planDuplicate,
   planMove,
+  planNewDataFile,
   planNewFile,
   planNewFolder,
   planRename,
   planSetMain,
   projectFileText,
+  readDataFileName,
   renameHint,
   StaleChangeError,
 } from '../playground/services/workspace-edits.js';
@@ -664,6 +666,66 @@ describe('more folders, names and limits', () => {
     const state = gearsWorkspace();
     const { change } = made(state, planDelete(state, 'try-sizes.pathogen'));
     expect(change.message).toBe('Deleted try-sizes.pathogen.');
+  });
+});
+
+describe('New data file… (phase 3a step 7b; docs/workspace-files.md "Data files")', () => {
+  const withData = (): WorkspaceState => {
+    const state = gearsWorkspace();
+    return { ...state, files: { ...state.files, 'data/gears.json': '[]' } };
+  };
+
+  it('makes the file starting as {}, opens it, and leaves the program list alone', () => {
+    const state = withData();
+    const { after, change } = made(state, planNewDataFile(state, 'data', 'trips', '.json'));
+    expect(after.files['data/trips.json']).toBe('{}');
+    expect(after.entryPoints).toEqual(state.entryPoints);
+    expect(change.open).toBe('data/trips.json');
+  });
+
+  it('a data extension typed in the name is the one it gets; a slash makes folders', () => {
+    const state = withData();
+    expect(Object.keys(made(state, planNewDataFile(state, 'data', 'trips.geojson', '.json')).after.files)).toContain(
+      'data/trips.geojson',
+    );
+    expect(Object.keys(made(state, planNewDataFile(state, 'data', 'raw/trips', '.fold')).after.files)).toContain(
+      'data/raw/trips.fold',
+    );
+  });
+
+  it('refuses a taken name in the tree’s words, another extension, a bad name and a full workspace', () => {
+    const state = withData();
+    expect(refusal(planNewDataFile(state, 'data', 'gears', '.json'))).toBe('data/ already has gears.json.');
+    expect(refusal(planNewDataFile(state, 'data', 'trips.txt', '.json'))).toBe(
+      'A data file ends in .json, .geojson, .topojson or .fold, not .txt. To keep .txt in its name, add one: trips.txt.json.',
+    );
+    // A dotted name kept as the message says; a folder whose name has a dot; a dot at the end.
+    const kept = made(state, planNewDataFile(state, 'data', 'report.final.json', '.json')).after;
+    expect(Object.keys(kept.files)).toContain('data/report.final.json');
+    const folder = made(state, planNewDataFile(state, 'data', 'raw.json/trips', '.json')).after;
+    expect(Object.keys(folder.files)).toContain('data/raw.json/trips.json');
+    expect(refusal(planNewDataFile(state, 'data', 'trips.', '.json'))).toBe(
+      refusal(planNewFile(state, 'data', 'trips.', 'program')),
+    );
+    expect(refusal(planNewDataFile(state, 'data', '', '.json'))).toBe(engine.workspaceNameProblem(''));
+    const full: WorkspaceState = {
+      ...state,
+      files: Object.fromEntries(Array.from({ length: 20 }, (_, i) => [`f${i}.pathogen`, 'M 0 0'])),
+      entryPoints: ['f0.pathogen'],
+    };
+    expect(refusal(planNewDataFile(full, '', 'trips', '.json'))).toBe(
+      'A workspace can hold at most 20 files, and this one has 20.',
+    );
+  });
+
+  it('reads a typed name: a data extension at its end, another, or none', () => {
+    expect(readDataFileName(' trips.GeoJSON ', '.json')).toEqual({
+      name: 'trips',
+      extension: '.geojson',
+      unknown: null,
+    });
+    expect(readDataFileName('trips.txt', '.json')).toEqual({ name: 'trips.txt', extension: '.json', unknown: '.txt' });
+    expect(readDataFileName('trips', '.fold')).toEqual({ name: 'trips', extension: '.fold', unknown: null });
   });
 });
 

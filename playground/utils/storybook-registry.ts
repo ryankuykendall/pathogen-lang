@@ -615,6 +615,63 @@ layer('hex').apply { circle(60, 100, 40) }`,
     },
   },
   {
+    id: 'new-data-file-dialog',
+    name: 'New Data File Dialog',
+    category: 'Editor',
+    description:
+      "New data file… (phase 3a; docs/workspace-files.md \"Data files\"; mockups v3 2b to 2d): one field, the name with the extension after it as a dropdown, .json unless another is chosen; what each extension holds shows only in the open list. The line under the field says the file it adds, or why it can't (a taken name, an extension that isn't a data file's, the name rules, a full workspace), and then Create is off. Typing a data extension at the end of the name chooses it. Enter creates; Esc closes the list, then cancels. The frame is Confirm Dialog's. In the playground it is modal; here it is shown in place.",
+    stories: [
+      { name: 'A name typed', props: { name: 'trips' } },
+      { name: 'The extension list', props: { name: 'trips', list: true } },
+      { name: 'A taken name', props: { name: 'gears' } },
+      { name: 'Another extension typed', props: { name: 'trips.txt' } },
+    ],
+    controls: [],
+    notes:
+      "Adding to data/ in a workspace that holds data/gears.json, checked by workspace-edits' own rules (planNewDataFile), as workspace-view checks them. Answering shows the answer; Ask again brings the dialog back.",
+    render: (container, props) => {
+      Promise.all([import('../components/shared/new-data-file-dialog.js'), import('../services/workspace-edits.js')])
+        .then(([, edits]) => {
+          const state = {
+            files: { 'main.pathogen': 'M 0 0', 'data/gears.json': '[]' },
+            folders: [],
+            entryPoints: ['main.pathogen'],
+          };
+          const ask = (): void => {
+            container.innerHTML = '';
+            container.style.minHeight = '360px';
+            const dialog = document.createElement('new-data-file-dialog');
+            container.appendChild(dialog);
+            dialog
+              .ask(
+                {
+                  name: String(props.name ?? ''),
+                  read: (typed) => edits.dataFileNameParts(typed),
+                  check: (typed, extension) => {
+                    const planned = edits.planNewDataFile(state, 'data', typed, extension);
+                    return planned.ok ? { path: planned.change.open ?? '' } : { problem: planned.message };
+                  },
+                },
+                { modal: false, list: props.list === true },
+              )
+              .then((answer) => {
+                const said = document.createElement('p');
+                said.textContent = `Answered: ${answer ? `${answer.typed} with ${answer.extension}` : 'cancelled'}. `;
+                const again = document.createElement('button');
+                again.type = 'button';
+                again.textContent = 'Ask again';
+                again.addEventListener('click', ask);
+                said.append(again);
+                container.appendChild(said);
+              })
+              .catch((err: unknown) => console.error(err));
+          };
+          ask();
+        })
+        .catch((err: unknown) => console.error('New Data File Dialog story failed to load:', err));
+    },
+  },
+  {
     id: 'clash-prompt',
     name: 'Clash Prompt',
     category: 'Editor',
