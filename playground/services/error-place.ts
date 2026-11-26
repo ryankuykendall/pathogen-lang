@@ -43,6 +43,8 @@ export interface ErrorReading {
 /** A diagnostic, as getDiagnostics gives it (0-based positions; `alsoIn.file` a project path). */
 export interface DiagnosticLike {
   range: { start: { line: number; character: number } };
+  /** 1 an error, 2 a warning (LSP's numbers); left out, an error. */
+  severity?: number;
   message: string;
   alsoIn?: { file: string; range: { start: { line: number; character: number } }; message: string };
 }
@@ -161,10 +163,11 @@ export function readMessage(message: string, program: string): ErrorReading[] {
  * Read getDiagnostics' errors for `program`. An error a call caused in another
  * file says where (`alsoIn`); one in another file's own code names that file
  * in its first line. Either way the diagnostic's own place is where the
- * program reaches it.
+ * program reaches it. A warning isn't read: it's an underline in the editor,
+ * never one of the panel's errors (a data key no item has, phase 3a).
  */
 export function readDiagnostics(diagnostics: readonly DiagnosticLike[], program: string): ErrorReading[] {
-  return diagnostics.map((d) => {
+  return diagnostics.filter((d) => d.severity === undefined || d.severity === 1).map((d) => {
     const at = { line: d.range.start.line + 1, column: d.range.start.character + 1 };
     if (d.alsoIn) {
       const [first, ...rest] = d.alsoIn.message.split('\n');

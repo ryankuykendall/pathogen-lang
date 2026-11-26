@@ -67,6 +67,56 @@ describe('a JSON mistake in a data file (phase 3a step 6)', () => {
   });
 });
 
+describe('a failure reads errors only, never a warning (phase 3a step 9)', () => {
+  // The data-key check (docs/data-import.md "In the editor") is a warning, an
+  // underline. On a failed compile the panel read every diagnostic, so it
+  // listed the warning as one of the errors (found by verify-3a-step9-surfaces).
+  it("a key no item has stays an underline: the panel holds the JSON mistake alone", async () => {
+    // error-place knows a data file's path by the engine's DATA_EXTENSIONS, read from window.PathogenLang.
+    const engine = await import('../src');
+    const global = globalThis as { window?: unknown };
+    const before = global.window;
+    global.window = { PathogenLang: engine };
+    try {
+      const main = 'import order from "./data/order.json";\nimport beam from "./data/beam.json";\nlog(order, beam.width);\n';
+      const files = new Map([
+        ['main.pathogen', main],
+        ['data/order.json', '{\n  "b": 6\n  "a": 14\n}\n'],
+        ['data/beam.json', '{ "length": 40 }\n'],
+      ]);
+      const { graph, errors } = await engine.resolveModules(main, {
+        host: createMemoryProjectHost(files, { label: 'test' }),
+        entry: '/main.pathogen',
+      });
+      const diagnostics = getDiagnostics(new StringTextDocument(main), { modules: graph, loadErrors: errors });
+      // getDiagnostics gives both: the mistake, an error; the key, a warning.
+      expect(diagnostics.map((d) => [d.severity, d.message.split('\n')[0]])).toEqual(
+        expect.arrayContaining([
+          [1, expect.stringMatching(/^data\/order\.json line 3, col 3: /)],
+          [2, 'data/beam.json has no key width.'],
+        ]),
+      );
+      expect(readDiagnostics(diagnostics, 'main.pathogen').map((r) => [r.file, r.line, r.column])).toEqual([
+        ['data/order.json', 3, 3],
+      ]);
+    } finally {
+      global.window = before;
+    }
+  });
+
+  it('only warnings: nothing read, so the panel falls back to the compile’s own message', () => {
+    const warning = { range: { start: { line: 2, character: 16 } }, severity: 2, message: 'data/beam.json has no key width.' };
+    expect(readDiagnostics([warning], 'main.pathogen')).toEqual([]);
+  });
+
+  it('a diagnostic without a severity is read as an error', () => {
+    const plain = { range: { start: { line: 0, character: 0 } }, message: 'Undefined variable: nope' };
+    expect(readDiagnostics([plain], 'main.pathogen').map((r) => [r.file, r.line, r.text])).toEqual([
+      ['main.pathogen', 1, 'Undefined variable: nope'],
+    ]);
+  });
+});
+
 describe('errorPlace', () => {
   it("an error in the program's own code: its line", () => {
     const message = failure(() => compile('M 0 0\nL nope 0\n'));

@@ -221,6 +221,14 @@ Existing issues outside the modules work, found while mapping phase 2 (`38-phase
 - **Needs:** only if it feels slow: a draw that checks a cancel flag between its steps, ending the thread only after a timeout.
 - **From:** the 2f code review, finding 7 (`reviews/phase-2f-code-review.md`), 2026-11-23.
 
+## Release
+
+### Release the npm package and the VS Code extension with data imports
+- **What:** phase 3a's last part (note 76, step 9: "the push"): publish `pathogen-lang` to npm and the VS Code extension, so the CLI's data imports (`--max-data-size`) and VS Code's (`pathogen.maxDataSize`, hover and completion for data) reach people who install them.
+- **Today:** the playground and the API are live with data files (pushed 2026-11-24 and 25). The published docs describe the CLI's and VS Code's data imports too (docs/data-import.md "In each tool", docs/cli.md "Data files"), but the released package and extension are from before 3a, so for anyone who installs them, those pages describe what they don't have yet (note 84, "Live but unfinished").
+- **Needs:** the CHANGELOG entry (step 9, for your approval); a version; `npm publish`; the `.vsix` built and installed in a clean VS Code, every advertised feature checked; your explicit go-ahead for each publish.
+- **From:** your answer, 2026-11-25: "we are not quite ready for #3 yet...let's add that to the backlog."
+
 ## Storage
 
 After the first release. Both come from note 50 and were moved here on 2026-11-21 (note 65).

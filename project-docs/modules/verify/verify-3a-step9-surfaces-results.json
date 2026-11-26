@@ -1,0 +1,61 @@
+{
+  "when": "2026-11-26T04:19:16.772Z",
+  "results": [
+    {
+      "check": "CLI: compiles the program with its module and six data files, no warnings",
+      "ok": true
+    },
+    {
+      "check": "CLI: the object's keys come in the file's order (b, 2, a), not JSON.parse's",
+      "ok": true
+    },
+    {
+      "check": "CLI: writes the SVG and its PNG",
+      "ok": true
+    },
+    {
+      "check": "CLI: a JSON mistake names the data file, its line and column, and the import that read it",
+      "ok": true
+    },
+    {
+      "check": "VS Code host: the six data files go to the page as text, each read from disk",
+      "ok": true
+    },
+    {
+      "check": "VS Code host: the JSON mistake, in the CLI's words",
+      "ok": true
+    },
+    {
+      "check": "VS Code page: draws what the CLI draws, path by path (within 1e-9)",
+      "ok": true
+    },
+    {
+      "check": "VS Code page: no CSP violations, no page errors",
+      "ok": true
+    },
+    {
+      "check": "playground: the owner's load leaves data/pad.json deferred (past the answer's 2 MB of data)",
+      "ok": true
+    },
+    {
+      "check": "playground: draws what the CLI draws, path by path (within 1e-9)",
+      "ok": true
+    },
+    {
+      "check": "playground: no error panel",
+      "ok": true
+    },
+    {
+      "check": "playground: the JSON mistake in the error panel, in the CLI's words",
+      "ok": true
+    },
+    {
+      "check": "playground: the panel holds that error alone; the data key's warning isn't listed as one",
+      "ok": true
+    },
+    {
+      "check": "playground: no page errors",
+      "ok": true
+    }
+  ]
+}

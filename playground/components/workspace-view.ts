@@ -2819,7 +2819,9 @@ export class WorkspaceView extends HTMLElement {
           const doc = new StringTextDocument(code);
           return getDiagnostics(doc, graph ? { modules: graph.modules, loadErrors: graph.loadErrors } : {});
         }) as DiagnosticLike[];
-        if (diagnostics.length > 0) return readDiagnostics(diagnostics, shown);
+        // Warnings aren't read, so only warnings fall back to the compile's own message.
+        const readings = readDiagnostics(diagnostics, shown);
+        if (readings.length > 0) return readings;
       } catch {
         // The compile's own message, below.
       }
