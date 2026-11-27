@@ -21,4 +21,6 @@ One content-reviewer pass, scoped to the change. It found nothing that must be f
 |---|---|---|
 | 1 | optional. Add `log(list.empty());  // true` to the example, like `.first` and `.last` above it, and the same to the string entry | **Not taken:** the user asked for the line. Offered to the user |
 | 2 | optional. A link to Booleans: recommended against, since the string entries don't link | **Not taken**, as recommended |
-| 3 | outside the change. docs/syntax.md:1824 says "Comparison results are numeric: `1` for true, `0` for false." That contradicts :685 and :702. `log(5 > 3)` logs `true` (tests/evaluator.test.ts, "log(5 > 3) displays \"true\""). Proposed: "Comparison results are booleans (`true` or `false`; see [Booleans](#syntax-booleans))." | **Offered to the user** as a separate one-line fix. It's a docs change they haven't approved |
+| 3 | outside the change. docs/syntax.md:1824 says "Comparison results are numeric: `1` for true, `0` for false." That contradicts :685 and :702. `log(5 > 3)` logs `true` (tests/evaluator.test.ts, "log(5 > 3) displays \"true\""). Proposed: "Comparison results are booleans (`true` or `false`; see [Booleans](#syntax-booleans))." | **Taken** at the user's word ("Make the fixes and then push"), in the proposed wording |
+
+The CHANGELOG's 2026-11-27 entry, Fixed › Documentation, was widened at the same word: "`.empty()`, on a string or an array, and a string's `.includes()` return `true` or `false`, not `1` or `0` as the page said. So does a comparison, such as `5 > 3`."

@@ -1821,7 +1821,7 @@ if (size > 75) {
 }
 ```
 
-You can chain as many `else if` blocks as needed. Comparison results are numeric: `1` for true, `0` for false. When every branch compares the same value, a [switch](#syntax-switch-statements) says it once.
+You can chain as many `else if` blocks as needed. Comparison results are booleans (`true` or `false`; see [Booleans](#syntax-booleans)). When every branch compares the same value, a [switch](#syntax-switch-statements) says it once.
 
 ## Switch Statements
 

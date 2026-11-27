@@ -150,7 +150,7 @@ Phase 3a of the modules work: a program or a module imports a JSON file by a nam
 
 #### Documentation
 
-- **docs/syntax.md:** a string's `.empty()` and `.includes()` return `true` or `false`, not `1` or `0` as the page said.
+- **docs/syntax.md:** `.empty()`, on a string or an array, and a string's `.includes()` return `true` or `false`, not `1` or `0` as the page said. So does a comparison, such as `5 > 3`.
 
 ## [Unreleased] - 2026-11-23 (workspaces are read in one format)
 
