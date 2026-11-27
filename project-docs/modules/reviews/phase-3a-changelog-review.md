@@ -1,0 +1,18 @@
+# Phase 3a: the CHANGELOG entry's content review
+
+2026-11-25. One content-reviewer pass over the draft (`tmp/phase3/changelog-3a-draft.md`), checked against the commits since 0b4805f1, notes 71 to 86, the docs and the code. 3 must-fix, 3 should-fix, then four more on request ("more available").
+
+| # | Finding | Disposition |
+|---|---|---|
+| 1 | must-fix. "the same program draws the same drawing in all three" claims more than step 9 checked: one program, and VS Code's side was the built extension's preview host and webview page, not a running VS Code | **Taken:** "One program that touches each rule of the docs drew the same drawing, path by path, in all three (step 9's check, below)"; the Development line names the extension's pieces and says "not a running VS Code" |
+| 2 | must-fix. The release sentence: add "only", the library parts, and that the published docs describe what an installed CLI or extension lacks; the backlog pointer belongs in the Notes | **Taken** as proposed; the release is in the Notes' `backlog.md` line. The reviewer also noted cec40b0a isn't pushed: the entry goes out in the same push as that fix |
+| 3 | must-fix. The between-pushes Fixed bullet: "past 2 MB" is wrong (the 2 MB is what a load carries, and a 1 MB file was deferred); the review screen wasn't something the docs described; it could approve the wrong drawing; there were more than two pushes | **Taken:** "Between the first push (steps 1 to 7, 2026-11-24) and step 8's (2026-11-25)…", "a data file that didn't fit in the 2 MB of data a load carries came without its text, so the review screen compiled it as empty and could approve the wrong drawing" |
+| 4 | should-fix. Tested: no recorded source for 9,927; not every commit's tree was tested alone; the semantics audit ran at steps 1 to 3 only | **Taken,** with the count kept: 9,927 is step 9's full-suite run (`tmp/phase3/step9-full-suite.log`). "each build step's tree on its own"; "the semantics audit at steps 1 to 3, the steps that changed the compiler". "26 existing files" checked: 27 modified files under `tests/`, one of them `fakes/vscode.ts` |
+| 5 | should-fix. Missing: note 71 (dev's conversion, 397 records, 0 errors; the last entry left it "being converted"), `mockups-bbwp.ts`, Rename and Move updating a data file's imports, the array message, `HostReadResult.text` | **Taken,** all five. F2 renaming a data import's name added under Language services |
+| 6 | should-fix. docs/syntax.md: only a string's `.empty()` and `.includes()` changed; the array `.empty()` (line 1104) still says `1`/`0` | **Taken:** "a string's `.empty()` and `.includes()`", moved to Fixed › Documentation. Checked: `[].empty()` logs `true`, so line 1104 is wrong too; offered to the user as a one-line docs fix |
+| 7 | optional. "the file still gets a tree" is jargon | **Taken:** "before, it was a parse error that stopped the editors' checks for the whole file" |
+| 8 | optional. "no page from before keeps running" overclaims: an open tab keeps its old code until reloaded | **Taken** |
+| 9 | optional. "Deep nesting reads fine": say how deep | **Taken:** "100,000 levels deep" |
+| 10 | optional. Duplicate missing from the carriers | **Not taken:** step 6 says Duplicate skips a data file as a program; nothing records Duplicate copying data files, so it isn't claimed |
+
+Checked, not in the review: "No new built-in names" (`git diff --stat 0b4805f1..HEAD -- src/stdlib src/evaluator/builtin-enums.ts src/pathogen-api.ts src/api-surface.ts src/evaluator/constructor-registry.ts` prints nothing); `ReadOptions` and `DEFAULT_MAX_DATA_BYTES` are new exports (the diff of `src/index.ts`); `GET /workspace/:id/file/:sha256` existed before 3a, so the entry doesn't call it new.

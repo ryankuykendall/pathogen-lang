@@ -5,6 +5,153 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] - 2026-11-27 (data imports: a JSON file by a name)
+
+Phase 3a of the modules work: a program or a module imports a JSON file by a name, `import gears from "./data/gears.json";`, and the name holds the file's data. It works in the CLI, in VS Code, and in the playground, where a workspace now holds data files beside its programs. One program that touches each rule of the docs drew the same drawing, path by path, in all three (step 9's check, below). The playground and the API are live on pathogen.studio. The CLI, VS Code and library parts aren't released yet: until they are, they reach only people who build from this repository, and the published docs describe data imports that an installed CLI or extension doesn't have. No new built-in names.
+
+### Added
+
+#### Core
+
+- **Data imports** (docs/data-import.md). A name without braces imports a data file: `import gears from "./data/gears.json";`. `.json`, `.geojson`, `.topojson` and `.fold` files are read as JSON, and the name holds the file's value: objects (with their keys in the file's order, so a key such as `"2"` stays where the file has it), arrays, numbers, strings, `true`, `false` and `null`.
+  - **Imported data is fixed, all the way in.** Giving the name a new value, or changing an array or object inside the data, is an error that says what to do instead: `Cannot change an object inside gears — it comes from data/gears.json, and imported values are fixed. Make new objects: gears.map {|gear| return { ...gear }; }`.
+  - **Each data file is read once per compile,** before any module runs, so a module can import data too, and every file that imports it sees the same value.
+  - **A JSON mistake** names the data file, its line and column, what was expected where the reading stopped, and each import that read it:
+
+    ```text
+    data/gears.json line 3, col 3: expected , or ] after an array item
+      imported from main.pathogen line 2
+    ```
+
+  - **New errors at the import:** a data file that isn't UTF-8 text, a path with no extension, an extension Pathogen doesn't read, braces or `* as` on a data file. Each is in docs/data-import.md "Errors".
+  - Pathogen reads JSON with its own reader, so a mistake reads the same on every surface. A file nested 100,000 levels deep reads fine, and a number too large to hold, such as `1e400`, is an error at its place.
+- **For library callers:**
+  - `readJson`, `dataFormatOf`, `DATA_EXTENSIONS`, `DEFAULT_MAX_DATA_BYTES`, `megabytes`, `graphForMessage` and `graphFromMessage`, and `WORKSPACE_KINDS_HELD`;
+  - the types `DataFile`, `DataFileMessage`, `DataFormat`, `DataValue`, `ImportForm`, `JsonReadResult`, `ModuleGraphMessage` and `ReadOptions`;
+  - `ModuleGraph.data`, `resolveModules`' `maxDataBytes` option and `unread` result, and `HostReadResult.text` (a host may answer with text it already holds);
+  - in `pathogen-lang/node`: `listProjectDataFiles`, a `maxBytes` option on `readProjectFile` (a larger file answers `too-large` without being read), a `maxDataBytes` option on `resolveEditorModules`, and `EditorModules.unread`;
+  - the highlight bundle exports `workspaceFileKind`.
+
+#### CLI
+
+- **A data file can be up to 50 MB;** `--max-data-size=<MB>` raises that. A larger file stops at its import line, before it's read, so a file of several gigabytes stops with this message rather than running out of memory: `import file "./data/trips.json" is 82 MB, more than the 50 MB a data file can be. To read it anyway, pass --max-data-size=100 (in VS Code, the pathogen.maxDataSize setting).`
+
+#### Language services (VS Code and the playground)
+
+- **Hover** an imported name to see what it holds: `data/gears.json · an array of 2 objects: name, x, y, radius, teeth`.
+- **Completion** offers an object's keys after a dot: after `gears[0].`, after a loop over the array (`gear.`), after `let first = gears[0];`, and in a `.map` block. A key that needs brackets, such as `length` or `Population (2020)`, is offered in its bracket form.
+- **A key no item has** gets a warning with the nearest key: `data/gears.json has no key radus. Did you mean radius?`. A key that only some items have doesn't.
+- **Import paths:** a name alone is offered data files; braces and `* as` are offered modules.
+- **Rename** (F2) on a data import's name renames it in the file: the name is the file's own.
+
+#### VS Code
+
+- **Data imports work as in the CLI,** up to 50 MB. The new `pathogen.maxDataSize` setting, the extension's first, raises that.
+- **Editing a data file, saved or not,** redraws the preview when its program is shown, and rechecks the open files that import it. Fixing a broken data file rechecks them too. JSON files no program reads, such as `package.json`, are left alone.
+
+#### Playground
+
+- **Data files in a workspace** (docs/workspace-files.md "Data files"). They show in the tree and in tabs with a braces icon, and keep their extension. In the editor:
+  - JSON is highlighted, and a mistake is underlined as you type; hover the mark to read it, and a screen reader hears it;
+  - a file written on long lines, such as a minified one, is shown plain;
+  - Format Document is off ("It formats Pathogen code").
+
+  A data file is never a program: it isn't in the program list, and it can't be set as the main. Renaming or moving one updates the imports that name it, as for a module.
+- **New data file…,** in the tree's + menu and a folder's menu, opens a dialog with one field: the name, with the extension after it as a dropdown. A new file starts as `{}`.
+- **Programs redraw** when a data file they read changes. A JSON mistake shows in the error panel under the data file's name, at its line, with the import that read it.
+- **Uploads and a project's import** take data files. Anything else is left out, and the message says why: `profile.txt: a workspace holds .pathogen files and data files (.json, .geojson, .topojson and .fold).` The import's page lists the data files after the modules.
+- **Limits:** a data file can be up to 5 MB, and a workspace up to 50 MB and 20 files, data files included. A larger file is left out of an upload or an import, with its size. An upload or an import that would take the workspace past 50 MB adds nothing, and says so (docs/workspace-files.md "Limits" quotes each message).
+- **Everything that carries a workspace carries its data files:**
+  - Download workspace, and a `.zip` imported back;
+  - Copy Workspace;
+  - a snapshot, and Start new workspace from it;
+  - Open as new workspace from a public page.
+
+  View source on a public page, the snapshots page and the review screen list data files with the braces, their JSON highlighted. Copy Debug Info includes the data files the program reads, with their size and first 20 lines.
+
+#### API
+
+- **Workspaces hold data files** (`.json`, `.geojson`, `.topojson`, `.fold`): 5 MB each, 50 MB and 20 files in all.
+- **No request holds a whole workspace's data.** A load, a viewer's or a copy's answer carries every `.pathogen` text and up to 2 MB of data text. Any other data file comes as `{ sha256, size, deferred: true }`, read by its hash:
+  - the owner, through `GET /workspace/:id/file/:sha256`;
+  - anyone, for an approved workspace, through the new `GET /approval-source/:id/file/:sha256`;
+  - the owner, for a snapshot, through the new `GET /snapshot/:sid/file/:sha256`.
+
+  The site's `source.json` for a public page (served by the Pages worker) names its `workspaceId` for this.
+- **`PUT /workspace/:id/file`** (new) stores one file's text (owner only, UTF-8, up to 5 MB) and answers its hash. A save then names the file by that hash, so large files go up one at a time.
+- **Request bodies have a cap:** 24 MB for a create or a save, 5 MB for one file. Past it, a 413 says how to send large files.
+
+#### Documentation
+
+- **docs/data-import.md** is new.
+- **docs/modules.md, cli.md, projects.md and workspace-files.md** describe data files:
+  - cli.md has a new "Data files" section;
+  - workspace-files.md covers Data files, uploads, New data file…, the limits, errors, Copy Debug Info, downloads and imports;
+  - its "Limits" section quotes the three 50 MB refusals: a save's, an upload's and an import's.
+
+#### Development
+
+- **New tests:**
+  - `data-json-reader`, `data-import-syntax`, `data-import-loader`, `data-import-runtime`, `data-import-cli`, `data-import-editors`, `data-import-vscode` and `data-import-graph-message`;
+  - `api/workspace-data-files`;
+  - `playground-deferred-files`, `playground-editor-data-file`, `playground-new-data-file-dialog`, `playground-save-limits` and `playground-workspace-create`;
+  - and additions to 26 existing files.
+- **Checks on the dev stack,** each in `project-docs/modules/verify/` with its results:
+  - `verify-3a-api-limits.ts` (5/5, through the real Worker runtime);
+  - `verify-3a-step4.mjs` (15/15, the built extension's pieces);
+  - `verify-3a-step6.ts` (11/11) and `verify-3a-step7.ts` (34/34, both themes);
+  - `verify-3a-step8a.ts` to `8e.ts` (23, 5, 11, 7 and 12 checks), the last taking one workspace through every carrier and comparing each copy by hash;
+  - `verify-3a-step9-surfaces.ts` (14/14): one program through the built CLI, the built extension's preview host and webview page (not a running VS Code), and the dev playground, the same drawing path by path, and a JSON mistake in the same words.
+- **Gates:**
+  - the memory gate: 57 MB of records read in 0.7 s into 360 MB; the worst shape, 6.5 million tiny objects, needs 1.45 GB, under Node's default limit;
+  - typing beside 50 MB of data costs under 1 ms a keystroke, down from 137 ms;
+  - checking a file that reads 500,000 records costs 1 ms, down from 95 ms.
+- **`project-docs/modules/mockups-bbwp.ts`** builds a gallery page for each mockup set (every state, light and dark), so 3a's mockups and 2f's and 2g's reach the BBWP gallery.
+- **Tested:**
+  - the full suite (9,926 tests in step 9's tree);
+  - each build step's tree on its own;
+  - the semantics audit at steps 1 to 3, the steps that changed the compiler: 1,502 programs, 0 changed;
+  - a code review of each step.
+- **Notes:**
+  - note 71 records that dev's data finished converting to today's workspace format: 397 records, 0 errors;
+  - notes 72 to 86 hold the design round, the mockups (v1 to v3) and their answers, the build plan, each step's record, the pushes, and step 9;
+  - the content reviews are in `reviews/`;
+  - `backlog.md` gains the release (npm and the VS Code extension), keeps the sweep of stored files nothing names there by choice, and holds text imports (`.txt`), which wait for regular expressions.
+
+### Changed
+
+#### Core
+
+- **Changing an object or an array inside any imported value,** a module's too, has its own message ("Cannot change an object inside …", "Cannot change an array inside …"). Before, changing `rows[0]` advised copying `rows`, which doesn't help: the copy holds the same items. `docs/modules.md` adds that copying is one level deep.
+- **The import messages follow the path and the form:**
+  - a module imported by a name gets "…Pathogen has no default export…" at the path; before, it was a parse error that stopped the editors' checks for the whole file;
+  - another extension reads "…isn't a file Pathogen can import. Imports read .pathogen modules and JSON files (.json, .geojson, .topojson, .fold).", in place of "…isn't a .pathogen file. Only .pathogen files can be imported."
+
+#### Playground
+
+- **A save past a limit says why in the error panel.** The save status reads "Not saved", and the error panel says why under the file's name, until it fits again: `Not saved: 5.4 MB, more than the 5 MB a data file can be in a workspace. Your edits stay in the editor.` That includes a `.pathogen` file over 1 MB, whose message used to be in the save status.
+- **The read-only viewer highlights `pathogen.json` as JSON;** before, it highlighted it as Pathogen.
+- **A project's import says "A workspace can hold at most …",** as every other limit message does.
+
+#### API
+
+- **A load can answer with deferred files** (above). The playground reads them. Browsers check the site's code on every load, so a page loaded after the push runs code that knows them; a tab left open from before keeps its old code until it's reloaded.
+
+### Fixed
+
+#### Playground
+
+- **The error panel no longer lists a data key's warning as an error.** Since 2026-11-24, when a program failed to compile, a key no item has (an editor underline) also showed in the panel, counted among the errors. The panel holds errors only now. Found by step 9's check.
+- **Between the first push (steps 1 to 7, 2026-11-24) and step 8's (2026-11-25),** some of 3a didn't work yet. Step 8's push fixed it:
+  - uploads and a project's import refused data files, though the docs said they took them;
+  - a data file that didn't fit in the 2 MB of data a load carries came without its text, so the review screen compiled it as empty and could approve the wrong drawing;
+  - Make public on the Workspaces page refused a workspace whose main imports such a file;
+  - View source, the snapshots page and Open as new workspace couldn't read such a file.
+
+#### Documentation
+
+- **docs/syntax.md:** a string's `.empty()` and `.includes()` return `true` or `false`, not `1` or `0` as the page said.
+
 ## [Unreleased] - 2026-11-23 (workspaces are read in one format)
 
 Housekeeping after phase 2's storage migration: the API stops reading workspaces in the format from before phase 2 (replaced on 2026-11-17), after a read-only check of production found none left. Nothing changes for anyone using the site. The site and the API both deployed.

@@ -43,4 +43,11 @@ The first run's error panel held two entries, under the "2 errors" badge: the JS
 
 ## The CHANGELOG
 
-The entry covers every commit since the last one (0b4805f1, 2026-11-23): notes 71 to 86 and steps 1 to 9. The draft is `tmp/phase3/changelog-3a-draft.md`; it waits for a content review and the user's approval before it goes into CHANGELOG.md.
+The entry covers every commit since the last one (0b4805f1, 2026-11-23): notes 71 to 86 and steps 1 to 9. The draft was `tmp/phase3/changelog-3a-draft.md`. Its content review and the dispositions are in `reviews/phase-3a-changelog-review.md`. The user approved it on 2026-11-27 ("I approve the changelog draft, incorporate it into the push"), and it went into CHANGELOG.md with three changes:
+- the heading is dated 2026-11-27, the day it landed, as the 11-23 entry is;
+- a blank line before "Development";
+- the test count is 9,926, the tests in step 9's committed tree (`tmp/phase3/step9-tree.log`). The 9,927 passes of the working-copy run included 4 of the user's uncommitted tests.
+
+It was pushed with `cec40b0a`. The push touched no API files, so only the website redeployed.
+
+Still open: `docs/syntax.md:1104` says an array's `.empty()` returns `1` or `0`, but it returns `true` or `false`. The fix was offered to the user and waits for their answer.
