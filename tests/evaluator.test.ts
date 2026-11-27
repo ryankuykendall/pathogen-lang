@@ -2189,6 +2189,11 @@ describe('Evaluator', () => {
       expect(compilePath('let list = [1]; if (list.empty()) { M 1 0 } else { M 0 0 }')).toBe('M 0 0');
     });
 
+    it('empty() on an array returns true or false, as docs/syntax.md says', () => {
+      const result = compile('log([].empty()); log([1].empty());');
+      expect(result.logs.map((l) => l.parts[0].value)).toEqual(['true', 'false']);
+    });
+
     it('push adds element and returns new length', () => {
       expect(compilePath('let list = [1, 2]; let len = list.push(3); M len list[2]')).toBe('M 3 3');
     });
@@ -3401,6 +3406,11 @@ log(p.color.hex);`);
       expect(compilePath('let str = `hello`; if (str.empty()) { M 1 0 } else { M 0 0 }')).toBe('M 0 0');
     });
 
+    it('.empty() on a string returns true or false, as docs/syntax.md says', () => {
+      const result = compile('log(``.empty()); log(`hello`.empty());');
+      expect(result.logs.map((l) => l.parts[0].value)).toEqual(['true', 'false']);
+    });
+
     it('index access returns character at position', () => {
       const result = compile('let str = `Hello`; log(str[0]);');
       expect(result.logs[0].parts[0].value).toBe('H');
@@ -3460,6 +3470,11 @@ log(p.color.hex);`);
 
     it('.includes() works with empty substring', () => {
       expect(compilePath('let str = `Hello`; if (str.includes(``)) { M 1 0 } else { M 0 0 }')).toBe('M 1 0');
+    });
+
+    it('.includes() returns true or false, as docs/syntax.md says', () => {
+      const result = compile('log(`Hello World`.includes(`World`)); log(`Hello World`.includes(`Foo`));');
+      expect(result.logs.map((l) => l.parts[0].value)).toEqual(['true', 'false']);
     });
 
     it('.slice() extracts substring', () => {

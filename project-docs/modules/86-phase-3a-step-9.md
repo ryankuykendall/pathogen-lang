@@ -51,3 +51,5 @@ The entry covers every commit since the last one (0b4805f1, 2026-11-23): notes 7
 It was pushed with `cec40b0a`. The push touched no API files, so only the website redeployed.
 
 Still open: `docs/syntax.md:1104` says an array's `.empty()` returns `1` or `0`, but it returns `true` or `false`. The fix was offered to the user and waits for their answer.
+
+**Answered 2026-11-27:** "Yes, fix the array .empty() line in the docs." Fixed, with tests that log the value of an array's `.empty()` and a string's `.empty()` and `.includes()`. The review is in `reviews/syntax-array-empty-review.md`. It found the same mistake at docs/syntax.md:1824 ("Comparison results are numeric: `1` for true, `0` for false"), which is offered to the user separately.

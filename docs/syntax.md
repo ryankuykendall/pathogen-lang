@@ -1101,7 +1101,7 @@ log(empty.last);   // null
 
 ### `.empty()`
 
-Returns `1` (truthy) if the array has no elements, `0` (falsy) otherwise:
+Returns `true` if the array has no elements, `false` otherwise:
 
 ```
 let list = [];
